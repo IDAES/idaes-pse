@@ -27,7 +27,6 @@ from pyomo.core.base.constraint import _ConstraintData
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.var import _GeneralVarData
 from pyomo.core.base.component import ComponentUID
-from pyomo.core.base.set import SortedSimpleSet, OrderedSimpleSet
 from pyomo.opt.solver import SystemCallSolver
 
 from idaes.core import FlowsheetBlock
@@ -41,15 +40,13 @@ from idaes.core.util.dyn_utils import (get_activity_dict,
                                        deactivate_constraints_unindexed_by, 
                                        find_comp_in_block)
 from idaes.core.util.initialization import initialize_by_time_element
-from idaes.apps.caprese.common.config import VariableCategory, NoiseBoundOption
+from idaes.apps.caprese.common.config import VariableCategory
 import idaes.logger as idaeslog
 
-from collections import OrderedDict, namedtuple
-import os
+from collections import OrderedDict
 import random
 import time as timemodule
 import enum
-import json
 import pdb
 
 __author__ = "Robert Parker and David Thierry"
@@ -107,8 +104,7 @@ class NMPCVar(object):
 
 
 class NMPCVarGroup(object):
-    # This is basically just an IndexedVar
-    # TODO: Create a ctype that inherits from IndexedVar
+    # TODO: implement __iter__ that iterates over varlist
     def __init__(self, varlist, index_set, is_scalar=False):
         if type(varlist) is not list:
             raise TypeError(
@@ -323,6 +319,16 @@ def get_violated_bounds_at_time(group, timepoints, tolerance=1e-8):
     return violated
 
 
+def find_point_in_continuousset(point, cset, tolerance=1e-8):
+    for t in cset:
+        diff = abs(point-t)
+        if diff < tolerance:
+            return t
+        if t > point:
+            break
+    return None
+
+
 def copy_weights(tgt_group, src_group):
     assert tgt_group.n_vars == src_group.n_vars
     for i in range(tgt_group.n_vars):
@@ -352,7 +358,9 @@ def copy_values_at_time(varlist_tgt, varlist_src, t_tgt, t_src):
         t_tgt = [t_tgt]
 
     # TODO? This could be made more compact with vargroups...
-    for src_slice, tgt_slice in zip(varlist_src, varlist_tgt):
+    for i, tgt_slice in enumerate(varlist_tgt):
+        src_slice = varlist_src[i]
+
         try:
             src_value = src_slice[t_src].value
         except KeyError:
@@ -465,14 +473,15 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
     # TODO: Should I fix scalar vars? Intuition is that they should already
     # be fixed.
 
+    #time = model.time
     assert t_start in time.get_finite_elements()
     assert t_end in time.get_finite_elements()
-    #assert degrees_of_freedom(model) == 0
-    # No need to check dof here as we will check right before each solve
+#    assert degrees_of_freedom(model) == 0
+# Don't care about dof of whole model...
 
     #dae_vars = kwargs.pop('dae_vars', [])
     if not dae_vars:
-        scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
+        scalar_vars, dae_vars = flatten_dae_components(model, time, Var)
         for var in scalar_vars:
             var.fix()
         deactivate_constraints_unindexed_by(model, time)
@@ -505,9 +514,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
-            raise ValueError(
-                'Failed to solve for consisten initial conditions.'
-                )
+            raise ValueError
 
         deactivated[time.first()] = deactivate_model_at(model, time, 
                 time.first(),
@@ -594,9 +601,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
-            raise ValueError(
-                'Failed to solve for finite element %s' %i
-                )
+            raise ValueError
 
         for t in fe:
             for comp in deactivated[t]:
@@ -611,256 +616,113 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
             if was_originally_active[id(comp)]:
                 comp.activate()
 
-def get_violated_bounds(val, bounds):
-    lower = bounds[0]
-    upper = bounds[1]
-    if upper is not None:
-        if val > upper:
-            return (upper, -1)
-    if lower is not None:
-        if val < lower:
-            return (lower, 1)
-    return (None, 0)
+#    assert degrees_of_freedom(model) == 0
+# Again, only care about dof within range
 
-class MaxDiscardError(Exception):
-    pass
 
-def apply_noise(val_list, noise_params, noise_function):
+def add_noise_at_time(varlist, t_list, **kwargs):
+    """Function to add random noise to the values of variables at a particular
+    point in time.
+
+    Args:
+        varlist : List of (only) time-indexed variables (or References) to
+                  which to add noise
+        t_list : Point in time, or list of points in time, at which to add noise
+
+    Kwargs:
+        random_function : Function that will be called to get the random noise 
+                          added to each variable
+        args_function : Function that maps index (location) of a variable in
+                      varlist to a list of arguments that can be passed to the
+                      random function
+        weights : List of weights for random distribution arguments such as 
+                  standard deviation (Gaussian), radius (uniform), or lambda
+                  (Laplacian)
+        sigma_0 : Value of standard deviation for a variable with unit weight.
+                  Default is 0.05.
+        random_arg_dict : Dictionary containing other values users may want
+                          to use in their argument function
+        bound_strategy : String describing strategy for case in which a bound
+                         is violated. Options are 'discard' (default) or 'push'.
+        discard_limit : Number of discarded random values after which an
+                        exception will be raised. Default is 5
+        bound_push : Distance from bound if a push strategy is used for bound
+                     violate. Default is 0
+
+    Returns:
+        A dictionary mapping each t in t_list to the 
     """
-    Applies noise to each value in a list of values and returns the result.
-    Noise is generated by a user-provided function that maps a value and 
-    parameters to a random value. 
-    """
-    result = []
-    for val, params in zip(val_list, noise_params):
-        if type(params) is not tuple:
-            # better be a scalar
-            params = (params)
-        result.append(noise_function(val, *params))
-    return result
+    n = len(varlist)
+    rand_fcn = kwargs.pop('random_function', random.gauss)
+    weights = kwargs.pop('weights', [1 for i in range(n)])
+    random_arg_dict = kwargs.pop('random_arg_dict', {})
+    assert len(weights) == n
+    sig_0 = kwargs.pop('sigma_0', 0.05)
+    sig = [w*sig_0 if w is not None else None for w in weights]
 
-def apply_bounded_noise_discard(val, params, noise_function, bounds, 
-        max_number_discards):
-    i = 0
-    while i <= max_number_discards:
-        newval = noise_function(val, *params)
+    args_fcn = kwargs.pop('args_function',
+                          lambda i, val, **kwargs: [val, sig[i]] 
+                                 if sig[i] is not None else None)
 
-        violated_bound, direction = get_violated_bounds(newval, bounds)
-        if violated_bound is None:
-            return newval
+    bound_strategy = kwargs.pop('bound_strategy', 'discard')
+    discard_limit = kwargs.pop('discard_limit', 5)
+    bound_push = kwargs.pop('bound_push', 0)
+    assert bound_push >= 0
+    assert discard_limit >= 0
 
-    # NOTE: This is not the most useful place to raise such an error
-    raise MaxDiscardError(
-        'Max number of discards exceeded when applying noise.')
+    if type(t_list) is not list:
+        t_list = [t_list]
 
-def apply_bounded_noise_push(val, params, noise_function, bounds,
-        bound_push):
-    newval = noise_function(val, *params)
-    violated_bound, direction = get_violated_bounds(newval, bounds)
-    if not violated_bound:
-        return newval
-    return violated_bound + bound_push*direction
+    nom_values = {t: [var[t].value for var in varlist] for t in t_list}
+    for t in t_list:
+        if any([val is None for val in nom_values[t]]):
+            raise ValueError(
+                    'Cannot apply noise to an uninitialized variable')
 
-def apply_bounded_noise_fail(val, params, noise_function, bounds):
-    newval = noise_function(val, *params)
-    violated_bound, direction = get_violated_bounds(newval, bounds)
-    if violated_bound:
-        raise RuntimeError(
-            'Applying noise caused a bound to be violated')
-    return newval
+    def violated_bounds(var, t, val):
+        if var[t].ub is not None:
+            if val > var[t].ub:
+                return ('upper', var[t].ub)
+        if var[t].lb is not None:
+            if val < var[t].lb:
+                return ('lower', var[t].lb)
+        return None
 
-def apply_noise_with_bounds(val_list, noise_params, noise_function, bound_list,
-        bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
-        bound_push=1e-8):
-    result = []
-    for val, params, bounds in zip(val_list, noise_params, bound_list):
-        if type(params) is not tuple:
-            # better be a scalar
-            # better check: if type(params) not in {sequence_types}...
-            params = (params,)
+    for i, var in enumerate(varlist):
+        for t in t_list:
+            rand_args = args_fcn(i, var[t].value, **random_arg_dict)
+            if not rand_args:
+                # If a certain value is to be skipped,
+                # args_fcn should return None
+                continue
+            newval = rand_fcn(*rand_args)
 
-        if bound_option == NoiseBoundOption.DISCARD:
-            newval = apply_bounded_noise_discard(val, params, noise_function,
-                    bounds, max_number_discards)
-        elif bound_option == NoiseBoundOption.PUSH:
-            newval = apply_bounded_noise_push(val, params, noise_function,
-                    bounds, bound_push)
-        elif bound_option == NoiseBoundOption.FAIL:
-            newval = apply_bounded_noise_fail(val, params, noise_function, 
-                    bounds)
-        else:
-            raise RuntimeError(
-                'Bound violation option not recognized')
+            violated = violated_bounds(var, t, newval)
+            if not violated:
+                var[t].set_value(newval)
+                continue
+            if bound_strategy == 'discard':
+                for count in range(0, discard_limit):
+                    newval = rand_fcn(*rand_args) 
+                    if not violated_bounds(var, t, newval):
+                        break
+                if violated_bounds(var, t, newval):
+                    raise ValueError(
+                        'Discard limit exceeded when trying to apply noise to '
+                        + var[t].name + ' with arguments ' + str(rand_args) +
+                        '. Please adjust bounds or tighten distribution.')
+            elif bound_strategy == 'push':
+                if violated[0] == 'upper':
+                    newval = violated[1] - bound_push
+                elif violated[0] == 'lower':
+                    newval = violated[1] + bound_push
+                if violated_bounds(var, t, newval):
+                    raise ValueError(
+                            'Value after noise violates bounds even after '
+                            'push. Please use a smaller bound push.')
+            var[t].set_value(newval) 
 
-        result.append(newval)
-    return result
-
-def apply_noise_to_slices(slice_list, t, noise_params, noise_function,
-        bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
-        bound_push=1e-8):
-    """
-    Acts as a wrapper around apply_noise, with additional logic to handle the
-    case where a variable's bound is violated.
-    """
-    val_list = [_slice[t].value for _slice in slice_list]
-    bound_list = [(_slice[t].lb, _slice[t].ub) for _slice in slice_list]
-
-    result = apply_noise_with_bounds(val_list, noise_params, noise_function,
-            bound_list,
-            bound_option=bound_option,
-            max_number_discards=max_number_discards,
-            bound_push=bound_push)
-    return result
-
-def apply_noise_at_time_points(var, points, params, noise_function,
-        bounds=(None, None), bound_option=NoiseBoundOption.DISCARD, 
-        max_number_discards=5, bound_push=1e-8):
-    """
-    TODO
-    """
-    params_type = type(params)
-    points_type = type(points)
-    sequence_types = {tuple, list}
-    if params_type not in sequence_types:
-        # better be a scalar
-        params = (params,)
-    if points_type not in sequence_types:
-        points = [points]
-
-    result = []
-    for t in points:
-        val = var[t].value
-        if bound_option == NoiseBoundOption.DISCARD:
-            newval = apply_bounded_noise_discard(val, params, noise_function,
-                    bounds, max_number_discards)
-        elif bound_option == NoiseBoundOption.PUSH:
-            newval = apply_bounded_noise_push(val, params, noise_function,
-                    bounds, bound_push)
-        elif bound_option == NoiseBoundOption.FAIL:
-            newval = apply_bounded_noise_fail(val, params, noise_function, 
-                    bounds)
-        else:
-            raise RuntimeError(
-                'Bound violation option not recognized')
-        result.append(newval)
-    return result
-
-#InputRecord = namedtuple('InputRecord', ['start', 'end', 'value'])
-#
-#class InputHistory(list):
-#    def __init__(self, sample_time=0, tolerance=1e-8):
-#        self.sample_time = sample_time
-#        self.tolerance = tolerance
-#        super().__init__()
-#
-#    def append(self, record):
-#        if not isinstance(record, InputRecord):
-#            raise TypeError(
-#                'Items of InputHistory must be instances of InputRecord')
-#
-#        if len(self) == 0:
-#            super().append(record)
-#        else:
-#            last = self[-1]
-#            if abs(record.start - last.end) > self.tolerance:
-#                raise ValueError(
-#                    'Appended record must start where the last '
-#                    'record left off')
-#            super().append(record)
-#
-#def search_history(history, low, high, val, tolerance=1e-8):
-#    """
-#    Binary search of an InputHistory array for a time value
-#    """
-#    if high >= low:
-#        mid = (high + low) // 2
-#        record = history[mid]
-#        if (record.start + tolerance < val and val < record.end + tolerance):
-#            # Want sample points to be included in their preceding interval
-#            return mid
-#
-#        elif record.start + tolerance > val:
-#            return search_history(history, low, mid-1, val, tolerance)
-#
-#        else:
-#            return search_history(history, mid+1, high, val, tolerance)
-#
-#    else:
-#        return None
-#
-#MeasurementRecord = namedtuple('MeasurementRecord', ['time_point', 'value'])
-#
-#class MeasurementHistory(list):
-#    def __init__(self, name=None, tolerance=1e-8):
-#        self.name = name
-#        self.tolerance = tolerance
-#        self.empty = True
-#        super().__init__()
-#
-#    def last(self):
-#        return self[-1]
-#
-#    def append(self, record):
-#        if not isinstance(record, MeasurementRecord):
-#            raise TypeError(
-#                'Items of MeasurementHistory must be instances of '
-#                'MeasurementRecord')
-#
-#        if self.empty:
-#            super().append(record)
-#            self.empty = False
-#        else:
-#            if (record.time_point < self.last().time_point + self.tolerance):
-#                raise ValueError(
-#                'Appended record must come after the last existing record. '
-#                'Expected a time point after %s, got %s.'
-#                % (self.last().time_point, record.time_point))
-#            super().append(record)
-#
-#    def binary_search(self, low, high, t):
-#        """
-#        Binary search of a MeasurementHistory array for a time value
-#        """
-#        if high >= low:
-#            mid = (high + low) // 2
-#            record = self[mid]
-#            if abs(record.time_point - t) <= self.tolerance:
-#                return mid
-#
-#            elif t < record.time_point - self.tolerance:
-#                return self.binary_search(low, mid-1, t)
-#
-#            else:
-#                return self.binary_search(mid+1, high, t)
-#
-#        else:
-#            return None
-#
-#    def find(self, t, low=0, high=None):
-#        """
-#        Returns the record at time point t, if one exists.
-#        """
-#        if high is None:
-#            high = len(self)
-#        index = self.binary_search(low, high, t)
-#        if index is None:
-#            return None
-#        record = self[index]
-#        return record
-#
-#
-#def histories_from_json(filename):
-#    with open(filename, 'r') as f:
-#        obj = json.load(f)
-#    histories = []
-#    for meas_list in obj:
-#        history = MeasurementHistory()
-#        for data in meas_list:
-#            record = MeasurementRecord(*data)
-#            history.append(record)
-#        histories.append(history)
-#    return histories
-
+    return nom_values
 
 def cuid_from_timeslice(_slice, time):
     """
