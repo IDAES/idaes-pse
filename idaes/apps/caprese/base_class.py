@@ -69,9 +69,11 @@ class DynamicBase(object):
                 )
             )
 
+    namespace_name = '_DYNAMIC_NAMESPACE'
+
     @classmethod
     def get_namespace_name(cls):
-        return '_DYNAMIC_NAMESPACE'
+        return cls.namespace_name
 
     @classmethod
     def add_namespace_to(cls, model, time):
@@ -413,6 +415,7 @@ class DynamicBase(object):
         locator = ComponentMap()
         for categ, vargroup in category_dict.items():
             varlist = vargroup.varlist
+            varlist = vargroup
             if categ == VariableCategory.SCALAR:
                 for i, var in enumerate(varlist):
                     locator[var] = NMPCVarLocator(categ, vargroup, i)
@@ -432,5 +435,3 @@ class DynamicBase(object):
                 locator[_slice[t]].is_measurement = True
 
         namespace.var_locator = locator
-
-
