@@ -17,3 +17,5 @@ The phase equilibria methods include methods to calculate bubble and dew tempera
 The methods also include ``Txy_diagram()`` which is a method that calculates the data and creates the plots automatically.
 
 .. autofunction:: idaes.core.util.phase_equilibria.Txy_diagram
+
+.. note::Currently these methods work with **FTPx** state definitions.

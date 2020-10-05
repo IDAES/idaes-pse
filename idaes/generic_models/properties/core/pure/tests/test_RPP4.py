@@ -30,7 +30,7 @@ from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.generic_models.properties.core.pure.RPP import *
+from idaes.generic_models.properties.core.pure.RPP4 import *
 from idaes.core.util.misc import add_object_reference
 from idaes.core.property_meta import PropertyClassMetadata
 

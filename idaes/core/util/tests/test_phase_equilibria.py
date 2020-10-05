@@ -28,7 +28,9 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 import idaes.generic_models.properties.core.pure.NIST as NIST
-
+from idaes.core import FlowsheetBlock
+from idaes.generic_models.properties.core.generic.generic_property import (
+        GenericParameterBlock)
 
 from idaes.core.util.phase_equilibria import (TXYDataClass,Txy_data)
 
@@ -103,13 +105,17 @@ def test_Txy_data():
         "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
         "bubble_dew_method": IdealBubbleDew}
 
-    TD = Txy_data('benzene','toluene',101325,3,configuration)
+    model = ConcreteModel()
+
+    model.params = GenericParameterBlock(default=configuration)
+
+    TD = Txy_data('benzene','toluene', 101325, 3, model)
 
     assert TD.Component_1 == 'benzene'
     assert TD.Component_2 == 'toluene'
     assert TD.Punits == pyunits.kg / pyunits.m / pyunits.s ** 2
     assert TD.Tunits == pyunits.K
     assert TD.P == 101325
-    assert TD.TBubb == [pytest.approx(353.2876, abs=1e-4), pytest.approx(365.2127, abs=1e-4), pytest.approx(383.7682, abs=1e-4)]
-    assert TD.TDew == [pytest.approx(353.28758, abs=1e-2), pytest.approx(371.8702, abs=1e-4), pytest.approx(383.7710, abs=1e-4)]
-    assert TD.x == [pytest.approx(0.9999, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(9.9999e-05, abs=1e-4)]
+    assert TD.TBubb == [pytest.approx(353.3853, abs=1e-4), pytest.approx(365.2127, abs=1e-4), pytest.approx(383.5312, abs=1e-4)]
+    assert TD.TDew == [pytest.approx(353.5429, abs=1e-2), pytest.approx(371.8702, abs=1e-4), pytest.approx(383.6709, abs=1e-4)]
+    assert TD.x == [pytest.approx(0.995, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.005, abs=1e-4)]

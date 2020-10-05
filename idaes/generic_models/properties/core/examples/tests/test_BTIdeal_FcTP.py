@@ -47,7 +47,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP as RPP
+import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 import idaes.generic_models.properties.core.pure.NIST as NIST
 
 
@@ -61,7 +61,7 @@ config_dict = {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
-            "enth_mol_ig_comp": RPP,
+            "enth_mol_ig_comp": RPP4,
             "pressure_sat_comp": NIST,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
@@ -90,7 +90,7 @@ config_dict = {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
-            "enth_mol_ig_comp": RPP,
+            "enth_mol_ig_comp": RPP4,
             "pressure_sat_comp": NIST,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
