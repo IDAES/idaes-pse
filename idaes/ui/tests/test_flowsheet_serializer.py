@@ -32,6 +32,7 @@ from pyomo.environ import Expression
 @pytest.mark.component
 def test_serialize():
     # Construct the model from idaes.generic_models.flowsheets.demo_flowsheet
+    # It consists of a Mixer linked to a Heater linked to a Flash.
     m = build_flowsheet()
     m.fs.properties = SWCO2ParameterBlock()
     m.fs.main_compressor = PressureChanger(
@@ -91,8 +92,8 @@ def test_serialize():
                                     ]
 
     # TODO: Examine whether these are in fact appropriate
-    inlet_names = {'inlet', 'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 8)})
-    outlet_names = {'outlet', 'vap_outlet', 'liq_outlet'}.union({f'outlet_{n}' for n in range(1, 8)})
+    inlet_names = {'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 9)})
+    outlet_names = {'vap_outlet_1', 'liq_outlet_1'}.union({f'outlet_{n}' for n in range(1, 9)})
     feed_and_outlet_names_type_truth = [{'name': name, 'type': 'feed'} for name in inlet_names] + \
                                        [{'name': name, 'type': 'product'} for name in outlet_names]
     unit_models_names_type_truth += feed_and_outlet_names_type_truth
@@ -145,26 +146,26 @@ def test_serialize():
     # In particular, note that numbered inlet/outlet names are somewhat arbitrary;
     # they're only deterministic due to sorting upon automatic generation.
     in_out_edges_truth = {
-           's_inlet': {'dest': 'FG_cooler', 'source': 'inlet'},
+           's_inlet_1': {'dest': 'FG_cooler', 'source': 'inlet_1'},
            's_inlet_1_1': {'dest': 'M01', 'source': 'inlet_1_1'},
-           's_inlet_1': {'dest': 'HTR_pseudo_tube', 'source': 'inlet_1'},
+           's_inlet_2': {'dest': 'HTR_pseudo_tube', 'source': 'inlet_2'},
            's_inlet_2_1': {'dest': 'M01', 'source': 'inlet_2_1'},
-           's_inlet_2': {'dest': 'LTR_pseudo_tube', 'source': 'inlet_2'},
-           's_inlet_3': {'dest': 'boiler', 'source': 'inlet_3'},
-           's_inlet_4': {'dest': 'bypass_compressor', 'source': 'inlet_4'},
-           's_inlet_5': {'dest': 'main_compressor', 'source': 'inlet_5'},
-           's_inlet_6': {'dest': 'pre_boiler', 'source': 'inlet_6'},
-           's_inlet_7': {'dest': 'turbine', 'source': 'inlet_7'},
-           's_liq_outlet': {'dest': 'liq_outlet', 'source': 'F03'},
-           's_outlet': {'dest': 'outlet', 'source': 'FG_cooler'},
-           's_outlet_1': {'dest': 'outlet_1', 'source': 'HTR_pseudo_tube'},
-           's_outlet_2': {'dest': 'outlet_2', 'source': 'LTR_pseudo_tube'},
-           's_outlet_3': {'dest': 'outlet_3', 'source': 'boiler'},
-           's_outlet_4': {'dest': 'outlet_4', 'source': 'bypass_compressor'},
-           's_outlet_5': {'dest': 'outlet_5', 'source': 'main_compressor'},
-           's_outlet_6': {'dest': 'outlet_6', 'source': 'pre_boiler'},
-           's_outlet_7': {'dest': 'outlet_7', 'source': 'turbine'},
-           's_vap_outlet': {'dest': 'vap_outlet', 'source': 'F03'}}
+           's_inlet_3': {'dest': 'LTR_pseudo_tube', 'source': 'inlet_3'},
+           's_inlet_4': {'dest': 'boiler', 'source': 'inlet_4'},
+           's_inlet_5': {'dest': 'bypass_compressor', 'source': 'inlet_5'},
+           's_inlet_6': {'dest': 'main_compressor', 'source': 'inlet_6'},
+           's_inlet_7': {'dest': 'pre_boiler', 'source': 'inlet_7'},
+           's_inlet_8': {'dest': 'turbine', 'source': 'inlet_8'},
+           's_liq_outlet_1': {'dest': 'liq_outlet_1', 'source': 'F03'},
+           's_outlet_1': {'dest': 'outlet_1', 'source': 'FG_cooler'},
+           's_outlet_2': {'dest': 'outlet_2', 'source': 'HTR_pseudo_tube'},
+           's_outlet_3': {'dest': 'outlet_3', 'source': 'LTR_pseudo_tube'},
+           's_outlet_4': {'dest': 'outlet_4', 'source': 'boiler'},
+           's_outlet_5': {'dest': 'outlet_5', 'source': 'bypass_compressor'},
+           's_outlet_6': {'dest': 'outlet_6', 'source': 'main_compressor'},
+           's_outlet_7': {'dest': 'outlet_7', 'source': 'pre_boiler'},
+           's_outlet_8': {'dest': 'outlet_8', 'source': 'turbine'},
+           's_vap_outlet_1': {'dest': 'vap_outlet_1', 'source': 'F03'}}
 
     for edge, details in in_out_edges_truth.items():
         named_edges_truth[edge] = details
