@@ -224,9 +224,9 @@ def test_in_out_regex_matching():
 @pytest.mark.unit
 def test__unique_unit_name():
     fss = FlowsheetSerializer()
-    assert fss._unique_unit_name('hydrogen_in') == 'hydrogen_in'
-    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod'
-    assert fss._unique_unit_name('feed') == "feed"
+    assert fss._unique_unit_name('hydrogen_in') == 'hydrogen_in_1'
+    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod_1'
+    assert fss._unique_unit_name('feed') == "feed_1"
     # _used_unit_names is incremented by _unique_unit_name so this should have a suffix
     assert fss._unique_unit_name('toluene_prod') == 'toluene_prod_2'
     assert fss._unique_unit_name('feed') == "feed_2"
