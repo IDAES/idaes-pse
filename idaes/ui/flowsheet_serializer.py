@@ -51,7 +51,7 @@ class FlowsheetSerializer:
         self.flowsheet = None
         self._used_ports = set()
         self._known_endpoints = set()
-        self._used_unit_names = defaultdict(lambda: 0)
+        self._unit_name_used_count = defaultdict(lambda: 0)
         self._logger = idaes.logger.getLogger(__name__)
 
     def serialize(self, flowsheet, name):
@@ -188,7 +188,7 @@ class FlowsheetSerializer:
                     "type": self._get_unit_model_type(unit)
                 }
 
-            self._used_unit_names[unit_name] += 1
+            self._unit_name_used_count[unit_name] += 1
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = unit
 
@@ -281,12 +281,9 @@ class FlowsheetSerializer:
                 self._logger.warning(f"Disconnected port found: {port_name} parent unit model: {self.ports[port].getname()}")
 
     def _unique_unit_name(self, base_name):
-        # Prevent name collisions by simply appending a number if there is multiple instances of a 
-        self._used_unit_names[base_name] += 1
-        if self._used_unit_names[base_name] == 1:
-            return base_name
-        else:
-            return f"{base_name}_{self._used_unit_names[base_name]}"
+        # Prevent name collisions by simply appending a suffix based on how many times the name's been used
+        self._unit_name_used_count[base_name] += 1
+        return f'{base_name}_{self._unit_name_used_count[base_name]}'
 
     def _construct_output_json(self):
         self._construct_model_json()
