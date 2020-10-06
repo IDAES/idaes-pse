@@ -91,7 +91,6 @@ def test_serialize():
                                     {'name': 'LTR_pseudo_tube', 'type': 'heater'},
                                     ]
 
-    # TODO: Examine whether these are in fact appropriate
     inlet_names = {'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 9)})
     outlet_names = {'vap_outlet_1', 'liq_outlet_1'}.union({f'outlet_{n}' for n in range(1, 9)})
     feed_and_outlet_names_type_truth = [{'name': name, 'type': 'feed'} for name in inlet_names] + \
@@ -142,9 +141,6 @@ def test_serialize():
     named_edges_truth = {'s01': {'source': 'M01', 'dest': 'H02'},
                          's02': {'source': 'H02', 'dest': 'F03'}}
 
-    # TODO: as obove, examine whether this is appropriate treatment for arcs connected to inlets/outlets
-    # In particular, note that numbered inlet/outlet names are somewhat arbitrary;
-    # they're only deterministic due to sorting upon automatic generation.
     in_out_edges_truth = {
            's_inlet_1': {'dest': 'FG_cooler', 'source': 'inlet_1'},
            's_inlet_1_1': {'dest': 'M01', 'source': 'inlet_1_1'},
