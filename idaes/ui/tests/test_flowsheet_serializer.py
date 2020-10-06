@@ -31,7 +31,7 @@ from pyomo.environ import Expression
 
 @pytest.mark.component
 def test_serialize():
-    # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
+    # Construct the model from idaes.generic_models.flowsheets.demo_flowsheet
     m = build_flowsheet()
     m.fs.properties = SWCO2ParameterBlock()
     m.fs.main_compressor = PressureChanger(

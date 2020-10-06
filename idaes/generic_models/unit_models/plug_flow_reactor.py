@@ -14,7 +14,7 @@
 Standard IDAES PFR model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var, Reference
+from pyomo.environ import Constraint, Var, Reference, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -29,6 +29,8 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     list_of_floats)
 from idaes.core.util.misc import add_object_reference
+import idaes.core.util.unit_costing as costing
+from idaes.core.util.constants import Constants as const
 
 __author__ = "Andrew Lee, John Eslick"
 
@@ -287,3 +289,24 @@ domain,
         var_dict = {"Area": self.area}
 
         return {"vars": var_dict}
+
+    def get_costing(self, alignment='horizontal', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True,
+                    year=None, module=costing):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing(year=year, module=module)
+
+        self.costing = Block()
+        units_meta = (self.config.property_package.get_metadata().
+                      get_derived_units)
+        self.diameter = Var(initialize=1,
+                            units=units_meta('length'),
+                            doc='vessel diameter')
+        self.diameter_eq = Constraint(expr=self.volume
+                                      == (self.length*const.pi
+                                          * self.diameter**2)/4)
+        module.pfr_costing(self.costing, alignment=alignment,
+                           Mat_factor=Mat_factor,
+                           weight_limit=weight_limit,
+                           L_D_range=L_D_range,
+                           PL=PL)
