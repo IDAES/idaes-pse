@@ -20,13 +20,19 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           units,
+                           Var)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
+
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
 
-from idaes.generic_models.unit_models.stoichiometric_reactor import StoichiometricReactor
+from idaes.generic_models.unit_models.stoichiometric_reactor import \
+    StoichiometricReactor
 
 from idaes.generic_models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
@@ -36,8 +42,6 @@ from idaes.generic_models.properties.examples.saponification_reactions import (
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
-                                              fixed_variables_set,
-                                              activated_constraints_set,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
@@ -138,6 +142,14 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 13
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
+        assert_units_equivalent(sapon.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
+        assert_units_equivalent(sapon.fs.unit.rate_reaction_extent[0, "R1"],
+                                units.mol/units.s)
+
     @pytest.mark.unit
     def test_dof(self, sapon):
 
@@ -204,3 +216,21 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_costing(self, sapon):
+        sapon.fs.unit.get_costing()
+        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
+        sapon.fs.unit.diameter.fix(2)
+        sapon.fs.unit.length.fix(3)
+        results = solver.solve(sapon)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+        assert (pytest.approx(56327.5803, abs=1e3) ==
+                value(sapon.fs.unit.costing.base_cost))
+        assert (pytest.approx(85432.06008, abs=1e3) ==
+                value(sapon.fs.unit.costing.purchase_cost))

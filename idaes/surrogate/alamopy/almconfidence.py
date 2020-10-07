@@ -52,14 +52,17 @@ def almconfidence(data, *vargs):
 
             for j in range(nlinterms):
                 thisterm = model[j].split(' * ')
-                coeffs[j] = float(eval(thisterm[0]))
+                if (thisterm[0].isdigit()):
+                    coeffs[j] = float(eval(thisterm[0]))
+                else:
+                    coeffs[j] = 1
                 thisterm = thisterm[-1]
                 thislam = lambdify([symbols(data['xlabels'])], 
                                    parse_expr(thisterm.replace('^', '**')), "numpy")
                 for i in range(ndata):
                     sensmat[i, j] = thislam(xdata[i])
 
-            sigma = float(data['ssr']) / (float(ndata) - float(nlinterms))
+            sigma = float(data['ssr'][okey]) / (float(ndata) - float(nlinterms))
             ci = np.zeros([nlinterms])
             covar = sigma * np.linalg.inv(np.matmul(np.transpose(sensmat), sensmat))
             for i in range(0, nlinterms):
@@ -88,7 +91,10 @@ def almconfidence(data, *vargs):
         for j in range(nlinterms):
             if(' * ' in model[j]):
                 thisterm = model[j].split(' * ')
-                coeffs[j] = float(eval(thisterm[0]))
+                if (thisterm[0].isdigit()):
+                    coeffs[j] = float(eval(thisterm[0]))
+                else:
+                    coeffs[j] = 1
                 thisterm = thisterm[-1]
             else:
                 thisterm = model[j]

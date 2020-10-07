@@ -522,4 +522,3 @@ def test_strip_test_cells(remove_cells_notebooks):
                     if examples.REMOVE_CELL_TAG in tags:
                         n += 1
                 assert n > 0  # tag still there
-

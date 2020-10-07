@@ -14,7 +14,7 @@
 Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, Var
+from pyomo.environ import Constraint, Param, Reals, Reference, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -25,7 +25,6 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Jinliang Ma, Andrew Lee"
@@ -171,11 +170,14 @@ see property package for documentation.}"""))
 
         # Add performance equations
         # Add Lagrangian multiplier variables
+        e_units = self.config.property_package.get_metadata(
+            ).get_derived_units("energy_mole")
         self.lagrange_mult = Var(self.flowsheet().config.time,
                                  self.config.property_package.element_list,
                                  domain=Reals,
                                  initialize=100,
-                                 doc="Lagrangian multipliers")
+                                 doc="Lagrangian multipliers",
+                                 units=e_units)
 
         # TODO : Remove this once sacling is properly implemented
         self.gibbs_scaling = Param(default=1, mutable=True)
@@ -244,14 +246,10 @@ see property package for documentation.}"""))
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != EnergyBalanceType.none):
-            add_object_reference(self,
-                                 "heat_duty",
-                                 self.control_volume.heat)
+            self.heat_duty = Reference(self.control_volume.heat[:])
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
-            add_object_reference(self,
-                                 "deltaP",
-                                 self.control_volume.deltaP)
+            self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}

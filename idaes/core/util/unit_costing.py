@@ -12,7 +12,10 @@
 ##############################################################################
 # =============================================================================
 
-from pyomo.environ import (Constraint, Var, Param, exp, log, NonNegativeReals)
+from pyomo.environ import (Constraint, Var, Param, exp, log,
+                           NonNegativeReals, units)
+from idaes.core.util.constants import Constants as const
+from pyomo.core.base.units_container import _PyomoUnit
 
 # Some more information about this module
 __author__ = "Miguel Zamarripa"
@@ -215,7 +218,14 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                              pump_type_factor='1.4',
                              # 1.1 to 1.4, 2.1 and 2.2
                              # (needs to be wise-selected by user see table)
-                             pump_motor_type_factor='open'):
+                             pump_motor_type_factor='open',
+                             # centrifugal_backward, centrifugal_straight
+                             # vane_axial, tube_axial
+                             fan_type='centrifugal_backward',
+                             # select from table depends on fan's head
+                             fan_head_factor=1.45,
+                             # centrifugal and rotary
+                             blower_type='centrifugal'):
     '''
     Pressure changer costing method
     Source: Process and Product Design Principles: Synthesis, Analysis,
@@ -245,8 +255,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
         pump_motor_type_factor : Only if config.compressor is True and
                         compressor_type='pump'. Valid values 'open' (default),
                         'enclosed', 'explosion_proof''
-        Mat_factor : construction material; Valid values 'stain_steel' (default),
-                        'nickel_alloy' (compressor only)
+        Mat_factor : construction material; Valid values 'stain_steel'
+                    (default), 'nickel_alloy' (compressor only)
 
     Returns:
         None
@@ -257,7 +267,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
 
     self.material_factor = Param(mutable=True, initialize=3,
                                  doc='construction material correction factor')
-    
+
     # checking units
     if self.parent_block().config.thermodynamic_assumption.name == 'pump':
         w = (self.parent_block().
@@ -565,11 +575,495 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
 
+            # FAN Costing Model --------------------------------------------
             elif mover_type == "fan":
+
+                # volumetric flow units required in cfm
+                if(self.parent_block().config.property_package.get_metadata().
+                   properties['flow_vol']['units']) == 'm^3/s':
+                    # 1 m3/s = 2118.88 cfm
+                    Q_cfm = self.parent_block().control_volume.\
+                        properties_in[0].flow_vol*2118.88
+                elif(self.parent_block().config.property_package.
+                     get_metadata().
+                     properties['flow_vol']['units']) == 'm^3/hr':
+                    Q_cfm = self.parent_block().control_volume.\
+                        properties_in[0].flow_vol*0.589  # 1 m3/hr = 0.589cfm
+                elif(self.parent_block().config.property_package.
+                     get_metadata().
+                     properties['flow_vol']['units']) == 'ft^3/s':
+                    Q_cfm = self.parent_block().control_volume.\
+                        properties_in[0].flow_vol*60  # 1ft3/s*60s/min = ft3/m
+                # end volumetric flow units
+                else:
+                    raise Exception('volumetric flowrate units not supported')
+
                 # fan cost correlation
-                print('Fan costing coming soon')
+                c_alf1 = {'centrifugal_backward': 11.0757,
+                          'centrifugal_straight': 12.1678,
+                          'vane_axial': 9.5229,
+                          'tube_axial': 6.12905}
+
+                c_alf2 = {'centrifugal_backward': 1.12906,
+                          'centrifugal_straight': 1.31363,
+                          'vane_axial': 0.97566,
+                          'tube_axial': 0.40254}
+
+                c_alf3 = {'centrifugal_backward': 0.08860,
+                          'centrifugal_straight': 0.09974,
+                          'vane_axial': 0.08532,
+                          'tube_axial': 0.05787}
+
+                self.head_factor = fan_head_factor
+
+                material_factor_dic = {'carbon_steel': 1.0,
+                                       'fiberglass':   1.8,
+                                       'stain_steel':  2.5,
+                                       'nickel_alloy': 5.0}
+
+                self.material_factor = material_factor_dic[Mat_factor]
+
+                # Base cost
+                def CB_rule(self):
+                    return self.base_cost == \
+                        exp(c_alf1[fan_type] - c_alf2[fan_type]*(log(Q_cfm))
+                            + c_alf3[fan_type]*(log(Q_cfm)**2))
+                self.cb_cost_eq = Constraint(rule=CB_rule)
+
+                def CP_rule(self):
+                    return self.purchase_cost == \
+                        (self.material_factor * self.head_factor
+                         * (self.parent_block().flowsheet().costing.
+                            CE_index/500)*self.base_cost)
+                self.cp_cost_eq = Constraint(rule=CP_rule)
+
+            # Blower Costing -------------------------------------------------
             elif mover_type == "blower":
                 # Blower Cost Correlation
-                print('Blower costing coming soon')
+                c_alf1 = {'centrifugal': 6.8929,
+                          'rotary': 7.59176}
+
+                c_alf2 = {'centrifugal': 0.7900,
+                          'rotary': 0.7932}
+
+                c_alf3 = {'centrifugal': 0.0,
+                          'rotary': 0.012900}
+
+                material_factor_dic = {'carbon_steel': 1.0,
+                                       'aluminum': 0.60,
+                                       'fiberglass':   1.8,
+                                       'stain_steel':  2.5,
+                                       'nickel_alloy': 5.0}
+                self.material_factor = material_factor_dic[Mat_factor]
+
+                # Base cost
+                def CB_rule(self):
+                    return self.base_cost == \
+                        exp(c_alf1[blower_type]
+                            + c_alf2[blower_type]*(log(work_hp))
+                            - c_alf3[blower_type]*(log(work_hp)**2))
+                self.cb_cost_eq = Constraint(rule=CB_rule)
+
+                def CP_rule(self):
+                    return self.purchase_cost == \
+                        (self.material_factor
+                         * (self.parent_block().flowsheet().costing.
+                            CE_index/500)*self.base_cost)
+                self.cp_cost_eq = Constraint(rule=CP_rule)
             else:
                 raise Exception('mover type not supported')
+
+
+def vessel_costing(self, alignment='horizontal',
+                   # material of construction of the vessel
+                   Mat_factor='carbon_steel',
+                   # option 1: 1000 to 920,000 lb; option2: 4200 to 1M lb
+                   weight_limit='option1',
+                   # for vertical vessels only
+                   # option1: 3 < D < 21 ft; 12 < L < 40 ft
+                   # option2: 3 < D < 24 ft; 27 < L < 170 ft
+                   L_D_range='option1',
+                   # True to add platforms and ladders cost
+                   PL=True,
+                   # True for plates cost (for distillation column)
+                   plates=False,
+                   # if tray cost is True, material of construction type needed
+                   tray_mat_factor='carbon_steel',
+                   # if tray cost is True, provide type of the trays
+                   tray_type='sieve',
+                   number_tray=10,
+                   ref_parameter_diameter=None,
+                   ref_parameter_length=None):
+
+    # make vars (base cost, purchase cost)
+    _make_vars(self)
+
+    if ref_parameter_diameter is None and ref_parameter_length is None:
+        try:
+            D = self.parent_block().diameter
+        except AttributeError:
+            raise ConfigurationError('diameter does not exist in unit model')
+        try:
+            L = self.parent_block().length
+        except AttributeError:
+            raise ConfigurationError('length variable does not exist in '
+                                     'the unit model')
+        # checking units of self.parent_block().diameter
+        if isinstance(self.parent_block().config.property_package.
+                      get_metadata().default_units['length'], _PyomoUnit):
+            D = units.convert(D, to_units=units.foot)
+            L = units.convert(L, to_units=units.foot)
+        elif (self.parent_block().config.property_package.get_metadata().
+                default_units['length']) == 'm':
+            D = D*3.28084  # converting to ft
+            L = L*3.28084
+        elif (self.parent_block().config.property_package.get_metadata().
+                default_units['length']) == 'ft':
+            pass
+        else:
+            raise Exception('area units not supported contact developers')
+
+    elif (ref_parameter_diameter is not None
+          and ref_parameter_length is not None):
+        D = ref_parameter_diameter
+        L = ref_parameter_length
+
+    else:
+        raise ConfigurationError('provide both ref_parameter_diameter'
+                                 'and ref_parameter_length')
+
+    # new variables and parameters
+    self.weight = Var(initialize=1000,
+                      domain=NonNegativeReals,
+                      doc='weight of vessel in lb')
+
+    self.vessel_purchase_cost = Var(initialize=1e5,
+                                    domain=NonNegativeReals,
+                                    doc='vessel cost in $')
+
+    # we recommend users to calculate the pressure design based shell thickness
+    # shell thickness here already considers the pressure design
+    self.shell_thickness = Param(mutable=True,
+                                 initialize=1.25,
+                                 doc='shell thickness in in')
+    self.material_factor = Param(mutable=True, initialize=3,
+                                 doc='construction material correction factor')
+    self.material_density = Param(mutable=True, initialize=0.284,
+                                  doc='density of the metal in lb/in^3')
+
+    if weight_limit == 'option1':
+        # Blower Cost Correlation
+        c_alf1 = {'horizontal': 8.9552,
+                  'vertical': 7.0132}
+
+        c_alf2 = {'horizontal': -0.2330,
+                  'vertical': 0.18255}
+
+        c_alf3 = {'horizontal': 0.04333,
+                  'vertical': 0.02297}
+
+    elif weight_limit == 'option2':
+        # option 2 only for vertical vessels
+        c_alf1 = {'vertical': 7.2756}
+
+        c_alf2 = {'vertical': 0.18255}
+
+        c_alf3 = {'vertical': 0.02297}
+
+    # material factor -------------------
+    material_factor_dic = {'carbon_steel': 1.0,
+                           'low_alloy_steel': 1.2,
+                           'stain_steel_304': 1.7,
+                           'stain_steel_316': 2.1,
+                           'carpenter_20CB-3': 3.2,
+                           'nickel_200': 5.4,
+                           'monel_400': 3.6,
+                           'inconel_600': 3.9,
+                           'incoloy_825': 3.7,
+                           'titanium': 7.7}
+
+    self.material_factor = material_factor_dic[Mat_factor]
+    # metal densities in lb/in^3
+    material_dens_dic = {'carbon_steel': 0.284,  # lb/in3 = 490 lb/ft3
+                         'low_alloy_steel': 0.271,  # 0.271 - 0.292 lb/in³
+                         'stain_steel_304': 0.270,  # 467 - 499 lb/ft3
+                         'stain_steel_316': 0.276,  # 467 - 499 lb/ft3
+                         'carpenter_20CB-3': 0.292,  # lb/in3 = 503 lb/ft3
+                         'nickel_200': 0.3216,  # lb/in3 = 556 lb/ft3
+                         'monel_400': 0.319,  # lb/in3 = 522 - 552 lb/ft3
+                         'inconel_600': 0.3071,  # lb/in3 = 530 lb/ft3
+                         'incoloy_825': 0.2903,  # lb/in3 = 501 lb/ft3
+                         'titanium': 0.1628}  # lb/in3 = 281 lb/ft3
+
+    self.material_density = material_dens_dic[Mat_factor]
+
+    # weight in lb --------------------------------------------------------
+    # converting D in ft to inches, 0.8*D = accounts for two heads of vessel
+    def weight_rule(self):
+        return self.weight == const.pi * ((D*12) + self.shell_thickness) \
+            * ((L*12)+(0.8*D*12))*self.shell_thickness*self.material_density
+    self.weight_eq = Constraint(rule=weight_rule)
+
+    # Base Vessel cost
+    def CV_rule(self):
+        return self.base_cost == \
+            exp(c_alf1[alignment]
+                + c_alf2[alignment]*(log(self.weight))
+                + c_alf3[alignment]*(log(self.weight)**2))
+    self.cv_cost_eq = Constraint(rule=CV_rule)
+
+    # True if platform and ladder costs are incuded
+    if PL is True:
+        self.base_cost_platf_ladders = Var(initialize=1000,
+                                           domain=NonNegativeReals,
+                                           doc='base cost of'
+                                           ' platforms and ladders in $')
+        platforms_ladders(self, alignment=alignment, L_D_range=L_D_range,
+                          D=D, L=L)
+
+    # purchase cost of vessel and platforms and ladders
+    def CP_vessel_rule(self):
+        return self.vessel_purchase_cost == \
+            (self.parent_block().parent_block().costing.CE_index/500) \
+            * (self.material_factor*self.base_cost
+               + (self.base_cost_platf_ladders if PL else 0))
+    self.cp_vessel_eq = Constraint(rule=CP_vessel_rule)
+
+    # True if platform and ladder costs are incuded
+    if plates is True:
+        self.purchase_cost_trays = Var(initialize=1e6,
+                                       domain=NonNegativeReals,
+                                       doc='purchase cost of trays in $')
+        plates_cost(self,
+                    tray_mat_factor=tray_mat_factor,
+                    tray_type=tray_type, D=D, number_tray=number_tray)
+
+    def CP_cost_rule(self):
+        return self.purchase_cost == self.vessel_purchase_cost \
+            + (self.purchase_cost_trays if plates else 0)
+    self.cp_cost_eq = Constraint(rule=CP_cost_rule)
+
+
+def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
+                      D=10, L=20):
+    if alignment == 'horizontal':
+        def CPL_rule(self):
+            return self.base_cost_platf_ladders == 2005*D**0.20294
+        self.CPL_eq = Constraint(rule=CPL_rule)
+
+    elif alignment == 'vertical':
+        def CPL_rule(self):
+            if L_D_range == 'option1':
+                return self.base_cost_platf_ladders == 361.8*((D)**0.73960) \
+                    * (L)**0.70684
+            elif L_D_range == 'option2':
+                return self.base_cost_platf_ladders == 309.9*(D**0.63316) \
+                    * (L**0.80161)
+            else:
+                raise Exception('L_D_range option not supported')
+        self.CPL_eq = Constraint(rule=CPL_rule)
+
+    else:
+        raise Exception('alignment not supported')
+
+
+def plates_cost(self,
+                tray_mat_factor='carbon_steel',
+                tray_type='sieve', D=10, number_tray=10):
+
+    self.base_cost_trays = Var(initialize=1e4,
+                               domain=NonNegativeReals,
+                               doc='base cost of trays in $')
+    self.type_tray_factor = Param(mutable=True, initialize=1.0,
+                                  doc='tray type factor')
+    self.number_tray_factor = Param(mutable=True,
+                                    initialize=1.0,
+                                    doc='number of trays factor')
+    self.number_trays = Param(mutable=True, initialize=15.0,
+                              doc='tray type factor')
+    self.tray_material_factor = Var(initialize=1.0,
+                                    doc='FTM material of construction'
+                                    ' factor')
+    # calc number tray factor
+    if number_tray > 20:
+        self.number_tray_factor = 1.0
+    else:
+        self.number_tray_factor = 2.25/(1.0414**number_tray)
+
+    type_tray_dic = {'sieve': 1,
+                     'valve': 1.18,
+                     'bubble_cap': 1.87}
+
+    self.type_tray_factor = type_tray_dic[tray_type]
+    # calculate material of construction factor
+    t_alf1 = {'carbon_steel': 1,
+              'stain_steel_303': 1.189,
+              'stain_steel_316': 1.401,
+              'carpenter_20CB-3': 1.525,
+              'monel': 2.306}
+
+    t_alf2 = {'carbon_steel': 0,
+              'stain_steel_303': 0.0577,
+              'stain_steel_316': 0.0724,
+              'carpenter_20CB-3': 0.0788,
+              'monel': 0.1120}
+
+    # recalculating tray factor value
+    # Column diameter in ft, eq. valid for 2 to 16 ft
+    def mt_factor_rule(self):
+        return self.tray_material_factor == t_alf1[tray_mat_factor] \
+            + t_alf2[tray_mat_factor]*D
+    self.mt_factor_eq = Constraint(rule=mt_factor_rule)
+
+    # base cost for trays
+    def bc_tray_rule(self):
+        return self.base_cost_trays == 468.00*exp(0.1739*D)
+    self.bc_tray_eq = Constraint(rule=bc_tray_rule)
+
+    # purchase cost calculation for trays
+    def CP_tray_rule(self):
+        return self.purchase_cost_trays == \
+            (self.parent_block().parent_block().costing.CE_index/500) \
+            * self.number_trays \
+            * self.number_tray_factor \
+            * self.type_tray_factor \
+            * self.tray_material_factor \
+            * self.base_cost_trays
+    self.cp_tray_eq = Constraint(rule=CP_tray_rule)
+
+
+def fired_heater_costing(self,
+                         fired_type='fuel',
+                         Mat_factor='carbon_steel',
+                         ref_parameter_pressure=None,
+                         ref_parameter_heat_duty=None):
+    # (base cost, purchase cost)
+    _make_vars(self)
+    self.material_factor = Param(mutable=True, initialize=3,
+                                 doc='construction material correction factor')
+
+    self.pressure_factor = Var(initialize=1.1,
+                               domain=NonNegativeReals,
+                               doc='pressure design factor')
+    if ref_parameter_pressure is None:
+        # pressure in psig
+        if(self.parent_block().config.property_package.get_metadata().
+           properties['pressure']['units']) == 'Pa':
+            P = (self.parent_block().control_volume.
+                 properties_in[0].pressure*14.69/1.01325e5)  # to psig
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['pressure']['units']) == 'psig':
+            P = self.parent_block().control_volume.properties_in[0].pressure
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['pressure']['units']) == 'bar':
+            P = (self.parent_block().control_volume.
+                 properties_in[0].pressure*14.5038)  # to psig
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['pressure']['units']) == 'MPa':
+            P = (self.parent_block().control_volume.
+                 properties_in[0].pressure*145.038)
+        else:
+            raise Exception('Pressure units not supported contact developers')
+    else:
+        P = ref_parameter_pressure
+
+    if ref_parameter_heat_duty is None:
+        # Q in BTU/hr
+        Q_in = self.parent_block().heat_duty[0]
+        if(self.parent_block().config.property_package.get_metadata().
+           properties['enth_mol']['units']) == 'J/mol':
+            Q = Q_in*3.41214  # assuming work is in J/s
+
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['enth_mol']['units']) == 'kJ/kmol':
+            Q = Q_in*0.947817  # assuming w is in kJ/hr
+
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['enth_mol']['units']) == 'cal/mol':
+            Q = Q_in*14276.4  # assuming W is in cal/s
+
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['enth_mol']['units']) == 'cal/kmol':
+            Q = Q_in*3.96567  # assuming W is in cal/hr
+
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['enth_mol']['units']) == 'TJ/kmol':
+            Q = Q_in*3.412e+12  # assuming W is in TJ/s
+        elif(self.parent_block().config.property_package.get_metadata().
+             properties['enth_mol']['units']) == 'MJ/kmol':
+            Q = Q_in*3.412e+6  # assuming W is in MJ/s (W/746=hp)
+        else:
+            raise Exception("work units not supported contact develpers")
+    else:
+        Q = ref_parameter_heat_duty
+
+    # material factor -------------------
+    material_factor_dic = {'carbon_steel': 1.0,
+                           'Cr-Mo_alloy': 1.4,
+                           'stain_steel': 1.7}
+
+    self.material_factor = material_factor_dic[Mat_factor]
+
+    # pressure deisgn factor calculation
+    def p_factor_rule(self):
+        return self.pressure_factor == 0.986 - 0.0035*(P/500.00) \
+            + 0.0175*(P/500.00)**2
+    self.p_factor_eq = Constraint(rule=p_factor_rule)
+
+    def CB_rule(self):
+        if fired_type == 'fuel':
+            return self.base_cost == exp(0.32325 + 0.766*log(Q))
+        elif fired_type == 'reformer':
+            return self.base_cost == 0.859*Q**0.81
+        elif fired_type == 'pyrolysis':
+            return self.base_cost == 0.650*Q**0.81
+        elif fired_type == 'hot_water':
+            return self.base_cost == exp(9.593-0.3769*log(Q)+0.03434*log(Q)**2)
+        elif fired_type == 'salts':
+            return self.base_cost == 12.32*Q**0.64
+        elif fired_type == 'dowtherm_a':
+            return self.base_cost == 12.74*Q**0.65
+        elif fired_type == 'steam_boiler':
+            return self.base_cost == 0.367*Q**0.77
+        else:
+            raise Exception('fired heater type not supported')
+    self.cb_eq = Constraint(rule=CB_rule)
+
+    # # base cost fired heater
+    def CP_rule(self):
+        return self.purchase_cost == self.material_factor \
+            * (self.parent_block().parent_block().costing.CE_index/500) \
+            * self.pressure_factor * self.base_cost
+    self.cp_eq = Constraint(rule=CP_rule)
+
+
+def cstr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)
+
+
+def flash_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)
+
+
+def rstoic_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)
+
+
+def pfr_costing(self, alignment, Mat_factor, weight_limit, L_D_range, PL):
+    vessel_costing(self, alignment=alignment,
+                   Mat_factor=Mat_factor,
+                   weight_limit=weight_limit,
+                   L_D_range=L_D_range,
+                   PL=PL)

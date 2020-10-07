@@ -38,7 +38,6 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
@@ -188,7 +187,7 @@ see property package for documentation.}"""))
         if self.config.has_boilup_ratio is True:
 
             self.boilup_ratio = Var(initialize=0.5,
-                                    doc="boilup ratio for reboiler")
+                                    doc="Boilup ratio for reboiler")
 
             def rule_boilup_ratio(self, t):
                 if hasattr(self.control_volume.properties_out[t],
@@ -225,10 +224,10 @@ see property package for documentation.}"""))
 
         # Add object reference to variables of the control volume
         # Reference to the heat duty
-        add_object_reference(self, "heat_duty", self.control_volume.heat)
+        self.heat_duty = Reference(self.control_volume.heat[:])
         # Reference to the pressure drop (if set to True)
         if self.config.has_pressure_change:
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+            self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _make_ports(self):
 
@@ -250,14 +249,18 @@ see property package for documentation.}"""))
 
         # Create references and populate the reflux, distillate ports
         for k in member_list:
+
+            local_name = member_list[k].local_name
+
             # Create references and populate the intensive variables
-            if "flow" not in k and "frac" not in k and "enth" not in k:
+            if "flow" not in local_name and "frac" not in local_name \
+                    and "enth" not in local_name:
                 if not member_list[k].is_indexed():
                     var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)
+                        component(local_name)
                 else:
                     var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                 # add the reference and variable name to the reflux port
                 self.bottoms.add(Reference(var), k)
@@ -266,14 +269,14 @@ see property package for documentation.}"""))
                 # vapor outlet port
                 self.vapor_reboil.add(Reference(var), k)
 
-            elif "frac" in k:
+            elif "frac" in local_name:
 
                 # Mole/mass frac is typically indexed
                 index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
-                if "phase" not in k:
-                    if "mole" in k:  # check mole basis/mass basis
+                if "phase" not in local_name:
+                    if "mole" in local_name:  # check mole basis/mass basis
 
                         # The following conditionals are required when a
                         # mole frac or mass frac is a state var i.e. will be
@@ -300,7 +303,7 @@ see property package for documentation.}"""))
                                 "No mole_frac_phase_comp or flow_mol_phase or"
                                 " flow_mol_phase_comp variables encountered "
                                 "while building ports for the reboiler. ")
-                    elif "mass" in k:
+                    elif "mass" in local_name:
                         if hasattr(self.control_volume.properties_out[0],
                                    "mass_frac_phase_comp") and \
                             hasattr(self.control_volume.properties_out[0],
@@ -396,15 +399,15 @@ see property package for documentation.}"""))
                     # state vars in the port and therefore access directly
                     # from the state block.
                     var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                     # add the reference and variable name to the distillate port
                     self.bottoms.add(Reference(var), k)
 
                     # add the reference and variable name to the boil up port
                     self.vapor_reboil.add(Reference(var), k)
-            elif "flow" in k:
-                if "phase" not in k:
+            elif "flow" in local_name:
+                if "phase" not in local_name:
 
                     # Assumes that here the var is total flow or component
                     # flow. However, need to extract the flow by phase from
@@ -416,14 +419,13 @@ see property package for documentation.}"""))
                     if not member_list[k].is_indexed():
                         # if state var is not flow_mol/flow_mass
                         # by phase
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        local_name_flow = local_name + "_phase"
 
                         # Rule for vap flow
                         def rule_vap_flow(self, t):
                             return sum(
                                 self.control_volume.properties_out[t].
-                                component(local_name)[p]
+                                component(local_name_flow)[p]
                                 for p in self._vapor_set)
                         self.e_vap_flow = Expression(
                             self.flowsheet().time,
@@ -433,7 +435,7 @@ see property package for documentation.}"""))
                         def rule_bottoms_flow(self, t):
                             return sum(
                                 self.control_volume.properties_out[t].
-                                component(local_name)[p]
+                                component(local_name_flow)[p]
                                 for p in self._liquid_set)
                         self.e_bottoms_flow = Expression(
                             self.flowsheet().time,
@@ -441,10 +443,9 @@ see property package for documentation.}"""))
 
                     else:
                         # when it is flow comp indexed by component list
-                        str_split = \
-                            str(member_list[k].local_name).split("_")
+                        str_split = local_name.split("_")
                         if len(str_split) == 3 and str_split[-1] == "comp":
-                            local_name = str_split[0] + "_" + \
+                            local_name_flow = str_split[0] + "_" + \
                                 str_split[1] + "_phase_" + "comp"
 
                         # Get the indexing set i.e. component list
@@ -453,7 +454,7 @@ see property package for documentation.}"""))
                         # Rule for vap phase flow to the vapor outlet
                         def rule_vap_flow(self, t, i):
                             return sum(self.control_volume.properties_out[t].
-                                       component(local_name)[p, i]
+                                       component(local_name_flow)[p, i]
                                        for p in self._vapor_set)
                         self.e_vap_flow = Expression(
                             self.flowsheet().time, index_set,
@@ -462,7 +463,7 @@ see property package for documentation.}"""))
                         # Rule for liq phase flow to the liquid outlet
                         def rule_bottoms_flow(self, t, i):
                             return sum(self.control_volume.properties_out[t].
-                                       component(local_name)[p, i]
+                                       component(local_name_flow)[p, i]
                                        for p in self._liquid_set)
                         self.e_bottoms_flow = Expression(
                             self.flowsheet().time, index_set,
@@ -475,15 +476,14 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the
                     # distillate port
                     self.vapor_reboil.add(self.e_vap_flow, k)
-            elif "enth" in k:
-                if "phase" not in k:
+            elif "enth" in local_name:
+                if "phase" not in local_name:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
                     if not member_list[k].is_indexed():
                         # if state var is not enth_mol/enth_mass
                         # by phase, add _phase string to extract the right
                         # value from the state block
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        local_name_enth = local_name + "_phase"
                     else:
                         raise PropertyPackageError(
                             "Enthalpy is indexed but the variable "
@@ -495,7 +495,7 @@ see property package for documentation.}"""))
                     # enth_mol_phase['Vap'] value from the state block
                     def rule_vap_enth(self, t):
                         return sum(self.control_volume.properties_out[t].
-                                   component(local_name)[p]
+                                   component(local_name_enth)[p]
                                    for p in self._vapor_set)
                     self.e_vap_enth = Expression(
                         self.flowsheet().time,
@@ -506,7 +506,7 @@ see property package for documentation.}"""))
                     # enth_mol_phase['Liq'] value from the state block
                     def rule_bottoms_enth(self, t):
                         return sum(self.control_volume.properties_out[t].
-                                   component(local_name)[p]
+                                   component(local_name_enth)[p]
                                    for p in self._liquid_set)
                     self.e_bottoms_enth = Expression(
                         self.flowsheet().time,
@@ -519,19 +519,19 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the
                     # distillate port
                     self.vapor_reboil.add(self.e_vap_enth, k)
-                elif "phase" in k:
+                elif "phase" in local_name:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
                     # reference irrespective of the reflux, distillate and
                     # vap_outlet
 
                     # Rule for vap flow
-                    if not member_list[k].is_indexed():
+                    if not k.is_indexed():
                         var = self.control_volume.properties_out[:].\
-                            component(member_list[k].local_name)
+                            component(local_name)
                     else:
                         var = self.control_volume.properties_out[:].\
-                            component(member_list[k].local_name)[...]
+                            component(local_name)[...]
 
                     # add the reference and variable name to the distillate port
                     self.bottoms.add(Reference(var), k)

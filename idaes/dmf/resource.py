@@ -24,11 +24,11 @@ import json
 from json import JSONDecodeError
 import logging
 import os
-import pathlib
+from pathlib import Path
 import pprint
 import re
 import sys
-from typing import List
+from typing import List, Union, Iterator, Optional, IO
 import uuid
 
 # third-party
@@ -68,41 +68,52 @@ class ProgLangExt:
         return cls._extmap.get(ext, default)
 
 
-#: Constants for relation predicates
-PR_DERIVED = "derived"    #: object is derived from the subject
-PR_CONTAINS = "contains"  #: object contains the subject
-PR_USES = "uses"          #: object uses the subject
-PR_VERSION = "version"    #: object is a (new) version of the subject
+class Predicates:
+    """Constants for relation predicates (types of relations).
 
-RELATION_PREDICATES = {PR_DERIVED, PR_CONTAINS, PR_USES, PR_VERSION}
+    This can be extended at runtime by simply adding non-underscore attributes
+    to this class, e.g.:
+
+        Predicates.destroys = "destroys"
+    """
+    derived = "derived"  #: object is derived from the subject
+    contains = "contains"  #: object is contained by the subject
+    uses = "uses"  #: object is used by the subject
+    version = "version"  #: object is a (new) version of the subject
+
+    @classmethod
+    def valid(cls, value) -> bool:
+        """Whether the 'value' is a valid predicate.
+        """
+        return value in cls.all()
+
+    @classmethod
+    def all(cls) -> List[str]:
+        """Return all predicates, as a list of strings.
+        """
+        return [k for k in cls.__dict__ if k and (k != "all") and (k[0] != "_")]
 
 
-TY_EXPERIMENT = "experiment"  #: Resource type for experiments
-TY_TABULAR = "tabular_data"  #: Resource type for tabular data
-TY_PROPERTY = "propertydb"  #: Resource type for property data
-TY_FLOWSHEET = "flowsheet"  #: Resource type for a process flowsheet
-TY_NOTEBOOK = "notebook"  #: Resource type for a Jupyter Notebook
-TY_CODE = "code"  #: Resource type for source code
-TY_SURRMOD = "surrogate_model"  #: Resource type for a surrogate model
-TY_DATA = "data"  #: Resource type for generic data
-TY_JSON = "json"  #: Resource type for JSON data
-TY_OTHER = "other"  #: Resource type for unspecified type of resource
-TY_RESOURCE_JSON = "resource_json"  #: Resource type for a JSON serialized resource
+class ResourceTypes:
+    experiment = "experiment"               #: Experiment(s)
+    tabular = "tabular_data"                #: Tabular data
+    publication = "publication"             #: Published work(s)
+    property = "propertydb"                 #: Property data
+    flowsheet = "flowsheet"                 #: Process flowsheet
+    notebook = "notebook"                   #: Jupyter Notebook
+    code = "code"                           #: Source code(s)
+    surrogate_model = "surrogate_model"     #: Surrogate model
+    data = "data"                           #: Generic data
+    other = "json"                          #: JSON data
+    json = "other"                          #: User-defined type of resource
+    resource_json = "resource_json"         #: JSON serialized resource
 
-#: Constants for resource 'types'
-RESOURCE_TYPES = {
-    TY_EXPERIMENT,
-    TY_TABULAR,
-    TY_PROPERTY,
-    TY_FLOWSHEET,
-    TY_NOTEBOOK,
-    TY_CODE,
-    TY_SURRMOD,
-    TY_DATA,
-    TY_OTHER,
-    TY_JSON,
-    TY_RESOURCE_JSON,
-}
+    @classmethod
+    def all(cls) -> List[str]:
+        """Return all resource type names, as a list of strings.
+        """
+        return [k for k in cls.__dict__ if k and (k != "all") and (k[0] != "_")]
+
 
 # Constants for fields in stored relations
 RR_PRED = "predicate"
@@ -132,34 +143,6 @@ RESOURCE_SCHEMA = {
     "type": "object",
     "properties": {
         "aliases": {"type": "array", "items": {"type": "string"}},
-        "codes": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "method",
-                            "function",
-                            "module",
-                            "class",
-                            "file",
-                            "package",
-                            "repository",
-                            "notebook",
-                        ],
-                    },
-                    "desc": {"type": "string"},
-                    "name": {"type": "string"},
-                    "language": {"type": "string"},
-                    "idhash": {"type": "string"},
-                    "location": {"type": "string"},
-                    "version": {"$ref": "#/definitions/SemanticVersion"},
-                },
-                "required": ["name"],
-            },
-        },
         "collaborators": {
             "type": "array",
             "items": {
@@ -205,13 +188,56 @@ RESOURCE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    RR_PRED: {"type": "string", "enum": list(RELATION_PREDICATES)},
+                    RR_PRED: {"type": "string", "enum": Predicates.all()},
                     RR_ID: {"type": "string"},
                     RR_ROLE: {"type": "string", "enum": [RR_SUBJ, RR_OBJ]},
                 },
                 "required": [RR_PRED, RR_ID, RR_ROLE],
             },
         },
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "type": {"type": "string", "enum": ResourceTypes.all()},
+        "version_info": {
+            "type": "object",
+            "properties": {
+                "created": {"type": "number"},
+                "name": {"type": "string"},
+                "version": {"$ref": "#/definitions/SemanticVersion"},
+            },
+        },
+        # These are only required for certain values of `type`
+        # For type = code
+        "codes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "method",
+                            "function",
+                            "module",
+                            "class",
+                            "file",
+                            "package",
+                            "repository",
+                            "notebook",
+                            "block"
+                        ],
+                    },
+                    "desc": {"type": "string"},
+                    "name": {"type": "string"},
+                    "language": {"type": "string"},
+                    "idhash": {"type": "string"},
+                    "location": {"type": "string"},
+                    "inline": {"type": "string"},
+                    "version": {"$ref": "#/definitions/SemanticVersion"},
+                },
+                "required": ["name"],
+            },
+        },
+        # For type = publication
         "sources": {
             "type": "array",
             "items": {
@@ -222,22 +248,11 @@ RESOURCE_SCHEMA = {
                     "isbn": {"type": "string"},
                     "language": {"type": "string"},
                     "source": {"type": "string"},
-                },
-            },
-        },
-        "tags": {"type": "array", "items": {"type": "string"}},
-        "type": {"type": "string", "enum": list(RESOURCE_TYPES)},
-        "version_info": {
-            "type": "object",
-            "properties": {
-                "created": {"type": "number"},
-                "name": {"type": "string"},
-                "version": {"$ref": "#/definitions/SemanticVersion"},
-            },
-        },
+                }
+            }
+        }
     },
-    "required": ["id_"],
-    "additionalProperties": False,
+    "additionalProperties": False
 }
 
 
@@ -269,23 +284,22 @@ class Resource(object):
     TYPE_FIELD = "type"  #: Resource type field name constant
 
     def __init__(self, value: dict = None, type_: str = None):
-        self._set_defaults()
+        if type_ is None:
+            type_ = ResourceTypes.other
+        self._set_defaults(type_)
         if value:
             self.set_values(value)
-        if type_ is not None:
-            self.v[self.TYPE_FIELD] = type_
         self._validator = jsonschema.Draft4Validator(RESOURCE_SCHEMA)
         self._validations = 0  # count validations; mostly for testing
         self.do_copy = self.is_tmp = False  # flags for copying datafiles
 
-    def _set_defaults(self):
+    def _set_defaults(self, t):
         now = datetime.now().timestamp()
         self.v = Dict(
             {
                 self.ID_FIELD: identifier_str(),
-                self.TYPE_FIELD: TY_OTHER,
+                self.TYPE_FIELD: t,
                 "aliases": [],
-                "codes": [],
                 "collaborators": [],
                 "created": now,
                 "modified": now,
@@ -295,16 +309,27 @@ class Resource(object):
                 "datafiles_dir": "",
                 "desc": "",
                 "relations": [],
-                "sources": [],
                 "tags": [],
                 "version_info": {"created": now, "version": (0, 0, 0), "name": ""},
             }
         )
+        if t == ResourceTypes.code:
+            self.v["codes"] = []
+        elif t == ResourceTypes.publication:
+            self.v["sources"] = []
+
+    @property
+    def sources(self):
+        return self.v.get("sources", [])
+
+    @property
+    def codes(self):
+        return self.v.get("codes", [])
 
     def _massage_values(self):
         try:
             # convert dates
-            for item in self.v["sources"]:
+            for item in self.sources:
                 if not isinstance(item["date"], float):
                     item["date"] = date_float(item["date"])
             if not isinstance(self.v["created"], float):
@@ -320,7 +345,7 @@ class Resource(object):
                 self.v["version_info"]["version"] = version_list(
                     self.v["version_info"]["version"]
                 )
-            for i, code in enumerate(self.v["codes"]):
+            for i, code in enumerate(self.codes):
                 if "version" in code:
                     if not isinstance(code["version"], list):
                         code["version"] = version_list(code["version"])
@@ -360,9 +385,9 @@ class Resource(object):
             InferResourceTypeError: if resource type does not match inferred/specified
             LoadResourceError: if resource import failed
         """
-        path = pathlib.Path(path)
+        path = Path(path)
         if as_type:
-            if as_type == TY_RESOURCE_JSON:  # make sure resources validate
+            if as_type == ResourceTypes.json:  # make sure resources validate
                 try:
                     parsed = json.load(path.open())
                     jsonschema.Draft4Validator(RESOURCE_SCHEMA).validate(parsed)
@@ -380,13 +405,13 @@ class Resource(object):
         return importer.create()
 
     @classmethod
-    def _infer_resource_type(cls, path: pathlib.Path, strict: bool):
-        default_type = TY_OTHER
+    def _infer_resource_type(cls, path: Path, strict: bool):
+        default_type = ResourceTypes.other
         try:
             if path.suffix == ".ipynb":
-                return TY_NOTEBOOK, None
+                return ResourceTypes.notebook, None
             if path.suffix == ".py":
-                return TY_CODE, None
+                return ResourceTypes.code, None
             if path.suffix == ".json":
                 max_bytes = 1e6  # arbitrary limit
                 # over max_bytes? generic
@@ -405,8 +430,8 @@ class Resource(object):
                 try:
                     jsonschema.Draft4Validator(RESOURCE_SCHEMA).validate(parsed)
                 except jsonschema.ValidationError:
-                    return TY_JSON, parsed  # generic JSON
-                return TY_RESOURCE_JSON, parsed
+                    return ResourceTypes.json, parsed  # generic JSON
+                return ResourceTypes.resource_json, parsed
         except ValueError as err:
             if strict:
                 raise cls.InferResourceTypeError(str(err))
@@ -415,24 +440,24 @@ class Resource(object):
 
     @classmethod
     def _get_resource_importer(
-        cls, type_: str, path: pathlib.Path, parsed=None, **kwargs
+        cls, type_: str, path: Path, parsed=None, **kwargs
     ) -> "ResourceImporter":
         E = cls.LoadResourceError  # alias for exception raised
-        if type_ == TY_NOTEBOOK:
+        if type_ == ResourceTypes.notebook:
             try:
                 nb = json.load(open(str(path)))
             except (UnicodeDecodeError, JSONDecodeError):
-                raise E(TY_NOTEBOOK, "not valid JSON")
+                raise E(ResourceTypes.notebook, "not valid JSON")
             for key in "cells", "metadata", "nbformat":
                 if key not in nb:
-                    raise E(TY_NOTEBOOK, f"missing key: {key}")
+                    raise E(ResourceTypes.notebook, f"missing key: {key}")
             return JupyterNotebookImporter(path, **kwargs)
-        if type_ == TY_CODE:
+        if type_ == ResourceTypes.code:
             language = ProgLangExt.guess(path.suffix, default="unknown")
             return CodeImporter(path, language, **kwargs)
-        if type_ == TY_JSON:
+        if type_ == ResourceTypes.json:
             return JsonFileImporter(path, **kwargs)
-        if type_ == TY_RESOURCE_JSON:
+        if type_ == ResourceTypes.resource_json:
             return SerializedResourceImporter(path, parsed, **kwargs)
         return FileImporter(path, **kwargs)
 
@@ -496,36 +521,54 @@ class Resource(object):
         """
         self.v["data"] = value
 
-    def get_datafiles(self, mode="r"):
-        """Generate readable file objects for 'datafiles' in resource.
+    def get_datafiles(
+        self, mode: Optional[str] = None, ignore_errors: bool = False
+    ) -> Iterator[Union[Path, IO]]:
+        """Generate paths or file objects for 'datafiles' in resource.
 
         Args:
-            mode (str): Mode for ``open()``
+            mode: If given, call `open(mode)` on the path and return a file object. Otherwise, return a Path object.
+            ignore_errors: If true, ignore failures on `open(mode)` of a path. This will only have an effect if
+                  mode is not None (otherwise, no attempt is made to open the paths).
         Returns:
-            generator: Generates ``file`` objects.
+            generator: Generates Path or file objects, depending on mode
         """
-        dfdir = self.v["datafiles_dir"]
+        df_dir = self.v["datafiles_dir"]
         for datafile in self.v["datafiles"]:
-            if not dfdir:
-                path = datafile["path"]
+            if not df_dir:
+                path = Path(datafile["path"])
             else:
-                path = os.path.join(dfdir, datafile["path"])
-            fp = open(path, mode=mode)
-            yield fp
+                df = Path(datafile["path"])
+                if df.is_absolute():
+                    path = df
+                else:
+                    path = Path(df_dir) / df
+            if mode is None:
+                yield path
+            else:
+                try:
+                    fp = path.open(mode=mode)
+                except FileNotFoundError:
+                    if ignore_errors:
+                        _log.warning("Failed to open path '{path}' in mode '{mode}'")
+                    else:
+                        raise
+                yield fp
 
     def _repr_text_(self):
         return pprint.pformat(self.v, indent=2)
 
     def formatted_source(self) -> str:
         result = []
-        for src in self.v['sources']:
+        for src in self.sources:
             s = f"{src['source']}"
-            if src['isbn']:
+            if src["isbn"]:
                 s += f" ISBN: {src['isbn']}"
-            if src['date']:
+            if src["date"]:
                 s += f" Date: {src['date']}"
             result.append(s)
         return "\n".join(result)
+
 
 #
 # Function(s) to help creating [two-way] relations
@@ -557,23 +600,25 @@ def create_relation(*args):
     Raises:
         ValueError: if this relation already exists in the subject or
                     object resource, or the predicate is not in the list
-                    of valid ones in RELATION_PREDICATES
+                    of valid ones in Predicates
     """
     if len(args) == 1:
         triple = args[0]
     elif len(args) == 3:
         triple = Triple(*args)
     else:
-        raise ValueError("Wrong number of arguments. Must be one argument (Triple) or "
-                         "three arguments (subject:Resource, predicate, object:resource)")
+        raise ValueError(
+            "Wrong number of arguments. Must be one argument (Triple) or "
+            "three arguments (subject:Resource, predicate, object:resource)"
+        )
     return _create_relation(triple)
 
 
 def _create_relation(rel):
-    if rel.predicate not in RELATION_PREDICATES:
+    if not Predicates.valid(rel.predicate):
         raise ValueError(
             'Bad predicate: "{}" not in: {}'.format(
-                rel.predicate, ", ".join(list(RELATION_PREDICATES))
+                rel.predicate, ", ".join(Predicates.all())
             )
         )
     try:
@@ -830,8 +875,14 @@ class TidyUnitData:
         units (list): Units for each column, None where no units are defined
         table (pandas.DataFrame): The observation data
     """
-    def __init__(self, data: dict = None, variables: List = None, units: List = None,
-                 observations: List = None):
+
+    def __init__(
+        self,
+        data: dict = None,
+        variables: List = None,
+        units: List = None,
+        observations: List = None,
+    ):
         """Constructor.
 
         Args:
@@ -845,8 +896,11 @@ class TidyUnitData:
         """
         if data:
             try:
-                variables, units, observations = (data['variables'], data['units'],
-                                                  data['observations'])
+                variables, units, observations = (
+                    data["variables"],
+                    data["units"],
+                    data["observations"],
+                )
             except KeyError as err:
                 raise ValueError(f"Missing expected key in `data` param: {err}")
             except TypeError as err:
@@ -856,8 +910,9 @@ class TidyUnitData:
             self.df, self.units = pandas.DataFrame(), ()
             return
         if len(units) != n:
-            raise ValueError(f"Length of units {len(units)} "
-                             f"must match length of header ({n})")
+            raise ValueError(
+                f"Length of units {len(units)} " f"must match length of header ({n})"
+            )
         self.units = units
         self.table = pandas.DataFrame(data=observations, columns=variables)
 
@@ -878,6 +933,7 @@ class TidyUnitData:
             d[key] = value
         return d
 
+
 #
 # Import Resource of varying types from file
 #
@@ -887,7 +943,7 @@ class ResourceImporter(abc.ABC):
     """Base class for Resource importers.
     """
 
-    def __init__(self, path: pathlib.Path, do_copy: bool = None):
+    def __init__(self, path: Path, do_copy: bool = None):
         self._path = path
         self._do_copy = do_copy
 
@@ -926,7 +982,7 @@ class ResourceImporter(abc.ABC):
 
 class JupyterNotebookImporter(ResourceImporter):
     def _create(self) -> Resource:
-        r = Resource(type_=TY_NOTEBOOK)
+        r = Resource(type_=ResourceTypes.notebook)
         # XXX: add notebook 'metadata' as FilePath metadata attr
         self._add_datafiles(r)
         r.v["desc"] = self._path.name
@@ -939,8 +995,8 @@ class CodeImporter(ResourceImporter):
         self.language = language
 
     def _create(self) -> Resource:
-        r = Resource(type_=TY_CODE)
-        r.v["codes"].append(
+        r = Resource(type_=ResourceTypes.code)
+        r.codes.append(
             {"name": self._path.name, "language": self.language, "type": "module"}
         )
         self._add_datafiles(r)
@@ -950,7 +1006,7 @@ class CodeImporter(ResourceImporter):
 
 class FileImporter(ResourceImporter):
     def _create(self) -> Resource:
-        r = Resource(type_=TY_DATA)
+        r = Resource(type_=ResourceTypes.data)
         self._add_datafiles(r)
         r.v["desc"] = str(self._path)
         return r
@@ -958,7 +1014,7 @@ class FileImporter(ResourceImporter):
 
 class JsonFileImporter(ResourceImporter):
     def _create(self) -> Resource:
-        r = Resource(type_=TY_JSON)
+        r = Resource(type_=ResourceTypes.json)
         self._add_datafiles(r)
         r.v["desc"] = str(self._path)
         return r

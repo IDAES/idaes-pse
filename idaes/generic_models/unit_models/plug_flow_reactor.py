@@ -14,7 +14,7 @@
 Standard IDAES PFR model.
 """
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var
+from pyomo.environ import Constraint, Var, Reference, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -29,6 +29,8 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     list_of_floats)
 from idaes.core.util.misc import add_object_reference
+import idaes.core.util.unit_costing as costing
+from idaes.core.util.constants import Constants as const
 
 __author__ = "Andrew Lee, John Eslick"
 
@@ -263,26 +265,23 @@ domain,
                     b.control_volume.area)
 
         # Set references to balance terms at unit level
-        add_object_reference(self,
-                             "length",
-                             self.control_volume.length)
-        add_object_reference(self,
-                             "area",
-                             self.control_volume.area)
+        add_object_reference(self, "length", self.control_volume.length)
+        add_object_reference(self, "area", self.control_volume.area)
 
         # Add volume variable for full reactor
-        # TODO : Need to add units
+        units = self.config.property_package.get_metadata()
         self.volume = Var(initialize=1,
-                          doc="Reactor Volume")
+                          doc="Reactor Volume",
+                          units=units.get_derived_units("volume"))
 
         self.geometry = Constraint(expr=self.volume == self.area*self.length)
 
         if (self.config.has_heat_transfer is True and
-                self.config.energy_balance_type != 'none'):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+                self.config.energy_balance_type != EnergyBalanceType.none):
+            self.heat_duty = Reference(self.control_volume.heat[...])
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+                self.config.momentum_balance_type != MomentumBalanceType.none):
+            self.deltaP = Reference(self.control_volume.deltaP[...])
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {"Volume": self.volume}
@@ -290,3 +289,24 @@ domain,
         var_dict = {"Area": self.area}
 
         return {"vars": var_dict}
+
+    def get_costing(self, alignment='horizontal', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True,
+                    year=None, module=costing):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing(year=year, module=module)
+
+        self.costing = Block()
+        units_meta = (self.config.property_package.get_metadata().
+                      get_derived_units)
+        self.diameter = Var(initialize=1,
+                            units=units_meta('length'),
+                            doc='vessel diameter')
+        self.diameter_eq = Constraint(expr=self.volume
+                                      == (self.length*const.pi
+                                          * self.diameter**2)/4)
+        module.pfr_costing(self.costing, alignment=alignment,
+                           Mat_factor=Mat_factor,
+                           weight_limit=weight_limit,
+                           L_D_range=L_D_range,
+                           PL=PL)

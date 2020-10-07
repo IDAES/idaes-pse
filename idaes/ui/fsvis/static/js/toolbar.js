@@ -3,7 +3,10 @@ export class Toolbar {
         this._graph = graph;
         this._paper = paper;
         this._paperScroller = paperScroller;
+
+        // We need to save this to a variable so that we can access it later
         self = this;
+
         self.setupToolbar();
     };
 
@@ -25,9 +28,11 @@ export class Toolbar {
     };
 
     setupToolbar() {
+        // Grab the model information from the div tag so that we can use it in our ajax calls
         var data_model = $("#model").data("model");
         var model_id = data_model.model.id;
         var url = "/fs?id=".concat(model_id);
+        var model_server_url = $("#model-server-url").data("modelurl");
 
         var toolbar = new joint.ui.Toolbar({
             autoToggle: true,
@@ -36,6 +41,8 @@ export class Toolbar {
                 paperScroller: self._paperScroller
             },
             tools: [
+                { type: 'button', name: 'refresh', text: 'Refresh Graph'},
+                { type: 'separator' },
                 { type: 'toggle', name: 'labels', label: 'Labels:' },
                 { type: 'separator' },
                 { type: 'button', name: 'save', text: 'Save'},
@@ -55,7 +62,36 @@ export class Toolbar {
             ],
         });
 
+        toolbar.on('refresh:pointerclick', function(event) {
+            // Get the new model from the model server
+            // First post any position changes to the model
+            $.ajax({
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(self._paper.model.toJSON()),
+                dataType: 'json',
+                url: url,
+                success: function (data) {
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+            // Then get the new model
+            $.ajax({
+                type: 'GET',
+                url: model_server_url,
+                success: function(result) {
+                    self._paper.model.fromJSON(result);
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        });
+
         toolbar.on('labels:change', function(value, event) {
+            // Go through all of the links and set the display values
             if (value == true) {
                 self._paper.model.getLinks().forEach(function (link) {
                     link.label(0, {
@@ -83,6 +119,11 @@ export class Toolbar {
         });
 
         toolbar.on('save:pointerclick', function(event) {
+            // Send an ajax POST request to the flask server with the jointjs model
+            // This request also sets the request header to Source: save_button so 
+            // that the server knows to save the jointjs model to a file
+            // If this isn't set then the flask server will just save the jointjs 
+            // to the database rather than saving it to the file
             $.ajax({
                 type: 'POST',
                 contentType: 'application/json',

@@ -47,7 +47,7 @@ def test_alamopy(branin_dataset):
     modeler = Alamopy(**alamo_settings)
 
     modeler.regressed_data(x, y)
-    
+
     has_alamo_flag = alamopy.multos.has_alamo()
     if has_alamo_flag:
 
@@ -139,7 +139,12 @@ def test_pysmo_poly(branin_dataset):
 def test_general_interface(branin_dataset):
     m, x, y = branin_dataset
 
-    general_settings = {'linear':True,
+    general_settings = {'alamopy':True, # default
+                        'pysmo_polyregression':True, #default
+                        'pysmo_kriging':False, #default
+                        'pysmo_rbf':False, #default
+                        'alamopy_rbf': False,
+                        'linear':True,
                         # 'ratio': True,
                         'pyomo_vars': [m.x[1], m.x[2]],
                         'additional_features_list': ['ft[0] * ft[0] * ft[1] * ft[1]', 'pyo.exp(ft[0])',
@@ -162,6 +167,8 @@ def test_general_interface(branin_dataset):
     os.remove('solution.pickle')
 
     check_metrics(modeler.get_results())
+
+    return True
 
 
 # Interface consistency

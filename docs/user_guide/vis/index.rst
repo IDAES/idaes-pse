@@ -47,9 +47,8 @@ paste the URL that outputs from the visualize command:
 
 .. image:: ../../_images/modelvis/modified_layout.png
 
-5. If the flowsheet is later modified, call `visualize()` again
-   to load a new webpage with the updated flowsheet:
-   `m.fs.visualize('model_name')`
+5. If the flowsheet is later modified, click the Refresh Graph button to
+   see the changes.
 
 The displayed layout is preserved as much as possible, with new components
 appearing along a diagonal line. 

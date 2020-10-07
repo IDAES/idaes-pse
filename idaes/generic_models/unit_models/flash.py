@@ -18,7 +18,7 @@ import logging
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, value
+from pyomo.environ import Constraint, value, Reference, Var, Block
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
@@ -31,11 +31,12 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.generic_models.unit_models.separator import (Separator,
-                                         SplittingType,
-                                         EnergySplittingType)
+                                                        SplittingType,
+                                                        EnergySplittingType)
 
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.misc import add_object_reference
+import idaes.core.util.unit_costing as costing
+
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -236,11 +237,11 @@ see property package for documentation.}"""))
 
         # Add references
         if (self.config.has_heat_transfer is True and
-                self.config.energy_balance_type != 'none'):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+                self.config.energy_balance_type != EnergyBalanceType.none):
+            self.heat_duty = Reference(self.control_volume.heat[:])
         if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+                self.config.momentum_balance_type != MomentumBalanceType.none):
+            self.deltaP = Reference(self.control_volume.deltaP[:])
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
@@ -275,3 +276,20 @@ see property package for documentation.}"""))
                             value(port_obj.vars[k][time_point, i[1:]])
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
+
+    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
+                    weight_limit='option1', L_D_range='option1', PL=True,
+                    year=None, module=costing):
+        if not hasattr(self.flowsheet(), "costing"):
+            self.flowsheet().get_costing(year=year, module=module)
+
+        self.costing = Block()
+        self.length = Var(initialize=1,
+                          doc='vessel length')
+        self.diameter = Var(initialize=1,
+                            doc='vessel diameter')
+        module.flash_costing(self.costing, alignment=alignment,
+                             Mat_factor=Mat_factor,
+                             weight_limit=weight_limit,
+                             L_D_range=L_D_range,
+                             PL=PL)

@@ -75,7 +75,7 @@ constraints.}""",
         ConfigValue(
             default=False,
             domain=In([True, False]),
-            description="Indicated whether outlet state is in phase equilibrium",
+            description="Indicates whether outlet is in phase equilibrium",
             doc="""Indicates whether outlet property package should enforce
 phase equilibrium constraints.
 **default** - False.
@@ -91,8 +91,8 @@ phase equilibrium constraints.
             default=None,
             domain=is_physical_parameter_block,
             description="Property package to use for incoming stream",
-            doc="""Property parameter object used to define property calculations
-for the incoming stream,
+            doc="""Property parameter object used to define property
+calculations for the incoming stream,
 **default** - None.
 **Valid values:** {
 **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
@@ -102,10 +102,10 @@ for the incoming stream,
         "inlet_property_package_args",
         ConfigBlock(
             implicit=True,
-            description="Arguments to use for constructing property package of "
-            "the incoming stream",
-            doc="""A ConfigBlock with arguments to be passed to the property block
-associated with the incoming stream,
+            description="Arguments to use for constructing property package "
+            "of the incoming stream",
+            doc="""A ConfigBlock with arguments to be passed to the property
+block associated with the incoming stream,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -117,8 +117,8 @@ see property package for documentation.}""",
             default=None,
             domain=is_physical_parameter_block,
             description="Property package to use for outgoing stream",
-            doc="""Property parameter object used to define property calculations
-for the outgoing stream,
+            doc="""Property parameter object used to define property
+calculations for the outgoing stream,
 **default** - None.
 **Valid values:** {
 **PhysicalParameterObject** - a PhysicalParameterBlock object.}""",
@@ -128,10 +128,10 @@ for the outgoing stream,
         "outlet_property_package_args",
         ConfigBlock(
             implicit=True,
-            description="Arguments to use for constructing property package of "
-            "the outgoing stream",
-            doc="""A ConfigBlock with arguments to be passed to the property block
-associated with the outgoing stream,
+            description="Arguments to use for constructing property package "
+            "of the outgoing stream",
+            doc="""A ConfigBlock with arguments to be passed to the property
+block associated with the outgoing stream,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -152,7 +152,8 @@ see property package for documentation.}""",
         super(TranslatorData, self).build()
 
         # Check construction argumnet consistency
-        if self.config.outlet_state_defined and self.config.has_phase_equilibrium:
+        if (self.config.outlet_state_defined and
+                self.config.has_phase_equilibrium):
             raise ConfigurationError(
                 "{} cannot calcuate phase equilibrium (has_phase_equilibrium "
                 "= True) when outlet state is set to be fully defined ("
@@ -181,8 +182,12 @@ see property package for documentation.}""",
         )
 
         # Add outlet port
-        self.add_port(name="inlet", block=self.properties_in, doc="Inlet Port")
-        self.add_port(name="outlet", block=self.properties_out, doc="Outlet Port")
+        self.add_port(name="inlet",
+                      block=self.properties_in,
+                      doc="Inlet Port")
+        self.add_port(name="outlet",
+                      block=self.properties_out,
+                      doc="Outlet Port")
 
     def initialize(
         blk,

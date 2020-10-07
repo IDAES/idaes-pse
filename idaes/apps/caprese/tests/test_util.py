@@ -21,9 +21,9 @@ from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
                            TransformationFactory, TerminationCondition,
                            Reference)
 from pyomo.network import Arc
-from pyomo.kernel import ComponentSet, ComponentMap
+from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
-from pyomo.dae.flatten import flatten_dae_variables
+from pyomo.dae.flatten import flatten_dae_components
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
@@ -53,7 +53,6 @@ else:
     solver = None
 
 
-# @ pytest something...?
 @pytest.mark.unit
 def test_find_comp_in_block():
     m1 = ConcreteModel()
@@ -130,8 +129,8 @@ def test_copy_values():
 
     ###
 
-    scalar_vars_1, dae_vars_1 = flatten_dae_variables(m1, m1.time)
-    scalar_vars_2, dae_vars_2 = flatten_dae_variables(m2, m2.time)
+    scalar_vars_1, dae_vars_1 = flatten_dae_components(m1, m1.time, Var)
+    scalar_vars_2, dae_vars_2 = flatten_dae_components(m2, m2.time, Var)
 
     m2.v1[2].set_value(5)
     m2.blk[2].v2.set_value(5)
@@ -171,8 +170,8 @@ def test_find_slices_in_model():
 
     ###
 
-    scalar_vars_1, dae_vars_1 = flatten_dae_variables(m1, m1.time)
-    scalar_vars_2, dae_vars_2 = flatten_dae_variables(m2, m2.time)
+    scalar_vars_1, dae_vars_1 = flatten_dae_components(m1, m1.time, Var)
+    scalar_vars_2, dae_vars_2 = flatten_dae_components(m2, m2.time, Var)
 
     t0_tgt = m1.time.first()
     group = NMPCVarGroup(dae_vars_1, m1.time)
@@ -197,7 +196,7 @@ def test_initialize_by_element_in_range():
     mod = make_model(horizon=2, ntfe=20)
     assert degrees_of_freedom(mod) == 0
 
-    scalar_vars, dae_vars = flatten_dae_variables(mod.fs, mod.fs.time)
+    scalar_vars, dae_vars = flatten_dae_components(mod.fs, mod.fs.time, Var)
     diff_vars = [Reference(mod.fs.cstr.control_volume.energy_holdup[:, 'aq']),
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'S']),
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'E']),
@@ -238,7 +237,7 @@ def test_add_noise_at_time():
     t0 = time.first()
     assert degrees_of_freedom(mod) == 0
 
-    scalar_vars, dae_vars = flatten_dae_variables(mod.fs, time)
+    scalar_vars, dae_vars = flatten_dae_components(mod.fs, time, Var)
     diff_vars = [Reference(mod.fs.cstr.control_volume.energy_holdup[:, 'aq']),
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'S']),
                  Reference(mod.fs.cstr.control_volume.material_holdup[:, 'aq', 'E']),

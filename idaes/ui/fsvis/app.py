@@ -10,6 +10,11 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
+
+# See model_server.py for more information about this module's role in the visualizer
+
+
 """
 Flask app for flowsheet viewer server.
 
@@ -32,24 +37,27 @@ URL but provide JSON content. See the tests for programmatic examples using the
 from multiprocessing import Process
 import json
 import os
+import threading
 import socket
+
 # third party
-from flask import Flask, request, render_template#, send_static_file
+from flask import Flask, jsonify, request, render_template#, send_static_file
+from flask_cors import CORS, cross_origin
+from werkzeug.serving import make_server
+
 # local
 from idaes.ui.fsvis.server import DataStorage
 
-from werkzeug.serving import make_server
-import threading
-
 # globals
-
 app = Flask(__name__, static_url_path='', 
         static_folder='static', 
         template_folder='templates')
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 db = DataStorage()
 
-# Custom exceptions (handled by Flask error handlers)
 
+# Custom exceptions (handled by Flask error handlers)
 class LookupError(Exception):
     def __init__(self, id_):
         self.id_ = id_
@@ -64,8 +72,11 @@ class NoIdError(Exception):
     pass
 
 
-# classes/functions
+class NoModelServerUrlError(Exception):
+    pass
 
+
+# classes/functions
 class ServerThread(threading.Thread):
 
     def __init__(self, app, host, pport):
@@ -94,36 +105,17 @@ class App:
         def is_running(self) -> bool:
             return self._server and self._server.is_alive()
 
-        def start(self, host: str = '127.0.0.1', port: int = 5555, probe: int = 10):
+        def start(self, host: str = '127.0.0.1'):
             """Start server.
 
             Does nothing if server is already running.
             """
             if self._server:
                 return
-            pport = self._probe_ports(host, port, probe)
-            if pport == 0:
-                p1, p2 = port, port + probe - 1
-                raise RuntimeError(f"Could not find an open port in range {p1}..{p2}")
-            self._server = ServerThread(app, host, pport)
+            port = find_free_port(host)
+            self._server = ServerThread(app, host, port)
             self._server.start()
-            self.host, self.port = host, pport
-
-        @staticmethod
-        def _probe_ports(host, start, num):
-            found_port = 0  # invalid
-            for port in range(start, start + num):
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                try:
-                    s.bind((host, port))
-                    found_port = port  # it worked
-                except socket.error as e:
-                    pass
-                finally:
-                    s.close()
-                if found_port > 0:
-                    break
-            return found_port
+            self.host, self.port = host, port
 
         def stop(self) -> None:
             """Stop server.
@@ -142,6 +134,12 @@ class App:
         """Delegate all access to instance.
         """
         return getattr(self.instance, name)
+
+
+def find_free_port(host):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((host, 0))
+    return s.getsockname()[1]
 
 
 def save(data, id_):
@@ -173,6 +171,7 @@ def fetch(request, id_):
 
 # Flask routes
 @app.route("/fs", methods=["GET", "POST"])
+@cross_origin()
 def flowsheet():
     """Store/retrieve flowsheet JSON
     """
@@ -181,24 +180,32 @@ def flowsheet():
         raise NoIdError()
     if request.method == "POST":
         data = update(request, id_)
-        return data
+        response = jsonify(data)
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
 
     elif request.method == "GET":
         data = fetch(request, id_)
-        return data
+        response = jsonify(data)
+        response.headers.add("Access-Control-Allow-Origin", "*")
+        return response
 
 
 @app.route("/app", methods=["GET", "POST"])
+@cross_origin()
 def display():
     """Display the web app."""
     id_ = request.args.get("id", None)
+    model_server_url_ = request.args.get("modelurl", None)
     if id_ is None:
         raise NoIdError()
+    if model_server_url_ is None:
+        raise NoModelServerUrlError()
     if request.method == "POST":
         data = update(request, id_)
     elif request.method == "GET":
         data = fetch(request, id_)
-    return render_template('index.html', model=data)
+    return render_template('index.html', model=data, modelurl=model_server_url_)
 
 
 # Flask error handlers

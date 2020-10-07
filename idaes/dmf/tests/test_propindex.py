@@ -68,7 +68,7 @@ def test_index_property_metadata():
     )
     # Check the resource
     for rsrc in dmf.find():
-        assert rsrc.v[rsrc.TYPE_FIELD] == resource.TY_CODE
+        assert rsrc.v[rsrc.TYPE_FIELD] == resource.ResourceTypes.code
         # print('@@ GOT RESOURCE:\n{}'.format(rsrc.v))
 
 
@@ -120,11 +120,11 @@ def test_index_multiple_versions():
     second_rel = rlist[second].v["relations"][0]
     # First resource is pointed at by second
     assert first_rel[resource.RR_ROLE] == resource.RR_OBJ
-    assert first_rel[resource.RR_PRED] == resource.PR_VERSION
+    assert first_rel[resource.RR_PRED] == resource.Predicates.version
     assert first_rel[resource.RR_ID] == rlist[second].id
     # Second resource points at first
     assert second_rel[resource.RR_ROLE] == resource.RR_SUBJ
-    assert second_rel[resource.RR_PRED] == resource.PR_VERSION
+    assert second_rel[resource.RR_PRED] == resource.Predicates.version
     assert second_rel[resource.RR_ID] == rlist[first].id
 
     # Add the same version

@@ -22,7 +22,7 @@
 
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.core.expr.numvalue import value
-from pyomo.core.kernel.component_map import ComponentMap
+from pyomo.common.collections import ComponentMap
 
 _numpy_available = True
 try:

@@ -20,8 +20,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            units,
-                           value)
-from pyomo.util.check_units import assert_units_consistent
+                           value,
+                           Var)
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -39,6 +39,8 @@ from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock,
                                      initialization_tester)
+from pyomo.util.check_units import (assert_units_consistent,
+                                    assert_units_equivalent)
 
 
 # -----------------------------------------------------------------------------
@@ -138,6 +140,13 @@ class TestSaponification(object):
         assert number_total_constraints(sapon) == 16
         assert number_unused_variables(sapon) == 0
 
+    @pytest.mark.component
+    def test_units(self, sapon):
+        assert_units_consistent(sapon)
+        assert_units_equivalent(sapon.fs.unit.volume[0], units.m**3)
+        assert_units_equivalent(sapon.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(sapon.fs.unit.deltaP[0], units.Pa)
+
     @pytest.mark.unit
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
@@ -203,3 +212,20 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_costing(self, sapon):
+        sapon.fs.unit.get_costing()
+        assert isinstance(sapon.fs.unit.costing.purchase_cost, Var)
+        sapon.fs.unit.diameter.fix(2)
+        results = solver.solve(sapon)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+        assert (pytest.approx(29790.11975, abs=1e3) ==
+                value(sapon.fs.unit.costing.base_cost))
+        assert (pytest.approx(40012.2523, abs=1e3) ==
+                value(sapon.fs.unit.costing.purchase_cost))
