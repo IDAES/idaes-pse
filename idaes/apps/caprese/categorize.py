@@ -4,7 +4,7 @@ from pyomo.environ import (
 from pyomo.dae import DerivativeVar
 from pyomo.common.collections import ComponentSet, ComponentMap
 
-from idaes.apps.caprese.nmpc_var import NmpcVar
+import idaes.apps.caprese.nmpc_var as nmpc_var
 from idaes.apps.caprese.common.config import VariableCategory
 
 def categorize_dae_variables(dae_vars, time, inputs):
@@ -94,6 +94,18 @@ def categorize_dae_variables(dae_vars, time, inputs):
             alg_vars.append(time_slice)
 
     category_dict = {
+#            VariableCategory.DERIVATIVE: [
+#                Reference(ref.referent, ctype=nmpc_var.DerivativeVar)
+#                for ref in deriv_vars
+#                ],
+#            VariableCategory.DIFFERENTIAL: [
+#                Reference(ref.reference, ctype=nmpc_var.DifferentialVar)
+#                for ref in diff_vars
+#                ],
+#            VariableCategory.ALGEBRAIC: [
+#                Reference(ref.reference, ctype=nmpc_var.AlgebraicVar)
+#                for ref in alg_vars
+#                ],
             VariableCategory.DERIVATIVE: deriv_vars,
             VariableCategory.DIFFERENTIAL: diff_vars,
             VariableCategory.ALGEBRAIC: alg_vars,
