@@ -270,10 +270,11 @@ class DynamicModelHelper(object):
         t0 = time.first()
         cat_dict = self.category_dict
         for categ in categories:
-            # Would like:
-            # v[:,:].set_value(v[:,t0].value)
             for v in cat_dict[categ]:
                 v[:].set_value(v[t0].value)
+        # for var in component_objects(categories):
+        #     var[:].set_value(var[t0].value)
+        # This should work without a custom var class.
 
     def initialize_by_solving_elements(self, solver, fix_inputs=False):
         namespace = self.namespace
@@ -391,11 +392,15 @@ class DynamicModelHelper(object):
         # need an argument for the start time of inputs.
         for var, val in zip(self.input_vars[:], inputs):
             # Would like:
-            # self.input_vars.fix(inputs)
+            # self.input_vars[:,:].fix(inputs)
+            # This is an example of setting a matrix from a vector.
+            # Could even aspire towards:
+            # self.input_vars[:,t0:t1].fix(inputs[t1])
             var[:].fix(val)
 
     def load_measurements(self, measured):
         t0 = self.time.first()
+        # Want: self.measured_vars[:,t0].fix(measured)
         for var, val in zip(self.measured_vars, measured):
             var[t0].fix(val)
 
@@ -558,6 +563,7 @@ class ControllerHelper(DynamicModelHelper):
 
         # Fix inputs that were originally fixed
         for var in input_vars[:]:
+        # for var in input_vars[:, t0]:... would be nicer
             if was_fixed[var[t0]]:
                 var[t0].fix()
 
@@ -574,6 +580,12 @@ class ControllerHelper(DynamicModelHelper):
             # Needs a ctype that's aware of this vectorization
             for var in vector[:]:
                 var.setpoint = var[t0].value
+
+        # for vector in component_objects(NmpcVector):
+        #     vector.set_setpoint(vector[:,0].value)
+        # or
+        #     vector.setpoint = vector[:,0].value
+        # and this has to actually change the 
 
     def add_setpoint_objective(self, 
             setpoint,
