@@ -58,16 +58,15 @@ from idaes.apps.caprese.model import (
         ControllerHelper,
         )
 from idaes.apps.caprese.util import (
-        initialize_by_element_in_range,
-        find_slices_in_model, 
-        NMPCVarGroup, 
-        NMPCVarLocator, 
-        copy_values_at_time, 
-        add_noise_at_time,
+#        initialize_by_element_in_range,
+#        find_slices_in_model, 
+#        NMPCVarGroup, 
+#        NMPCVarLocator, 
+#        copy_values_at_time, 
         validate_list_of_vardata, 
         validate_list_of_vardata_value_tuples, 
         validate_solver,
-        find_point_in_continuousset,
+#        find_point_in_continuousset,
         get_violated_bounds_at_time)
 from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
