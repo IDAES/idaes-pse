@@ -35,7 +35,7 @@ from idaes.apps.caprese.common.config import (
         ElementInitializationInputOption,
         ControlInitOption,
         )
-from idaes.apps.caprese.tests.test_model import (
+from idaes.apps.caprese.tests.test_simple_model import (
         make_model, 
         make_small_model,
         initialize_t0,
