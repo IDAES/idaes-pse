@@ -54,8 +54,8 @@ from idaes.apps.caprese.common.config import (
         ControlPenaltyType,
         VariableCategory)
 from idaes.apps.caprese.model import (
-        DynamicModelHelper,
-        ControllerHelper,
+        DynamicBlock,
+        ControllerBlock,
         )
 from idaes.apps.caprese.util import (
 #        initialize_by_element_in_range,

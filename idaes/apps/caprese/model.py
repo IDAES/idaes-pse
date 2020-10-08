@@ -30,14 +30,15 @@ from pyomo.environ import (
         Var,
         Set,
         )
-from pyomo.core.base.block import _BlockData
+from pyomo.core.base.block import _BlockData, declare_custom_block
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
 
-class DynamicModelHelper(object):
+@declare_custom_block('DynamicBlock')
+class _DynamicBlockData(_BlockData):
     # TODO: Any advantage to inheriting from ConcreteModel or Block?
     #       Would not have to access the "model" attribute
     #       As a Block, could "contain" the newly constructed components?
@@ -46,7 +47,10 @@ class DynamicModelHelper(object):
 
     namespace_name = '_CAPRESE_NAMESPACE'
 
-    def __init__(self, model, time, inputs=None):
+    def __init__(self, model=None, time=None, inputs=None, **kwargs):
+        # TODO: Figure out how to properly get the arguments I want into
+        # this custom block class.
+        super(_DynamicBlockData, self).__init__(**kwargs)
         self.model = model
         self.time = time
 
@@ -492,7 +496,8 @@ class DynamicModelHelper(object):
         return data
 
 
-class ControllerHelper(DynamicModelHelper):
+@declare_custom_block('ControllerBlock')
+class _ControllerBlockData(_DynamicBlockData):
 
     def solve_setpoint(self, solver, require_steady=True):
         controller = self.model
