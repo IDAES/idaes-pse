@@ -6,6 +6,11 @@ version: 2.1
 
 _vars:
   - &ubuntu-image idaes/ubuntu18-conda:2.1
+  - docker-options: &docker-options
+    - image: *ubuntu-image
+      auth:
+        username: $DOCKERHUB_USERNAME
+        password: $DOCKERHUB_ACCESS_TOKEN
 
 ## Commands shared by jobs
 
@@ -160,8 +165,7 @@ commands:
 
 jobs:
   idaes_dev:
-    docker:
-      - image: *ubuntu-image
+    docker: *docker-options
     working_directory: ~/repo
     parameters:
       python:
@@ -197,8 +201,7 @@ jobs:
 
   # Clone and test examples
   integration_tests:
-    docker:
-      - image: *ubuntu-image
+    docker: *docker-options
     working_directory: ~/repo
     parameters:
       python:
@@ -215,16 +218,14 @@ jobs:
 
   # After integration tests
   integration_tests_postprocess:
-    docker:
-      - image: *ubuntu-image
+    docker: *docker-options
     working_directory: ~/repo
     steps:
         - clear_approved_tag
 
   # pip install-based
   idaes_pse:
-    docker:
-      - image: *ubuntu-image
+    docker: *docker-options
     working_directory: ~
     parameters:
       python:
