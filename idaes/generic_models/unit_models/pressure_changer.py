@@ -640,24 +640,13 @@ see property package for documentation.}""",
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        # ---------------------------------------------------------------------
-        # Initialize holdup block
-        flags = blk.control_volume.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-        )
-        init_log.info_high("Initialization Step 1 Complete.")
-        # ---------------------------------------------------------------------
-        # Initialize Isentropic block
-
-        # Set state_args from inlet state
+        cv = blk.control_volume
         if state_args is None:
             state_args = {}
-            state_dict = blk.control_volume.properties_in[
-                blk.flowsheet().config.time.first()
-            ].define_port_members()
+            state_dict = (
+                cv.properties_in[
+                    blk.flowsheet().config.time.first()]
+                .define_port_members())
 
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
@@ -667,11 +656,52 @@ see property package for documentation.}""",
                 else:
                     state_args[k] = state_dict[k].value
 
+        # Get initialisation guesses for outlet and isentropic states
+        t0 = blk.flowsheet().config.time.first()
+        state_args_out = {}
+        for k in state_args:
+            if k == "pressure":
+                # Work out how to estimate outlet pressure
+                if cv.properties_out[t0].pressure.fixed:
+                    # Fixed outlet pressure, use this value
+                    state_args_out[k] = value(cv.properties_out[t0].pressure)
+                elif blk.deltaP[t0].fixed:
+                    state_args_out[k] = value(
+                        cv.properties_in[t0].pressure + blk.deltaP[t0])
+                elif blk.ratio[t0].fixed:
+                    state_args_out[k] = value(
+                        cv.properties_in[t0].pressure * blk.ratioP[t0])
+                else:
+                    # Not obvious what to do, use inlet state
+                    state_args_out[k] = state_args[k]
+            else:
+                state_args_out[k] = state_args[k]
+
+        # Initialize state blocks
+        flags = cv.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+            state_args=state_args,
+        )
+        cv.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=False,
+            state_args=state_args_out,
+        )
+
+        init_log.info_high("Initialization Step 1 Complete.")
+        # ---------------------------------------------------------------------
+        # Initialize Isentropic block
+
         blk.properties_isentropic.initialize(
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            state_args=state_args,
+            state_args=state_args_out,
         )
 
         init_log.info_high("Initialization Step 2 Complete.")
@@ -738,7 +768,7 @@ see property package for documentation.}""",
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl + 1)
+        blk.control_volume.release_state(flags, outlvl)
         init_log.info(
             "Initialization Complete: {}"
             .format(idaeslog.condition(res))
