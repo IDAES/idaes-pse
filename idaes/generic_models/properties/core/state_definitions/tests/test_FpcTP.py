@@ -67,10 +67,8 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -80,8 +78,6 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
 
     @pytest.mark.unit
     def test_always_flash(self, frame):
-        define_state(frame.props[1])
-
         assert not frame.props[1].always_flash
 
     @pytest.mark.unit
@@ -195,10 +191,8 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=True))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -208,8 +202,6 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
 
     @pytest.mark.unit
     def test_always_flash(self, frame):
-        define_state(frame.props[1])
-
         assert not frame.props[1].always_flash
 
     @pytest.mark.unit
@@ -327,10 +319,8 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -340,8 +330,6 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
 
     @pytest.mark.unit
     def test_always_flash(self, frame):
-        define_state(frame.props[1])
-
         assert not frame.props[1].always_flash
 
     @pytest.mark.unit
@@ -457,10 +445,8 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=True))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -470,8 +456,6 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
 
     @pytest.mark.unit
     def test_always_flash(self, frame):
-        define_state(frame.props[1])
-
         assert not frame.props[1].always_flash
 
     @pytest.mark.unit
@@ -591,10 +575,8 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -604,8 +586,6 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
 
     @pytest.mark.unit
     def test_always_flash(self, frame):
-        define_state(frame.props[1])
-
         assert not frame.props[1].always_flash
 
     @pytest.mark.unit
@@ -722,10 +702,8 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=True))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -735,8 +713,6 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
 
     @pytest.mark.unit
     def test_always_flash(self, frame):
-        define_state(frame.props[1])
-
         assert not frame.props[1].always_flash
 
     @pytest.mark.unit
@@ -858,16 +834,12 @@ class TestCommon(object):
                                "temperature": pyunits.K}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        m.props = m.params.build_state_block(
+            [1], default={"parameters": m.params, "defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
         m.props[1].enth_mol_phase = Var(m.params.phase_list, initialize=1)
-
-        define_state(m.props[1])
 
         return m
 

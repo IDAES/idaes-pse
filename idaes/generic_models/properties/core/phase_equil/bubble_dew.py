@@ -69,7 +69,7 @@ class IdealBubbleDew():
             else:
                 return b._mole_frac_tbub[p1, p2, j] == 0
         b.eq_mole_frac_tbub = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_bubble_temp)
 
     # -------------------------------------------------------------------------
@@ -126,7 +126,7 @@ class IdealBubbleDew():
                 return b._mole_frac_tdew[p1, p2, j] == 0
 
         b.eq_mole_frac_tdew = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_dew_temp)
 
     # -------------------------------------------------------------------------
@@ -183,7 +183,7 @@ class IdealBubbleDew():
                 return b._mole_frac_pbub[p1, p2, j] == 0
 
         b.eq_mole_frac_pbub = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_bubble_press)
 
     # -------------------------------------------------------------------------
@@ -239,7 +239,7 @@ class IdealBubbleDew():
                 return b._mole_frac_pdew[p1, p2, j] == 0
 
         b.eq_mole_frac_pdew = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_dew_press)
 
 
@@ -277,7 +277,7 @@ class LogBubbleDew():
                     return b._mole_frac_tbub[p1, p2, j] == 0
 
             b.eq_temperature_bubble = Constraint(b.params._pe_pairs,
-                                                 b.params.component_list,
+                                                 b.component_list,
                                                  rule=rule_bubble_temp)
         except AttributeError:
             b.del_component(b.eq_temperature_bubble)
@@ -335,7 +335,7 @@ class LogBubbleDew():
                 else:
                     return b._mole_frac_tdew[p1, p2, j] == 0
             b.eq_temperature_dew = Constraint(b.params._pe_pairs,
-                                              b.params.component_list,
+                                              b.component_list,
                                               rule=rule_dew_temp)
         except AttributeError:
             b.del_component(b.eq_temperature_dew)
@@ -393,7 +393,7 @@ class LogBubbleDew():
                 else:
                     return b._mole_frac_pbub[p1, p2, j] == 0
             b.eq_pressure_bubble = Constraint(b.params._pe_pairs,
-                                              b.params.component_list,
+                                              b.component_list,
                                               rule=rule_bubble_press)
         except AttributeError:
             b.del_component(b.eq_pressure_bubble)
@@ -451,7 +451,7 @@ class LogBubbleDew():
                 else:
                     return b._mole_frac_pdew[p1, p2, j] == 0
             b.eq_pressure_dew = Constraint(b.params._pe_pairs,
-                                           b.params.component_list,
+                                           b.component_list,
                                            rule=rule_dew_press)
         except AttributeError:
             b.del_component(b.eq_pressure_dew)
@@ -498,13 +498,13 @@ def _valid_VL_component_list(blk, pp):
 
     # Only need to do this for V-L pairs, so check
     if l_phase is not None and v_phase is not None:
-        for j in blk.params.component_list:
-            if ((l_phase, j) in pparams._phase_component_set and
-                    (v_phase, j) in pparams._phase_component_set):
+        for j in blk.component_list:
+            if ((l_phase, j) in blk.phase_component_set and
+                    (v_phase, j) in blk.phase_component_set):
                 vl_comps.append(j)
-            elif (l_phase, j) in pparams._phase_component_set:
+            elif (l_phase, j) in blk.phase_component_set:
                 l_only_comps.append(j)
-            elif (v_phase, j) in pparams._phase_component_set:
+            elif (v_phase, j) in blk.phase_component_set:
                 v_only_comps.append(j)
 
     return l_phase, v_phase, vl_comps, l_only_comps, v_only_comps

@@ -15,6 +15,7 @@ Framework for generic property packages
 """
 # Import Python libraries
 import types
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -52,6 +53,11 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class StateIndex(Enum):
+    true = 1
+    apparent = 2
 
 
 def set_param_value(b, param, units):
@@ -101,6 +107,13 @@ class GenericParameterData(PhysicalParameterBlock):
         domain=dict,
         description="Bounds for state variables",
         doc="""A dict containing bounds to use for state variables."""))
+    CONFIG.declare("state_components", ConfigValue(
+        default=StateIndex.apparent,
+        domain=In(StateIndex),
+        doc="Index state variables by true or apparent components",
+        description="Argument idicating whether the true or apparent species "
+        "set should be used for indexing state variables. Must be "
+        "StateIndex.true or StateIndex.apparent."))
 
     # Reference State
     CONFIG.declare("pressure_ref", ConfigValue(
@@ -669,32 +682,36 @@ class _GenericStateBlock(StateBlock):
         # Overload the _return_component_list method to handle electrolyte
         # systems where we have two component lists to choose from
         params = self._get_parameter_block()
+
         if not params._electrolyte:
             return params.component_list
-        elif self._block_data_config_default["species_basis"] == "true":
+
+        if params.config["state_components"] == StateIndex.true:
             return params.true_species_set
-        elif self._block_data_config_default["species_basis"] == "apparent":
+        elif params.config["state_components"] == StateIndex.apparent:
             return params.apparent_species_set
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
-                "'species_basis'; this should never happen. Please contact "
+                "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
     def _return_phase_component_set(self):
         # Overload the _return_phase_component_set method to handle electrolyte
         # systems where we have two component lists to choose from
         params = self._get_parameter_block()
+
         if not params._electrolyte:
             return params._phase_component_set
-        elif self._block_data_config_default["species_basis"] == "true":
+
+        if params.config["state_components"] == StateIndex.true:
             return params.true_phase_component_set
-        elif self._block_data_config_default["species_basis"] == "apparent":
+        elif params.config["state_components"] == StateIndex.apparent:
             return params.apparent_phase_component_set
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
-                "'species_basis'; this should never happen. Please contact "
+                "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
     def initialize(blk, state_args={}, state_vars_fixed=False,
@@ -1121,13 +1138,6 @@ class _GenericStateBlock(StateBlock):
                              block_class=_GenericStateBlock)
 class GenericStateBlockData(StateBlockData):
     CONFIG = StateBlockData.CONFIG()
-
-    CONFIG.declare("species_basis", ConfigValue(
-        default="true",
-        domain=In(["true", "apparent"]),
-        doc="True or apparent component basis",
-        description="Argument idicating whetehr the true or apparent species "
-        "set should be used for indexing components"))
 
     def build(self):
         super(GenericStateBlockData, self).build()
