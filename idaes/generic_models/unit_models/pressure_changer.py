@@ -641,12 +641,12 @@ see property package for documentation.}""",
         opt.options = optarg
 
         cv = blk.control_volume
+        t0 = blk.flowsheet().config.time.first()
+        state_args_out = {}
         if state_args is None:
             state_args = {}
             state_dict = (
-                cv.properties_in[
-                    blk.flowsheet().config.time.first()]
-                .define_port_members())
+                cv.properties_in[t0].define_port_members())
 
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
@@ -656,26 +656,25 @@ see property package for documentation.}""",
                 else:
                     state_args[k] = state_dict[k].value
 
-        # Get initialisation guesses for outlet and isentropic states
-        t0 = blk.flowsheet().config.time.first()
-        state_args_out = {}
-        for k in state_args:
-            if k == "pressure":
-                # Work out how to estimate outlet pressure
-                if cv.properties_out[t0].pressure.fixed:
-                    # Fixed outlet pressure, use this value
-                    state_args_out[k] = value(cv.properties_out[t0].pressure)
-                elif blk.deltaP[t0].fixed:
-                    state_args_out[k] = value(
-                        cv.properties_in[t0].pressure + blk.deltaP[t0])
-                elif blk.ratio[t0].fixed:
-                    state_args_out[k] = value(
-                        cv.properties_in[t0].pressure * blk.ratioP[t0])
+            # Get initialisation guesses for outlet and isentropic states
+            for k in state_args:
+                if k == "pressure":
+                    # Work out how to estimate outlet pressure
+                    if cv.properties_out[t0].pressure.fixed:
+                        # Fixed outlet pressure, use this value
+                        state_args_out[k] = value(
+                            cv.properties_out[t0].pressure)
+                    elif blk.deltaP[t0].fixed:
+                        state_args_out[k] = value(
+                            state_args[k] + blk.deltaP[t0])
+                    elif blk.ratio[t0].fixed:
+                        state_args_out[k] = value(
+                            state_args[k] * blk.ratioP[t0])
+                    else:
+                        # Not obvious what to do, use inlet state
+                        state_args_out[k] = state_args[k]
                 else:
-                    # Not obvious what to do, use inlet state
                     state_args_out[k] = state_args[k]
-            else:
-                state_args_out[k] = state_args[k]
 
         # Initialize state blocks
         flags = cv.properties_in.initialize(
