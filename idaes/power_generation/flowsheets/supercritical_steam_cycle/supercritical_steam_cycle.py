@@ -649,8 +649,8 @@ def set_model_input(m):
     #  Turbine input                                                           #
     ############################################################################
     main_steam_pressure = 2.423e7
-    m.fs.turb.turbine_inlet_cf_fix(2.7e-4)
-    m.fs.turb.turbine_outlet_cf_fix(0.15)
+    m.fs.turb.turbine_inlet_cf_fix(4.6e-4)
+    m.fs.turb.turbine_outlet_cf_fix(0.32)
     # Set the turbine steam inlet conditions and flow guess for init
     m.fs.turb.inlet_split.inlet.enth_mol.fix(62710)
     m.fs.turb.inlet_split.inlet.pressure.fix(main_steam_pressure)

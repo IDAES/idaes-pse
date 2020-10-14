@@ -100,10 +100,8 @@ def test_initialize_calc_cf(build_turbine):
     m.fs.turb.inlet.enth_mol[0].value = hin
     m.fs.turb.inlet.flow_mol[0].value = 26000/4.0
     m.fs.turb.inlet.pressure[0].value = 2.4233e7
-
     m.fs.turb.inlet.fix()
     solver.solve(m)
-
     assert m.fs.turb.ratioP[0].value == pytest.approx(0.6)
 
     assert degrees_of_freedom(m)==0
@@ -123,9 +121,41 @@ def test_initialize_dyn(build_turbine_dyn):
     m.fs.turb.inlet.enth_mol.fix(hin)
     m.fs.turb.inlet.flow_mol.fix(26000/4.0)
     m.fs.turb.inlet.pressure.fix(2.4233e7)
+    m.fs.turb.flow_coeff[:].fix()
+
     m.fs.turb.initialize()
 
-    # TODO: This test should assert something...
+    eq_cons = activated_equalities_generator(m)
+    for c in eq_cons:
+        assert(abs(c.body() - c.lower) < 1e-4)
+
+    assert(degrees_of_freedom(m)==0)
+
+
+@pytest.mark.component
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_initialize_dyn2(build_turbine_dyn):
+    """Initialize a turbine model"""
+    m = build_turbine_dyn
+    hin = iapws95.htpx(T=880, P=2.4233e7)
+    discretizer = TransformationFactory('dae.finite_difference')
+    discretizer.apply_to(m, nfe=4, wrt=m.fs.time, scheme='BACKWARD')
+
+    # fix inlet
+    m.fs.turb.inlet.enth_mol.fix(hin)
+    m.fs.turb.inlet.flow_mol.fix(26000/4.0)
+    m.fs.turb.inlet.pressure.fix(2.4233e7)
+    m.fs.turb.flow_coeff[:].fix()
+    m.fs.turb.ratioP[0].value = 0.6 # used for flow coeff calc
+
+    m.fs.turb.initialize(calculate_cf=True)
+
+    eq_cons = activated_equalities_generator(m)
+    for c in eq_cons:
+        assert(abs(c.body() - c.lower) < 1e-4)
+    assert m.fs.turb.ratioP[0].value == pytest.approx(0.6)
+    assert(degrees_of_freedom(m)==0)
 
 
 @pytest.mark.unit

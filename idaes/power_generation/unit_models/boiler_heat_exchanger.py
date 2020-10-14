@@ -57,6 +57,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
 
+import idaes.logger as idaeslog
+
 
 __author__ = "Boiler subsystem team (J Ma, M Zamarripa)"
 __version__ = "1.0.0"
@@ -1126,7 +1128,7 @@ constructed,
         blk.side_2.model_check()
 
     def initialize(blk, state_args_1={}, state_args_2={},
-                   outlvl=0, solver='ipopt', optarg={'tol': 1e-6,
+                   outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6,
                                                      'max_iter': 100}):
         '''
         General Heat Exchanger initialisation routine.
@@ -1157,27 +1159,24 @@ constructed,
             None
         '''
         # Set solver options
-        if outlvl > 3:
-            stee = True
-        else:
-            stee = False
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks
-        flags1 = blk.side_1.initialize(outlvl=outlvl-1,
+        flags1 = blk.side_1.initialize(outlvl=outlvl,
                                        optarg=optarg,
                                        solver=solver,
                                        state_args=state_args_1)
 
-        flags2 = blk.side_2.initialize(outlvl=outlvl-1,
+        flags2 = blk.side_2.initialize(outlvl=outlvl,
                                        optarg=optarg,
                                        solver=solver,
                                        state_args=state_args_2)
-        if outlvl > 0:
-            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
+        init_log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
         # Initialize temperature differentials
@@ -1213,16 +1212,10 @@ constructed,
         blk.deltaP_tube_eqn.deactivate()
         blk.deltaP_shell_eqn.deactivate()
 
-        results = opt.solve(blk, tee=stee)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}.".format(idaeslog.condition(res)))
 
-        if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                _log.info('{} Initialisation Step 2 Complete.'
-                          .format(blk.name))
-            else:
-                _log.warning('{} Initialisation Step 2 Failed.'
-                             .format(blk.name))
         # Activate energy balance and driving force
         for t in blk.flowsheet().time:
             if not p1_flags[t]:
@@ -1239,20 +1232,13 @@ constructed,
         blk.deltaP_tube_eqn.activate()
         blk.deltaP_shell_eqn.activate()
 
-        results = opt.solve(blk, tee=stee)
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}.".format(idaeslog.condition(res)))
 
-        if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                _log.info('{} Initialisation Step 3 Complete.'
-                          .format(blk.name))
-            else:
-                _log.warning('{} Initialisation Step 3 Failed.'
-                             .format(blk.name))
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.side_1.release_state(flags1, outlvl-1)
-        blk.side_2.release_state(flags2, outlvl-1)
+        blk.side_1.release_state(flags1, outlvl)
+        blk.side_2.release_state(flags2, outlvl)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+        init_log.info('{} Initialisation Complete.'.format(blk.name))

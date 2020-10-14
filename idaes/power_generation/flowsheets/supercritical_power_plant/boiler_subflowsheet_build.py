@@ -72,6 +72,7 @@ from pyomo.common.fileutils import this_file_dir
 from collections import OrderedDict
 import os
 from idaes.core.util.model_statistics import degrees_of_freedom
+import logging
 
 
 def main():
@@ -441,15 +442,15 @@ def initialize(m):
 # ---------  Initialization ------------------------------------------
 
     # Initialize Units
-    m.fs.ECON.initialize(outlvl=4)
-    m.fs.PrSH.initialize(outlvl=4)
-    m.fs.FSH.initialize(outlvl=4)
-    m.fs.RH.initialize(outlvl=4)
-    m.fs.PlSH.initialize(outlvl=4)
-    m.fs.Water_wall.initialize(outlvl=4)
-    m.fs.Spl1.initialize(outlvl=4)
-    m.fs.mix1.initialize(outlvl=4)
-    m.fs.ATMP1.initialize(outlvl=4)
+    m.fs.ECON.initialize(outlvl=logging.INFO)
+    m.fs.PrSH.initialize(outlvl=logging.INFO)
+    m.fs.FSH.initialize(outlvl=logging.INFO)
+    m.fs.RH.initialize(outlvl=logging.INFO)
+    m.fs.PlSH.initialize(outlvl=logging.INFO)
+    m.fs.Water_wall.initialize(outlvl=logging.INFO)
+    m.fs.Spl1.initialize(outlvl=logging.INFO)
+    m.fs.mix1.initialize(outlvl=logging.INFO)
+    m.fs.ATMP1.initialize(outlvl=logging.INFO)
     print('initialization done')
 
 
@@ -621,9 +622,9 @@ def print_results(m):
     print()
 
     print('viscosity gas side = ',
-          m.fs.PrSH.side_2.properties_in[0].visc_d_mix.value)
+          m.fs.PrSH.side_2.properties_in[0].visc_d.value)
     print('conductivity gas side = ',
-          m.fs.PrSH.side_2.properties_in[0].therm_cond_mix.value)
+          m.fs.PrSH.side_2.properties_in[0].therm_cond.value)
     print('velocity_tube = ',
           m.fs.PrSH.v_tube[0].value)
     print('velocity_shell = ', m.fs.PrSH.v_shell[0].value)

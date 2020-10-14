@@ -63,15 +63,17 @@ def test_unit_consistency(model):
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_init_value(model):
-    assert gross_power_mw(model) == pytest.approx(633.56, abs=1e-2)
+def test_init_value(initialize_model):
+    m, solver = initialize_model
+    assert gross_power_mw(m) == pytest.approx(635.63, abs=1e-2)
 
 
 @pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_valve_change(model):
-    model.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
-    model.solver.solve(model, tee=True)
-    assert gross_power_mw(model) == pytest.approx(592.87, abs=1e-2)
+def test_valve_change(initialize_model):
+    m, solver = initialize_model
+    m.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
+    solver.solve(m, tee=True)
+    assert gross_power_mw(m) == pytest.approx(603.46, abs=1e-2)

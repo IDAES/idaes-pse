@@ -70,8 +70,36 @@ def test_initialize(build_turbine):
     eq_cons = activated_equalities_generator(build_turbine)
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
-    # inlet was't fixed and still shouldn't be
+
     assert degrees_of_freedom(build_turbine) == 3
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_initialize_dyn(build_turbine_dyn):
+    """Initialize a turbine model"""
+    m = build_turbine_dyn
+    hin = iapws95.htpx(T=880, P=2.4233e7)
+    discretizer = TransformationFactory('dae.finite_difference')
+    discretizer.apply_to(m, nfe=4, wrt=m.fs.time, scheme='BACKWARD')
+
+    # fix inlet
+    m.fs.turb.inlet[:].enth_mol.fix(hin)
+    m.fs.turb.inlet[:].flow_mol.fix(26000/4.0)
+    m.fs.turb.inlet[:].pressure.fix(2.4233e7)
+    m.fs.turb.flow_coeff[:].fix()
+
+    assert(degrees_of_freedom(m)==0)
+    m.fs.turb.initialize()
+
+    eq_cons = activated_equalities_generator(m)
+    for c in eq_cons:
+        assert(abs(c.body() - c.lower) < 1e-4)
+
+    m.display()
+
+    assert(degrees_of_freedom(m)==0)
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
