@@ -18,7 +18,8 @@ Author: John Eslick
 import pytest
 
 from pyomo.environ import (
-    ConcreteModel, SolverFactory, units as pyunits, value)
+    ConcreteModel, SolverFactory, units as pyunits, value,
+    TransformationFactory)
 from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
@@ -45,6 +46,17 @@ def build_turbine():
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineInletStage(
         default={"property_package": m.fs.properties})
+    return m
+
+
+@pytest.fixture()
+def build_turbine_dyn():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": True})
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+    m.fs.turb = TurbineInletStage(default={
+        "dynamic": False,
+        "property_package": m.fs.properties})
     return m
 
 
@@ -80,7 +92,7 @@ def test_initialize(build_turbine):
 def test_initialize_dyn(build_turbine_dyn):
     """Initialize a turbine model"""
     m = build_turbine_dyn
-    hin = iapws95.htpx(T=880, P=2.4233e7)
+    hin = iapws95.htpx(T=880*pyunits.K, P=2.4233e7*pyunits.Pa)
     discretizer = TransformationFactory('dae.finite_difference')
     discretizer.apply_to(m, nfe=4, wrt=m.fs.time, scheme='BACKWARD')
 
@@ -90,7 +102,7 @@ def test_initialize_dyn(build_turbine_dyn):
     m.fs.turb.inlet[:].pressure.fix(2.4233e7)
     m.fs.turb.flow_coeff[:].fix()
 
-    assert(degrees_of_freedom(m)==0)
+    assert(degrees_of_freedom(m) == 0)
     m.fs.turb.initialize()
 
     eq_cons = activated_equalities_generator(m)
@@ -99,7 +111,7 @@ def test_initialize_dyn(build_turbine_dyn):
 
     m.display()
 
-    assert(degrees_of_freedom(m)==0)
+    assert(degrees_of_freedom(m) == 0)
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")

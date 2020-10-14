@@ -138,7 +138,7 @@ def test_initialize_dyn(build_turbine_dyn):
 def test_initialize_dyn2(build_turbine_dyn):
     """Initialize a turbine model"""
     m = build_turbine_dyn
-    hin = iapws95.htpx(T=880, P=2.4233e7)
+    hin = iapws95.htpx(T=880*pyunits.K, P=2.4233e7*pyunits.Pa)
     discretizer = TransformationFactory('dae.finite_difference')
     discretizer.apply_to(m, nfe=4, wrt=m.fs.time, scheme='BACKWARD')
 
