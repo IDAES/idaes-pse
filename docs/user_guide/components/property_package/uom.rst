@@ -1,7 +1,7 @@
 Defining Units of Measurement
 =============================
 
-All property packages within IDAES are expected to define a metadata class as part of the package's `ParameterBlock`, which amongst other things contains a definition of the base units of measurement used by that property package. An example of defining the default units for a property package is shown below.
+All property packages within IDAES are expected to define a metadata class as part of the package's ParameterBlock, which amongst other things contains a definition of the base units of measurement used by that property package. An example of defining the default units for a property package is shown below.
 
 .. code-block:: python
 

@@ -24,7 +24,7 @@ from typing import Union
 import pytest
 
 # local
-from idaes.dmf import surrmod, errors, DMF
+from idaes.dmf import surrmod, DMF
 from idaes.dmf.experiment import Experiment
 
 # for testing

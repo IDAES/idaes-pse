@@ -51,7 +51,8 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        BurntToast)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
@@ -931,6 +932,17 @@ see reaction package for documentation.}"""))
             return (b.velocity_superficial_gas[t, x] ==
                     b.velocity_bubble[t, x] * b.delta[t, x] +
                     b.velocity_emulsion_gas[t, x])
+    
+        # Particle porosity constraint
+        # Particle porosity is assumed constant
+        @self.Constraint(
+            self.flowsheet().config.time,
+            self.length_domain,
+            doc="Constant particle porosity")
+        def particle_porosity_constraint(b, t, x):
+            return (
+                b.solid_emulsion.properties[t, x].particle_porosity ==
+                b.solid_inlet_block[t].particle_porosity)
 
         # Gas_emulsion pressure drop calculation
         if self.config.has_pressure_change:
@@ -1744,6 +1756,7 @@ see reaction package for documentation.}"""))
         blk.gas_emulsion_mass_transfer.activate()
         blk.bubble_gas_flowrate.activate()
         blk.emulsion_gas_flowrate.activate()
+        blk.particle_porosity_constraint.activate()
 
         # Activate relevant boundary constraints
         blk.velocity_superficial_gas_inlet.activate()

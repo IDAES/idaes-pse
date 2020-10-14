@@ -12,6 +12,7 @@
 ##############################################################################
 # server backend code for fsvis
 import json
+import logging
 import os
 import requests
 from requests.exceptions import ConnectionError
@@ -20,10 +21,16 @@ import time
 import webbrowser
 
 from idaes.ui.fsvis.app import App as fsvis_server
+from idaes.ui.fsvis.app import find_free_port
+from idaes.ui.fsvis.model_server import ModelServer
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 
+
+# See model_server.py for more information about this module's role in the visualizer
+
+
 # serialize flowsheet and launch the app
-def visualize(flowsheet, name, browser=True, overwrite=False):
+def visualize(flowsheet, name, browser=True, overwrite=False, model_server_host='127.0.0.1'):
     """Visualizes the flowsheet, assigning it to the given name. 
     
     Attempts to
@@ -49,9 +56,16 @@ def visualize(flowsheet, name, browser=True, overwrite=False):
     Raises:
         None.#TODO
     """
+    # Start the model server that contains a reference to the model so that the flask 
+    # server can ping it when refresh is called in order to get the updated model
     server = fsvis_server()
+
     url = f"http://{server.host}:{server.port}/app"
-        
+
+    model_server = ModelServer.getInstance(flowsheet, name, f"http://{server.host}:{server.port}/fs?id={name}", model_server_host)
+
+    model_server_url = f"http://{model_server_host}:{model_server.port}"
+
     # Check if the {name}.viz file exists and overwrite is not true. If it was True
     # then we want to serialize the flowsheet and reset to the original
     file_path = os.path.expandvars(os.path.join(os.path.expanduser("~"), ".idaes", "viz", f"{name}.viz"))
@@ -63,14 +77,16 @@ def visualize(flowsheet, name, browser=True, overwrite=False):
             serialized_flowsheet = json.load(viz_file)
     else:
         serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
-    
+
     repeat_until_connection_available(requests.post, url, json=serialized_flowsheet, 
-                                      params={'id': slugify(name)})
+                                      params={'id': slugify(name), "modelurl": model_server_url})
     if browser:
-        success = webbrowser.open(url + f"?id={name}")
+        success = webbrowser.open(url + f"?id={name}&modelurl={model_server_url}")
         print(f'Opened in browser window: {success}')
-        print(f'{url}?id={name}')
+        print(f'{url}?id={name}&modelurl={model_server_url}')
+
     return server
+
 
 # possibly should be changed to _repeat_until_connection_available()
 def repeat_until_connection_available(f, *args, retries=127, **kwargs):
@@ -85,24 +101,4 @@ def repeat_until_connection_available(f, *args, retries=127, **kwargs):
             
     # raise ConnectionRefusedError?? how
     # or maybe just print to debug and stop?
-
-#
-def get_stored_fs(fs_id):
-    return
-
-# compare serialized model with stored to see if changes need to be made at all
-def _model_has_changed(fs_id, new):
-    return True
-
-# record structural changes from the flowsheet
-def update_stored_model(fs_id, new):
-    return
-
-# record manual layout changes from jointjs
-def update_layout(fs_id, new):
-    return
-
-# sort the elements of the json representation of the flowsheet
-# to facilitate comparison between versions
-def _canonicalize_jointjs_output(json):
-    return
+        

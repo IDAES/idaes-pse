@@ -52,6 +52,15 @@ class TestModelSerialize(unittest.TestCase):
         a.fix(2)
         return model
 
+    def setup_model01b(self):
+        model = ConcreteModel()
+        model.b = Block(["1","2","3"])
+        a = model.b["1"].a = Var(bounds=(-100, 100), initialize=2)
+        b = model.b["1"].b = Var(bounds=(-100, 100), initialize=20)
+        model.b["1"].c = Constraint(expr=b==10*a)
+        a.fix(2)
+        return model
+
     def setup_model02(self):
         model = ConcreteModel()
         a = model.a = Param(default=1, mutable=True)
@@ -64,6 +73,21 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
         model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
         return model
+
+    def setup_model02b(self):
+        model = ConcreteModel()
+        model.p = Param(["a", "b"], default={"a":1, "b":2}, mutable=True)
+        a = model.p["a"]
+        b = model.p["b"]
+        c = model.c = Param(initialize=4)
+        x = model.x = Var(["1","2"], initialize={"1":1.5, "2":2.5}, bounds=(-10,10))
+        model.f = Objective(expr=(x["1"] - a)**2 + (x["2"] - b)**2)
+        model.g = Constraint(expr=x["1"] + x["2"] - c >= 0)
+        model.dual = Suffix(direction=Suffix.IMPORT)
+        model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
+        model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
+        return model
+
 
     @pytest.mark.unit
     def test01(self):
@@ -86,6 +110,32 @@ class TestModelSerialize(unittest.TestCase):
         #make sure they are right
         assert(a.fixed)
         assert(model.b[1].active)
+        assert(abs(value(b) - 20) < 1e-4)
+        assert(abs(value(a) - 2) < 1e-4)
+        assert(abs(b.lb - -100) < 1e-4)
+        assert(abs(b.ub - 100) < 1e-4)
+
+    @pytest.mark.unit
+    def test01b(self):
+        """
+        Simple test of load save json
+        """
+        model = self.setup_model01b()
+        a = model.b["1"].a
+        b = model.b["1"].b
+        to_json(model, fname=self.fname, human_read=True)
+        # change variable values
+        a.value = 0.11
+        b.value = 0.11
+        a.unfix()
+        model.b["1"].deactivate()
+        b.setlb(2)
+        b.setub(4)
+        # reload values
+        from_json(model, fname=self.fname)
+        #make sure they are right
+        assert(a.fixed)
+        assert(model.b["1"].active)
         assert(abs(value(b) - 20) < 1e-4)
         assert(abs(value(a) - 2) < 1e-4)
         assert(abs(b.lb - -100) < 1e-4)
@@ -117,6 +167,37 @@ class TestModelSerialize(unittest.TestCase):
         assert(abs(model.ipopt_zL_out[x[2]]) < 1e-5)
         assert(abs(model.ipopt_zU_out[x[1]]) < 1e-5)
         assert(abs(model.ipopt_zU_out[x[2]]) < 1e-5)
+
+    @pytest.mark.unit
+    def test02b(self):
+        """Test with suffixes"""
+        model = self.setup_model02b()
+        x = model.x
+        model.dual[model.g] = 1
+        model.ipopt_zL_out[x["1"]] = 0
+        model.ipopt_zL_out[x["2"]] = 0
+        model.ipopt_zU_out[x["1"]] = 0
+        model.ipopt_zU_out[x["2"]] = 0
+        to_json(model, fname=self.fname, human_read=True)
+        model.x["1"].value = 10
+        model.x["2"].value = 10
+        model.dual[model.g] = 10
+        model.ipopt_zL_out[x["1"]] = 10
+        model.ipopt_zL_out[x["2"]] = 10
+        model.ipopt_zU_out[x["1"]] = 10
+        model.ipopt_zU_out[x["2"]] = 10
+        model.p["a"] = 10
+        model.p["b"] = 10
+        from_json(model, fname=self.fname)
+        assert value(model.x["1"]) == pytest.approx(1.5)
+        assert value(model.x["2"]) == pytest.approx(2.5)
+        assert value(model.p["a"]) == pytest.approx(1)
+        assert value(model.p["b"]) == pytest.approx(2)
+        assert model.dual[model.g] == pytest.approx(1)
+        assert model.ipopt_zL_out[x["1"]] == pytest.approx(0)
+        assert model.ipopt_zL_out[x["2"]] == pytest.approx(0)
+        assert model.ipopt_zU_out[x["1"]] == pytest.approx(0)
+        assert model.ipopt_zU_out[x["2"]] == pytest.approx(0)
 
     @pytest.mark.unit
     def test03(self):

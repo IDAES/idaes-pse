@@ -31,6 +31,7 @@ from idaes.core import (
     UnitModelBlockData,
     useDefault,
     MaterialBalanceType,
+    MaterialFlowBasis
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
@@ -492,25 +493,29 @@ objects linked to all inlet states and the mixed state,
         # Get phase component list(s)
         pc_set = pp.get_phase_component_set()
 
+        # Get units metadata
+        units = pp.get_metadata()
+
+        flow_basis = mixed_block[
+            self.flowsheet().config.time.first()].get_material_flow_basis()
+        if flow_basis == MaterialFlowBasis.molar:
+            flow_units = units.get_derived_units("flow_mole")
+        elif flow_basis == MaterialFlowBasis.mass:
+            flow_units = units.get_derived_units("flow_mass")
+        else:
+            # Let this pass for now with no units
+            flow_units = None
+
         if mb_type == MaterialBalanceType.componentPhase:
             # Create equilibrium generation term and constraints if required
             if self.config.has_phase_equilibrium is True:
-                # Get units from property package
-                units = {}
-                for u in ["holdup", "time"]:
-                    try:
-                        units[u] = pp.get_metadata().default_units[u]
-                    except KeyError:
-                        units[u] = "-"
-
                 try:
                     self.phase_equilibrium_generation = Var(
                         self.flowsheet().config.time,
                         pp.phase_equilibrium_idx,
                         domain=Reals,
-                        doc="Amount of generation in unit by phase "
-                        "equilibria [{}/{}]".format(units["holdup"],
-                                                    units["time"]),
+                        doc="Amount of generation in unit by phase equilibria",
+                        units=flow_units
                     )
                 except AttributeError:
                     raise PropertyNotSupportedError(
@@ -652,18 +657,24 @@ objects linked to all inlet states and the mixed state,
         """
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
+
+        # Get units metadata
+        units = self.config.property_package.get_metadata()
+
         # Add variables
         self.minimum_pressure = Var(
             self.flowsheet().config.time,
             self.inlet_idx,
-            doc="Variable for calculating " "minimum inlet pressure",
+            doc="Variable for calculating minimum inlet pressure",
+            units=units.get_derived_units("pressure")
         )
 
         self.eps_pressure = Param(
             mutable=True,
             initialize=1e-3,
             domain=PositiveReals,
-            doc="Smoothing term for " "minimum inlet pressure",
+            doc="Smoothing term for minimum inlet pressure",
+            units=units.get_derived_units("pressure")
         )
 
         # Calculate minimum inlet pressure

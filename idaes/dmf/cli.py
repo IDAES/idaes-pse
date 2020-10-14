@@ -34,6 +34,7 @@ import click
 
 # package
 from idaes.dmf import DMF, DMFConfig, resource, workspace
+from idaes.dmf.resource import Predicates
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 from idaes.dmf import util
@@ -229,16 +230,12 @@ def init(path, create, name, desc, html):
             name = click.prompt("New workspace name")
         if not desc:
             desc = click.prompt("New workspace description")
-        if html is None:
-            # guess html path
-            # XXX: don't try to verify the guess
-            errfile = pathlib.Path(errors.__file__)
-            docsdir = errfile.parent.parent.parent / 'docs'
-            hpath = [str(docsdir / 'build')]
-        else:
-            hpath = [html]
+        # Note: default HTML paths, and all other default values, are included
+        # in the JSON schema at `idaes.dmf.workspace.CONFIG_SCHEMA`
+        hpath = [html] if html else None
         try:
-            d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath)
+            d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath,
+                    add_defaults=True)
         except errors.WorkspaceError as err:
             click.echo(f"Cannot create workspace: {err}")
             sys.exit(Code.DMF_OPER.value)
@@ -364,7 +361,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     "--type",
     "-t",
     "resource_type",
-    type=click.Choice(tuple(resource.RESOURCE_TYPES)),
+    type=click.Choice(tuple(resource.ResourceTypes.all())),
     help="Resource type (default=determined from file)",
 )
 @click.option(
@@ -471,10 +468,10 @@ def register(
     # process relations
     _log.debug("add relations")
     rel_to_add = {  # translate into standard relation names
-        resource.PR_CONTAINS: contained,
-        resource.PR_DERIVED: derived,
-        resource.PR_USES: used,
-        resource.PR_VERSION: prev,
+        Predicates.contains: contained,
+        Predicates.derived: derived,
+        Predicates.uses: used,
+        Predicates.version: prev,
     }
     target_resources = {}  # keep target resources in dict, update at end
     for rel_name, rel_ids in rel_to_add.items():

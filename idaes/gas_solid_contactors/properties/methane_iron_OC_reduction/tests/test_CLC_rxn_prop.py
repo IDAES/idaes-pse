@@ -67,12 +67,13 @@ def rxn_prop():
 
     # Fix required variables to make reaction model square
     # (gas mixture and component densities,
-    # solid density and component fractions)
+    # solid particle porosity, density and component fractions)
+    m.fs.gas_state_block.dens_mol.fix(10)
+    m.fs.gas_state_block.dens_mol_comp.fix(10)
+    m.fs.solid_state_block.particle_porosity.fix(0.27)
     m.fs.solid_state_block.mass_frac_comp["Fe2O3"].fix(0.45)
     m.fs.solid_state_block.mass_frac_comp["Fe3O4"].fix(1e-9)
     m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.55)
-    m.fs.gas_state_block.dens_mol.fix(10)
-    m.fs.gas_state_block.dens_mol_comp.fix(10)
     m.fs.solid_state_block.dens_mass_skeletal.fix(1)
 
     return m

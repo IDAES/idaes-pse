@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
@@ -19,7 +19,7 @@ from pyomo.environ import Block, Constraint, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.set_utils import (is_explicitly_indexed_by,
         is_in_block_indexed_by, get_index_set_except)
-from pyomo.kernel import ComponentSet
+from pyomo.common.collections import ComponentSet
 
 from idaes.core import FlowsheetBlock
 from collections import Counter
@@ -573,7 +573,12 @@ def find_comp_in_block_at_time(tgt_block, src_block, src_comp,
     return tgt_comp
 
 
-def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
+def copy_non_time_indexed_values(
+        fs_tgt,
+        fs_src,
+        copy_fixed=True,
+        outlvl=idaeslog.NOTSET,
+        ):
     """
     Function to set the values of all variables that are not (implicitly
     or explicitly) indexed by time to their values in a different flowsheet.
@@ -583,6 +588,7 @@ def copy_non_time_indexed_values(fs_tgt, fs_src, copy_fixed=True):
         fs_src : Flowsheet from which values will be copied.
         copy_fixed : Bool marking whether or not to copy over fixed variables
                      in the target flowsheet.
+        outlvl : Outlevel for the IDAES logger.
 
     Returns:
         None

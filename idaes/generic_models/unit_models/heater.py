@@ -181,9 +181,9 @@ class HeaterData(UnitModelBlockData):
         # Add a convienient reference to heat duty.
         self.heat_duty = Reference(self.control_volume.heat)
         if (self.config.has_pressure_change is True and
-            self.config.momentum_balance_type != MomentumBalanceType.none):
+                self.config.momentum_balance_type != MomentumBalanceType.none):
 
             self.deltaP = Reference(self.control_volume.deltaP)
 
     def _get_performance_contents(self, time_point=0):
-        return {"vars":{"Heat Duty":self.heat_duty[time_point]}}
+        return {"vars": {"Heat Duty": self.heat_duty[time_point]}}
