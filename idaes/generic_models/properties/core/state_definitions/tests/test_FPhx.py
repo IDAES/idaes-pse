@@ -18,9 +18,8 @@ Authors: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import (ConcreteModel, Constraint, Block,
+from pyomo.environ import (ConcreteModel, Constraint, Expression,
                            Var, units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
@@ -33,7 +32,6 @@ from idaes.core import (MaterialFlowBasis,
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
 
@@ -148,6 +146,13 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
+
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Expression)
+        assert len(frame.props[1].flow_mol_phase_comp) == 3
+        for i in frame.props[1].flow_mol_phase_comp:
+            assert i in frame.props[1].params._phase_component_set
+            assert check_units_equivalent(
+                frame.props[1].flow_mol_phase_comp[i], pyunits.mol/pyunits.s)
 
     @pytest.mark.unit
     def test_constraints(self, frame):
@@ -272,6 +277,13 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
             assert i in [("p1", "c1"), ("p1", "c2"), ("p1", "c3")]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Expression)
+        assert len(frame.props[1].flow_mol_phase_comp) == 3
+        for i in frame.props[1].flow_mol_phase_comp:
+            assert i in frame.props[1].params._phase_component_set
+            assert check_units_equivalent(
+                frame.props[1].flow_mol_phase_comp[i], pyunits.mol/pyunits.s)
+
     @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
@@ -394,6 +406,13 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
+
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Expression)
+        assert len(frame.props[1].flow_mol_phase_comp) == 6
+        for i in frame.props[1].flow_mol_phase_comp:
+            assert i in frame.props[1].params._phase_component_set
+            assert check_units_equivalent(
+                frame.props[1].flow_mol_phase_comp[i], pyunits.mol/pyunits.s)
 
     @pytest.mark.unit
     def test_constraints(self, frame):
@@ -533,6 +552,13 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                          ("p2", "c1"), ("p2", "c2"), ("p2", "c3")]
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
 
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Expression)
+        assert len(frame.props[1].flow_mol_phase_comp) == 6
+        for i in frame.props[1].flow_mol_phase_comp:
+            assert i in frame.props[1].params._phase_component_set
+            assert check_units_equivalent(
+                frame.props[1].flow_mol_phase_comp[i], pyunits.mol/pyunits.s)
+
     @pytest.mark.unit
     def test_constraints(self, frame):
         # Check that the correct constraints are present
@@ -670,6 +696,13 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
+
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Expression)
+        assert len(frame.props[1].flow_mol_phase_comp) == 9
+        for i in frame.props[1].flow_mol_phase_comp:
+            assert i in frame.props[1].params._phase_component_set
+            assert check_units_equivalent(
+                frame.props[1].flow_mol_phase_comp[i], pyunits.mol/pyunits.s)
 
     @pytest.mark.unit
     def test_constraints(self, frame):
@@ -817,6 +850,13 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
             assert frame.props[1].mole_frac_phase_comp[i].value == 1/3
         assert check_units_equivalent(frame.props[1].mole_frac_phase_comp,
                                       None)
+
+        assert isinstance(frame.props[1].flow_mol_phase_comp, Expression)
+        assert len(frame.props[1].flow_mol_phase_comp) == 9
+        for i in frame.props[1].flow_mol_phase_comp:
+            assert i in frame.props[1].params._phase_component_set
+            assert check_units_equivalent(
+                frame.props[1].flow_mol_phase_comp[i], pyunits.mol/pyunits.s)
 
     @pytest.mark.unit
     def test_constraints(self, frame):

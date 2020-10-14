@@ -14,7 +14,7 @@
 Methods for setting up FPhx as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var
+from pyomo.environ import Constraint, Expression, NonNegativeReals, Var
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -91,6 +91,12 @@ def define_state(b):
         bounds=(0, None),
         doc='Phase mole fractions',
         units=None)
+
+    def rule_flow_mol_phase_comp(b, p, j):
+        return b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(b.phase_component_set,
+                                       rule=rule_flow_mol_phase_comp,
+                                       doc='Phase-component molar flow rates')
 
     b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,

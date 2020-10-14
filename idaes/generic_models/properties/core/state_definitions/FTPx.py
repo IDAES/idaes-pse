@@ -14,7 +14,7 @@
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var, value
+from pyomo.environ import Constraint, Expression, NonNegativeReals, Var, value
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -91,6 +91,12 @@ def define_state(b):
         bounds=(0, None),
         doc='Phase fractions',
         units=None)
+
+    def rule_flow_mol_phase_comp(b, p, j):
+        return b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(b.phase_component_set,
+                                       rule=rule_flow_mol_phase_comp,
+                                       doc='Phase-component molar flow rates')
 
     # Add supporting constraints
     if b.config.defined_state is False:

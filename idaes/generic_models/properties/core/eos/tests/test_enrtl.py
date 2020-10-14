@@ -24,7 +24,7 @@ import logging
 import pytest
 
 # Import Pyomo units
-from pyomo.environ import ConcreteModel, units as pyunits
+from pyomo.environ import ConcreteModel, Constraint, Var, units as pyunits
 
 # Import IDAES cores
 from idaes.core import AqueousPhase
@@ -185,6 +185,41 @@ def test_apparent_component_lists():
     assert m.fs.state[1].phase_component_set is \
         m.fs.props.apparent_phase_component_set
 
+    assert isinstance(m.fs.state[1].flow_mol, Var)
+    assert len(m.fs.state[1].flow_mol) == 1
+    assert isinstance(m.fs.state[1].pressure, Var)
+    assert len(m.fs.state[1].pressure) == 1
+    assert isinstance(m.fs.state[1].temperature, Var)
+    assert len(m.fs.state[1].temperature) == 1
+
+    assert isinstance(m.fs.state[1].flow_mol_phase, Var)
+    assert len(m.fs.state[1].flow_mol_phase) == 1
+    for p in m.fs.state[1].flow_mol_phase:
+        assert p == "Liq"
+    assert isinstance(m.fs.state[1].phase_frac, Var)
+    assert len(m.fs.state[1].phase_frac) == 1
+    for p in m.fs.state[1].phase_frac:
+        assert p == "Liq"
+
+    assert isinstance(m.fs.state[1].mole_frac_comp, Var)
+    assert len(m.fs.state[1].mole_frac_comp) == 4
+    for j in m.fs.state[1].mole_frac_comp:
+        assert j in ["H2O", "CO2", "KHCO3", "N2"]
+    assert isinstance(m.fs.state[1].mole_frac_phase_comp, Var)
+    assert len(m.fs.state[1].mole_frac_phase_comp) == 4
+    for j in m.fs.state[1].mole_frac_phase_comp:
+        assert j in [("Liq", "H2O"), ("Liq", "CO2"),
+                     ("Liq", "KHCO3"), ("Liq", "N2")]
+
+    assert isinstance(m.fs.state[1].total_flow_balance, Constraint)
+    assert len(m.fs.state[1].total_flow_balance) == 1
+    assert isinstance(m.fs.state[1].phase_fraction_constraint, Constraint)
+    assert len(m.fs.state[1].phase_fraction_constraint) == 1
+    assert isinstance(m.fs.state[1].component_flow_balances, Constraint)
+    assert len(m.fs.state[1].component_flow_balances) == 4
+    for j in m.fs.state[1].component_flow_balances:
+        assert j in ["H2O", "CO2", "KHCO3", "N2"]
+
 
 @pytest.mark.unit
 def test_true_component_lists():
@@ -224,3 +259,38 @@ def test_true_component_lists():
 
     assert m.fs.state[1].phase_component_set is \
         m.fs.props.true_phase_component_set
+
+    assert isinstance(m.fs.state[1].flow_mol, Var)
+    assert len(m.fs.state[1].flow_mol) == 1
+    assert isinstance(m.fs.state[1].pressure, Var)
+    assert len(m.fs.state[1].pressure) == 1
+    assert isinstance(m.fs.state[1].temperature, Var)
+    assert len(m.fs.state[1].temperature) == 1
+
+    assert isinstance(m.fs.state[1].flow_mol_phase, Var)
+    assert len(m.fs.state[1].flow_mol_phase) == 1
+    for p in m.fs.state[1].flow_mol_phase:
+        assert p == "Liq"
+    assert isinstance(m.fs.state[1].phase_frac, Var)
+    assert len(m.fs.state[1].phase_frac) == 1
+    for p in m.fs.state[1].phase_frac:
+        assert p == "Liq"
+
+    assert isinstance(m.fs.state[1].mole_frac_comp, Var)
+    assert len(m.fs.state[1].mole_frac_comp) == 5
+    for j in m.fs.state[1].mole_frac_comp:
+        assert j in ["HCO3-", "K+", "H2O", "CO2", "N2"]
+    assert isinstance(m.fs.state[1].mole_frac_phase_comp, Var)
+    assert len(m.fs.state[1].mole_frac_phase_comp) == 5
+    for j in m.fs.state[1].mole_frac_phase_comp:
+        assert j in [("Liq", "HCO3-"), ("Liq", "K+"), ("Liq", "H2O"),
+                     ("Liq", "CO2"), ("Liq", "N2")]
+
+    assert isinstance(m.fs.state[1].total_flow_balance, Constraint)
+    assert len(m.fs.state[1].total_flow_balance) == 1
+    assert isinstance(m.fs.state[1].phase_fraction_constraint, Constraint)
+    assert len(m.fs.state[1].phase_fraction_constraint) == 1
+    assert isinstance(m.fs.state[1].component_flow_balances, Constraint)
+    assert len(m.fs.state[1].component_flow_balances) == 5
+    for j in m.fs.state[1].component_flow_balances:
+        assert j in ["HCO3-", "K+", "H2O", "CO2", "N2"]

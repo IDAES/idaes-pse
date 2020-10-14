@@ -112,6 +112,12 @@ def define_state(b):
         doc='Phase fractions',
         units=None)
 
+    def rule_flow_mol_phase_comp(b, p, j):
+        return b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(b.phase_component_set,
+                                       rule=rule_flow_mol_phase_comp,
+                                       doc='Phase-component molar flow rates')
+
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):
         if len(b.component_list) > 1:

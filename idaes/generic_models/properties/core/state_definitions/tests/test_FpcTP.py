@@ -19,9 +19,8 @@ Authors: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import (ConcreteModel, Constraint, Block,
+from pyomo.environ import (ConcreteModel, Constraint,
                            Expression, Var, units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
@@ -34,7 +33,6 @@ from idaes.core import (MaterialFlowBasis,
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
-from idaes.core.util.misc import add_object_reference
 
 
 @declare_process_block_class("DummyParameterBlock")
