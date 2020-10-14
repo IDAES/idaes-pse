@@ -24,6 +24,7 @@ import itertools
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
 from matplotlib import pyplot as plt
 import os.path, pickle
+import pprint
 
 
 """
@@ -1123,8 +1124,7 @@ class RadialBasisFunctions:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
         s = self._report()
         j = pprint.PrettyPrinter(width=80)
         j.pprint(s)

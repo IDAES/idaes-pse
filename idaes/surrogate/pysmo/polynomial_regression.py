@@ -27,6 +27,7 @@ from pyomo.core.expr.visitor import replace_expressions
 from scipy.special import comb as comb
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
 import os.path, pickle
+import pprint
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
@@ -1312,8 +1313,8 @@ class PolynomialRegression:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
+ 
         s = self._report()
         j = pprint.PrettyPrinter(width=80)
         j.pprint(s)

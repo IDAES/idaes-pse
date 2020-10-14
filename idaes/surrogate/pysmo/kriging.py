@@ -16,7 +16,7 @@ import scipy.optimize as opt
 import pandas as pd
 from pyomo.core import Param, exp
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
-import os.path, pickle
+import os.path, pickle, pprint
 from matplotlib import pyplot as plt
 
 
@@ -654,8 +654,7 @@ class KrigingModel:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
         s = self._report()
         j = pprint.PrettyPrinter(width=80)
         j.pprint(s)
