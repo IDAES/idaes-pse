@@ -248,8 +248,9 @@ see property package for documentation.}""",
             init_log.info("Initialization Complete {}."
                           .format(idaeslog.condition(res)))
         else:
-            raise Exception("Degrees of freedom were not zero. Please provide "
-                            "sufficient number of constraints linking the "
-                            "state variables between the two state blocks.")
+            init_log.warning("Initialization incomplete.Degrees of freedom "
+                             "were not zero. Please provide sufficient number "
+                             "of constraints linking the state variables "
+                             "between the two state blocks.")
 
         blk.properties_in.release_state(flags=flags, outlvl=outlvl)
