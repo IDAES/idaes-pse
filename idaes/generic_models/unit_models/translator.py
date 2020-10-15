@@ -248,7 +248,7 @@ see property package for documentation.}""",
             init_log.info("Initialization Complete {}."
                           .format(idaeslog.condition(res)))
         else:
-            init_log.warning("Initialization incomplete.Degrees of freedom "
+            init_log.warning("Initialization incomplete. Degrees of freedom "
                              "were not zero. Please provide sufficient number "
                              "of constraints linking the state variables "
                              "between the two state blocks.")
