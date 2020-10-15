@@ -336,3 +336,6 @@ class TestIAPWS(object):
                 value(iapws.fs.unit.costing.base_cost))
         assert (pytest.approx(97660.6169, abs=1e3) ==
                 value(iapws.fs.unit.costing.purchase_cost))
+
+        assert_units_consistent(iapws.fs.unit.costing)
+
