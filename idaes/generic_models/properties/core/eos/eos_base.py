@@ -21,6 +21,8 @@ from idaes.core.util.constants import Constants as const
 
 
 class EoSBase():
+
+    @staticmethod
     def gas_constant(b):
         # Utility method to convert gas constant to base units
         base_units = b.params.get_metadata().default_units
@@ -33,60 +35,79 @@ class EoSBase():
 
         return pyunits.convert(const.gas_constant, to_units=r_units)
 
+    @staticmethod
     def common(b, pobj):
         raise NotImplementedError(_msg(b, "common"))
 
+    @staticmethod
     def build_parameters(b):
         raise NotImplementedError(_msg(b, "build_parameters"))
 
+    @staticmethod
     def dens_mass_phase(b, p):
         raise NotImplementedError(_msg(b, "dens_mass_phase"))
 
+    @staticmethod
     def dens_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "dens_mol_phase"))
 
+    @staticmethod
     def enth_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "enth_mol_phase"))
 
+    @staticmethod
     def enth_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "enth_mol_phase_comp"))
 
+    @staticmethod
     def entr_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "entr_mol_phase"))
 
+    @staticmethod
     def entr_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "entr_mol_phase_comp"))
 
+    @staticmethod
     def fug_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "fug_phase_comp"))
 
+    @staticmethod
     def fug_phase_comp_eq(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_eq"))
 
+    @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
         raise NotImplementedError(_msg(b, "log_fug_phase_comp_eq"))
 
+    @staticmethod
     def fug_coeff_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "fug_coeff_phase_comp"))
 
+    @staticmethod
     def fug_coeff_phase_comp_eq(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_coeff_phase_comp_eq"))
 
+    @staticmethod
     def fug_phase_comp_Tbub(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_Tbub"))
 
+    @staticmethod
     def fug_phase_comp_Tdew(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_Tdew"))
 
+    @staticmethod
     def fug_phase_comp_Pbub(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_Pbub"))
 
+    @staticmethod
     def fug_phase_comp_Pdew(b, p, j, pp):
         raise NotImplementedError(_msg(b, "fug_phase_comp_Pdew"))
 
+    @staticmethod
     def gibbs_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "gibbs_mol_phase"))
 
+    @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "gibbs_mol_phase_comp"))
 

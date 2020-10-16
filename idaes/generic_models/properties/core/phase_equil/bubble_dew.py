@@ -19,6 +19,7 @@ from idaes.generic_models.properties.core.generic.utility import \
 class IdealBubbleDew():
     # -------------------------------------------------------------------------
     # Bubble temperature methods
+    @staticmethod
     def temperature_bubble(b):
         try:
             def rule_bubble_temp(b, p1, p2):
@@ -74,6 +75,7 @@ class IdealBubbleDew():
 
     # -------------------------------------------------------------------------
     # Dew temperature methods
+    @staticmethod
     def temperature_dew(b):
         try:
             def rule_dew_temp(b, p1, p2):
@@ -131,6 +133,7 @@ class IdealBubbleDew():
 
     # -------------------------------------------------------------------------
     # Bubble pressure methods
+    @staticmethod
     def pressure_bubble(b):
         try:
             def rule_bubble_press(b, p1, p2):
@@ -188,6 +191,7 @@ class IdealBubbleDew():
 
     # -------------------------------------------------------------------------
     # Dew pressure methods
+    @staticmethod
     def pressure_dew(b):
         try:
             def rule_dew_press(b, p1, p2):
@@ -246,6 +250,7 @@ class IdealBubbleDew():
 class LogBubbleDew():
     # -------------------------------------------------------------------------
     # Bubble temperature methods
+    @staticmethod
     def temperature_bubble(b):
         try:
             def rule_bubble_temp(b, p1, p2, j):
@@ -305,6 +310,7 @@ class LogBubbleDew():
 
     # -------------------------------------------------------------------------
     # Dew temperature methods
+    @staticmethod
     def temperature_dew(b):
         try:
             def rule_dew_temp(b, p1, p2, j):
@@ -363,6 +369,7 @@ class LogBubbleDew():
 
     # -------------------------------------------------------------------------
     # Bubble pressure methods
+    @staticmethod
     def pressure_bubble(b):
         try:
             def rule_bubble_press(b, p1, p2, j):
@@ -421,6 +428,7 @@ class LogBubbleDew():
 
     # -------------------------------------------------------------------------
     # Dew pressure methods
+    @staticmethod
     def pressure_dew(b):
         try:
             def rule_dew_press(b, p1, p2, j):

@@ -80,6 +80,8 @@ CubicConfig.declare("type", ConfigValue(
 
 
 class Cubic(EoSBase):
+
+    @staticmethod
     def common(b, pobj):
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -297,6 +299,7 @@ class Cubic(EoSBase):
                         ExternalFunction(library=_so,
                                          function="ceos_z_vap"))
 
+    @staticmethod
     def build_parameters(b):
         b._cubic_type = b.config.equation_of_state_options["type"]
         cname = b._cubic_type.name
@@ -316,6 +319,7 @@ class Cubic(EoSBase):
                 doc=cname+' binary interaction parameters',
                 units=None))
 
+    @staticmethod
     def compress_fact_phase(b, p):
         pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
@@ -330,9 +334,11 @@ class Cubic(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
         return proc(f, A[p], B[p])
 
+    @staticmethod
     def dens_mass_phase(b, p):
         return b.dens_mol_phase[p]*b.mw_phase[p]
 
+    @staticmethod
     def dens_mol_phase(b, p):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
@@ -341,6 +347,7 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+    @staticmethod
     def enth_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
@@ -367,6 +374,7 @@ class Cubic(EoSBase):
                                             blk, cobj(blk, j), blk.temperature)
                                  for j in blk.components_in_phase(p)))
 
+    @staticmethod
     def enth_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
@@ -391,6 +399,7 @@ class Cubic(EoSBase):
                 (bm*EoS_p) + get_method(blk, "enth_mol_ig_comp", j)(
                                         blk, cobj(blk, j), blk.temperature))
 
+    @staticmethod
     def entr_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
@@ -419,6 +428,7 @@ class Cubic(EoSBase):
                                      blk, cobj(blk, j), blk.temperature)
                                  for j in blk.components_in_phase(p)))
 
+    @staticmethod
     def entr_mol_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
@@ -448,6 +458,7 @@ class Cubic(EoSBase):
                 (bm*EoS_p)) + get_method(blk, "entr_mol_ig_comp", j)(
                                       blk, cobj(blk, j), blk.temperature))
 
+    @staticmethod
     def fug_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
@@ -457,6 +468,7 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+    @staticmethod
     def fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
@@ -466,6 +478,7 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+    @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
@@ -475,6 +488,7 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+    @staticmethod
     def fug_coeff_phase_comp(blk, p, j):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
@@ -492,9 +506,11 @@ class Cubic(EoSBase):
 
         return exp(_log_fug_coeff_method(A, b, bm, B, delta, Z, ctype))
 
+    @staticmethod
     def fug_coeff_phase_comp_eq(blk, p, j, pp):
         return exp(_log_fug_coeff_phase_comp_eq(blk, p, j, pp))
 
+    @staticmethod
     def log_fug_coeff_phase_comp_Tbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
@@ -547,6 +563,7 @@ class Cubic(EoSBase):
 
         return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
+    @staticmethod
     def log_fug_coeff_phase_comp_Tdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
@@ -599,6 +616,7 @@ class Cubic(EoSBase):
 
         return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
+    @staticmethod
     def log_fug_coeff_phase_comp_Pbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
@@ -644,6 +662,7 @@ class Cubic(EoSBase):
 
         return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
+    @staticmethod
     def log_fug_coeff_phase_comp_Pdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
@@ -688,9 +707,11 @@ class Cubic(EoSBase):
 
         return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
 
+    @staticmethod
     def gibbs_mol_phase(b, p):
         return (b.enth_mol_phase[p] - b.entr_mol_phase[p]*b.temperature)
 
+    @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
         return (b.enth_mol_phase_comp[p, j] -
                 b.entr_mol_phase_comp[p, j] *
