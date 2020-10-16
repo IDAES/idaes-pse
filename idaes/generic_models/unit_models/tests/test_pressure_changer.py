@@ -851,7 +851,6 @@ class Test_costing(object):
 
         m.fs.unit.deltaP.fix(Pout - Pin)
         m.fs.unit.efficiency_isentropic.fix(0.9)
-        m.fs.unit.work_mechanical.display()
 
         m.fs.unit.initialize()
 

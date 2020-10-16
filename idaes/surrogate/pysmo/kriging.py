@@ -41,7 +41,7 @@ class KrigingModel:
     """
     The KrigingModel class trains a Kriging model for a training data set.
 
-    The class must first be initialized by calling **KrigingModel**. Model training is then carried out by calling the ``kriging_training`` method.
+    The class must first be initialized by calling **KrigingModel**. Model training is then carried out by calling the ``training`` method.
 
     **KrigingModel** is able to generate either an interpolating or a regressing Kriging model depending on the settings used during initialization..
 
@@ -54,8 +54,8 @@ class KrigingModel:
         >>> p = d.get_feature_vector()
         
         # Train Kriging model and predict output for an test data x_test
-        >>> results = d.kriging_training()
-        >>> predictions = d.kriging_predict_output(results, x_test)
+        >>> d.training()
+        >>> predictions = d.predict_output(x_test)
 
     Args:
         XY_data (NumPy Array or Pandas Dataframe)   : The dataset for Kriging training. **XY_data** is expected to contain both the features (X) and output (Y) information, with the output values (Y) in the last column.

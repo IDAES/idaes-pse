@@ -28,6 +28,8 @@ from idaes.generic_models.properties.core.generic.utility import \
 # -----------------------------------------------------------------------------
 # Shomate Equation for heat capacities, enthalpy and entropy
 class cp_mol_ig_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         cobj.cp_mol_ig_comp_coeff_A = Var(
             doc="Shomate A parameter for ideal gas molar heat capacity",
@@ -100,6 +102,7 @@ class cp_mol_ig_comp():
             units=pyunits.kJ*pyunits.mol**-1,
             index="H")
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific heat capacity (const. P)  via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
@@ -114,10 +117,13 @@ class cp_mol_ig_comp():
 
 
 class enth_mol_ig_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
@@ -136,10 +142,13 @@ class enth_mol_ig_comp():
 
 
 class entr_mol_ig_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific entropy via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
@@ -157,6 +166,8 @@ class entr_mol_ig_comp():
 # -----------------------------------------------------------------------------
 # Antoine equation for saturation pressure
 class pressure_sat_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         cobj.pressure_sat_comp_coeff_A = Var(
                 doc="Antoine A coefficient for calculating Psat",
@@ -182,6 +193,7 @@ class pressure_sat_comp():
                         units=pyunits.K,
                         index="C")
 
+    @staticmethod
     def return_expression(b, cobj, T, dT=False):
         if dT:
             return pressure_sat_comp.dT_expression(b, cobj, T)
@@ -194,6 +206,7 @@ class pressure_sat_comp():
         units = b.params.get_metadata().derived_units
         return pyunits.convert(psat, to_units=units["pressure"])
 
+    @staticmethod
     def dT_expression(b, cobj, T):
         p_sat_dT = (pressure_sat_comp.return_expression(b, cobj, T) *
                     cobj.pressure_sat_comp_coeff_B *

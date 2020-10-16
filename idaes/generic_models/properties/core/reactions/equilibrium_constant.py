@@ -26,6 +26,8 @@ from idaes.core.util.exceptions import BurntToast, ConfigurationError
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
 class van_t_hoff():
+
+    @staticmethod
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
         units = parent.get_metadata().derived_units
@@ -76,6 +78,7 @@ class van_t_hoff():
                         units=units["temperature"],
                         config=config)
 
+    @staticmethod
     def return_expression(b, rblock, r_idx, T):
         units = rblock.parent_block().get_metadata().derived_units
 
