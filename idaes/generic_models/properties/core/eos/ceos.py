@@ -99,7 +99,7 @@ class Cubic(EoSBase):
                        0.176*cobj.omega**2
             else:
                 raise BurntToast(
-                        "{} received unrecognised cubic type. This should "
+                        "{} received unrecognized cubic type. This should "
                         "never happen, so please contact the IDAES developers "
                         "with this bug.".format(b.name))
 
@@ -142,7 +142,7 @@ class Cubic(EoSBase):
                 return rule_am_default(m, cname, a, p)
             else:
                 raise ConfigurationError(
-                    "{} Unrecognised option for Equation of State "
+                    "{} Unrecognized option for Equation of State "
                     "mixing_rule_a: {}. Must be an instance of MixingRuleA "
                     "Enum.".format(m.name, rule))
         b.add_component(cname+'_am',
@@ -160,7 +160,7 @@ class Cubic(EoSBase):
                 return rule_bm_default(m, b, p)
             else:
                 raise ConfigurationError(
-                    "{} Unrecognised option for Equation of State "
+                    "{} Unrecognized option for Equation of State "
                     "mixing_rule_a: {}. Must be an instance of MixingRuleB "
                     "Enum.".format(m.name, rule))
 
@@ -246,7 +246,7 @@ class Cubic(EoSBase):
                     return rule_am_default(m, cname, a, p3, (p1, p2))
                 else:
                     raise ConfigurationError(
-                        "{} Unrecognised option for Equation of State "
+                        "{} Unrecognized option for Equation of State "
                         "mixing_rule_a: {}. Must be an instance of MixingRuleA "
                         "Enum.".format(m.name, rule))
             b.add_component('_'+cname+'_am_eq',
@@ -698,7 +698,7 @@ class Cubic(EoSBase):
 
 
 def _invalid_phase_msg(name, phase):
-    return ("{} received unrecognised phase name {}. Ideal property "
+    return ("{} received unrecognized phase name {}. Ideal property "
             "libray only supports Vap and Liq phases."
             .format(name, phase))
 
