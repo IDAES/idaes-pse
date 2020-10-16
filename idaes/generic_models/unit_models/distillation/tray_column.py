@@ -249,16 +249,15 @@ see property package for documentation.}"""))
         self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
         self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
 
-    def my_propagate_state(self, source=None,
-                           destination=None, direction="forward"):
+    def propagate_stream_state(self, source=None,
+                               destination=None):
         """
-        This method propagates values between Ports along Arcs. Values can be
-        propagated in either direction using the direction argument.
+        This method is used during initialization to propage state values
+        between any two ports.
 
         Args:
-            stream : Arc object along which to propagate values
-            direction: direction in which to propagate values. Default = 'forward'
-                    Valid value: 'forward', 'backward'.
+            source : source port
+            destination : destination port
         """
         for v in source.vars:
             for i in destination.vars[v]:
@@ -280,13 +279,13 @@ see property package for documentation.}"""))
 
         self.tray[self.config.feed_tray_location].initialize()
 
-        self.my_propagate_state(
+        self.propagate_stream_state(
             source=self.tray[self.config.feed_tray_location].vap_out,
             destination=self.condenser.inlet)
 
         self.condenser.initialize()
 
-        self.my_propagate_state(
+        self.propagate_stream_state(
             source=self.tray[self.config.feed_tray_location].liq_out,
             destination=self.reboiler.inlet)
 
@@ -294,19 +293,19 @@ see property package for documentation.}"""))
 
         for i in self.tray_index:
             if i < self.config.feed_tray_location:
-                self.my_propagate_state(
+                self.propagate_stream_state(
                     source=self.condenser.reflux,
                     destination=self.tray[i].liq_in)
-                self.my_propagate_state(
+                self.propagate_stream_state(
                     source=self.tray[self.config.feed_tray_location].vap_out,
                     destination=self.tray[i].vap_in)
                 self.tray[i].initialize()
 
             elif i > self.config.feed_tray_location:
-                self.my_propagate_state(
+                self.propagate_stream_state(
                     source=self.tray[self.config.feed_tray_location].liq_out,
                     destination=self.tray[i].liq_in)
-                self.my_propagate_state(
+                self.propagate_stream_state(
                     source=self.reboiler.vapor_reboil,
                     destination=self.tray[i].vap_in)
                 self.tray[i].initialize()
