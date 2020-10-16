@@ -35,7 +35,7 @@ from idaes.core.util.math import safe_log
 from .eos_base import EoSBase
 from idaes import bin_directory
 import idaes.logger as idaeslog
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
 
 # Set up logger
@@ -56,6 +56,14 @@ def cubic_roots_available():
 class CubicType(Enum):
     PR = 0
     SRK = 1
+
+
+class MixingRuleA(Enum):
+    default = 0
+
+
+class MixingRuleB(Enum):
+    default = 0
 
 
 EoS_param = {
@@ -93,7 +101,7 @@ class Cubic(EoSBase):
                        0.176*cobj.omega**2
             else:
                 raise BurntToast(
-                        "{} received unrecognised cubic type. This should "
+                        "{} received unrecognized cubic type. This should "
                         "never happen, so please contact the IDAES developers "
                         "with this bug.".format(b.name))
 
@@ -125,20 +133,39 @@ class Cubic(EoSBase):
                                    doc='Component b coefficient'))
 
         def rule_am(m, p):
+            try:
+                rule = m.params.get_phase(p).config.equation_of_state_options[
+                    "mixing_rule_a"]
+            except KeyError:
+                rule = MixingRuleA.default
+
             a = getattr(m, cname+"_a")
-            k = getattr(m.params, cname+"_kappa")
-            return sum(sum(
-                m.mole_frac_phase_comp[p, i]*m.mole_frac_phase_comp[p, j] *
-                sqrt(a[i]*a[j])*(1-k[i, j])
-                for j in m.components_in_phase(p))
-                for i in m.components_in_phase(p))
+            if rule == MixingRuleA.default:
+                return rule_am_default(m, cname, a, p)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                    "Enum.".format(m.name, rule))
         b.add_component(cname+'_am',
                         Expression(b.params.phase_list, rule=rule_am))
 
         def rule_bm(m, p):
+            try:
+                rule = m.params.get_phase(p).config.equation_of_state_options[
+                    "mixing_rule_b"]
+            except KeyError:
+                rule = MixingRuleB.default
+
             b = getattr(m, cname+"_b")
-            return sum(m.mole_frac_phase_comp[p, i]*b[i]
-                       for i in m.components_in_phase(p))
+            if rule == MixingRuleB.default:
+                return rule_bm_default(m, b, p)
+            else:
+                raise ConfigurationError(
+                    "{} Unrecognized option for Equation of State "
+                    "mixing_rule_a: {}. Must be an instance of MixingRuleB "
+                    "Enum.".format(m.name, rule))
+
         b.add_component(cname+'_bm',
                         Expression(b.params.phase_list, rule=rule_bm))
 
@@ -210,14 +237,20 @@ class Cubic(EoSBase):
                                        doc='Component a coefficient at Teq'))
 
             def rule_am_eq(m, p1, p2, p3):
-                a = getattr(m, '_'+cname+"_a_eq")
-                k = getattr(m.params, cname+"_kappa")
-                return sum(sum(
-                    m.mole_frac_phase_comp[p3, i] *
-                    m.mole_frac_phase_comp[p3, j] *
-                    sqrt(a[p1, p2, i]*a[p1, p2, j])*(1-k[i, j])
-                    for j in m.components_in_phase(p3))
-                    for i in m.components_in_phase(p3))
+                try:
+                    rule = m.params.get_phase(p3).config.equation_of_state_options[
+                        "mixing_rule_a"]
+                except KeyError:
+                    rule = MixingRuleA.default
+    
+                a = getattr(m, "_"+cname+"_a_eq")
+                if rule == MixingRuleA.default:
+                    return rule_am_default(m, cname, a, p3, (p1, p2))
+                else:
+                    raise ConfigurationError(
+                        "{} Unrecognized option for Equation of State "
+                        "mixing_rule_a: {}. Must be an instance of MixingRuleA "
+                        "Enum.".format(m.name, rule))
             b.add_component('_'+cname+'_am_eq',
                             Expression(b.params._pe_pairs,
                                        b.params.phase_list,
@@ -512,8 +545,8 @@ class Cubic(EoSBase):
         b = getattr(blk, cname+"_b")
         bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
 
-        A = am*blk.pressure/(Cubic.gas_constant(blk) 
-                             *blk.temperature_bubble[pp])**2
+        A = am*blk.pressure/(Cubic.gas_constant(blk) *
+                             blk.temperature_bubble[pp])**2
         B = bm*blk.pressure/(Cubic.gas_constant(blk) *
                              blk.temperature_bubble[pp])
 
@@ -686,7 +719,7 @@ class Cubic(EoSBase):
 
 
 def _invalid_phase_msg(name, phase):
-    return ("{} received unrecognised phase name {}. Ideal property "
+    return ("{} received unrecognized phase name {}. Ideal property "
             "libray only supports Vap and Liq phases."
             .format(name, phase))
 
@@ -725,3 +758,19 @@ def _log_fug_coeff_method(A, b, bm, B, delta, Z, cubic_type):
              A*(b/bm - delta)*safe_log((2*Z + B*(u + p))/(2*Z + B*(u - p)),
                                        eps=1e-6)) /
             (B*p))
+
+
+# -----------------------------------------------------------------------------
+# Mixing rules
+def rule_am_default(m, cname, a, p, pp=()):
+    k = getattr(m.params, cname+"_kappa")
+    return sum(sum(
+        m.mole_frac_phase_comp[p, i]*m.mole_frac_phase_comp[p, j] *
+        sqrt(a[pp, i]*a[pp, j])*(1-k[i, j])
+        for j in m.components_in_phase(p))
+        for i in m.components_in_phase(p))
+
+
+def rule_bm_default(m, b, p):
+    return sum(m.mole_frac_phase_comp[p, i]*b[i]
+               for i in m.components_in_phase(p))
