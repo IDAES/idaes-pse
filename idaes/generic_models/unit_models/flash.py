@@ -206,7 +206,7 @@ see property package for documentation.}"""))
         self.add_inlet_port()
 
         split_map = {}
-        for p in self.config.property_package.phase_list:
+        for p in self.control_volume.properties_in.phase_list:
             p_obj = self.config.property_package.get_phase(p)
             if p_obj.is_vapor_phase():
                 # Vapor leaves through Vap outlet

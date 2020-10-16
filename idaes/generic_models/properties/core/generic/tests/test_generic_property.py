@@ -168,6 +168,9 @@ class TestGenericParameterBlock(object):
                            match="params was not provided with a components "
                            "argument."):
             m.params = DummyParameterBlock(default={
+                "phases": {
+                        "p1": {"equation_of_state": "foo"},
+                        "p2": {"equation_of_state": "bar"}},
                 "base_units": base_units})
 
     @pytest.mark.unit
