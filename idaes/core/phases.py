@@ -32,6 +32,7 @@ class PhaseType(Enum):
     liquidPhase = 1
     vaporPhase = 2
     solidPhase = 3
+    aqueousPhase = 4
 
 
 # TODO: Document EoS options and parameter_Data
@@ -95,6 +96,10 @@ class PhaseData(ProcessBlockData):
         else:
             return False
 
+    def is_aqueous_phase(self):
+        # Returns bool indicating if this phase involve electrolytes
+        return False
+
     def __add_to_phase_list(self):
         """
         Method to add reference to new Phase in phase_list
@@ -145,5 +150,14 @@ class VaporPhaseData(PhaseData):
         return True
 
 
+@declare_process_block_class("AqueousPhase")
+class AqueousPhaseData(LiquidPhaseData):
+    # Special phase type for liquid phases involving electrolytes
+    # This is used to determine if we need to do the more complex component
+    # list determinations
+    def is_aqueous_phase(self):
+        return True
+
+
 # List of all Phase types to use for validation
-__all_phases__ = [Phase, LiquidPhase, SolidPhase, VaporPhase]
+__all_phases__ = [Phase, LiquidPhase, SolidPhase, VaporPhase, AqueousPhase]

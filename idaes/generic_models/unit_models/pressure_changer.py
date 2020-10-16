@@ -431,12 +431,12 @@ see property package for documentation.}""",
             return b.work_isentropic[t] == (
                 sum(
                     b.properties_isentropic[t].get_enthalpy_flow_terms(p)
-                    for p in b.config.property_package.phase_list
+                    for p in b.properties_isentropic.phase_list
                 )
                 - sum(
                     b.control_volume.properties_in[
                         t].get_enthalpy_flow_terms(p)
-                    for p in b.config.property_package.phase_list
+                    for p in b.control_volume.properties_in.phase_list
                 )
             )
 

@@ -637,6 +637,7 @@ def test_add_phase_fractions():
                 "finite_elements": 10})
 
     m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv._add_phase_fractions()
 
     assert isinstance(m.fs.cv.phase_fraction, Var)
@@ -662,6 +663,7 @@ def test_add_phase_fractions_single_phase():
                 "finite_elements": 10})
 
     m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv._add_phase_fractions()
 
     assert isinstance(m.fs.cv.phase_fraction, Expression)

@@ -134,7 +134,7 @@ class PolynomialRegression:
 	
     The PolynomialRegression class performs polynomial regression on a training data set.
     
-    The class must first be initialized by calling PolynomialRegression. Regression is then carried out by calling ``poly_training``.
+    The class must first be initialized by calling PolynomialRegression. Regression is then carried out by calling ``training``.
 
     For a given dataset with :math:`n` features :math:`x_{1},x_{2},\ldots,x_{n}`, Polyregression is able to consider three types of basis functions:
         (a) Mononomial terms (:math:`x_{i}^{p},p \leq 10`) for all individual features. The maximum degree to be considered can be set by the user (**maximum_polynomial_order**)
@@ -151,8 +151,8 @@ class PolynomialRegression:
         >>> d.set_additional_terms([...extra terms...])
         
         # Train polynomial model and predict output for an test data x_test
-        >>> results = d.poly_training()
-        >>> predictions = d.poly_predict_output(results, x_test)
+        >>> d.training()
+        >>> predictions = d.predict_output(x_test)
 
     Args:
         regression_data_input(NumPy Array of Pandas Dataframe) : The dataset for regression training. It is expected to contain the features (X) and output (Y) data, with the output values (Y) in the last column.
@@ -1173,7 +1173,7 @@ class PolynomialRegression:
 
         The ``generate_expression`` method returns the Pyomo expression for the polynomial model trained.
 
-        The expression is constructed based on a supplied list of variables **variable_list** and the output of ``poly_training``.
+        The expression is constructed based on a supplied list of variables **variable_list** and the output of ``training``.
 
         Args:
             variable_list(list)           : List of input variables to be used in generating expression. This can be the a list generated from the results of ``get_feature_vector``. The user can also choose to supply a new list of the appropriate length.
@@ -1229,7 +1229,7 @@ class PolynomialRegression:
 
     def pickle_save(self, solutions):
         """
-        The poly_training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
+        The training method saves the results of the run in a pickle object. It saves an object with two elements: the setup (index[0]) and the results (index[1]).
         """
         try:
             filehandler = open(self.filename, 'wb')
