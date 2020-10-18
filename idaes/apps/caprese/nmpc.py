@@ -57,209 +57,28 @@ from idaes.apps.caprese.model import (
         DynamicModelHelper,
         ControllerHelper,
         )
-from idaes.apps.caprese.util import (
+#from idaes.apps.caprese.util import (
 #        initialize_by_element_in_range,
 #        find_slices_in_model, 
 #        NMPCVarGroup, 
 #        NMPCVarLocator, 
 #        copy_values_at_time, 
-        validate_list_of_vardata, 
-        validate_list_of_vardata_value_tuples, 
-        validate_solver,
+#        validate_list_of_vardata, 
+#        validate_list_of_vardata_value_tuples, 
+#        validate_solver,
 #        find_point_in_continuousset,
-        get_violated_bounds_at_time)
-from idaes.apps.caprese.base_class import DynamicBase
+#        get_violated_bounds_at_time)
+#from idaes.apps.caprese.base_class import DynamicBase
 import idaes.logger as idaeslog
 
 __author__ = "Robert Parker and David Thierry"
 
 
-class NMPCSim(DynamicBase):
+class NMPCSim(object):
     """
     Main class for NMPC simulations of Pyomo models.
     """
     # pyomo.common.config.add_docstring_list
-#    CONFIG = DynamicBase.CONFIG
-    CONFIG = ConfigDict()
-
-    # TODO: How to document config values?
-    CONFIG.declare(
-            'control_init_option',
-            ConfigValue(
-                default=ControlInitOption.FROM_INITIAL_CONDITIONS,
-                domain=ControlInitOption.from_enum_or_string,
-                doc='Option for how to initialize the controller model'
-                )
-            )
-    CONFIG.declare(
-            'element_initialization_input_option',
-            ConfigValue(
-                default=ElementInitializationInputOption.SETPOINT,
-                domain=ElementInitializationInputOption.from_enum_or_string,
-                doc=('Option for how to fix inputs when initializing '
-                    'by time element')
-                )
-            )
-    CONFIG.declare(
-            'time_resolution_option',
-            ConfigValue(
-                default=TimeResolutionOption.SAMPLE_POINTS,
-                domain=TimeResolutionOption.from_enum_or_string,
-                doc=('Option for specifying a time resolution in the '
-                    'objective function')
-                )
-            )
-    CONFIG.declare(
-            'calculate_error',
-            ConfigValue(
-                default=True,
-                domain=bool,
-                doc=('Flag for whether or not to calculate set-point-error '
-                    'when simulating plant')
-                )
-            )
-    CONFIG.declare(
-            'state_objective_weight_matrix_diagonal',
-            ConfigValue(
-                default=True,
-                domain=bool,
-                doc='Flag for whether state objective weights are diagonal'
-                )
-            )
-    CONFIG.declare(
-            'control_objective_weight_matrix_diagonal',
-            ConfigValue(
-                default=True,
-                domain=bool,
-                doc='Flag for whether control objective weights are diagonal'
-                )
-            )
-    CONFIG.declare(
-            'control_penalty_type',
-            ConfigValue(
-                default=ControlPenaltyType.ERROR,
-                domain=ControlPenaltyType.from_enum_or_string,
-                doc=('Type of control penalty that will be normed in '
-                    'objective functions')
-                )
-            )
-    # TODO: Should I combine these into one config argument, then just override
-    # for each's function if they need to change?
-    CONFIG.declare(
-            'add_plant_noise',
-            ConfigValue(
-                default=True,
-                domain=bool,
-                doc='Flag for whether to add noise to state loaded from plant'
-                )
-            )
-    CONFIG.declare(
-            'add_input_noise',
-            ConfigValue(
-                default=True,
-                domain=bool,
-                doc=('Flag for whether to add noise to inputs injected '
-                    'into plant')
-                )
-            )
-    CONFIG.declare(
-            'noise_weights',
-            ConfigValue(
-                default=[],
-                domain=list,
-                doc=('List of weights to override weights for variance '
-                    'in noise function')
-                )
-            )
-    # ^ TODO: Really this should be a list of vardata, value tuples
-    CONFIG.declare(
-            'max_noise_weight',
-            ConfigValue(
-                default=1e6,
-                domain=float,
-                doc='Maximum value by which noise variance can be weighted'
-                )
-            )
-    CONFIG.declare(
-            'noise_arguments',
-            ConfigValue(
-                default={},
-                domain=dict,
-                doc='Extra arguments for noise function')
-            )
-    CONFIG.declare(
-            'noise_sigma_0',
-            ConfigValue(
-                default=0.05,
-                domain=float,
-                doc=('Nominal value of variance that will be scaled by weights '
-                    'for each state')
-                )
-            )
-    CONFIG.declare(
-            'setpoint',
-            ConfigValue(
-                default=[],
-                domain=validate_list_of_vardata_value_tuples,
-                doc=('User-specified list of VarDatas and their corresponding '
-                    'setpoints')
-                )
-            )
-    CONFIG.declare('objective_weight_tolerance',
-            ConfigValue(
-                default=1e-6,
-                domain=float,
-                doc=('Minimum delta between nominal and set-point that will '
-                    'be used to calculate objective function weights')
-                )
-            )
-    CONFIG.declare('objective_weight_override',
-            ConfigValue(
-                default=[],
-                domain=validate_list_of_vardata_value_tuples,
-                doc=('User-specified objective weight values for given '
-                    'variables that take precedence over calculated values')
-                )
-            )
-    CONFIG.declare('objective_state_categories',
-            ConfigValue(
-                default=[VariableCategory.DIFFERENTIAL],
-                domain=list,
-                doc=('Variable categories that will be penalized as '
-                    'states in the objective function'),
-                )
-            )
-    CONFIG.declare('sample_time',
-            ConfigValue(
-                default=1,
-                domain=float,
-                doc='Time period over which inputs will be held'
-                )
-            )
-    CONFIG.declare('inputs_at_t0',
-            ConfigValue(
-                default=[],
-                domain=validate_list_of_vardata,
-                doc=('List of VarData objects corresponding to the inputs '
-                    'at time.first() in the plant model')
-                )
-            )
-    CONFIG.declare('user_objective_name',
-            ConfigValue(
-                default='user_objective',
-                domain=str,
-                doc=('Name for the objective function created from the '
-                    'set-point provided by the user')
-                )
-            )
-    CONFIG.declare('full_state_objective_name',
-            ConfigValue(
-                default='tracking_objective',
-                domain=str,
-                doc=('Name for full-state objective function calculated '
-                    'from that provided by the user')
-                )
-            )
 
     def __init__(self, plant_model=None, plant_time_set=None, 
         controller_model=None, controller_time_set=None, inputs_at_t0=None,
@@ -299,8 +118,6 @@ class NMPCSim(DynamicBase):
                           controller model's discretization spacing.
 
         """
-        self.config = self.CONFIG(kwargs)
-
         self.plant = DynamicModelHelper(
                 plant_model,
                 plant_time_set,
@@ -337,198 +154,13 @@ class NMPCSim(DynamicBase):
         self.plant_input_map = ComponentMap(
                 zip(controller_inputs, plant_inputs))
 
-        self.controller.validate_sample_time(sample_time)
-        self.plant.validate_sample_time(sample_time)
+        self.controller.set_sample_time(sample_time)
+        self.plant.set_sample_time(sample_time)
         self.sample_time = sample_time
-
-        # NOTE: This is probably unnecessary:
-#        self.validate_fixedness(self.plant, self.controller)
 
         self.current_plant_time = 0
 
-    def validate_fixedness(self, *models):
-        """
-        Makes sure that assumptions regarding fixedness for different points
-        in time are valid. Differential, algebraic, and derivative variables
-        may be fixed only at t0, only if they are initial conditions.
-        Fixed variables must be fixed at all points in time, except possibly
-        initial conditions. 
-
-        Expects to find "alg," "diff," "deriv," and "fixed" vars on each
-        model's _NMPC_NAMESPACE, as well as a var_locator ComponentMap.
-
-        Args:
-            models: Models for which to validate fixedness
-
-        """
-        for model in models:
-            time = model._NMPC_NAMESPACE.get_time()
-            t0 = time.first()
-            locator = model._NMPC_NAMESPACE.var_locator
-
-            # Appropriate for this function to have categories specified
-            for _slice in (model._NMPC_NAMESPACE.alg_vars.varlist + 
-                           model._NMPC_NAMESPACE.diff_vars.varlist + 
-                           model._NMPC_NAMESPACE.deriv_vars.varlist):
-                var0 = _slice[t0]
-                if locator[var0].is_ic:
-                    assert var0.fixed
-                    for t in time:
-                        if t == t0:
-                            continue
-                        assert not _slice[t].fixed
-                else:
-                    for t in time:
-                        assert not _slice[t].fixed
-
-            for var in model._NMPC_NAMESPACE.fixed_vars.varlist:
-                for t in time:
-                    # Fixed vars, e.g. those used in boundary conditions,
-                    # may "overlap" with initial conditions. It is up to the user
-                    # to make sure model has appropriate number of degrees of
-                    # freedom
-                    if t == t0:
-                        continue
-                    assert var[t].fixed
-
-    def transfer_current_plant_state_to_controller(self, t_plant, **kwargs):
-        """Transfers values of the initial condition variables at a specified
-        time in the plant model to the initial time point of the controller
-        model, adding noise if desired.
-
-        Args:
-            t_plant: Time point in plant model whose values will be transferred
-
-        """
-        # Would like to pass "noise_args" in as a bundle here. This can
-        # probably be done with config blocks somehow.
-        # TODO: allow specification of noise args
-        config = self.config(kwargs)
-
-        time = self.controller_time
-        t0 = time.first()
-
-        copy_values_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                            self.plant._NMPC_NAMESPACE.controller_ic_vars,
-                            t0,
-                            t_plant)
-
-        # Apply noise to new initial conditions
-        add_noise = config.add_plant_noise
-
-        noise_weights = config.noise_weights
-        noise_sig_0 = config.noise_sigma_0
-        noise_args = config.noise_arguments
-        max_noise_weight = config.max_noise_weight
-
-        locator = self.controller._NMPC_NAMESPACE.var_locator
-        if add_noise:
-            if not noise_weights:
-                noise_weights = []
-                for var in self.controller._NMPC_NAMESPACE.ic_vars:
-                    info = locator[var[t0]]
-                    loc = info.location
-                    obj_weight = info.group.weights[loc]
-
-                    if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, 
-                                                 max_noise_weight))
-                    else:
-                        noise_weights.append(None)
-
-            add_noise_at_time(self.controller._NMPC_NAMESPACE.ic_vars,
-                              t0,
-                              weights=noise_weights,
-                              sigma_0=noise_sig_0,
-                              **noise_args)
-
-    def inject_inputs_into_plant(self):
-        time = self.controller.time
-        ts = time.first() + self.sample_time
-        for p_var, c_var in self.plant_input_map.items():
-            # TODO: Could apply noise here, or could do it elsewhere
-            p_var[:].fix(c_var[ts].value)
-
-    def inject_control_inputs_into_plant(self, t_plant, **kwargs):
-        """Injects input variables from the first sampling time in the 
-        controller model to the sampling period in the plant model that
-        starts at the specified time, adding noise if desired.
-
-        Args:
-            t_plant : First time point in plant model where inputs will be
-                      applied.
-            
-        """
-        # config args for control_input_noise
-        config = self.config(kwargs)
-        tolerance = config.continuous_set_tolerance
-        sample_time = self.config.sample_time
-
-        # Send inputs to plant that were calculated for the end
-        # of the first sample
-        t_controller = find_point_in_continuousset(
-                self.controller_time.first() + sample_time, 
-                self.controller_time, tolerance)
-        assert t_controller in self.controller_time
-
-        time = self.plant_time
-        plant_sample_end = find_point_in_continuousset(
-                t_plant + sample_time, 
-                time, tolerance)
-        assert plant_sample_end in time
-        plant_sample = [t for t in time if t > t_plant and t<= plant_sample_end]
-        assert plant_sample_end in plant_sample
-        # len(plant_sample) should be ncp*nfe_per_sample, assuming the expected
-        # sample_time is passed in
-
-        add_noise = config.add_input_noise
-        noise_weights = config.noise_weights
-        noise_sig_0 = config.noise_sigma_0
-        noise_args = config.noise_arguments
-        max_noise_weight = config.max_noise_weight
-
-        # Need to get proper weights for plant's input vars
-        locator = self.controller._NMPC_NAMESPACE.var_locator
-        if add_noise:
-            if not noise_weights:
-                noise_weights = []
-                for var in self.controller._NMPC_NAMESPACE.plant_input_vars:
-                    info = locator[var[t_controller]]
-                    loc = info.location
-                    obj_weight = info.group.weights[loc]
-                    if obj_weight is not None and obj_weight != 0:
-                        noise_weights.append(min(1/obj_weight, max_noise_weight))
-                    else:
-                        # By default, if state is not penalized in objective,
-                        # noise will not be applied to it here.
-                        # This may be incorrect, but user will have to override,
-                        # by providing their own weights, as I don't see a good
-                        # way of calculating a weight
-                        noise_weights.append(None)
-
-            add_noise_at_time(self.controller._NMPC_NAMESPACE.plant_input_vars,
-                              t_controller,
-                              weights=noise_weights,
-                              sigma_0=noise_sig_0,
-                              **noise_args)
-            #add_noise_at_time(self.plant.input_vars,
-            #                  t_plant+sample_time,
-            #                  weights=noise_weights,
-            #                  sigma_0=noise_sig_0,
-            #                  **noise_args)
-            # Slight bug in logic here: noise is applied to plant variables,
-            # but only controller variables have bounds.
-            # Alternatives: add bounds to plant variables (undesirable)  
-            #               apply noise to controller variables (maybe okay...)
-            #                ^ can always record nominal values, then revert
-            #                  noise after it's copied into plant...
-            # Right now I apply noise to controller model, and don't revert
-
-        copy_values_at_time(self.plant._NMPC_NAMESPACE.input_vars.varlist,
-                            self.controller._NMPC_NAMESPACE.plant_input_vars,
-                            plant_sample,
-                            t_controller)
-
+    # TODO: put next two methods on a model wrapper.
     def has_consistent_initial_conditions(self, model, **kwargs):
         """
         Finds constraints at time.first() that are violated by more than
@@ -586,57 +218,10 @@ class NMPCSim(DynamicBase):
 
         return result
 
-    def calculate_error_between_states(self, mod1, mod2, t1, t2, 
-            Q_matrix=[],
-            categories=[VariableCategory.DIFFERENTIAL],
-            **kwargs):
-        """
-        Calculates the normalized (by the weighting matrix already calculated)
-        error between the differential variables in different models and at
-        different points in time.
-
-        Args:
-            mod1 : First flowsheet model
-            mod2 : Second flowsheet model (may be same as the first)
-            t1 : Time point of interest in first model
-            t2 : Time point of interest in second model
-            Q_matrix : List of weights by which to weigh the error for
-                       each state. Default is to use the same weights calculated
-                       for the controller objective function.
-
-        """
-        config = self.config(kwargs)
-
-        Q_diagonal = config.state_objective_weight_matrix_diagonal
-        if not Q_diagonal:
-            raise ValueError('Only diagonal weighting matrices are supported')
-        # Grab the weighting matrix from the controller model regardless of what
-        # mod1 and mod2 are. This can be overwritten if desired.
-
-        # TODO: allow option to override weights
-        # As the default, weights are taken from model 1
-
-        # Used to specify variables other than differential to use for
-        # error calculation
-        
-        varlist_1 = []
-        varlist_2 = []
-
-        weight_matrix_provided = bool(Q_matrix)
-        for categ in categories:
-            varlist_1 += mod1._NMPC_NAMESPACE.category_dict[categ].varlist
-            varlist_2 += mod2._NMPC_NAMESPACE.category_dict[categ].varlist
-            if not weight_matrix_provided:
-                Q_matrix += self.controller._NMPC_NAMESPACE.category_dict[categ].weights
-        assert len(varlist_1) == len(varlist_2)
-        n = len(varlist_1)
-
-        assert t1 in mod1._NMPC_NAMESPACE.get_time()
-        assert t2 in mod2._NMPC_NAMESPACE.get_time()
-
-        error = sum(Q_matrix[i]*(varlist_1[i][t1].value - 
-                                 varlist_2[i][t2].value)**2
-                    for i in range(n) if Q_matrix[i] is not None)
-
-        return error
-
+# TODO: This functionality is useful, but I need to rethink how
+# I want to do it.
+#    def calculate_error_between_states(self, mod1, mod2, t1, t2, 
+#            Q_matrix=[],
+#            categories=[VariableCategory.DIFFERENTIAL],
+#            **kwargs):
+#        pass
