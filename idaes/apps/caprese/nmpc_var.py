@@ -25,7 +25,7 @@ class NmpcVar(IndexedVar):
         kwargs.setdefault('ctype', NmpcVar)
         super(NmpcVar, self).__init__(*args, **kwargs)
 
-class NmpcVector(IndexedVar):
+class _NmpcVector(IndexedVar):
     # TODO: Make sure I never add this monstrosity to an
     # active block in my model.
     # nmpc.controller.vars.input[:,:].fix() is still valid though
