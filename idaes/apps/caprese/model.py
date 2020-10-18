@@ -276,12 +276,14 @@ class DynamicModelHelper(object):
         #     var[:].set_value(var[t0].value)
         # This should work without a custom var class.
 
-    def initialize_by_solving_elements(self, solver, fix_inputs=False):
+    def initialize_by_solving_elements(self, solver, fix_inputs=False, strip_bounds=False):
         namespace = self.namespace
         time = self.time
         model = self.model
-        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
-        strip_bounds.apply_to(model, reversible=True)
+
+        if strip_bounds:
+            strip_bounds = TransformationFactory('contrib.strip_var_bounds')
+            strip_bounds.apply_to(model, reversible=True)
 
         if fix_inputs:
             input_vars = self.input_vars
@@ -323,7 +325,8 @@ class DynamicModelHelper(object):
                         continue
                     var[t].unfix()
 
-        strip_bounds.revert(model)
+        if strip_bounds:
+            strip_bounds.revert(model)
         # TODO: Can check for violated bounds if I'm really worried about it.
         # Should have a general method to deal with violated bounds that I
         # can use for noise as well.
