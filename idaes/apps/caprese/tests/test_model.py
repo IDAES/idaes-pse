@@ -26,14 +26,6 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
         activated_equalities_generator, unfixed_variables_generator)
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.exceptions import ConfigurationError
-#from idaes.apps.caprese import nmpc
-#from idaes.apps.caprese.nmpc import *
-#from idaes.apps.caprese.util import *
-#from idaes.apps.caprese.common.config import (
-#        VariableCategory,
-#        ElementInitializationInputOption,
-#        ControlInitOption,
-#        )
 from idaes.apps.caprese.tests.test_simple_model import (
         make_model, 
         make_small_model,
@@ -52,7 +44,8 @@ class TestDynamicBlock(object):
     def make_block(self, sample_time=0.5, horizon=1, nfe=2):
         model = make_model(horizon=horizon, nfe=nfe)
         time = model.time
-        inputs = [model.flow_in[time.first()]]
+        t0 = time.first()
+        inputs = [model.flow_in[t0]]
         block = DynamicBlock(model=model, time=time, inputs=inputs)
         return block
 
