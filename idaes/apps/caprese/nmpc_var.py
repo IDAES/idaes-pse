@@ -25,7 +25,7 @@ class NmpcVar(IndexedVar):
         kwargs.setdefault('ctype', NmpcVar)
         super(NmpcVar, self).__init__(*args, **kwargs)
 
-class NmpcVector(IndexedVar):
+class _NmpcVector(IndexedVar):
     # TODO: Make sure I never add this monstrosity to an
     # active block in my model.
     # nmpc.controller.vars.input[:,:].fix() is still valid though
@@ -37,31 +37,24 @@ class NmpcVector(IndexedVar):
 
     def _generate_referenced_vars(self):
         _slice = self.referent.duplicate()
+        # This class should only be instantiated as a reference...
         _slice._call_stack.pop()
         _slice._len -= 1
         for var in _slice:
             yield var
-
-    # What about...
-    def __iter__(self):
-        _slice = self.referent.duplicate()
-        _slice._call_stack.pop()
-        _slice._len -= 1
-        for var in _slice:
-            yield var
-    # Will self[:,t0] still behave properly?
 
     def set_setpoint(self, setpoint):
+        referent_gen = self._generate_referenced_vars()
         try:
-            for var, sp in zip(self, setpoint):
+            for var, sp in zip(referent_gen, setpoint):
                 var.setpoint = sp
         except TypeError:
-            for var in self:
+            for var in self._generate_referenced_vars():
                 var.setpoint = setpoint
-        #for var, sp in zip(self, setpoint):
-        #    var.setpoint = sp
-        # What if setpoint is not iterable, e.g. 
-        # nmpc.controller.vars.derivative.set_setpoint(0.)
+
+    def get_setpoint(self):
+        for var in self._generate_referenced_vars():
+            yield var.setpoint
 
     # But none of this really helps me set value or fix from an iterable...
     # Two syntaxes I would like to support:
@@ -70,8 +63,16 @@ class NmpcVector(IndexedVar):
     # var.set_value/fix(vector), automatically interpreting as
     # a vector of vars, eached set/fixed for all time
     #
+    # But I rarely want to set/fix the entire var. More likely, I want:
+    # var[:,t0:].set_value(some_vector)
+    # (This is initialization, say to the setpoint)
+    # or
+    # var[:,t0:ts].set_value(some_vector)
+    #
     # var[:,t0].set_value/fix(vector)
     # Then this could potentially be interpreted by the slice?
+    # ^ This would be easier to implement than setting a matrix
+    # from a vector.
 
 # NOTE: .value attribute on a slice yields a slice
 #       value function on a slice yields a list of values
@@ -84,45 +85,35 @@ class NmpcVector(IndexedVar):
 # var[:,t].value = var[:,t0].value
 # var[:,t] = var[:,t0].value
 # (^ set value from an iterable)
+
 # var[:,:].set_value(var[:,t0].value)
+# This is handled by the _NmpcVector class
 
 # var[0,:].set_value(0)
 # var[:,t0].set_value(0)
 # ^ These will work currently if var is an IndexedVar
 
-# Want to be able to treat var as either a vector or a 
-# matrix.
-# var[:,:].set_value(var[:,t0])
-# How do I know which dimension to broadcast here?
-# Should var[0] return an IndexedVar?
-# Default should be to iterate over first index?
-# The "Pyomothonic" way of doing this would probably
-# be to have different components for different dimensions.
-# The "tuplized-index" components should be specifically for
-# operating on all vars in one line
-#
-# How should this work for setpoint attributes?
-# var.setpoint is a list of varlist[i].setpoint
-# var[:].setpoint is undefined, because var[:] is undefined.
-# var[:,t0].setpoint is undefined because a vardata has no
-# setpoint
-# var.set_setpoint(var.setpoint for var in varlist)
-
-class DifferentialVar(NmpcVar):
+class DiffVar(NmpcVar):
+    _attr = 'diff'
     pass
 
-class DerivativeVar(NmpcVar):
+class DerivVar(NmpcVar):
     # FIXME Find better name
+    _attr = 'deriv'
     pass
 
-class AlgebraicVar(NmpcVar):
+class AlgVar(NmpcVar):
+    _attr = 'alg'
     pass
 
 class InputVar(NmpcVar):
+    _attr = 'input'
     pass
 
 class FixedVar(NmpcVar):
+    _attr = 'fixed'
     pass
 
 class MeasuredVar(NmpcVar):
+    _attr = 'measured'
     pass
