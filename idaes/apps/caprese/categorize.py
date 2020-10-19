@@ -7,6 +7,15 @@ from pyomo.common.collections import ComponentSet, ComponentMap
 import idaes.apps.caprese.nmpc_var as nmpc_var
 from idaes.apps.caprese.common.config import VariableCategory
 
+CATEGORY_TYPE_MAP = {
+        VariableCategory.DIFFERENTIAL: nmpc_var.DiffVar,
+        VariableCategory.ALGEBRAIC: nmpc_var.AlgVar,
+        VariableCategory.DERIVATIVE: nmpc_var.DerivVar,
+        VariableCategory.INPUT: nmpc_var.InputVar,
+        VariableCategory.FIXED: nmpc_var.FixedVar,
+        VariableCategory.MEASUREMENT: nmpc_var.MeasuredVar,
+        }
+
 def categorize_dae_variables(dae_vars, time, inputs):
     t0 = time.first()
     t1 = time.get_finite_elements()[1]
@@ -93,25 +102,20 @@ def categorize_dae_variables(dae_vars, time, inputs):
                 measured_vars.append(time_slice)
             alg_vars.append(time_slice)
 
-    category_dict = {
-#            VariableCategory.DERIVATIVE: [
-#                Reference(ref.referent, ctype=nmpc_var.DerivativeVar)
-#                for ref in deriv_vars
-#                ],
-#            VariableCategory.DIFFERENTIAL: [
-#                Reference(ref.reference, ctype=nmpc_var.DifferentialVar)
-#                for ref in diff_vars
-#                ],
-#            VariableCategory.ALGEBRAIC: [
-#                Reference(ref.reference, ctype=nmpc_var.AlgebraicVar)
-#                for ref in alg_vars
-#                ],
+    category_list_map = {
             VariableCategory.DERIVATIVE: deriv_vars,
             VariableCategory.DIFFERENTIAL: diff_vars,
             VariableCategory.ALGEBRAIC: alg_vars,
             VariableCategory.INPUT: input_vars,
             VariableCategory.FIXED: fixed_vars,
             VariableCategory.MEASUREMENT: measured_vars,
+            }
+    category_dict = {
+            category: [
+                Reference(ref.referent, ctype=ctype)
+                for ref in category_list_map[category]
+                ]
+            for category, ctype in CATEGORY_TYPE_MAP.items()
             }
     return category_dict
 
