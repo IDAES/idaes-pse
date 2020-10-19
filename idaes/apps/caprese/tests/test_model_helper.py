@@ -100,3 +100,15 @@ class TestDynamicHelper(object):
             assert var[t0] in pred_alg_vars
 
         assert list(helper.namespace.vectors.alg.get_setpoint()) == sp
+
+        vals = (10, 11)
+        diff_vars.values = vals
+        for var, val in zip(helper.namespace.DIFFERENTIAL_BLOCK[:].var, vals):
+            for v in var[:]:
+                assert v.value == val
+        
+        _slice = helper.namespace.DIFFERENTIAL_BLOCK[:].var
+        diff_var_vals = diff_vars.values
+        for var, vals in zip(_slice, diff_var_vals):
+            for v, vl in zip(var[:], vals):
+                assert v.value == vl
