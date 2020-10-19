@@ -667,7 +667,7 @@ see property package for documentation.}""",
                     elif blk.deltaP[t0].fixed:
                         state_args_out[k] = value(
                             state_args[k] + blk.deltaP[t0])
-                    elif blk.ratio[t0].fixed:
+                    elif blk.ratioP[t0].fixed:
                         state_args_out[k] = value(
                             state_args[k] * blk.ratioP[t0])
                     else:
