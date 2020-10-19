@@ -331,7 +331,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     # which are valid in current phase
                     for j in self.component_list:
                         if self.get_component(j)._is_phase_valid(pobj):
-                            # If compoennt says phase is valid, add to set
+                            # If component says phase is valid, add to set
                             pc_set.append((p, j))
                 else:
                     # Validate that component names are valid and add to pc_set
@@ -363,11 +363,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     # which are valid in current phase
                     for j in self.true_species_set:
                         if self.get_component(j)._is_phase_valid(pobj):
-                            # If compoennt says phase is valid, add to set
+                            # If component says phase is valid, add to set
                             pc_set_true.append((p, j))
                     for j in self.apparent_species_set:
                         if self.get_component(j)._is_phase_valid(pobj):
-                            # If compoennt says phase is valid, add to set
+                            # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
                 else:
                     # Validate that component names are valid and add to pc_set
@@ -395,6 +395,23 @@ class GenericParameterData(PhysicalParameterBlock):
                                                 ordered=True)
             self.apparent_phase_component_set = Set(initialize=pc_set_appr,
                                                     ordered=True)
+
+        # Check that each component appears phase-component set
+        for j in self.component_list:
+            count = 0
+            for p in self.phase_list:
+                if self._electrolyte:
+                    if ((p, j) in self.true_phase_component_set or
+                            (p, j) in self.apparent_phase_component_set):
+                        count += 1
+                elif (p, j) in self._phase_component_set:
+                    count += 1
+            if count == 0:
+                raise ConfigurationError(
+                    "{} Component {} does not appear to be valid in any "
+                    "phase. Please check the component lists defined for each "
+                    "phase, and be sure you do not have generic Components "
+                    "in single-phase aqueous systems.".format(self.name, j))
 
         # Validate and construct elemental composition objects as appropriate
         element_comp = {}

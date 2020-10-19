@@ -20,10 +20,10 @@ from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
 
-from idaes.generic_models.properties.core.state_definitions.FTPx import (
-    state_initialization)
+from .FTPx import state_initialization
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from .mole_frac_electrolytes import create_mole_frac_vars
 
 
 def set_metadata(b):
@@ -86,12 +86,15 @@ def define_state(b):
                            doc='Mixture mole fractions',
                            units=None)
 
-    b.mole_frac_phase_comp = Var(
-        b.phase_component_set,
-        initialize=1/len(b.component_list),
-        bounds=(0, None),
-        doc='Phase mole fractions',
-        units=None)
+    if not b.params._electrolyte:
+        b.mole_frac_phase_comp = Var(
+            b.phase_component_set,
+            initialize=1/len(b.component_list),
+            bounds=(0, None),
+            doc='Phase mole fractions',
+            units=None)
+    else:
+        create_mole_frac_vars(b)
 
     b.phase_frac = Var(
         b.phase_list,

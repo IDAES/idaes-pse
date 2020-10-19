@@ -202,6 +202,24 @@ class TestGenericParameterBlock(object):
                     "base_units": base_units})
 
     @pytest.mark.unit
+    def test_invalid_orphaned_component_in_phase_component_list(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Component c does not appear to be "
+                           "valid in any phase. Please check the component "
+                           "lists defined for each phase, and be sure you do "
+                           "not have generic Components in single-phase "
+                           "aqueous systems."):
+            m.params = DummyParameterBlock(default={
+                    "components": {"a": {}, "b": {}, "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": "foo"}},
+                    "base_units": base_units})
+
+    @pytest.mark.unit
     def test_invalid_component_in_phase_component_list_2(self):
         m = ConcreteModel()
 

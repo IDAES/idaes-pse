@@ -21,6 +21,7 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config, get_method, GenericPropertyPackageError
+from .mole_frac_electrolytes import create_mole_frac_vars
 
 
 def set_metadata(b):
@@ -78,12 +79,15 @@ def define_state(b):
                            doc='Phase molar flow rates',
                            units=units["flow_mole"])
 
-    b.mole_frac_phase_comp = Var(
-        b.phase_component_set,
-        initialize=1/len(b.component_list),
-        bounds=(0, None),
-        doc='Phase mole fractions',
-        units=None)
+    if not b.params._electrolyte:
+        b.mole_frac_phase_comp = Var(
+            b.phase_component_set,
+            initialize=1/len(b.component_list),
+            bounds=(0, None),
+            doc='Phase mole fractions',
+            units=None)
+    else:
+        create_mole_frac_vars(b)
 
     b.phase_frac = Var(
         b.phase_list,

@@ -21,8 +21,8 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
-from idaes.generic_models.properties.core.state_definitions.FTPx import (
-    state_initialization)
+from .FTPx import state_initialization
+from .mole_frac_electrolytes import create_mole_frac_vars
 
 
 # TODO : Need a way to get a guess for T during initialization
@@ -85,12 +85,15 @@ def define_state(b):
                            doc='Phase molar flow rates',
                            units=units["flow_mole"])
 
-    b.mole_frac_phase_comp = Var(
-        b.phase_component_set,
-        initialize=1/len(b.component_list),
-        bounds=(0, None),
-        doc='Phase mole fractions',
-        units=None)
+    if not b.params._electrolyte:
+        b.mole_frac_phase_comp = Var(
+            b.phase_component_set,
+            initialize=1/len(b.component_list),
+            bounds=(0, None),
+            doc='Phase mole fractions',
+            units=None)
+    else:
+        create_mole_frac_vars(b)
 
     def rule_flow_mol_phase_comp(b, p, j):
         return b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, j]
