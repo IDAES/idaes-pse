@@ -40,25 +40,76 @@ from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
 
-@declare_custom_block('DynamicBlock')
+class _ScalarDynamicBlockMeta(type):
+    def __new__(meta, name, bases, dct, **kwargs):
+        def __init__(self, *args, **kwargs):
+            model = kwargs.pop('model', None)
+            time = kwargs.pop('time', None)
+            inputs = kwargs.pop('inputs', None)
+            # This should call BlockData.__init__, which
+            # initializes the _default_ctype attribute
+            super(_DynamicBlockData, self).__init__(
+                    component=self,
+                    )
+            #bases[0].__init__(self, 
+            #        model=model,
+            #        time=time,
+            #        inputs=inputs,
+            #        component=self,
+            #        )
+            self._default_ctype = None
+            bases[1].__init__(self, *args, **kwargs)
+            bases[0].__init__(self,
+                    model=model,
+                    time=time,
+                    inputs=inputs,
+                    )
+
+        dct["__init__"] = __init__
+        return type.__new__(meta, name, bases, dct)
+
+class DynamicBlock(Block):
+    def __init__(self, **kwargs):
+        if self._default_ctype is not None:
+            kwargs.setdefault('ctype', self._default_ctype)
+        Block.__init__(self, **kwargs)
+
+    def __new__(cls, **kwargs):
+        name = cls.__name__
+        if name.startswith('_Indexed') or name.startswith('_Scalar'):
+            return super(DynamicBlock, cls).__new__(cls)
+        n = _ScalarDynamicBlockMeta(
+                "_Scalar%s" % (cls.__name__,),
+                (_DynamicBlockData, cls),
+                {},
+                **kwargs,
+                )
+        return n.__new__(n)
+
+
+#@declare_custom_block('DynamicBlock')
 class _DynamicBlockData(_BlockData):
-    # TODO: Any advantage to inheriting from ConcreteModel or Block?
-    #       Would not have to access the "model" attribute
-    #       As a Block, could "contain" the newly constructed components?
     # TODO: This class should probably give the option to clone
     # the user's model.
 
     namespace_name = '_CAPRESE_NAMESPACE'
 
-    def __init__(self, model=None, time=None, inputs=None, **kwargs):
+    def __init__(self, **kwargs):
+        model = kwargs.pop('model', None)
+        time = kwargs.pop('time', None)
+        inputs = kwargs.pop('inputs', None)
         # TODO: Figure out how to properly get the arguments I want into
         # this custom block class.
-        super(_DynamicBlockData, self).__init__(**kwargs)
-        self.model = model
-        self.time = time
+#        super(_DynamicBlockData, self).__init__(**kwargs)
+        # This __init__ needs to be called last, as I can't add_component
+        # until I've called Block.__init__, it seems...
+        # This implies I need a custom block data with multiple inheritance.
+        # 
+        super(_BlockData, self).__setattr__('time', time)
+        self.mod = model
 
-        self.add_namespace()
-        self.add_time_to_namespace()
+#        self.add_namespace()
+#        self.add_time_to_namespace()
 
         scalar_vars, dae_vars = flatten_dae_components(
                 model,
@@ -82,7 +133,7 @@ class _DynamicBlockData(_BlockData):
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
-        self._add_category_blocks_to_namespace()
+        self._add_category_blocks()
         self._add_category_references()
 
     _var_name = 'var'
@@ -99,9 +150,9 @@ class _DynamicBlockData(_BlockData):
         categ_name = str(categ).split('.')[1]
         return categ_name + cls._set_suffix
 
-    def _add_category_blocks_to_namespace(self):
+    def _add_category_blocks(self):
         category_dict = self.category_dict
-        namespace = self.namespace
+#        namespace = self.namespace
         var_name = self._var_name
         for categ, varlist in category_dict.items():
             block_name = self.get_category_block_name(categ)
@@ -109,41 +160,51 @@ class _DynamicBlockData(_BlockData):
             set_range = range(len(varlist))
 
             category_set = Set(initialize=set_range)
-            namespace.add_component(set_name, category_set)
+            self.add_component(set_name, category_set)
+            getattr(self, set_name).construct()
 
             category_block = Block(category_set)
-            namespace.add_component(block_name, category_block)
+            self.add_component(block_name, category_block)
+            getattr(self, block_name).construct()
+
             # Don't want these blocks sent to any solver.
             category_block.deactivate()
+            # RuntimeError: Cannot access __len__ on DIFFERENTIAL_SET??
+            # Problem was that components need to be constructed...
+            # Why is this not done automatically? Is it because they
+            # are not rooted to a ConcreteModel?
 
             for i, var in enumerate(varlist):
                 # Add references to new blocks
                 category_block[i].add_component(var_name, var)
+                getattr(category_block[i], var_name).construct()
                 # These vars were created by the categorizer.
                 # To give them each a custom ctype, change
                 # the ctype given in the categorizer.
 
+    _vectors_name = 'vectors'
+
     def _add_category_references(self):
         category_dict = self.category_dict
-        namespace = self.namespace
-        namespace.vectors = Block()
-        namespace.vectors.deactivate()
+#        namespace = self.namespace
+        self.add_component(self._vectors_name, Block())
+        self.vectors.deactivate()
         for categ in category_dict:
             ctype = CATEGORY_TYPE_MAP[categ]
             block_name = self.get_category_block_name(categ)
             var_name = self._var_name
-            _slice = getattr(namespace, block_name)[:]
+            _slice = getattr(self, block_name)[:]
             #_slice = namespace.__getattribute__(block_name)[:]
             # Why does this work when namespace.__getattr__(block_name) does not?
             # __getattribute__ appears to work just fine...
             _slice = getattr(_slice, var_name)[:]
-            namespace.vectors.__setattr__(
+            self.vectors.__setattr__(
                     ctype._attr,
                     Reference(_slice, ctype=_NmpcVector),
                     )
 
     def add_namespace(self):
-        model = self.model
+        model = self.mod
         namespace_name = self.namespace_name
         namespace_name = unique_component_name(model, namespace_name)
         self.namespace_name = namespace_name
@@ -162,7 +223,7 @@ class _DynamicBlockData(_BlockData):
         for comp in comps:
             src_vardata = comp[t0_src]
             tgt_vardata = find_comp_in_block_at_time(
-                    self.model,
+                    self.mod,
                     model,
                     src_vardata,
                     self.time,
