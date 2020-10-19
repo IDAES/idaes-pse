@@ -13,8 +13,11 @@ from idaes.apps.caprese.common.config import (
         ControlPenaltyType,
         ControlInitOption,
         )
-from idaes.apps.caprese.categorize import categorize_dae_variables
-from idaes.apps.caprese.nmpc_var import NmpcVar
+from idaes.apps.caprese.categorize import (
+        categorize_dae_variables,
+        CATEGORY_TYPE_MAP,
+        )
+from idaes.apps.caprese.nmpc_var import NmpcVar, _NmpcVector
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
         find_comp_in_block_at_time,
@@ -56,8 +59,7 @@ class DynamicModelHelper(object):
         scalar_vars, dae_vars = flatten_dae_components(
                 model,
                 time,
-                Var,
-                new_ctype=NmpcVar,
+                ctype=Var,
                 )
         self.dae_vars = dae_vars
         category_dict = categorize_dae_variables(dae_vars, time, inputs)
@@ -76,19 +78,30 @@ class DynamicModelHelper(object):
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
-        self.add_category_blocks_to_namespace()
-        self.add_category_references()
+        self._add_category_blocks_to_namespace()
+        self._add_category_references()
 
     _var_name = 'var'
+    _block_suffix = '_BLOCK'
+    _set_suffix = '_SET'
 
-    def add_category_blocks_to_namespace(self):
+    @classmethod
+    def get_category_block_name(cls, categ):
+        categ_name = str(categ).split('.')[1]
+        return categ_name + cls._block_suffix
+
+    @classmethod
+    def get_category_set_name(cls, categ):
+        categ_name = str(categ).split('.')[1]
+        return categ_name + cls._set_suffix
+
+    def _add_category_blocks_to_namespace(self):
         category_dict = self.category_dict
         namespace = self.namespace
         var_name = self._var_name
         for categ, varlist in category_dict.items():
-            categ_name = str(categ).split('.')[1]
-            block_name = categ_name + '_BLOCK'
-            set_name = categ_name + '_SET'
+            block_name = self.get_category_block_name(categ)
+            set_name = self.get_category_set_name(categ)
             set_range = range(len(varlist))
 
             category_set = Set(initialize=set_range)
@@ -102,15 +115,28 @@ class DynamicModelHelper(object):
             for i, var in enumerate(varlist):
                 # Add references to new blocks
                 category_block[i].add_component(var_name, var)
+                # These vars were created by the categorizer.
+                # To give them each a custom ctype, change
+                # the ctype given in the categorizer.
 
-    def add_category_references(self):
+    def _add_category_references(self):
+        category_dict = self.category_dict
         namespace = self.namespace
-        # TODO: Don't hardcode name of `.var` here
-        self.deriv_vars = Reference(namespace.DERIVATIVE_BLOCK[:].var)
-        self.diff_vars = Reference(namespace.DIFFERENTIAL_BLOCK[:].var)
-        self.alg_vars = Reference(namespace.ALGEBRAIC_BLOCK[:].var)
-        self.input_vars = Reference(namespace.INPUT_BLOCK[:].var)
-        self.fixed_vars = Reference(namespace.FIXED_BLOCK[:].var)
+        namespace.vectors = Block()
+        namespace.vectors.deactivate()
+        for categ in category_dict:
+            ctype = CATEGORY_TYPE_MAP[categ]
+            block_name = self.get_category_block_name(categ)
+            var_name = self._var_name
+            _slice = getattr(namespace, block_name)[:]
+            #_slice = namespace.__getattribute__(block_name)[:]
+            # Why does this work when namespace.__getattr__(block_name) does not?
+            # __getattribute__ appears to work just fine...
+            _slice = getattr(_slice, var_name)[:]
+            namespace.vectors.__setattr__(
+                    ctype._attr,
+                    Reference(_slice, ctype=_NmpcVector),
+                    )
 
     def add_namespace(self):
         model = self.model
