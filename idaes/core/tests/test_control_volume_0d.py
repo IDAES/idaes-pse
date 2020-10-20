@@ -274,6 +274,7 @@ def test_add_phase_fractions():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                             "reaction_package": m.fs.rp})
 
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv._add_phase_fractions()
 
     assert isinstance(m.fs.cv.phase_fraction, Var)
@@ -294,6 +295,7 @@ def test_add_phase_fractions_single_phase():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                             "reaction_package": m.fs.rp})
 
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv._add_phase_fractions()
 
     assert isinstance(m.fs.cv.phase_fraction, Expression)
