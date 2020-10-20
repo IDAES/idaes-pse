@@ -33,6 +33,7 @@ from pyomo.environ import (
         Var,
         Set,
         )
+from pyomo.core.base.util import Initializer
 from pyomo.core.base.block import _BlockData, declare_custom_block
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.modeling import unique_component_name
@@ -68,26 +69,6 @@ class _ScalarDynamicBlockMeta(type):
         dct["__init__"] = __init__
         return type.__new__(meta, name, bases, dct)
 
-class DynamicBlock(Block):
-    def __init__(self, **kwargs):
-        if self._default_ctype is not None:
-            kwargs.setdefault('ctype', self._default_ctype)
-        Block.__init__(self, **kwargs)
-
-    def __new__(cls, **kwargs):
-        name = cls.__name__
-        if name.startswith('_Indexed') or name.startswith('_Scalar'):
-            return super(DynamicBlock, cls).__new__(cls)
-        n = _ScalarDynamicBlockMeta(
-                "_Scalar%s" % (cls.__name__,),
-                (_DynamicBlockData, cls),
-                {},
-                **kwargs,
-                )
-        return n.__new__(n)
-
-
-#@declare_custom_block('DynamicBlock')
 class _DynamicBlockData(_BlockData):
     # TODO: This class should probably give the option to clone
     # the user's model.
@@ -95,9 +76,12 @@ class _DynamicBlockData(_BlockData):
     namespace_name = '_CAPRESE_NAMESPACE'
 
     def __init__(self, **kwargs):
-        model = kwargs.pop('model', None)
-        time = kwargs.pop('time', None)
-        inputs = kwargs.pop('inputs', None)
+        # TODO: Move all this initialization into the construct
+        # method?
+
+#        model = kwargs.pop('model', None)
+#        time = kwargs.pop('time', None)
+#        inputs = kwargs.pop('inputs', None)
         # TODO: Figure out how to properly get the arguments I want into
         # this custom block class.
 #        super(_DynamicBlockData, self).__init__(**kwargs)
@@ -105,11 +89,11 @@ class _DynamicBlockData(_BlockData):
         # until I've called Block.__init__, it seems...
         # This implies I need a custom block data with multiple inheritance.
         # 
-        super(_BlockData, self).__setattr__('time', time)
-        self.mod = model
-
-#        self.add_namespace()
-#        self.add_time_to_namespace()
+        #super(_BlockData, self).__setattr__('time', time)
+        model = self.mod
+        time = self.time
+        inputs = self._inputs
+        measurements = self._measurements
 
         scalar_vars, dae_vars = flatten_dae_components(
                 model,
@@ -584,6 +568,92 @@ class _DynamicBlockData(_BlockData):
                     self.generate_time_in_sample(ts, tolerance=tolerance)]
 
         return data
+
+class DynamicBlock(Block):
+    _ComponentDataClass = _DynamicBlockData
+
+    def __new__(cls, *args, **kwds):
+        # Decide what class to allocate
+        if cls != DynamicBlock:
+            target_cls = cls
+        elif not args or (args[0] is UnindexedComponent_set and len(args) == 1):
+            target_cls = SimpleDynamicBlock
+        else:
+            target_cls = IndexedDynamicBlock
+        return super(DynamicBlock, cls).__new__(target_cls)
+
+    def __init__(self, *args, **kwds):
+        # This will get called regardless of what class we have instantiated
+        self._init_model = Initializer(kwds.pop('model', None))
+        self._init_time = Initializer(kwds.pop('time', None))
+        self._init_inputs = Initializer(kwds.pop('inputs', None))
+        self._init_measurements = Initializer(kwds.pop('measurements', None))
+        Block.__init__(self, *args, **kwds)
+
+    def construct(self, data=None):
+        """
+        Construct the DynamicBlockDatas
+        """
+        if self._constructed:
+            return
+        # Do not set the constructed flag - Block.construct() will do that
+
+        timer = ConstructionTimer(self)
+        if __debug__ and logger.isEnabledFor(logging.DEBUG):
+            logger.debug("Constructing DynamicBlock %s"
+                         % (self.name))
+
+        super(DynamicBlock, self).construct(data)
+
+        # This should get called before any of the _DynamicBlockData
+        # __init__s get called.
+        if self._init_model is not None:
+            for index, data in iteritems(self):
+                # Do something with self._init_model and index
+                data.mod = self._init_model.val
+        if self._init_time is not None:
+            for index, data in iteritems(self):
+                super(_BlockData, data).__setattr__('time', time)
+        if self._init_inputs is not None:
+            for index, data in iteritems(self):
+                data._inputs = self._init_inputs.val
+        if self._init_measurements is not None:
+            for index, data in iteritems(self):
+                data._inputs = self._init_measurements.val
+        # Repeat for every Initializer
+
+
+class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
+    def __init__(self, *args, **kwds):
+        _DynamicBlockData.__init__(self, component=self)
+        DynamicBlock.__init__(self, *args, **kwds)
+
+    # Pick up the display() from Block and not BlockData
+    display = DynamicBlock.display
+
+
+class IndexedDynamicBlock(Block):
+    pass
+
+#    def __init__(self, **kwargs):
+#        if self._default_ctype is not None:
+#            kwargs.setdefault('ctype', self._default_ctype)
+#        Block.__init__(self, **kwargs)
+#
+#    def __new__(cls, **kwargs):
+#        name = cls.__name__
+#        if name.startswith('_Indexed') or name.startswith('_Scalar'):
+#            return super(DynamicBlock, cls).__new__(cls)
+#        n = _ScalarDynamicBlockMeta(
+#                "_Scalar%s" % (cls.__name__,),
+#                (_DynamicBlockData, cls),
+#                {},
+#                **kwargs,
+#                )
+#        return n.__new__(n)
+#
+# 
+
 
 
 @declare_custom_block('ControllerBlock')
