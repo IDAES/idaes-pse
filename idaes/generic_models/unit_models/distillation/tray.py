@@ -752,7 +752,7 @@ see property package for documentation.}"""))
                 optarg=optarg,
                 hold_state=True,
                 state_args=state_args_feed,
-                state_vars_fixed=True)
+                state_vars_fixed=False)
 
         liq_in_flags = self.properties_in_liq. \
             initialize(outlvl=outlvl,
