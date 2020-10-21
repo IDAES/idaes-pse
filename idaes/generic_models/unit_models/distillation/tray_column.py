@@ -277,7 +277,7 @@ see property package for documentation.}"""))
                              " being used for initialization.")
             solver = get_default_solver()
 
-        self.tray[self.config.feed_tray_location].initialize()
+        feed_flags = self.tray[self.config.feed_tray_location].initialize()
 
         self.propagate_stream_state(
             source=self.tray[self.config.feed_tray_location].vap_out,
@@ -315,3 +315,7 @@ see property package for documentation.}"""))
         init_log.info_high(
             "Column initialization status {}.".format(idaeslog.condition(res))
         )
+
+        # release feed tray state once initialization is complete
+        self.tray[self.config.feed_tray_location].properties_in_feed.\
+            release_state(flags=feed_flags, outlvl=outlvl)

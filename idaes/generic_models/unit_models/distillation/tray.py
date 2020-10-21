@@ -746,12 +746,13 @@ see property package for documentation.}"""))
                     state_args_vap[k] = state_dict[k].value
 
         if self.config.is_feed_tray:
-            self.properties_in_feed.initialize(outlvl=outlvl,
-                                               solver=solver,
-                                               optarg=optarg,
-                                               hold_state=False,
-                                               state_args=state_args_feed,
-                                               state_vars_fixed=True)
+            feed_flags = self.properties_in_feed.initialize(
+                outlvl=outlvl,
+                solver=solver,
+                optarg=optarg,
+                hold_state=True,
+                state_args=state_args_feed,
+                state_vars_fixed=True)
 
         liq_in_flags = self.properties_in_liq. \
             initialize(outlvl=outlvl,
@@ -888,3 +889,6 @@ see property package for documentation.}"""))
         init_log.info(
             "Initialization complete, status {}.".
             format(idaeslog.condition(res)))
+
+        if self.config.is_feed_tray:
+            return feed_flags
