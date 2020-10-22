@@ -618,14 +618,14 @@ class FlueGasStateBlockData(StateBlockData):
             x = self.mole_frac_comp
             p = self.pressure
             r_gas = constants.Constants.gas_constant
-            return (self.entr_mol + r_gas * log(p/1e5)) * ft  == \
+            return (self.entr_mol + r_gas * log(p/1e5)) * ft == \
                 sum(n[j] * (
-                    coeff['A', j] * log(t) +
-                    coeff['B', j] * t +
-                    coeff['C', j] * t**2 / 2 +
-                    coeff['D', j] * t**3 / 3 -
-                    coeff['E', j] / t**2 / 2 +
-                    coeff['G', j] +
+                    self.params.cp_mol_ig_comp_coeff_A[j]*log(t) +
+                    self.params.cp_mol_ig_comp_coeff_B[j]*t +
+                    self.params.cp_mol_ig_comp_coeff_C[j]*t**2 / 2 +
+                    self.params.cp_mol_ig_comp_coeff_D[j]*t**3 / 3 -
+                    self.params.cp_mol_ig_comp_coeff_E[j]/t**2 / 2 +
+                    self.params.cp_mol_ig_comp_coeff_G[j] +
                     r_gas * log(x[j])) for j in self.params.component_list)
 
         try:
