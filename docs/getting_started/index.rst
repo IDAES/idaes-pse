@@ -117,7 +117,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
     pip install idaes-pse
 
-2. Run the :doc:`idaes get-extensions command<user_guide/commands/get_extensions>`
+2. Run the :doc:`idaes get-extensions command<../user_guide/commands/get_extensions>`
    to install the compiled binaries::
 
     idaes get-extensions
@@ -131,7 +131,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
                 conda-forge ipopt`` though this will not have all the features
                 of our extentions package.
 
-3. Run the :doc:`idaes get-examples command <user_guide/commands/get_examples>` to download
+3. Run the :doc:`idaes get-examples command <../user_guide/commands/get_examples>` to download
    and install the example files::
 
     idaes get-examples
@@ -150,7 +150,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
         idaes get-examples --dir C:\Users\MyName\IDAES\Examples
 
-    Refer to the full :doc:`idaes get-examples command documentation <user_guide/commands/get_examples>`
+    Refer to the full :doc:`idaes get-examples command documentation <../user_guide/commands/get_examples>`
     for more information.
 
 4. Run tests::
@@ -162,3 +162,14 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
    output. You can report problems on the |github-issues|
    (Please try to be specific about the command and the offending output.)
+
+Optional Dependencies
+---------------------
+Some tools in IDAES may require additional dependencies. Instructions for installing these dependencies 
+are located :ref:`here<getting_started/opt_dependencies:Optional Dependencies>`.
+
+.. toctree::
+    :glob:
+    :hidden:
+    
+    *
