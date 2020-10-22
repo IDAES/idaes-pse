@@ -15,10 +15,12 @@ Generic template for a translator block.
 """
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import SolverFactory
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -218,6 +220,10 @@ see property package for documentation.}""",
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+
+        # Set solver options
+        opt = SolverFactory(solver)
+        opt.options = optarg
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(
@@ -235,6 +241,16 @@ see property package for documentation.}""",
             state_args=state_args_out,
         )
 
-        blk.properties_in.release_state(flags)
+        if degrees_of_freedom(blk) == 0:
+            with idaeslog.solver_log(init_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
 
-        init_log.info("Initialization Complete.")
+            init_log.info("Initialization Complete {}."
+                          .format(idaeslog.condition(res)))
+        else:
+            init_log.warning("Initialization incomplete. Degrees of freedom "
+                             "were not zero. Please provide sufficient number "
+                             "of constraints linking the state variables "
+                             "between the two state blocks.")
+
+        blk.properties_in.release_state(flags=flags, outlvl=outlvl)
