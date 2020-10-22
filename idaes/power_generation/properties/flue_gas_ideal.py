@@ -571,8 +571,9 @@ class FlueGasStateBlockData(StateBlockData):
             t = self.temperature / 1000
             n = self.flow_mol_comp
             x = self.mole_frac_comp
+            p = self.pressure
             r_gas = constants.Constants.gas_constant
-            return self.entr_mol * ft  == \
+            return (self.entr_mol + r_gas * log(p/1e5)) * ft  == \
                 sum(n[j] * (
                     coeff['A', j] * log(t) +
                     coeff['B', j] * t +
