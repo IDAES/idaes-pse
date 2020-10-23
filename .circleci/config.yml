@@ -98,6 +98,7 @@ commands:
               printf ">   If you want to run them, add the 'approved' label to your pull request\n\n";
               exit 1; \
             fi
+          no_output_timeout: 60m
   clear_approved_tag:
     description: Remove approved label, if present, from PR
     steps:
