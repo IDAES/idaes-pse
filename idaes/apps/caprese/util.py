@@ -873,5 +873,4 @@ def cuid_from_timeslice(_slice, time):
         The ComponentUID constructed from the string described above
     """
     t0 = time.first()
-    compdata = _slice[t0]
-    return ComponentUID(compdata, wildcard_set=time)
+    return ComponentUID(_slice.referent)
