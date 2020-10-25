@@ -548,6 +548,7 @@ class _DynamicBlockData(_BlockData):
                 VariableCategory.INPUT,
                 ),
             tolerance=1e-8,
+            include_t0=False,
             ):
         time = self.time
         sample_time = self.sample_time
@@ -564,8 +565,14 @@ class _DynamicBlockData(_BlockData):
                 continue
             _slice = vardata_map[var]
             cuid = cuid_from_timeslice(_slice, time)
-            data[cuid] = [_slice[t].value for t in
-                    self.generate_time_in_sample(ts, tolerance=tolerance)]
+            if include_t0:
+                i0 = time.find_nearest_index(ts-sample_time, tolerance=tolerance)
+                t0 = time[i0]
+                data[cuid] = [_slice[t0].value]
+            else:
+                data[cuid] = []
+            data[cuid].extend(_slice[t].value for t in
+                    self.generate_time_in_sample(ts, tolerance=tolerance))
 
         return data
 
