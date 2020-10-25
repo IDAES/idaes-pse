@@ -1,6 +1,8 @@
 import time as time_module
 from collections import OrderedDict
 
+from six import iteritems
+
 import idaes.logger as idaeslog
 from idaes.apps.caprese.base_class import DynamicBase
 from idaes.apps.caprese.util import (
@@ -33,41 +35,14 @@ from pyomo.environ import (
         Var,
         Set,
         )
-from pyomo.core.base.util import Initializer
+from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, declare_custom_block
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.modeling import unique_component_name
+from pyomo.common.timing import ConstructionTimer
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
-
-class _ScalarDynamicBlockMeta(type):
-    def __new__(meta, name, bases, dct, **kwargs):
-        def __init__(self, *args, **kwargs):
-            model = kwargs.pop('model', None)
-            time = kwargs.pop('time', None)
-            inputs = kwargs.pop('inputs', None)
-            # This should call BlockData.__init__, which
-            # initializes the _default_ctype attribute
-            super(_DynamicBlockData, self).__init__(
-                    component=self,
-                    )
-            #bases[0].__init__(self, 
-            #        model=model,
-            #        time=time,
-            #        inputs=inputs,
-            #        component=self,
-            #        )
-            self._default_ctype = None
-            bases[1].__init__(self, *args, **kwargs)
-            bases[0].__init__(self,
-                    model=model,
-                    time=time,
-                    inputs=inputs,
-                    )
-
-        dct["__init__"] = __init__
-        return type.__new__(meta, name, bases, dct)
 
 class _DynamicBlockData(_BlockData):
     # TODO: This class should probably give the option to clone
@@ -75,26 +50,18 @@ class _DynamicBlockData(_BlockData):
 
     namespace_name = '_CAPRESE_NAMESPACE'
 
-    def __init__(self, **kwargs):
-        # TODO: Move all this initialization into the construct
-        # method?
-
-#        model = kwargs.pop('model', None)
-#        time = kwargs.pop('time', None)
-#        inputs = kwargs.pop('inputs', None)
-        # TODO: Figure out how to properly get the arguments I want into
-        # this custom block class.
-#        super(_DynamicBlockData, self).__init__(**kwargs)
-        # This __init__ needs to be called last, as I can't add_component
-        # until I've called Block.__init__, it seems...
-        # This implies I need a custom block data with multiple inheritance.
-        # 
-        #super(_BlockData, self).__setattr__('time', time)
+    def _construct(self):
+        # Is it "bad practice" to have a construct method on a data object?
+        # ^ Yes, because this method needs to be called via DynamicBlock,
+        # not immediately when _DynamicBlockData.construct is invoked...
         model = self.mod
         time = self.time
         inputs = self._inputs
         measurements = self._measurements
 
+        # TODO: Give the user the option to provide their own
+        # category_dict (they know the structure of their model
+        # better than I do...)
         scalar_vars, dae_vars = flatten_dae_components(
                 model,
                 time,
@@ -119,6 +86,8 @@ class _DynamicBlockData(_BlockData):
 
         self._add_category_blocks()
         self._add_category_references()
+
+        super(_DynamicBlockData, self).construct()
 
     _var_name = 'var'
     _block_suffix = '_BLOCK'
@@ -153,10 +122,6 @@ class _DynamicBlockData(_BlockData):
 
             # Don't want these blocks sent to any solver.
             category_block.deactivate()
-            # RuntimeError: Cannot access __len__ on DIFFERENTIAL_SET??
-            # Problem was that components need to be constructed...
-            # Why is this not done automatically? Is it because they
-            # are not rooted to a ConcreteModel?
 
             for i, var in enumerate(varlist):
                 # Add references to new blocks
@@ -590,11 +555,11 @@ class DynamicBlock(Block):
         return super(DynamicBlock, cls).__new__(target_cls)
 
     def __init__(self, *args, **kwds):
-        # This will get called regardless of what class we have instantiated
-        self._init_model = Initializer(kwds.pop('model', None))
-        self._init_time = Initializer(kwds.pop('time', None))
-        self._init_inputs = Initializer(kwds.pop('inputs', None))
-        self._init_measurements = Initializer(kwds.pop('measurements', None))
+        # This will get called regardless of what class we are instantiating
+        self._init_model = ConstantInitializer(kwds.pop('model', None))
+        self._init_time = ConstantInitializer(kwds.pop('time', None))
+        self._init_inputs = ConstantInitializer(kwds.pop('inputs', None))
+        self._init_measurements = ConstantInitializer(kwds.pop('measurements', None))
         Block.__init__(self, *args, **kwds)
 
     def construct(self, data=None):
@@ -606,20 +571,28 @@ class DynamicBlock(Block):
         # Do not set the constructed flag - Block.construct() will do that
 
         timer = ConstructionTimer(self)
-        if __debug__ and logger.isEnabledFor(logging.DEBUG):
-            logger.debug("Constructing DynamicBlock %s"
-                         % (self.name))
 
+        # What is data, here?
         super(DynamicBlock, self).construct(data)
 
         # This should get called before any of the _DynamicBlockData
         # __init__s get called.
+        # ^ Which isn't going to happen. The entire __init__ method
+        # will get called before any of the constructs.
+        # More accurately, construct is the last thing called in 
+        # Block.__init__ (if we are concrete)
+        #
+        # TODO: Should I raise an error if model, etc. was not provided?
+        # Probably not, because maybe the user wants to provide them
+        # manually as part of an initialization rule, rather than as
+        # arguments to the component.
         if self._init_model is not None:
             for index, data in iteritems(self):
                 # Do something with self._init_model and index
                 data.mod = self._init_model.val
         if self._init_time is not None:
             for index, data in iteritems(self):
+                time = self._init_time.val
                 super(_BlockData, data).__setattr__('time', time)
         if self._init_inputs is not None:
             for index, data in iteritems(self):
@@ -627,7 +600,14 @@ class DynamicBlock(Block):
         if self._init_measurements is not None:
             for index, data in iteritems(self):
                 data._inputs = self._init_measurements.val
-        # Repeat for every Initializer
+
+        # Will calling super().construct after adding attributes
+        # break the logic in Block.construct?
+        # It may not even be possible to add attributes before
+        # constructing...
+        #super(DynamicBlock, self).construct(data)
+        for index, data in iteritems(self):
+            data.construct()
 
 
 class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
@@ -642,28 +622,9 @@ class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
 class IndexedDynamicBlock(Block):
     pass
 
-#    def __init__(self, **kwargs):
-#        if self._default_ctype is not None:
-#            kwargs.setdefault('ctype', self._default_ctype)
-#        Block.__init__(self, **kwargs)
-#
-#    def __new__(cls, **kwargs):
-#        name = cls.__name__
-#        if name.startswith('_Indexed') or name.startswith('_Scalar'):
-#            return super(DynamicBlock, cls).__new__(cls)
-#        n = _ScalarDynamicBlockMeta(
-#                "_Scalar%s" % (cls.__name__,),
-#                (_DynamicBlockData, cls),
-#                {},
-#                **kwargs,
-#                )
-#        return n.__new__(n)
-#
-# 
+class ControllerBlock(object):
+    pass
 
-
-
-@declare_custom_block('ControllerBlock')
 class _ControllerBlockData(_DynamicBlockData):
 
     def solve_setpoint(self, solver, require_steady=True):
