@@ -56,6 +56,25 @@ class _NmpcVector(IndexedVar):
         for var in self._generate_referenced_vars():
             yield var.setpoint
 
+    @property
+    def values(self):
+        referent_gen = self._generate_referenced_vars()
+        return list(list(var[t].value for t in var) for var in referent_gen)
+
+    @values.setter
+    def values(self, vals):
+        referent_gen = self._generate_referenced_vars()
+        try:
+            for var, val in zip(referent_gen, vals):
+                # var is time-indexed
+                var[:].set_value(val)
+        except TypeError:
+            # A scalar value was provided. Set for all i, t
+            self[...].set_value(vals)
+    # Pyomo seems to already have a similar functionality in
+    # set_values, that sets values via a dict. Would it be
+    # easier to do all my setting/getting via dicts?
+
     # But none of this really helps me set value or fix from an iterable...
     # Two syntaxes I would like to support:
     # var[:,:].set_value/fix(vector)
