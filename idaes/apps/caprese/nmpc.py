@@ -55,20 +55,10 @@ from idaes.apps.caprese.common.config import (
         VariableCategory)
 from idaes.apps.caprese.model import (
         DynamicBlock,
-        ControllerBlock,
         )
-#from idaes.apps.caprese.util import (
-#        initialize_by_element_in_range,
-#        find_slices_in_model, 
-#        NMPCVarGroup, 
-#        NMPCVarLocator, 
-#        copy_values_at_time, 
-#        validate_list_of_vardata, 
-#        validate_list_of_vardata_value_tuples, 
-#        validate_solver,
-#        find_point_in_continuousset,
-#        get_violated_bounds_at_time)
-#from idaes.apps.caprese.base_class import DynamicBase
+from idaes.apps.caprese.controller import (
+        Controller,
+        )
 import idaes.logger as idaeslog
 
 __author__ = "Robert Parker and David Thierry"
