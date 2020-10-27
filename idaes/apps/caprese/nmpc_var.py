@@ -114,25 +114,19 @@ class _NmpcVector(IndexedVar):
 
 class DiffVar(NmpcVar):
     _attr = 'diff'
-    pass
 
 class DerivVar(NmpcVar):
     # FIXME Find better name
     _attr = 'deriv'
-    pass
 
 class AlgVar(NmpcVar):
     _attr = 'alg'
-    pass
 
 class InputVar(NmpcVar):
     _attr = 'input'
-    pass
 
 class FixedVar(NmpcVar):
     _attr = 'fixed'
-    pass
 
 class MeasuredVar(NmpcVar):
     _attr = 'measured'
-    pass
