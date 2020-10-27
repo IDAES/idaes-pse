@@ -17,7 +17,9 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+from pyomo.environ import (ConcreteModel, SolverFactory,
+                           value, units as pyunits)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.power_generation.unit_models import SteamValve
@@ -36,7 +38,7 @@ else:
     solver = None
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def build_valve_vapor():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -45,7 +47,7 @@ def build_valve_vapor():
     return m
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def build_valve_liquid():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -55,16 +57,14 @@ def build_valve_liquid():
     return m
 
 
-@pytest.mark.unit
-def test_vapor_steady_state_build(build_valve_vapor):
-    """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_valve_vapor
+@pytest.mark.integration
+def test_units_vapor(build_valve_vapor):
+    assert_units_consistent(build_valve_vapor)
 
 
 @pytest.mark.unit
-def test_liquid_steady_state_build(build_valve_liquid):
-    """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_valve_liquid
+def test_units_liquid(build_valve_liquid):
+    assert_units_consistent(build_valve_liquid)
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
@@ -72,27 +72,27 @@ def test_liquid_steady_state_build(build_valve_liquid):
 @pytest.mark.component
 def test_vapor_steady_state_initialize(build_valve_vapor):
     """Initialize a turbine model"""
-    m = build_valve_vapor
     # set inlet
-    hin = iapws95.htpx(T=880, P=2.4233e7)
+    hin = value(iapws95.htpx(T=880*pyunits.K, P=2.4233e7*pyunits.Pa))
     # set inlet
-    m.fs.valve.inlet.enth_mol[0].value = hin
-    m.fs.valve.inlet.flow_mol[0].value = 26000/4.0
-    m.fs.valve.inlet.pressure[0].value = 2.5e7
-    m.fs.valve.Cv.fix(0.01)
+    build_valve_vapor.fs.valve.inlet.enth_mol[0].value = hin
+    build_valve_vapor.fs.valve.inlet.flow_mol[0].value = 26000/4.0
+    build_valve_vapor.fs.valve.inlet.pressure[0].value = 2.5e7
+    build_valve_vapor.fs.valve.Cv.fix(0.01)
 
-    m.fs.valve.initialize(outlvl=1)
+    build_valve_vapor.fs.valve.initialize(outlvl=1)
 
-    eq_cons = activated_equalities_generator(m)
+    eq_cons = activated_equalities_generator(build_valve_vapor)
 
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
-    assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+
+    # inlet was't fixed and still shouldn't be
+    assert degrees_of_freedom(build_valve_vapor) == 3
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.unit
 def test_report(build_valve_vapor):
     """Initialize a turbine model"""
-    m = build_valve_vapor
-    m.fs.valve.report()
+    build_valve_vapor.fs.valve.report()

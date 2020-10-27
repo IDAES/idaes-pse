@@ -164,7 +164,11 @@ def delta_temperature_underwood_callback(b):
     """
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
-    b.cbrt = ExternalFunction(library=functions_lib(), function="cbrt")
+    b.cbrt = ExternalFunction(
+        library=functions_lib(),
+        function="cbrt",
+        units=pyunits.K**(1/3),
+        arg_units=[pyunits.K])
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 

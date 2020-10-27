@@ -283,11 +283,16 @@ see property package for documentation.}"""))
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
+        units_meta = \
+            self.config.property_package.get_metadata().get_derived_units
+
         self.costing = Block()
         self.length = Var(initialize=1,
-                          doc='vessel length')
+                          doc='vessel length',
+                          units=units_meta('length'))
         self.diameter = Var(initialize=1,
-                            doc='vessel diameter')
+                            doc='vessel diameter',
+                            units=units_meta('length'))
         module.flash_costing(self.costing, alignment=alignment,
                              Mat_factor=Mat_factor,
                              weight_limit=weight_limit,

@@ -19,7 +19,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, Param, sqrt, value, SolverFactory
+from pyomo.environ import Var, Param, sqrt, value, SolverFactory, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -45,6 +45,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             self.flowsheet().config.time,
             initialize=1.053 / 3600.0,
             doc="Turbine flow coefficient [kg*C^0.5/Pa/s]",
+            units=pyunits.kg*pyunits.K**0.5/pyunits.Pa/pyunits.s
         )
         self.blade_reaction = Var(
             initialize=0.9,
@@ -52,7 +53,8 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         )
         self.blade_velocity = Var(
             initialize=110.0,
-            doc="Design blade velocity [m/s]"
+            doc="Design blade velocity [m/s]",
+            units=pyunits.m/pyunits.s
         )
         self.eff_nozzle = Var(
             initialize=0.95,
@@ -103,6 +105,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             cf = b.flow_coeff[t]
             Pin = b.control_volume.properties_in[t].pressure
             Pratio = b.ratioP[t]
+
             return flow ** 2 * mw ** 2 * Tin == (
                 cf ** 2 * Pin ** 2 * g / (g - 1)
                     * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g)))
