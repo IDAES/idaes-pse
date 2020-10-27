@@ -22,7 +22,7 @@ from pyomo.core.base.units_container import _PyomoUnit
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 from .phases import PhaseType as PT
-from .util.config import list_of_phase_types
+from .util.config import list_of_phase_types, list_of_strings
 from .util.exceptions import ConfigurationError
 from idaes.generic_models.properties.core.generic.utility import \
     set_param_value
@@ -373,6 +373,13 @@ class ApparentData(SoluteData):
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """
+    CONFIG = SoluteData.CONFIG()
+    CONFIG.declare("dissociation_species", ConfigValue(
+        domain=list_of_strings,
+        default=None,
+        description="List of dissociation species",
+        doc="List of true species that this species will dissociate into "
+        "upon dissolution."))
 
     def _is_aqueous_phase_valid(self):
         return True

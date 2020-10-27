@@ -62,6 +62,7 @@ configuration = {
                 "parameter_data": {
                     "mw": (44E-3, pyunits.kg/pyunits.mol)}},
         'KHCO3': {"type": Apparent,
+                  "dissociation_species": ["K+", "HCO3-"],
                   "parameter_data": {
                       "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
         'K+': {"type": Cation,
@@ -106,6 +107,7 @@ config_true = {
                 "parameter_data": {
                     "mw": (44E-3, pyunits.kg/pyunits.mol)}},
         'KHCO3': {"type": Apparent,
+                  "dissociation_species": ["K+", "HCO3-"],
                   "parameter_data": {
                       "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
         'K+': {"type": Cation,
@@ -119,9 +121,7 @@ config_true = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
-                        "equation_of_state": ENRTL,
-                        "equation_of_state_options": {
-                            "true_to_apparent_conversion": "anion"}}},
+                        "equation_of_state": ENRTL}},
 
     # Set base units of measurement
     "base_units": {"time": pyunits.s,
@@ -153,6 +153,7 @@ config_true_2phase = {
                 "parameter_data": {
                     "mw": (44E-3, pyunits.kg/pyunits.mol)}},
         'KHCO3': {"type": Apparent,
+                  "dissociation_species": ["K+", "HCO3-"],
                   "parameter_data": {
                       "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
         'K+': {"type": Cation,
@@ -169,9 +170,7 @@ config_true_2phase = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
-                        "equation_of_state": ENRTL,
-                        "equation_of_state_options": {
-                            "true_to_apparent_conversion": "anion"}},
+                        "equation_of_state": ENRTL},
                 'Vap': {"type": VaporPhase,
                         "equation_of_state": Ideal}},
 

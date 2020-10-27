@@ -82,13 +82,7 @@ def create_mole_frac_vars(b):
         for p in b.phase_list:
             p_obj = b.params.get_phase(p)
             if isinstance(p_obj, AqueousPhase):
-                try:
-                    basis = p_obj.config.equation_of_state_options[
-                        "true_to_apparent_conversion"]
-                except KeyError:
-                    basis = "anion"
-
-                # Add balances for all molecular species
+                # Add balances for all molecular solute species
                 def rule_molecular(b, j):
                     return b.mole_frac_phase_comp_true[p, j] == \
                         b.mole_frac_phase_comp_apparent[p, j]
@@ -97,15 +91,6 @@ def create_mole_frac_vars(b):
                     rule=rule_molecular,
                     doc="Equating mole fractions of molecular species")
 
-                if basis == "anion":
-                    print(1)
-                elif basis == "cation":
-                    print(2)
-                else:
-                    raise ConfigurationError(
-                        "{} Unrecognized value for equation of state option "
-                        "true_to_apparent_conversion: {}. Expected 'anion' or "
-                        "'cation'".format(b.name, basis))
     elif cons_set == StateIndex.apparent:
         # Apparent to true conversion
         all_aqueous = (b.params.anion_set |
