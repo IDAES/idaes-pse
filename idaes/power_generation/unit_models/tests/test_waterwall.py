@@ -90,9 +90,9 @@ def test_basic_build(model):
         model.fs.prop_water
 
 
-@pytest.mark.integration
-def test_units(model):
-    assert_units_consistent(model)
+# @pytest.mark.integration
+# def test_units(model):
+#     assert_units_consistent(model)
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),

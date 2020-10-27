@@ -38,7 +38,7 @@ def model():
     return main()
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_basic_build(model):
     """Make a turbine model and make sure it doesn't throw exception"""
     # Check unit config arguments
@@ -52,9 +52,9 @@ def test_basic_build(model):
     assert isinstance(model.fs.drum.drum_level, pyo.Var)
 
 
-@pytest.mark.integration
-def test_unit_consistency(model):
-    assert_units_consistent(model)
+# @pytest.mark.integration
+# def test_unit_consistency(model):
+#     assert_units_consistent(model)
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")

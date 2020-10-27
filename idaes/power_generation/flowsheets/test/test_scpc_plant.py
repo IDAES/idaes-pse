@@ -41,7 +41,7 @@ def boiler():
     return m
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
