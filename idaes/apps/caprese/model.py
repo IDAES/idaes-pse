@@ -582,21 +582,37 @@ class DynamicBlock(Block):
         self.to_dense_data()
         # When constructing an IndexedDynamicBlock, self._data is empty
         # here. Do I have to explicitly tell it to construct dense?
+
+        # FIXME: Need to figure out a better way to initialize...
         if self._init_model.val is not None:
-            for index, data in iteritems(self):
-                # Do something with self._init_model and index
-                mod = self._init_model.val
-                super(_BlockData, data).__setattr__('mod', mod)
+            if self.is_indexed():
+                for index, data in iteritems(self):
+                    # If indexed and model arg was provided,
+                    # expect the arg to be a dict.
+                    data.mod = self._init_model.val[index]
+            else:
+                # Else just expect it to be a model.
+                self.mod = self._init_model.val
         if self._init_time.val is not None:
-            for index, data in iteritems(self):
+            if self.is_indexed():
+                for index, data in iteritems(self):
+                    time = self._init_time.val[index]
+                    super(_BlockData, data).__setattr__('time', time)
+            else:
                 time = self._init_time.val
-                super(_BlockData, data).__setattr__('time', time)
+                super(_BlockData, self).__setattr__('time', time)
         if self._init_inputs.val is not None:
-            for index, data in iteritems(self):
-                data._inputs = self._init_inputs.val
+            if self.is_indexed():
+                for index, data in iteritems(self):
+                    data._inputs = self._init_inputs.val[index]
+            else:
+                self._inputs = self._init_inputs.val
         if self._init_measurements.val is not None:
-            for index, data in iteritems(self):
-                data._measurements = self._init_measurements.val
+            if self.is_indexed():
+                for index, data in iteritems(self):
+                    data._measurements = self._init_measurements.val[index]
+            else:
+                self._measurements = self._init_measurements.val
 
         # Will calling super().construct after adding attributes
         # break the logic in Block.construct?
