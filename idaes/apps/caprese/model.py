@@ -49,8 +49,6 @@ class _DynamicBlockData(_BlockData):
     # TODO: This class should probably give the option to clone
     # the user's model.
 
-    namespace_name = '_CAPRESE_NAMESPACE'
-
     def _construct(self):
         # Is it "bad practice" to have a construct method on a data object?
         # ^ Yes, because this method needs to be called via DynamicBlock,
@@ -70,11 +68,17 @@ class _DynamicBlockData(_BlockData):
                 )
         self.dae_vars = dae_vars
         category_dict = categorize_dae_variables(dae_vars, time, inputs)
-        # Why are these attributes not getting set...?
         self.category_dict = category_dict
+
+        self._add_category_blocks()
+        self._add_category_references()
+
+        # Why are these attributes not getting set...?
         self.measured_vars = category_dict.pop(VariableCategory.MEASUREMENT)
         # The categories in category_dict now form a partition of the
-        # time-indexed variables.
+        # time-indexed variables. This is necessary to have a well-defined
+        # vardata map, which maps each vardata to a unique component indexed
+        # only by time.
 
         # Maps each vardata (of a time-indexed var) to the NmpcVar
         # that contains it.
@@ -85,9 +89,6 @@ class _DynamicBlockData(_BlockData):
                 )
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
-
-        self._add_category_blocks()
-        self._add_category_references()
 
     _var_name = 'var'
     _block_suffix = '_BLOCK'
@@ -105,67 +106,110 @@ class _DynamicBlockData(_BlockData):
 
     def _add_category_blocks(self):
         category_dict = self.category_dict
-#        namespace = self.namespace
         var_name = self._var_name
         for categ, varlist in category_dict.items():
+            # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
+            # They serve as a way to access all the "differential variables"
             block_name = self.get_category_block_name(categ)
             set_name = self.get_category_set_name(categ)
             set_range = range(len(varlist))
 
+            # Construct a set that indexes, eg, the "differential variables"
             category_set = Set(initialize=set_range)
             self.add_component(set_name, category_set)
-            getattr(self, set_name).construct()
 
+            # Construct an IndexedBlock, each data object of which
+            # will contain a single reference-to-timeslice of that
+            # category, and with the corresponding custom ctype
             category_block = Block(category_set)
             self.add_component(block_name, category_block)
-            getattr(self, block_name).construct()
 
             # Don't want these blocks sent to any solver.
             category_block.deactivate()
 
             for i, var in enumerate(varlist):
-                # Add references to new blocks
+                # Add reference-to-timeslices to new blocks:
                 category_block[i].add_component(var_name, var)
-                getattr(category_block[i], var_name).construct()
-                # These vars were created by the categorizer.
-                # To give them each a custom ctype, change
-                # the ctype given in the categorizer.
+                # These vars were created by the categorizer
+                # and have custom ctypes.
 
     _vectors_name = 'vectors'
 
     def _add_category_references(self):
         category_dict = self.category_dict
-#        namespace = self.namespace
+
+        # Add a deactivated block to store all my `_NmpcVector`s
+        # These will vars, named by category, indexed by the index 
+        # into the list of that category and by time. E.g.
+        # self.vectors.differential
         self.add_component(self._vectors_name, Block())
         self.vectors.deactivate()
+
         for categ in category_dict:
+            # TODO: use ctype as the key in category_dict
             ctype = CATEGORY_TYPE_MAP[categ]
+            # Get the block that holds this category of var,
+            # and the name of the attribute that holds the
+            # custom-ctype var (this attribute is the same
+            # for all blocks).
             block_name = self.get_category_block_name(categ)
             var_name = self._var_name
+
+            # Get a slice of the block, e.g.
+            # self.DIFFERENTIAL_BLOCK[:]
             _slice = getattr(self, block_name)[:]
-            #_slice = namespace.__getattribute__(block_name)[:]
-            # Why does this work when namespace.__getattr__(block_name) does not?
+            #_slice = self.__getattribute__(block_name)[:]
+            # Why does this work when self.__getattr__(block_name) does not?
             # __getattribute__ appears to work just fine...
+
+            # Get a slice of the block and var, e.g.
+            # self.DIFFERENTIAL_BLOCK[:].var[:]
             _slice = getattr(_slice, var_name)[:]
-            self.vectors.__setattr__(
+
+            # Add a reference to this slice to the `vectors` block.
+            # This will be, e.g. `self.vectors.differential` and
+            # can be accessed with its two indices, e.g.
+            # `self.vectors.differential[i,t0]`
+            # to get the "ith coordinate" of the vector of differential
+            # variables at time t0.
+            self.vectors.add_component(
                     ctype._attr,
+                    # ^ I store the name I want this attribute to have,
+                    # e.g. 'differential', on the custom ctype.
                     Reference(_slice, ctype=_NmpcVector),
                     )
 
-    def add_namespace(self):
-        model = self.mod
-        namespace_name = self.namespace_name
-        namespace_name = unique_component_name(model, namespace_name)
-        self.namespace_name = namespace_name
-
-        model.add_component(namespace_name, Block())
-        self.namespace = getattr(model, namespace_name)
-
-    def add_time_to_namespace(self):
+    # Should be unnecessary here as time is added in DynamicBlock.construct
+    # But this is nice if the user wants to add time in a rule and doesn't
+    # want a long messy line of super().__setattr__.
+    def add_time(self):
         # Do this because I can't add a reference to a set
-        super(_BlockData, self.namespace).__setattr__('time', self.time)
+        super(_BlockData, self).__setattr__('time', self.time)
 
     def find_components(self, model, comps, time):
+        # TODO: Block has a very similar method. This method
+        # is different as it is "time-aware."
+        # I should probably rewrite this to use CUIDs, as my
+        # underlying method is doing something almost equivalent.
+        #
+        # _slices = [c.referent for c in comps]
+        # cuids = [ComponentUID(s, context=src_model) for s in _slices]
+        # for cuid in cuids:
+        #     for comp in cuid.list_components(self.mod):
+        #         break
+        #     comp = self.vardata_map[comp]
+        #     tgt_comps.append(comp)
+        # ^ This seems sufficiently short to do in NmpcManager.
+        # Once I do this I can remove this method.
+        # If I could get a slice from a CUID, I could do:
+        #
+        # _slices = [c.referent for c in comps]
+        # cuids = [ComponentUID(s, context=src_model) for s in _slices]
+        # for cuid in cuids:
+        #     _slice = cuid.find_component(self.mod)
+        #     tgt_comps.append(Reference(_slice))
+        # ^ This won't return components with ctype NmpcVar, but I can
+        # always pass in a ctype argument.
         t0_src = time.first()
         t0_tgt = self.time.first()
         tgt_comps = []
@@ -197,8 +241,7 @@ class _DynamicBlockData(_BlockData):
             sample_time: Sample time to check
 
         """
-        namespace = self.namespace
-        time = namespace.time
+        time = self.time
         horizon_length = time.last() - time.first()
 
         # TODO: This should probably be a DAE utility
@@ -252,7 +295,6 @@ class _DynamicBlockData(_BlockData):
         self.sample_points = sample_points
 
     def initialize(self, option):
-        namespace = self.namespace
         time = self.time
 
         if option == ControlInitOption.FROM_PREVIOUS:
@@ -272,10 +314,9 @@ class _DynamicBlockData(_BlockData):
                 VariableCategory.INPUT,
                 ],
             ):
-        namespace = self.namespace
         time = self.time
         t0 = time.first()
-        category_dict = namespace.category_dict
+        category_dict = self.category_dict
         for categ, varlist in categories.items():
             # Would like:
             # vector[:,t1:].set_value(vector[:].setpoint)
@@ -305,7 +346,6 @@ class _DynamicBlockData(_BlockData):
                          and ALGEBRAIC.
 
         """
-        namespace = self.namespace
         time = self.time
         t0 = time.first()
         cat_dict = self.category_dict
@@ -317,7 +357,6 @@ class _DynamicBlockData(_BlockData):
         # This should work without a custom var class.
 
     def initialize_by_solving_elements(self, solver, fix_inputs=False, strip_bounds=False):
-        namespace = self.namespace
         time = self.time
         model = self.model
 
@@ -337,10 +376,10 @@ class _DynamicBlockData(_BlockData):
                     else:
                         var[t].fix()
         
-        if hasattr(namespace, 'tracking_objective'):
-            namespace.tracking_objective.deactivate()
-        if hasattr(namespace, 'pwc_constraint'):
-            namespace.pwc_constraint.deactivate()
+        if hasattr(self, 'tracking_objective'):
+            self.tracking_objective.deactivate()
+        if hasattr(self, 'pwc_constraint'):
+            self.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(
                 model,
@@ -353,10 +392,10 @@ class _DynamicBlockData(_BlockData):
                 solver=solver,
                 )
 
-        if hasattr(namespace, 'tracking_objective'):
-            namespace.tracking_objective.activate()
-        if hasattr(namespace, 'pwc_constraint'):
-            namespace.pwc_constraint.activate()
+        if hasattr(self, 'tracking_objective'):
+            self.tracking_objective.activate()
+        if hasattr(self, 'pwc_constraint'):
+            self.pwc_constraint.activate()
 
         if fix_inputs:
             for var in self.input_vars[:]:
@@ -372,7 +411,6 @@ class _DynamicBlockData(_BlockData):
         # can use for noise as well.
 
     def initialize_sample_by_element(self, solver, ts, fix_inputs=False):
-        namespace = self.namespace
         time = self.time
         model = self.model
         strip_bounds = TransformationFactory('contrib.strip_var_bounds')
@@ -393,10 +431,10 @@ class _DynamicBlockData(_BlockData):
                     t = time[i]
                     var[t].fix(sp)
         
-        if hasattr(namespace, 'tracking_objective'):
-            namespace.tracking_objective.deactivate()
-        if hasattr(namespace, 'pwc_constraint'):
-            namespace.pwc_constraint.deactivate()
+        if hasattr(self, 'tracking_objective'):
+            self.tracking_objective.deactivate()
+        if hasattr(self, 'pwc_constraint'):
+            self.pwc_constraint.deactivate()
 
         initialize_by_element_in_range(
                 model,
@@ -409,10 +447,10 @@ class _DynamicBlockData(_BlockData):
                 solver=solver,
                 )
 
-        if hasattr(namespace, 'tracking_objective'):
-            namespace.tracking_objective.activate()
-        if hasattr(namespace, 'pwc_constraint'):
-            namespace.pwc_constraint.activate()
+        if hasattr(self, 'tracking_objective'):
+            self.tracking_objective.activate()
+        if hasattr(self, 'pwc_constraint'):
+            self.pwc_constraint.activate()
 
         if fix_inputs:
             for var in self.input_vars[:]:
