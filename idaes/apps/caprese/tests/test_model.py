@@ -94,6 +94,7 @@ class TestDynamicBlock(object):
                 block.INPUT_BLOCK,
                 block.FIXED_BLOCK,
                 block.DERIVATIVE_BLOCK,
+                block.MEASUREMENT_BLOCK,
                 ]
 
         block_objects = ComponentSet(
@@ -157,6 +158,7 @@ class TestDynamicBlock(object):
                     b.INPUT_BLOCK,
                     b.FIXED_BLOCK,
                     b.DERIVATIVE_BLOCK,
+                    b.MEASUREMENT_BLOCK,
                     ]
 
             block_objects = ComponentSet(
@@ -227,6 +229,7 @@ class TestDynamicBlock(object):
                     b.INPUT_BLOCK,
                     b.FIXED_BLOCK,
                     b.DERIVATIVE_BLOCK,
+                    b.MEASUREMENT_BLOCK,
                     ]
 
             block_objects = ComponentSet(
@@ -305,4 +308,193 @@ class TestDynamicBlock(object):
         assert len(pred_deriv_vars) == len(deriv_vars)
         for var in deriv_vars:
             assert var[t0] in pred_deriv_vars
+
+    def test_category_blocks(self):
+        m = make_small_model()
+        time = m.time
+        t0 = time.first()
+        helper = DynamicBlock(
+                model=m,
+                time=time,
+                inputs=[m.flow_in[0]],
+                measurements=[m.conc[0,'A'], m.conc[0,'B']],
+                )
+        helper.construct()
+
+        diff_vars = helper.vectors.differential
+        diff_var_set = helper.DIFFERENTIAL_SET*m.time
+        assert diff_vars.index_set() == diff_var_set
+
+        helper.vectors.derivative.set_setpoint(0.0)
+        for var in helper.DERIVATIVE_BLOCK[:].var:
+            assert var.setpoint == 0.
+
+        sp = [1,2,3]
+        helper.vectors.algebraic.set_setpoint(sp)
+        for i,j in zip(helper.ALGEBRAIC_SET, sp):
+            assert helper.ALGEBRAIC_BLOCK[i].var.setpoint == j
+
+        alg_vars = list(helper.component_objects(AlgVar))
+        pred_alg_vars = ComponentSet((
+                m.flow_out[t0],
+                m.rate[t0,'A'],
+                m.rate[t0,'B'],
+                ))
+        assert len(pred_alg_vars) == len(alg_vars)
+        for var in alg_vars:
+            assert var[t0] in pred_alg_vars
+
+        assert list(helper.vectors.algebraic.get_setpoint()) == sp
+
+        vals = (10, 11) 
+        diff_vars.values = vals
+        for var, val in zip(helper.DIFFERENTIAL_BLOCK[:].var, vals):
+            for v in var[:]:
+                assert v.value == val 
+    
+        _slice = helper.DIFFERENTIAL_BLOCK[:].var
+        diff_var_vals = diff_vars.values
+        for var, vals in zip(_slice, diff_var_vals):
+            for v, vl in zip(var[:], vals):
+                assert v.value == vl
+
+    def test_add_references(self):
+        m = make_small_model()
+        time = m.time
+        t0 = time.first()
+        blk = DynamicBlock(
+                model=m,
+                time=time,
+                inputs=[m.flow_in[0]],
+                measurements=[m.conc[0,'A'], m.conc[0,'B']],
+                )
+        blk.construct()
+
+        attrs = [
+                'differential',
+                'algebraic',
+                'derivative',
+                'input',
+                'fixed',
+                'measurement',
+                ]
+
+        for attr in attrs:
+            # Make sure we've added the expected attribute
+            assert hasattr(blk.vectors, attr)
+            vec = getattr(blk.vectors, attr)
+
+            # These "vectors" should be two-dimensional;
+            # indexed by a coordinate (index into a list) and by time.
+            assert vec.dim() == 2
+            assert list(vec.index_set().subsets())[1] is time
+
+            # Make sure we can use the set/get setpoint methods.
+            # This should be tested more extensively elsewhere.
+            setpoints = list(range(len(list(vec[:,t0]))))
+            vec.set_setpoint(setpoints)
+            assert list(vec.get_setpoint()) == setpoints
+
+            # Make sure the underlying var has the ctype we expect
+            # (check using the attribute/component name)
+            for var in vec._generate_referenced_vars():
+                assert var.ctype._attr == attr
+
+
+    def test_validate_sample_time(self):
+        model = make_model(horizon=1, nfe=2)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in[t0]]
+        measurements = [model.conc[t0,'A'], model.conc[t0,'B']]
+        blk = DynamicBlock(
+                model=model,
+                time=time,
+                inputs=inputs,
+                measurements=measurements,
+                )
+        blk.construct()
+        blk.validate_sample_time(0.5)
+        assert hasattr(blk, 'sample_points')
+        assert hasattr(blk, 'fe_per_sample')
+
+        sample_point_set = set(blk.sample_points)
+        for p in [0.0, 0.5, 1.0]:
+            assert p in sample_point_set
+
+        with pytest.raises(ValueError, match=r".*integer divider.*"):
+            blk.validate_sample_time(0.6)
+
+        with pytest.raises(ValueError, match=r"Could not find a time point.*"):
+            blk.validate_sample_time(1/3.)
+
+        with pytest.raises(ValueError, 
+                match=r".*tolerance is larger than.*not.*unique.*"):
+            blk.validate_sample_time(0.5, tolerance=0.09)
+            # min spacing in continuous set: 0.166667
+
+        blk.validate_sample_time(0.5, tolerance=0.08)
+        sample_point_set = set(blk.sample_points)
+        for p in [0.0, 0.5, 1.0]:
+            assert p in sample_point_set
+
+    def test_set_sample_time(self):
+        model = make_model(horizon=1, nfe=2)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in[t0]]
+        measurements = [model.conc[t0,'A'], model.conc[t0,'B']]
+        blk = DynamicBlock(
+                model=model,
+                time=time,
+                inputs=inputs,
+                measurements=measurements,
+                )
+        blk.construct()
+
+        blk.set_sample_time(1.0)
+        assert blk.sample_points == [0.0, 1.0]
+
+        blk.set_sample_time(0.5)
+        assert blk.sample_points == [0.0, 0.5, 1.0]
+
+    def make_block(self, sample_time=0.5, horizon=1, nfe=2):
+        model = make_model(horizon=horizon, nfe=nfe)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in[t0]]
+        measurements = [model.conc[t0,'A'], model.conc[t0,'B']]
+        dyn_block = DynamicBlock(
+                model=model,
+                time=time,
+                inputs=inputs,
+                measurements=measurements,
+                )
+        dyn_block.construct()
+        dyn_block.set_sample_time(sample_time)
+        return dyn_block
+
+    def test_find_components(self):
+        # Name of this function is pending
+        blk1 = self.make_block()
+        blk2 = self.make_block()
+
+        src_comps = [
+                aml.Reference(blk1.vectors.differential[0,:]),
+                # Kinda clunky if this is how I have to get
+                # the "first differential var."
+                # _NmpcVector should have a method to make this easier...
+                aml.Reference(blk1.vectors.algebraic[0,:]),
+                ]
+        src_names = [c[0].name for c in src_comps]
+        tgt_names = [
+                blk2.mod.conc[0,'A'].name,
+                blk2.mod.flow_out[0].name,
+                ]
+        assert src_names == tgt_names
+        tgt_comps = blk2.find_components(blk1.mod, src_comps, blk1.time)
+        # Note that right now, I attempt to find the component on the model,
+        # not on the encompassing DynamicBlock. This may change...
+        tgt_comp_names = [c[0].name for c in tgt_comps]
+        assert tgt_names == tgt_comp_names
 
