@@ -20,8 +20,9 @@ class NmpcVar(IndexedVar):
                 '%s component must be indexed by at least one set.'
                 % self.__class__
                 )
-        for attr in NMPC_ATTRS:
-            setattr(self, attr, kwargs.pop(attr, None))
+        #for attr in NMPC_ATTRS:
+        #    setattr(self, attr, kwargs.pop(attr, None))
+        self.setpoint = kwargs.pop('setpoint', None)
         kwargs.setdefault('ctype', NmpcVar)
         super(NmpcVar, self).__init__(*args, **kwargs)
 
@@ -42,6 +43,9 @@ class _NmpcVector(IndexedVar):
         _slice._len -= 1
         for var in _slice:
             yield var
+        # TODO: assert some properties of the call stack here
+        # popped item is a getitem, slice
+        # last remaining item is a getattr, NmpcVar
 
     def set_setpoint(self, setpoint):
         referent_gen = self._generate_referenced_vars()
@@ -86,7 +90,9 @@ class _NmpcVector(IndexedVar):
     # var[:,t0:].set_value(some_vector)
     # (This is initialization, say to the setpoint)
     # or
-    # var[:,t0:ts].set_value(some_vector)
+    # var[:,t0:ts].set_value(some_vector # len n x n_t)
+    # var[:].set_value(iter(some_vector))
+    # var[t0:].set_value(setpoint)
     #
     # var[:,t0].set_value/fix(vector)
     # Then this could potentially be interpreted by the slice?
@@ -113,14 +119,13 @@ class _NmpcVector(IndexedVar):
 # ^ These will work currently if var is an IndexedVar
 
 class DiffVar(NmpcVar):
-    _attr = 'diff'
+    _attr = 'differential'
 
 class DerivVar(NmpcVar):
-    # FIXME Find better name
-    _attr = 'deriv'
+    _attr = 'derivative'
 
 class AlgVar(NmpcVar):
-    _attr = 'alg'
+    _attr = 'algebraic'
 
 class InputVar(NmpcVar):
     _attr = 'input'
@@ -129,4 +134,4 @@ class FixedVar(NmpcVar):
     _attr = 'fixed'
 
 class MeasuredVar(NmpcVar):
-    _attr = 'measured'
+    _attr = 'measurement'
