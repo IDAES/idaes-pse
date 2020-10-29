@@ -138,14 +138,6 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(GibbsReactorData, self).build()
 
-        # Validate list of inert species
-        for i in self.config.inert_species:
-            if i not in self.config.property_package.component_list:
-                raise ConfigurationError(
-                    "{} invalid component in inert_species argument. {} is "
-                    "not in the property package component list."
-                    .format(self.name, i))
-
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
@@ -153,6 +145,14 @@ see property package for documentation.}"""))
                 "property_package_args": self.config.property_package_args})
 
         self.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+        # Validate list of inert species
+        for i in self.config.inert_species:
+            if i not in self.control_volume.properties_in.component_list:
+                raise ConfigurationError(
+                    "{} invalid component in inert_species argument. {} is "
+                    "not in the property package component list."
+                    .format(self.name, i))
 
         self.control_volume.add_total_element_balances()
 
@@ -187,7 +187,7 @@ see property package for documentation.}"""))
         # a similar order of magnitude as log(Yi)
 
         @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package._phase_component_set,
+                         self.control_volume.properties_in.phase_component_set,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
@@ -203,7 +203,7 @@ see property package for documentation.}"""))
 
         if len(self.config.inert_species) > 0:
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
+                             self.control_volume.properties_in.phase_list,
                              self.config.inert_species,
                              doc="Inert species balances")
             def inert_species_balance(b, t, p, j):
@@ -217,7 +217,7 @@ see property package for documentation.}"""))
                 # element balance for e.
                 dependent = True
 
-                if len(self.config.property_package.phase_list) > 1:
+                if len(self.control_volume.properties_in.phase_list) > 1:
                     # Multiple phases avoid linear dependency
                     dependent = False
                 else:
@@ -226,7 +226,7 @@ see property package for documentation.}"""))
                             # Element e not in component j, no effect
                             continue
                         else:
-                            for i in self.config.property_package.component_list:
+                            for i in self.control_volume.properties_in.component_list:
                                 if i == j:
                                     continue
                                 else:
@@ -236,7 +236,7 @@ see property package for documentation.}"""))
                                         dependent = False
 
                 if (not dependent and (p, j) in
-                        self.config.property_package._phase_component_set):
+                        self.control_volume.properties_in.phase_component_set):
                     return 0 == (
                         cv.properties_in[t].get_material_flow_terms(p, j) -
                         cv.properties_out[t].get_material_flow_terms(p, j))

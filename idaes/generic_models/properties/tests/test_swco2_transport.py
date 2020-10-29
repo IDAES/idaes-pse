@@ -14,14 +14,9 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, Var, SolverFactory
-from pyomo.common.fileutils import this_file_dir
+from pyomo.environ import ConcreteModel, value, SolverFactory
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.generic_models.properties.swco2 import swco2_available
-from idaes.generic_models.unit_models import Compressor
-from idaes.core import FlowsheetBlock
-import csv
-import os
 import idaes
 
 if SolverFactory('ipopt').available():
@@ -30,7 +25,9 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-@pytest.mark.skipif(not swco2_available(), reason="Span-Wagner lib not available")
+
+@pytest.mark.skipif(not swco2_available(),
+                    reason="Span-Wagner lib not available")
 class TestSWCO2(object):
 
     @pytest.fixture(scope="class")
@@ -89,18 +86,18 @@ class TestSWCO2(object):
                 ph = "Liq"
             else:
                 # if too close to sat, don't want to get into a situation where
-                # I don't know if it's liquid or vapor, so using extreme caution
-                # If we're woried about it, we can add tests on the sat curve, and
-                # test both liquid and vapor
+                # I don't know if it's liquid or vapor, so using extreme
+                # caution
+                # If we're woried about it, we can add tests on the sat curve,
+                # and test both liquid and vapor
                 continue
 
             rho = value(model2.prop_in.dens_mass_phase[ph])
             mu = value(model2.prop_in.visc_d_phase[ph])
             tc = value(model2.prop_in.therm_cond_phase[ph])
-            print("T = {}, P = {}, mu = {}, tc = {}, rho = {}, phase = {}".format(
-                    T, P, mu, tc, rho, ph
-                )
-            )
+            print("T = {}, P = {}, mu = {}, tc = {}, rho = {}, phase = {}".
+                  format(T, P, mu, tc, rho, ph)
+                  )
             print("Data: mu = {}, tc = {}".format(mu_data, tc_data))
             assert tc == pytest.approx(tc_data, rel=tol_tc)
             assert mu == pytest.approx(mu_data, rel=tol_mu)

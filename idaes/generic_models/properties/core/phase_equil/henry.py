@@ -19,6 +19,8 @@ from pyomo.environ import Var
 # -----------------------------------------------------------------------------
 # Molarity basis
 class Hcp_constant():
+
+    @staticmethod
     def build_parameters(cobj, p):
         cobj.add_component(
             "henry_ref_"+p,
@@ -26,6 +28,7 @@ class Hcp_constant():
                 doc="Henry coeffiicient (molarity basis) at reference state "
                 "for phase "+p))
 
+    @staticmethod
     def return_expression(b, p, j, T=None):
         if T is None:
             T = b.temperature
@@ -39,6 +42,8 @@ class Hcp_constant():
 # -----------------------------------------------------------------------------
 # Mole fraction basis
 class Hxp_constant():
+
+    @staticmethod
     def build_parameters(cobj, p):
         cobj.add_component(
             "henry_ref_"+p,
@@ -46,6 +51,7 @@ class Hxp_constant():
                 doc="Henry coeffiicient (mole fraction basis) at reference "
                 "state for phase "+p))
 
+    @staticmethod
     def return_expression(b, p, j, T=None):
         if T is None:
             T = b.temperature

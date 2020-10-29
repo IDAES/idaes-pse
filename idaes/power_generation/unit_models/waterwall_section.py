@@ -23,6 +23,9 @@ main equations:
 
 """
 # Import Pyomo libraries
+from pyomo.environ import SolverFactory, value, Var, Param, \
+    asin, cos, sqrt, log10, PositiveReals, Reference, units as pyunits
+from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.expr.current import Expr_if
 
@@ -41,9 +44,6 @@ import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, value, Var, Param, \
-    asin, cos, sqrt, log10, PositiveReals, Reference
-from pyomo.dae import DerivativeVar
 from idaes.core.util.constants import Constants as const
 
 
@@ -224,10 +224,12 @@ constructed,
         """
         Define the geometry of the unit as necessary, and link to holdup volume
         """
+        units_meta = self.config.property_package.get_metadata()
         # Total projected wall area of waterwall section from fire-side model
         self.projected_area = Var(
                 initialize=10,
-                doc="Total projected wall area of waterwall section")
+                doc="Total projected wall area of waterwall section",
+                units=units_meta.get_derived_units("area"))
         # Number of waterwall tubes
         self.number_tubes = Var(
                 initialize=4,
@@ -235,16 +237,19 @@ constructed,
         # Height of waterwall section, given by boiler model
         self.height = Var(
                 initialize=5.0,
-                doc="Height of waterwall section")
+                doc="Height of waterwall section",
+                units=units_meta.get_derived_units("length"))
         # Length of waterwall tubes calculated based on given total area
         # and perimeter of waterwall
         self.tube_length = Var(
                 initialize=5.0,
-                doc="length waterwall tube")
+                doc="length waterwall tube",
+                units=units_meta.get_derived_units("length"))
         # Inner diameter of waterwall tubes
         self.tube_diameter = Var(
                 initialize=0.05,
-                doc="Inside diameter of waterwall tube")
+                doc="Inside diameter of waterwall tube",
+                units=units_meta.get_derived_units("length"))
         # Inside radius of waterwall tube
         @self.Expression(doc="Inside radius of waterwall tube")
         def radius_inner(b):
@@ -256,7 +261,8 @@ constructed,
         # Tube thickness
         self.tube_thickness = Var(
                 initialize=0.005,
-                doc="Thickness of waterwall tube")
+                doc="Thickness of waterwall tube",
+                units=units_meta.get_derived_units("length"))
         # Outside radius of waterwall tube
         @self.Expression(doc="Outside radius of waterwall tube")
         def radius_outer(b):
@@ -264,7 +270,8 @@ constructed,
         # Thickness of waterwall fin
         self.fin_thickness = Var(
                 initialize=0.004,
-                doc="Thickness of waterwall Fin")
+                doc="Thickness of waterwall Fin",
+                units=units_meta.get_derived_units("length"))
         # Half of the waterwall fin thickness
         @self.Expression(doc="Half of the waterwall fin thickness")
         def fin_thickness_half(b):
@@ -272,13 +279,15 @@ constructed,
         # Length of waterwall fin
         self.fin_length = Var(
                 initialize=0.005,
-                doc="Length of waterwall fin")
+                doc="Length of waterwall fin",
+                units=units_meta.get_derived_units("length"))
         # Thickness of slag layer
         self.slag_thickness = Var(
                 self.flowsheet().config.time,
                 bounds=(0.0001, 0.009),
                 initialize=0.001,
-                doc="Thickness of slag layer")
+                doc="Thickness of slag layer",
+                units=units_meta.get_derived_units("length"))
 
         @self.Expression(doc="Pitch of two neighboring tubes")
         def pitch(b):
@@ -341,6 +350,7 @@ constructed,
         """
         Define constraints which describe the behaviour of the unit model.
         """
+        units_meta = self.config.property_package.get_metadata()
         self.fcorrection_dp = Var(
                 initialize=1.2,
                 within=PositiveReals,
@@ -350,32 +360,38 @@ constructed,
         self.therm_cond_metal = Param(
                 initialize=43.0,
                 mutable=True,
-                doc='Thermal conductivity of tube metal')
+                doc='Thermal conductivity of tube metal',
+                units=units_meta.get_derived_units("thermal_conductivity"))
         # Thermal conductivity of slag
         self.therm_cond_slag = Param(
                 initialize=1.3,
                 mutable=True,
-                doc='Thermal conductivity of slag')
+                doc='Thermal conductivity of slag',
+                units=units_meta.get_derived_units("thermal_conductivity"))
         # Heat capacity of metal
         self.cp_metal = Param(
                 initialize=500.0,
                 mutable=True,
-                doc='Heat capacity of tube metal')
+                doc='Heat capacity of tube metal',
+                units=units_meta.get_derived_units("heat_capacity_mass"))
         # Heat Capacity of slag
         self.cp_slag = Param(
                 initialize=250,
                 mutable=True,
-                doc='Heat capacity of slag')
+                doc='Heat capacity of slag',
+                units=units_meta.get_derived_units("heat_capacity_mass"))
         # Density of metal
         self.dens_metal = Param(
                 initialize=7800.0,
                 mutable=True,
-                doc='Density of tube metal')
+                doc='Density of tube metal',
+                units=units_meta.get_derived_units("density_mass"))
         # Density of slag
         self.dens_slag = Param(
                 initialize=2550,
                 mutable=True,
-                doc='Density of slag')
+                doc='Density of slag',
+                units=units_meta.get_derived_units("density_mass"))
         # Shape factor of tube metal conduction resistance
         # based on projected area
         self.fshape_metal = Param(
@@ -415,39 +431,48 @@ constructed,
         self.heat_fireside = Var(
                 self.flowsheet().config.time,
                 initialize=1e7,
-                doc='total heat from fire side model for the section')
+                doc='total heat from fire side model for the section',
+                units=units_meta.get_derived_units("power"))
         # Tube boundary wall temperature
         self.temp_tube_boundary = Var(
                 self.flowsheet().config.time,
                 initialize=400.0,
-                doc='Temperature of tube boundary wall')
+                doc='Temperature of tube boundary wall',
+                units=units_meta.get_derived_units("temperature"))
         # Tube center point wall temperature
         self.temp_tube_center = Var(
                 self.flowsheet().config.time,
                 initialize=450.0,
-                doc='Temperature of tube center wall')
+                doc='Temperature of tube center wall',
+                units=units_meta.get_derived_units("temperature"))
         # Slag boundary wall temperature
         self.temp_slag_boundary = Var(
                 self.flowsheet().config.time,
                 initialize=600.0,
-                doc='Temperature of slag boundary wall')
+                doc='Temperature of slag boundary wall',
+                units=units_meta.get_derived_units("temperature"))
         # Slag center point wall temperature
         self.temp_slag_center = Var(
                 self.flowsheet().config.time,
                 initialize=500.0,
-                doc='Temperature of slag layer center point')
+                doc='Temperature of slag layer center point',
+                units=units_meta.get_derived_units("temperature"))
 
         # Energy holdup for slag layer
         self.energy_holdup_slag = Var(
                 self.flowsheet().config.time,
                 initialize=1e4,
-                doc='Energy holdup of slag layer')
+                doc='Energy holdup of slag layer',
+                units=(units_meta.get_derived_units("energy") *
+                       units_meta.get_derived_units("length")**-1))
 
         # Energy holdup for metal (tube + fin)
         self.energy_holdup_metal = Var(
                 self.flowsheet().config.time,
                 initialize=1e6,
-                doc='Energy holdup of metal')
+                doc='Energy holdup of metal',
+                units=(units_meta.get_derived_units("energy") *
+                       units_meta.get_derived_units("length")**-1))
 
         # Energy accumulation for slag and metal
         if self.config.dynamic is True:
@@ -470,7 +495,8 @@ constructed,
         self.velocity_liquid = Var(
                 self.flowsheet().config.time,
                 initialize=3.0,
-                doc='Velocity of liquid only')
+                doc='Velocity of liquid only',
+                units=units_meta.get_derived_units("velocity"))
 
         # Reynolds number based on liquid only flow
         self.N_Re = Var(
@@ -533,7 +559,8 @@ constructed,
         self.mass_flux = Var(
                 self.flowsheet().config.time,
                 initialize=1000.0,
-                doc='mass flux')
+                doc='mass flux',
+                units=units_meta.get_derived_units("flux_mass"))
 
         # Reduced pressure
         self.reduced_pressure = Var(
@@ -552,20 +579,26 @@ constructed,
         self.hconv = Var(
                 self.flowsheet().config.time,
                 initialize=30000.0,
-                doc='Convective heat transfer coefficient')
+                doc='Convective heat transfer coefficient',
+                units=units_meta.get_derived_units(
+                    "heat_transfer_coefficient"))
 
         # Convective heat transfer coefficient for liquid only,
         # typically in range (1000.0, 1e5)
         self.hconv_liquid = Var(
                 self.flowsheet().config.time,
                 initialize=20000.0,
-                doc='Convective heat transfer coefficient of liquid only')
+                doc='Convective heat transfer coefficient of liquid only',
+                units=units_meta.get_derived_units(
+                    "heat_transfer_coefficient"))
 
         # Pool boiling heat transfer coefficient, typically in range (1e4, 5e5)
         self.hpool = Var(
                 self.flowsheet().config.time,
                 initialize=1e5,
-                doc='Pool boiling heat transfer coefficient')
+                doc='Pool boiling heat transfer coefficient',
+                units=units_meta.get_derived_units(
+                    "heat_transfer_coefficient"))
 
         # Boiling number, typical range in (1e-7, 5e-4) in original formula.
         # we define here as boiling_number_scaled == 1e6*boiling_number
@@ -590,25 +623,29 @@ constructed,
         self.heat_flux_conv = Var(
                 self.flowsheet().config.time,
                 initialize=7e4,
-                doc='Convective heat flux to fluid')
+                doc='Convective heat flux to fluid',
+                units=units_meta.get_derived_units("flux_energy"))
 
         # Slag-tube interface heat flux
         self.heat_flux_interface = Var(
                 self.flowsheet().config.time,
                 initialize=100000.0,
-                doc='Slag-tube interface heat flux')
+                doc='Slag-tube interface heat flux',
+                units=units_meta.get_derived_units("flux_energy"))
 
         # Pressure change due to friction
         self.deltaP_friction = Var(
                 self.flowsheet().config.time,
                 initialize=-1000.0,
-                doc='Pressure change due to friction')
+                doc='Pressure change due to friction',
+                units=units_meta.get_derived_units("pressure"))
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
                 self.flowsheet().config.time,
                 initialize=-1000.0,
-                doc='Pressure change due to gravity')
+                doc='Pressure change due to gravity',
+                units=units_meta.get_derived_units("pressure"))
 
         # Equation to calculate heat flux to slag boundary
         @self.Expression(self.flowsheet().config.time,
@@ -734,8 +771,9 @@ constructed,
         # n-exponent equation for inlet
         @self.Constraint(self.flowsheet().config.time, doc="n-exponent")
         def n_exp_eqn(b, t):
-            return 0.001*(0.8294 - b.n_exp[t]) \
-                * b.control_volume.properties_in[t].pressure == 8.0478
+            return (0.001*(0.8294 - b.n_exp[t]) *
+                    b.control_volume.properties_in[t].pressure ==
+                    8.0478*units_meta.get_derived_units("pressure"))
 
         # Gamma equation for inlet
         @self.Constraint(self.flowsheet().config.time, doc="Gamma at inlet")
@@ -836,10 +874,12 @@ constructed,
         @self.Constraint(self.flowsheet().config.time,
                          doc="pool boiling heat transfer coefficient")
         def hpool_eqn(b, t):
-            return 1e-4*b.hpool[t] \
-                * sqrt(b.control_volume.properties_in[0].mw*1000.0) * \
-                (-log10(b.reduced_pressure[t]))**(0.55) == 1e-4 * \
-                55.0 * b.reduced_pressure[t]**0.12 * b.heat_flux_conv[t]**0.67
+            return (1e-4*b.hpool[t]*sqrt(pyunits.convert(
+                        b.control_volume.properties_in[0].mw,
+                        to_units=pyunits.g/pyunits.mol)) *
+                    (-log10(b.reduced_pressure[t]))**(0.55) ==
+                    1e-4*55.0*b.reduced_pressure[t]**0.12 *
+                    b.heat_flux_conv[t]**0.67)
 
         # Boiling number scaled by a factor of 1e6
         @self.Constraint(self.flowsheet().config.time, doc="boiling number")

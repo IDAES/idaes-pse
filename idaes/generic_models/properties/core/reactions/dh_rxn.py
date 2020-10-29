@@ -23,6 +23,8 @@ from idaes.generic_models.properties.core.generic.utility import \
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
 class constant_dh_rxn():
+
+    @staticmethod
     def build_parameters(rblock, config):
         units = rblock.parent_block().get_metadata().derived_units
 
@@ -42,5 +44,6 @@ class constant_dh_rxn():
                         units=units["energy_"+basis],
                         config=config)
 
+    @staticmethod
     def return_expression(b, rblock, r_idx, T):
         return rblock.dh_rxn_ref
