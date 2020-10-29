@@ -316,6 +316,10 @@ argument)."""))
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
+        component_list = self.properties.component_list
+        phase_list = self.properties.phase_list
+        pc_set = self.properties.phase_component_set
+
         # Check that reaction block exists if required
         if has_rate_reactions or has_equilibrium_reactions:
             try:
@@ -395,9 +399,6 @@ argument)."""))
                 acc_units = None
             else:
                 acc_units = holdup_l_units/f_time_units
-
-        # Get phase component set and lists
-        pc_set = self.config.property_package.get_phase_component_set()
 
         # Material holdup and accumulation
         if has_holdup:
@@ -750,7 +751,7 @@ argument)."""))
             # Add component balances
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
-                             self.config.property_package.component_list,
+                             component_list,
                              doc="Material balances")
             def material_balances(b, t, x, j):
                 if ((b.config.transformation_scheme != "FORWARD" and
@@ -760,7 +761,7 @@ argument)."""))
                     return Constraint.Skip
                 else:
                     cplist = []
-                    for p in self.config.property_package.phase_list:
+                    for p in phase_list:
                         if (p, j) in pc_set:
                             cplist.append(p)
                     return (
@@ -902,6 +903,9 @@ argument)."""))
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
+        component_list = self.properties.component_list
+        pc_set = self.properties.phase_component_set
+
         # Check that property package supports element balances
         if not hasattr(self.config.property_package, "element_list"):
             raise PropertyNotSupportedError(
@@ -974,7 +978,7 @@ argument)."""))
 
         # For each component in the material, search for elements which are
         # unique to it
-        for i in self.config.property_package.component_list:
+        for i in component_list:
             unique_elements = []
             for e in self.config.property_package.element_list:
                 if self.properties[
@@ -982,7 +986,7 @@ argument)."""))
                     # Assume unique until shown otherwise
                     unique = True
 
-                    for j in self.config.property_package.component_list:
+                    for j in component_list:
                         if j == i:
                             continue
 
@@ -1057,11 +1061,10 @@ argument)."""))
                          doc="Elemental flow constraints")
         def elemental_flow_constraint(b, t, x, e):
             return b.elemental_flow_term[t, x, e] == (
-                sum(sum(conv_factor(b, t, x, j) *
-                        b.properties[t, x].get_material_flow_terms(p, j) *
-                        b.properties[t, x].config.parameters.element_comp[j][e]
-                        for j in b.config.property_package.component_list)
-                    for p in b.config.property_package.phase_list))
+                sum(conv_factor(b, t, x, j) *
+                    b.properties[t, x].get_material_flow_terms(p, j) *
+                    b.properties[t, x].config.parameters.element_comp[j][e]
+                    for p, j in pc_set))
 
         self.elemental_flow_dx = DerivativeVar(self.elemental_flow_term,
                                                wrt=self.length_domain,
@@ -1135,8 +1138,7 @@ argument)."""))
                     sum(conv_factor(b, t, x, j)*b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
-                        for p in b.config.property_package.phase_list
-                        for j in b.config.property_package.component_list))
+                        for p, j in pc_set))
 
         return self.element_balances
 
@@ -1178,6 +1180,8 @@ argument)."""))
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
+        phase_list = self.properties.phase_list
+
         # Test for components that must exist prior to calling this method
         if has_heat_of_reaction:
             if not (hasattr(self, "rate_reaction_extent") or
@@ -1215,14 +1219,14 @@ argument)."""))
         # Create variables
         self._enthalpy_flow = Var(self.flowsheet().config.time,
                                   self.length_domain,
-                                  self.config.property_package.phase_list,
+                                  phase_list,
                                   initialize=1.0,
                                   doc="Enthalpy flow terms",
                                   units=units('power'))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
-                         self.config.property_package.phase_list,
+                         phase_list,
                          doc="Enthapy flow linking constraints")
         def enthalpy_flow_linking_constraint(b, t, x, p):
             return b._enthalpy_flow[t, x, p] == \
@@ -1239,7 +1243,7 @@ argument)."""))
             self.energy_holdup = Var(
                         self.flowsheet().config.time,
                         self.length_domain,
-                        self.config.property_package.phase_list,
+                        phase_list,
                         domain=Reals,
                         initialize=1.0,
                         doc="Enthalpy holdup per unit length",
@@ -1345,10 +1349,9 @@ argument)."""))
             else:
                 return b.length*sum(
                         accumulation_term(b, t, x, p) for p in
-                        b.config.property_package.phase_list) == (
+                        phase_list) == (
                     b._flow_direction_term * sum(b.enthalpy_flow_dx[t, x, p]
-                                                 for p in b.config.
-                                                 property_package.phase_list) +
+                                                 for p in phase_list) +
                     b.length*heat_term(b, t, x) +
                     b.length*work_term(b, t, x) +
                     b.length*enthalpy_transfer_term(b, t, x) +
@@ -1363,7 +1366,7 @@ argument)."""))
 
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
-                             self.config.property_package.phase_list,
+                             phase_list,
                              doc="Enthalpy holdup constraint")
             def energy_holdup_calculation(b, t, x, p):
                 return b.energy_holdup[t, x, p] == (
@@ -1730,13 +1733,14 @@ argument)."""))
         Returns:
             None
         """
-        if len(self.config.property_package.phase_list) > 1:
+        phase_list = self.properties.phase_list
+
+        if len(phase_list) > 1:
             self.phase_fraction = Var(
                             self.flowsheet().config.time,
                             self.length_domain,
-                            self.config.property_package.phase_list,
-                            initialize=1 / len(self.config.
-                                               property_package.phase_list),
+                            phase_list,
+                            initialize=1 / len(phase_list),
                             doc='Volume fraction of holdup by phase')
 
             @self.Constraint(self.flowsheet().config.time,
@@ -1745,11 +1749,11 @@ argument)."""))
             def sum_of_phase_fractions(b, t, x):
                 return 1 == sum(
                         b.phase_fraction[t, x, p]
-                        for p in self.config.property_package.phase_list)
+                        for p in phase_list)
         else:
             @self.Expression(self.flowsheet().config.time,
                              self.length_domain,
-                             self.config.property_package.phase_list,
+                             phase_list,
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, x, p):
                 return 1
@@ -1772,6 +1776,10 @@ argument)."""))
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
+
+        phase_list = self.properties.phase_list
+        pc_set = self.properties.phase_component_set
+
         # Default scale factors
         # If the paraent component of an indexed component has a scale factor, but
         # some of the data objects don't, propogate the indexed component scale
@@ -1895,7 +1903,7 @@ argument)."""))
                 for (t, x, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties[t,x].get_material_flow_terms(p, j)
-                            for p in self.config.property_package.phase_list])
+                            for p in phase_list])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 _log.warning(f"Unknow material balance type {mb_type}")
@@ -1905,7 +1913,7 @@ argument)."""))
             for i, c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self.properties[i].get_enthalpy_flow_terms(p)
-                        for p in self.config.property_package.phase_list])
+                        for p in phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "energy_holdup_calculation"):
@@ -1934,12 +1942,9 @@ argument)."""))
 
         if hasattr(self, "elemental_flow_constraint"):
             for i, c in self.elemental_flow_constraint.items():
-                sf = conv_factor(self, *i)
-                sf *= iscale.min_scaling_factor(
-                    [self.properties[t, x].get_material_flow_terms(p, j)
-                        for j in self.config.property_package.component_list
-                        for p in self.config.property_package.phase_list])
-                iscale.constraint_scaling_transform(s, sf)
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.elemental_flow_term[i], default=1, warning=True))
 
         if hasattr(self, "rate_reaction_stoichiometry_constraint"):
             for i, c in self.rate_reaction_stoichiometry_constraint.items():

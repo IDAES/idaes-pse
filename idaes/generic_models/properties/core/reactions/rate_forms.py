@@ -19,9 +19,12 @@ from idaes.generic_models.properties.core.generic.generic_reaction import \
 
 # -----------------------------------------------------------------------------
 class power_law_rate():
+
+    @staticmethod
     def build_parameters(rblock, config):
         pass
 
+    @staticmethod
     def return_expression(b, rblock, r_idx, T):
         e = None
         # Get reaction orders and construct power law expression

@@ -299,11 +299,13 @@ between flow and pressure driven simulations.}""",
         comparisons of each inlet to the minimum pressure so far, using
         the IDAES smooth minimum function.
         """
+        units_meta = self.config.property_package.get_metadata()
         self.eps_pressure = Param(
             mutable=True,
             initialize=1e-3,
             domain=PositiveReals,
             doc="Smoothing term for minimum inlet pressure",
+            units=units_meta.get_derived_units("pressure")
         )
 
         # Calculate minimum inlet pressure

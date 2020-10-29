@@ -250,3 +250,5 @@ class TestSaponification(object):
                 value(sapon.fs.unit.costing.base_cost))
         assert (pytest.approx(16025.42623, abs=1e3) ==
                 value(sapon.fs.unit.costing.purchase_cost))
+
+        assert_units_consistent(sapon.fs.unit.costing)
