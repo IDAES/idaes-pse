@@ -13,6 +13,8 @@
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
+
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
 from idaes.power_generation.unit_models import FWH0D
@@ -26,6 +28,7 @@ if pyo.SolverFactory('ipopt').available():
 else:
     solver = None
 
+
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
@@ -36,10 +39,10 @@ def test_fwh_model():
         "default_property_package": iapws95.Iapws95ParameterBlock()})
     model.fs.properties = model.fs.config.default_property_package
     model.fs.fwh = FWH0D(default={
-        "has_desuperheat":True,
-        "has_drain_cooling":True,
-        "has_drain_mixer":True,
-        "property_package":model.fs.properties})
+        "has_desuperheat": True,
+        "has_drain_cooling": True,
+        "has_drain_mixer": True,
+        "property_package": model.fs.properties})
 
     model.fs.fwh.desuperheat.inlet_1.flow_mol.fix(100)
     model.fs.fwh.desuperheat.inlet_1.flow_mol.unfix()
@@ -57,7 +60,24 @@ def test_fwh_model():
     model.fs.fwh.desuperheat.overall_heat_transfer_coefficient.fix(10)
     model.fs.fwh.cooling.area.fix(1000)
     model.fs.fwh.cooling.overall_heat_transfer_coefficient.fix(10)
-    model.fs.fwh.initialize(optarg={"max_iter":50})
+    model.fs.fwh.initialize(optarg={"max_iter": 50})
 
     assert(degrees_of_freedom(model) == 0)
-    assert(abs(pyo.value(model.fs.fwh.desuperheat.inlet_1.flow_mol[0]) - 98.335) < 0.01)
+    assert(abs(pyo.value(model.fs.fwh.desuperheat.inlet_1.flow_mol[0]) -
+               98.335) < 0.01)
+
+
+@pytest.mark.integration
+def test_fwh_units():
+    model = pyo.ConcreteModel()
+    model.fs = FlowsheetBlock(default={
+        "dynamic": False,
+        "default_property_package": iapws95.Iapws95ParameterBlock()})
+    model.fs.properties = model.fs.config.default_property_package
+    model.fs.fwh = FWH0D(default={
+        "has_desuperheat": True,
+        "has_drain_cooling": True,
+        "has_drain_mixer": True,
+        "property_package": model.fs.properties})
+
+    assert_units_consistent(model)

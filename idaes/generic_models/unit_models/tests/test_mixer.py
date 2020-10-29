@@ -36,6 +36,7 @@ from idaes.core import (FlowsheetBlock,
                         StateBlock,
                         declare_process_block_class,
                         StateBlockData,
+                        StateBlock,
                         PhysicalParameterBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
@@ -843,7 +844,8 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
                                'holdup': 'mol'})
 
 
-@declare_process_block_class("NoPressureStateBlock")
+@declare_process_block_class("NoPressureStateBlock",
+                             block_class=StateBlock)
 class NoPressureStateBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 

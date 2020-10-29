@@ -206,7 +206,7 @@ see property package for documentation.}"""))
         self.add_inlet_port()
 
         split_map = {}
-        for p in self.config.property_package.phase_list:
+        for p in self.control_volume.properties_in.phase_list:
             p_obj = self.config.property_package.get_phase(p)
             if p_obj.is_vapor_phase():
                 # Vapor leaves through Vap outlet
@@ -283,11 +283,16 @@ see property package for documentation.}"""))
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
+        units_meta = \
+            self.config.property_package.get_metadata().get_derived_units
+
         self.costing = Block()
         self.length = Var(initialize=1,
-                          doc='vessel length')
+                          doc='vessel length',
+                          units=units_meta('length'))
         self.diameter = Var(initialize=1,
-                            doc='vessel diameter')
+                            doc='vessel diameter',
+                            units=units_meta('length'))
         module.flash_costing(self.costing, alignment=alignment,
                              Mat_factor=Mat_factor,
                              weight_limit=weight_limit,
