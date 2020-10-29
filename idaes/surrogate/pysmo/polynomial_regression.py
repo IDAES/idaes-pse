@@ -1319,8 +1319,7 @@ class PolynomialRegression:
     def _repr_pretty_(self, p, cycle=False):
  
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)
 
     def confint_regression(self, confidence=0.95):
         """

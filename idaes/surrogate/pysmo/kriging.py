@@ -661,5 +661,5 @@ class KrigingModel:
 
     def _repr_pretty_(self, p, cycle=False):
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)
+
