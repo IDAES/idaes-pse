@@ -21,7 +21,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, SolverFactory, value
+from pyomo.environ import Var, SolverFactory, value, units as pyunits
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
@@ -45,7 +45,10 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_mech.fix()
         time_set = self.flowsheet().config.time
-        self.shaft_speed = Var(time_set, doc="Shaft speed [1/s]", initialize=60.0)
+        self.shaft_speed = Var(time_set,
+                               doc="Shaft speed [1/s]",
+                               initialize=60.0,
+                               units=pyunits.s**-1)
         self.shaft_speed.fix()
 
         @self.Expression(time_set, doc="Specific speed [dimensionless]")

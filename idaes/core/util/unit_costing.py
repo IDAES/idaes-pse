@@ -12,9 +12,10 @@
 ##############################################################################
 # =============================================================================
 
-from pyomo.environ import (Constraint, Var, Param, exp, log,
-                           NonNegativeReals, units)
+from pyomo.environ import (
+    Constraint, Var, Param, exp, log, NonNegativeReals, units as pyunits)
 from idaes.core.util.constants import Constants as const
+from idaes.core.util.exceptions import ConfigurationError
 from pyomo.core.base.units_container import _PyomoUnit
 
 # Some more information about this module
@@ -97,7 +98,8 @@ def hx_costing(self, hx_type='U-tube',
                                'factor - Mat_factor')
 
     self.hx_os = Param(mutable=True, initialize=1.1,
-                       doc='hx oversize factor 1.1 to 1.5')
+                       doc='hx oversize factor 1.1 to 1.5',
+                       units=pyunits.ft**-2)
 
     # select length correction factor
     c_fl = {'8ft': 1.25, '12ft': 1.12, '16ft': 1.05, '20ft': 1.00}
@@ -114,14 +116,7 @@ def hx_costing(self, hx_type='U-tube',
             'Kettle_vap': 0.09005}
 
     # checking units of self.parent_block().area
-    if (self.parent_block().config.tube.property_package.get_metadata().
-            default_units['length']) == 'm':
-        area = self.parent_block().area*10.7639  # converting to ft^2
-    elif (self.parent_block().config.tube.property_package.get_metadata().
-            default_units['length']) == 'ft':
-        area = self.area
-    else:
-        raise Exception('area units not supported contact developers')
+    area = pyunits.convert(self.parent_block().area, to_units=pyunits.ft**2)
 
     def hx_cost_rule(self):
         return self.base_cost == exp(alf1[hx_type]
@@ -162,28 +157,16 @@ def hx_costing(self, hx_type='U-tube',
         if Mat_factor == 'carbon steel/carbon steel':
             return self.material_factor == 1
         else:
-            return self.material_factor == a + (area/100)**b
+            return self.material_factor == a + (area/100/pyunits.ft**2)**b
     self.hx_material_eqn = Constraint(rule=hx_material_fact_rule)
 
     # ------------------------------------------------------
     # Pressure factor calculation
     # doublecheck units (higher pressure fluid should be tube side)
-    if(self.parent_block().config.tube.property_package.get_metadata().
-       properties['pressure']['units']) == 'Pa':
-        pressure = (self.parent_block().
-                    tube.properties_in[0].pressure*14.69/1.01325e5)  # to psig
-    elif(self.parent_block().config.tube.property_package.get_metadata().
-         properties['pressure']['units']) == 'psig':
-        pressure = self.tube.properties_in[0].pressure
-    elif(self.parent_block().config.tube.property_package.get_metadata().
-         properties['pressure']['units']) == 'bar':
-        pressure = (self.parent_block().
-                    tube.properties_in[0].pressure*14.5038)  # to psig
-    elif(self.parent_block().config.tube.property_package.get_metadata().
-         properties['pressure']['units']) == 'MPa':
-        pressure = (self.parent_block().tube.properties_in[0].pressure*145.038)
-    else:
-        raise Exception('Pressure units not supported contact developers')
+
+    pressure = pyunits.convert(
+        self.parent_block().tube.properties_in[0].pressure,
+        to_units=pyunits.psi)
 
     # units must be in psig
     def hx_P_factor(self):
@@ -191,8 +174,9 @@ def hx_costing(self, hx_type='U-tube',
         #    return self.pressure_factor == 0.8510 + 0.1292*(pressure/600)
         #                                + 0.0198*(pressure/600)**2
         # eq valid from 100 pisg to 2000 psig
-        return self.pressure_factor == 0.9803 + 0.0180 * (pressure/100) \
-            + 0.0017 * (pressure/100)**2
+        return self.pressure_factor == (
+            0.9803 + 0.0180 * (pressure/100/pyunits.psi) +
+            0.0017 * (pressure/100/pyunits.psi)**2)
     self.p_factor_eq = Constraint(rule=hx_P_factor)
 
     # ---------------------------------------------------------
@@ -256,7 +240,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         compressor_type='pump'. Valid values 'open' (default),
                         'enclosed', 'explosion_proof''
         Mat_factor : construction material; Valid values 'stain_steel'
-                    (default), 'nickel_alloy' (compressor only)
+                        (default), 'nickel_alloy' (compressor only)
 
     Returns:
         None
@@ -278,37 +262,13 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
              work_mechanical[self.parent_block().
                              flowsheet().config.time.first()])
 
-    if(self.parent_block().config.property_package.get_metadata().
-       properties['enth_mol']['units']) == 'J/mol':
-        work_hp = w/746  # assuming work is in J/s
-
-    elif(self.parent_block().config.property_package.get_metadata().
-         properties['enth_mol']['units']) == 'kJ/kmol':
-        work_hp = w*0.0003725  # assuming w is in kJ/hr
-
-    elif(self.parent_block().config.property_package.get_metadata().
-         properties['enth_mol']['units']) == 'cal/mol':
-        work_hp = w * 0.00561  # assuming W is in cal/s
-
-    elif(self.parent_block().config.property_package.get_metadata().
-         properties['enth_mol']['units']) == 'cal/kmol':
-        work_hp = w/641186.48  # assuming W is in cal/hr
-
-    elif(self.parent_block().config.property_package.get_metadata().
-         properties['enth_mol']['units']) == 'TJ/kmol':
-        work_hp = w*1.34102209e9  # assuming W is in TJ/s (W/746=hp)
-    elif(self.parent_block().config.property_package.get_metadata().
-         properties['enth_mol']['units']) == 'MJ/kmol':
-        work_hp = w*1e6/746  # assuming W is in MJ/s (W/746=hp)
-    else:
-        raise Exception("work units not supported contact develpers")
-    # end of units check
+    work_hp = pyunits.convert(w, to_units=pyunits.hp)
 
     # if compressor is == False, that means pressure changer is a Turbine
     if self.parent_block().config.compressor is False:
         #                           -1*work_hp because work is negative
         def CP_rule(self):
-            return self.purchase_cost == 530*(-1 * work_hp)**0.81
+            return self.purchase_cost == 530*(-1/pyunits.hp * work_hp)**0.81
         self.cp_cost_eq = Constraint(rule=CP_rule)
 
     # if compressor is True
@@ -321,15 +281,16 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                                                flowsheet().config.time.first()]
 
             # new variables only used by pump costing
-            self.pump_head = Var(initialize=10,
-                                 domain=NonNegativeReals,
-                                 doc='Pump Head in feet of fluid '
-                                 'flowing (Pressure rise/dens)')
+            self.pump_head = Var(
+                initialize=10,
+                domain=NonNegativeReals,
+                doc='Pump Head in feet of fluid flowing (Pressure rise/dens)',
+                units=pyunits.pound_force*pyunits.foot/pyunits.pound)
 
-            self.size_factor = Var(initialize=10000,
-                                   domain=NonNegativeReals,
-                                   doc='pump size factor,'
-                                   'f(Q,pump_head) in gpm*ft^0.5')
+            self.size_factor = Var(
+                initialize=10000,
+                domain=NonNegativeReals,
+                doc='Pump size factor, f(Q,pump_head)')
 
             self.motor_base_cost = Var(initialize=10000,
                                        domain=NonNegativeReals,
@@ -347,57 +308,19 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             doc='pump-type factor')
 
             # Pressure units required in lbf/ft^2
-            if(self.parent_block().config.property_package.get_metadata().
-               properties['pressure']['units']) == 'Pa':
-                #                        Pa to psi = lb/in^2  1ft^2 = 144 in^2
-                deltaP_lb_ft2 = self.parent_block().deltaP[0] \
-                    * 0.00014503773 * 144
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['pressure']['units']) == 'psig':
-                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 144
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['pressure']['units']) == 'bar':
-                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 14.5038 * 144
-
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['pressure']['units']) == 'MPa':
-                deltaP_lb_ft2 = self.parent_block().deltaP[0] * 145.038 * 144
-            # end pressure units
-            else:
-                raise Exception('Pressure units not supported')
+            deltaP_lb_ft2 = pyunits.convert(
+                self.parent_block().deltaP[0],
+                to_units=pyunits.psi*pyunits.inch**2/pyunits.foot**2)
 
             # dens mass units required in lb/ft^3
-            if(self.parent_block().config.property_package.
-               get_metadata().properties['dens_mass']['units']) == 'kg/m^3':
-                #                   kg/m^3  1 kg= 2.2 lb  1m3 = 35.3147 ft^3
-                dens_mass_lb_ft3 = self.parent_block().control_volume.\
-                    properties_in[0].dens_mass * 2.2 / 35.3147
-            elif(self.parent_block().config.property_package.
-                 get_metadata().properties['dens_mass']['units']) == 'g/cm^3':
-                dens_mass_lb_ft3 = self.parent_block().control_volume.\
-                    properties_in[0].dens_mass * 62.427961
-            else:
-                raise Exception('mass density units not supported')
+            dens_mass_lb_ft3 = pyunits.convert(
+                self.parent_block().control_volume.properties_in[0].dens_mass,
+                to_units=pyunits.pound/pyunits.foot**3)
 
             # volumetric flow units required in gpm
-            if(self.parent_block().config.property_package.get_metadata().
-               properties['flow_vol']['units']) == 'm^3/s':
-                # 1 m3/s = 15850.32314 gal(US)/min
-                Q_gpm = self.parent_block().control_volume.\
-                    properties_in[0].flow_vol * 15850.32314
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['flow_vol']['units']) == 'm^3/hr':
-                Q_gpm = self.parent_block().control_volume.\
-                    properties_in[0].flow_vol * 246.172 / 60
-            elif(self.parent_block().config.property_package.get_metadata().
-                 properties['flow_vol']['units']) == 'ft^3/s':
-                Q_gpm = self.parent_block().control_volume.\
-                    properties_in[0].flow_vol * 448.83  # 1ft3/s = 448.83gpm
-            # end volumetric flow units
-            else:
-                raise Exception('volumetric flowrate units not supported')
+            Q_gpm = pyunits.convert(
+                self.parent_block().control_volume.properties_in[0].flow_vol,
+                to_units=pyunits.gallon/pyunits.minute)
 
             # build pump_head equation
             def p_head_rule(self):
@@ -409,7 +332,10 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
             # H = pump head in feet of flowing (pressure rise/liquid density)
             # build Size Factor equation
             def p_s_factor_rule(self):
-                return self.size_factor == Q_gpm*(self.pump_head**0.5)
+                return self.size_factor == (
+                    Q_gpm*pyunits.minute/pyunits.gallon *
+                    (self.pump_head *
+                     pyunits.pound/pyunits.pound_force/pyunits.foot)**0.5)
             self.s_factor_eq = Constraint(rule=p_s_factor_rule)
 
             # Base cost and Purchase cost for centrifugal pump
@@ -492,9 +418,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                                   doc='motor type factor')
 
             # pump fractional efficiency
-            np = -0.316 + 0.24015*log(Q_gpm) - 0.01199*log(Q_gpm)**2
+            np = (-0.316 + 0.24015*log(Q_gpm*pyunits.minute/pyunits.gallon) -
+                  0.01199*log(Q_gpm*pyunits.minute/pyunits.gallon)**2)
             # fractional efficiency of the electric motor
-            nm = 0.80 + 0.0319*log(work_hp) - 0.00182*log(work_hp)**2
+            nm = (0.80 + 0.0319*log(work_hp/pyunits.hp) -
+                  0.00182*log(work_hp/pyunits.hp)**2)
 
             # power consumption in horsepower
             @self.Expression()
@@ -503,11 +431,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         * dens_mass_lb_ft3/7.48052)/(33000*np*nm)
 
             def base_motor_cost_rule(self):
-                return self.motor_base_cost == \
-                    exp(5.8259 + 0.13141*log(self.power_consumption_hp)
-                        + 0.053255*log(self.power_consumption_hp)**2
-                        + 0.028628*log(self.power_consumption_hp)**3
-                        - 0.0035549*log(self.power_consumption_hp)**4)
+                pc_hp = (self.power_consumption_hp /
+                         pyunits.get_units(self.power_consumption_hp))
+                return self.motor_base_cost == exp(
+                    5.8259 + 0.13141*log(pc_hp) + 0.053255*log(pc_hp)**2 +
+                    0.028628*log(pc_hp)**3 - 0.0035549*log(pc_hp)**4)
             self.base_motor_cost_eq = Constraint(rule=base_motor_cost_rule)
 
             def CP_motor_rule(self):
@@ -565,7 +493,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                 def CB_rule(self):
                     return self.base_cost == \
                         exp(c_alf1[compressor_type]
-                            + c_alf2[compressor_type]*log(work_hp))
+                            + c_alf2[compressor_type]*log(work_hp/pyunits.hp))
                 self.cb_cost_eq = Constraint(rule=CB_rule)
 
                 def CP_rule(self):
@@ -702,40 +630,32 @@ def vessel_costing(self, alignment='horizontal',
         try:
             D = self.parent_block().diameter
         except AttributeError:
-            raise ConfigurationError('diameter does not exist in unit model')
+            raise ConfigurationError(
+                '{} Component diameter does not exist in unit model'
+                .format(self.name))
         try:
             L = self.parent_block().length
         except AttributeError:
-            raise ConfigurationError('length variable does not exist in '
-                                     'the unit model')
-        # checking units of self.parent_block().diameter
-        if isinstance(self.parent_block().config.property_package.
-                      get_metadata().default_units['length'], _PyomoUnit):
-            D = units.convert(D, to_units=units.foot)
-            L = units.convert(L, to_units=units.foot)
-        elif (self.parent_block().config.property_package.get_metadata().
-                default_units['length']) == 'm':
-            D = D*3.28084  # converting to ft
-            L = L*3.28084
-        elif (self.parent_block().config.property_package.get_metadata().
-                default_units['length']) == 'ft':
-            pass
-        else:
-            raise Exception('area units not supported contact developers')
-
-    elif (ref_parameter_diameter is not None
-          and ref_parameter_length is not None):
+            raise ConfigurationError(
+                '{} Component length does not exist in unit model'
+                .format(self.name))
+    elif ref_parameter_diameter is None or ref_parameter_length is None:
+        raise ConfigurationError('provide both ref_parameter_diameter '
+                                 'and ref_parameter_length')
+    else:
         D = ref_parameter_diameter
         L = ref_parameter_length
 
-    else:
-        raise ConfigurationError('provide both ref_parameter_diameter'
-                                 'and ref_parameter_length')
+    D = pyunits.convert(D, to_units=pyunits.foot)
+    L = pyunits.convert(L, to_units=pyunits.foot)
+    D_in = pyunits.convert(D, to_units=pyunits.inch)
+    L_in = pyunits.convert(L, to_units=pyunits.inch)
 
     # new variables and parameters
     self.weight = Var(initialize=1000,
                       domain=NonNegativeReals,
-                      doc='weight of vessel in lb')
+                      doc='weight of vessel in lb',
+                      units=pyunits.pound)
 
     self.vessel_purchase_cost = Var(initialize=1e5,
                                     domain=NonNegativeReals,
@@ -745,11 +665,13 @@ def vessel_costing(self, alignment='horizontal',
     # shell thickness here already considers the pressure design
     self.shell_thickness = Param(mutable=True,
                                  initialize=1.25,
-                                 doc='shell thickness in in')
+                                 doc='shell thickness in in',
+                                 units=pyunits.inch)
     self.material_factor = Param(mutable=True, initialize=3,
                                  doc='construction material correction factor')
     self.material_density = Param(mutable=True, initialize=0.284,
-                                  doc='density of the metal in lb/in^3')
+                                  doc='density of the metal in lb/in^3',
+                                  units=pyunits.pound/pyunits.inch**3)
 
     if weight_limit == 'option1':
         # Blower Cost Correlation
@@ -784,32 +706,34 @@ def vessel_costing(self, alignment='horizontal',
 
     self.material_factor = material_factor_dic[Mat_factor]
     # metal densities in lb/in^3
-    material_dens_dic = {'carbon_steel': 0.284,  # lb/in3 = 490 lb/ft3
-                         'low_alloy_steel': 0.271,  # 0.271 - 0.292 lb/in³
-                         'stain_steel_304': 0.270,  # 467 - 499 lb/ft3
-                         'stain_steel_316': 0.276,  # 467 - 499 lb/ft3
-                         'carpenter_20CB-3': 0.292,  # lb/in3 = 503 lb/ft3
-                         'nickel_200': 0.3216,  # lb/in3 = 556 lb/ft3
-                         'monel_400': 0.319,  # lb/in3 = 522 - 552 lb/ft3
-                         'inconel_600': 0.3071,  # lb/in3 = 530 lb/ft3
-                         'incoloy_825': 0.2903,  # lb/in3 = 501 lb/ft3
-                         'titanium': 0.1628}  # lb/in3 = 281 lb/ft3
+    material_dens_dic = {
+        'carbon_steel': 0.284,  # 490 lb/ft3
+        'low_alloy_steel': 0.271,  # 0.292 lb/in³
+        'stain_steel_304': 0.270,  # 467 - 499 lb/ft3
+        'stain_steel_316': 0.276,  # 467 - 499 lb/ft3
+        'carpenter_20CB-3': 0.29,  # 503 lb/ft3
+        'nickel_200': 0.3216,  # 556 lb/ft3
+        'monel_400': 0.319,  # 522 - 552 lb/ft3
+        'inconel_600': 0.3071,  # 530 lb/ft3
+        'incoloy_825': 0.2903,  # 501 lb/ft3
+        'titanium': 0.1628}  # 281 lb/ft3
 
-    self.material_density = material_dens_dic[Mat_factor]
+    self.material_density.set_value(material_dens_dic[Mat_factor])
 
     # weight in lb --------------------------------------------------------
     # converting D in ft to inches, 0.8*D = accounts for two heads of vessel
     def weight_rule(self):
-        return self.weight == const.pi * ((D*12) + self.shell_thickness) \
-            * ((L*12)+(0.8*D*12))*self.shell_thickness*self.material_density
+        return self.weight == (
+            const.pi * (D_in + self.shell_thickness) *
+            (L_in + 0.8*D_in)*self.shell_thickness*self.material_density)
     self.weight_eq = Constraint(rule=weight_rule)
 
     # Base Vessel cost
     def CV_rule(self):
         return self.base_cost == \
-            exp(c_alf1[alignment]
-                + c_alf2[alignment]*(log(self.weight))
-                + c_alf3[alignment]*(log(self.weight)**2))
+            exp(c_alf1[alignment] +
+                c_alf2[alignment]*(log(self.weight/pyunits.pound)) +
+                c_alf3[alignment]*(log(self.weight/pyunits.pound)**2))
     self.cv_cost_eq = Constraint(rule=CV_rule)
 
     # True if platform and ladder costs are incuded
@@ -848,17 +772,20 @@ def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
                       D=10, L=20):
     if alignment == 'horizontal':
         def CPL_rule(self):
-            return self.base_cost_platf_ladders == 2005*D**0.20294
+            return self.base_cost_platf_ladders == (
+                2005*(D/pyunits.foot)**0.20294)
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     elif alignment == 'vertical':
         def CPL_rule(self):
             if L_D_range == 'option1':
-                return self.base_cost_platf_ladders == 361.8*((D)**0.73960) \
-                    * (L)**0.70684
+                return self.base_cost_platf_ladders == (
+                    361.8*(D/pyunits.foot)**0.73960 *
+                    (L/pyunits.foot)**0.70684)
             elif L_D_range == 'option2':
-                return self.base_cost_platf_ladders == 309.9*(D**0.63316) \
-                    * (L**0.80161)
+                return self.base_cost_platf_ladders == (
+                    309.9*(D/pyunits.foot)**0.63316 *
+                    (L/pyunits.foot)**0.80161)
             else:
                 raise Exception('L_D_range option not supported')
         self.CPL_eq = Constraint(rule=CPL_rule)
@@ -911,13 +838,14 @@ def plates_cost(self,
     # recalculating tray factor value
     # Column diameter in ft, eq. valid for 2 to 16 ft
     def mt_factor_rule(self):
-        return self.tray_material_factor == t_alf1[tray_mat_factor] \
-            + t_alf2[tray_mat_factor]*D
+        return self.tray_material_factor == (
+            t_alf1[tray_mat_factor] +
+            t_alf2[tray_mat_factor]*D/pyunits.foot)
     self.mt_factor_eq = Constraint(rule=mt_factor_rule)
 
     # base cost for trays
     def bc_tray_rule(self):
-        return self.base_cost_trays == 468.00*exp(0.1739*D)
+        return self.base_cost_trays == 468.00*exp(0.1739*D/pyunits.foot)
     self.bc_tray_eq = Constraint(rule=bc_tray_rule)
 
     # purchase cost calculation for trays
@@ -947,55 +875,19 @@ def fired_heater_costing(self,
                                doc='pressure design factor')
     if ref_parameter_pressure is None:
         # pressure in psig
-        if(self.parent_block().config.property_package.get_metadata().
-           properties['pressure']['units']) == 'Pa':
-            P = (self.parent_block().control_volume.
-                 properties_in[0].pressure*14.69/1.01325e5)  # to psig
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['pressure']['units']) == 'psig':
-            P = self.parent_block().control_volume.properties_in[0].pressure
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['pressure']['units']) == 'bar':
-            P = (self.parent_block().control_volume.
-                 properties_in[0].pressure*14.5038)  # to psig
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['pressure']['units']) == 'MPa':
-            P = (self.parent_block().control_volume.
-                 properties_in[0].pressure*145.038)
-        else:
-            raise Exception('Pressure units not supported contact developers')
+        P = self.parent_block().control_volume.properties_in[0].pressure
+
+        # Need to convert to gauge pressure
+        P = pyunits.convert(P, to_units=pyunits.psi) - 14.6959
     else:
-        P = ref_parameter_pressure
+        P = pyunits.convert(ref_parameter_pressure, to_units=pyunits.psi)
 
     if ref_parameter_heat_duty is None:
-        # Q in BTU/hr
-        Q_in = self.parent_block().heat_duty[0]
-        if(self.parent_block().config.property_package.get_metadata().
-           properties['enth_mol']['units']) == 'J/mol':
-            Q = Q_in*3.41214  # assuming work is in J/s
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'kJ/kmol':
-            Q = Q_in*0.947817  # assuming w is in kJ/hr
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'cal/mol':
-            Q = Q_in*14276.4  # assuming W is in cal/s
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'cal/kmol':
-            Q = Q_in*3.96567  # assuming W is in cal/hr
-
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'TJ/kmol':
-            Q = Q_in*3.412e+12  # assuming W is in TJ/s
-        elif(self.parent_block().config.property_package.get_metadata().
-             properties['enth_mol']['units']) == 'MJ/kmol':
-            Q = Q_in*3.412e+6  # assuming W is in MJ/s (W/746=hp)
-        else:
-            raise Exception("work units not supported contact develpers")
+        Q = self.parent_block().heat_duty[0]
     else:
         Q = ref_parameter_heat_duty
+
+    Q = pyunits.convert(Q, to_units=pyunits.BTU/pyunits.hr)
 
     # material factor -------------------
     material_factor_dic = {'carbon_steel': 1.0,
@@ -1006,25 +898,29 @@ def fired_heater_costing(self,
 
     # pressure deisgn factor calculation
     def p_factor_rule(self):
-        return self.pressure_factor == 0.986 - 0.0035*(P/500.00) \
-            + 0.0175*(P/500.00)**2
+        return self.pressure_factor == (
+            0.986 - 0.0035*(P/(500.00*pyunits.psi)) +
+            0.0175*(P/(500.00*pyunits.psi))**2)
     self.p_factor_eq = Constraint(rule=p_factor_rule)
 
     def CB_rule(self):
         if fired_type == 'fuel':
-            return self.base_cost == exp(0.32325 + 0.766*log(Q))
+            return self.base_cost == exp(
+                0.32325 + 0.766*log(Q/pyunits.BTU*pyunits.hr))
         elif fired_type == 'reformer':
-            return self.base_cost == 0.859*Q**0.81
+            return self.base_cost == 0.859*(Q/pyunits.BTU*pyunits.hr)**0.81
         elif fired_type == 'pyrolysis':
-            return self.base_cost == 0.650*Q**0.81
+            return self.base_cost == 0.650*(Q/pyunits.BTU*pyunits.hr)**0.81
         elif fired_type == 'hot_water':
-            return self.base_cost == exp(9.593-0.3769*log(Q)+0.03434*log(Q)**2)
+            return self.base_cost == exp(
+                9.593-0.3769*log((Q/pyunits.BTU*pyunits.hr)) +
+                0.03434*log((Q/pyunits.BTU*pyunits.hr))**2)
         elif fired_type == 'salts':
-            return self.base_cost == 12.32*Q**0.64
+            return self.base_cost == 12.32*(Q/pyunits.BTU*pyunits.hr)**0.64
         elif fired_type == 'dowtherm_a':
-            return self.base_cost == 12.74*Q**0.65
+            return self.base_cost == 12.74*(Q/pyunits.BTU*pyunits.hr)**0.65
         elif fired_type == 'steam_boiler':
-            return self.base_cost == 0.367*Q**0.77
+            return self.base_cost == 0.367*(Q/pyunits.BTU*pyunits.hr)**0.77
         else:
             raise Exception('fired heater type not supported')
     self.cb_eq = Constraint(rule=CB_rule)

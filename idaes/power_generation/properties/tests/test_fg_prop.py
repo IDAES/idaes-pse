@@ -15,6 +15,7 @@ __author__ = "John Eslick"
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.fileutils import this_file_dir
 from idaes.power_generation.properties import FlueGasParameterBlock, FlueGasStateBlock
 from idaes.core import FlowsheetBlock
@@ -56,7 +57,7 @@ def read_data(fname, params):
             d = data[row[4]][int(row[0])]
             d["Cp"] = float(row[1])
             d["S"] = float(row[2])
-            H = params.cp_mol_ig_comp_coeff[("H", row[4])]*1000
+            H = pyo.value(params.cp_mol_ig_comp_coeff_H[(row[4])]*1000)
             d["H"] = float(row[3]) + H # H = enthalpy of formation
             d["comp"] = {row[4]:1.0}
 
@@ -80,6 +81,8 @@ def test_thermo():
     m.fs.params = FlueGasParameterBlock()
     m.fs.state = FlueGasStateBlock(default={"parameters":m.fs.params})
     m.fs.state.pressure.fix(1e5) #ideal gas properties are pressure independent
+
+    assert_units_consistent(m)
 
     data = read_data("pure-prop-nist-webbook.csv", m.fs.params)
 

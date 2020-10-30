@@ -182,7 +182,8 @@ ValveFunctionType.custom}""",
         self.Cv = pyo.Var(
             initialize=0.1,
             doc="Valve flow coefficent, for vapor "
-            "[mol/s/Pa] for liquid [mol/s/Pa^0.5]",
+            "[mol/s/Pa] for liquid [mol/s/Pa]",
+            units=pyo.units.mol/pyo.units.s/pyo.units.Pa
         )
         #self.Cv.fix()
 

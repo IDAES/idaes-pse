@@ -17,7 +17,8 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+from pyomo.environ import ConcreteModel, SolverFactory
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.power_generation.unit_models import TurbineStage
@@ -35,7 +36,7 @@ else:
     solver = None
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def build_turbine():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -44,21 +45,10 @@ def build_turbine():
     return m
 
 
-@pytest.fixture()
-def build_turbine_dyn():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
-    m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = TurbineStage(default={
-        "dynamic": False,
-        "property_package": m.fs.properties})
-    return m
-
-
-@pytest.mark.unit
-def test_basic_build(build_turbine):
+@pytest.mark.integration
+def test_units(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_turbine
+    assert_units_consistent(build_turbine)
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
@@ -66,23 +56,22 @@ def test_basic_build(build_turbine):
 @pytest.mark.component
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
-    m = build_turbine
     # set inlet
-    m.fs.turb.inlet.enth_mol[0].value = 70000
-    m.fs.turb.inlet.flow_mol[0].value = 15000
-    m.fs.turb.inlet.pressure[0].value = 8e6
-    m.fs.turb.efficiency_isentropic.fix(0.8)
-    m.fs.turb.ratioP.fix(0.7)
-    m.fs.turb.initialize(outlvl=4)
+    build_turbine.fs.turb.inlet.enth_mol[0].value = 70000
+    build_turbine.fs.turb.inlet.flow_mol[0].value = 15000
+    build_turbine.fs.turb.inlet.pressure[0].value = 8e6
+    build_turbine.fs.turb.efficiency_isentropic.fix(0.8)
+    build_turbine.fs.turb.ratioP.fix(0.7)
+    build_turbine.fs.turb.initialize(outlvl=4)
 
-    eq_cons = activated_equalities_generator(m)
+    eq_cons = activated_equalities_generator(build_turbine)
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
-    assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+    # inlet was't fixed and still shouldn't be
+    assert degrees_of_freedom(build_turbine) == 3
 
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.unit
 def test_report(build_turbine):
-    m = build_turbine
-    m.fs.turb.report()
+    build_turbine.fs.turb.report()
