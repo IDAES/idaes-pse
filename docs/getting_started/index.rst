@@ -113,9 +113,23 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 **Install IDAES**
 
-1. Install IDAES with pip::
+1. Install IDAES with pip by one of the following methods
 
-    pip install idaes-pse
+  a. To get the latest release::
+
+      pip install idaes-pse
+
+  b. To get a specific release, for example 1.7::
+
+      pip install idaes-pse==1.7
+
+  c. To get the latest development main branch::
+
+      pip install git+https://github.com/idaes/idaes-pse
+
+  d. To get a specific fork or branch, for example myfork (or idaes) and mybranch::
+
+      pip install git+https://github.com/myfork/idaes-pse@mybranch
 
 2. Run the :doc:`idaes get-extensions command<../user_guide/commands/get_extensions>`
    to install the compiled binaries::
@@ -165,11 +179,11 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 Optional Dependencies
 ---------------------
-Some tools in IDAES may require additional dependencies. Instructions for installing these dependencies 
+Some tools in IDAES may require additional dependencies. Instructions for installing these dependencies
 are located :ref:`here<getting_started/opt_dependencies:Optional Dependencies>`.
 
 .. toctree::
     :glob:
     :hidden:
-    
+
     *
