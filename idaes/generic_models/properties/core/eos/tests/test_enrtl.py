@@ -62,7 +62,7 @@ configuration = {
                 "parameter_data": {
                     "mw": (44E-3, pyunits.kg/pyunits.mol)}},
         'KHCO3': {"type": Apparent,
-                  "dissociation_species": ["K+", "HCO3-"],
+                  "dissociation_species": {"K+": 1, "HCO3-": 1},
                   "parameter_data": {
                       "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
         'K+': {"type": Cation,
@@ -76,7 +76,9 @@ configuration = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
-                        "equation_of_state": ENRTL}},
+                        "equation_of_state": ENRTL,
+                        "equation_of_state_options": {
+                            "pH_range": "basic"}}},
 
     # Set base units of measurement
     "base_units": {"time": pyunits.s,
@@ -107,7 +109,7 @@ config_true = {
                 "parameter_data": {
                     "mw": (44E-3, pyunits.kg/pyunits.mol)}},
         'KHCO3': {"type": Apparent,
-                  "dissociation_species": ["K+", "HCO3-"],
+                  "dissociation_species": {"K+": 1, "HCO3-": 1},
                   "parameter_data": {
                       "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
         'K+': {"type": Cation,
@@ -121,7 +123,9 @@ config_true = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
-                        "equation_of_state": ENRTL}},
+                        "equation_of_state": ENRTL,
+                        "equation_of_state_options": {
+                            "pH_range": "basic"}}},
 
     # Set base units of measurement
     "base_units": {"time": pyunits.s,
@@ -153,7 +157,7 @@ config_true_2phase = {
                 "parameter_data": {
                     "mw": (44E-3, pyunits.kg/pyunits.mol)}},
         'KHCO3': {"type": Apparent,
-                  "dissociation_species": ["K+", "HCO3-"],
+                  "dissociation_species": {"K+": 1, "HCO3-": 1},
                   "parameter_data": {
                       "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
         'K+': {"type": Cation,
@@ -170,7 +174,9 @@ config_true_2phase = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
-                        "equation_of_state": ENRTL},
+                        "equation_of_state": ENRTL,
+                        "equation_of_state_options": {
+                            "pH_range": "basic"}},
                 'Vap': {"type": VaporPhase,
                         "equation_of_state": Ideal}},
 
@@ -381,11 +387,19 @@ def test_true_component_lists():
                       Constraint)
     assert len(m.fs.state[1]._non_aqueous_mole_frac_equality) == 0
 
-    assert isinstance(m.fs.state[1]._molecular_mole_frac_equality,
+    assert isinstance(m.fs.state[1]._extent_apparent, Var)
+    assert len(m.fs.state[1]._extent_apparent) == 1
+    for k in m.fs.state[1]._extent_apparent:
+        assert k in ["KHCO3"]
+
+    assert not hasattr(m.fs.state[1], "_extent_apparent_H2O")
+
+    assert isinstance(m.fs.state[1]._aqueous_mole_frac_equality,
                       Constraint)
-    assert len(m.fs.state[1]._molecular_mole_frac_equality) == 2
-    for k in m.fs.state[1]._molecular_mole_frac_equality:
-        assert k in ["H2O", "CO2"]
+    assert len(m.fs.state[1]._aqueous_mole_frac_equality) == 5
+    for k in m.fs.state[1]._aqueous_mole_frac_equality:
+        assert k in [("Liq", "H2O"), ("Liq", "CO2"), ("Liq", "KHCO3"),
+                     ("Liq", "K+"), ("Liq", "HCO3-")]
 
 
 @pytest.mark.unit
@@ -487,8 +501,16 @@ def test_true_component_lists_2_phase():
     for k in m.fs.state[1]._non_aqueous_mole_frac_equality:
         assert k in [("Vap", "H2O"), ("Vap", "CO2"), ("Vap", "N2")]
 
-    assert isinstance(m.fs.state[1]._molecular_mole_frac_equality,
+    assert isinstance(m.fs.state[1]._extent_apparent, Var)
+    assert len(m.fs.state[1]._extent_apparent) == 1
+    for k in m.fs.state[1]._extent_apparent:
+        assert k in ["KHCO3"]
+
+    assert not hasattr(m.fs.state[1], "_extent_apparent_H2O")
+
+    assert isinstance(m.fs.state[1]._aqueous_mole_frac_equality,
                       Constraint)
-    assert len(m.fs.state[1]._molecular_mole_frac_equality) == 2
-    for k in m.fs.state[1]._molecular_mole_frac_equality:
-        assert k in ["H2O", "CO2"]
+    assert len(m.fs.state[1]._aqueous_mole_frac_equality) == 5
+    for k in m.fs.state[1]._aqueous_mole_frac_equality:
+        assert k in [("Liq", "H2O"), ("Liq", "CO2"), ("Liq", "KHCO3"),
+                     ("Liq", "K+"), ("Liq", "HCO3-")]

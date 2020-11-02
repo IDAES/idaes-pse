@@ -22,7 +22,7 @@ from pyomo.core.base.units_container import _PyomoUnit
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 from .phases import PhaseType as PT
-from .util.config import list_of_phase_types, list_of_strings
+from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
 from idaes.generic_models.properties.core.generic.utility import \
     set_param_value
@@ -375,11 +375,11 @@ class ApparentData(SoluteData):
     """
     CONFIG = SoluteData.CONFIG()
     CONFIG.declare("dissociation_species", ConfigValue(
-        domain=list_of_strings,
+        domain=dict,
         default=None,
-        description="List of dissociation species",
-        doc="List of true species that this species will dissociate into "
-        "upon dissolution."))
+        description="Dict of dissociation species",
+        doc="Dict of true species that this species will dissociate into "
+        "upon dissolution along with stoichiometric coefficients."))
 
     def _is_aqueous_phase_valid(self):
         return True

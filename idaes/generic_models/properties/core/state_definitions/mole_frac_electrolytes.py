@@ -79,17 +79,73 @@ def create_mole_frac_vars(b):
         cation = b.params.cation_set
         molec = b.params.solvent_set|b.params.solute_set
 
-        for p in b.phase_list:
+        # TODO: Need different extents for each aqueous phase
+        b._extent_apparent = Var(b.params._apparent_set,
+                                 initialize=0,
+                                 doc="Extent of apparent reactions")
+
+        if "H3O+" in cation and "OH-" in anion:
+            # Water self-ionization uses hydronium form
+            gamma_H2O = 2
+        elif "H+" in cation and "OH-" in anion:
+            # Water self-ionization uses proton form
+            gamma_H2O = 1
+        else:
+            # No water self-ionization
+            gamma_H2O = 0
+
+        if gamma_H2O > 0:
+            b._extent_apparent_H2O = Var(initialize=0,
+                                         doc="Extent of water self-ionization")
+
+        def true_to_apparent_conversion(b, p, j):
             p_obj = b.params.get_phase(p)
-            if isinstance(p_obj, AqueousPhase):
-                # Add balances for all molecular solute species
-                def rule_molecular(b, j):
-                    return b.mole_frac_phase_comp_true[p, j] == \
-                        b.mole_frac_phase_comp_apparent[p, j]
-                b._molecular_mole_frac_equality = Constraint(
-                    molec,
-                    rule=rule_molecular,
-                    doc="Equating mole fractions of molecular species")
+            c_obj = b.params.get_component(j)
+            if not isinstance(p_obj, AqueousPhase):
+                # Non-aqueous phases covered earlier
+                return Constraint.Skip
+            elif not c_obj._is_phase_valid(p_obj):
+                # Component not valid in aqueous phase
+                return Constraint.Skip
+            elif j == "H2O" and gamma_H2O > 0:
+                return (b.mole_frac_phase_comp_apparent[p, j] ==
+                        b.mole_frac_phase_comp_true[p, j] +
+                        gamma_H2O*b._extent_apparent_H2O)
+            elif j in molec:
+                return (b.mole_frac_phase_comp_apparent[p, j] ==
+                        b.mole_frac_phase_comp_true[p, j])
+            else:
+                # Can only write one constraint for between H+/H3O+ and OH-
+                # Select based on acidic or basic config argument
+                if (j in ["H+", "H3O+"] and
+                        p_obj.config.equation_of_state_options["pH_range"] ==
+                        "basic"):
+                    return Constraint.Skip
+                if (j == "OH-" and
+                        p_obj.config.equation_of_state_options["pH_range"] ==
+                        "acidic"):
+                    return Constraint.Skip
+
+                if j not in anion and j not in cation:
+                    lhs = b.mole_frac_phase_comp_apparent[p, j]
+                    rhs = 0
+                else:
+                    lhs = 0
+                    rhs = b.mole_frac_phase_comp_true[p, j]
+
+                for i in b.params._apparent_set:
+                    i_comp = b.params.get_component(i)
+                    if j in i_comp.config.dissociation_species.keys():
+                        gamma = i_comp.config.dissociation_species[j]
+                        rhs = rhs + gamma*b._extent_apparent[i]
+
+                return lhs == rhs
+
+        b._aqueous_mole_frac_equality = Constraint(
+            b.phase_list,
+            b.params.component_list,  # in this case, we want ALL components
+            rule=true_to_apparent_conversion,
+            doc="Relating true and apparent mole fractions in aqueous phases")
 
     elif cons_set == StateIndex.apparent:
         # Apparent to true conversion
