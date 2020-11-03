@@ -65,7 +65,7 @@ Linux
 1. The IPOPT solver depends on the GNU FORTRAN, GOMP, Blas, and Lapack libraries,
    If these libraries are not already installed on your Linux system, you or your
    system administrator can use the sample commands below to install them. If you
-   have a Linux distribution that is not listed, IPOPT should still work, but you
+   have a Linux distribution that is not listed, IPOPT should still work, but 
    the commands to install the required libraries may differ. If these libraries
    are already installed, you can skip this and proceed with the next step.
 
@@ -103,7 +103,7 @@ Follow the :ref:`min_install_generic` instructions.
 
 .. _min_install_generic:
 
-Generic install
+Generic Install
 ---------------
 
 The remaining steps performed in either the Linux or OSX Terminal or Powershell.
@@ -127,7 +127,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
       pip install git+https://github.com/idaes/idaes-pse
 
-  d. To get a specific fork or branch, for example myfork (or idaes) and mybranch::
+  d. To get a specific fork or branch, for example myfork (of idaes-pse) and mybranch::
 
       pip install git+https://github.com/myfork/idaes-pse@mybranch
 
@@ -140,10 +140,10 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
    .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX.
 
-                As fallback (assuming you are uisng a conda env) you can install
+                As a fallback (assuming you are using a conda env) you can install
                 the generic ipopt solver with the command ``conda install -c
                 conda-forge ipopt`` though this will not have all the features
-                of our extentions package.
+                of our extensions package.
 
 3. Run the :doc:`idaes get-examples command <../user_guide/commands/get_examples>` to download
    and install the example files::
