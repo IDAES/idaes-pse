@@ -77,7 +77,7 @@ def test_turbine():
     Tin = 500 # K
     Pin = 1e6 # Pa
     Pout = 7e5 # Pa
-    hin = iapws95.htpx(Tin, Pin) # J/mol
+    hin = pyo.value(iapws95.htpx(Tin*pyo.units.K, Pin*pyo.units.Pa)) # J/mol
 
     m.fs.unit1.inlet.flow_mol[0].fix(Fin)
     m.fs.unit2.inlet.flow_mol[0].fix(Fin)
@@ -114,7 +114,7 @@ def test_compressor():
     Tin = 500 # K
     Pin = 2222782.4 # Pa
     Pout = 2.7*Pin # Pa
-    hin = iapws95.htpx(Tin, Pin) # J/mol
+    hin = pyo.value(iapws95.htpx(Tin*pyo.units.K, Pin*pyo.units.Pa)) # J/mol
     eff = 0.324
 
     m.fs.unit1.inlet.flow_mol[0].fix(Fin)

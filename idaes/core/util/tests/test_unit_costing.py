@@ -47,8 +47,10 @@ def test_costing_FH_build():
     m.fs.get_costing()
     m.fs.costing.CE_index = 550  # for testing only
     m.fs.unit = pyo.Block()
-    m.fs.unit.heat_duty = pyo.Var(initialize=1e6)
-    m.fs.unit.pressure = pyo.Var(initialize=1e5)
+    m.fs.unit.heat_duty = pyo.Var(initialize=1e6,
+                                  units=pyo.units.BTU/pyo.units.hr)
+    m.fs.unit.pressure = pyo.Var(initialize=1e5,
+                                 units=pyo.units.psi)
     m.fs.unit.costing = pyo.Block()
     m.fs.unit.heat_duty.fix(18390000)  # Btu/hr
     m.fs.unit.pressure.fix(700)  # psig
@@ -73,8 +75,10 @@ def test_costing_FH_solve():
     m.fs.get_costing()
     m.fs.costing.CE_index = 550  # for testing only
     m.fs.unit = pyo.Block()
-    m.fs.unit.heat_duty = pyo.Var(initialize=1e6)
-    m.fs.unit.pressure = pyo.Var(initialize=1e5)
+    m.fs.unit.heat_duty = pyo.Var(initialize=1e6,
+                                  units=pyo.units.BTU/pyo.units.hr)
+    m.fs.unit.pressure = pyo.Var(initialize=1e5,
+                                 units=pyo.units.psi)
     m.fs.unit.costing = pyo.Block()
     m.fs.unit.heat_duty.fix(18390000)  # Btu/hr
     m.fs.unit.pressure.fix(700)  # psig
@@ -108,14 +112,16 @@ def test_costing_distillation_solve():
     m.fs.costing.CE_index = 550
     # create a unit model and variables
     m.fs.unit = pyo.Block()
-    m.fs.unit.heat_duty = pyo.Var(initialize=1e6)
-    m.fs.unit.pressure = pyo.Var(initialize=1e5)
+    m.fs.unit.heat_duty = pyo.Var(initialize=1e6,
+                                  units=pyo.units.BTU/pyo.units.hr)
+    m.fs.unit.pressure = pyo.Var(initialize=1e5,
+                                 units=pyo.units.psi)
     m.fs.unit.diameter = pyo.Var(initialize=10,
                                  domain=pyo.NonNegativeReals,
-                                 doc='unit diameter in m')
+                                 units=pyo.units.foot)
     m.fs.unit.length = pyo.Var(initialize=10,
                                domain=pyo.NonNegativeReals,
-                               doc='unit length in m')
+                               units=pyo.units.foot)
     # create costing block
     m.fs.unit.costing = pyo.Block()
 
@@ -131,17 +137,17 @@ def test_costing_distillation_solve():
     # pressure design and shell thickness from Example 22.13 Product and
     # Process Design Principless
     m.fs.unit.heat_duty.fix(18390000)  # Btu/hr
-    m.fs.unit.pressure.fix(123)  # psig
+    m.fs.unit.pressure.fix(123+14.6959)  # psia
     # pressure design minimum thickness tp = 0.582 in
     # vessel is vertical + quite tall the tower is subject to wind load,
     # and earthquake. Assume wall thickness of 1.25 in.
     # The additional wall thickness at the bottom of the tower is 0.889 in
     # average thickness is 1.027, plus corrosion allowance of 1/8
     # 1.152 in, therefore steel plate thickness is 1.250 (ts)
-    m.fs.unit.costing.shell_thickness = 1.250  # inches
+    m.fs.unit.costing.shell_thickness.set_value(1.250)  # inches
     m.fs.unit.diameter.fix(10)  # ft
     m.fs.unit.length.fix(212)   # ft
-    m.fs.unit.costing.number_trays = 100
+    m.fs.unit.costing.number_trays.set_value(100)
 
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments

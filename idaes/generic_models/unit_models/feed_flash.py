@@ -138,9 +138,9 @@ see property package for documentation.}"""))
             def isenthalpic(b, t):
                 cv = b.control_volume
                 return (sum(cv.properties_in[t].get_enthalpy_flow_terms(p)
-                            for p in b.config.property_package.phase_list) ==
+                            for p in cv.properties_in[t].phase_list) ==
                         sum(cv.properties_out[t].get_enthalpy_flow_terms(p)
-                            for p in b.config.property_package.phase_list))
+                            for p in cv.properties_in[t].phase_list))
 
         self.control_volume.add_momentum_balances(
             balance_type=MomentumBalanceType.pressureTotal)
