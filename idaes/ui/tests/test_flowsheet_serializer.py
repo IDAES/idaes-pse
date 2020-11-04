@@ -11,9 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import pytest
-from operator import itemgetter
-
 import re
+
+from collections import defaultdict
+from operator import itemgetter
 
 from idaes.generic_models.flowsheets.demo_flowsheet import (
     build_flowsheet, set_dof, initialize_flowsheet, solve_flowsheet)
@@ -29,8 +30,9 @@ from pyomo.environ import Expression
 
 
 @pytest.mark.component
-def test_serialize_flowsheet():
-    # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
+def test_serialize():
+    # Construct the model from idaes.generic_models.flowsheets.demo_flowsheet
+    # It consists of a Mixer linked to a Heater linked to a Flash.
     m = build_flowsheet()
     m.fs.properties = SWCO2ParameterBlock()
     m.fs.main_compressor = PressureChanger(
@@ -66,12 +68,12 @@ def test_serialize_flowsheet():
                                        'property_package': m.fs.properties,
                                        'has_pressure_change': True})
 
-    # _set_numerical_details(m)
+    _set_numerical_details(m)
 
     fss = FlowsheetSerializer()
     fss.serialize(m.fs, 'myflowsheet')
 
-    unit_models = fss.get_unit_models()
+    unit_models = fss.unit_models
     unit_model_names_types = []
     for unit_model in unit_models:
         unit_model_names_types.append(unit_models[unit_model])
@@ -89,9 +91,8 @@ def test_serialize_flowsheet():
                                     {'name': 'LTR_pseudo_tube', 'type': 'heater'},
                                     ]
 
-    # TODO: Examine whether these are in fact appropriate
-    inlet_names = {'inlet', 'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 8)})
-    outlet_names = {'outlet', 'vap_outlet', 'liq_outlet'}.union({f'outlet_{n}' for n in range(1, 8)})
+    inlet_names = {'inlet_1_1', 'inlet_2_1'}.union({f'inlet_{n}' for n in range(1, 9)})
+    outlet_names = {'vap_outlet_1', 'liq_outlet_1'}.union({f'outlet_{n}' for n in range(1, 9)})
     feed_and_outlet_names_type_truth = [{'name': name, 'type': 'feed'} for name in inlet_names] + \
                                        [{'name': name, 'type': 'product'} for name in outlet_names]
     unit_models_names_type_truth += feed_and_outlet_names_type_truth
@@ -103,7 +104,7 @@ def test_serialize_flowsheet():
     assert len(difference) == 0
 
     # TODO Figure out how to test ports. Maybe find out if we can find the parent component for the port?
-    # ports = fss.get_ports()
+    # ports = fss.ports
     # assert ports == {"<pyomo.network.port.SimplePort object at 0x7fe8d0d79278>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
     #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d792e8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
     #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79358>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>",
@@ -132,7 +133,7 @@ def test_serialize_flowsheet():
     #                  }
 
     named_edges_results = {}
-    edges = fss.get_edges()
+    edges = fss.edges
 
     for name, end_points in edges.items():
       named_edges_results[name] = {"source": end_points["source"].getname(), "dest": end_points["dest"].getname()}
@@ -140,30 +141,27 @@ def test_serialize_flowsheet():
     named_edges_truth = {'s01': {'source': 'M01', 'dest': 'H02'},
                          's02': {'source': 'H02', 'dest': 'F03'}}
 
-    # TODO: as obove, examine whether this is appropriate treatment for arcs connected to inlets/outlets
-    # In particular, note that numbered inlet/outlet names are somewhat arbitrary;
-    # they're only deterministic due to sorting upon automatic generation.
     in_out_edges_truth = {
-           's_inlet': {'dest': 'FG_cooler', 'source': 'inlet'},
+           's_inlet_1': {'dest': 'FG_cooler', 'source': 'inlet_1'},
            's_inlet_1_1': {'dest': 'M01', 'source': 'inlet_1_1'},
-           's_inlet_1': {'dest': 'HTR_pseudo_tube', 'source': 'inlet_1'},
+           's_inlet_2': {'dest': 'HTR_pseudo_tube', 'source': 'inlet_2'},
            's_inlet_2_1': {'dest': 'M01', 'source': 'inlet_2_1'},
-           's_inlet_2': {'dest': 'LTR_pseudo_tube', 'source': 'inlet_2'},
-           's_inlet_3': {'dest': 'boiler', 'source': 'inlet_3'},
-           's_inlet_4': {'dest': 'bypass_compressor', 'source': 'inlet_4'},
-           's_inlet_5': {'dest': 'main_compressor', 'source': 'inlet_5'},
-           's_inlet_6': {'dest': 'pre_boiler', 'source': 'inlet_6'},
-           's_inlet_7': {'dest': 'turbine', 'source': 'inlet_7'},
-           's_liq_outlet': {'dest': 'liq_outlet', 'source': 'F03'},
-           's_outlet': {'dest': 'outlet', 'source': 'FG_cooler'},
-           's_outlet_1': {'dest': 'outlet_1', 'source': 'HTR_pseudo_tube'},
-           's_outlet_2': {'dest': 'outlet_2', 'source': 'LTR_pseudo_tube'},
-           's_outlet_3': {'dest': 'outlet_3', 'source': 'boiler'},
-           's_outlet_4': {'dest': 'outlet_4', 'source': 'bypass_compressor'},
-           's_outlet_5': {'dest': 'outlet_5', 'source': 'main_compressor'},
-           's_outlet_6': {'dest': 'outlet_6', 'source': 'pre_boiler'},
-           's_outlet_7': {'dest': 'outlet_7', 'source': 'turbine'},
-           's_vap_outlet': {'dest': 'vap_outlet', 'source': 'F03'}}
+           's_inlet_3': {'dest': 'LTR_pseudo_tube', 'source': 'inlet_3'},
+           's_inlet_4': {'dest': 'boiler', 'source': 'inlet_4'},
+           's_inlet_5': {'dest': 'bypass_compressor', 'source': 'inlet_5'},
+           's_inlet_6': {'dest': 'main_compressor', 'source': 'inlet_6'},
+           's_inlet_7': {'dest': 'pre_boiler', 'source': 'inlet_7'},
+           's_inlet_8': {'dest': 'turbine', 'source': 'inlet_8'},
+           's_liq_outlet_1': {'dest': 'liq_outlet_1', 'source': 'F03'},
+           's_outlet_1': {'dest': 'outlet_1', 'source': 'FG_cooler'},
+           's_outlet_2': {'dest': 'outlet_2', 'source': 'HTR_pseudo_tube'},
+           's_outlet_3': {'dest': 'outlet_3', 'source': 'LTR_pseudo_tube'},
+           's_outlet_4': {'dest': 'outlet_4', 'source': 'boiler'},
+           's_outlet_5': {'dest': 'outlet_5', 'source': 'bypass_compressor'},
+           's_outlet_6': {'dest': 'outlet_6', 'source': 'main_compressor'},
+           's_outlet_7': {'dest': 'outlet_7', 'source': 'pre_boiler'},
+           's_outlet_8': {'dest': 'outlet_8', 'source': 'turbine'},
+           's_vap_outlet_1': {'dest': 'vap_outlet_1', 'source': 'F03'}}
 
     for edge, details in in_out_edges_truth.items():
         named_edges_truth[edge] = details
@@ -226,12 +224,13 @@ def test_in_out_regex_matching():
 @pytest.mark.unit
 def test__unique_unit_name():
     fss = FlowsheetSerializer()
-    fss._used_unit_names = {'inlet', 'inlet_1', 'outlet', 'toluene_prod'}
-    assert fss._unique_unit_name('hydrogen_in') == 'hydrogen_in'
-    assert fss._unique_unit_name('toluene') == 'toluene'
-    assert fss._unique_unit_name('outlet') == 'outlet_1'
-    assert fss._unique_unit_name('inlet') == 'inlet_2'
-    assert fss._unique_unit_name('prod') == 'prod'
+    assert fss._unique_unit_name('hydrogen_in') == 'hydrogen_in_1'
+    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod_1'
+    assert fss._unique_unit_name('feed') == "feed_1"
+    # _used_unit_names is incremented by _unique_unit_name so this should have a suffix
+    assert fss._unique_unit_name('toluene_prod') == 'toluene_prod_2'
+    assert fss._unique_unit_name('feed') == "feed_2"
+    assert fss._unique_unit_name('feed') == "feed_3"
 
 @pytest.mark.unit
 def test_create_image_jointjs_json():
@@ -276,7 +275,7 @@ def test_create_image_jointjs_json():
                 ]}
 
   fss = FlowsheetSerializer()
-  fss.create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type, port_group)
+  fss._create_image_jointjs_json(out_json, x_pos, y_pos, component_id, image, component_type, port_group)
   assert out_json == {'cells':
                         [{
                             'type': 'standard.Image',
@@ -338,7 +337,7 @@ def test_create_link_jointjs_json():
     label = "foo"
 
     fss = FlowsheetSerializer()
-    fss.create_link_jointjs_json(out_json, source_port, dest_port, source_id, dest_id, link_id, label)
+    fss._create_link_jointjs_json(out_json, source_port, dest_port, source_id, dest_id, link_id, label)
     assert out_json == {'cells': [{
                             'type': 'standard.Link',
                             'source': {
