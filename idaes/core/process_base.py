@@ -323,6 +323,9 @@ class ProcessBlockData(_BlockData):
     def _get_stream_table_contents(self, time_point):
         return None
 
+    def serialize_contents(self, time_point=0):
+        return self._get_performance_contents(time_point), self._get_stream_table_contents(time_point)
+
     def _setup_dynamics(self):
         """
         This method automates the setting of the dynamic flag and time domain

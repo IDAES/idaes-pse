@@ -37,6 +37,19 @@ def compare_models(existing_model, new_model, keep_old_model=False):
                     "M101": {
                         "image": "mixer.svg", 
                         "type": "mixer"
+                        "performance_contents": {
+                            "0": {
+                                "Variable": "Heat Duty", 
+                                "Value": "0.0"
+                            }
+                        },
+                        "stream_contents": {
+                            "0": {
+                                "Variable": "temperature", 
+                                "Inlet": ".01", 
+                                "Outlet": "12"
+                            }
+                        }
                     }
                 },
                 "arcs": {
@@ -248,6 +261,19 @@ def model_jointjs_conversion(diff_model, current_json):
                     "M101": {
                         "image": "mixer.svg", 
                         "type": "mixer"
+                        "performance contents": {
+                            "0": {
+                                "Variable": "Heat Duty", 
+                                "Value": "0.0"
+                            }
+                        },
+                        "stream contents": {
+                            "0": {
+                                "Variable": "temperature", 
+                                "Inlet": ".01", 
+                                "Outlet": "12"
+                            }
+                        }
                     }
                 },
                 "arcs": {
