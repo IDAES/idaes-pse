@@ -62,8 +62,8 @@ source_suffix = '.rst'
 #
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
-master_doc = 'index'
+# The main toctree document.
+main_doc = 'index'
 
 # General information about the project.
 project = u'IDAES'
@@ -289,7 +289,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'IDAES.tex', u'IDAES Documentation', u'IDAES team', 'manual')
+    (main_doc, 'IDAES.tex', u'IDAES Documentation', u'IDAES team', 'manual')
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -343,7 +343,7 @@ man_pages = [('dmf/cli', 'dmf', u'Data Management Framework', [author], 1)]
 #  dir menu entry, description, category)
 texinfo_documents = [
     (
-        master_doc,
+        main_doc,
         'IDAES',
         u'IDAES Documentation',
         author,
