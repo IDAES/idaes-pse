@@ -69,19 +69,23 @@ class TestDynamicBlock(object):
                 inputs=inputs,
                 measurements=measurements,
                 )
+        # Assert that we have the correct type
         assert type(block) is SimpleDynamicBlock
         assert isinstance(block, DynamicBlock)
         assert isinstance(block, _DynamicBlockData)
 
         block.construct()
+        # Assert that we behave like a simple block
         assert block[None] is block
         assert all(b is block for b in block[:])
 
+        # Assert that input attributes have been processed correctly
         assert block.mod is model
         assert block.time is time
         assert all(i1 is i2 for i1, i2 in zip(block._inputs, inputs))
         assert all(i1 is i2 for i1, i2 in zip(block._measurements, measurements))
 
+        # Assert that utility attributes have been added
         assert hasattr(block, 'category_dict')
         assert hasattr(block, 'measured_vars')
         assert hasattr(block, 'vardata_map')
@@ -99,10 +103,12 @@ class TestDynamicBlock(object):
 
         block_objects = ComponentSet(
                 block.component_objects(aml.Block, descend_into=False))
+        # Assert that subblocks have been added
         assert len(subblocks) == len(block_objects)
         for b in subblocks:
             assert b in block_objects
 
+        # Assert that we can add variables and constraints to the block
         block.v = aml.Var(initialize=3)
         block.c = aml.Constraint(expr=block.v==5)
         assert block.v.value == 3
@@ -121,6 +127,7 @@ class TestDynamicBlock(object):
                 i: [model_map[i].conc[0,'A'], model_map[i].conc[0,'B']]
                 for i in block_set
                 }
+        # Construct block with a dict for each of its arguments
         block = DynamicBlock(
                 block_set,
                 model=model_map,
@@ -128,6 +135,7 @@ class TestDynamicBlock(object):
                 inputs=inputs_map,
                 measurements=measurements_map,
                 )
+        # Make sure we have the right type
         assert type(block) is IndexedDynamicBlock
         assert isinstance(block, DynamicBlock)
 
@@ -136,9 +144,11 @@ class TestDynamicBlock(object):
         # Are blocks constructed sparse by default?
         assert all(b.parent_component() is block for b in block.values())
 
+        # Check __contains__
         for i in block_set:
             assert i in block
 
+        # Check attributes and subblocks of each data object
         for i, b in block.items():
             assert b.mod is model_map[i]
             assert b.time is time_map[i]
@@ -175,6 +185,7 @@ class TestDynamicBlock(object):
     def test_construct_rule(self):
         block_set = aml.Set(initialize=range(3))
         block_set.construct()
+        # Create same maps as before
         horizon_map = {0: 1, 1: 3, 2: 5}
         nfe_map = {0: 2, 1: 6, 2: 10}
         model_map = {
@@ -182,6 +193,7 @@ class TestDynamicBlock(object):
                 for i in block_set
                 }
 
+        # Create rule to construct DynamicBlock with
         def dynamic_block_rule(b, i):
             model = model_map[i]
             time = model.time
@@ -196,6 +208,7 @@ class TestDynamicBlock(object):
             b._inputs = inputs
             b._measurements = measurements
 
+        # Create DynamicBlock from a rule
         block = DynamicBlock(block_set, rule=dynamic_block_rule)
         assert type(block) is IndexedDynamicBlock
         assert isinstance(block, DynamicBlock)
@@ -203,11 +216,15 @@ class TestDynamicBlock(object):
         block.construct()
         # Why is block._data empty here?
         # Are blocks constructed sparse by default?
+
+        # Make sure iterating over block.values works as expected
         assert all(b.parent_component() is block for b in block.values())
 
+        # Make sure __contains__ works
         for i in block_set:
             assert i in block
 
+        # Assert correct attributes and subblocks
         for i, b in block.items():
             assert b.mod is model_map[i]
             assert b.time is model_map[i].time
@@ -244,6 +261,8 @@ class TestDynamicBlock(object):
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
     def test_init(self):
+        # This really should be `test_construct`, and the above tests
+        # should be `test_init_...`
         m = make_small_model()
         time = m.time
         t0 = time.first()
@@ -321,6 +340,8 @@ class TestDynamicBlock(object):
                 )
         helper.construct()
 
+        # Test that NmpcVectors and category blocks behave
+        # as we expect
         diff_vars = helper.vectors.differential
         diff_var_set = helper.DIFFERENTIAL_SET*m.time
         assert diff_vars.index_set() == diff_var_set
