@@ -65,7 +65,7 @@ Linux
 1. The IPOPT solver depends on the GNU FORTRAN, GOMP, Blas, and Lapack libraries,
    If these libraries are not already installed on your Linux system, you or your
    system administrator can use the sample commands below to install them. If you
-   have a Linux distribution that is not listed, IPOPT should still work, but you
+   have a Linux distribution that is not listed, IPOPT should still work, but 
    the commands to install the required libraries may differ. If these libraries
    are already installed, you can skip this and proceed with the next step.
 
@@ -103,7 +103,7 @@ Follow the :ref:`min_install_generic` instructions.
 
 .. _min_install_generic:
 
-Generic install
+Generic Install
 ---------------
 
 The remaining steps performed in either the Linux or OSX Terminal or Powershell.
@@ -113,11 +113,25 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 **Install IDAES**
 
-1. Install IDAES with pip::
+1. Install IDAES with pip by one of the following methods
 
-    pip install idaes-pse
+  a. To get the latest release::
 
-2. Run the :doc:`idaes get-extensions command<user_guide/commands/get_extensions>`
+      pip install idaes-pse
+
+  b. To get a specific release, for example 1.7::
+
+      pip install idaes-pse==1.7
+
+  c. To get the latest development main branch::
+
+      pip install git+https://github.com/idaes/idaes-pse
+
+  d. To get a specific fork or branch, for example myfork (of idaes-pse) and mybranch::
+
+      pip install git+https://github.com/myfork/idaes-pse@mybranch
+
+2. Run the :doc:`idaes get-extensions command<../user_guide/commands/get_extensions>`
    to install the compiled binaries::
 
     idaes get-extensions
@@ -126,12 +140,12 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
    .. warning:: The IDAES binary extensions are not yet supported on Mac/OSX.
 
-                As fallback (assuming you are uisng a conda env) you can install
+                As a fallback (assuming you are using a conda env) you can install
                 the generic ipopt solver with the command ``conda install -c
                 conda-forge ipopt`` though this will not have all the features
-                of our extentions package.
+                of our extensions package.
 
-3. Run the :doc:`idaes get-examples command <user_guide/commands/get_examples>` to download
+3. Run the :doc:`idaes get-examples command <../user_guide/commands/get_examples>` to download
    and install the example files::
 
     idaes get-examples
@@ -150,7 +164,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
         idaes get-examples --dir C:\Users\MyName\IDAES\Examples
 
-    Refer to the full :doc:`idaes get-examples command documentation <user_guide/commands/get_examples>`
+    Refer to the full :doc:`idaes get-examples command documentation <../user_guide/commands/get_examples>`
     for more information.
 
 4. Run tests::
@@ -162,3 +176,54 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
    output. You can report problems on the |github-issues|
    (Please try to be specific about the command and the offending output.)
+
+Optional Dependencies
+---------------------
+Some tools in IDAES may require additional dependencies. Instructions for installing these dependencies
+are located :ref:`here<getting_started/opt_dependencies:Optional Dependencies>`.
+
+.. toctree::
+    :glob:
+    :hidden:
+
+    *
+
+Updating an existing installation
+---------------------------------
+
+When a new version is released, an IDAES installation can be updated without having to remove and reinstall it from scratch.
+
+The following steps describe how to upgrade an existing installation in-place,
+assuming that the installation was done using one of the methods described earlier in this section.
+
+.. warning:: If IDAES was installed in a dedicated environment (e.g. a Conda environment, or Python virtual environment), activate the environment before running any of these commands.
+
+1. Open a terminal and verify the currently installed version of IDAES::
+
+    idaes --version
+
+2. Install the upgraded version of the ``idaes-pse`` package using ``pip install``::
+
+    pip install --upgrade idaes-pse
+
+..
+
+    If a newer version of the ``idaes-pse`` package is available, the currently installed version will be removed and replaced by the newest available version.
+    Check again the IDAES version to verify that the upgrade was successful::
+
+        idaes --version
+
+3. Run the ``idaes get-extension`` command to install compiled binaries compatible with the newly upgraded IDAES version::
+
+    idaes get-extensions
+
+4. Finally, use the ``idaes get-examples`` command to install the most recent version of the IDAES examples compatible with the upgraded IDAES version.
+
+    .. warning:: If the examples target installation directory is not empty, its contents, including examples installed with a previous IDAES version and other files, **will be overwritten without warning**.
+        To avoid losing data, **it is strongly recommended that you make a backup copy of any existing examples directory** before proceeding.
+
+..
+
+    After creating a backup copy of the existing examples directory, run::
+
+        idaes get-examples

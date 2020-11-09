@@ -18,14 +18,16 @@ Author: Andrew Lee
 from pyomo.environ import ConcreteModel, Set
 
 from idaes.core.phases import (Phase, LiquidPhase, SolidPhase, VaporPhase,
-                               PhaseType)
+                               PhaseType, AqueousPhase)
 import pytest
+
 
 @pytest.mark.unit
 def test_PhaseType():
-    assert len(PhaseType) == 4
+    assert len(PhaseType) == 5
     for i in PhaseType.__members__:
-        assert i in ["undefined", "liquidPhase", "vaporPhase", "solidPhase"]
+        assert i in ["undefined", "liquidPhase", "vaporPhase",
+                     "solidPhase", "aqueousPhase"]
 
 
 @pytest.mark.unit
@@ -66,6 +68,7 @@ def test_is_phase_generic():
     assert not m.phase.is_liquid_phase()
     assert not m.phase.is_solid_phase()
     assert not m.phase.is_vapor_phase()
+    assert not m.phase.is_aqueous_phase()
 
 
 @pytest.mark.unit
@@ -77,6 +80,7 @@ def test_is_phase_old_style_liquid():
     assert m.Liq.is_liquid_phase()
     assert not m.Liq.is_solid_phase()
     assert not m.Liq.is_vapor_phase()
+    assert not m.Liq.is_aqueous_phase()
 
 
 @pytest.mark.unit
@@ -88,6 +92,7 @@ def test_is_phase_old_style_solid():
     assert not m.Sol.is_liquid_phase()
     assert m.Sol.is_solid_phase()
     assert not m.Sol.is_vapor_phase()
+    assert not m.Sol.is_aqueous_phase()
 
 
 @pytest.mark.unit
@@ -99,6 +104,7 @@ def test_is_phase_old_style_vapor():
     assert not m.Vap.is_liquid_phase()
     assert not m.Vap.is_solid_phase()
     assert m.Vap.is_vapor_phase()
+    assert not m.Vap.is_aqueous_phase()
 
 
 @pytest.mark.unit
@@ -120,6 +126,7 @@ def test_LiquidPhase():
     assert m.phase.is_liquid_phase()
     assert not m.phase.is_solid_phase()
     assert not m.phase.is_vapor_phase()
+    assert not m.phase.is_aqueous_phase()
 
 
 @pytest.mark.unit
@@ -131,6 +138,7 @@ def test_SolidPhase():
     assert not m.phase.is_liquid_phase()
     assert m.phase.is_solid_phase()
     assert not m.phase.is_vapor_phase()
+    assert not m.phase.is_aqueous_phase()
 
 
 @pytest.mark.unit
@@ -142,3 +150,16 @@ def test_VaporPhase():
     assert not m.phase.is_liquid_phase()
     assert not m.phase.is_solid_phase()
     assert m.phase.is_vapor_phase()
+    assert not m.phase.is_aqueous_phase()
+
+
+@pytest.mark.unit
+def test_AqueousPhase():
+    m = ConcreteModel()
+
+    m.phase = AqueousPhase()
+
+    assert m.phase.is_liquid_phase()
+    assert not m.phase.is_solid_phase()
+    assert not m.phase.is_vapor_phase()
+    assert m.phase.is_aqueous_phase()

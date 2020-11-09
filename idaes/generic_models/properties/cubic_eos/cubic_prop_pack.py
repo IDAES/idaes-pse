@@ -60,6 +60,7 @@ from idaes.core.util.initialization import (solve_indexed_blocks,
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
+from idaes.core.util.math import safe_log
 from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
@@ -1133,10 +1134,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
     def dew_temp_liq(b, j):
         def a(k):
@@ -1162,10 +1164,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
     def bubble_pres_liq(b, j):
         am = sum(sum(b.mole_frac_comp[i]*b.mole_frac_comp[j] *
@@ -1184,10 +1187,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
     def dew_press_liq(b, j):
         am = sum(sum(b._mole_frac_pdew[i]*b._mole_frac_pdew[j] *
@@ -1207,10 +1211,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_liq(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
 # -----------------------------------------------------------------------------
 # Vapour phase properties
@@ -1265,10 +1270,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
     def dew_temp_vap(b, j):
         def a(k):
@@ -1294,10 +1300,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
     def bubble_pres_vap(b, j):
         am = sum(sum(b._mole_frac_pbub[i]*b._mole_frac_pbub[j] *
@@ -1317,10 +1324,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
     def dew_press_vap(b, j):
         am = sum(sum(b.mole_frac_comp[i]*b.mole_frac_comp[j] *
@@ -1339,10 +1347,11 @@ class CubicStateBlockData(StateBlockData):
         Z = b.proc_Z_vap(b._ext_func_param, A, B)
 
         return exp((b.b[j]/bm*(Z-1)*(B*b.EoS_p) -
-                   log(Z-B)*(B*b.EoS_p) +
+                   safe_log(Z-B, eps=1e-6)*(B*b.EoS_p) +
                    A*(b.b[j]/bm - delta) *
-                   log((2*Z + B*(b.EoS_u + b.EoS_p)) /
-                       (2*Z + B*(b.EoS_u-b.EoS_p))))/(B*b.EoS_p))
+                   safe_log((2*Z + B*(b.EoS_u + b.EoS_p)) /
+                            (2*Z + B*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                   (B*b.EoS_p))
 
 # -----------------------------------------------------------------------------
 # Common Cubic Functions
@@ -1548,33 +1557,35 @@ class CubicStateBlockData(StateBlockData):
         # See pg. 145 in Properties of Gases and Liquids
         return exp((b.b[j]/b.bm[p]*(b.compress_fact_phase[p]-1) *
                     (b.B[p]*b.EoS_p) -
-                    log(b.compress_fact_phase[p]-b.B[p]) *
+                    safe_log(b.compress_fact_phase[p]-b.B[p], eps=1e-6) *
                     (b.B[p]*b.EoS_p) +
                     b.A[p]*(b.b[j]/b.bm[p] - b.delta[p, j]) *
-                    log((2*b.compress_fact_phase[p] +
-                         b.B[p]*(b.EoS_u + b.EoS_p)) /
-                        (2*b.compress_fact_phase[p] +
-                         b.B[p]*(b.EoS_u-b.EoS_p)))) /
+                    safe_log((2*b.compress_fact_phase[p] +
+                              b.B[p]*(b.EoS_u + b.EoS_p)) /
+                             (2*b.compress_fact_phase[p] +
+                              b.B[p]*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
                    (b.B[p]*b.EoS_p))
 
     def _log_equilibrium_cubic(b, p, j):
         # See pg. 145 in Properties of Gases and Liquids
         return ((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
                  (b._B_eq[p]*b.EoS_p) -
-                 log(b._compress_fact_eq[p]-b._B_eq[p]) *
+                 safe_log(b._compress_fact_eq[p]-b._B_eq[p], eps=1e-6) *
                  (b._B_eq[p]*b.EoS_p) +
                  b._A_eq[p]*(b.b[j]/b.bm[p] - b._delta_eq[p, j]) *
-                 log((2*b._compress_fact_eq[p] +
-                      b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
-                     (2*b._compress_fact_eq[p] +
-                      b._B_eq[p]*(b.EoS_u-b.EoS_p)))) /
+                 safe_log((2*b._compress_fact_eq[p] +
+                           b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
+                          (2*b._compress_fact_eq[p] +
+                           b._B_eq[p]*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
                 (b._B_eq[p]*b.EoS_p) + log(b.mole_frac_phase_comp[p, j]))
 
     def _enth_mol_cubic(b, p):
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((b.temperature*b.dadT[p] - b.am[p]) *
-                 log((2*b.compress_fact_phase[p] + b.B[p]*(b.EoS_u+b.EoS_p)) /
-                     (2*b.compress_fact_phase[p] + b.B[p]*(b.EoS_u-b.EoS_p))) +
+                 safe_log((2*b.compress_fact_phase[p] +
+                           b.B[p]*(b.EoS_u+b.EoS_p)) /
+                          (2*b.compress_fact_phase[p] +
+                           b.B[p]*(b.EoS_u-b.EoS_p)), eps=1e-6) +
                  const.gas_constant*b.temperature *
                  (b.compress_fact_phase[p]-1)*b.bm[p]*b.EoS_p) /
                 (b.bm[p]*b.EoS_p) + b._enth_mol_ig(p))
@@ -1586,16 +1597,17 @@ class CubicStateBlockData(StateBlockData):
 
     def _entr_mol_cubic(b, p):
         # See pg. 102 in Properties of Gases and Liquids
-        return ((const.gas_constant*log(
+        return ((const.gas_constant*safe_log(
                     (b.compress_fact_phase[p]-b.B[p]) /
-                    b.compress_fact_phase[p])*b.bm[p]*b.EoS_p +
-                 const.gas_constant*log(b.compress_fact_phase[p] *
-                                        b.params.pressure_ref/b.pressure) *
+                    b.compress_fact_phase[p], eps=1e-6)*b.bm[p]*b.EoS_p +
+                 const.gas_constant*safe_log(b.compress_fact_phase[p] *
+                                             b.params.pressure_ref/b.pressure,
+                                             eps=1e-6) *
                  b.bm[p]*b.EoS_p +
-                 b.dadT[p]*log((2*b.compress_fact_phase[p] +
-                                b.B[p]*(b.EoS_u + b.EoS_p)) /
-                               (2*b.compress_fact_phase[p] +
-                                b.B[p]*(b.EoS_u-b.EoS_p)))) /
+                 b.dadT[p]*safe_log((2*b.compress_fact_phase[p] +
+                                     b.B[p]*(b.EoS_u + b.EoS_p)) /
+                                    (2*b.compress_fact_phase[p] +
+                                     b.B[p]*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
                 (b.bm[p]*b.EoS_p) + b._entr_mol_ig(p))
 
     def _entr_mol_ig(b, p):

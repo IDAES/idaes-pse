@@ -17,6 +17,7 @@ Jupyter magics for the DMF.
 import inspect
 import logging
 import os
+from urllib.parse import urlparse
 import webbrowser
 # third-party
 from IPython.core.magic import Magics, magics_class, line_magic
@@ -289,10 +290,10 @@ class DmfMagicsImpl(object):
             p_module = 'idaes'
             p_class = 'Home'
         # Get the help
-        helpfiles = None
+        help_locations = None
         if p_module is not None:
             try:
-                helpfiles = help.get_html_docs(self._dmf, p_module, p_class)
+                help_locations = help.get_html_docs(self._dmf, p_module, p_class)
             except DMFMagicError as err:
                 _log.debug('Getting help for pseudo-class {}::{}, error: {}'
                            .format(p_module, p_class, err))
@@ -300,13 +301,13 @@ class DmfMagicsImpl(object):
                 name = 'pseudo-module {}.{}'.format(p_module, p_class)
         else:
             try:
-                helpfiles = self._find_help_for_object(name)
+                help_locations = self._find_help_for_object(name)
             except DMFMagicError as err:
                 _log.debug('Getting help for object {}, error: {}'
                            .format(name, err))
         # Result
-        if helpfiles:
-            self._show_help_in_browser(helpfiles)
+        if help_locations:
+            self._show_help_in_browser(help_locations)
         else:
             self._dmf_markdown('No Sphinx docs found for "{}"'.format(name))
         return None
@@ -346,10 +347,11 @@ class DmfMagicsImpl(object):
         return result
 
     @staticmethod
-    def _show_help_in_browser(helpfiles):
+    def _show_help_in_browser(help_locations):
         """Open help docs in the browser."""
-        for hf in helpfiles:
-            url = 'file://' + hf
+        for url in help_locations:
+            if urlparse(url).scheme == '':
+                url = 'file://' + url
             _log.debug('Opening URL "{}"'.format(url))
             webbrowser.open_new(url)
 

@@ -295,15 +295,18 @@ see property package for documentation.}"""))
         """
         Define the geometry of the unit as necessary
         """
+        units_meta = self.config.property_package.get_metadata()
 
         # Inside diameter of drum
         self.drum_diameter = Var(
                 initialize=1.0,
-                doc="Inside diameter of drum")
+                doc="Inside diameter of drum",
+                units=units_meta.get_derived_units("length"))
         # Length of drum
         self.drum_length = Var(
                 initialize=10,
-                doc="Horizontal length of drum")
+                doc="Horizontal length of drum",
+                units=units_meta.get_derived_units("length"))
         # Number of downcomers connected at the bottom of drum,
         # used to calculate contrac
         self.number_downcomers = Var(
@@ -312,37 +315,43 @@ see property package for documentation.}"""))
         # Inside diameter of downcomer
         self.downcomer_diameter = Var(
                 initialize=0.6,
-                doc="Inside diameter of downcomer")
+                doc="Inside diameter of downcomer",
+                units=units_meta.get_derived_units("length"))
 
     def _make_performance(self):
         """
         Define constraints which describe the behaviour of the unit model.
         """
+        units_meta = self.config.property_package.get_metadata()
 
         # Add performance variables
         self.drum_level = Var(
                 self.flowsheet().config.time,
                 within=pyo.PositiveReals,
                 initialize=1.0,
-                doc='Water level from the bottom of the drum')
+                doc='Water level from the bottom of the drum',
+                units=units_meta.get_derived_units("length"))
 
         # Velocity of fluid inside downcomer pipe
         self.downcomer_velocity = Var(
                 self.flowsheet().config.time,
                 initialize=10.0,
-                doc='Liquid water velocity at the top of downcomer')
+                doc='Liquid water velocity at the top of downcomer',
+                units=units_meta.get_derived_units("velocity"))
 
         # Pressure change due to contraction
         self.deltaP_contraction = Var(
                 self.flowsheet().config.time,
                 initialize=-1.0,
-                doc='Pressure change due to contraction')
+                doc='Pressure change due to contraction',
+                units=units_meta.get_derived_units("pressure"))
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
                 self.flowsheet().config.time,
                 initialize=1.0,
-                doc='Pressure change due to gravity')
+                doc='Pressure change due to gravity',
+                units=units_meta.get_derived_units("pressure"))
 
         # Radius expression
         @self.Expression(doc="Radius of drum")
@@ -384,12 +393,14 @@ see property package for documentation.}"""))
                 * b.downcomer_velocity[t]**2
 
         # Pressure change equation for gravity, density*gravity*height
+        g_units = units_meta.get_derived_units("acceleration")
         @self.Constraint(self.flowsheet().config.time,
                          doc="pressure change due to gravity")
         def pressure_change_gravity_eqn(b, t):
             return 1e-3 * b.deltaP_gravity[t] == 1e-3 * \
                 b.control_volume.properties_out[t].dens_mass_phase["Liq"] \
-                * const.acceleration_gravity * b.drum_level[t]
+                * pyo.units.convert(const.acceleration_gravity,
+                                    to_units=g_units) * b.drum_level[t]
 
         # Total pressure change equation
         @self.Constraint(self.flowsheet().config.time,
