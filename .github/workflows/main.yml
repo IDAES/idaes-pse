@@ -1,0 +1,43 @@
+name: Install IDAES and run tests
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  idaes-pse:
+    name: Install and test IDAES with Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        shell: bash
+        # if: ${{ runner.os == 'Linux' }}
+        run: |
+          python -m pip --no-cache-dir install --progress-bar off git+https://github.com/PyUtilib/pyutilib git+https://github.com/IDAES/pyomo.git@IDAES
+          python -m pip install --progress-bar off --editable .
+      - name: Display IDAES version
+        shell: bash
+        run: |
+          idaes --version
+      - name: Install IDAES extensions
+        shell: bash
+        run: |
+          idaes get-extensions
+      - name: Run tests (excluding integration)
+        shell: bash
+        run: |
+          pytest -c pytest.ini -m 'not integration' idaes/
+
