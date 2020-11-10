@@ -38,22 +38,19 @@ from idaes.core.util.testing import get_default_solver, \
 solver = get_default_solver()
 
 
-@pytest.mark.unit
+@pytest.mark.build
 def test_config():
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = BTXParameterBlock(default={"valid_phase":
-                                                 ('Liq', 'Vap'),
-                                                 "activity_coeff_model":
-                                                 "Ideal"})
+    m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = TrayColumn(default={
                            "number_of_trays": 10,
                            "feed_tray_location": 5,
                            "condenser_type": CondenserType.totalCondenser,
                            "condenser_temperature_spec":
-                               TemperatureSpec.atBubblePoint,
+                               TemperatureSpec.customTemperature,
                            "property_package": m.fs.properties,
                            "has_heat_transfer": False,
                            "has_pressure_change": False})
@@ -68,25 +65,68 @@ def test_config():
     assert hasattr(m.fs.unit, "liq_stream")
     assert hasattr(m.fs.unit, "vap_stream")
 
-    # Inlet feed conditions
-    m.fs.unit.tray[5].feed.flow_mol.fix(100)
-    m.fs.unit.tray[5].feed.temperature.fix(368)
-    m.fs.unit.tray[5].feed.pressure.fix(101325)
-    m.fs.unit.tray[5].feed.mole_frac_comp[0, "benzene"].fix(0.5)
-    m.fs.unit.tray[5].feed.mole_frac_comp[0, "toluene"].fix(0.5)
 
-    # unit level inputs
-    m.fs.unit.condenser.reflux_ratio.fix(1.4)
-    m.fs.unit.condenser.condenser_pressure.fix(101325)
+@pytest.mark.build
+class TestBTXIdeal():
+    @pytest.fixture(scope="class")
+    def btx_ftpz(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal"})
 
-    m.fs.unit.reboiler.boilup_ratio.fix(1.3)
+        m.fs.unit = TrayColumn(default={
+                               "number_of_trays": 10,
+                               "feed_tray_location": 5,
+                               "condenser_type": CondenserType.totalCondenser,
+                               "condenser_temperature_spec":
+                                   TemperatureSpec.atBubblePoint,
+                               "property_package": m.fs.properties,
+                               "has_heat_transfer": False,
+                               "has_pressure_change": False})
 
-    assert degrees_of_freedom(m) == 0
+        # Inlet feed conditions
+        m.fs.unit.tray[5].feed.flow_mol.fix(100)
+        m.fs.unit.tray[5].feed.temperature.fix(368)
+        m.fs.unit.tray[5].feed.pressure.fix(101325)
+        m.fs.unit.tray[5].feed.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.tray[5].feed.mole_frac_comp[0, "toluene"].fix(0.5)
 
-    m.fs.unit.initialize()
+        # unit level inputs
+        m.fs.unit.condenser.reflux_ratio.fix(1.4)
+        m.fs.unit.condenser.condenser_pressure.fix(101325)
 
-    results = solver.solve(m, tee=False)
+        m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
-    assert results.solver.termination_condition == \
-        TerminationCondition.optimal
-    assert results.solver.status == SolverStatus.ok
+        assert degrees_of_freedom(m) == 0
+
+        return m
+
+    @pytest.mark.unit
+    def test_build(self, btx_ftpz):
+        assert len(btx_ftpz.fs.unit.config) == 12
+
+        assert btx_ftpz.fs.unit.tray[5].config.is_feed_tray
+
+        assert hasattr(btx_ftpz.fs.unit, "condenser")
+        assert hasattr(btx_ftpz.fs.unit, "reboiler")
+
+        assert hasattr(btx_ftpz.fs.unit, "liq_stream")
+        assert hasattr(btx_ftpz.fs.unit, "vap_stream")
+
+    @pytest.mark.solver
+    @pytest.mark.component
+    def test_initialize(self, btx_ftpz):
+        initialization_tester(btx_ftpz)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, btx_ftpz):
+        results = solver.solve(btx_ftpz)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
