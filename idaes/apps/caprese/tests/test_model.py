@@ -39,7 +39,10 @@ from idaes.apps.caprese.model import (
         IndexedDynamicBlock,
         _DynamicBlockData,
         )
-from idaes.apps.caprese.common.config import VariableCategory
+from idaes.apps.caprese.common.config import (
+        VariableCategory,
+        InputOption,
+        )
 from idaes.apps.caprese.nmpc_var import (
         NmpcVar,
         DiffVar,
@@ -54,6 +57,12 @@ import random
 import pytest
 
 __author__ = "Robert Parker"
+
+solver_available = aml.SolverFactory('ipopt').available()
+if solver_available:
+    solver = aml.SolverFactory('ipopt')
+else:
+    solver = None
 
 class TestDynamicBlock(object):
 
@@ -87,8 +96,13 @@ class TestDynamicBlock(object):
 
         # Assert that utility attributes have been added
         assert hasattr(block, 'category_dict')
-        assert hasattr(block, 'measured_vars')
         assert hasattr(block, 'vardata_map')
+        assert hasattr(block, 'measurement_vars')
+        assert hasattr(block, 'differential_vars')
+        assert hasattr(block, 'algebraic_vars')
+        assert hasattr(block, 'derivative_vars')
+        assert hasattr(block, 'input_vars')
+        assert hasattr(block, 'fixed_vars')
 
         subblocks = [
                 block.mod,
@@ -157,8 +171,13 @@ class TestDynamicBlock(object):
                     zip(b._measurements, measurements_map[i]))
 
             assert hasattr(b, 'category_dict')
-            assert hasattr(b, 'measured_vars')
             assert hasattr(b, 'vardata_map')
+            assert hasattr(b, 'measurement_vars')
+            assert hasattr(b, 'differential_vars')
+            assert hasattr(b, 'algebraic_vars')
+            assert hasattr(b, 'derivative_vars')
+            assert hasattr(b, 'input_vars')
+            assert hasattr(b, 'fixed_vars')
 
             subblocks = [
                     b.mod,
@@ -235,8 +254,13 @@ class TestDynamicBlock(object):
                 [model_map[i].conc[t0,'A'], model_map[i].conc[t0,'B']]))
 
             assert hasattr(b, 'category_dict')
-            assert hasattr(b, 'measured_vars')
             assert hasattr(b, 'vardata_map')
+            assert hasattr(b, 'measurement_vars')
+            assert hasattr(b, 'differential_vars')
+            assert hasattr(b, 'algebraic_vars')
+            assert hasattr(b, 'derivative_vars')
+            assert hasattr(b, 'input_vars')
+            assert hasattr(b, 'fixed_vars')
 
             subblocks = [
                     b.mod,
@@ -273,8 +297,13 @@ class TestDynamicBlock(object):
                 measurements=[m.conc[0,'A'], m.conc[0,'B']])
         helper.construct()
         assert hasattr(helper, 'category_dict')
-        assert hasattr(helper, 'measured_vars')
         assert hasattr(helper, 'vardata_map')
+        assert hasattr(helper, 'measurement_vars')
+        assert hasattr(helper, 'differential_vars')
+        assert hasattr(helper, 'algebraic_vars')
+        assert hasattr(helper, 'derivative_vars')
+        assert hasattr(helper, 'input_vars')
+        assert hasattr(helper, 'fixed_vars')
 
         # Make sure category dict contains variables we expect
         assert VariableCategory.DIFFERENTIAL in helper.category_dict
@@ -345,10 +374,18 @@ class TestDynamicBlock(object):
         diff_vars = helper.vectors.differential
         diff_var_set = helper.DIFFERENTIAL_SET*m.time
         assert diff_vars.index_set() == diff_var_set
+        # And that they contain the same variables as the corresponding
+        # lists on our helper block.
+        for b, v in zip(helper.DIFFERENTIAL_BLOCK.values(),
+                helper.differential_vars):
+            assert b.var is v
 
         helper.vectors.derivative.set_setpoint(0.0)
         for var in helper.DERIVATIVE_BLOCK[:].var:
             assert var.setpoint == 0.
+        for b, v in zip(helper.DERIVATIVE_BLOCK.values(),
+                helper.derivative_vars):
+            assert b.var is v
 
         sp = [1,2,3]
         helper.vectors.algebraic.set_setpoint(sp)
@@ -364,6 +401,9 @@ class TestDynamicBlock(object):
         assert len(pred_alg_vars) == len(alg_vars)
         for var in alg_vars:
             assert var[t0] in pred_alg_vars
+        for b, v in zip(helper.ALGEBRAIC_BLOCK.values(),
+                helper.algebraic_vars):
+            assert b.var is v
 
         assert list(helper.vectors.algebraic.get_setpoint()) == sp
 
@@ -518,4 +558,168 @@ class TestDynamicBlock(object):
         # not on the encompassing DynamicBlock. This may change...
         tgt_comp_names = [c[0].name for c in tgt_comps]
         assert tgt_names == tgt_comp_names
+
+    def test_init_from_setpoint(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+
+        # Initialize all data objects with some consistent value
+        # so I can make sure certain data objects are skipped
+        # by the subsequent initialization
+        init_val = -1.
+        blk.vectors.differential[...].set_value(init_val)
+        blk.vectors.algebraic[...].set_value(init_val)
+        blk.vectors.input[...].set_value(init_val)
+        blk.vectors.derivative[...].set_value(init_val)
+
+        # Note that I have no pointer from vectors.differential to
+        # the list diff_vars... I can construct an identical list with
+        # the _generate_referenced_vars method, but that is O(n)...
+        # Not sure yet if this will be a problem/inconvenience...
+        blk.vectors.differential.set_setpoint(range(len(blk.differential_vars)))
+        blk.vectors.algebraic.set_setpoint(range(len(blk.algebraic_vars)))
+        blk.vectors.input.set_setpoint(range(len(blk.input_vars)))
+        blk.vectors.derivative.set_setpoint(range(len(blk.derivative_vars)))
+
+        blk.initialize_from_setpoint()
+        vectors = [
+                blk.vectors.differential,
+                blk.vectors.algebraic,
+                blk.vectors.input,
+                blk.vectors.derivative,
+                ]
+        for vec in vectors:
+            for i, t in vec:
+                if t == t0:
+                    assert vec[i, t].value == init_val
+                else:
+                    assert vec[i, t].value == i
+
+        new_sp = 7.
+        blk.vectors.algebraic.set_setpoint(new_sp)
+        blk.initialize_from_setpoint(ctype=AlgVar)
+        vectors = [
+                blk.vectors.differential,
+                blk.vectors.input,
+                blk.vectors.derivative,
+                ]
+        for vec in vectors:
+            for i, t in vec:
+                if t == t0:
+                    assert vec[i, t].value == init_val
+                else:
+                    assert vec[i, t].value == i
+
+        vec = blk.vectors.algebraic
+        for i, t in vec:
+            if t == t0:
+                assert vec[i, t].value == init_val
+            else:
+                assert vec[i, t].value == new_sp
+
+    def test_init_from_initial_conditions(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+
+        # So I can tell when something wasn't initialized:
+        init_val = -1. # `init_val` name might be confusing...
+        blk.vectors.differential[...].set_value(init_val)
+        blk.vectors.algebraic[...].set_value(init_val)
+        blk.vectors.input[...].set_value(init_val)
+        blk.vectors.derivative[...].set_value(init_val)
+        
+        # Don't have a concise way to set value at t0
+        # from a vector.
+        # E.g. vectors.differential[:,t0].set_value(range(len(diff_vars)))
+        # or vectors.differential[:,t0] = range(len(diff_vars))
+        # The latter requires handling iterables in a slice setitem call
+        vectors = [
+                blk.vectors.differential,
+                blk.vectors.algebraic,
+                blk.vectors.input,
+                blk.vectors.derivative,
+                ]
+        # Set initial conditions to "index"
+        for vec in vectors:
+            for i, var in enumerate(vec[:,t0]):
+                var.set_value(i)
+
+        blk.initialize_from_initial_conditions(ctype=(DiffVar, AlgVar))
+        for vec in (blk.vectors.differential, blk.vectors.algebraic):
+            for i, t in vec:
+                assert vec[i, t].value == i
+        for vec in (blk.vectors.input, blk.vectors.derivative):
+            for i, t in vec:
+                if t == t0:
+                    assert vec[i, t].value == i
+                else:
+                    assert vec[i, t].value == init_val
+                    # value that was used to initialize, not the initial
+                    # condition value...
+
+    @pytest.mark.skipif(not solver_available, reason='IPOPT is not available')
+    def test_init_by_solving_elements(self):
+        blk = self.make_block()
+        time = blk.time
+        blk.mod.flow_in[:].set_value(3.0)
+        initialize_t0(blk.mod)
+        copy_values_forward(blk.mod)
+        blk.mod.flow_in[:].set_value(2.0)
+        blk.initialize_by_solving_elements(solver)
+
+        t0 = time.first()
+        tl = time.last()
+        vectors = blk.vectors
+        assert vectors.input[0,tl].value == 2.0
+        assert vectors.differential[0,tl].value == pytest.approx(3.185595567867036)
+        assert vectors.differential[1,tl].value == pytest.approx(1.1532474073395755)
+        assert vectors.derivative[0,tl].value == pytest.approx(0.44321329639889284)
+        assert vectors.derivative[1,tl].value == pytest.approx(0.8791007531878847)
+
+        vectors.input.set_setpoint(3.0)
+        blk.initialize_by_solving_elements(solver, input_option=InputOption.SETPOINT)
+        for t in time:
+            if t == t0:
+                assert vectors.input[0,t].value == 2.0
+            else:
+                assert vectors.input[0,t].value == 3.0
+        assert vectors.differential[0,tl].value == pytest.approx(3.7037037037037037)
+        assert vectors.differential[1,tl].value == pytest.approx(1.0746896480968502)
+        assert vectors.derivative[0,tl].value == pytest.approx(0.1851851851851849)
+        assert vectors.derivative[1,tl].value == pytest.approx(0.47963475941315314)
+
+    @pytest.mark.skipif(not solver_available, reason='IPOPT is not available')
+    def test_init_samples_by_element(self):
+        blk = self.make_block()
+        time = blk.time
+        blk.mod.flow_in[:].set_value(3.0)
+        initialize_t0(blk.mod)
+        copy_values_forward(blk.mod)
+        blk.mod.flow_in[:].set_value(2.0)
+        blk.set_sample_time(0.5)
+        blk.initialize_samples_by_element((1,2), solver)
+
+        t0 = time.first()
+        tl = time.last()
+        vectors = blk.vectors
+        assert vectors.input[0,tl].value == 2.0
+        assert vectors.differential[0,tl].value == pytest.approx(3.185595567867036)
+        assert vectors.differential[1,tl].value == pytest.approx(1.1532474073395755)
+        assert vectors.derivative[0,tl].value == pytest.approx(0.44321329639889284)
+        assert vectors.derivative[1,tl].value == pytest.approx(0.8791007531878847)
+
+        blk.vectors.input.set_setpoint(3.0)
+        blk.initialize_samples_by_element(1, solver, input_option=InputOption.SETPOINT)
+        blk.initialize_samples_by_element(2, solver, input_option=InputOption.SETPOINT)
+        for t in time:
+            if t == t0:
+                assert vectors.input[0,t].value == 2.0
+            else:
+                assert vectors.input[0,t].value == 3.0
+        assert vectors.differential[0,tl].value == pytest.approx(3.7037037037037037)
+        assert vectors.differential[1,tl].value == pytest.approx(1.0746896480968502)
+        assert vectors.derivative[0,tl].value == pytest.approx(0.1851851851851849)
+        assert vectors.derivative[1,tl].value == pytest.approx(0.47963475941315314)
 
