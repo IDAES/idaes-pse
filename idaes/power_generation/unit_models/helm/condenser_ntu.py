@@ -18,6 +18,7 @@ __author__ = "Jinliang Ma"
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
+from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -127,24 +128,6 @@ class HelmNtuCondenserData(UnitModelBlockData):
         time = self.flowsheet().config.time
 
         ########################################################################
-        # Add variables                                                        #
-        ########################################################################
-        units_meta = self.config.property_package.get_metadata()
-        self.overall_heat_transfer_coefficient = pyo.Var(
-            time,
-            domain=pyo.PositiveReals,
-            initialize=100.0,
-            doc="Overall heat transfer coefficient",
-            units=units_meta.get_derived_units("heat_trasnfer_coefficient")
-        )
-        self.area = pyo.Var(
-            domain=pyo.PositiveReals,
-            initialize=1000.0,
-            doc="Heat exchange area",
-            units=units_meta.get_derived_units("area")
-        )
-
-        ########################################################################
         # Add control volumes                                                  #
         ########################################################################
         hot_side = _make_heater_control_volume(
@@ -174,6 +157,35 @@ class HelmNtuCondenserData(UnitModelBlockData):
             add_object_reference(self, "hot_side", hot_side)
         if not hasattr(self, "cold_side"):
             add_object_reference(self, "cold_side", cold_side)
+
+        ########################################################################
+        # Add variables                                                        #
+        ########################################################################
+        # Use hot side units as basis
+        s1_metadata = config.hot_side_config.property_package.get_metadata()
+
+        f_units = s1_metadata.get_derived_units("flow_mole")
+        cp_units = s1_metadata.get_derived_units("heat_capacity_mole")
+        q_units = s1_metadata.get_derived_units("power")
+        u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
+        a_units = s1_metadata.get_derived_units("area")
+        t_units = s1_metadata.get_derived_units("temperature")
+
+        self.overall_heat_transfer_coefficient = pyo.Var(
+            time,
+            domain=pyo.PositiveReals,
+            initialize=100.0,
+            doc="Overall heat transfer coefficient",
+            units=u_units,
+        )
+        self.area = pyo.Var(
+            domain=pyo.PositiveReals,
+            initialize=1000.0,
+            doc="Heat exchange area",
+            units=a_units,
+        )
+        self.heat_duty = pyo.Reference(cold_side.heat)
+        q = self.heat_duty
 
         ########################################################################
         # Add ports                                                            #
@@ -221,7 +233,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         ########################################################################
         @self.Constraint(time, doc="Heat balance equation")
         def unit_heat_balance(b, t):
-            return 0 == self.side_1.heat[t] + self.side_2.heat[t]
+            return 0 == (self.side_1.heat[t] +
+                pyunits.convert(self.side_2.heat[t], to_units=q_units))
 
         ########################################################################
         # Add some useful expressions for condenser performance                #
@@ -229,24 +242,24 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         @self.Expression(time, doc="Inlet temperature difference")
         def delta_temperature_in(b, t):
-                return (b.side_1.properties_in[t].temperature
-                    - b.side_2.properties_in[t].temperature)
+                return (b.side_1.properties_in[t].temperature -
+                    pyunits.convert(b.side_2.properties_in[t].temperature, t_units))
 
         @self.Expression(time, doc="Outlet temperature difference")
         def delta_temperature_out(b, t):
-                return (b.side_1.properties_out[t].temperature
-                    - b.side_2.properties_out[t].temperature)
+                return (b.side_1.properties_out[t].temperature -
+                    pyunits.convert(b.side_2.properties_out[t].temperature, t_units))
 
         @self.Expression(time, doc="NTU Based temperature difference")
         def delta_temperature_ntu(b, t):
                 return (b.side_1.properties_in[t].temperature_sat -
-                    b.side_2.properties_in[t].temperature)
+                    pyunits.convert(b.side_2.properties_in[t].temperature, t_units))
 
         @self.Expression(time, doc="Minimum product of flow rate and heat "
             "capacity (always on tube side since shell side has phase change)")
         def mcp_min(b, t):
-            return (self.side_2.properties_in[t].flow_mol
-                * self.side_2.properties_in[t].cp_mol_phase['Liq'])
+            return pyunits.convert(self.side_2.properties_in[t].flow_mol
+                * self.side_2.properties_in[t].cp_mol_phase['Liq'], f_units*cp_units)
 
         @self.Expression(time, doc="Number of transfer units (NTU)")
         def ntu(b, t):
@@ -258,9 +271,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         @self.Expression(time, doc="Heat treansfer")
         def heat_transfer(b, t):
-            return b.effectiveness[t]*b.mcp_min[t] * (
-                b.side_1.properties_in[t].temperature_sat
-                - b.side_2.properties_in[t].temperature)
+            return b.effectiveness[t]*b.mcp_min[t] * b.delta_temperature_ntu[t]
 
         ########################################################################
         # Add Equations to calculate heat duty based on NTU method             #
@@ -268,7 +279,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         @self.Constraint(
             time, doc="Heat transfer rate equation based on NTU method")
         def heat_transfer_equation(b, t):
-            return self.side_2.heat[t] == self.heat_transfer[t]
+            return (pyunits.convert(self.side_2.heat[t], q_units) ==
+                self.heat_transfer[t])
 
         @self.Constraint(
             time, doc="Shell side outlet enthalpy is saturated water enthalpy")
@@ -278,8 +290,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
     def set_initial_condition(self):
         if self.config.dynamic is True:
-            self.side_1.material_accumulation[:,:,:].value = 0
-            self.side_1.energy_accumulation[:,:].value = 0
+            hot_side.material_accumulation[:,:,:].value = 0
+            hot_side.energy_accumulation[:,:].value = 0
             self.side_1.material_accumulation[0,:,:].fix(0)
             self.side_1.energy_accumulation[0,:].fix(0)
             self.side_2.material_accumulation[:,:,:].value = 0
@@ -341,11 +353,11 @@ class HelmNtuCondenserData(UnitModelBlockData):
         # Solve with all constraints activated
         blk.saturation_eqn.activate()
         if unfix == 'pressure':
-            blk.hot_side.properties_in[0].pressure.unfix()
+            blk.hot_side.properties_in[:].pressure.unfix()
         elif unfix == 'hot_flow':
-            blk.hot_side.properties_in[0].flow_mol.unfix()
+            blk.hot_side.properties_in[:].flow_mol.unfix()
         elif unfix == 'cold_flow':
-            blk.cold_side.properties_in[0].flow_mol.unfix()
+            blk.cold_side.properties_in[:].flow_mol.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -354,8 +366,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         )
 
         # Release Inlet state
-        blk.side_1.release_state(flags1, outlvl + 1)
-        blk.side_2.release_state(flags2, outlvl + 1)
+        blk.side_1.release_state(flags1, outlvl)
+        blk.side_2.release_state(flags2, outlvl)
         from_json(blk, sd=istate, wts=sp)
 
 
