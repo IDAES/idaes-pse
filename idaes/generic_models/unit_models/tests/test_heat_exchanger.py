@@ -178,6 +178,8 @@ def test_costing():
                 m.fs.unit.costing.purchase_cost,
                 m.fs.unit.costing.cp_cost_eq)
 
+    assert_units_consistent(m.fs.unit.costing)
+
     results = solver.solve(m)
 
     # Check for optimal solution
@@ -602,13 +604,12 @@ class TestIAPWS_countercurrent(object):
 
     @pytest.mark.integration
     def test_units(self, iapws):
-        # TODO: Add these checks in once the IAPWS package has units
-        # assert_units_equivalent(
-        #     iapws.fs.unit.overall_heat_transfer_coefficient,
-        #     pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        # assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
-        # assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
+        assert_units_equivalent(
+            iapws.fs.unit.overall_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
+        assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
 
         assert_units_consistent(iapws)
 

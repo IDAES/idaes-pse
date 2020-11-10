@@ -22,6 +22,7 @@ Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 import pytest
 # Import Pyomo libraries
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
@@ -66,6 +67,11 @@ def test_basic_build(build_downcomer):
     assert isinstance(m.fs.unit.heat_duty, pyo.Var)
     assert isinstance(m.fs.unit.deltaP, pyo.Var)
     assert m.fs.unit.config.property_package is m.fs.properties
+
+
+@pytest.mark.integration
+def test_units(build_downcomer):
+    assert_units_consistent(build_downcomer)
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),

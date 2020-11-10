@@ -14,27 +14,22 @@
 Multistage steam turbine for power generation.
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
-    for Use in a Process Simulation Software Environment." Journal of Engineering
-    for Gas Turbines and Power. v136, November
+    for Use in a Process Simulation Software Environment." Journal of
+    Engineering for Gas Turbines and Power. v136, November
 """
 import copy
 
 from pyomo.environ import (
     RangeSet,
     Set,
-    TransformationFactory,
-    Var,
-    value,
-    SolverFactory,
+    TransformationFactory
 )
 from pyomo.network import Arc
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigList, ConfigValue, In
 
 from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
-    EnergyBalanceType,
-    MomentumBalanceType,
     MaterialBalanceType,
     useDefault,
 )
@@ -54,8 +49,6 @@ from idaes.power_generation.unit_models import (
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as _set_port
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
-from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -121,8 +114,8 @@ calculated for the resulting mixed stream,
             default=useDefault,
             domain=is_physical_parameter_block,
             description="Property package to use for control volume",
-            doc="""Property parameter object used to define property calculations,
-**default** - useDefault.
+            doc="""Property parameter object used to define property
+calculations, **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PropertyParameterObject** - a PropertyParameterBlock object.}""",
@@ -133,8 +126,8 @@ calculated for the resulting mixed stream,
         ConfigBlock(
             implicit=True,
             description="Arguments to use for constructing property packages",
-            doc="""A ConfigBlock with arguments to be passed to a property block(s)
-and used when constructing these,
+            doc="""A ConfigBlock with arguments to be passed to a property
+block(s) and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
@@ -145,8 +138,8 @@ see property package for documentation.}""",
         ConfigValue(
             default=4,
             domain=int,
-            description="Number of parallel inlet stages to simulate partial arc "
-            "admission.  Default=4",
+            description="Number of parallel inlet stages to simulate partial "
+            "arc admission.  Default=4",
         ),
     )
     config.declare(
@@ -182,8 +175,8 @@ see property package for documentation.}""",
             default=[],
             domain=int,
             description="Locations of splitters in HP section",
-            doc="A list of index locations of splitters in the HP section. The "
-            "indexes indicate after which stage to include splitters.  0 is "
+            doc="A list of index locations of splitters in the HP section. The"
+            " indexes indicate after which stage to include splitters.  0 is "
             "between the inlet stage and the first regular HP stage.",
         ),
     )
@@ -193,8 +186,8 @@ see property package for documentation.}""",
             default=[],
             domain=int,
             description="Locations of splitters in IP section",
-            doc="A list of index locations of splitters in the IP section. The "
-            "indexes indicate after which stage to include splitters.",
+            doc="A list of index locations of splitters in the IP section. The"
+            " indexes indicate after which stage to include splitters.",
         ),
     )
     config.declare(
@@ -203,8 +196,8 @@ see property package for documentation.}""",
             default=[],
             domain=int,
             description="Locations of splitter in LP section",
-            doc="A list of index locations of splitters in the LP section. The "
-            "indexes indicate after which stage to include splitters.",
+            doc="A list of index locations of splitters in the LP section. The"
+            " indexes indicate after which stage to include splitters.",
         ),
     )
     config.declare(
@@ -213,7 +206,7 @@ see property package for documentation.}""",
             default=[],
             domain=int,
             description="HP Turbine stages to not connect to next with an arc.",
-            doc="HP Turbine stages to not connect to next with an arc. This is "
+            doc="HP Turbine stages to not connect to next with an arc. This is"
             "usually used to insert addtional units between stages on a "
             "flowsheet, such as a reheater",
         ),
@@ -224,8 +217,8 @@ see property package for documentation.}""",
             default=[],
             domain=int,
             description="IP Turbine stages to not connect to next with an arc.",
-            doc="IP Turbine stages to not connect to next with an arc. This is "
-            "usually used to insert addtional units between stages on a "
+            doc="IP Turbine stages to not connect to next with an arc. This is"
+            " usually used to insert addtional units between stages on a "
             "flowsheet, such as a reheater",
         ),
     )
@@ -235,8 +228,8 @@ see property package for documentation.}""",
             default=[],
             domain=int,
             description="LP Turbine stages to not connect to next with an arc.",
-            doc="LP Turbine stages to not connect to next with an arc. This is "
-            "usually used to insert addtional units between stages on a "
+            doc="LP Turbine stages to not connect to next with an arc. This is"
+            " usually used to insert addtional units between stages on a "
             "flowsheet, such as a reheater",
         ),
     )
@@ -301,9 +294,12 @@ class TurbineMultistageData(UnitModelBlockData):
         self.inlet_mix = Mixer(default=self._mix_cfg(unit_cfg, ni))
         # add turbine sections.
         # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
-        self.hp_stages = TurbineStage(RangeSet(config.num_hp), default=unit_cfg)
-        self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
-        self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
+        self.hp_stages = TurbineStage(
+            RangeSet(config.num_hp), default=unit_cfg)
+        self.ip_stages = TurbineStage(
+            RangeSet(config.num_ip), default=unit_cfg)
+        self.lp_stages = TurbineStage(
+            RangeSet(config.num_lp), default=unit_cfg)
         self.outlet_stage = TurbineOutletStage(default=unit_cfg)
 
         for i in self.hp_stages:
@@ -332,15 +328,21 @@ class TurbineMultistageData(UnitModelBlockData):
         # put in splitters for turbine steam extractions
         if config.hp_split_locations:
             self.hp_split = Separator(
-                config.hp_split_locations, default=s_sfg_default, initialize=hp_splt_cfg
+                config.hp_split_locations,
+                default=s_sfg_default,
+                initialize=hp_splt_cfg
             )
         if config.ip_split_locations:
             self.ip_split = Separator(
-                config.ip_split_locations, default=s_sfg_default, initialize=ip_splt_cfg
+                config.ip_split_locations,
+                default=s_sfg_default,
+                initialize=ip_splt_cfg
             )
         if config.lp_split_locations:
             self.lp_split = Separator(
-                config.lp_split_locations, default=s_sfg_default, initialize=lp_splt_cfg
+                config.lp_split_locations,
+                default=s_sfg_default,
+                initialize=lp_splt_cfg
             )
 
         # Done with unit models.  Adding Arcs (streams).
@@ -390,7 +392,8 @@ class TurbineMultistageData(UnitModelBlockData):
                 if (i[0] in discon or i[0] == nstages) and i[0] in splits:
                     # don't connect stage i to next remove stream after split
                     sr.add((i[0], 2))
-                elif (i[0] in discon or i[0] == nstages) and i[0] not in splits:
+                elif ((i[0] in discon or i[0] == nstages) and
+                      i[0] not in splits):
                     # no splitter and disconnect so remove both streams
                     sr.add((i[0], 1))
                     sr.add((i[0], 2))
@@ -411,8 +414,8 @@ class TurbineMultistageData(UnitModelBlockData):
             associated.
 
             Args:
-                turbines (TurbineStage): Indexed block with turbine section stages
-                splitters (Separator): Indexed block of splitters
+                turbines (TurbineStage): Indexed block with turbine section
+                stages splitters (Separator): Indexed block of splitters
             """
 
             def _rule(b, i, j):
@@ -435,9 +438,12 @@ class TurbineMultistageData(UnitModelBlockData):
             return _rule
 
         # Create initial arcs index sets with all possible streams
-        self.hp_stream_idx = Set(initialize=self.hp_stages.index_set() * [1, 2])
-        self.ip_stream_idx = Set(initialize=self.ip_stages.index_set() * [1, 2])
-        self.lp_stream_idx = Set(initialize=self.lp_stages.index_set() * [1, 2])
+        self.hp_stream_idx = Set(
+            initialize=self.hp_stages.index_set() * [1, 2])
+        self.ip_stream_idx = Set(
+            initialize=self.ip_stages.index_set() * [1, 2])
+        self.lp_stream_idx = Set(
+            initialize=self.lp_stages.index_set() * [1, 2])
 
         # Throw out unneeded streams
         _arc_indexes(
@@ -472,7 +478,8 @@ class TurbineMultistageData(UnitModelBlockData):
 
         # Connect hp section to ip section unless its a disconnect location
         last_hp = config.num_hp
-        if 0 not in config.ip_disconnect and last_hp not in config.hp_disconnect:
+        if (0 not in config.ip_disconnect and
+                last_hp not in config.hp_disconnect):
             if last_hp in config.hp_split_locations:  # connect splitter to ip
                 self.hp_to_ip_stream = Arc(
                     source=self.hp_split[last_hp].outlet_1,
@@ -485,7 +492,8 @@ class TurbineMultistageData(UnitModelBlockData):
                 )
         # Connect ip section to lp section unless its a disconnect location
         last_ip = config.num_ip
-        if 0 not in config.lp_disconnect and last_ip not in config.ip_disconnect:
+        if (0 not in config.lp_disconnect and
+                last_ip not in config.ip_disconnect):
             if last_ip in config.ip_split_locations:  # connect splitter to ip
                 self.ip_to_lp_stream = Arc(
                     source=self.ip_split[last_ip].outlet_1,
@@ -501,14 +509,17 @@ class TurbineMultistageData(UnitModelBlockData):
         if 0 in config.hp_split_locations:
             # connect inlet mix to splitter and splitter to hp section
             self.inlet_to_splitter_stream = Arc(
-                source=self.inlet_mix.outlet, destination=self.hp_split[0].inlet
+                source=self.inlet_mix.outlet,
+                destination=self.hp_split[0].inlet
             )
             self.splitter_to_hp_stream = Arc(
-                source=self.hp_split[0].outlet_1, destination=self.hp_stages[1].inlet
+                source=self.hp_split[0].outlet_1,
+                destination=self.hp_stages[1].inlet
             )
         else:  # connect mixer to first hp turbine stage
             self.inlet_to_hp_stream = Arc(
-                source=self.inlet_mix.outlet, destination=self.hp_stages[1].inlet
+                source=self.inlet_mix.outlet,
+                destination=self.hp_stages[1].inlet
             )
 
         @self.Expression(self.flowsheet().config.time)
@@ -564,7 +575,8 @@ class TurbineMultistageData(UnitModelBlockData):
         """
         m_cfg = copy.copy(unit_cfg)  # splitter config based on unit_cfg
         m_cfg.update(
-            num_inlets=ni, momentum_mixing_type=MomentumMixingType.minimize_and_equality
+            num_inlets=ni,
+            momentum_mixing_type=MomentumMixingType.minimize_and_equality
         )
         return m_cfg
 
@@ -615,33 +627,33 @@ class TurbineMultistageData(UnitModelBlockData):
         """
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
-        #   values, this makes sure original problem spec is same but initializes
-        #   the values of free vars
-        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-
+        #   values, this makes sure original problem spec is same but
+        #   initializes the values of free vars
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         ni = self.config.num_parallel_inlet_stages
-        flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         def init_section(stages, splits, disconnects, prev_port):
             if 0 in splits:
                 _set_port(splits[0].inlet, prev_port)
-                splits[0].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+                splits[0].initialize(
+                    outlvl=outlvl, solver=solver, optarg=optarg)
                 prev_port = splits[0].outlet_1
             for i in stages:
                 if i - 1 not in disconnects:
                     _set_port(stages[i].inlet, prev_port)
                 else:
                     if copy_disconneted_flow:
-                        for t in stages[i].stages[i].inlet.flow_mol[t]:
-                            stages[i].inlet.flow_mol[t] = prev_port.flow_mol[t]
-                stages[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+                        for t in stages[i].stages[i].inlet.flow_mol:
+                            stages[i].inlet.flow_mol[t] = \
+                                prev_port.flow_mol[t]
+                stages[i].initialize(
+                    outlvl=outlvl, solver=solver, optarg=optarg)
                 prev_port = stages[i].outlet
                 if i in splits:
                     _set_port(splits[i].inlet, prev_port)
-                    splits[i].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+                    splits[i].initialize(
+                        outlvl=outlvl, solver=solver, optarg=optarg)
                     prev_port = splits[i].outlet_1
             return prev_port
 
@@ -652,16 +664,19 @@ class TurbineMultistageData(UnitModelBlockData):
             for i in self.inlet_stage_idx:
                 if i == 1:  # fix rest of splits at leaving first one free
                     continue
-                self.inlet_split.split_fraction[0, "outlet_{}".format(i)].fix(1.0 / ni)
+                self.inlet_split.split_fraction[
+                    0, "outlet_{}".format(i)].fix(1.0 / ni)
             # fix inlet and free outlet
             self.inlet_split.inlet.fix()
             for i in self.inlet_stage_idx:
                 ol = getattr(self.inlet_split, "outlet_{}".format(i))
                 ol.unfix()
-            self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_split.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
             # free split fractions
             for i in self.inlet_stage_idx:
-                self.inlet_split.split_fraction[0, "outlet_{}".format(i)].unfix()
+                self.inlet_split.split_fraction[
+                    0, "outlet_{}".format(i)].unfix()
 
             # Initialize valves
             for i in self.inlet_stage_idx:
@@ -675,7 +690,8 @@ class TurbineMultistageData(UnitModelBlockData):
 
             # Initialize turbine
             for i in self.inlet_stage_idx:
-                _set_port(self.inlet_stage[i].inlet, self.throttle_valve[i].outlet)
+                _set_port(
+                    self.inlet_stage[i].inlet, self.throttle_valve[i].outlet)
                 self.inlet_stage[i].initialize(
                     outlvl=outlvl, solver=solver, optarg=optarg
                 )
@@ -688,28 +704,39 @@ class TurbineMultistageData(UnitModelBlockData):
                     self.inlet_stage[i].outlet,
                 )
                 getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
-            self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_mix.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
             for i in self.inlet_stage_idx:
                 getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
             self.inlet_mix.use_equal_pressure_constraint()
 
             prev_port = self.inlet_mix.outlet
             prev_port = init_section(
-                self.hp_stages, self.hp_split, self.config.hp_disconnect, prev_port
+                self.hp_stages,
+                self.hp_split,
+                self.config.hp_disconnect,
+                prev_port
             )
             if len(self.hp_stages) in self.config.hp_disconnect:
                 prev_port = self.ip_stages[1].inlet
             prev_port = init_section(
-                self.ip_stages, self.ip_split, self.config.ip_disconnect, prev_port
+                self.ip_stages,
+                self.ip_split,
+                self.config.ip_disconnect,
+                prev_port
             )
             if len(self.ip_stages) in self.config.ip_disconnect:
                 prev_port = self.lp_stages[1].inlet
             prev_port = init_section(
-                self.lp_stages, self.lp_split, self.config.lp_disconnect, prev_port
+                self.lp_stages,
+                self.lp_split,
+                self.config.lp_disconnect,
+                prev_port
             )
 
             _set_port(self.outlet_stage.inlet, prev_port)
-            self.outlet_stage.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.outlet_stage.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
             for t in self.flowsheet().time:
                 self.inlet_split.inlet.flow_mol[
                     t

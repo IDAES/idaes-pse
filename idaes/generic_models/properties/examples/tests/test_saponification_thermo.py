@@ -21,6 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            Param,
                            value,
                            Var)
+from pyomo.util.check_units import assert_units_consistent
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
                         MaterialFlowBasis)
@@ -300,5 +301,6 @@ class TestStateBlock(object):
         for i in model.props[1].conc_mol_comp:
             assert not model.props[1].conc_mol_comp[i].fixed
 
+    @pytest.mark.component
     def check_units(self, model):
-        units.assert_units_consistent(model)
+        assert_units_consistent(model)

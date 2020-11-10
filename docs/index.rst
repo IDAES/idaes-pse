@@ -41,7 +41,7 @@ Contents
 .. toctree::
     :maxdepth: 2
     
-    getting_started
+    getting_started/index
     user_guide/index
     advanced_user_guide/index
     tutorials_examples
