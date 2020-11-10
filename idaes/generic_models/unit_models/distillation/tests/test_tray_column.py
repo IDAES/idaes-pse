@@ -104,8 +104,44 @@ class TestBTXIdeal():
 
         return m
 
+    @pytest.fixture(scope="class")
+    def btx_fctp(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal",
+                                                     "state_vars": "FcTP"})
+
+        m.fs.unit = TrayColumn(default={
+                               "number_of_trays": 10,
+                               "feed_tray_location": 5,
+                               "condenser_type": CondenserType.totalCondenser,
+                               "condenser_temperature_spec":
+                                   TemperatureSpec.atBubblePoint,
+                               "property_package": m.fs.properties,
+                               "has_heat_transfer": False,
+                               "has_pressure_change": False})
+
+        # Inlet feed conditions
+        m.fs.unit.tray[5].feed.flow_mol_comp[0, "benzene"].fix(50)
+        m.fs.unit.tray[5].feed.flow_mol_comp[0, "toluene"].fix(50)
+        m.fs.unit.tray[5].feed.temperature.fix(368)
+        m.fs.unit.tray[5].feed.pressure.fix(101325)
+
+        # unit level inputs
+        m.fs.unit.condenser.reflux_ratio.fix(1.4)
+        m.fs.unit.condenser.condenser_pressure.fix(101325)
+
+        m.fs.unit.reboiler.boilup_ratio.fix(1.3)
+
+        assert degrees_of_freedom(m) == 0
+
+        return m
+
     @pytest.mark.unit
-    def test_build(self, btx_ftpz):
+    def test_build(self, btx_ftpz, btx_fctp):
         assert len(btx_ftpz.fs.unit.config) == 12
 
         assert btx_ftpz.fs.unit.tray[5].config.is_feed_tray
@@ -116,16 +152,33 @@ class TestBTXIdeal():
         assert hasattr(btx_ftpz.fs.unit, "liq_stream")
         assert hasattr(btx_ftpz.fs.unit, "vap_stream")
 
+        assert len(btx_fctp.fs.unit.config) == 12
+
+        assert btx_fctp.fs.unit.tray[5].config.is_feed_tray
+
+        assert hasattr(btx_fctp.fs.unit, "condenser")
+        assert hasattr(btx_fctp.fs.unit, "reboiler")
+
+        assert hasattr(btx_fctp.fs.unit, "liq_stream")
+        assert hasattr(btx_fctp.fs.unit, "vap_stream")
+
     @pytest.mark.solver
     @pytest.mark.component
-    def test_initialize(self, btx_ftpz):
+    def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
+        initialization_tester(btx_fctp)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve(self, btx_ftpz):
+    def test_solve(self, btx_ftpz, btx_fctp):
         results = solver.solve(btx_ftpz)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        results = solver.solve(btx_fctp)
 
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
