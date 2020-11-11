@@ -40,8 +40,3 @@ jobs:
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
-      - name: Run pylint
-        run: |
-          python -m pip --no-cache-dir install --progress-bar off pylint
-          pylint -E --ignore-patterns="test_.*" idaes/ || true
-
