@@ -9,6 +9,8 @@ jobs:
     name: Integration tests (py=${{ matrix.python-version }}, os=${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      # if fail-fast == true (the default), jobs for the remaining values in the matrix are cancelled
+      fail-fast: true
       matrix:
         python-version:
           - '3.6'

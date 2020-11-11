@@ -17,6 +17,8 @@ jobs:
     name: Install and test (py=${{ matrix.python-version }}, os=${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      # if fail-fast == true (the default), jobs for the remaining values in the matrix are cancelled
+      fail-fast: false
       matrix:
         python-version:
           - '3.6'
@@ -41,6 +43,9 @@ jobs:
         run: |
           idaes get-extensions --verbose
           ipopt -v
+        # adding "ipopt -v" causes this step to fail
+        # so we add an exception to continue with the rest of the job in case of failure
+        continue-on-error: true
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
