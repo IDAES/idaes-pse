@@ -23,8 +23,16 @@ jobs:
         # idaes and the modules in idaes.__init__ are imported when accessing idaes.ver
         python -m pip --no-cache-dir install --progress-bar off -r requirements.txt
         python -m pip --no-cache-dir install --progress-bar off -r docs/requirements-sphinx.txt
+    - name: Install IDAES extensions
+      run: |
+        idaes get-extensions --verbose
+        find $(idaes data-directory) -ls
+        PATH=$PATH:$(idaes bin-directory)
+        ipopt -v
     - name: Build Sphinx docs
       run: |
+        # TODO check if there's a better way of sharing env vars between steps of the same job
+        PATH=$PATH:$(idaes bin-directory)
         cd docs/
         python build.py
     - name: Publish built docs
