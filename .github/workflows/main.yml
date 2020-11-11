@@ -40,10 +40,6 @@ jobs:
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
-      - name: Build Sphinx docs
-        run: |
-          cd docs/
-          python build.py
       - name: Run pylint
         run: |
           python -m pip --no-cache-dir install --progress-bar off pylint

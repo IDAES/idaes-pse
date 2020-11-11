@@ -1,0 +1,32 @@
+name: Documentation
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    # uncomment this to run this conditionally only when files in "docs/" are changed
+    # paths:
+    #   - 'docs/**'
+
+jobs:
+  build-sphinx:
+    name: Sphinx HTML docs
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+    - name: Install Sphinx dependencies
+      run: |
+        python -m pip --no-cache-dir install --progress-bar off sphinx<3.0.0 sphinx-rtd-theme sphinxcontrib-napoleon>=0.5.0 spinx-argparse
+    - name: Build Sphinx docs
+      run: |
+        cd docs/
+        python build.py
+    - name: Publish built docs
+      uses: actions/upload-artifact@v2
+      with:
+        name: idaes-pse-docs-html
+        path: ./build/html/
