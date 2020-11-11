@@ -10,7 +10,7 @@ defaults:
 
 jobs:
   idaes-pse:
-    name: Install and test IDAES with Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    name: Install and test (py=${{ matrix.python-version }}, os=${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -18,7 +18,7 @@ jobs:
           - '3.6'
           - '3.7'
         os:
-          - ubuntu-latest
+          - ubuntu-18.04
           - windows-latest
     steps:
       - uses: actions/checkout@v2
