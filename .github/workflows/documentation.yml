@@ -20,6 +20,8 @@ jobs:
         python-version: '3.7'
     - name: Install Sphinx dependencies
       run: |
+        # idaes and the modules in idaes.__init__ are imported when accessing idaes.ver
+        python -m pip --no-cache-dir install --progress-bar off -r requirements.txt
         python -m pip --no-cache-dir install --progress-bar off -r docs/requirements-sphinx.txt
     - name: Build Sphinx docs
       run: |
