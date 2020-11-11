@@ -20,7 +20,7 @@ jobs:
         python-version: '3.7'
     - name: Install Sphinx dependencies
       run: |
-        python -m pip --no-cache-dir install --progress-bar off sphinx<3.0.0 sphinx-rtd-theme sphinxcontrib-napoleon>=0.5.0 spinx-argparse
+        python -m pip --no-cache-dir install --progress-bar off -r docs/requirements-sphinx.txt
     - name: Build Sphinx docs
       run: |
         cd docs/
