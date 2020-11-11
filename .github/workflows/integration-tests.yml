@@ -1,0 +1,37 @@
+name: Run integration tests
+
+on:
+  # for the moment, this workflow needs to be triggered manually
+  workflow_dispatch:
+
+jobs:
+  integration:
+    name: Integration tests (py=${{ matrix.python-version }}, os=${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+        os:
+          - ubuntu-18.04
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install idaes and dependencies
+        run: |
+          python -m pip --no-cache-dir install --progress-bar off .[dev]
+      - name: Fetch examples-pse
+        run: |
+          git clone https://github.com/IDAES/examples-pse.git
+      - name: Run idaes-pse integration tests
+        run: |
+          pytest -m integration idaes/
+      - name: Run examples-pse tests
+        run: |
+          cd examples-pse
+          pytest
