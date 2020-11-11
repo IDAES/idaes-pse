@@ -723,3 +723,97 @@ class TestDynamicBlock(object):
         assert vectors.derivative[0,tl].value == pytest.approx(0.1851851851851849)
         assert vectors.derivative[1,tl].value == pytest.approx(0.47963475941315314)
 
+    def test_shift_values_back_by_time(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+        tl = time.last()
+
+        for t in time:
+            blk.vectors.differential[:,t].set_value(t)
+            blk.vectors.algebraic[:,t].set_value(t)
+            blk.vectors.derivative[:,t].set_value(t)
+            blk.vectors.input[:,t].set_value(t)
+            blk.vectors.fixed[:,t].set_value(t)
+
+        ctypes = (DiffVar, DerivVar, AlgVar, InputVar, FixedVar)
+
+        shift = tl - t0 # 1.0, two samples
+        blk.shift_values_back_by_time(shift)
+        for t in time:
+            if t == t0:
+                for v in blk.component_objects(ctypes):
+                    assert v[t].value == tl
+            else:
+                for v in blk.component_objects(ctypes):
+                    assert v[t].value == t
+
+        ctypes_to_shift = (DiffVar, DerivVar)
+        ctypes_to_not_shift = (AlgVar, InputVar, FixedVar)
+        shift = (tl - t0)/2 # 0.5, one sample
+        idx_of_last_sample = time.find_nearest_index(tl-shift)
+        time_of_last_sample = time[idx_of_last_sample]
+        blk.shift_values_back_by_time(shift, ctype=ctypes_to_shift)
+        for t in time:
+            if t <= shift:
+                for v in blk.component_objects(ctypes_to_shift):
+                    assert v[t].value == t + shift
+            else:
+                for v in blk.component_objects(ctypes_to_shift):
+                    assert v[t].value == t
+            if t == t0:
+                for v in blk.component_objects(ctypes_to_not_shift):
+                    assert v[t].value == tl
+            else:
+                for v in blk.component_objects(ctypes_to_not_shift):
+                    assert v[t].value == t
+
+    def test_shift_back_one_sample(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+        tl = time.last()
+
+        for t in time:
+            blk.vectors.differential[:,t].set_value(t)
+            blk.vectors.algebraic[:,t].set_value(t)
+            blk.vectors.derivative[:,t].set_value(t)
+            blk.vectors.input[:,t].set_value(t)
+            blk.vectors.fixed[:,t].set_value(t)
+
+        ctypes = (DiffVar, DerivVar, AlgVar, InputVar, FixedVar)
+
+        shift = tl - t0 # 1.0, two samples
+        blk.set_sample_time(shift)
+        blk.shift_back_one_sample()
+        for t in time:
+            if t == t0:
+                for v in blk.component_objects(ctypes):
+                    assert v[t].value == tl
+            else:
+                for v in blk.component_objects(ctypes):
+                    assert v[t].value == t
+
+        ctypes_to_shift = (DiffVar, DerivVar)
+        ctypes_to_not_shift = (AlgVar, InputVar, FixedVar)
+        shift = (tl - t0)/2 # 0.5, one sample
+        idx_of_last_sample = time.find_nearest_index(tl-shift)
+        time_of_last_sample = time[idx_of_last_sample]
+        blk.set_sample_time(shift)
+        blk.shift_back_one_sample(ctype=ctypes_to_shift)
+        for t in time:
+            if t <= shift:
+                for v in blk.component_objects(ctypes_to_shift):
+                    assert v[t].value == t + shift
+            else:
+                for v in blk.component_objects(ctypes_to_shift):
+                    assert v[t].value == t
+            if t == t0:
+                for v in blk.component_objects(ctypes_to_not_shift):
+                    assert v[t].value == tl
+            else:
+                for v in blk.component_objects(ctypes_to_not_shift):
+                    assert v[t].value == t
+
+    def test_generate_time_in_sample(self):
+        blk = self.make_block()
