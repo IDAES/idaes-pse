@@ -42,6 +42,8 @@ jobs:
       - name: Install IDAES extensions
         run: |
           idaes get-extensions --verbose
+          ls -lh $(idaes data-directory)
+          PATH=$PATH:$(idaes bin-directory)
           ipopt -v
         # adding "ipopt -v" causes this step to fail
         # so we add an exception to continue with the rest of the job in case of failure
