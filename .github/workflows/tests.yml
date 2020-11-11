@@ -42,7 +42,9 @@ jobs:
       - name: Install IDAES extensions
         run: |
           idaes get-extensions --verbose
-          ls -lh $(idaes data-directory)
+          # TODO: these commands are Unix-shell specific 
+          # and will need to be changed if we want to test on CMD.exe/Powershell
+          find $(idaes data-directory) -ls
           PATH=$PATH:$(idaes bin-directory)
           ipopt -v
         # adding "ipopt -v" causes this step to fail
