@@ -1,8 +1,12 @@
-name: Install IDAES and run tests
+name: Installation and non-integration tests
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
+    # uncomment this to run this only if files in the root Python package directory have been changed
+    # paths:
+    #   - 'idaes/**'
 
 defaults:
   run:
@@ -29,14 +33,16 @@ jobs:
       - name: Install dependencies
         # if: ${{ runner.os == 'Linux' }}
         run: |
-          python -m pip --no-cache-dir install --progress-bar off git+https://github.com/PyUtilib/pyutilib git+https://github.com/IDAES/pyomo.git@IDAES
-          python -m pip install --progress-bar off --editable .
+          python -m pip install --progress-bar off -r requirements.txt
       - name: Display IDAES version
         run: |
           idaes --version
       - name: Install IDAES extensions
         run: |
-          idaes get-extensions
+          idaes get-extensions --verbose
+          ipopt -v
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
+      # TODO: pytest --cov
+      # TODO: coveralls (coverage report)
