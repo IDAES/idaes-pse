@@ -569,7 +569,7 @@ class TestDynamicBlock(object):
         tgt_comp_names = [c[0].name for c in tgt_comps]
         assert tgt_names == tgt_comp_names
 
-    def test_init_from_setpoint(self):
+    def test_init_to_setpoint(self):
         blk = self.make_block()
         time = blk.time
         t0 = time.first()
@@ -592,7 +592,7 @@ class TestDynamicBlock(object):
         blk.vectors.input.set_setpoint(range(len(blk.input_vars)))
         blk.vectors.derivative.set_setpoint(range(len(blk.derivative_vars)))
 
-        blk.initialize_from_setpoint()
+        blk.initialize_to_setpoint()
         vectors = [
                 blk.vectors.differential,
                 blk.vectors.algebraic,
@@ -608,7 +608,7 @@ class TestDynamicBlock(object):
 
         new_sp = 7.
         blk.vectors.algebraic.set_setpoint(new_sp)
-        blk.initialize_from_setpoint(ctype=AlgVar)
+        blk.initialize_to_setpoint(ctype=AlgVar)
         vectors = [
                 blk.vectors.differential,
                 blk.vectors.input,
@@ -628,7 +628,7 @@ class TestDynamicBlock(object):
             else:
                 assert vec[i, t].value == new_sp
 
-    def test_init_from_initial_conditions(self):
+    def test_init_to_initial_conditions(self):
         blk = self.make_block()
         time = blk.time
         t0 = time.first()
@@ -656,7 +656,7 @@ class TestDynamicBlock(object):
             for i, var in enumerate(vec[:,t0]):
                 var.set_value(i)
 
-        blk.initialize_from_initial_conditions(ctype=(DiffVar, AlgVar))
+        blk.initialize_to_initial_conditions(ctype=(DiffVar, AlgVar))
         for vec in (blk.vectors.differential, blk.vectors.algebraic):
             for i, t in vec:
                 assert vec[i, t].value == i
