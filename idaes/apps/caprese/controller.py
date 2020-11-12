@@ -229,39 +229,7 @@ class _ControllerBlockData(_DynamicBlockData):
     def constrain_control_inputs_piecewise_constant(self):
         time = self.time
         input_set = self.INPUT_SET
-        namespace.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
-
-    def initialize_last_sample(self,
-            categories=(
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.INPUT,
-                VariableCategory.FIXED,
-                ),
-            # TODO: include option for how to initialize
-            # In particular, how should a known disturbance be initialized?
-            tolerance=1e-8,
-            ):
-        time = self.time
-        sample_time = self.sample_time
-        t = time.last() - sample_time
-        idx = time.find_nearest_index(t, tolerance)
-        n = len(time)
-        category_dict = self.category_dict
-        if type(categories) is VariableCategory:
-            categories = (categories,)
-        for categ in categories:
-            # Would be nice to use component_objects here
-            for v in category_dict[categ]:
-                for i in range(idx+1, n+1):
-                    # Do not initialize the first point in this sample
-                    # I do not consider it to be "in the sample"
-                    t = time[i]
-                    # All variables should have a setpoint attribute,
-                    # regardless of category. May not be meaningful
-                    # for fixed variables.
-                    v[t].set_value(v.setpoint)
+        self.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
 
 
 class ControllerBlock(DynamicBlock):
