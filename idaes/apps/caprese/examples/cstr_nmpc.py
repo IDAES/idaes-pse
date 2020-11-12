@@ -26,10 +26,12 @@ __author__ = "Robert Parker"
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'bound_push': 1e-8,
-                      'halt_on_ampl_error': 'yes',
-                      }
+    solver.options = {
+            'tol': 1e-6,
+            'bound_push': 1e-8,
+            'halt_on_ampl_error': 'yes',
+            'linear_solver': 'ma57',
+            }
 else:
     solver = None
 
@@ -65,51 +67,60 @@ class PlotData(object):
 def main(plot_switch=False):
 
     # This tests the same model constructed in the test_nmpc_constructor_1 file
-    m_plant = make_model(horizon=6, ntfe=60, ntcp=2)
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
     sample_time = 0.5
+    m_plant = make_model(horizon=sample_time, ntfe=5, ntcp=2)
     time_plant = m_plant.fs.time
 
-    n_plant_samples = (time_plant.last()-time_plant.first())/sample_time
-    assert n_plant_samples == int(n_plant_samples)
-    n_plant_samples = int(n_plant_samples)
+    simulation_horizon = 60
+    n_samples_to_simulate = round(simulation_horizon/sample_time)
 
-    plant_sample_points = [time_plant.first() + i*sample_time
-                           for i in range(1, n_plant_samples)]
-    for t in plant_sample_points:
-        assert t in time_plant
-    # Six samples per horizon, five elements per sample
+    samples_to_simulate = [time_plant.first() + i*sample_time
+                           for i in range(1, n_samples_to_simulate)]
 
-    initial_plant_inputs = [m_plant.fs.mixer.S_inlet.flow_vol[0],
-                            m_plant.fs.mixer.E_inlet.flow_vol[0]]
+    inputs = [
+            m_plant.fs.mixer.S_inlet.flow_vol[0],
+            m_plant.fs.mixer.E_inlet.flow_vol[0],
+            ]
+    measurements = [
+            m_controller.fs.cstr.outlet.conc_mol[0, 'C'],
+            m_controller.fs.cstr.outlet.conc_mol[0, 'E'],
+            m_controller.fs.cstr.outlet.conc_mol[0, 'S'],
+            m_controller.fs.cstr.outlet.conc_mol[0, 'P'],
+            m_controller.fs.cstr.outlet.temperature[0],
+            ]
     
-    nmpc = NMPCSim(plant_model=m_plant.fs, 
-                   plant_time_set=m_plant.fs.time,
-                   controller_model=m_controller.fs, 
-                   controller_time_set=m_controller.fs.time,
-                   inputs_at_t0=initial_plant_inputs,
-                   solver=solver, outlvl=idaeslog.DEBUG,
-                   sample_time=sample_time)
+    nmpc = NMPCSim(
+            plant_model=m_plant,
+            plant_time_set=m_plant.fs.time,
+            controller_model=m_controller, 
+            controller_time_set=m_controller.fs.time,
+            inputs_at_t0=inputs,
+            measurements=measurements,
+            sample_time=sample_time,
+            )
 
     plant = nmpc.plant
     controller = nmpc.controller
 
     nmpc.solve_consistent_initial_conditions(plant)
     nmpc.solve_consistent_initial_conditions(controller)
-    
-    set_point = [(controller.cstr.outlet.conc_mol[0, 'P'], 0.4),
-                 (controller.cstr.outlet.conc_mol[0, 'S'], 0.0),
-                 (controller.cstr.control_volume.energy_holdup[0, 'aq'], 300),
-                 (controller.mixer.E_inlet.flow_vol[0], 0.1),
-                 (controller.mixer.S_inlet.flow_vol[0], 2.0)]
+
+    set_point = [
+            (controller.mod.fs.cstr.outlet.conc_mol[0, 'P'], 0.4),
+            (controller.mod.fs.cstr.outlet.conc_mol[0, 'S'], 0.0),
+            (controller.mod.fs.cstr.control_volume.energy_holdup[0, 'aq'], 300),
+            (controller.mod.fs.mixer.E_inlet.flow_vol[0], 0.1),
+            (controller.mod.fs.mixer.S_inlet.flow_vol[0], 2.0),
+            ]
     # Interestingly, this (st.st. set point) solve converges infeasible
     # if energy_holdup set point is not 300. (Needs higher weight?)
 
     weight_tolerance = 5e-7
     
-    # Weight overwrite expects a list of (VarData, value) tuples
+    # Weight override expects a list of (VarData, value) tuples
     # in the STEADY MODEL
-    weight_override = [(controller.mixer.E_inlet.flow_vol[0], 20.0)]
+    weight_override = [(controller.mod.fs.mixer.E_inlet.flow_vol[0], 20.0)]
 
     nmpc.calculate_full_state_setpoint(set_point,
             objective_weight_override=weight_override,
@@ -117,6 +128,8 @@ def main(plot_switch=False):
             outlvl=idaeslog.DEBUG,
             allow_inconsistent=False,
             tolerance=1e-6)
+
+    import pdb; pdb.set_trace()
 
     nmpc.add_setpoint_to_controller()
     
