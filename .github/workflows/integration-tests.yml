@@ -43,15 +43,19 @@ jobs:
         run: |
           idaes get-extensions --verbose
           find $(idaes data-directory) -ls
-          PATH=$PATH:$(idaes bin-directory)
+          # add bin directory to $PATH (only valid for subsequent steps)
+          echo "$(idaes bin-directory)" >> $GITHUB_PATH
+      - name: Test access to executables
+        run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
               ipopt.exe -v
           else
               ipopt -v
           fi
+        # TODO if this step still fails, continue to at least let the tests start
+        continue-on-error: true
       - name: Run idaes-pse integration tests
         run: |
-          PATH=$PATH:$(idaes bin-directory)
           pytest -m integration idaes/
       - name: Fetch examples-pse
         run: |

@@ -45,12 +45,17 @@ jobs:
           # TODO: these commands are Unix-shell specific 
           # and will need to be changed if we want to test on CMD.exe/Powershell
           find $(idaes data-directory) -ls
-          PATH=$PATH:$(idaes bin-directory)
+          # add bin directory to $PATH (only valid for subsequent steps)
+          echo "$(idaes bin-directory)" >> $GITHUB_PATH
+      - name: Test access to executables
+        run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
               ipopt.exe -v
           else
               ipopt -v
           fi
+        # TODO if this step still fails, continue to at least let the tests start
+        continue-on-error: true
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
