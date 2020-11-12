@@ -57,7 +57,7 @@ from idaes.apps.caprese.model import (
         DynamicBlock,
         )
 from idaes.apps.caprese.controller import (
-        Controller,
+        ControllerBlock,
         )
 import idaes.logger as idaeslog
 
@@ -72,68 +72,43 @@ class NMPCSim(object):
 
     def __init__(self, plant_model=None, plant_time_set=None, 
         controller_model=None, controller_time_set=None, inputs_at_t0=None,
-        sample_time=None, **kwargs):
-        """Constructor method. Accepts plant and controller models needed for 
-        NMPC simulation, as well as time sets (Pyomo Sets) in each model
-        Inputs at the first time point in the plant model are also required.
-        Models provided are added to the NMPCSim instance as attributes.
-        This constructor solves for consistent initial conditions 
-        in the plant and controller and performs categorization into lists of
-        differential, derivative, algebraic, input, fixed, and scalar variables,
-        which are added as attributes to a _NMPC_NAMESPACE Block on each model.
-
-        Args:
-            plant_model : Plant Pyomo model, NMPC of which will be 
-                          simulated. Currently this must contain the entire 
-                          timespan it is desired to simulate.
-            plant_time_set : Set to treat as time in the plant model
-            controller_model : Model to be used to calculate control inputs
-                               for the plant. Control inputs in controller
-                               must exist in the plant, and initial condition
-                               variables in the plant must exist in the 
-                               controller.
-            controller_time_set : Set to treat as time in the controller model
-            inputs_at_t0 : List of VarData objects containing the variables
-                             to be treated as control inputs, at time.first().
-            solver : Solver to be used for verification of consistent initial 
-                     conditions, will also be used as the default solver if
-                     another is not provided for initializing or solving the 
-                     optimal control problem.
-            outlvl : IDAES logger output level. Default is idaes.logger.INFO.
-                     To see solver output, use idaes.logger.DEBUG.
-            sample_time : Length of time each control input will be held for.
-                          This must be an integer multiple of the (finite
-                          element) discretization spacing in both the plant
-                          and controller models. Default is to use the 
-                          controller model's discretization spacing.
-
+        measurements=None, sample_time=None, **kwargs):
         """
-        self.plant = DynamicModelHelper(
-                plant_model,
-                plant_time_set,
-                inputs_at_t0,
+        """
+        init_plant_measurements = [
+                find_comp_in_block(plant_model, controller_model, comp)
+                for comp in measurements
+                ]
+        self.plant = DynamicBlock(
+                model=plant_model,
+                time=plant_time_set,
+                inputs=inputs_at_t0,
+                measurements=init_plant_measurements,
                 )
+        self.plant.construct()
 
         init_controller_inputs = [
                 find_comp_in_block(controller_model, plant_model, comp)
                 for comp in inputs_at_t0
                 ]
-        self.controller = ControllerHelper(
-                controller_model,
-                controller_time_set,
-                init_controller_inputs,
+        self.controller = ControllerBlock(
+                model=controller_model,
+                time=controller_time_set,
+                inputs=init_controller_inputs,
+                measurements=measurements,
                 )
+        self.controller.construct()
 
-        controller_measurements = self.controller.measured_vars
+        controller_measurements = self.controller.measurement_vars
         plant_measurements = self.plant.find_components(
-                self.controller.model,
+                self.controller.mod,
                 controller_measurements,
                 self.controller.time,
                 )
 
         plant_inputs = self.plant.category_dict[VariableCategory.INPUT]
         controller_inputs = self.controller.find_components(
-                self.plant.model,
+                self.plant.mod,
                 plant_inputs,
                 self.plant.time,
                 )
@@ -151,56 +126,52 @@ class NMPCSim(object):
         self.current_plant_time = 0
 
     # TODO: put next two methods on a model wrapper.
-    def has_consistent_initial_conditions(self, model, **kwargs):
+    def has_consistent_initial_conditions(self, block, **kwargs):
         """
         Finds constraints at time.first() that are violated by more than
         tolerance. Returns True if any are found.
         """
         # This will raise an error if any constraints at t0 cannot be
         # evaluated, i.e. contain a variable of value None.
-        namespace = getattr(model, self.get_namespace_name())
-        time = namespace.get_time()
-        config = self.config(kwargs)
-        tolerance = config.tolerance
+        time = block.time
         inconsistent = get_inconsistent_initial_conditions(
-                model, 
+                block, 
                 time, 
-                tol=tolerance,
+                tol=1e-8,
                 suppress_warnings=True)
         return not inconsistent
 
-    def solve_consistent_initial_conditions(self, model, **kwargs):
+    def solve_consistent_initial_conditions(self, block, **kwargs):
         """
         Uses pyomo.dae.initialization solve_consistent_initial_conditions
         function to solve for consistent initial conditions. Inputs are
         fixed at time.first() in attempt to eliminate degrees of freedom.
         """
-        namespace = getattr(model, self.get_namespace_name())
-        time = namespace.get_time()
+        time = block.time
         strip_bounds = kwargs.pop('strip_bounds', True)
-        config = self.config(kwargs)
-        outlvl = config.outlvl
-        solver = config.solver
-        solver_log = idaeslog.getSolveLogger('nmpc', level=outlvl)
+        solver = SolverFactory('ipopt')
+        solver.set_options({
+            'linear_solver': 'ma57',
+            })
+        solver_log = idaeslog.getSolveLogger('nmpc', level=idaeslog.DEBUG)
         t0 = time.first()
 
         previously_fixed = ComponentMap()
-        for var in namespace.input_vars:
-            var0 = var[t0]
-            previously_fixed[var0] = var0.fixed
-            var0.fix()
+        for var in block.vectors.input[:,t0]:
+            previously_fixed[var] = var.fixed
+            var.fix()
 
         if strip_bounds:
             strip_var_bounds = TransformationFactory(
                                            'contrib.strip_var_bounds')
-            strip_var_bounds.apply_to(model, reversible=True)
+            strip_var_bounds.apply_to(block, reversible=True)
 
         with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-            result = solve_consistent_initial_conditions(model, time, solver,
+            result = solve_consistent_initial_conditions(block, time, solver,
                     tee=slc.tee)
 
         if strip_bounds:
-            strip_var_bounds.revert(model)
+            strip_var_bounds.revert(block)
 
         for var, was_fixed in previously_fixed.items():
             if not was_fixed:
