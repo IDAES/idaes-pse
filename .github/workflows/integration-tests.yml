@@ -12,6 +12,10 @@ on:
     - cron: '0 5 * * *'
     - cron: '30 7 * * *'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   integration:
     name: Integration tests (py=${{ matrix.python-version }}, os=${{ matrix.os }})
