@@ -478,10 +478,16 @@ class TestDynamicBlock(object):
         blk.validate_sample_time(0.5)
         assert hasattr(blk, 'sample_points')
         assert hasattr(blk, 'fe_per_sample')
-
+        assert hasattr(blk, 'sample_point_indices')
+        
         sample_point_set = set(blk.sample_points)
+        sample_point_indices = set(blk.sample_point_indices)
         for p in [0.0, 0.5, 1.0]:
             assert p in sample_point_set
+        for i in [1, 3, 5]:
+            assert i in sample_point_indices
+        assert len(sample_point_set) == 3
+        assert len(sample_point_indices) == 3
 
         with pytest.raises(ValueError, match=r".*integer divider.*"):
             blk.validate_sample_time(0.6)
@@ -498,6 +504,10 @@ class TestDynamicBlock(object):
         sample_point_set = set(blk.sample_points)
         for p in [0.0, 0.5, 1.0]:
             assert p in sample_point_set
+        for i in [1, 3, 5]:
+            assert i in sample_point_indices
+        assert len(sample_point_set) == 3
+        assert len(sample_point_indices) == 3
 
     def test_set_sample_time(self):
         model = make_model(horizon=1, nfe=2)
