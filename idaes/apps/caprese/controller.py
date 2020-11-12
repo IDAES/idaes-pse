@@ -57,6 +57,16 @@ from pyomo.dae.flatten import flatten_dae_components
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 
 
+def pwc_rule(ctrl, i, t):
+    time = ctrl.time
+    sp_set = set(ctrl.sample_points)
+    if t in sp_set:
+        # No need to check for time.first() as it is a sample point
+        return Constraint.Skip
+    t_next = time.next(t)
+    return ctrl.vectors.input[i, t_next] == ctrl.vectors.input[i, t]
+
+
 class _ControllerBlockData(_DynamicBlockData):
 
     def solve_setpoint(self, solver, require_steady=True):
@@ -155,9 +165,7 @@ class _ControllerBlockData(_DynamicBlockData):
     def add_tracking_objective(self,
             weights,
             control_penalty_type=ControlPenaltyType.ERROR,
-            state_categories=[
-                VariableCategory.DIFFERENTIAL,
-                ],
+            state_ctypes=DiffVar,
             # TODO: Option for user to provide a setpoint here.
             #       (Should ignore setpoint attrs)
             state_weight=1.0, # These are liable to get confused with other weights
@@ -166,7 +174,6 @@ class _ControllerBlockData(_DynamicBlockData):
             ):
         """
         """
-        namespace = self.namespace
         samples = self.sample_points
         # Since t0 ~is~ a sample point, will have to iterate
         # over samples[1:]
@@ -183,12 +190,10 @@ class _ControllerBlockData(_DynamicBlockData):
                 control_penalty_type == ControlPenaltyType.NONE):
             raise ValueError(
                 "control_penalty_type argument must be 'ACTION', 'ERROR', "
-                "or 'None'."
+                "or 'NONE'."
                 )
 
-        category_dict = self.category_dict
-
-        states = [var for c in state_categories for var in category_dict[c]]
+        states = list(self.component_objects(state_ctypes))
         inputs = self.input_vars
 
         state_term = sum(
@@ -201,7 +206,7 @@ class _ControllerBlockData(_DynamicBlockData):
         if control_penalty_type == ControlPenaltyType.ERROR:
             input_term = sum(
                     var.weight*(var[t] - var.setpoint)**2
-                    for var in inputs[:]
+                    for var in inputs
                     if var.weight is not None and var.setpoint is not None
                     for t in samples[1:]
                     )
@@ -210,7 +215,7 @@ class _ControllerBlockData(_DynamicBlockData):
         elif control_penalty_type == ControlPenaltyType.ACTION:
             input_term = sum(
                     var.weight*(var[samples[k]] - var[samples[k-1]])**2
-                    for var in inputs[:]
+                    for var in inputs
                     if var.weight is not None and var.setpoint is not None
                     for k in range(1, n_sample_points)
                     )
@@ -219,24 +224,11 @@ class _ControllerBlockData(_DynamicBlockData):
         elif control_penalty_type == ControlPenaltyType.NONE:
             obj_expr = objective_weight*state_weight*state_term
 
-        namespace.tracking_objective = Objective(expr=obj_expr)
+        self.tracking_objective = Objective(expr=obj_expr)
 
     def constrain_control_inputs_piecewise_constant(self):
-        namespace = self.namespace
         time = self.time
-        input_set = namespace.INPUT_SET
-
-        def pwc_rule(ns, i, t):
-            time = self.time
-            sp_set = set(self.sample_points)
-            if t in sp_set:
-                # No need to check for time.first() as it is a sample point
-                return Constraint.Skip
-            t_next = time.next(t)
-            inputs = self.input_vars
-            var = inputs[i]
-            return var[t_next] == var[t]
-
+        input_set = self.INPUT_SET
         namespace.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
 
     def initialize_last_sample(self,
