@@ -3,6 +3,11 @@ name: Run integration tests
 on:
   # for the moment, this workflow needs to be triggered manually
   workflow_dispatch:
+  schedule:
+    # run daily at 5:00 am UTC (12 am ET/9 pm PT)
+    - cron: '0 5 * * *'
+  repository_dispatch:
+    types: [integration_tests_requested]
 
 jobs:
   integration:
