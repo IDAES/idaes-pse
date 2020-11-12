@@ -35,12 +35,18 @@ jobs:
       - name: Install idaes and dependencies
         run: |
           python -m pip --no-cache-dir install --progress-bar off .[dev]
-      - name: Fetch examples-pse
+      - name: Install extensions
         run: |
-          git clone https://github.com/IDAES/examples-pse.git
+          idaes get-extensions --verbose
+          find $(idaes data-directory) -ls
+          PATH=$PATH:$(idaes bin-directory)
+          ipopt -v
       - name: Run idaes-pse integration tests
         run: |
           pytest -m integration idaes/
+      - name: Fetch examples-pse
+        run: |
+          git clone https://github.com/IDAES/examples-pse.git
       - name: Run examples-pse tests
         run: |
           cd examples-pse
