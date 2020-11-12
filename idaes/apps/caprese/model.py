@@ -110,6 +110,11 @@ class _DynamicBlockData(_BlockData):
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
+        # These should be overridden by a call to `set_sample_time`
+        # The defaults assume that the entire model is one sample.
+        self.sample_points = [time.first(), time.last()]
+        self.sample_point_indices = [1, len(time)]
+
     _var_name = 'var'
     _block_suffix = '_BLOCK'
     _set_suffix = '_SET'
