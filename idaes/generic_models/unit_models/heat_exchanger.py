@@ -49,6 +49,7 @@ from idaes.generic_models.unit_models.heater import (
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 
 _log = idaeslog.getLogger(__name__)
 
@@ -164,18 +165,18 @@ def delta_temperature_underwood_callback(b):
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
-    t_units = pyunits.get_units(dT1)
+    temp_units = pyunits.get_units(dT1)
 
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
     b.cbrt = ExternalFunction(
         library=functions_lib(),
         function="cbrt",
-        arg_units=[t_units])
+        arg_units=[temp_units])
 
     @b.Expression(b.flowsheet().config.time)
     def delta_temperature(b, t):
-        return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3 * t_units
+        return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3 * temp_units
 
 
 @declare_process_block_class("HeatExchanger", doc="Simple 0D heat exchanger model.")
@@ -217,6 +218,11 @@ class HeatExchangerData(UnitModelBlockData):
             # Allow access to hot_side_config under the cold_side_name, backward
             # compatible with the tube and shell notation
             setattr(config, config.cold_side_name, config.cold_side_config)
+
+        if config.cold_side_name in ["hot_side", "side_1"]:
+            raise ConfigurationError("Cold side name cannot be in {'hot_side', 'side_1'}.")
+        if config.hot_side_name in ["cold_side", "side_2"]:
+            raise ConfigurationError("Hot side name cannot be in {'cold_side', 'side_2'}.")
 
     def build(self):
         """
@@ -274,7 +280,7 @@ class HeatExchangerData(UnitModelBlockData):
         q_units = s1_metadata.get_derived_units("power")
         u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
         a_units = s1_metadata.get_derived_units("area")
-        t_units = s1_metadata.get_derived_units("temperature")
+        temp_units = s1_metadata.get_derived_units("temperature")
 
         u = self.overall_heat_transfer_coefficient = Var(
             self.flowsheet().config.time,
@@ -293,13 +299,13 @@ class HeatExchangerData(UnitModelBlockData):
             self.flowsheet().config.time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
-            units=t_units
+            units=temp_units
         )
         self.delta_temperature_out = Var(
             self.flowsheet().config.time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
-            units=t_units
+            units=temp_units
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
@@ -311,7 +317,6 @@ class HeatExchangerData(UnitModelBlockData):
             f = self.crossflow_factor
 
         self.heat_duty = Reference(cold_side.heat)
-        q = self.heat_duty
         ########################################################################
         # Add ports                                                            #
         ########################################################################
@@ -363,14 +368,14 @@ class HeatExchangerData(UnitModelBlockData):
                     b.delta_temperature_in[t]
                     == hot_side.properties_in[t].temperature
                     - pyunits.convert(cold_side.properties_in[t].temperature,
-                                      to_units=t_units)
+                                      to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_in[t]
                     == hot_side.properties_in[t].temperature
                     - pyunits.convert(cold_side.properties_out[t].temperature,
-                                      to_units=t_units)
+                                      to_units=temp_units)
                 )
 
         @self.Constraint(self.flowsheet().config.time)
@@ -380,14 +385,14 @@ class HeatExchangerData(UnitModelBlockData):
                     b.delta_temperature_out[t]
                     == hot_side.properties_out[t].temperature
                     - pyunits.convert(cold_side.properties_out[t].temperature,
-                                      to_units=t_units)
+                                      to_units=temp_units)
                 )
             else:
                 return (
                     b.delta_temperature_out[t]
                     == hot_side.properties_out[t].temperature
                     - pyunits.convert(cold_side.properties_in[t].temperature,
-                                      to_units=t_units)
+                                      to_units=temp_units)
                 )
 
         ########################################################################
@@ -412,10 +417,10 @@ class HeatExchangerData(UnitModelBlockData):
         @self.Constraint(self.flowsheet().config.time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-                return pyunits.convert(q[t], to_units=q_units) == (
+                return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
                     f[t] * u[t] * a * deltaT[t])
             else:
-                return pyunits.convert(q[t], to_units=q_units) == (
+                return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
                     u[t] * a * deltaT[t])
 
         ########################################################################
@@ -423,8 +428,8 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         self.overall_heat_transfer_coefficient.latex_symbol = "U"
         self.area.latex_symbol = "A"
-        self.side_1.heat.latex_symbol = "Q_1"
-        self.side_2.heat.latex_symbol = "Q_2"
+        hot_side.heat.latex_symbol = "Q_1"
+        cold_side.heat.latex_symbol = "Q_2"
         self.delta_temperature.latex_symbol = "\\Delta T"
 
     def initialize(

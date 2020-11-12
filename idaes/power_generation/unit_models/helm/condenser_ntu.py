@@ -110,6 +110,11 @@ class HelmNtuCondenserData(UnitModelBlockData):
             # Allow access to hot_side_config under the cold_side_name
             setattr(config, config.cold_side_name, config.cold_side_config)
 
+        if config.cold_side_name in ["hot_side", "side_1"]:
+            raise ConfigurationError("Cold side name cannot be in {'hot_side', 'side_1'}.")
+        if config.hot_side_name in ["cold_side", "side_2"]:
+            raise ConfigurationError("Hot side name cannot be in {'cold_side', 'side_2'}.")
+
     def build(self):
         """
         Building model
@@ -169,7 +174,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         q_units = s1_metadata.get_derived_units("power")
         u_units = s1_metadata.get_derived_units("heat_transfer_coefficient")
         a_units = s1_metadata.get_derived_units("area")
-        t_units = s1_metadata.get_derived_units("temperature")
+        temp_units = s1_metadata.get_derived_units("temperature")
 
         self.overall_heat_transfer_coefficient = pyo.Var(
             time,
@@ -185,26 +190,24 @@ class HelmNtuCondenserData(UnitModelBlockData):
             units=a_units,
         )
         self.heat_duty = pyo.Reference(cold_side.heat)
-        q = self.heat_duty
-
         ########################################################################
         # Add ports                                                            #
         ########################################################################
         i1 = self.add_inlet_port(
             name=f"{config.hot_side_name}_inlet",
-            block=self.side_1,
+            block=hot_side,
             doc="Hot side inlet")
         i2 = self.add_inlet_port(
             name=f"{config.cold_side_name}_inlet",
-            block=self.side_2,
+            block=cold_side,
             doc="Cold side inlet")
         o1 = self.add_outlet_port(
             name=f"{config.hot_side_name}_outlet",
-            block=self.side_1,
+            block=hot_side,
             doc="Hot side outlet")
         o2 = self.add_outlet_port(
             name=f"{config.cold_side_name}_outlet",
-            block=self.side_2,
+            block=cold_side,
             doc="Cold side outlet")
 
         # Using Andrew's function for now.  I want these port names for backward
@@ -233,8 +236,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         ########################################################################
         @self.Constraint(time, doc="Heat balance equation")
         def unit_heat_balance(b, t):
-            return 0 == (self.side_1.heat[t] +
-                pyunits.convert(self.side_2.heat[t], to_units=q_units))
+            return 0 == (hot_side.heat[t] +
+                pyunits.convert(cold_side.heat[t], to_units=q_units))
 
         ########################################################################
         # Add some useful expressions for condenser performance                #
@@ -242,24 +245,24 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         @self.Expression(time, doc="Inlet temperature difference")
         def delta_temperature_in(b, t):
-                return (b.side_1.properties_in[t].temperature -
-                    pyunits.convert(b.side_2.properties_in[t].temperature, t_units))
+                return (hot_side.properties_in[t].temperature -
+                    pyunits.convert(cold_side.properties_in[t].temperature, temp_units))
 
         @self.Expression(time, doc="Outlet temperature difference")
         def delta_temperature_out(b, t):
-                return (b.side_1.properties_out[t].temperature -
-                    pyunits.convert(b.side_2.properties_out[t].temperature, t_units))
+                return (hot_side.properties_out[t].temperature -
+                    pyunits.convert(cold_side.properties_out[t].temperature, temp_units))
 
         @self.Expression(time, doc="NTU Based temperature difference")
         def delta_temperature_ntu(b, t):
-                return (b.side_1.properties_in[t].temperature_sat -
-                    pyunits.convert(b.side_2.properties_in[t].temperature, t_units))
+                return (hot_side.properties_in[t].temperature_sat -
+                    pyunits.convert(cold_side.properties_in[t].temperature, temp_units))
 
         @self.Expression(time, doc="Minimum product of flow rate and heat "
             "capacity (always on tube side since shell side has phase change)")
         def mcp_min(b, t):
-            return pyunits.convert(self.side_2.properties_in[t].flow_mol
-                * self.side_2.properties_in[t].cp_mol_phase['Liq'], f_units*cp_units)
+            return pyunits.convert(cold_side.properties_in[t].flow_mol
+                * cold_side.properties_in[t].cp_mol_phase['Liq'], f_units*cp_units)
 
         @self.Expression(time, doc="Number of transfer units (NTU)")
         def ntu(b, t):
@@ -279,28 +282,28 @@ class HelmNtuCondenserData(UnitModelBlockData):
         @self.Constraint(
             time, doc="Heat transfer rate equation based on NTU method")
         def heat_transfer_equation(b, t):
-            return (pyunits.convert(self.side_2.heat[t], q_units) ==
+            return (pyunits.convert(cold_side.heat[t], q_units) ==
                 self.heat_transfer[t])
 
         @self.Constraint(
             time, doc="Shell side outlet enthalpy is saturated water enthalpy")
         def saturation_eqn(b, t):
-            return (self.side_1.properties_out[t].enth_mol ==
-                self.side_1.properties_in[t].enth_mol_sat_phase["Liq"])
+            return (hot_side.properties_out[t].enth_mol ==
+                hot_side.properties_in[t].enth_mol_sat_phase["Liq"])
 
     def set_initial_condition(self):
         if self.config.dynamic is True:
             hot_side.material_accumulation[:,:,:].value = 0
             hot_side.energy_accumulation[:,:].value = 0
-            self.side_1.material_accumulation[0,:,:].fix(0)
-            self.side_1.energy_accumulation[0,:].fix(0)
-            self.side_2.material_accumulation[:,:,:].value = 0
-            self.side_2.energy_accumulation[:,:].value = 0
-            self.side_2.material_accumulation[0,:,:].fix(0)
-            self.side_2.energy_accumulation[0,:].fix(0)
+            hot_side.material_accumulation[0,:,:].fix(0)
+            hot_side.energy_accumulation[0,:].fix(0)
+            cold_side.material_accumulation[:,:,:].value = 0
+            cold_side.energy_accumulation[:,:].value = 0
+            cold_side.material_accumulation[0,:,:].fix(0)
+            cold_side.energy_accumulation[0,:].fix(0)
 
     def initialize(
-        blk,
+        self,
         state_args_1=None,
         state_args_2=None,
         unfix='hot_flow',
@@ -315,10 +318,10 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         Args:
             state_args_1 : a dict of arguments to be passed to the property
-                initialization for side_1 (see documentation of the specific
+                initialization for hot side (see documentation of the specific
                 property package) (default = None).
             state_args_2 : a dict of arguments to be passed to the property
-                initialization for side_2 (see documentation of the specific
+                initialization for cold side (see documentation of the specific
                 property package) (default = None).
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
@@ -332,44 +335,46 @@ class HelmNtuCondenserData(UnitModelBlockData):
             raise Exception("Condenser free variable must be in 'hot_flow', "
                 "'cold_flow', or 'pressure'")
         # Set solver options
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
+
+        hot_side = getattr(self, self.config.hot_side_name)
+        cold_side = getattr(self, self.config.cold_side_name)
 
         # Store initial model specs, restored at the end of initializtion, so
         # the problem is not altered.  This can restore fixed/free vars,
         # active/inactive constraints, and fixed variable values.
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
-        istate = to_json(blk, return_dict=True, wts=sp)
+        istate = to_json(self, return_dict=True, wts=sp)
 
         opt = pyo.SolverFactory(solver)
         opt.options = optarg
 
-        flags1 = blk.side_1.initialize(
+        flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1)
-        flags2 = blk.side_2.initialize(
+        flags2 = cold_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_2)
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Solve with all constraints activated
-        blk.saturation_eqn.activate()
+        self.saturation_eqn.activate()
         if unfix == 'pressure':
-            blk.hot_side.properties_in[:].pressure.unfix()
+            hot_side.properties_in[:].pressure.unfix()
         elif unfix == 'hot_flow':
-            blk.hot_side.properties_in[:].flow_mol.unfix()
+            hot_side.properties_in[:].flow_mol.unfix()
         elif unfix == 'cold_flow':
-            blk.cold_side.properties_in[:].flow_mol.unfix()
+            cold_side.properties_in[:].flow_mol.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high(
             "Initialization Step 4 {}.".format(idaeslog.condition(res))
         )
 
         # Release Inlet state
-        blk.side_1.release_state(flags1, outlvl)
-        blk.side_2.release_state(flags2, outlvl)
-        from_json(blk, sd=istate, wts=sp)
-
+        hot_side.release_state(flags1, outlvl)
+        cold_side.release_state(flags2, outlvl)
+        from_json(self, sd=istate, wts=sp)
 
 
     def _get_performance_contents(self, time_point=0):
