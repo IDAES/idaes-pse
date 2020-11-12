@@ -263,6 +263,7 @@ class _DynamicBlockData(_BlockData):
         """
         time = self.time
         horizon_length = time.last() - time.first()
+        n_t = len(time)
 
         # TODO: This should probably be a DAE utility
         min_spacing = horizon_length
@@ -290,11 +291,14 @@ class _DynamicBlockData(_BlockData):
         self.samples_per_horizon = n_samples
 
         finite_elements = time.get_finite_elements()
+        fe_set = set(finite_elements)
+        finite_element_indices = [i for i in range(1,n_t+1) if time[i] in fe_set]
         sample_points = [time.first()]
+        sample_indices = [1] # Indices of sample points with in time set
         sample_no = 1
         fe_per = 0
         fe_per_sample_dict = {}
-        for t in finite_elements:
+        for i, t in zip(finite_element_indices, finite_elements):
             if t == time.first():
                 continue
             fe_per += 1
@@ -303,6 +307,7 @@ class _DynamicBlockData(_BlockData):
             diff = abs(sp-time_since)
             if diff < tolerance:
                 sample_points.append(t)
+                sample_indices.append(i)
                 sample_no += 1
                 fe_per_sample_dict[sample_no] = fe_per
                 fe_per = 0
@@ -313,6 +318,7 @@ class _DynamicBlockData(_BlockData):
         assert len(sample_points) == n_samples + 1
         self.fe_per_sample = fe_per_sample_dict
         self.sample_points = sample_points
+        self.sample_point_indices = sample_indices
 
     def initialize(self, option):
         time = self.time
@@ -328,6 +334,21 @@ class _DynamicBlockData(_BlockData):
 
     # TODO: A natural generalization of these initialization methods
     # would initialize only a single sample.
+
+    def initialize_sample_to_setpoint(self, 
+            sample_idx,
+            ctype=(DiffVar, AlgVar, InputVar, DerivVar),
+            ):
+        time = self.time
+        sample_point_indices = self.sample_point_indices
+        i_0 = sample_point_indices[sample_idx-1]
+        i_s = sample_point_indices[sample_idx]
+        for var in self.component_objects(ctype):
+            for i in range(i_0+1, i_s+1):
+                # Want to exclude first time point of sample,
+                # but include last time point of sample.
+                t = time[i]
+                var[t].set_value(var.setpoint)
 
     def initialize_from_setpoint(self, 
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
