@@ -46,10 +46,11 @@ jobs:
           # and will need to be changed if we want to test on CMD.exe/Powershell
           find $(idaes data-directory) -ls
           PATH=$PATH:$(idaes bin-directory)
-          ipopt -v
-        # adding "ipopt -v" causes this step to fail
-        # so we add an exception to continue with the rest of the job in case of failure
-        continue-on-error: true
+          if [ "$RUNNER_OS" == "Windows" ]; then
+              ipopt.exe -v
+          else
+              ipopt -v
+          fi
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/

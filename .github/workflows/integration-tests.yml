@@ -22,7 +22,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       # if fail-fast == true (the default), jobs for the remaining values in the matrix are cancelled
-      fail-fast: true
+      fail-fast: false
       matrix:
         python-version:
           - '3.6'
@@ -44,14 +44,20 @@ jobs:
           idaes get-extensions --verbose
           find $(idaes data-directory) -ls
           PATH=$PATH:$(idaes bin-directory)
-          ipopt -v
+          if [ "$RUNNER_OS" == "Windows" ]; then
+              ipopt.exe -v
+          else
+              ipopt -v
+          fi
       - name: Run idaes-pse integration tests
         run: |
+          PATH=$PATH:$(idaes bin-directory)
           pytest -m integration idaes/
       - name: Fetch examples-pse
         run: |
           git clone https://github.com/IDAES/examples-pse.git
       - name: Run examples-pse tests
         run: |
+          PATH=$PATH:$(idaes bin-directory)
           cd examples-pse
           pytest
