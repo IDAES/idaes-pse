@@ -320,21 +320,6 @@ class _DynamicBlockData(_BlockData):
         self.sample_points = sample_points
         self.sample_point_indices = sample_indices
 
-    def initialize(self, option):
-        time = self.time
-
-        if option == ControlInitOption.FROM_PREVIOUS:
-            pass
-        elif option == ControlInitOption.BY_TIME_ELEMENT:
-            pass
-        elif option == ControlInitOption.FROM_INITIAL_CONDITIONS:
-            pass
-        elif option == ControlInitOption.SETPOINT:
-            pass
-
-    # TODO: A natural generalization of these initialization methods
-    # would initialize only a single sample.
-
     def initialize_sample_to_setpoint(self, 
             sample_idx,
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
@@ -344,53 +329,49 @@ class _DynamicBlockData(_BlockData):
         i_0 = sample_point_indices[sample_idx-1]
         i_s = sample_point_indices[sample_idx]
         for var in self.component_objects(ctype):
+            # `type(var)` is a subclass of `NmpcVar`, so I can
+            # access the `setpoint` attribute. Note that var is not
+            # an instance of `_NmpcVector`.
+            #
+            # Would like:
+            # var[t1:ts].set_value(var.setpoint)
             for i in range(i_0+1, i_s+1):
                 # Want to exclude first time point of sample,
                 # but include last time point of sample.
                 t = time[i]
                 var[t].set_value(var.setpoint)
 
-    def initialize_from_setpoint(self, 
+    def initialize_sample_to_initial(self,
+            sample_idx,
+            ctype=(DiffVar, AlgVar, DerivVar),
+            ):
+        time = self.time
+        sample_point_indices = self.sample_point_indices
+        i_0 = sample_point_indices[sample_idx-1]
+        i_s = sample_point_indices[sample_idx]
+        t0 = time[i_0]
+        for var in self.component_objects(ctype):
+            # Would be nice if I could use a slice with
+            # start/stop indices to make this more concise.
+            for i in range(i_0+1, i_s+1):
+                t = time[i]
+                var[t].set_value(var[t0].value)
+
+    def initialize_to_setpoint(self, 
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
             ):
-        time = self.time
-        t0 = time.first()
-        for var in self.component_objects(ctype):
-            # `type(var)` is a subclass of `NmpcVar`, so I can
-            # access the `setpoint` attribute. Note that var is not
-            # an instance of `_NmpcVector`.
-            #
-            # Would like:
-            # var[t1:].set_value(var.setpoint)
-            for t in time:
-                if t == t0:
-                    continue
-                var[t].set_value(var.setpoint)
+        # There should be negligible overhead to initializing
+        # in many small loops as opposed to one big loop here.
+        for i in range(len(self.sample_points)):
+            self.initialize_sample_to_setpoint(i, ctype=ctype)
 
-    def initialize_from_initial_conditions(self,
-            ctype=(DerivVar, DiffVar, AlgVar)
-            # By default, don't initialize input_vars, because typically
-            # the values of these vars at t0 are not meaningful.
+    def initialize_to_initial_conditions(self, 
+            ctype=(DiffVar, AlgVar, DerivVar),
             ):
-        """ 
-        Set values of differential, algebraic, and derivative variables to
-        their values at the initial conditions.
-        An implicit assumption here is that the initial conditions are
-        consistent.
-
-        Args:
-            model : Flowsheet model whose variables are initialized
-            categories : List of VariableCategory enum items to 
-                         initialize. Default contains DERIVATIVE, DIFFERENTIAL,
-                         and ALGEBRAIC.
-
-        """
-        time = self.time
-        t0 = time.first()
-        for var in self.component_objects(ctype):
-            # Var is an instance of NmpcVar, so it is indexed by one
-            # set (time).
-            var[:].set_value(var[t0].value)
+        # There should be negligible overhead to initializing
+        # in many small loops as opposed to one big loop here.
+        for i in range(len(self.sample_points)):
+            self.initialize_sample_to_initial(i, ctype=ctype)
 
     def initialize_by_solving_elements(self, solver, **kwargs):
         outlvl = kwargs.pop('outlvl', idaeslog.INFO)
@@ -403,6 +384,10 @@ class _DynamicBlockData(_BlockData):
                 )
         model = self.mod
         time = self.time
+        # There is a significant amount of overhead when calling
+        # initialize_by_element_in_range multiple times, so
+        # this method does not call `initialize_samples_by_element`
+        # in a loop.
         with square_solve_context as sqs:
             initialize_by_element_in_range(
                     model,
