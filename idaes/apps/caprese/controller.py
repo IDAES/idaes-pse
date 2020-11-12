@@ -19,7 +19,14 @@ from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
         CATEGORY_TYPE_MAP,
         )
-from idaes.apps.caprese.nmpc_var import NmpcVar, _NmpcVector
+from idaes.apps.caprese.nmpc_var import (
+        NmpcVar,
+        DiffVar,
+        AlgVar,
+        InputVar,
+        DerivVar,
+        FixedVar,
+        )
 from idaes.apps.caprese.model import (
         _DynamicBlockData,
         IndexedDynamicBlock,
@@ -40,7 +47,6 @@ from pyomo.environ import (
         Var,
         Set,
         )
-from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, declare_custom_block
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.modeling import unique_component_name
@@ -48,25 +54,21 @@ from pyomo.common.timing import ConstructionTimer
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
+from pyomo.core.base.indexed_component import UnindexedComponent_set
 
 
-class Controller(object):
-    pass
-
-class _ControllerData(_DynamicBlockData):
+class _ControllerBlockData(_DynamicBlockData):
 
     def solve_setpoint(self, solver, require_steady=True):
-        controller = self.model
+        model = self.mod
         time = self.time
         t0 = time.first()
-        namespace = self.namespace
-        category_dict = self.category_dict
 
         was_originally_active = ComponentMap([(comp, comp.active) for comp in 
-                controller.component_data_objects((Constraint, Block))])
+                model.component_data_objects((Constraint, Block))])
         non_initial_time = list(time)[1:]
         deactivated = deactivate_model_at(
-                controller,
+                model,
                 time,
                 non_initial_time,
                 allow_skip=True,
@@ -77,44 +79,38 @@ class _ControllerData(_DynamicBlockData):
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
         # it to be fixed if steady state is required.
-        for var in self.measured_vars:
-            # Would like:
-            # self.measured_vars[:, t0].unfix()
-            # Not possible yet because measured_vars are not a reference
-            var[t0].unfix()
+        self.vectors.measurement[:,t0].unfix()
 
-        input_vars = self.input_vars
+        input_vars = self.vectors.input
         was_fixed = ComponentMap(
-                (var[t0], var[t0].fixed) for var in input_vars[:]
+                (var, var.fixed) for var in input_vars[:,t0]
                 )
-        input_vars[:][t0].unfix()
+        input_vars[:,t0].unfix()
         if require_steady == True:
-            self.deriv_vars[:][t0].fix(0.)
+            self.vectors.derivative[:,t0].fix(0.)
 
-        namespace.setpoint_objective.activate()
+        self.setpoint_objective.activate()
 
         # Solve single-time point optimization problem
-        dof = degrees_of_freedom(controller)
+        dof = degrees_of_freedom(model)
         if require_steady:
-            assert dof == len(namespace.INPUT_SET)
+            assert dof == len(self.INPUT_SET)
         else:
-            assert dof == (len(namespace.INPUT_SET) +
-                    len(namespace.DIFFERENTIAL_SET))
-        results = solver.solve(controller, tee=True)
+            assert dof == (len(self.INPUT_SET) +
+                    len(self.DIFFERENTIAL_SET))
+        results = solver.solve(self, tee=True)
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
             msg = 'Failed to solve for full state setpoint values'
             raise RuntimeError(msg)
 
-        namespace.setpoint_objective.deactivate()
+        self.setpoint_objective.deactivate()
 
         # Revert changes. Again, order matters
         if require_steady == True:
-            self.deriv_vars[:][t0].unfix()
-        for var in self.measured_vars:
-            # Again, would like this to be one line
-            var[t0].fix()
+            self.vectors.derivative[:,t0].unfix()
+        self.vectors.measurement[:,t0].fix()
 
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
@@ -123,30 +119,13 @@ class _ControllerData(_DynamicBlockData):
                     comp.activate()
 
         # Fix inputs that were originally fixed
-        for var in input_vars[:]:
-        # for var in input_vars[:, t0]:... would be nicer
-            if was_fixed[var[t0]]:
-                var[t0].fix()
+        for var in self.vectors.input[:,t0]:
+            if was_fixed[var]:
+                var.fix()
 
-        setpoint_categories = [
-                self.diff_vars,
-                self.alg_vars,
-                self.input_vars,
-                self.fixed_vars,
-                self.deriv_vars,
-                ]
-        for vector in setpoint_categories:
-            # Would like:
-            # vector.set_setpoint(vector[:,0].value)
-            # Needs a ctype that's aware of this vectorization
-            for var in vector[:]:
-                var.setpoint = var[t0].value
-
-        # for vector in component_objects(NmpcVector):
-        #     vector.set_setpoint(vector[:,0].value)
-        # or
-        #     vector.setpoint = vector[:,0].value
-        # and this has to actually change the 
+        setpoint_ctype = (DiffVar, AlgVar, InputVar, FixedVar, DerivVar)
+        for var in self.component_objects(setpoint_ctype):
+            var.setpoint = var[t0].value
 
     def add_setpoint_objective(self, 
             setpoint,
@@ -154,7 +133,6 @@ class _ControllerData(_DynamicBlockData):
             ):
         """
         """
-        namespace = self.namespace
         vardata_map = self.vardata_map
         for vardata, weight in weights:
             nmpc_var = vardata_map[vardata]
@@ -164,6 +142,7 @@ class _ControllerData(_DynamicBlockData):
         for vardata, sp in setpoint:
             nmpc_var = vardata_map[vardata]
             if nmpc_var.weight is None:
+                # TODO: config with outlvl, use logger here.
                 print('WARNING: weight not supplied for %s' % var.name)
                 nmpc_var.weight = 1.0
             weight_vector.append(nmpc_var.weight)
@@ -171,8 +150,7 @@ class _ControllerData(_DynamicBlockData):
         obj_expr = sum(
             weight_vector[i]*(var - sp)**2 for
             i, (var, sp) in enumerate(setpoint))
-        namespace.setpoint_objective = Objective(expr=obj_expr)
-        self.setpoint_objective = namespace.setpoint_objective
+        self.setpoint_objective = Objective(expr=obj_expr)
 
     def add_tracking_objective(self,
             weights,
@@ -292,3 +270,32 @@ class _ControllerData(_DynamicBlockData):
                     # regardless of category. May not be meaningful
                     # for fixed variables.
                     v[t].set_value(v.setpoint)
+
+
+class ControllerBlock(DynamicBlock):
+    _ComponentDataClass = _ControllerBlockData
+
+    def __new__(cls, *args, **kwds):
+        # Decide what class to allocate
+        if cls != ControllerBlock:
+            target_cls = cls
+        elif not args or (args[0] is UnindexedComponent_set and len(args) == 1):
+            target_cls = SimpleControllerBlock
+        else:
+            target_cls = IndexedControllerBlock
+        return super(ControllerBlock, cls).__new__(target_cls)
+
+
+class SimpleControllerBlock(_ControllerBlockData, ControllerBlock):
+    def __init__(self, *args, **kwds):
+        _ControllerBlockData.__init__(self, component=self)
+        ControllerBlock.__init__(self, *args, **kwds)
+
+    # Pick up the display() from Block and not BlockData
+    display = ControllerBlock.display
+
+
+class IndexedControllerBlock(ControllerBlock):
+
+    def __init__(self, *args, **kwargs):
+        ControllerBlock.__init__(self, *args, **kwargs)
