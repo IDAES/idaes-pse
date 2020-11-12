@@ -11,15 +11,25 @@ from idaes.apps.caprese.util import (
         cuid_from_timeslice,
         )
 from idaes.apps.caprese.common.config import (
-        VariableCategory,
         ControlPenaltyType,
         ControlInitOption,
+        InputOption,
         )
+from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
         CATEGORY_TYPE_MAP,
         )
-from idaes.apps.caprese.nmpc_var import NmpcVar, _NmpcVector
+from idaes.apps.caprese.nmpc_var import (
+        NmpcVar,
+        _NmpcVector,
+        DiffVar,
+        DerivVar,
+        AlgVar,
+        InputVar,
+        FixedVar,
+        MeasuredVar,
+        )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
         find_comp_in_block_at_time,
@@ -56,7 +66,10 @@ class _DynamicBlockData(_BlockData):
         model = self.mod
         time = self.time
         inputs = self._inputs
-        measurements = self._measurements
+        try:
+            measurements = self._measurements
+        except AttributeError:
+            measurements = self._measurements = None
 
         # TODO: Give the user the option to provide their own
         # category_dict (they know the structure of their model
@@ -66,6 +79,7 @@ class _DynamicBlockData(_BlockData):
                 time,
                 ctype=Var,
                 )
+        self.scalar_vars = scalar_vars
         self.dae_vars = dae_vars
         category_dict = categorize_dae_variables(dae_vars, time, inputs)
         self.category_dict = category_dict
@@ -73,8 +87,14 @@ class _DynamicBlockData(_BlockData):
         self._add_category_blocks()
         self._add_category_references()
 
+        self.differential_vars = category_dict[VC.DIFFERENTIAL]
+        self.algebraic_vars = category_dict[VC.ALGEBRAIC]
+        self.derivative_vars = category_dict[VC.DERIVATIVE]
+        self.input_vars = category_dict[VC.INPUT]
+        self.fixed_vars = category_dict[VC.FIXED]
+
         # Why are these attributes not getting set...?
-        self.measured_vars = category_dict.pop(VariableCategory.MEASUREMENT)
+        self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
         # vardata map, which maps each vardata to a unique component indexed
@@ -306,32 +326,30 @@ class _DynamicBlockData(_BlockData):
         elif option == ControlInitOption.SETPOINT:
             pass
 
-    def initialize_from_setpoint(self,
-            categories=[
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.INPUT,
-                ],
+    # TODO: A natural generalization of these initialization methods
+    # would initialize only a single sample.
+
+    def initialize_from_setpoint(self, 
+            ctype=(DiffVar, AlgVar, InputVar, DerivVar),
             ):
         time = self.time
         t0 = time.first()
-        category_dict = self.category_dict
-        for categ, varlist in categories.items():
+        for var in self.component_objects(ctype):
+            # `type(var)` is a subclass of `NmpcVar`, so I can
+            # access the `setpoint` attribute. Note that var is not
+            # an instance of `_NmpcVector`.
+            #
             # Would like:
-            # vector[:,t1:].set_value(vector[:].setpoint)
-            for var in varlist:
-                for t in time:
-                    if t == t0:
-                        continue
-                    var[t].set_value(var.setpoint)
+            # var[t1:].set_value(var.setpoint)
+            for t in time:
+                if t == t0:
+                    continue
+                var[t].set_value(var.setpoint)
 
     def initialize_from_initial_conditions(self,
-            categories=[
-                VariableCategory.DERIVATIVE,
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC,
-                ],
+            ctype=(DerivVar, DiffVar, AlgVar)
+            # By default, don't initialize input_vars, because typically
+            # the values of these vars at t0 are not meaningful.
             ):
         """ 
         Set values of differential, algebraic, and derivative variables to
@@ -348,124 +366,80 @@ class _DynamicBlockData(_BlockData):
         """
         time = self.time
         t0 = time.first()
-        cat_dict = self.category_dict
-        for categ in categories:
-            for v in cat_dict[categ]:
-                v[:].set_value(v[t0].value)
-        # for var in component_objects(categories):
-        #     var[:].set_value(var[t0].value)
-        # This should work without a custom var class.
+        for var in self.component_objects(ctype):
+            # Var is an instance of NmpcVar, so it is indexed by one
+            # set (time).
+            var[:].set_value(var[t0].value)
 
-    def initialize_by_solving_elements(self, solver, fix_inputs=False, strip_bounds=False):
-        time = self.time
-        model = self.model
-
-        if strip_bounds:
-            strip_bounds = TransformationFactory('contrib.strip_var_bounds')
-            strip_bounds.apply_to(model, reversible=True)
-
-        if fix_inputs:
-            input_vars = self.input_vars
-            for var in input_vars[:]:
-                sp = var.setpoint
-                # Would like:
-                # var[t1:].fix(sp)
-                for t in time:
-                    if t != time.first():
-                        var[t].fix(sp)
-                    else:
-                        var[t].fix()
-        
-        if hasattr(self, 'tracking_objective'):
-            self.tracking_objective.deactivate()
-        if hasattr(self, 'pwc_constraint'):
-            self.pwc_constraint.deactivate()
-
-        initialize_by_element_in_range(
-                model,
-                time,
-                time.first(),
-                time.last(),
-                dae_vars=self.dae_vars,
-                time_linking_vars=list(self.diff_vars[:]),
-                outlvl=idaeslog.DEBUG,
-                solver=solver,
+    def initialize_by_solving_elements(self, solver, **kwargs):
+        outlvl = kwargs.pop('outlvl', idaeslog.INFO)
+        strip_var_bounds = kwargs.pop('strip_var_bounds', True)
+        input_option = kwargs.pop('input_option', InputOption.CURRENT)
+        square_solve_context = SquareSolveContext(
+                self,
+                strip_var_bounds=strip_var_bounds,
+                input_option=input_option,
                 )
-
-        if hasattr(self, 'tracking_objective'):
-            self.tracking_objective.activate()
-        if hasattr(self, 'pwc_constraint'):
-            self.pwc_constraint.activate()
-
-        if fix_inputs:
-            for var in self.input_vars[:]:
-                for t in time:
-                    if t == time.first():
-                        continue
-                    var[t].unfix()
-
-        if strip_bounds:
-            strip_bounds.revert(model)
-        # TODO: Can check for violated bounds if I'm really worried about it.
-        # Should have a general method to deal with violated bounds that I
-        # can use for noise as well.
-
-    def initialize_sample_by_element(self, solver, ts, fix_inputs=False):
+        model = self.mod
         time = self.time
-        model = self.model
-        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
-        strip_bounds.apply_to(model, reversible=True)
+        with square_solve_context as sqs:
+            initialize_by_element_in_range(
+                    model,
+                    time,
+                    time.first(),
+                    time.last(),
+                    dae_vars=self.dae_vars,
+                    time_linking_vars=list(self.differential_vars[:]),
+                    outlvl=outlvl,
+                    solver=solver,
+                    )
 
-        t0 = ts - self.sample_time
-        idx_0 = time.find_nearest_index(t0)
-        t0 = time[idx_0]
-        idx_s = time.find_nearest_index(ts)
+    def initialize_samples_by_element(self, samples, solver, **kwargs):
+        # TODO: ConfigBlock for this class
+        outlvl = kwargs.pop('outlvl', idaeslog.INFO)
+        strip_var_bounds = kwargs.pop('strip_var_bounds', True)
+        input_option = kwargs.pop('input_option', InputOption.CURRENT)
 
-        if fix_inputs:
-            input_vars = self.input_vars
-            for var in input_vars[:]:
-                sp = var.setpoint
-                # Would like:
-                # var[t1:].fix(sp)
-                for i in range(idx_0+1, idx_s+1):
-                    t = time[i]
-                    var[t].fix(sp)
-        
-        if hasattr(self, 'tracking_objective'):
-            self.tracking_objective.deactivate()
-        if hasattr(self, 'pwc_constraint'):
-            self.pwc_constraint.deactivate()
+        if type(samples) not in {list, tuple}:
+            samples = (samples,)
 
-        initialize_by_element_in_range(
-                model,
-                time,
-                t0,
-                ts,
-                dae_vars=self.dae_vars,
-                time_linking_vars=list(self.diff_vars[:]),
-                outlvl=idaeslog.DEBUG,
-                solver=solver,
+        # Create a context manager that will temporarily strip bounds
+        # and fix inputs, preparing the model for a "square solve."
+        square_solve_context = SquareSolveContext(
+                self,
+                samples=samples,
+                strip_var_bounds=strip_var_bounds,
+                input_option=input_option,
                 )
-
-        if hasattr(self, 'tracking_objective'):
-            self.tracking_objective.activate()
-        if hasattr(self, 'pwc_constraint'):
-            self.pwc_constraint.activate()
-
-        if fix_inputs:
-            for var in self.input_vars[:]:
-                for i in range(idx_0+1, idx_s+1):
-                    t = time[i]
-                    var[t].unfix()
-
-        strip_bounds.revert(model)
+        sample_points = self.sample_points
+        model = self.mod
+        time = self.time
+        with square_solve_context as sqs:
+            for s in samples:
+                t0 = sample_points[s-1]
+                t1 = sample_points[s]
+                # Really I would like an `ElementInitializer` context manager
+                # class that deactivates the model once, then allows me to
+                # activate the elements I want to solve one at a time.
+                # This would allow me to not repeat so much work when
+                # initializing multiple samples.
+                initialize_by_element_in_range(
+                        model,
+                        time,
+                        t0,
+                        t1,
+                        dae_vars=self.dae_vars,
+                        time_linking_vars=list(self.differential_vars[:]),
+                        outlvl=outlvl,
+                        solver=solver,
+                        )
 
     def generate_inputs_at_time(self, t):
         for val in self.input_vars[:][t].value:
             yield val
 
     def generate_measurements_at_time(self, t):
-        for var in self.measured_vars:
+        for var in self.measurement_vars:
             yield var[t].value
 
     def inject_inputs(self, inputs):
@@ -482,58 +456,63 @@ class _DynamicBlockData(_BlockData):
     def load_measurements(self, measured):
         t0 = self.time.first()
         # Want: self.measured_vars[:,t0].fix(measured)
-        for var, val in zip(self.measured_vars, measured):
+        for var, val in zip(self.measurement_vars, measured):
             var[t0].fix(val)
 
-    def cycle_by(self,
-            t_cycle,
-            categories=(
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.INPUT,
-                VariableCategory.FIXED,
+    def shift_values_back_by_time(self,
+            t_shift,
+            ctype=(
+                DiffVar,
+                DerivVar,
+                AlgVar,
+                InputVar,
+                FixedVar,
+                # Fixed variables are included I expect disturbances
+                # should shift in time as well.
                 ),
             tolerance=1e-8,
             ):
         time = self.time
-        category_dict = self.category_dict
+        # The outer loop is over time so we don't have to call
+        # `find_nearest_index` for every variable.
+        # I am assuming that `find_nearest_index` is slower than
+        # accessing `component_objects`
         for t in time:
-            ts = t + t_cycle
+            ts = t + t_shift
             idx = time.find_nearest_index(ts, tolerance)
             if idx is None:
                 # t + sample_time is outside the model's "horizon"
                 continue
             ts = time[idx]
-            for categ in categories:
-                # Would like:
-                # for var in component_objects(categories):
-                for var in category_dict[categ]:
-                    var[t].set_value(var[ts].value)
+            for var in self.component_objects(ctype):
+                var[t].set_value(var[ts].value)
 
-    def cycle(self,
-            categories=(
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.INPUT,
-                VariableCategory.FIXED,
+    def shift_back_one_sample(self,
+            ctype=(
+                DiffVar,
+                DerivVar,
+                AlgVar,
+                InputVar,
+                FixedVar,
                 ),
             tolerance=1e-8,
             ):
         #horizon = self.time.last() - self.time.last()
         sample_time = self.sample_time
-        self.cycle_by(
+        self.shift_values_back_by_time(
                 sample_time,
-                categories=categories,
+                ctype=ctype,
                 tolerance=tolerance,
                 )
 
     def generate_time_in_sample(self,
             ts,
             t0=None,
+            include_t0=False,
             tolerance=1e-8,
             ):
+        # TODO: Need to address the question of whether I want users 
+        # passing around time points or the integer index of samples.
         time = self.time
         idx_s = time.find_nearest_index(ts, tolerance=tolerance)
         ts = time[idx_s]
@@ -547,8 +526,8 @@ class _DynamicBlockData(_BlockData):
     def get_data(self,
             ts,
             variables=(
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.INPUT,
+                VC.DIFFERENTIAL,
+                VC.INPUT,
                 ),
             tolerance=1e-8,
             include_t0=False,
@@ -561,7 +540,7 @@ class _DynamicBlockData(_BlockData):
         data = OrderedDict()
         queue = list(variables)
         for var in queue:
-            if var in VariableCategory:
+            if var in VC:
                 category = var
                 varlist = category_dict[category]
                 queue.extend(var[ts] for var in varlist)
@@ -594,13 +573,42 @@ class DynamicBlock(Block):
 
     def __init__(self, *args, **kwds):
         # This will get called regardless of what class we are instantiating
-        self._init_model = ConstantInitializer(kwds.pop('model', None))
-        self._init_time = ConstantInitializer(kwds.pop('time', None))
-        self._init_inputs = ConstantInitializer(kwds.pop('inputs', None))
-        self._init_measurements = ConstantInitializer(kwds.pop('measurements', None))
+        self._init_model = Initializer(kwds.pop('model', None))
+        self._init_time = Initializer(kwds.pop('time', None),
+                treat_sequences_as_mappings=False)
+        self._init_inputs = Initializer(kwds.pop('inputs', None),
+                treat_sequences_as_mappings=False)
+        self._init_measurements = Initializer(kwds.pop('measurements', None),
+                treat_sequences_as_mappings=False)
         Block.__init__(self, *args, **kwds)
 
+    def _getitem_when_not_present(self, idx):
+        block = super(DynamicBlock, self)._getitem_when_not_present(idx)
+        parent = self.parent_block()
+
+        if self._init_model is not None:
+            block.mod = self._init_model(parent, idx)
+
+        if self._init_time is not None:
+            super(_BlockData, block).__setattr__('time', 
+                    self._init_time(parent, idx))
+
+        if self._init_inputs is not None:
+            block._inputs = self._init_inputs(parent, idx)
+
+        if self._init_measurements is not None:
+            block._measurements = self._init_measurements(parent, idx)
+
+        block._construct()
+
     def construct(self, data=None):
+        if self._constructed:
+            return
+
+        super(DynamicBlock, self).construct(data)
+        self.to_dense_data()
+
+    def ex_construct(self, data=None):
         """
         Construct the DynamicBlockDatas
         """
@@ -621,44 +629,46 @@ class DynamicBlock(Block):
         # When constructing an IndexedDynamicBlock, self._data is empty
         # here. Do I have to explicitly tell it to construct dense?
 
-        # FIXME: Need to figure out a better way to initialize...
-        if self._init_model.val is not None:
-            if self.is_indexed():
-                for index, data in iteritems(self):
-                    # If indexed and model arg was provided,
-                    # expect the arg to be a dict.
-                    data.mod = self._init_model.val[index]
-            else:
-                # Else just expect it to be a model.
-                self.mod = self._init_model.val
-        if self._init_time.val is not None:
-            if self.is_indexed():
-                for index, data in iteritems(self):
-                    time = self._init_time.val[index]
-                    super(_BlockData, data).__setattr__('time', time)
-            else:
-                time = self._init_time.val
-                super(_BlockData, self).__setattr__('time', time)
-        if self._init_inputs.val is not None:
-            if self.is_indexed():
-                for index, data in iteritems(self):
-                    data._inputs = self._init_inputs.val[index]
-            else:
-                self._inputs = self._init_inputs.val
-        if self._init_measurements.val is not None:
-            if self.is_indexed():
-                for index, data in iteritems(self):
-                    data._measurements = self._init_measurements.val[index]
-            else:
-                self._measurements = self._init_measurements.val
+#        parent = self.parent_block()
+#
+#        # FIXME: Need to figure out a better way to initialize...
+#        if self._init_model is not None:
+#            if self.is_indexed():
+#                for index, data in iteritems(self):
+#                    # If indexed and model arg was provided,
+#                    # expect the arg to be a dict.
+#                    data.mod = self._init_model[index]
+#            else:
+#                # Else just expect it to be a model.
+#                self.mod = self._init_model(parent, index)
+#        if self._init_time is not None:
+#            if self.is_indexed():
+#                for index, data in iteritems(self):
+#                    time = self._init_time[index]
+#                    super(_BlockData, data).__setattr__('time', time)
+#            else:
+#                time = self._init_time
+#                super(_BlockData, self).__setattr__('time', time)
+#        if self._init_inputs is not None:
+#            if self.is_indexed():
+#                for index, data in iteritems(self):
+#                    data._inputs = self._init_inputs[index]
+#            else:
+#                self._inputs = self._init_inputs
+#        if self._init_measurements is not None:
+#            if self.is_indexed():
+#                for index, data in iteritems(self):
+#                    data._measurements = self._init_measurements[index]
+#            else:
+#                self._measurements = self._init_measurements
 
         # Will calling super().construct after adding attributes
         # break the logic in Block.construct?
         # It may not even be possible to add attributes before
         # constructing...
         #super(DynamicBlock, self).construct(data)
-        for index, data in iteritems(self):
-            data._construct()
+#        for index, data in iteritems(self):
+#            data._construct()
 
 
 class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
@@ -674,3 +684,99 @@ class IndexedDynamicBlock(DynamicBlock):
 
     def __init__(self, *args, **kwargs):
         DynamicBlock.__init__(self, *args, **kwargs)
+
+
+class SquareSolveContext(object):
+    """
+    Utility class to prepare DynamicBlock for a square solve.
+    """
+    def __init__(self,
+            dynamic_block,
+            samples=None,
+            strip_var_bounds=True,
+            input_option=InputOption.CURRENT,
+            ):
+        """
+        Parameters
+        ----------
+            dynamic_block: A _DynamicBlockData object
+            samples: A list of integers corresponding to the samples that
+                     will be solved
+
+        """
+        self.block = dynamic_block
+        self.samples = samples
+        self.strip_var_bounds = strip_var_bounds
+        self.input_option = input_option
+
+        # Get indices for the time points where we need to fix inputs.
+        if samples is None:
+            # Assume we need to fix inputs for all non-initial time
+            self.time_indices = range(2, len(dynamic_block.time)+1)
+        else:
+            # Get the indices of all time points in the samples specified
+            sample_points = dynamic_block.sample_points
+            time = dynamic_block.time
+            time_indices = []
+            already_visited = set()
+            for s in samples:
+                # s is an integer in range(1, len(sample_points)+1)
+                # the ith sample is the interval (ts_{i-1}, ts_i]
+                t0 = sample_points[s-1]
+                ts = sample_points[s]
+                idx_0 = time.find_nearest_index(t0)
+                idx_s = time.find_nearest_index(ts)
+                for i in range(idx_0+1, idx_s+1): # Pyomo sets are 1-indexed
+                    if i not in already_visited:
+                        # Want to make sure each index gets added at most
+                        # once in the case of repeated samples...
+                        time_indices.append(i)
+                        already_visited.add(i)
+            self.time_indices = time_indices
+            
+
+    def __enter__(self):
+        # Strip bounds:
+        if self.strip_var_bounds:
+            self.strip_bounds = TransformationFactory(
+                    'contrib.strip_var_bounds')
+            self.strip_bounds.apply_to(self.block.mod, reversible=True)
+
+        # Fix inputs:
+        time = self.block.time
+        t0 = time.first()
+        time_indices = self.time_indices
+        input_vars = self.block.input_vars
+        input_option = self.input_option
+        if input_option is InputOption.CURRENT:
+            input_vals = [None for _ in input_vars]
+        elif input_option is InputOption.INITIAL:
+            input_vals = [v[t0] for v in input_vars]
+        elif input_option is InputOption.SETPOINT:
+            input_vals = [v.setpoint for v in input_vars]
+        else:
+            raise NotImplementedError('Unrecognized input option')
+
+        for var, val in zip(input_vars, input_vals):
+            for i in time_indices:
+                t = time[i]
+                if val is None:
+                    var[t].fix()
+                else:
+                    var[t].fix(val)
+
+        # Model should now be square and bound-free
+        return self
+
+    def __exit__(self, ex_type, ex_val, ex_tb):
+        # Unfix inputs:
+        time = self.block.time
+        time_indices = self.time_indices
+        input_vars = self.block.input_vars
+        for var in input_vars:
+            for i in time_indices:
+                t = time[i]
+                var[t].unfix()
+
+        if self.strip_var_bounds:
+            self.strip_bounds.revert(self.block.mod)
