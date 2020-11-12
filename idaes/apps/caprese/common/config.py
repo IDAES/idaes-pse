@@ -33,6 +33,13 @@ class ElementInitializationInputOption(ConfigEnum):
     CURRENT_VALUES = 23
 
 
+class InputOption(ConfigEnum):
+    CURRENT = 20
+    INITIAL = 21
+    SETPOINT = 22
+    # TODO: PREVIOUS = 23
+
+
 class TimeResolutionOption(ConfigEnum):
     COLLOCATION_POINTS = 31
     FINITE_ELEMENTS = 32
