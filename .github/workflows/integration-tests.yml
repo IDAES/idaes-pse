@@ -10,7 +10,7 @@ on:
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
     - cron: '0 5 * * *'
-    - cron: '30 7 * * *'
+  # TODO add PR when "draft" status is switched off (or absent?)
 
 defaults:
   run:
@@ -52,8 +52,6 @@ jobs:
           else
               ipopt -v
           fi
-        # TODO if this step still fails, continue to at least let the tests start
-        continue-on-error: true
       - name: Run idaes-pse integration tests
         run: |
           pytest -m integration idaes/

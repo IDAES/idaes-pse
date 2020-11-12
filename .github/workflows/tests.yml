@@ -33,7 +33,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        # if: ${{ runner.os == 'Linux' }}
         run: |
           python -m pip install --progress-bar off -r requirements.txt
       - name: Display IDAES version
@@ -54,8 +53,6 @@ jobs:
           else
               ipopt -v
           fi
-        # TODO if this step still fails, continue to at least let the tests start
-        continue-on-error: true
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
