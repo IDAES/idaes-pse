@@ -3,11 +3,14 @@ name: Run integration tests
 on:
   # for the moment, this workflow needs to be triggered manually
   workflow_dispatch:
+  repository_dispatch:
+    # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=integration_tests_requested`
+    types: [integration_tests_requested]
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
     - cron: '0 5 * * *'
-  repository_dispatch:
-    types: [integration_tests_requested]
+    - cron: '30 7 * * *'
 
 jobs:
   integration:
