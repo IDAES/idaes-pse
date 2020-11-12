@@ -569,6 +569,60 @@ class TestDynamicBlock(object):
         tgt_comp_names = [c[0].name for c in tgt_comps]
         assert tgt_names == tgt_comp_names
 
+    def test_init_sample_to_setpoint(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+
+        # Initialize all data objects with some consistent value
+        # so I can make sure certain data objects are skipped
+        # by the subsequent initialization
+        init_val = -1.
+        blk.vectors.differential[...].set_value(init_val)
+        blk.vectors.algebraic[...].set_value(init_val)
+        blk.vectors.input[...].set_value(init_val)
+        blk.vectors.derivative[...].set_value(init_val)
+
+        # Note that I have no pointer from vectors.differential to
+        # the list diff_vars... I can construct an identical list with
+        # the _generate_referenced_vars method, but that is O(n)...
+        # Not sure yet if this will be a problem/inconvenience...
+        blk.vectors.differential.set_setpoint(range(len(blk.differential_vars)))
+        blk.vectors.algebraic.set_setpoint(range(len(blk.algebraic_vars)))
+        blk.vectors.input.set_setpoint(range(len(blk.input_vars)))
+        blk.vectors.derivative.set_setpoint(range(len(blk.derivative_vars)))
+
+        # Possible sample indices: {1, 2}
+        sample_points = blk.sample_points
+        blk.initialize_sample_to_setpoint(2)
+        vectors = [
+                blk.vectors.differential,
+                blk.vectors.algebraic,
+                blk.vectors.input,
+                blk.vectors.derivative,
+                ]
+        for vec in vectors:
+            for i, t in vec:
+                if t <= sample_points[1]:
+                    assert vec[i, t].value == init_val
+                else:
+                    assert vec[i, t].value == i
+
+        blk.vectors.differential.set_setpoint(2*i for i in range(len(blk.differential_vars)))
+        blk.vectors.algebraic.set_setpoint(2*i for i in range(len(blk.algebraic_vars)))
+        blk.vectors.input.set_setpoint(2*i for i in range(len(blk.input_vars)))
+        blk.vectors.derivative.set_setpoint(2*i for i in range(len(blk.derivative_vars)))
+
+        blk.initialize_sample_to_setpoint(1)
+        for vec in vectors:
+            for i, t in vec:
+                if t == t0:
+                    assert vec[i, t].value == init_val
+                elif t <= sample_points[1]:
+                    assert vec[i, t].value == 2*i
+                else:
+                    assert vec[i, t].value == i
+
     def test_init_to_setpoint(self):
         blk = self.make_block()
         time = blk.time
@@ -627,6 +681,58 @@ class TestDynamicBlock(object):
                 assert vec[i, t].value == init_val
             else:
                 assert vec[i, t].value == new_sp
+
+    def test_init_sample_to_initial(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+
+        # So I can tell when something wasn't initialized:
+        init_val = -1. # `init_val` name might be confusing...
+        blk.vectors.differential[...].set_value(init_val)
+        blk.vectors.algebraic[...].set_value(init_val)
+        blk.vectors.input[...].set_value(init_val)
+        blk.vectors.derivative[...].set_value(init_val)
+
+        vectors = [
+                blk.vectors.differential,
+                blk.vectors.algebraic,
+                blk.vectors.derivative,
+                ]
+        # Set initial conditions to "index"
+        for vec in vectors:
+            for i, var in enumerate(vec[:,t0]):
+                var.set_value(i)
+
+        # Possible sample indices: {1, 2}
+        sample_points = blk.sample_points
+        blk.initialize_sample_to_initial(2)
+        for vec in vectors:
+            # We initialized sample 2 to the initial point in that
+            # sample. This was just `init_val`
+            for i, t in vec:
+                if t != t0:
+                    assert vec[i, t].value == init_val
+
+        t1 = sample_points[1]
+        for vec in vectors:
+            for i, var in enumerate(vec[:,t1]):
+                var.set_value(i)
+        blk.initialize_sample_to_initial(2)
+        for vec in vectors:
+            for i, t in vec:
+                if t == t0:
+                    assert vec[i, t].value == i
+                elif t < t1:
+                    assert vec[i, t].value == init_val
+                else:
+                    assert vec[i, t].value == i
+
+        blk.initialize_sample_to_initial(1)
+        for vec in vectors:
+            for i, t in vec:
+                assert vec[i, t].value == i
+
 
     def test_init_to_initial_conditions(self):
         blk = self.make_block()
