@@ -113,7 +113,7 @@ jobs:
         python -m pip --no-cache-dir install --progress-bar off pylint
         # in general the package being pylinted does not need to be installed to run pylint on it
         # but in our case the pylint plugin needs to be able to import some code from idaes and pyomo
-        python -m pip --no-cache-dir install --progress-bar off requirements.txt
+        python -m pip --no-cache-dir install --progress-bar off -r requirements.txt
     - name: Run pylint
       run: |
         pylint -E --ignore-patterns="test_.*" idaes || true
