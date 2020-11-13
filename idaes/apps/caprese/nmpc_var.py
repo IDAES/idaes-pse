@@ -1,14 +1,5 @@
 from pyomo.core.base.var import IndexedVar
 
-NMPC_ATTRS = [
-        'setpoint',
-        'variance',
-        'weight',
-        'initial',
-        'nominal',
-        'reference', # Reference value, not a pointer to a reference object
-        ]
-
 # If I subclass Var here without overriding __new__,
 # instances of this class will be SimpleVar or IndexedVar.
 # This makes Var kinda tricky to subclass...
@@ -20,10 +11,11 @@ class NmpcVar(IndexedVar):
                 '%s component must be indexed by at least one set.'
                 % self.__class__
                 )
-        #for attr in NMPC_ATTRS:
-        #    setattr(self, attr, kwargs.pop(attr, None))
         self.setpoint = kwargs.pop('setpoint', None)
-        kwargs.setdefault('ctype', NmpcVar)
+        self.weight = kwargs.pop('weight', None)
+        self.variance = kwargs.pop('variance', None)
+        self.nominal = kwargs.pop('nominal', None)
+        kwargs.setdefault('ctype', type(self))
         super(NmpcVar, self).__init__(*args, **kwargs)
 
 class _NmpcVector(IndexedVar):
