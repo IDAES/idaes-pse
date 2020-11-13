@@ -64,6 +64,13 @@ jobs:
       - name: Run tests (excluding integration)
         run: |
           pytest -c pytest.ini -m 'not integration' idaes/
+      - name: Run integration tests
+        # if this is a draft PR, skip integration tests
+        # the idea is that it should not be possible for a PR to be merged without integration tests:
+        # either it's a draft PR (and thus can't be merged), or it isn't (and integration tests will not be skipped)
+        if: github.event.pull_request.draft == false
+        run: |
+          pytest -c pytest.ini -m integration idaes/
       # TODO: pytest --cov
       # TODO: coveralls (coverage report)
   build-docs:
