@@ -1,8 +1,12 @@
-name: Run integration tests
+name: Integration tests
 
 on:
   # for the moment, this workflow needs to be triggered manually
   workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git hash (optional)
+        required: false
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
     # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=integration_tests_requested`
