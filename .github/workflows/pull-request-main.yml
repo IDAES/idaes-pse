@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      # TODO "gh-actions" branch included to facilitate development
-      # we could also consider simply going myfork:main -> upstream:main for CI PRs
-      - gh-actions
   pull_request:
     branches:
       - main
