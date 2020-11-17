@@ -231,7 +231,7 @@ def test_initialize_by_element_in_range():
 
 
 @pytest.mark.component
-def test_add_noise_at_time():
+def _test_add_noise_at_time():
     mod = make_model(horizon=2, ntfe=20)
     time = mod.fs.time
     t0 = time.first()
