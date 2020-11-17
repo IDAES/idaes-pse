@@ -14,7 +14,7 @@
 Example for Caprese's module for NMPC.
 """
 import random
-from idaes.apps.caprese import NMPCSim, ControlInitOption
+from idaes.apps.caprese.nmpc import NMPCSim
 from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory
 from pyomo.dae.initialization import solve_consistent_initial_conditions
