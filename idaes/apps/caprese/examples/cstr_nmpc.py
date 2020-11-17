@@ -123,17 +123,6 @@ def main(plot_switch=False):
             (controller.mod.fs.mixer.E_inlet.flow_vol[0], 1.),
             (controller.mod.fs.mixer.S_inlet.flow_vol[0], 1.),
             ]
-    # Interestingly, this (st.st. set point) solve converges infeasible
-    # if energy_holdup set point is not 300. (Needs higher weight?)
-
-    weight_override = [(controller.mod.fs.mixer.E_inlet.flow_vol[0], 20.0)]
-
-#    nmpc.calculate_full_state_setpoint(set_point,
-#            objective_weight_override=weight_override,
-#            objective_weight_tolerance=weight_tolerance,
-#            outlvl=idaeslog.DEBUG,
-#            allow_inconsistent=False,
-#            tolerance=1e-6)
 
     nmpc.controller.add_setpoint_objective(setpoint, setpoint_weights)
     nmpc.controller.solve_setpoint(solver)
