@@ -15,6 +15,7 @@ class NmpcVar(IndexedVar):
         self.weight = kwargs.pop('weight', None)
         self.variance = kwargs.pop('variance', None)
         self.nominal = kwargs.pop('nominal', None)
+        self.noise_bounds = kwargs.pop('noise_bounds', None)
         kwargs.setdefault('ctype', type(self))
         super(NmpcVar, self).__init__(*args, **kwargs)
 
