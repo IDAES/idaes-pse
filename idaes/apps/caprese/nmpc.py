@@ -15,6 +15,7 @@
 Class for performing NMPC simulations of IDAES flowsheets
 """
 
+import random
 from pyomo.environ import (
         Block, 
         Constraint, 
@@ -27,6 +28,7 @@ from pyomo.environ import (
         TransformationFactory, 
         Reference, 
         value,
+        ComponentUID,
         )
 from pyomo.core.base.range import remainder
 from pyomo.common.collections import ComponentMap
@@ -34,6 +36,7 @@ from pyomo.dae.initialization import (
         solve_consistent_initial_conditions,
         get_inconsistent_initial_conditions,
         )
+from pyomo.util.slices import slice_component_along_sets
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
 from idaes.core import FlowsheetBlock
@@ -68,17 +71,46 @@ class NMPCSim(object):
     """
     Main class for NMPC simulations of Pyomo models.
     """
-    # pyomo.common.config.add_docstring_list
+    # TODO: pyomo.common.config.add_docstring_list
 
     def __init__(self, plant_model=None, plant_time_set=None, 
         controller_model=None, controller_time_set=None, inputs_at_t0=None,
         measurements=None, sample_time=None, **kwargs):
         """
+        Measurements must be defined in the controller model.
+        Inputs must be defined in the plant model.
         """
-        init_plant_measurements = [
-                find_comp_in_block(plant_model, controller_model, comp)
+        # To find components in a model given a name,
+        # modulo the index of some set:
+        # i.   slice the component along the set
+        # ii.  create a cuid from that slice
+        # iii. get a (any) component in the new model from the cuid
+        # iv.  slice the new component along the corresponding set
+        # v.   create a reference to that slice
+        # vi.  access the reference at the index you want (optional)
+        self.measurement_cuids = [
+                ComponentUID(
+                slice_component_along_sets(comp, (controller_time_set,)))
                 for comp in measurements
                 ]
+        self.input_cuids = [
+                ComponentUID(
+                slice_component_along_sets(comp, (plant_time_set,)))
+                for comp in inputs_at_t0
+                ]
+
+        init_plant_measurements = []
+        for cuid in self.measurement_cuids:
+            # Here I perform steps iii. and iv. of the above.
+            # With the CUID rewrite, I should be able to combine these steps
+            # and get the slice directly from the CUID.
+            for comp in cuid.list_components(plant_model):
+                break
+            _slice = slice_component_along_sets(comp, (plant_time_set,))
+            ref = Reference(_slice)
+            t0 = plant_time_set.first()
+            init_plant_measurements.append(ref[t0])
+
         self.plant = DynamicBlock(
                 model=plant_model,
                 time=plant_time_set,
@@ -87,10 +119,16 @@ class NMPCSim(object):
                 )
         self.plant.construct()
 
-        init_controller_inputs = [
-                find_comp_in_block(controller_model, plant_model, comp)
-                for comp in inputs_at_t0
-                ]
+        # Here we repeat essentially the same "find component"
+        # procedure as above.
+        init_controller_inputs = []
+        for cuid in self.input_cuids:
+            for comp in cuid.list_components(controller_model):
+                break
+            _slice = slice_component_along_sets(comp, (controller_time_set,))
+            ref = Reference(_slice)
+            t0 = controller_time_set.first()
+            init_controller_inputs.append(ref[t0])
         self.controller = ControllerBlock(
                 model=controller_model,
                 time=controller_time_set,
@@ -99,90 +137,12 @@ class NMPCSim(object):
                 )
         self.controller.construct()
 
-        controller_measurements = self.controller.measurement_vars
-        plant_measurements = self.plant.find_components(
-                self.controller.mod,
-                controller_measurements,
-                self.controller.time,
-                )
+        if sample_time is not None:
+            self.controller.set_sample_time(sample_time)
+            self.plant.set_sample_time(sample_time)
+            self.sample_time = sample_time
 
-        plant_inputs = self.plant.category_dict[VariableCategory.INPUT]
-        controller_inputs = self.controller.find_components(
-                self.plant.mod,
-                plant_inputs,
-                self.plant.time,
-                )
-
-        self.controller_measurement_map = ComponentMap(
-                zip(plant_measurements, controller_measurements))
-
-        self.plant_input_map = ComponentMap(
-                zip(controller_inputs, plant_inputs))
-
-        self.controller.set_sample_time(sample_time)
-        self.plant.set_sample_time(sample_time)
-        self.sample_time = sample_time
-
-        self.current_plant_time = 0
-
-    # TODO: put next two methods on a model wrapper.
-    def has_consistent_initial_conditions(self, block, **kwargs):
-        """
-        Finds constraints at time.first() that are violated by more than
-        tolerance. Returns True if any are found.
-        """
-        # This will raise an error if any constraints at t0 cannot be
-        # evaluated, i.e. contain a variable of value None.
-        time = block.time
-        inconsistent = get_inconsistent_initial_conditions(
-                block, 
-                time, 
-                tol=1e-8,
-                suppress_warnings=True)
-        return not inconsistent
-
-    def solve_consistent_initial_conditions(self, block, **kwargs):
-        """
-        Uses pyomo.dae.initialization solve_consistent_initial_conditions
-        function to solve for consistent initial conditions. Inputs are
-        fixed at time.first() in attempt to eliminate degrees of freedom.
-        """
-        time = block.time
-        strip_bounds = kwargs.pop('strip_bounds', True)
-        solver = SolverFactory('ipopt')
-        solver.set_options({
-            'linear_solver': 'ma57',
-            })
-        solver_log = idaeslog.getSolveLogger('nmpc', level=idaeslog.DEBUG)
-        t0 = time.first()
-
-        previously_fixed = ComponentMap()
-        for var in block.vectors.input[:,t0]:
-            previously_fixed[var] = var.fixed
-            var.fix()
-
-        if strip_bounds:
-            strip_var_bounds = TransformationFactory(
-                                           'contrib.strip_var_bounds')
-            strip_var_bounds.apply_to(block, reversible=True)
-
-        with idaeslog.solver_log(solver_log, level=idaeslog.DEBUG) as slc:
-            result = solve_consistent_initial_conditions(block, time, solver,
-                    tee=slc.tee)
-
-        if strip_bounds:
-            strip_var_bounds.revert(block)
-
-        for var, was_fixed in previously_fixed.items():
-            if not was_fixed:
-                var.unfix()
-
-        return result
-
-# TODO: This functionality is useful, but I need to rethink how
-# I want to do it.
-#    def calculate_error_between_states(self, mod1, mod2, t1, t2, 
-#            Q_matrix=[],
-#            categories=[VariableCategory.DIFFERENTIAL],
-#            **kwargs):
-#        pass
+        t0 = controller_time_set.first()
+        self.noise_bounds = [(0.0, var[t0].ub) for var in 
+                self.controller.measurement_vars]
+        self.noise_function = random.gauss
