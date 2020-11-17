@@ -4,12 +4,7 @@ from collections import OrderedDict
 from six import iteritems
 
 import idaes.logger as idaeslog
-from idaes.apps.caprese.base_class import DynamicBase
-from idaes.apps.caprese.util import (
-        initialize_by_element_in_range,
-        NMPCVarLocator,
-        cuid_from_timeslice,
-        )
+from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
         VariableCategory,
         ControlPenaltyType,

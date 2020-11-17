@@ -4,12 +4,7 @@ from collections import OrderedDict
 from six import iteritems
 
 import idaes.logger as idaeslog
-from idaes.apps.caprese.base_class import DynamicBase
-from idaes.apps.caprese.util import (
-        initialize_by_element_in_range,
-        NMPCVarLocator,
-        cuid_from_timeslice,
-        )
+from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
         ControlPenaltyType,
         ControlInitOption,
@@ -31,9 +26,6 @@ from idaes.apps.caprese.nmpc_var import (
         MeasuredVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import (
-        find_comp_in_block_at_time,
-        )
 from pyomo.environ import (
         value,
         Objective,
@@ -44,6 +36,7 @@ from pyomo.environ import (
         TransformationFactory,
         Var,
         Set,
+        ComponentUID,
         )
 from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, declare_custom_block
@@ -209,45 +202,6 @@ class _DynamicBlockData(_BlockData):
     def add_time(self):
         # Do this because I can't add a reference to a set
         super(_BlockData, self).__setattr__('time', self.time)
-
-    def find_components(self, model, comps, time):
-        # TODO: Block has a very similar method. This method
-        # is different as it is "time-aware."
-        # I should probably rewrite this to use CUIDs, as my
-        # underlying method is doing something almost equivalent.
-        #
-        # _slices = [c.referent for c in comps]
-        # cuids = [ComponentUID(s, context=src_model) for s in _slices]
-        # for cuid in cuids:
-        #     for comp in cuid.list_components(self.mod):
-        #         break
-        #     comp = self.vardata_map[comp]
-        #     tgt_comps.append(comp)
-        # ^ This seems sufficiently short to do in NmpcManager.
-        # Once I do this I can remove this method.
-        # If I could get a slice from a CUID, I could do:
-        #
-        # _slices = [c.referent for c in comps]
-        # cuids = [ComponentUID(s, context=src_model) for s in _slices]
-        # for cuid in cuids:
-        #     _slice = cuid.find_component(self.mod)
-        #     tgt_comps.append(Reference(_slice))
-        # ^ This won't return components with ctype NmpcVar, but I can
-        # always pass in a ctype argument.
-        t0_src = time.first()
-        t0_tgt = self.time.first()
-        tgt_comps = []
-        for comp in comps:
-            src_vardata = comp[t0_src]
-            tgt_vardata = find_comp_in_block_at_time(
-                    self.mod,
-                    model,
-                    src_vardata,
-                    self.time,
-                    t0_tgt,
-                    )
-            tgt_comps.append(self.vardata_map[tgt_vardata])
-        return tgt_comps
 
     def set_sample_time(self, sample_time, tolerance=1e-8):
         self.validate_sample_time(sample_time, tolerance)
@@ -566,7 +520,7 @@ class _DynamicBlockData(_BlockData):
                 queue.extend(var[ts] for var in varlist)
                 continue
             _slice = vardata_map[var]
-            cuid = cuid_from_timeslice(_slice, time)
+            cuid = ComponentUID(_slice.referent)
             if include_t0:
                 i0 = time.find_nearest_index(ts-sample_time, tolerance=tolerance)
                 t0 = time[i0]
