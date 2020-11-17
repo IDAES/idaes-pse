@@ -545,30 +545,30 @@ class TestDynamicBlock(object):
         dyn_block.set_sample_time(sample_time)
         return dyn_block
 
-    def test_find_components(self):
-        # Name of this function is pending
-        blk1 = self.make_block()
-        blk2 = self.make_block()
-
-        src_comps = [
-                aml.Reference(blk1.vectors.differential[0,:]),
-                # Kinda clunky if this is how I have to get
-                # the "first differential var."
-                # _NmpcVector should have a method to make this easier...
-                aml.Reference(blk1.vectors.algebraic[0,:]),
-                ]
-        src_names = [c[0].name for c in src_comps]
-        tgt_names = [
-                blk2.mod.conc[0,'A'].name,
-                blk2.mod.flow_out[0].name,
-                ]
-        assert src_names == tgt_names
-        tgt_comps = blk2.find_components(blk1.mod, src_comps, blk1.time)
-        # Note that right now, I attempt to find the component on the model,
-        # not on the encompassing DynamicBlock. This may change...
-        tgt_comp_names = [c[0].name for c in tgt_comps]
-        assert tgt_names == tgt_comp_names
-
+#    def test_find_components(self):
+#        # Name of this function is pending
+#        blk1 = self.make_block()
+#        blk2 = self.make_block()
+#
+#        src_comps = [
+#                aml.Reference(blk1.vectors.differential[0,:]),
+#                # Kinda clunky if this is how I have to get
+#                # the "first differential var."
+#                # _NmpcVector should have a method to make this easier...
+#                aml.Reference(blk1.vectors.algebraic[0,:]),
+#                ]
+#        src_names = [c[0].name for c in src_comps]
+#        tgt_names = [
+#                blk2.mod.conc[0,'A'].name,
+#                blk2.mod.flow_out[0].name,
+#                ]
+#        assert src_names == tgt_names
+#        tgt_comps = blk2.find_components(blk1.mod, src_comps, blk1.time)
+#        # Note that right now, I attempt to find the component on the model,
+#        # not on the encompassing DynamicBlock. This may change...
+#        tgt_comp_names = [c[0].name for c in tgt_comps]
+#        assert tgt_names == tgt_comp_names
+#
     def test_init_sample_to_setpoint(self):
         blk = self.make_block()
         time = blk.time
