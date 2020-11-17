@@ -628,68 +628,6 @@ class DynamicBlock(Block):
         super(DynamicBlock, self).construct(data)
         self.to_dense_data()
 
-    def ex_construct(self, data=None):
-        """
-        Construct the DynamicBlockDatas
-        """
-        if self._constructed:
-            return
-        # Do not set the constructed flag - Block.construct() will do that
-
-        timer = ConstructionTimer(self)
-
-        # What is data, here?
-        super(DynamicBlock, self).construct(data)
-
-        # TODO: Should I raise an error if model, etc. was not provided?
-        # Probably not, because maybe the user wants to provide them
-        # manually as part of an initialization rule, rather than as
-        # arguments to the component.
-        self.to_dense_data()
-        # When constructing an IndexedDynamicBlock, self._data is empty
-        # here. Do I have to explicitly tell it to construct dense?
-
-#        parent = self.parent_block()
-#
-#        # FIXME: Need to figure out a better way to initialize...
-#        if self._init_model is not None:
-#            if self.is_indexed():
-#                for index, data in iteritems(self):
-#                    # If indexed and model arg was provided,
-#                    # expect the arg to be a dict.
-#                    data.mod = self._init_model[index]
-#            else:
-#                # Else just expect it to be a model.
-#                self.mod = self._init_model(parent, index)
-#        if self._init_time is not None:
-#            if self.is_indexed():
-#                for index, data in iteritems(self):
-#                    time = self._init_time[index]
-#                    super(_BlockData, data).__setattr__('time', time)
-#            else:
-#                time = self._init_time
-#                super(_BlockData, self).__setattr__('time', time)
-#        if self._init_inputs is not None:
-#            if self.is_indexed():
-#                for index, data in iteritems(self):
-#                    data._inputs = self._init_inputs[index]
-#            else:
-#                self._inputs = self._init_inputs
-#        if self._init_measurements is not None:
-#            if self.is_indexed():
-#                for index, data in iteritems(self):
-#                    data._measurements = self._init_measurements[index]
-#            else:
-#                self._measurements = self._init_measurements
-
-        # Will calling super().construct after adding attributes
-        # break the logic in Block.construct?
-        # It may not even be possible to add attributes before
-        # constructing...
-        #super(DynamicBlock, self).construct(data)
-#        for index, data in iteritems(self):
-#            data._construct()
-
 
 class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
     def __init__(self, *args, **kwds):
