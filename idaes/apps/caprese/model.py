@@ -93,7 +93,6 @@ class _DynamicBlockData(_BlockData):
         self.input_vars = category_dict[VC.INPUT]
         self.fixed_vars = category_dict[VC.FIXED]
 
-        # Why are these attributes not getting set...?
         self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
@@ -445,8 +444,18 @@ class _DynamicBlockData(_BlockData):
                         solver=solver,
                         )
 
+    def set_variance(self, variance_list):
+        t0 = self.time.first()
+        variance_map = ComponentMap(variance_list)
+        for var, val in variance_list:
+            nmpc_var = self.vardata_map[var]
+            nmpc_var.variance = val
+        for var in self.measurement_vars:
+            if var[t0] in variance_map:
+                var.variance = variance_map[var[t0]]
+
     def generate_inputs_at_time(self, t):
-        for val in self.input_vars[:][t].value:
+        for val in self.vectors.input[:,t].value:
             yield val
 
     def generate_measurements_at_time(self, t):
@@ -456,7 +465,7 @@ class _DynamicBlockData(_BlockData):
     def inject_inputs(self, inputs):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
-        for var, val in zip(self.input_vars[:], inputs):
+        for var, val in zip(self.input_vars, inputs):
             # Would like:
             # self.input_vars[:,:].fix(inputs)
             # This is an example of setting a matrix from a vector.
