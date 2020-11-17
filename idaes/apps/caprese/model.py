@@ -575,13 +575,6 @@ class DynamicBlock(Block):
 
         block._construct()
 
-    def construct(self, data=None):
-        if self._constructed:
-            return
-
-        super(DynamicBlock, self).construct(data)
-        self.to_dense_data()
-
 
 class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
     def __init__(self, *args, **kwds):
