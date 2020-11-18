@@ -21,12 +21,11 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           SolverFactory)
+                           SolverFactory,
+                           units as pyunits)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
-                                              HeatExchanger,
-                                              HeatExchangerFlowPattern)
 
 from idaes.generic_models.properties import iapws95
 
@@ -100,7 +99,7 @@ def test_boiler_hx():
         "has_radiation": True})
 
     #   Set inputs
-    h = iapws95.htpx(773.15, 2.5449e7)
+    h = value(iapws95.htpx(773.15*pyunits.K, 2.5449e7*pyunits.Pa))
     print(h)
     m.fs.unit.side_1_inlet.flow_mol[0].fix(24678.26)   # mol/s
     m.fs.unit.side_1_inlet.enth_mol[0].fix(h)           # J/mol
@@ -155,3 +154,27 @@ def test_boiler_hx():
         pytest.approx(588.07, 1)
     assert value(m.fs.unit.side_2.properties_out[0].temperature) == \
         pytest.approx(573.07, 1)
+
+
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.integration
+def test_units():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.prop_steam = iapws95.Iapws95ParameterBlock()
+    m.fs.prop_fluegas = FlueGasParameterBlock()
+
+    m.fs.unit = BoilerHeatExchanger(default={
+        "side_1_property_package": m.fs.prop_steam,
+        "side_2_property_package": m.fs.prop_fluegas,
+        "has_pressure_change": True,
+        "has_holdup": False,
+        "delta_T_method": DeltaTMethod.counterCurrent,
+        "tube_arrangement": TubeArrangement.inLine,
+        "side_1_water_phase": "Liq",
+        "has_radiation": True})
+
+    assert_units_consistent(m)

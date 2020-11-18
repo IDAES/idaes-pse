@@ -28,13 +28,14 @@ from pyomo.dae import ContinuousSet
 
 
 class PIDForm(Enum):
-    """Enum to for the pid ``pid_form`` option either standard or velocity form."""
+    """Enum for the pid ``pid_form`` option.
+    Either standard or velocity form."""
     standard = 1
     velocity = 2
 
 
-@declare_process_block_class("PIDBlock", doc=
-    """This is a PID controller block. The PID Controller block must be added
+@declare_process_block_class("PIDBlock", doc="""
+This is a PID controller block. The PID Controller block must be added
 after the DAE transformation.""")
 class PIDBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
@@ -92,13 +93,14 @@ class PIDBlockData(ProcessBlockData):
         if self.config.calculate_initial_integral:
             @self.Expression(doc="Initial integral error")
             def err_i0(b):
-                return b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0]\
-                       - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
+                return (b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0] -
+                                      b.gain[t0]*b.time_d[t0]*b.err_d[t0]) /
+                        b.gain[t0])
         # integral error
         @self.Expression(time_set, doc="Integral error")
         def err_i(b, t_end):
-            return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])
-                                   *(t - time_set.prev(t))/2.0
+            return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)]) *
+                                  (t - time_set.prev(t))/2.0
                                   for t in time_set if t <= t_end and t > t0)
         # Calculate the unconstrained controller output
         @self.Expression(time_set, doc="Unconstrained controller output")
@@ -117,20 +119,22 @@ class PIDBlockData(ProcessBlockData):
         if self.config.calculate_initial_integral:
             @self.Expression(doc="Initial integral error")
             def err_i0(b):
-                return b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0]\
-                       - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
+                return (b.time_i[t0]*(b.output[t0] - b.gain[t0]*b.pterm[t0] -
+                                      b.gain[t0]*b.time_d[t0]*b.err_d[t0]) /
+                        b.gain[t0])
 
         # Calculate the unconstrained controller output
         @self.Expression(time_set, doc="Unconstrained controller output")
         def unconstrained_output(b, t):
-            if t == t0: # do the standard first step so I have a previous time
-                        # for the rest of the velocity form
+            if t == t0:
+                # do the standard first step so I have a previous time
+                # for the rest of the velocity form
                 return b.gain[t]*(
                     b.pterm[t] +
                     1.0/b.time_i[t]*b.err_i0 +
                     b.time_d[t]*b.err_d[t]
                 )
-            tb = time_set.prev(t) # time back a step
+            tb = time_set.prev(t)  # time back a step
             return self.output[tb] + self.gain[t]*(
                 b.pterm[t] - b.pterm[tb] +
                 (t - tb)/b.time_i[t]*(b.err[t] + b.err[tb])/2 +
@@ -140,9 +144,9 @@ class PIDBlockData(ProcessBlockData):
         @self.Expression(doc="Initial integral error at the end")
         def err_i_end(b):
             tl = time_set.last()
-            return b.time_i[tl]*(b.output[tl] - b.gain[tl]*b.pterm[tl]\
-                   - b.gain[tl]*b.time_d[tl]*b.err_d[tl])/b.gain[tl]
-
+            return (b.time_i[tl]*(b.output[tl] - b.gain[tl]*b.pterm[tl] -
+                                  b.gain[tl]*b.time_d[tl]*b.err_d[tl]) /
+                    b.gain[tl])
 
     def build(self):
         """
@@ -155,55 +159,88 @@ class PIDBlockData(ProcessBlockData):
             if 'scheme' not in self.flowsheet().time.get_discretization_info():
                 # if you have a dynamic model, must do time discretization
                 # before adding the PID model
-                raise RunTimeError("PIDBlock must be added after time discretization")
+                raise RuntimeError(
+                    "PIDBlock must be added after time discretization")
 
-        super().build() # do the ProcessBlockData voodoo for config
+        super().build()  # do the ProcessBlockData voodoo for config
         # Check for required config
         if self.config.pv is None:
             raise ConfigurationError("Controller configuration requires 'pv'")
         if self.config.output is None:
-            raise ConfigurationError("Controller configuration requires 'output'")
+            raise ConfigurationError(
+                "Controller configuration requires 'output'")
+
         # Shorter pointers to time set information
-        time_set = self.flowsheet().time
+        time_set = self.flowsheet().config.time
         t0 = time_set.first()
+
+        # Get units of time domain, PV and output
+        t_units = self.flowsheet().config.time_units
+        pv_units = self.config.pv.get_units()
+        out_units = self.config.output.get_units()
+        gain_units = out_units/pv_units if pv_units is not None else None
+        err_d_units = pv_units/t_units if pv_units is not None else None
+        err_i_units = pv_units*t_units if pv_units is not None else None
+
         # Variable for basic controller settings may change with time.
-        self.setpoint = pyo.Var(time_set, doc="Setpoint")
-        self.gain = pyo.Var(time_set, doc="Controller gain")
-        self.time_i = pyo.Var(time_set, doc="Integral time")
-        self.time_d = pyo.Var(time_set, doc="Derivative time")
+        self.setpoint = pyo.Var(time_set,
+                                doc="Setpoint",
+                                units=pv_units)
+        self.gain = pyo.Var(time_set,
+                            doc="Controller gain",
+                            units=gain_units)
+        self.time_i = pyo.Var(time_set, doc="Integral time", units=t_units)
+        self.time_d = pyo.Var(time_set, doc="Derivative time", units=t_units)
+
         # Make the initial derivative term a variable so you can set it. This
         # should let you carry on from the end of another time period
-        self.err_d0 = pyo.Var(doc="Initial derivative term", initialize=0)
+        self.err_d0 = pyo.Var(doc="Initial derivative term",
+                              initialize=0,
+                              units=err_d_units)
         self.err_d0.fix()
+
         if not self.config.calculate_initial_integral:
-            self.err_i0 = pyo.Var(doc="Initial integral term", initialize=0)
+            self.err_i0 = pyo.Var(doc="Initial integral term",
+                                  initialize=0,
+                                  units=err_i_units)
             self.err_i0.fix()
+
         # Make references to the output and measured variables
-        self.pv = pyo.Reference(self.config.pv) # No duplicate
-        self.output = pyo.Reference(self.config.output) # No duplicate
+        self.pv = pyo.Reference(self.config.pv)  # No duplicate
+        self.output = pyo.Reference(self.config.output)  # No duplicate
+
         # Create an expression for error from setpoint
         @self.Expression(time_set, doc="Setpoint error")
         def err(b, t):
-            return  self.setpoint[t] - self.pv[t]
+            return self.setpoint[t] - self.pv[t]
+
         # Use expressions to allow the some future configuration
         @self.Expression(time_set)
-        def pterm(b,t):
+        def pterm(b, t):
             return -self.pv[t]
+
         @self.Expression(time_set)
-        def dterm(b,t):
+        def dterm(b, t):
             return -self.pv[t]
+
         @self.Expression(time_set)
-        def iterm(b,t):
+        def iterm(b, t):
             return self.err[t]
         # Output limits parameter
-        self.limits = pyo.Param(["l", "h"], mutable=True,
-            doc="controller output limits",
-            initialize={
-                "l":self.config.lower,
-                "h":self.config.upper})
+        self.limits = pyo.Param(["l", "h"],
+                                mutable=True,
+                                doc="controller output limits",
+                                initialize={"l": self.config.lower,
+                                            "h": self.config.upper},
+                                units=out_units)
+
         # Smooth min and max are used to limit output, smoothing parameter here
-        self.smooth_eps = pyo.Param(mutable=True, initialize=1e-4,
-            doc="Smoothing parameter for controller output limits")
+        self.smooth_eps = pyo.Param(
+            mutable=True,
+            initialize=1e-4,
+            doc="Smoothing parameter for controller output limits",
+            units=out_units)
+
         # This is ugly, but want integral and derivative error as expressions,
         # nice implementation with variables is harder to initialize and solve
         @self.Expression(time_set, doc="Derivative error.")
@@ -211,8 +248,8 @@ class PIDBlockData(ProcessBlockData):
             if t == t0:
                 return self.err_d0
             else:
-                return (b.dterm[t] - b.dterm[time_set.prev(t)])\
-                       /(t - time_set.prev(t))
+                return ((b.dterm[t] - b.dterm[time_set.prev(t)]) /
+                        (t - time_set.prev(t)))
 
         if self.config.pid_form == PIDForm.standard:
             self._build_standard(time_set, t0)

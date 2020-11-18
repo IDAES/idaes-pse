@@ -28,6 +28,8 @@ from idaes.generic_models.properties.core.generic.utility import \
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 class cp_mol_ig_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         cobj.cp_mol_ig_comp_coeff_A = Var(
                 doc="Parameter A for ideal gas molar heat capacity",
@@ -61,6 +63,7 @@ class cp_mol_ig_comp():
                         units=pyunits.cal/pyunits.mol/pyunits.K**4,
                         index="D")
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific heat capacity
         T = pyunits.convert(T, to_units=pyunits.K)
@@ -80,6 +83,8 @@ class cp_mol_ig_comp():
 
 
 class enth_mol_ig_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
@@ -97,6 +102,7 @@ class enth_mol_ig_comp():
                         param="enth_mol_form_vap_comp_ref",
                         units=pyunits.cal/pyunits.mol)
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
         T = pyunits.convert(T, to_units=pyunits.K)
@@ -119,6 +125,8 @@ class enth_mol_ig_comp():
 
 
 class entr_mol_ig_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
@@ -137,6 +145,7 @@ class entr_mol_ig_comp():
                         param="entr_mol_form_vap_comp_ref",
                         units=pyunits.cal/pyunits.mol/pyunits.K)
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific entropy
         T = pyunits.convert(T, to_units=pyunits.K)
@@ -163,6 +172,8 @@ class entr_mol_ig_comp():
 # Saturation pressure
 # Note that this equation in not valid beyond the critical temperature
 class pressure_sat_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         cobj.pressure_sat_comp_coeff_A = Var(
                 doc="Antoine A coefficient for calculating Psat",
@@ -188,6 +199,7 @@ class pressure_sat_comp():
                         units=pyunits.K,
                         index="C")
 
+    @staticmethod
     def return_expression(b, cobj, T, dT=False):
         if dT:
             return pressure_sat_comp.dT_expression(b, cobj, T)
@@ -203,6 +215,7 @@ class pressure_sat_comp():
                    base_units["time"]**-2)
         return pyunits.convert(psat, to_units=p_units)
 
+    @staticmethod
     def dT_expression(b, cobj, T):
         p_sat_dT = (pressure_sat_comp.return_expression(b, cobj, T) *
                     cobj.pressure_sat_comp_coeff_B /

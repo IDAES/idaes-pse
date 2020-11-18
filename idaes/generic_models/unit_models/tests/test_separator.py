@@ -34,6 +34,7 @@ from idaes.core import (FlowsheetBlock,
                         StateBlock,
                         MaterialBalanceType,
                         StateBlockData,
+                        StateBlock,
                         PhysicalParameterBlock)
 from idaes.generic_models.unit_models.separator import (Separator,
                                                         SeparatorData,
@@ -306,7 +307,8 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_split_fractions_total(self, build):
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -319,7 +321,8 @@ class TestSplitConstruction(object):
     def test_add_split_fractions_phase(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -338,7 +341,8 @@ class TestSplitConstruction(object):
     def test_add_split_fractions_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -357,7 +361,8 @@ class TestSplitConstruction(object):
     def test_add_split_fractions_phase_component(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         assert isinstance(build.fs.sep.outlet_idx, Set)
         assert len(build.fs.sep.outlet_idx) == len(build.outlet_list)
@@ -375,7 +380,8 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_material_splitting_constraints_pc_total_no_equil(self, build):
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -388,7 +394,8 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_pc_phase_no_equil(self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -402,7 +409,8 @@ class TestSplitConstruction(object):
                                                                       build):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -416,7 +424,8 @@ class TestSplitConstruction(object):
             self, build):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -429,7 +438,8 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_pc_total_equil(self, build):
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -444,7 +454,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -460,7 +471,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -476,7 +488,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.has_phase_equilibrium = True
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -491,7 +504,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -505,7 +519,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -519,7 +534,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -534,7 +550,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.componentTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -546,7 +563,8 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_t_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -559,7 +577,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -572,7 +591,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -585,7 +605,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.total
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -598,7 +619,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.material_balance_type = \
             MaterialBalanceType.elementTotal
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         with pytest.raises(ConfigurationError):
             build.fs.sep.add_material_splitting_constraints(
@@ -608,7 +630,8 @@ class TestSplitConstruction(object):
     def test_add_material_splitting_constraints_none_total(self, build):
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -620,7 +643,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -632,7 +656,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.componentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -645,7 +670,8 @@ class TestSplitConstruction(object):
         build.fs.sep.config.split_basis = SplittingType.phaseComponentFlow
         build.fs.sep.config.material_balance_type = MaterialBalanceType.none
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
 
         build.fs.sep.add_material_splitting_constraints(
                 build.fs.sep.mixed_state)
@@ -657,7 +683,8 @@ class TestSplitConstruction(object):
         assert(build.fs.sep.config.energy_split_basis ==
                EnergySplittingType.equal_temperature)
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
         build.fs.sep.add_energy_splitting_constraints(
                 build.fs.sep.mixed_state)
 
@@ -671,7 +698,8 @@ class TestSplitConstruction(object):
         assert(build.fs.sep.config.energy_split_basis ==
                EnergySplittingType.equal_molar_enthalpy)
 
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
         build.fs.sep.add_energy_splitting_constraints(
                 build.fs.sep.mixed_state)
 
@@ -680,7 +708,8 @@ class TestSplitConstruction(object):
 
     @pytest.mark.unit
     def test_add_momentum_splitting_constraints(self, build):
-        build.fs.sep.add_split_fractions(build.outlet_list)
+        build.fs.sep.add_split_fractions(build.outlet_list,
+                                         build.fs.sep.mixed_state)
         build.fs.sep.add_momentum_splitting_constraints(
                 build.fs.sep.mixed_state)
 
@@ -1265,7 +1294,7 @@ class _IdealParameterBlock(PhysicalParameterBlock):
                                'holdup': 'mol'})
 
 
-@declare_process_block_class("IdealStateBlock")
+@declare_process_block_class("IdealStateBlock", block_class=StateBlock)
 class IdealTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 

@@ -129,16 +129,19 @@ class HelmNtuCondenserData(UnitModelBlockData):
         ########################################################################
         # Add variables                                                        #
         ########################################################################
+        units_meta = self.config.property_package.get_metadata()
         self.overall_heat_transfer_coefficient = pyo.Var(
             time,
             domain=pyo.PositiveReals,
             initialize=100.0,
             doc="Overall heat transfer coefficient",
+            units=units_meta.get_derived_units("heat_trasnfer_coefficient")
         )
         self.area = pyo.Var(
             domain=pyo.PositiveReals,
             initialize=1000.0,
             doc="Heat exchange area",
+            units=units_meta.get_derived_units("area")
         )
 
         ########################################################################
