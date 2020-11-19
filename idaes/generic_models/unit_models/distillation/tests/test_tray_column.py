@@ -180,6 +180,59 @@ class TestBTXIdeal():
 
         results = solver.solve(btx_fctp)
 
+        raise Exception(results)
+
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, btx_ftpz, btx_fctp):
+
+        # Distillate port - btx_ftpz
+        assert (pytest.approx(47.446, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.condenser.distillate.flow_mol[0]))
+        assert (pytest.approx(0.8882, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.condenser.
+                      distillate.mole_frac_comp[0, "benzene"]))
+        assert (pytest.approx(0.1118, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.condenser.
+                      distillate.mole_frac_comp[0, "toluene"]))
+        assert (pytest.approx(355.642, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.condenser.
+                      distillate.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.condenser.
+                      distillate.pressure[0]))
+
+        # Bottoms port - btx_ftpz
+        assert (pytest.approx(52.553, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reboiler.bottoms.flow_mol[0]))
+        assert (pytest.approx(0.1495, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reboiler.
+                      bottoms.mole_frac_comp[0, "benzene"]))
+        assert (pytest.approx(0.8504, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reboiler.
+                      bottoms.mole_frac_comp[0, "toluene"]))
+        assert (pytest.approx(377.337, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reboiler.
+                      bottoms.temperature[0]))
+        assert (pytest.approx(101325, abs=1e-3) ==
+                value(btx_ftpz.fs.unit.reboiler.
+                      bottoms.pressure[0]))
+
+        # Distillate port - btx_fctp
+        assert (pytest.approx(50, abs=1e-3) ==
+                value(btx_fctp.fs.unit.condenser.
+                      distillate.flow_mol_comp[0, "benzene"]))
+        assert (pytest.approx(49.999, abs=1e-3) ==
+                value(btx_fctp.fs.unit.condenser.
+                      distillate.flow_mol_comp[0, "toluene"]))
+        # assert (pytest.approx(355.642, abs=1e-3) ==
+        #         value(btx_fctp.fs.unit.condenser.
+        #               distillate.temperature[0]))
+        # assert (pytest.approx(101325, abs=1e-3) ==
+        #         value(btx_fctp.fs.unit.condenser.
+        #               distillate.pressure[0]))
