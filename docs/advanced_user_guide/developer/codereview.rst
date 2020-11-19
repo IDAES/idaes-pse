@@ -102,6 +102,6 @@ rerun the tests after every change (in this case, every new Pull Request
 or update to the code in an existing Pull Request) and report the
 results back to Github for display in the web pages. This status
 information can then be used as an automatic gatekeeper on whether the
-code can be merged into the master branch – if tests fail, then no merge
-is allowed. Following this procedure, it is not possible for the master
+code can be merged into the main branch – if tests fail, then no merge
+is allowed. Following this procedure, it is not possible for the main
 branch to ever be failing its own tests.
