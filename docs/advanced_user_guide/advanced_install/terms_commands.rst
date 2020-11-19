@@ -38,7 +38,7 @@ together, and keep separable from other series of commits. From Git's perspectiv
 the branch is just a name for the first commit in that series.
 
 It is recommended that you create new branches on which to develop your work,
-and reserve the "master" branch for merging in work that has been completed
+and reserve the "main" branch for merging in work that has been completed
 and approved on GitHub. One way to do this is to create branches that correspond
 directly to issues on GitHub, and include the issue number in the branch name.
 
@@ -72,7 +72,7 @@ helpful:
 
 Pull requests are a mechanism that GitHub provides to look at what the
 code on some branch from your fork of the repository would be like if it
-were merged with the master branch in the main (e.g., idaes-pse/idaes-dev)
+were merged with the main branch in the main (e.g., idaes-pse/idaes-dev)
 repository. You can think of it as a staging area where the code is merged
 and all the tests are run, without changing the target repository.
 Everyone on the team can see a pull request, comment on it, and review
