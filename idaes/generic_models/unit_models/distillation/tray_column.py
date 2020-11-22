@@ -292,23 +292,13 @@ see property package for documentation.}"""))
         self.reboiler.initialize()
 
         for i in self.tray_index:
-            if i < self.config.feed_tray_location:
-                self.propagate_stream_state(
-                    source=self.condenser.reflux,
-                    destination=self.tray[i].liq_in)
-                self.propagate_stream_state(
-                    source=self.tray[self.config.feed_tray_location].vap_out,
-                    destination=self.tray[i].vap_in)
-                self.tray[i].initialize()
-
-            elif i > self.config.feed_tray_location:
-                self.propagate_stream_state(
-                    source=self.tray[self.config.feed_tray_location].liq_out,
-                    destination=self.tray[i].liq_in)
-                self.propagate_stream_state(
-                    source=self.reboiler.vapor_reboil,
-                    destination=self.tray[i].vap_in)
-                self.tray[i].initialize()
+            self.propagate_stream_state(
+                source=self.condenser.reflux,
+                destination=self.tray[i].liq_in)
+            self.propagate_stream_state(
+                source=self.reboiler.vapor_reboil,
+                destination=self.tray[i].vap_in)
+            self.tray[i].initialize()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)

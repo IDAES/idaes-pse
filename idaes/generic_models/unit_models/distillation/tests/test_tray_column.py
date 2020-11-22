@@ -164,32 +164,23 @@ class TestBTXIdeal():
 
     @pytest.mark.solver
     @pytest.mark.component
-    def test_initialize(self, btx_ftpz, btx_fctp):
+    def test_initialize(self, btx_ftpz):
         initialization_tester(btx_ftpz)
-        initialization_tester(btx_fctp)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve(self, btx_ftpz, btx_fctp):
+    def test_solve(self, btx_ftpz):
         results = solver.solve(btx_ftpz)
 
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-        results = solver.solve(btx_fctp)
-
-        raise Exception(results)
-
-        assert results.solver.termination_condition == \
-            TerminationCondition.optimal
-        assert results.solver.status == SolverStatus.ok
-
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solution(self, btx_ftpz, btx_fctp):
+    def test_solution(self, btx_ftpz):
 
         # Distillate port - btx_ftpz
         assert (pytest.approx(47.446, abs=1e-3) ==
@@ -222,17 +213,3 @@ class TestBTXIdeal():
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.reboiler.
                       bottoms.pressure[0]))
-
-        # Distillate port - btx_fctp
-        assert (pytest.approx(50, abs=1e-3) ==
-                value(btx_fctp.fs.unit.condenser.
-                      distillate.flow_mol_comp[0, "benzene"]))
-        assert (pytest.approx(49.999, abs=1e-3) ==
-                value(btx_fctp.fs.unit.condenser.
-                      distillate.flow_mol_comp[0, "toluene"]))
-        # assert (pytest.approx(355.642, abs=1e-3) ==
-        #         value(btx_fctp.fs.unit.condenser.
-        #               distillate.temperature[0]))
-        # assert (pytest.approx(101325, abs=1e-3) ==
-        #         value(btx_fctp.fs.unit.condenser.
-        #               distillate.pressure[0]))
