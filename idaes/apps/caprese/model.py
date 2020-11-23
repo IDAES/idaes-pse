@@ -471,7 +471,6 @@ class _DynamicBlockData(_BlockData):
                 ),
             tolerance=1e-8,
             ):
-        #horizon = self.time.last() - self.time.last()
         sample_time = self.sample_time
         self.shift_values_back_by_time(
                 sample_time,
