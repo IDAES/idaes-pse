@@ -20,7 +20,7 @@ import idaes.logger as idaeslog
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.network import Arc
+from pyomo.network import Arc, Port
 from pyomo.environ import value, Integers, RangeSet, TransformationFactory
 
 # Import IDAES cores
@@ -214,6 +214,10 @@ see property package for documentation.}"""))
                      "property_package": self.config.property_package,
                      "property_package_args":
                      self.config.property_package_args})
+
+        # Add extension to the feed port
+        self.feed = Port(extends=self.tray[self.config.feed_tray_location].
+                         feed)
 
         # Construct arcs between trays, condenser, and reboiler
         self._make_arcs()

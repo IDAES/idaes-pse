@@ -88,11 +88,11 @@ class TestBTXIdeal():
                                "has_pressure_change": False})
 
         # Inlet feed conditions
-        m.fs.unit.tray[5].feed.flow_mol.fix(100)
-        m.fs.unit.tray[5].feed.temperature.fix(368)
-        m.fs.unit.tray[5].feed.pressure.fix(101325)
-        m.fs.unit.tray[5].feed.mole_frac_comp[0, "benzene"].fix(0.5)
-        m.fs.unit.tray[5].feed.mole_frac_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.feed.flow_mol.fix(100)
+        m.fs.unit.feed.temperature.fix(368)
+        m.fs.unit.feed.pressure.fix(101325)
+        m.fs.unit.feed.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.feed.mole_frac_comp[0, "toluene"].fix(0.5)
 
         # unit level inputs
         m.fs.unit.condenser.reflux_ratio.fix(1.4)
@@ -125,10 +125,10 @@ class TestBTXIdeal():
                                "has_pressure_change": False})
 
         # Inlet feed conditions
-        m.fs.unit.tray[5].feed.flow_mol_comp[0, "benzene"].fix(50)
-        m.fs.unit.tray[5].feed.flow_mol_comp[0, "toluene"].fix(50)
-        m.fs.unit.tray[5].feed.temperature.fix(368)
-        m.fs.unit.tray[5].feed.pressure.fix(101325)
+        m.fs.unit.feed.flow_mol_comp[0, "benzene"].fix(50)
+        m.fs.unit.feed.flow_mol_comp[0, "toluene"].fix(50)
+        m.fs.unit.feed.temperature.fix(368)
+        m.fs.unit.feed.pressure.fix(101325)
 
         # unit level inputs
         m.fs.unit.condenser.reflux_ratio.fix(1.4)
