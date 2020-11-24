@@ -87,7 +87,7 @@ def categorize_dae_variables(dae_vars, time, inputs):
             deriv_vars.append(deriv_slice)
             diff_vars.append(state_slice)
 
-    if not updated_input_set:
+    if input_set:
         raise RuntimeError('Not all inputs could be found')
     assert len(deriv_vars) == len(diff_vars)
 
