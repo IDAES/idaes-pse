@@ -178,7 +178,7 @@ def main(plot_switch=False):
     for i in range(0,10):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
         measured = nmpc.plant.generate_measurements_at_time(p_ts)
-        nmpc.plant.shift_back_one_sample()
+        nmpc.plant.advance_one_sample()
         nmpc.plant.initialize_to_initial_conditions()
         measured = apply_noise_with_bounds(
                 measured,
@@ -187,7 +187,7 @@ def main(plot_switch=False):
                 measurement_noise_bounds,
                 )
 
-        nmpc.controller.shift_back_one_sample()
+        nmpc.controller.advance_one_sample()
         nmpc.controller.load_measurements(measured)
 
         solver.solve(nmpc.controller, tee=True)
@@ -202,6 +202,7 @@ def main(plot_switch=False):
         plant.inject_inputs(inputs)
         
         nmpc.plant.initialize_by_solving_elements(solver)
+        solver.solve(nmpc.plant)
 
 
 if __name__ == '__main__':
