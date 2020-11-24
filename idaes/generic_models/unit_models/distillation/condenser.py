@@ -174,6 +174,9 @@ see property package for documentation.}"""))
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True)
 
+        # Note: No momentum balance added for the condenser as the condenser
+        # outlet pressure is a spec set by the user.
+
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
         _liquid_list = []
