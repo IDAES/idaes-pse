@@ -433,7 +433,7 @@ class _DynamicBlockData(_BlockData):
         for var, val in zip(self.measurement_vars, measured):
             var[t0].fix(val)
 
-    def shift_values_back_by_time(self,
+    def advance_by_time(self,
             t_shift,
             ctype=(
                 DiffVar,
@@ -461,7 +461,7 @@ class _DynamicBlockData(_BlockData):
             for var in self.component_objects(ctype):
                 var[t].set_value(var[ts].value)
 
-    def shift_back_one_sample(self,
+    def advance_one_sample(self,
             ctype=(
                 DiffVar,
                 DerivVar,
@@ -472,7 +472,7 @@ class _DynamicBlockData(_BlockData):
             tolerance=1e-8,
             ):
         sample_time = self.sample_time
-        self.shift_values_back_by_time(
+        self.advance_by_time(
                 sample_time,
                 ctype=ctype,
                 tolerance=tolerance,
