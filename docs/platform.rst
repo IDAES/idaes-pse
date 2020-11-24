@@ -18,11 +18,11 @@ This diagram shows the relationship between the major IDAES-IP components:
         IDAES integrated platform, described on this page
 
     IDAES-Core
-        The software package that includes the Core Modeling Framework; process, unit, and property model libraries;
-        data management, artificial intelligence and uncertainty quantification tools; and grapphical user interfaces.
+        The software package that includes the Core Modeling Framework (IDAES-CMF); process, unit, and property model libraries;
+        data management, artificial intelligence and uncertainty quantification tools; and graphical user interfaces.
 
     IDAES-CMF
-        Core Modeling Framework (IDAES-CMF). The IDAES-CMF extends :term:`Pyomo`'s block-based hierarchical modeling
+        The IDAES-CMF is the center of the IDAES-Core. It extends :term:`Pyomo`'s block-based hierarchical modeling
         constructs to create a library of models for common process unit operations and thermophysical properties,
         along with a framework for the rapid development of process flowsheets.
 
