@@ -39,7 +39,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
-    PropertyNotSupportedError
+    PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.testing import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -571,78 +571,50 @@ see property package for documentation.}"""))
                              " being used for initialization.")
             solver = get_default_solver()
 
-        if state_args is None:
-            state_args = {}
-            state_dict = (
-                self.control_volume.properties_in[
-                    self.flowsheet().config.time.first()]
-                .define_port_members())
+        # Initialize the inlet and outlet state blocks. Calling the state
+        # blocks initialize methods directly so that custom set of state args
+        # can be passed to the inlet and outlet state blocks as control_volume
+        # initialize method initializes the state blocks with the same
+        # state conditions.
+        flags = self.control_volume.properties_in. \
+            initialize(state_args=state_args,
+                       solver=solver,
+                       optarg=optarg,
+                       outlvl=outlvl,
+                       hold_state=True)
 
-            for k in state_dict.keys():
-                if state_dict[k].is_indexed():
-                    state_args[k] = {}
-                    for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
+        # Initialize outlet state block at same conditions of inlet except
+        # the temperature. Set the temperature to a temperature guess based
+        # on the desired boilup_ratio.
+        temp_guess = 0.5 * (
+            self.control_volume.properties_in[0].temperature_dew.value -
+            self.control_volume.properties_in[0].
+            temperature_bubble.value) + \
+            self.control_volume.properties_in[0].temperature_bubble.value
+
+        state_args_outlet = {}
+        state_dict_outlet = (
+            self.control_volume.properties_in[
+                self.flowsheet().config.time.first()]
+            .define_port_members())
+
+        for k in state_dict_outlet.keys():
+            if state_dict_outlet[k].is_indexed():
+                state_args_outlet[k] = {}
+                for m in state_dict_outlet[k].keys():
+                    state_args_outlet[k][m] = state_dict_outlet[k][m].value
+            else:
+                if k != "temperature":
+                    state_args_outlet[k] = state_dict_outlet[k].value
                 else:
-                    state_args[k] = state_dict[k].value
+                    state_args_outlet[k] = temp_guess
 
-        # Initialize the inlet and outlet state blocks
-        flags = self.control_volume.initialize(state_args=state_args,
-                                               solver=solver,
-                                               optarg=optarg,
-                                               outlvl=outlvl,
-                                               hold_state=True)
-
-        if not self.control_volume.properties_out[0].temperature.fixed:
-
-            # Estimating a good guess for the reboiler temperature based on
-            # a vapor fraction of 0.5, bubble and dew
-            # point. This helps with initializing the system within the two
-            # phase envelope before activating the boilup ratio constraint.
-
-            alpha = 0.5 * (
-                self.control_volume.properties_in[0].temperature_dew.value -
-                self.control_volume.properties_in[0].
-                temperature_bubble.value) + \
-                self.control_volume.properties_in[0].temperature_bubble.value
-
-            self.eq_boilup_ratio.deactivate()
-            self.control_volume.properties_out[0].temperature.fix(alpha)
-
-            if degrees_of_freedom(self) == 0:
-                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    res = solver.solve(self, tee=slc.tee)
-                init_log.info(
-                    "Initialization Step 1 Complete, {}.".
-                    format(idaeslog.condition(res))
-                )
-            else:
-                raise Exception("State vars fixed but degrees of freedom "
-                                "for reboiler is not zero during "
-                                "initialization.")
-
-            self.control_volume.properties_out[0].temperature.unfix()
-            self.eq_boilup_ratio.activate()
-        else:
-            # In this case, outlet temperature has already been fixed by user
-            # and boil up ratio is assumed not to be fixed, otherwise the
-            # system is over specified.
-
-            self.eq_boilup_ratio.deactivate()
-
-            if degrees_of_freedom(self) == 0:
-                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    res = solver.solve(self, tee=slc.tee)
-                init_log.info(
-                    "Initialization Step 1 Complete, {}.".
-                    format(idaeslog.condition(res))
-                )
-            else:
-                raise Exception("State vars fixed but degrees of freedom "
-                                "for reboiler is not zero during "
-                                "initialization.")
-
-            self.eq_boilup_ratio.activate()
+        self.control_volume.properties_out.initialize(
+            state_args=state_args_outlet,
+            solver=solver,
+            optarg=optarg,
+            outlvl=outlvl,
+            hold_state=False)
 
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -651,11 +623,14 @@ see property package for documentation.}"""))
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )
         else:
-            raise Exception("State vars fixed but degrees of freedom "
-                            "for tray block is not zero during "
-                            "initialization.")
+            raise ConfigurationError(
+                "State vars fixed but degrees of freedom "
+                "for reboiler is not zero during "
+                "initialization. Please ensure that the boilup_ratio "
+                "or the outlet temperature is fixed.")
 
-        self.control_volume.release_state(flags=flags, outlvl=outlvl)
+        self.control_volume.properties_in.\
+            release_state(flags=flags, outlvl=outlvl)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
