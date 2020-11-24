@@ -530,7 +530,43 @@ def test_categorize_4():
     assert len(scalar_vars) == 0
 
 
+@pytest.mark.unit
+def test_categorize_error():
+    model = make_model(horizon=1, ntfe=5, ntcp=2)
+    time = model.fs.time
+
+    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
+
+    # Add a dummy var to treat as an input.
+    # This var is not in `dae_vars`, so it will not be located during
+    # categorization, which should fail.
+    model.dummy_var = Var(time)
+
+    init_input_list = [
+            model.fs.mixer.S_inlet.flow_vol[0],
+            model.fs.mixer.E_inlet.flow_vol[0],
+            model.dummy_var[0],
+            ]
+
+    with pytest.raises(RuntimeError, match=r'Not all inputs could be found'):
+        category_dict = categorize_dae_variables(
+                dae_vars,
+                time,
+                init_input_list,
+                )
+
+    # Re-run flattener. Now `dummy_var` should be included in `dae_vars`.
+    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
+    category_dict = categorize_dae_variables(
+            dae_vars,
+            time,
+            init_input_list,
+            )
+
+
 if __name__ == '__main__':
     test_categorize_1()
     test_categorize_2()
     test_categorize_3()
+    test_categorize_4()
+    test_categorize_error()
