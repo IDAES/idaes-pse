@@ -1,18 +1,21 @@
+.. _IFV
 
 IDAES Flowsheet Visualizer
 ===========================
 
 Concepts
 --------
-The IDAES Flowsheet Visualizer, or IFV for short, is a graphical user interface (or GUI) to help understand an IDAES flowsheet.
+The IDAES Flowsheet Visualizer, or IFV for short, is a graphical user interface to help understand an IDAES flowsheet.
 It uses the visual language of traditional process engineering diagrams, somewhat simplified, to display
 the components of a given flowsheet,
 their connections, and values associated with unit models and streams. At this time, it is read-only, i.e. nothing
 you can do with the flowsheet will alter the underlying IDAES models. On the other hand, the tool is wired so that
-changes in the underlying models can easily be viewed in the GUI.
+changes in the underlying models can easily be viewed in the IFV.
 
 Quickstart
 ----------
+Before starting to use the IFV, you must have installed IDAES. For detailed instructions on how to do this,
+see :ref:`IDAES Installation`.
 
 Reference
 ---------
