@@ -157,7 +157,7 @@ def test_solve_unit(build_unit):
     assert results.solver.status == pyo.SolverStatus.ok
 
     # flue gas outlet temperature
-    assert (pytest.approx(1237.12274, abs=1e-3) == pyo.value(m.fs.unit.
+    assert (pytest.approx(1236.780228, abs=1e-3) == pyo.value(m.fs.unit.
                                                               flue_gas_outlet.
                                                               temperature[0]))
 
