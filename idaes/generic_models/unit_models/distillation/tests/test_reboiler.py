@@ -207,7 +207,7 @@ class TestBTXIdeal():
                 value(btx_ftpz.fs.unit.bottoms.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.6109, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.bottoms.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-3) ==
+        assert (pytest.approx(368.728, abs=1e-2) ==
                 value(btx_ftpz.fs.unit.bottoms.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.bottoms.pressure[0]))
@@ -219,13 +219,13 @@ class TestBTXIdeal():
                 value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.3892, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-3) ==
+        assert (pytest.approx(368.728, abs=1e-2) ==
                 value(btx_ftpz.fs.unit.vapor_reboil.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.vapor_reboil.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(16926.526, abs=1e-3) ==
+        assert (pytest.approx(16926.5, rel=1e-4) ==
                 value(btx_ftpz.fs.unit.heat_duty[0]))
 
         # Reboiler when using FcTP
@@ -235,7 +235,7 @@ class TestBTXIdeal():
                 value(btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "benzene"]))
         assert (pytest.approx(0.30545, abs=1e-3) ==
                 value(btx_fctp.fs.unit.bottoms.flow_mol_comp[0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-3) ==
+        assert (pytest.approx(368.728, abs=1e-2) ==
                 value(btx_fctp.fs.unit.bottoms.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx_fctp.fs.unit.bottoms.pressure[0]))
@@ -245,13 +245,13 @@ class TestBTXIdeal():
                 value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "benzene"]))
         assert (pytest.approx(0.1946, abs=1e-3) ==
                 value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "toluene"]))
-        assert (pytest.approx(368.728, abs=1e-3) ==
+        assert (pytest.approx(368.728, abs=1e-2) ==
                 value(btx_fctp.fs.unit.vapor_reboil.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx_fctp.fs.unit.vapor_reboil.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(16926.522, abs=1e-3) ==
+        assert (pytest.approx(16926.5, rel=1e-4) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
     @pytest.mark.initialize
