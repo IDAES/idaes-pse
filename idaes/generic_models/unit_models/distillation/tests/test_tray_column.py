@@ -183,15 +183,15 @@ class TestBTXIdeal():
     def test_solution(self, btx_ftpz):
 
         # Distillate port - btx_ftpz
-        assert (pytest.approx(47.446, abs=1e-3) ==
+        assert (pytest.approx(47.45, rel=1e-2) ==
                 value(btx_ftpz.fs.unit.condenser.distillate.flow_mol[0]))
-        assert (pytest.approx(0.8882, abs=1e-3) ==
+        assert (pytest.approx(0.8882, rel=1e-2) ==
                 value(btx_ftpz.fs.unit.condenser.
                       distillate.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.1118, abs=1e-3) ==
+        assert (pytest.approx(0.1118, rel=1e-2) ==
                 value(btx_ftpz.fs.unit.condenser.
                       distillate.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(355.642, abs=1e-3) ==
+        assert (pytest.approx(355.642, abs=1e-2) ==
                 value(btx_ftpz.fs.unit.condenser.
                       distillate.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
@@ -199,15 +199,15 @@ class TestBTXIdeal():
                       distillate.pressure[0]))
 
         # Bottoms port - btx_ftpz
-        assert (pytest.approx(52.553, abs=1e-3) ==
+        assert (pytest.approx(52.553, rel=1e-2) ==
                 value(btx_ftpz.fs.unit.reboiler.bottoms.flow_mol[0]))
-        assert (pytest.approx(0.1495, abs=1e-3) ==
+        assert (pytest.approx(0.1495, rel=1e-2) ==
                 value(btx_ftpz.fs.unit.reboiler.
                       bottoms.mole_frac_comp[0, "benzene"]))
-        assert (pytest.approx(0.8504, abs=1e-3) ==
+        assert (pytest.approx(0.8504, rel=1e-3) ==
                 value(btx_ftpz.fs.unit.reboiler.
                       bottoms.mole_frac_comp[0, "toluene"]))
-        assert (pytest.approx(377.337, abs=1e-3) ==
+        assert (pytest.approx(377.337, abs=1e-2) ==
                 value(btx_ftpz.fs.unit.reboiler.
                       bottoms.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
