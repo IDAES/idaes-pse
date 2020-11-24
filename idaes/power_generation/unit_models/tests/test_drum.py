@@ -87,7 +87,7 @@ def build_drum():
 
 @pytest.mark.unit
 def test_basic_build(build_drum):
-    """Make a turbine model and make sure it doesn't throw exception"""
+    """Make a model and make sure it doesn't throw exception"""
     m = build_drum
     assert degrees_of_freedom(m) == 5
     # Check unit config arguments

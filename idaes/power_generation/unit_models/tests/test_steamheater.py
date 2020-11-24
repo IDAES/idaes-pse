@@ -11,18 +11,20 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Downcomer model
-Main assumptions:
-* Heat is given (zero if adiabatic)
-* Calculate pressure change due to friction and gravity
-* Assume enthalpy_in == enthalpy_out + heat
+Unit operation model for a steam heater applicable to platen superheater
+and roof superheater, model main equations:
+
+* Heat is given by fire-side boiler model
+* Calculate pressure change due to friction
+* Calculate slag layer wall temperature
+* Consider a layer of metal and a layer of slag
 
 Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 """
 import pytest
 # Import Pyomo libraries
 import pyomo.environ as pyo
-from pyomo.util.check_units import assert_units_consistent
+from pyomo.environ import units as pyunits
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
@@ -32,7 +34,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
 
 from idaes.core.util.testing import get_default_solver, initialization_tester
-from idaes.power_generation.unit_models.downcomer import Downcomer
+from idaes.power_generation.unit_models.steamheater import SteamHeater
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -42,66 +44,68 @@ solver = get_default_solver()
 
 
 @pytest.fixture(scope="module")
-def build_downcomer():
+def build_unit():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = Downcomer(
-        default={
-            "property_package": m.fs.properties,
-            "has_holdup": False,
-            "has_heat_transfer": True,
-        }
-    )
+    m.fs.unit = SteamHeater(default={
+        "dynamic": False,
+        "property_package": m.fs.properties,
+        "has_holdup": True,
+        "has_heat_transfer": True,
+        "has_pressure_change": True,
+        "single_side_only": True}
+        )
     return m
 
 
 @pytest.mark.unit
-def test_basic_build(build_downcomer):
-    """Make a model and make sure it doesn't throw exception"""
-    m = build_downcomer
-    assert degrees_of_freedom(m) == 7
+def test_basic_build(build_unit):
+    """Make a steam heater model and make sure it doesn't throw exception"""
+    m = build_unit
+    assert degrees_of_freedom(m) == 11
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 8
+    assert len(m.fs.unit.config) == 10
     assert m.fs.unit.config.has_heat_transfer
     assert isinstance(m.fs.unit.heat_duty, pyo.Var)
     assert isinstance(m.fs.unit.deltaP, pyo.Var)
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
-@pytest.mark.integration
-def test_units(build_downcomer):
-    assert_units_consistent(build_downcomer)
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_initialize_unit(build_unit):
+    m = build_unit
+    # platen superheater
+    m.fs.unit.diameter_in.fix(0.035)
+    m.fs.unit.tube_thickness.fix(0.005)
+    m.fs.unit.fin_thickness.fix(0.0035)
+    m.fs.unit.slag_thickness[:].fix(0.001)
+    m.fs.unit.fin_length.fix(0.00966)
+    m.fs.unit.tube_length.fix(40.0)
+    m.fs.unit.number_tubes.fix(200.0)
+    m.fs.unit.control_volume.scaling_factor_holdup_energy = 1e-8
+    m.fs.unit.heat_fireside[:].fix(5.5e7)  # initial guess
+    hpl = iapws95.htpx(798.15*pyunits.K, 24790249.01*pyunits.Pa)
+    m.fs.unit.inlet[:].flow_mol.fix(24194.177)
+    m.fs.unit.inlet[:].enth_mol.fix(hpl)
+    m.fs.unit.inlet[:].pressure.fix(24790249.01)
+
+    state_args = {'flow_mol': 24194.177,
+                  'pressure': 24790249.01,
+                  'enth_mol': hpl}
+
+    initialization_tester(build_unit, dof=0, state_args=state_args)
 
 
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_initialize_unit(build_downcomer):
-    m = build_downcomer
-    m.fs.unit.diameter.fix(0.3)
-    m.fs.unit.number_downcomers.fix(6)  # number of downcomers
-    m.fs.unit.height.fix(40.1)
-    m.fs.unit.heat_duty[:].fix(0.0)
-
-    # NETL Baseline values
-    m.fs.unit.inlet.enth_mol.fix(24944.7)
-    m.fs.unit.inlet.flow_mol.fix(49552.8)
-    m.fs.unit.inlet.pressure.fix(12025072.9)
-
-    state_args = {'flow_mol': 49552.8,
-                  'pressure': 12025072.9,
-                  'enth_mol': 24944.7}
-    initialization_tester(build_downcomer, dof=0, state_args=state_args)
-
-
-@pytest.mark.skipif(not iapws95.iapws95_available(),
-                    reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.component
-def test_solve_unit(build_downcomer):
-    m = build_downcomer
+def test_solve_unit(build_unit):
+    m = build_unit
 
     m.fs.unit.inlet.enth_mol.fix()
     m.fs.unit.inlet.flow_mol.fix()
@@ -121,12 +125,13 @@ def test_solve_unit(build_downcomer):
                           abs=1e-3) == 0)
 
     # pressure drop
-    assert (pytest.approx(273583.120306, abs=1e-3) == pyo.value(m.fs.unit.
+    assert (pytest.approx(-282158.4020, abs=1e-3) == pyo.value(m.fs.unit.
                                                                 deltaP[0]))
     # check energy balance
-    assert (pytest.approx(pyo.value(m.fs.unit.control_volume.properties_in[0].
-                                    enth_mol), abs=1e-3)
-            == pyo.value(m.fs.unit.control_volume.properties_out[0].enth_mol))
+    assert (pytest.approx(
+        pyo.value(m.fs.unit.control_volume.properties_in[0].enth_mol
+                  - m.fs.unit.control_volume.properties_out[0].enth_mol),
+        abs=1e-3) == -2273.2742)
 
-    assert (pytest.approx(580.83299, abs=1e-3) ==
+    assert (pytest.approx(835.7582, abs=1e-3) ==
             pyo.value(m.fs.unit.control_volume.properties_out[0].temperature))
