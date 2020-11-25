@@ -582,7 +582,7 @@ see property package for documentation.}"""))
                                        expr)
                     port.add(expr, k)
                 else:
-                    raise PropertyNotSupportedError(
+                    raise PropertyPackageError(
                         "Unrecognized flow state variable encountered "
                         "while building ports for the tray. Please follow "
                         "the naming convention outlined in the documentation "

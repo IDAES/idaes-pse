@@ -31,6 +31,7 @@ from idaes.generic_models.unit_models.distillation.condenser \
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         useDefault)
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.testing import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -163,7 +164,11 @@ see property package for documentation.}"""))
         super(TrayColumnData, self).build()
 
         # Create set for constructing indexed trays
-        self.tray_index = RangeSet(1, self.config.number_of_trays)
+        if self.config.number_of_trays is not None:
+            self.tray_index = RangeSet(1, self.config.number_of_trays)
+        else:
+            raise ConfigurationError("The config argument number_of_trays "
+                                     "needs to specified and cannot be None.")
 
         # Add trays
 
