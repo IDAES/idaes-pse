@@ -232,7 +232,7 @@ class TestBTXIdeal(object):
                 value(btx_ftpz.fs.unit.distillate.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-33711.313, abs=1e-3) ==
+        assert (pytest.approx(-33711.313, rel=1e-4) ==
                 value(btx_ftpz.fs.unit.heat_duty[0]))
 
         # Reflux port
@@ -256,7 +256,7 @@ class TestBTXIdeal(object):
                 value(btx_fctp.fs.unit.distillate.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-33711.295, abs=1e-1) ==
+        assert (pytest.approx(-33711.295, rel=1e-4) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
     @pytest.mark.initialize
