@@ -63,7 +63,7 @@ this must be False."""))
         description="Number of trays in the column",
         doc="""Indicates the number of trays to be constructed.
 **default** - None.
-**Valid values:**{
+**Valid values:** {
 Must be integer number.}"""))
     CONFIG.declare("feed_tray_location", ConfigValue(
         default=None,
@@ -71,7 +71,7 @@ Must be integer number.}"""))
         description="Feed tray location in the column",
         doc="""Indicates the number of trays to be constructed.
 **default** - None.
-**Valid values:**{
+**Valid values:** {
 Must be integer number.}"""))
     CONFIG.declare("condenser_type", ConfigValue(
         default=CondenserType.totalCondenser,
