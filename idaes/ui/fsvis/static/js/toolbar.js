@@ -29,10 +29,9 @@ export class Toolbar {
 
     setupToolbar() {
         // Grab the model information from the div tag so that we can use it in our ajax calls
-        var data_model = $("#model").data("model");
-        var model_id = data_model.model.id;
-        var url = "/fs?id=".concat(model_id);
-        var model_server_url = $("#model-server-url").data("modelurl");
+        let model_id = $("#idaes-fs-name").data("flowsheetId");
+        let url = `/fs?id=${ model_id }`;
+        let model_server_url = $("#model-server-url").data("modelurl");
 
         var toolbar = new joint.ui.Toolbar({
             autoToggle: true,
