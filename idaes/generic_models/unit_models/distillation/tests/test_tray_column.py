@@ -66,7 +66,6 @@ def test_config():
     assert hasattr(m.fs.unit, "vap_stream")
 
 
-@pytest.mark.unit
 class TestBTXIdeal():
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
