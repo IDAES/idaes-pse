@@ -45,7 +45,9 @@ class DataStore(ABC):
         if isinstance(dest, str):
             return FileDataStore(Path(dest))
         elif isinstance(dest, Path):
-            return FileDataStore(Path)
+            return FileDataStore(dest)
+        elif dest is None:
+            return MemoryDataStore()
         else:
             raise ValueError(f"Unknown destination '{dest}' for type '{type(dest)}'")
 

@@ -53,9 +53,8 @@ export class Paper {
     }
 
     setupEvents() {
-        var data_model = $("#model").data("model");
-        var model_id = data_model.model.id;
-        var url = "/fs?id=".concat(model_id);
+        let model_id = $("#idaes-fs-name").data("flowsheetId");
+        let url = "/fs?id=".concat(model_id);
 
         // /images/icons rotate 90 degrees on right click. Replaces browser 
         // context menu

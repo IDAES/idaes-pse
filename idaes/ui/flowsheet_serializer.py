@@ -19,8 +19,6 @@ from pandas import DataFrame
 
 import idaes.logger
 
-from idaes.core import UnitModelBlockData
-from idaes.core.util.tables import stream_states_dict
 from idaes.ui.link_position_mapping import link_position_mapping
 from idaes.ui.icon_mapping import icon_mapping
 from pyomo.environ import Block, value
@@ -134,6 +132,7 @@ class FlowsheetSerializer:
             self._known_endpoints.add(component.dest.parent_block())
 
     def _identify_unit_models(self):
+        from idaes.core import UnitModelBlockData  # avoid circular import
         # Identify the unit models and ports and store them
         for component in self.flowsheet.component_objects(Block, descend_into=True):
             if isinstance(component, UnitModelBlockData):
@@ -149,7 +148,7 @@ class FlowsheetSerializer:
 
     def _construct_stream_labels(self):
         # Construct the stream labels
-
+        from idaes.core.util.tables import stream_states_dict  # deferred to avoid circ. import
         # We might have this information from generating self.serialized_components but I (Makayla) don't
         # know how that connects to the stream names so this will be left alone for now
         for stream_name, stream_value in stream_states_dict(self.arcs).items():

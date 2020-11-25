@@ -35,82 +35,196 @@
 
 import http.server
 import json
-import requests
+from pathlib import Path
+import socket
 import threading
+from urllib.parse import urlparse
 
-from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
-from idaes.ui.flowsheet_serializer import FlowsheetSerializer
-from idaes.ui.fsvis.app import find_free_port
-from idaes.ui.fsvis import persist
+from idaes.logger import getLogger
+# from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
+from . import persist
+from ..flowsheet_serializer import FlowsheetSerializer
+
+_log = getLogger(__name__)
+
+# Directories
+_this_dir = Path(__file__).parent.absolute()
+_static_dir = _this_dir / "static"
+_template_dir = _this_dir / "templates"
 
 
-class ServerVariablesNotSetError(Exception):
-    pass
+class FlowsheetServer(http.server.HTTPServer):
+    """A simple HTTP server that runs in its own thread.
 
-
-class ModelServerHandler(http.server.BaseHTTPRequestHandler):
-    """This is the server handler for the model server. This takes care of the communication of the model server
+    This server is used for *all* models for a given process, so every request needs to contain
+    the ID of the model that should be used in that transaction.
     """
-    flowsheet, name = None, None
 
-    # def do_OPTIONS(self):
-    #     self.send_response(200, "ok")
-    #     self.send_header("Access-Control-Allow-Origin", "*")
-    #     self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-    #     self.send_header("Access-Control-Allow-Headers", "X-Requested-With")
-    #     self.end_headers()
+    def __init__(self, port=None):
+        """Create HTTP server
+        """
+        self._port = port or find_free_port()
+        print(f"@@ found free port {self._port}")
+        super().__init__(("127.0.0.1", self._port), FlowsheetServerHandler)
+        self._dsm = persist.DataStoreManager()
+        self._flowsheets = {}
+        self._fss = FlowsheetSerializer()
+
+    @property
+    def port(self):
+        return self._port
+
+    def start(self):
+        """Start the server, which will spawn a thread.
+        """
+        self._thr = threading.Thread(target=self._run)
+        self._thr.setDaemon(True)
+        self._thr.start()
+
+    def _run(self):
+        """Run in a separate thread.
+        """
+        _log.info(f"Serve forever on localhost:{self._port}")
+        try:
+            self.serve_forever()
+        except Exception:
+            _log.info("Shutting down server")
+            self.shutdown()
+
+    def add_flowsheet(self, id_, flowsheet, save_as):
+        """Add a flowsheet, and also the method of saving it.
+        """
+        self._flowsheets[id_] = flowsheet
+        store = persist.DataStore.create(save_as)
+        self._dsm.add(id_, store)
+        store.save(flowsheet)
+
+    def save_flowsheet_data(self, id_, data):
+        """Save the flowsheet data to the appropriate store.
+        """
+        self._dsm.save(id_, data)
+
+    def get_flowsheet_obj(self, id_):
+        """Get a flowsheet with the given ID.
+        """
+        return self._flowsheets[id_]
+
+    def serialize_flowsheet(self, flowsheet, id_):
+        try:
+            result = self._fss.serialize(flowsheet, id_)
+        except (AttributeError, KeyError) as err:
+            raise ValueError(f"Error serializing flowsheet: {err}")
+        return result
+
+
+class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
+    """Handle requests from the IDAES flowsheet visualization (IFV) web page.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def do_GET(self):
         """Get a model from the app.
         """
-        value = json.dumps(self.flowsheet).encode(encoding="utf-8")
-        self.send_response(200)
-        #self.send_header("Access-Control-Allow-Origin", "*")
+        u, id_ = self._parse_flowsheet_url(self.path)
+        _log.debug(f"do_GET: path={self.path} id=={id_}")
+        if u.path == "/app":
+            if id_ is None:
+                self.send_error(500, message="Query parameter 'id' is required for '/app'")
+            else:
+                self._get_app(u, id_)
+        elif u.path == "/fs":
+            if id_ is None:
+                self.send_error(500, message="Query parameter 'id' is required for '/fs'")
+            else:
+                self._get_fs(u, id_)
+        else:
+            # Try to serve a file
+            self.directory = _static_dir  # keep here: would be overwritten if set earlier
+            super().do_GET()
+
+    def _parse_flowsheet_url(self, path):
+        u, id_ = urlparse(self.path), None
+        if u.query:
+            queries = dict([q.split("=") for q in u.query.split("&")])
+            id_ = queries.get("id", None)
+        return u, id_
+
+    def do_PUT(self):
+        """Receive an updated flowsheet from the web app.
+        """
+        u, id_ = self._parse_flowsheet_url(self.path)
+        _log.debug(f"do_PUT: path={self.path} query={u.query}")
+        if u.path == "/fs":
+            if id_ is None:
+                self.send_error(500, message="Query parameter 'id' is required for '/fs'")
+            else:
+                self._put_fs(u, id_)
+
+    def _get_app(self, url, id_):
+        p = Path(_template_dir / "index.html")
+        with open(p, "r") as fp:
+            s = fp.read()
+            page = s.format(flowsheet_id=id_)
+        self._write_html(200, page)
+
+    def _get_fs(self, url, id_):
+        try:
+            flowsheet = self.server.get_flowsheet_obj(id_)
+        except KeyError:
+            self._bad_id_error(id_)
+            return
+        try:
+            flowsheet_json = self.server.serialize_flowsheet(flowsheet, id_)
+        except ValueError as err:
+            self.send_error(500, message="Serialization error", explain=str(err))
+        else:
+            self._write_json(200, flowsheet_json)
+
+    def _put_fs(self, url, id_):
+        # read and parse flowsheet sent from application
+        self.server.rfile.read()
+        app_flowsheet = json.loads(utf8_decode(bytes))
+        # save application flowsheet
+        self.server.save_flowsheet_data(app_flowsheet)
+        self._write_json(200, {"message": "Success"})
+
+    def _no_id_error(self):
+        self._write_json(404, {"message": "Identifier missing from request"})
+
+    def _bad_id_error(self, id_):
+        self._write_json(404, {"message": "No flowsheet found for identifier", "id": id_})
+
+    def _write_json(self, code, data):
+        str_json = json.dumps(data)
+        value = utf8_encode(str_json)
+        self.send_response(code)
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        #self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Content-type", "application/json")
+        self.send_header("Content-length", str(len(value)))
         self.end_headers()
         self.wfile.write(value)
-        #
-        # if None in [self.flowsheet, self.name, self.flask_url]:
-        #     raise ServerVariablesNotSetError
-        #
-        # serialized_flowsheet = FlowsheetSerializer().serialize(self.flowsheet, self.name)
-        # r = requests.get(self.flask_url)
-        #
-        # diff_model, model_json = compare_models(r.json(), serialized_flowsheet, keep_old_model=True)
-        # new_flowsheet = model_jointjs_conversion(diff_model, model_json)
-        #
-        # # Need to set the response and the headers or else you get CORS errors
-        # self.send_response(200)
-        # self.send_header("Access-Control-Allow-Origin", "*")
-        # self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        # self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        # self.send_header("Content-type", "application/json")
-        # http.server.SimpleHTTPRequestHandler.end_headers(self)
-        #
-        # self.wfile.write(json.dumps(new_flowsheet).encode(encoding="utf_8"))
+
+    def _write_html(self, code, page):
+        value = utf8_encode(page)
+        self.send_response(code)
+        self.send_header("Content-type", "text/html")
+        self.send_header("Content-length", str(len(value)))
+        self.end_headers()
+        self.wfile.write(value)
 
 
-class ModelServer(threading.Thread):
-    def __init__(self, flowsheet, name, port=0):
-        self._host = "127.0.0.1"
-        if port == 0:
-            # Find a free port on the host if there isn't an existing port
-            self._port = find_free_port(host)
-        else:
-            self._port = port
-        self._fs, self._name = flowsheet, name
-        super().__init__()
+def utf8_encode(s: str):
+    return s.encode(encoding="utf-8")
 
-    @property
-    def addr(self):
-        return self._host, self._port
+def utf8_decode(b: bytes):
+    return b.decode(encoding="utf-8")
 
-    def run(self):
-        ModelServerHandler.flowsheet, ModelServerHandler.name = self._fs, self._name
-        with http.server.HTTPServer((self._host, self._port), ModelServerHandler) as httpd:
-            try:
-                httpd.serve_forever()
-            except Exception:
-                httpd.shutdown()
+def find_free_port():
+    import time
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("127.0.0.1", 0))
+    port = s.getsockname()[1]
+    s.close()
+    time.sleep(1)  # wait for socket cleanup!!!
+    return port

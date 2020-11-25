@@ -6,11 +6,25 @@ function renderModel(model, paper) {
     paper.graph.fromJSON(model);
 }
 
+function getFlowsheet(flowsheetId) {
+    const url = `/fs?id=${ flowsheetId }`;
+    return $.ajax({
+        type: 'GET',
+        url: url,
+        datatype: 'json',
+        error: (error) => { console.log(error) }
+    })
+}
+
+// =====================
+//    Main function
+// =====================
 $( document ).ready(function() {
     // Get the model from the div tag (see the html file for an explanation)
-    var data_model = $("#model").data("model");
-
-    var paper = new Paper();
-    
-    renderModel(data_model, paper);
+    let flowsheetId = $("#idaes-fs-name").data("flowsheetId");
+    let paper = new Paper();
+    getFlowsheet(flowsheetId)
+        .done( (model) => {
+            renderModel(model, paper);
+        });
 });
