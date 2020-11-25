@@ -10,11 +10,6 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-
-
-# See model_server.py for more information about this module's role in the visualizer
-
-
 """
 Flask app for flowsheet viewer server.
 
@@ -37,28 +32,31 @@ URL but provide JSON content. See the tests for programmatic examples using the
 from multiprocessing import Process
 import json
 import os
+import requests
 import threading
 import socket
 
 # third party
-from flask import Flask, jsonify, request, render_template#, send_static_file
+from flask import Flask, jsonify, request, render_template  # , send_static_file
 from flask_cors import CORS, cross_origin
 from werkzeug.serving import make_server
 
 # local
-from idaes.ui.fsvis.server import DataStorage
+from idaes.ui.fsvis.persist import DataStoreManager
 
 # globals
-app = Flask(__name__, static_url_path='', 
-        static_folder='static', 
-        template_folder='templates')
+app = Flask(
+    __name__, static_url_path="", static_folder="static", template_folder="templates"
+)
 cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
-db = DataStorage()
+app.config["CORS_HEADERS"] = "Content-Type"
+
+# -----------------
+# Exception classes
+# -----------------
 
 
-# Custom exceptions (handled by Flask error handlers)
-class LookupError(Exception):
+class IdLookupError(Exception):
     def __init__(self, id_):
         self.id_ = id_
         super().__init__()
@@ -76,9 +74,10 @@ class NoModelServerUrlError(Exception):
     pass
 
 
-# classes/functions
-class ServerThread(threading.Thread):
+# -----------------
 
+
+class ServerThread(threading.Thread):
     def __init__(self, app, host, pport):
         threading.Thread.__init__(self)
         self.srv = make_server(host, pport, app)
@@ -92,6 +91,24 @@ class ServerThread(threading.Thread):
         self.srv.shutdown()
 
 
+def find_free_port(host):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((host, 0))
+    return s.getsockname()[1]
+
+
+class ModelServerManager:
+
+    def __init__(self):
+        self.data = {}
+
+    def add(self, name, info):
+        self.data[name] = info
+
+    def get(self, name):
+        return self.data[name]
+
+
 class App:
     """Singleton to run flask server as a forked process.
     """
@@ -100,12 +117,14 @@ class App:
     class __App:
         def __init__(self, **kwargs):
             self._server, self.host, self.port = None, None, None
+            self.data_storage_manager = DataStoreManager()
+            self.model_server_manager = ModelServerManager()
             self.start(**kwargs)
 
         def is_running(self) -> bool:
             return self._server and self._server.is_alive()
 
-        def start(self, host: str = '127.0.0.1'):
+        def start(self, host: str = "127.0.0.1"):
             """Start server.
 
             Does nothing if server is already running.
@@ -136,80 +155,87 @@ class App:
         return getattr(self.instance, name)
 
 
-def find_free_port(host):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((host, 0))
-    return s.getsockname()[1]
-
-
-def save(data, id_):
-    path = os.path.expandvars(os.path.join(os.path.expanduser("~"), ".idaes", "viz"))
-    if not os.path.exists(path):
-        os.makedirs(path)
-    file_path = os.path.join(path, f"{id_}.viz")
-    with open(file_path, "w") as viz_file:
-        json.dump(data, viz_file)
-
-
-def update(request, id_):
-    data = request.get_json()
-    if data is None:
-        raise NoDataError()
-    db.update(id_, data)
-    save_header = request.headers.get("Source", None)
-    if save_header == "save_button":
-        save(data, id_)
-    return db.fetch(id_)
-
-
-def fetch(request, id_):
-    data = db.fetch(id_)
-    if data is None:
-        raise LookupError(id_)
-    return data
-
-
+# ------------
 # Flask routes
+# ------------
+
+
 @app.route("/fs", methods=["GET", "POST"])
 @cross_origin()
 def flowsheet():
     """Store/retrieve flowsheet JSON
     """
-    id_ = request.args.get("id", None)
-    if id_ is None:
+    db = App().data_storage_manager
+    try:
+        id_ = request.args["id"]
+    except KeyError:
         raise NoIdError()
     if request.method == "POST":
-        data = update(request, id_)
-        response = jsonify(data)
+        # TODO: 1) Get model from model_server
+        # TODO: 2) Merge model with layout in 'data_in'
+        # TODO: 3) Save merged data to the db
+        # TODO: 4) Return merged data to caller
+        data_in = request.get_json()
+        data_out = db.update(id_, data_in)
+        response = jsonify(data_out)
         response.headers.add("Access-Control-Allow-Origin", "*")
         return response
 
     elif request.method == "GET":
-        data = fetch(request, id_)
-        response = jsonify(data)
-        response.headers.add("Access-Control-Allow-Origin", "*")
+        try:
+            id_ = request.args["id"]
+        except KeyError:
+            raise NoIdError()
+        try:
+            host, port = App().model_server_manager.get(id_)
+        except KeyError:
+            raise IdLookupError(id_)
+        model = get_model(host, port)
+        response = jsonify(model)
+        #response.headers.add("Access-Control-Allow-Origin", "*")
         return response
+
+
+def get_model(host, port):
+    r = requests.get(f"http://{host}:{port}")
+    return r.text
 
 
 @app.route("/app", methods=["GET", "POST"])
 @cross_origin()
 def display():
-    """Display the web app."""
-    id_ = request.args.get("id", None)
-    model_server_url_ = request.args.get("modelurl", None)
-    if id_ is None:
+    """Display the web app.
+    """
+    db = App().data_storage_manager
+    try:
+        id_ = request.args["id"]
+    except KeyError:
         raise NoIdError()
-    if model_server_url_ is None:
-        raise NoModelServerUrlError()
-    if request.method == "POST":
-        data = update(request, id_)
-    elif request.method == "GET":
-        data = fetch(request, id_)
-    return render_template('index.html', model=data, modelurl=model_server_url_)
+    # try:
+    #     model_server_url_ = request.args["modelurl"]
+    # except KeyError:
+    #     raise NoModelServerUrlError()
+    # if request.method == "POST":
+    #     data_in = request.get_json()
+    #     #data = db.update(id_, data_in)
+    if request.method == "GET":
+        try:
+            host, port = App().model_server_manager.get(id_)
+        except KeyError:
+            raise IdLookupError(id_)
+        model = get_model(host, port)
+#        data = db.load(id_)
+    else:
+        raise RuntimeError("Unexpected HTTP method")
+    return render_template("index.html", model=model)
 
 
+# --------------------
 # Flask error handlers
-@app.errorhandler(LookupError)
+# --------------------
+
+
+@app.errorhandler(IdLookupError)
 def lookup_exception_handler(error):
     return f"Flowsheet id='{error.id_}' not found", 404
 
