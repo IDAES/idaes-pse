@@ -20,85 +20,103 @@ from slugify import slugify
 import time
 import webbrowser
 
-from idaes.ui.fsvis.app import App as fsvis_server
-from idaes.ui.fsvis.app import find_free_port
-from idaes.ui.fsvis.model_server import ModelServer
-from idaes.ui.flowsheet_serializer import FlowsheetSerializer
+from .app import App, find_free_port
+from .persist import DataStore, MemoryDataStore
+from .model_server import ModelServer
+from ..flowsheet_serializer import FlowsheetSerializer
+
+_log = logging.getLogger(__name__)
 
 
-# See model_server.py for more information about this module's role in the visualizer
-
-
-# serialize flowsheet and launch the app
-def visualize(flowsheet, name, browser=True, overwrite=False, model_server_host='127.0.0.1'):
-    """Visualizes the flowsheet, assigning it to the given name. 
+def visualize(
+    flowsheet,
+    name: str = "flowsheet",
+    save_as=None,
+    browser: bool = True
+):
+    """Visualizes the flowsheet in a web application.
     
-    Attempts to
-    open a browser window to display the visualization app, as well as
+    Opens a browser window to display the visualization app, as well as
     directly showing the URL in case the browser fails to open.
 
-    Usage example:
-    
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(...)
-    ...
-    visualize(m.fs, "draftview")
-        
-    Args: 
-        flowsheet: An IDAES flowsheetBlock to be visualized.
-        name: A name string to assign to the visualization. This name will be
-            attached to the visualization instance as long as the visualization app
-            server stays running (e.g. until the parent python kernel is shut down)
+    Args:
+        flowsheet: IDAES flowsheet to visualize
+        name: Name of flowsheet to display as the title of the visualization
+        save_as: If a string or path then save to a file.
+        browser: If true, open a browser
 
-    Returns:   
+    Returns:
         None.
 
     Raises:
-        None.#TODO
+        ValueError if the data storage at 'save_as' can't be opened
     """
-    # Start the model server that contains a reference to the model so that the flask 
-    # server can ping it when refresh is called in order to get the updated model
-    server = fsvis_server()
+    # Get singleton for the web app
+    web_app = App()
 
-    url = f"http://{server.host}:{server.port}/app"
-
-    model_server = ModelServer.getInstance(flowsheet, name, f"http://{server.host}:{server.port}/fs?id={name}", model_server_host)
-
-    model_server_url = f"http://{model_server_host}:{model_server.port}"
-
-    # Check if the {name}.viz file exists and overwrite is not true. If it was True
-    # then we want to serialize the flowsheet and reset to the original
-    file_path = os.path.expandvars(os.path.join(os.path.expanduser("~"), ".idaes", "viz", f"{name}.viz"))
-    if os.path.isfile(file_path) and not overwrite:
-        print(f"Model {name} visualization exists. Reloading the visualization.")
-        print("If you don't want to load the existing visualization specify overwrite=True "
-              "when calling visualize")
-        with open(file_path, "r") as viz_file:
-            serialized_flowsheet = json.load(viz_file)
+    # Add data store
+    if save_as is None:
+        store = MemoryDataStore()
     else:
-        serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
+        try:
+            store = DataStore.create(dest=save_as)
+        except ValueError as err:
+            raise ValueError(f"Cannot create new data store: {err}")
+    web_app.data_storage_manager.add(name, store)
 
-    repeat_until_connection_available(requests.post, url, json=serialized_flowsheet, 
-                                      params={'id': slugify(name), "modelurl": model_server_url})
+    # Start model server, and add its address to flask
+    model_server = ModelServer(flowsheet, name)
+    model_server.start()
+    web_app.model_server_manager.add(name, model_server.addr)
+
+    # Open a browser window for the UI
+    url = f"http://{web_app.host}:{web_app.port}/app"
     if browser:
-        success = webbrowser.open(url + f"?id={name}&modelurl={model_server_url}")
-        print(f'Opened in browser window: {success}')
-        print(f'{url}?id={name}&modelurl={model_server_url}')
-
-    return server
+        success = webbrowser.open(url + f"?id={name}")
+        _log.debug(f"Opened in browser window: {success}")
 
 
-# possibly should be changed to _repeat_until_connection_available()
-def repeat_until_connection_available(f, *args, retries=127, **kwargs):
+
+    # # Check if the {name}.viz file exists and overwrite is not true. If it was True
+    # # then we want to serialize the flowsheet and reset to the original
+    # file_path = os.path.expandvars(
+    #     os.path.join(os.path.expanduser("~"), ".idaes", "viz", f"{name}.viz")
+    # )
+    # if os.path.isfile(file_path) and not overwrite:
+    #     print(f"Model {name} visualization exists. Reloading the visualization.")
+    #     print(
+    #         "If you don't want to load the existing visualization specify overwrite=True "
+    #         "when calling visualize"
+    #     )
+    #     with open(file_path, "r") as viz_file:
+    #         serialized_flowsheet = json.load(viz_file)
+    # else:
+    #     serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
+    # serialized_flowsheet = FlowsheetSerializer().serialize(flowsheet, name)
+    #
+    # # Set up the server URL
+    # url = f"http://{server.host}:{server.port}/app"
+    # model_server = ModelServer.getInstance(
+    #     flowsheet,
+    #     name,
+    #     f"http://{server.host}:{server.port}/fs?id={name}",
+    #     model_server_host,
+    # )
+    # model_server_url = f"http://{model_server_host}:{model_server.port}"
+    # try_to_connect(
+    #     requests.post,
+    #     url,
+    #     json=serialized_flowsheet,
+    #     params={"id": slugify(name), "modelurl": model_server_url},
+    # )
+
+
+def try_to_connect(f, *args, retries=127, **kwargs):
     for i in range(retries):
         try:
-            print(f'attempt {i} of {retries}')
+            _log.debug(f"attempt {i} of {retries}")
             return f(*args, **kwargs)
         except ConnectionError as e:
             time.sleep(0.1)
-            print(f'connection error: attempt {i}; {e}')
-            continue # consider logging
-            
-    # raise ConnectionRefusedError?? how
-    # or maybe just print to debug and stop?
-        
+            _log.info(f"connection error: attempt {i}; {e}")
+            continue

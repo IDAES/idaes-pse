@@ -41,96 +41,75 @@ import threading
 from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
 from idaes.ui.flowsheet_serializer import FlowsheetSerializer
 from idaes.ui.fsvis.app import find_free_port
-from idaes.ui.fsvis.server import DataStorage
+from idaes.ui.fsvis import persist
 
 
 class ServerVariablesNotSetError(Exception):
     pass
 
 
-class SimpleModelServerHandler(http.server.BaseHTTPRequestHandler):
+class ModelServerHandler(http.server.BaseHTTPRequestHandler):
+    """This is the server handler for the model server. This takes care of the communication of the model server
     """
-    This is the server handler for the model server. This takes care of the communcation of the model server
-    """
-    flowsheet = None
-    name = None
-    flask_url = None
+    flowsheet, name = None, None
 
-    # Overrides the BaseHTTPRequestHandler's do_OPTIONS to allow cross origin requests
-    def do_OPTIONS(self):           
-        self.send_response(200, "ok")       
-        self.send_header("Access-Control-Allow-Origin", "*")                
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "X-Requested-With") 
+    # def do_OPTIONS(self):
+    #     self.send_response(200, "ok")
+    #     self.send_header("Access-Control-Allow-Origin", "*")
+    #     self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+    #     self.send_header("Access-Control-Allow-Headers", "X-Requested-With")
+    #     self.end_headers()
 
-    # Overrides the BaseHTTPRequestHandler's do_GET in order to serve the new serialized model
     def do_GET(self):
-        if None in [self.flowsheet, self.name, self.flask_url]:
-            raise ServerVariablesNotSetError
-
-        serialized_flowsheet = FlowsheetSerializer().serialize(self.flowsheet, self.name)
-        r = requests.get(self.flask_url)
-        
-        diff_model, model_json = compare_models(r.json(), serialized_flowsheet, keep_old_model=True)
-        new_flowsheet = model_jointjs_conversion(diff_model, model_json)
-
-        # Need to set the response and the headers or else you get CORS errors
+        """Get a model from the app.
+        """
+        value = json.dumps(self.flowsheet).encode(encoding="utf-8")
         self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        #self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        #self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Content-type", "application/json")
-        http.server.SimpleHTTPRequestHandler.end_headers(self)
+        self.end_headers()
+        self.wfile.write(value)
+        #
+        # if None in [self.flowsheet, self.name, self.flask_url]:
+        #     raise ServerVariablesNotSetError
+        #
+        # serialized_flowsheet = FlowsheetSerializer().serialize(self.flowsheet, self.name)
+        # r = requests.get(self.flask_url)
+        #
+        # diff_model, model_json = compare_models(r.json(), serialized_flowsheet, keep_old_model=True)
+        # new_flowsheet = model_jointjs_conversion(diff_model, model_json)
+        #
+        # # Need to set the response and the headers or else you get CORS errors
+        # self.send_response(200)
+        # self.send_header("Access-Control-Allow-Origin", "*")
+        # self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        # self.send_header("Content-type", "application/json")
+        # http.server.SimpleHTTPRequestHandler.end_headers(self)
+        #
+        # self.wfile.write(json.dumps(new_flowsheet).encode(encoding="utf_8"))
 
-        self.wfile.write(json.dumps(new_flowsheet).encode(encoding="utf_8"))
 
-
-class ModelServer():
-    """Singleton to run a server with a reference to the IDAES model in a thread.
-    """
-    __instance = None
-
-    @staticmethod
-    def getInstance(flowsheet, name, flask_url, host, port=0):
-       """ Static access method. """
-       if ModelServer.__instance == None:
-          ModelServer(flowsheet, name, flask_url, host, port)
-       return ModelServer.__instance
-
-    def __init__(self, flowsheet, name, flask_url, host, port=0):
-        """ Virtually private constructor. """
-        if ModelServer.__instance != None:
-            return
-        else:
-            ModelServer.__instance = self
-            self.port = port
-            self._start_model_server(flowsheet, name, flask_url, host)
-
-    def _start_model_server_thread(self, flowsheet, name, flask_url, host):
-        daemon = threading.Thread(name='daemon_model_server',
-                                  target=self._setup_model_server,
-                                  args=(flowsheet, name, flask_url, host))
-        daemon.setDaemon(True) # Set as a daemon so it will be killed once the main thread is dead.
-        daemon.start()
-
-    # Start a daemon thread for the model server
-
-    def _start_model_server(self, flowsheet, name, flask_url, host):
-        if self.port == 0:
+class ModelServer(threading.Thread):
+    def __init__(self, flowsheet, name, port=0):
+        self._host = "127.0.0.1"
+        if port == 0:
             # Find a free port on the host if there isn't an existing port
-            self.port = find_free_port(host)
+            self._port = find_free_port(host)
+        else:
+            self._port = port
+        self._fs, self._name = flowsheet, name
+        super().__init__()
 
-        # Create a thread and start the server in the thread
-        self._start_model_server_thread(flowsheet, name, flask_url, host)
-        
+    @property
+    def addr(self):
+        return self._host, self._port
 
-    # Set up a http server for serving the model to the flask server refresh button
-    def _setup_model_server(self, flowsheet, name, flask_url, host):
-        SimpleModelServerHandler.flowsheet = flowsheet
-        SimpleModelServerHandler.name = name
-        SimpleModelServerHandler.flask_url = flask_url
-
-        with http.server.HTTPServer((host, self.port), SimpleModelServerHandler) as httpd:
+    def run(self):
+        ModelServerHandler.flowsheet, ModelServerHandler.name = self._fs, self._name
+        with http.server.HTTPServer((self._host, self._port), ModelServerHandler) as httpd:
             try:
                 httpd.serve_forever()
             except Exception:
