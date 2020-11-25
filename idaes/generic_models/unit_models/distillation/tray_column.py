@@ -34,7 +34,6 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.testing import get_default_solver
-from idaes.core.util.model_statistics import degrees_of_freedom
 
 _log = idaeslog.getLogger(__name__)
 
@@ -283,7 +282,7 @@ see property package for documentation.}"""))
 
         if solver is None:
             init_log.warning("Solver not provided. Default solver(ipopt) "
-                             " being used for initialization.")
+                             "being used for initialization.")
             solver = get_default_solver()
 
         feed_flags = self.tray[self.config.feed_tray_location].initialize()
@@ -311,7 +310,7 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
+        init_log.info(
             "Column initialization status {}.".format(idaeslog.condition(res))
         )
 
