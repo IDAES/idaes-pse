@@ -85,7 +85,7 @@ Before continuing, save the notebook ('File -> Save' or Ctrl-S) with an appropri
 When you ran the cell above, it created a new blank cell for you to continue editing. We will use this cell to visualize
 our initialized (but not solved) model. In the new cell, type in and run (shift-enter) the following code::
 
-    m.fs.visualize("Hello, World")
+    m.fs.visualize("Hello, World", save_as="hello_world.json")
 
 This will produce some diagnostic output, but more importantly it should create a new browser tab or window with the
 IFV displaying the flowsheet. This will look similar to this:
@@ -95,7 +95,9 @@ IFV displaying the flowsheet. This will look similar to this:
 
 You'll notice that the layout is not too great, and in fact if you look closely you'll see that the components
 have just been placed in a diagonal. You can try rearranging the diagram with the mouse (the components can all
-be moved), and for more details on the available functions, see the next section.
+be moved), and for more details on the available functions, see the next section. By default the IFV will auto-save
+your changes in the layout to the destination that you passed to "save_as", in this case the file
+"hello_world.json", in the current directory.
 
 .. TODO Tell user how to see values on the unit model and streams
 
@@ -109,7 +111,8 @@ the following code::
 Since this is such a simple optimization problem, the solver should finish very quickly with, at the bottom
 of its diagnostic output, the message ``EXIT: Optimal Solution Found``.
 
-Now go back to your IFV window and click on "Refresh Graph".
+Now go back to your IFV window and click on "Refresh Graph". You should see updated values reflecting the
+parameter values from the solution.
 
 .. TODO Point out how the values have changed to reflect solved model
 
