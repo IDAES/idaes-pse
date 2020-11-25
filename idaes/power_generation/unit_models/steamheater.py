@@ -227,10 +227,6 @@ see property package for documentation.}"""))
                 initialize=0.004,
                 doc="Thickness of fin")
 
-        # Half of fin thickness
-        @self.Expression(doc="Half of fin thickness")
-        def thk_fin_half(b):
-            return 0.5*b.fin_thickness
         # Length of fin
         self.fin_length = Var(
                 initialize=0.005,
@@ -255,13 +251,13 @@ see property package for documentation.}"""))
 
         @self.Expression(doc="Angle at joint of tube and fin")
         def alpha_tube(b):
-            return asin(b.thk_fin_half/b.radius_out)
+            return asin(0.5*b.fin_thickness/b.radius_out)
 
         @self.Expression(self.flowsheet().config.time,
                          doc="Angle at joint of tube "
                          "and fin at outside slag layer")
         def alpha_slag(b, t):
-            return asin((b.thk_fin_half + b.slag_thickness[t]) /
+            return asin((0.5*b.fin_thickness + b.slag_thickness[t]) /
                         (b.radius_out + b.slag_thickness[t]))
 
         @self.Expression(doc="Perimeter of interface between slag and tube")
@@ -321,9 +317,8 @@ see property package for documentation.}"""))
                 mutable=True,
                 doc='Thermal conductivity of tube metal')
         # Thermal conductivity of slag
-        self.therm_cond_slag = Param(
+        self.therm_cond_slag = Var(
                 initialize=1.3,
-                mutable=True,
                 doc='Thermal conductivity of slag')
         # Heat capacity of metal
         self.cp_metal = Param(

@@ -24,7 +24,7 @@ Main Assumptions:
 
 The model has two inlets:
 
-* primary air inlet: flow rate and composition either provided by user
+* primary air inlet: PA, flow rate and composition either provided by user
   or calculated by model
 * secondary air inlet: SA, flow rate and composition calculated by the model
 * primary_air_moist: primary air plus vaporized moisture (after mill)
@@ -43,7 +43,8 @@ Notes:
 2. PA to raw coal flow rate ratio can be specified by a flowsheet constraint
 3. Fraction of coal moisture vaporized in mill should be consistent with
    the surrogate model (typically 0.6)
-4. Moisture mass fration in raw coal is a user input and should be consistent with the values used to train the surrogate model
+4. Moisture mass fration in raw coal is a user input and
+ should be consistent with the values used to train the surrogate model
 
 
 Surrogate models need to be provided by the user:
@@ -60,7 +61,7 @@ The surrogate models are typically a function of:
 
 * raw coal mass flow rate,
 * moisture mass fraction of raw coal,
-* overall Stoichiometric ratio,
+* overall stoichiometric ratio,
 * lower furnace Stoichiometric ratio,
 * Secondary air temperature
 
@@ -93,7 +94,7 @@ __version__ = "1.0.0"
 @declare_process_block_class("BoilerFireside")
 class BoilerFiresideData(UnitModelBlockData):
     '''
-Boiler fire-side surrogate model with enfored perfect mass and energy balance
+Boiler fire-side surrogate model with enforced mass and energy balance
     '''
 
     CONFIG = ConfigBlock()
@@ -176,6 +177,12 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
     def build(self):
         super(BoilerFiresideData, self).build()
+        # Insert user provided custom surrogate model function
+        # self.config.surrogate_function(self)
+        if self.config.surrogate_dictionary is None:
+            raise ConfigurationError('user needs to provide '
+                                     'a dictionary of surrogates')
+
         self.primary_air = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
             default=self.config.property_package_args)
@@ -202,19 +209,14 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         self._import_surrogate_models()
 
     def _import_surrogate_models(self):
-        # Insert user provided custom surrogate model function
-        # self.config.surrogate_function(self)
-        if self.config.surrogate_dictionary is None:
-            raise Exception('user needs to provide a dictionary of surrogates')
 
         data_dict = self.config.surrogate_dictionary
         if len(data_dict) != (len(self.zones)
                               + self.config.has_platen_superheater
                               + self.config.has_roof_superheater
-                              + 1  # flyash surrogate
-                              + 1  # NOx surrogate
+                              + 2  # flyash surrogate and NOx surrogate
                               ):
-            raise Exception('User needs to provide the same number '
+            raise ConfigurationError('User needs to provide the same number '
                             'of surrogate models and water wall zones'
                             'and/or platen sh and/or boiler roof')
 
@@ -243,7 +245,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 return b.roof_heat[t] * b.fcorrection_heat_ww[t] == \
                     eval(data_dict['roof'])
 
-        # Constraints for ln of unburned carbon
+        # Constraints for unburned carbon
         @self.Constraint(self.flowsheet().config.time,
                          doc="Surrogate model for"
                          " mass fraction of unburned carbon")
@@ -1004,42 +1006,30 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             # Option 1: given PA and SA component flow rates - fixed inlets
             # fix inlet component molar flow rates
             # unfix ratio_PA2coal, SR, and fluegas_o2_pct_dry
-            blk.primary_air_inlet.flow_mol_comp[:, :].fix()
-            blk.secondary_air_inlet.flow_mol_comp[:, :].fix()
+            blk.primary_air_inlet.flow_mol_comp[...].fix()
+            blk.secondary_air_inlet.flow_mol_comp[...].fix()
             blk.ratio_PA2coal.unfix()
             blk.SR.unfix()
             blk.fluegas_o2_pct_dry.unfix()
             dof = degrees_of_freedom(blk)
-            init_log.info_high(
-                    "Degree of freedom {}.".format(dof)
-                    )
-            if not dof == 0:
-                raise Exception('check degrees of freedom')
 
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(blk, tee=slc.tee)
-            init_log.info_high(
-                    "Initialization Step 3 {}.".format(idaeslog.condition(res))
-                )
-            init_log.info("Initialization Complete.")
         else:
             # Option 2: SR, ratioPA2_coal to estimate TCA, PA, SA
             # unfix component molar flow rates, but keep T and P fixed.
             blk.primary_air_inlet.flow_mol_comp[:, :].unfix()
             blk.secondary_air_inlet.flow_mol_comp[:, :].unfix()
             dof = degrees_of_freedom(blk)
-            init_log.info_high(
-                    "Degree of freedom {}.".format(dof)
-                    )
-            if not dof == 0:
-                raise Exception('check degrees of freedom')
 
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(blk, tee=slc.tee)
-            init_log.info_high(
-                    "Initialization Step 3 {}.".format(idaeslog.condition(res))
-                )
-            init_log.info("Initialization Complete.")
+        if not dof == 0:
+            raise ConfigurationError('User needs to check '
+                                     'degrees of freedom')
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high(
+                "Initialization Step 3 {}.".format(idaeslog.condition(res))
+            )
+        init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()

@@ -24,7 +24,6 @@ Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 import pytest
 # Import Pyomo libraries
 import pyomo.environ as pyo
-from pyomo.environ import units as pyunits
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
@@ -63,7 +62,7 @@ def build_unit():
 def test_basic_build(build_unit):
     """Make a steam heater model and make sure it doesn't throw exception"""
     m = build_unit
-    assert degrees_of_freedom(m) == 11
+    assert degrees_of_freedom(m) == 12
     # Check unit config arguments
     assert len(m.fs.unit.config) == 10
     assert m.fs.unit.config.has_heat_transfer
@@ -86,9 +85,10 @@ def test_initialize_unit(build_unit):
     m.fs.unit.fin_length.fix(0.00966)
     m.fs.unit.tube_length.fix(40.0)
     m.fs.unit.number_tubes.fix(200.0)
+    m.fs.unit.therm_cond_slag.fix(1.3)
     m.fs.unit.control_volume.scaling_factor_holdup_energy = 1e-8
     m.fs.unit.heat_fireside[:].fix(5.5e7)  # initial guess
-    hpl = iapws95.htpx(798.15*pyunits.K, 24790249.01*pyunits.Pa)
+    hpl = iapws95.htpx(798.15*pyo.units.K, 24790249.01*pyo.units.Pa)
     m.fs.unit.inlet[:].flow_mol.fix(24194.177)
     m.fs.unit.inlet[:].enth_mol.fix(hpl)
     m.fs.unit.inlet[:].pressure.fix(24790249.01)

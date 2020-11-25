@@ -40,6 +40,10 @@ Dictionary of surrogate models
 # b.secondary_air_inlet.temperature[t]
 # b.ratio_PA2coal[t] - ratio primary air to coal flowrate calculated by model
 
+# Since the development of surrogate models requires a specific case and
+# the fire side must be connected with other unit models. This example aims
+# testing the model. Therefore, the following dictionary is a simple example
+# using fixed values for heat flux to the water wall, platen SH, and roof SH.
 data_dic = {1: '2.0e7',  # heat flux to water wall zone 1 from fire side in W
             2: '1.0e7',  # heat flux to water wall zone 2 from fire side in W
             3: '1.0e7',  # heat flux to water wall zone 3 from fire side in W
