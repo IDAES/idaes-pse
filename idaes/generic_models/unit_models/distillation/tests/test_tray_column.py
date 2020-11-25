@@ -38,7 +38,7 @@ from idaes.core.util.testing import get_default_solver, \
 solver = get_default_solver()
 
 
-@pytest.mark.build
+@pytest.mark.unit
 def test_config():
 
     m = ConcreteModel()
@@ -66,7 +66,7 @@ def test_config():
     assert hasattr(m.fs.unit, "vap_stream")
 
 
-@pytest.mark.build
+@pytest.mark.unit
 class TestBTXIdeal():
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
@@ -164,7 +164,7 @@ class TestBTXIdeal():
 
     @pytest.mark.solver
     @pytest.mark.component
-    def test_initialize(self, btx_ftpz):
+    def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
 
     @pytest.mark.solver
