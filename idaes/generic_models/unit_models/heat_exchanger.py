@@ -220,9 +220,9 @@ class HeatExchangerData(UnitModelBlockData):
             setattr(config, config.cold_side_name, config.cold_side_config)
 
         if config.cold_side_name in ["hot_side", "side_1"]:
-            raise ConfigurationError("Cold side name cannot be in {'hot_side', 'side_1'}.")
+            raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
         if config.hot_side_name in ["cold_side", "side_2"]:
-            raise ConfigurationError("Hot side name cannot be in {'cold_side', 'side_2'}.")
+            raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
 
     def build(self):
         """
@@ -257,8 +257,8 @@ class HeatExchangerData(UnitModelBlockData):
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
-        # Add refernces to the hot side and cold side, so that we have solid
-        # names to refere to internally.  side_1 and side_2 also maintain
+        # Add references to the hot side and cold side, so that we have solid
+        # names to refer to internally.  side_1 and side_2 also maintain
         # compatability with older models.  Using add_object_reference keeps
         # these from showing up when you iterate through pyomo compoents in a
         # model, so only the user specified control volume names are "seen"

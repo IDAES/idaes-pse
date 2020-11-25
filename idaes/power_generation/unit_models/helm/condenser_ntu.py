@@ -111,9 +111,9 @@ class HelmNtuCondenserData(UnitModelBlockData):
             setattr(config, config.cold_side_name, config.cold_side_config)
 
         if config.cold_side_name in ["hot_side", "side_1"]:
-            raise ConfigurationError("Cold side name cannot be in {'hot_side', 'side_1'}.")
+            raise ConfigurationError("Cold side name cannot be in ['hot_side', 'side_1'].")
         if config.hot_side_name in ["cold_side", "side_2"]:
-            raise ConfigurationError("Hot side name cannot be in {'cold_side', 'side_2'}.")
+            raise ConfigurationError("Hot side name cannot be in ['cold_side', 'side_2'].")
 
     def build(self):
         """
