@@ -11,24 +11,29 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Backend logic for flowsheet visualization server
+Storage of models for the IDAES Flowsheet Visualizer.
+
+Currently implemented methods are trivial storage in memory and storage to a file.
 """
+# stdlib
 from abc import ABC, abstractmethod
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Union
+# package
+from idaes import logger
 
-from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
+_log = logger.getLogger(__name__)
 
 
 class DataStore(ABC):
 
     @abstractmethod
-    def save(self, data: Dict):
+    def save(self, data: Union[Dict, str]):
         pass
 
     @abstractmethod
-    def load(self) -> Dict:
+    def load(self) -> Union[Dict, str]:
         pass
 
     @classmethod
@@ -51,19 +56,34 @@ class DataStore(ABC):
         else:
             raise ValueError(f"Unknown destination '{dest}' for type '{type(dest)}'")
 
+    def __str__(self):
+        return "generic storage; should not be used directly"
+
 
 class FileDataStore(DataStore):
     def __init__(self, path):
         self._p = path
+        self._is_json = False
 
     def save(self, data):
         with self._p.open("w") as fp:
-            json.dump(data, fp)
+            if isinstance(data, dict):
+                json.dump(data, fp)
+                self._is_json = True
+            else:
+                fp.write(data)
+                self._is_json = False
 
     def load(self):
         with self._p.open("r") as fp:
-            data = json.load(fp)
+            if self._is_json:
+                data = json.load(fp)
+            else:
+                data = fp.read()
         return data
+
+    def __str__(self):
+        return f"file storage at '{self._p}'"
 
 
 class MemoryDataStore(DataStore):
@@ -75,6 +95,9 @@ class MemoryDataStore(DataStore):
 
     def load(self):
         return self._data
+
+    def __str__(self):
+        return "memory storage"
 
 
 class DataStoreManager:
@@ -97,23 +120,11 @@ class DataStoreManager:
         if id_ not in self._id_store:
             raise KeyError(f"No storage associated with identifier '{id_}'")
 
-    def save(self, id_: str, data: Dict):
+    def save(self, id_: str, data: Union[Dict, str]):
         self._check_id(id_)
         self._id_store[id_].save(data)
 
-    def load(self, id_: str):
+    def load(self, id_: str) -> Union[Dict, str]:
         self._check_id(id_)
         return self._id_store[id_].load()
-
-    def update(self, id_: str, data: Dict):
-        """Update data for this identifier.
-        """
-        old_json = self.load(id_)
-        if not old_json:
-            self.save(id_, data)
-            return
-        diff_model, model_json = compare_models(old_json, data)
-        new_json = model_jointjs_conversion(diff_model, model_json)
-        self.save(id_, new_json)
-        return new_json
 

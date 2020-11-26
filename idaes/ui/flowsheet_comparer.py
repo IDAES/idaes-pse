@@ -10,6 +10,8 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+# stdlib
+import copy
 from enum import Enum
 from jsonschema import validate
 
@@ -158,14 +160,18 @@ def compare_models(existing_model, new_model, keep_old_model=False):
     }
 
     # Check for new or changed unit models
+    #
+    # Note that when we are constructing the diff_model object, we need to make sure
+    # to copy (not reference) the values in the 'new_model' input, otherwise the subsequent
+    # assignment statements will modify the input value.
     for item, value in new_model["unit_models"].items():
         validate(instance=value, schema=unit_model_schema)
         if item not in existing_model["unit_models"]:
-            diff_model[item] = value
+            diff_model[item] = copy.deepcopy(value)
             diff_model[item]["action"] = Action.ADD.value
             diff_model[item]["class"] = "unit model"
         elif existing_model["unit_models"][item] != value:
-            diff_model[item] = value
+            diff_model[item] = copy.deepcopy(value)
             diff_model[item]["action"] = Action.CHANGE.value
             diff_model[item]["class"] = "unit model"
         elif existing_model["unit_models"][item] == value:
@@ -180,7 +186,7 @@ def compare_models(existing_model, new_model, keep_old_model=False):
     for item, value in existing_model["unit_models"].items():
         validate(instance=value, schema=unit_model_schema)
         if item not in new_model["unit_models"]:
-            diff_model[item] = value
+            diff_model[item] = copy.deepcopy(value)
             diff_model[item]["action"] = Action.REMOVE.value
             diff_model[item]["class"] = "unit model"
 
@@ -197,11 +203,11 @@ def compare_models(existing_model, new_model, keep_old_model=False):
     for item, value in new_model["arcs"].items():
         validate(instance=value, schema=arc_schema)
         if item not in existing_model["arcs"]:
-            diff_model[item] = value
+            diff_model[item] = copy.deepcopy(value)
             diff_model[item]["action"] = Action.ADD.value
             diff_model[item]["class"] = "arc"
         elif existing_model["arcs"][item] != value:
-            diff_model[item] = value
+            diff_model[item] = copy.deepcopy(value)
             diff_model[item]["action"] = Action.CHANGE.value
             diff_model[item]["class"] = "arc"
         else:
@@ -211,7 +217,7 @@ def compare_models(existing_model, new_model, keep_old_model=False):
     for item, value in existing_model["arcs"].items():
         validate(instance=value, schema=arc_schema)
         if item not in new_model["arcs"]:
-            diff_model[item] = value
+            diff_model[item] = copy.deepcopy(value)
             diff_model[item]["action"] = Action.REMOVE.value
             diff_model[item]["class"] = "arc"
 

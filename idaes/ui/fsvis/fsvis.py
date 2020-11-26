@@ -10,12 +10,13 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-# server backend code for fsvis
-import logging
+# stdlib
 import webbrowser
+# package
+from idaes import logger
 from .model_server import FlowsheetServer
 
-_log = logging.getLogger(__name__)
+_log = logger.getLogger(__name__)
 
 web_server = None
 
