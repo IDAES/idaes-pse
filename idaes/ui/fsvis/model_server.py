@@ -32,20 +32,23 @@
 #    and returns it
 # 10. Javascript receives the serialized model and displays it
 
-
+# stdlib
 import http.server
 import json
 from pathlib import Path
 import socket
 import threading
+from typing import Dict, Union
 from urllib.parse import urlparse
-
-from idaes.logger import getLogger
-# from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
+# package
+from idaes import logger
+from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
 from . import persist
 from ..flowsheet_serializer import FlowsheetSerializer
 
-_log = getLogger(__name__)
+_log = logger.getLogger(__name__)
+# Debugging:
+_log.setLevel(logger.DEBUG)
 
 # Directories
 _this_dir = Path(__file__).parent.absolute()
@@ -64,7 +67,7 @@ class FlowsheetServer(http.server.HTTPServer):
         """Create HTTP server
         """
         self._port = port or find_free_port()
-        print(f"@@ found free port {self._port}")
+        _log.debug(f"Starting local HTTP server on port {self._port}")
         super().__init__(("127.0.0.1", self._port), FlowsheetServerHandler)
         self._dsm = persist.DataStoreManager()
         self._flowsheets = {}
@@ -96,13 +99,19 @@ class FlowsheetServer(http.server.HTTPServer):
         """
         self._flowsheets[id_] = flowsheet
         store = persist.DataStore.create(save_as)
+        _log.debug(f"Flowsheet '{id_}' storage is {store}")
         self._dsm.add(id_, store)
-        store.save(flowsheet)
+        # Serialize as JSON string
+        fs_dict = FlowsheetSerializer().serialize(flowsheet, id_)
+        store.save(fs_dict)
 
-    def save_flowsheet_data(self, id_, data):
-        """Save the flowsheet data to the appropriate store.
+    def save_flowsheet(self, id_, flowsheet: Union[Dict, str]):
+        """Save the flowsheet to the appropriate store.
         """
-        self._dsm.save(id_, data)
+        self._dsm.save(id_, flowsheet)
+
+    def load_flowsheet(self, id_) -> Union[Dict, str]:
+        return self._dsm.load(id_)
 
     def get_flowsheet_obj(self, id_):
         """Get a flowsheet with the given ID.
@@ -111,7 +120,7 @@ class FlowsheetServer(http.server.HTTPServer):
 
     def serialize_flowsheet(self, flowsheet, id_):
         try:
-            result = self._fss.serialize(flowsheet, id_)
+            result = FlowsheetSerializer().serialize(flowsheet, id_)
         except (AttributeError, KeyError) as err:
             raise ValueError(f"Error serializing flowsheet: {err}")
         return result
@@ -123,83 +132,143 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    # === GET ===
+
     def do_GET(self):
-        """Get a model from the app.
+        """Process a request to receive data.
+
+        Routes:
+          * `/app`: Return the web page
+          * `/fs`: Retrieve an updated flowsheet.
+          * `/path/to/file`: Retrieve file stored static directory
         """
         u, id_ = self._parse_flowsheet_url(self.path)
         _log.debug(f"do_GET: path={self.path} id=={id_}")
+        if u.path in ("/app", "/fs") and id_ is None:
+            self.send_error(400, message=f"Query parameter 'id' is required for '{u.path}'")
         if u.path == "/app":
-            if id_ is None:
-                self.send_error(500, message="Query parameter 'id' is required for '/app'")
-            else:
-                self._get_app(u, id_)
+            self._get_app(id_)
         elif u.path == "/fs":
-            if id_ is None:
-                self.send_error(500, message="Query parameter 'id' is required for '/fs'")
-            else:
-                self._get_fs(u, id_)
+            self._get_fs(id_)
         else:
             # Try to serve a file
-            self.directory = _static_dir  # keep here: would be overwritten if set earlier
+            self.directory = _static_dir  # keep here: overwritten if set earlier
             super().do_GET()
 
-    def _parse_flowsheet_url(self, path):
-        u, id_ = urlparse(self.path), None
-        if u.query:
-            queries = dict([q.split("=") for q in u.query.split("&")])
-            id_ = queries.get("id", None)
-        return u, id_
-
-    def do_PUT(self):
-        """Receive an updated flowsheet from the web app.
+    def _get_app(self, id_):
+        """Read index file, process to insert flowsheet identifier, and return it.
         """
-        u, id_ = self._parse_flowsheet_url(self.path)
-        _log.debug(f"do_PUT: path={self.path} query={u.query}")
-        if u.path == "/fs":
-            if id_ is None:
-                self.send_error(500, message="Query parameter 'id' is required for '/fs'")
-            else:
-                self._put_fs(u, id_)
-
-    def _get_app(self, url, id_):
         p = Path(_template_dir / "index.html")
         with open(p, "r") as fp:
             s = fp.read()
             page = s.format(flowsheet_id=id_)
         self._write_html(200, page)
 
-    def _get_fs(self, url, id_):
+    def _get_fs(self, id_: str):
+        """Get updated flowsheet.
+
+        Algorithm:
+            1. get saved flowsheet (if any) from datastore
+            2. get flowsheet object from memory
+            3. if both flowsheets exist, merge them (otherwise use the memory flowsheet)
+            4. save merged flowsheet to the datastore (this way datastore mirrors what app shows)
+            5. return merged flowsheet to app
+
+        Args:
+            id_: Flowsheet identifier
+
+        Returns:
+            None
+        """
+        # Get flowsheet from datastore
+        fs_store_data, fs_store_dict = None, None
         try:
-            flowsheet = self.server.get_flowsheet_obj(id_)
+            fs_store_data = self.server.load_flowsheet(id_)
+            _log.debug("Found stored flowsheet")
         except KeyError:
-            self._bad_id_error(id_)
-            return
+            _log.debug("No stored flowsheet found, using flowsheet from memory")
+            pass  # this is ok; could happen initially
+        if fs_store_data is not None:
+            if isinstance(fs_store_data, dict):
+                fs_store_dict = fs_store_data
+            else:
+                try:
+                    fs_store_dict = json.loads(fs_store_data)
+                except Exception as err:
+                    self.send_error(500, message="Cannot parse stored JSON data",
+                                explain=str(err))
+                    return
+        # Get flowsheet from memory
         try:
-            flowsheet_json = self.server.serialize_flowsheet(flowsheet, id_)
-        except ValueError as err:
-            self.send_error(500, message="Serialization error", explain=str(err))
+            fs_obj = self.server.get_flowsheet_obj(id_)
+        except KeyError:
+            self.send_error(404, message=f"No flowsheet found in memory for id={id_}")
+            return
+        fs_obj_dict = FlowsheetSerializer().serialize(fs_obj, id_)
+        # Merge datastore and memory flowsheets
+        if fs_store_dict is None:
+            # no stored value, so use value from memory
+            fs_merged = fs_obj_dict
         else:
-            self._write_json(200, flowsheet_json)
+            # update the 'cells' part to reflect the new 'model' part
+            model_diff, _ = compare_models(fs_store_dict, fs_obj_dict)
+            if not model_diff:  # model parts are the same
+                _log.debug("Stored flowsheet and model in memory are the same")
+                # Still need to update the model with the values from the object, since changes
+                # in the *values* inside the streams and units may have occurred
+                fs_merged = {
+                    "model": fs_obj_dict["model"],
+                    "cells": fs_store_dict["cells"]
+                }
+            else:
+                if _log.isEnabledFor(logger.DEBUG):
+                    num_diffs = len(model_diff)
+                    plural = "s" if num_diffs > 1 else ""
+                    _log.debug(f"Stored flowsheet and model in memory differ by {num_diffs} change{plural}; "
+                               f"updating JointJS display data")
+                # modify the JointJS display info in 'cells' based on the diff
+                merged_cells = model_jointjs_conversion(model_diff, fs_store_dict)
+                # the merged value has the new model info plus the updated 'cells'
+                fs_merged = {
+                    "model": fs_obj_dict["model"],
+                    "cells": merged_cells["cells"]
+                }
+        assert fs_merged
+        # Save merged flowsheet
+        if fs_merged is fs_store_dict:
+            _log.debug("Flowsheet has not changed so skipping save of merged value")
+        else:
+            _log.debug("Storing merged flowsheet")
+            self.server.save_flowsheet(id_, fs_merged)
+        # Return merged flowsheet to app
+        self._write_json(200, fs_merged)
+
+    # === PUT ===
+
+    def do_PUT(self):
+        """Process a request to store data.
+        """
+        u, id_ = self._parse_flowsheet_url(self.path)
+        _log.debug(f"do_PUT: path={self.path} id={id_}")
+        if u.path in ("/fs",) and id_ is None:
+            self.send_error(400, message=f"Query parameter 'id' is required for '{u.path}'")
+        if u.path == "/fs":
+            self._put_fs(u, id_)
 
     def _put_fs(self, url, id_):
-        # read and parse flowsheet sent from application
-        self.server.rfile.read()
-        app_flowsheet = json.loads(utf8_decode(bytes))
-        # save application flowsheet
-        self.server.save_flowsheet_data(app_flowsheet)
-        self._write_json(200, {"message": "Success"})
+        # read  flowsheet from request
+        data = utf8_decode(self.server.rfile.read())
+        # save flowsheet
+        self.server.save_flowsheet(data)
+        self.send_response(200, message="success")
 
-    def _no_id_error(self):
-        self._write_json(404, {"message": "Identifier missing from request"})
-
-    def _bad_id_error(self, id_):
-        self._write_json(404, {"message": "No flowsheet found for identifier", "id": id_})
+    # ===
 
     def _write_json(self, code, data):
         str_json = json.dumps(data)
         value = utf8_encode(str_json)
         self.send_response(code)
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Content-type", "application/json")
         self.send_header("Content-length", str(len(value)))
         self.end_headers()
@@ -212,6 +281,13 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Content-length", str(len(value)))
         self.end_headers()
         self.wfile.write(value)
+
+    def _parse_flowsheet_url(self, path):
+        u, id_ = urlparse(self.path), None
+        if u.query:
+            queries = dict([q.split("=") for q in u.query.split("&")])
+            id_ = queries.get("id", None)
+        return u, id_
 
 
 def utf8_encode(s: str):
