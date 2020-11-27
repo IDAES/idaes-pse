@@ -8,23 +8,22 @@ export class Toolbar {
         self = this;
 
         self.setupToolbar();
-    };
+    }
 
     setGrid(gridSize, color) {
         // Set grid size on the JointJS paper object (joint.dia.paper instance)
         self._paper.options.gridSize = gridSize;
         // Draw a grid into the HTML 5 canvas and convert it to a data URI image
-        var canvas = $('<canvas/>', { width: gridSize, height: gridSize });
+        let canvas = $('<canvas/>', { width: gridSize, height: gridSize });
+        let context = canvas[0].getContext('2d');
         canvas[0].width = gridSize;
         canvas[0].height = gridSize;
-        var context = canvas[0].getContext('2d');
         context.beginPath();
         context.rect(1, 1, 1, 1);
         context.fillStyle = color || '#AAAAAA';
         context.fill();
         // Finally, set the grid background image of the paper container element.
-        var gridBackgroundImage = canvas[0].toDataURL('image/png');
-        self._paper.$el.css('background-image', 'url("' + gridBackgroundImage + '")');
+        self._paper.$el.css('background-image', 'url("' + canvas[0].toDataURL('image/png') + '")');
     };
 
     setupToolbar() {
@@ -61,33 +60,10 @@ export class Toolbar {
             ],
         });
 
-        toolbar.on('refresh:pointerclick', function(event) {
-            // Get the new model from the model server
-            // First post any position changes to the model
-            $.ajax({
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(self._paper.model.toJSON()),
-                dataType: 'json',
-                url: url,
-                success: function (data) {
-                },
-                error: function(error) {
-                    console.log(error);
-                }
-            });
-            // Then get the new model
-            $.ajax({
-                type: 'GET',
-                url: model_server_url,
-                success: function(result) {
-                    self._paper.model.fromJSON(result);
-                },
-                error: function(error) {
-                    console.log(error);
-                }
-            });
-        });
+        toolbar.on('refresh:pointerclick', event => this.refreshModel(url, self._paper));
+
+        // Note: it is not good style to embed all the processing here.
+        // Instead, call functions as in the refresh:pointerclick event above.
 
         toolbar.on('labels:change', function(value, event) {
             // Go through all of the links and set the display values
@@ -178,5 +154,72 @@ export class Toolbar {
         $('#toolbar-container').append(toolbar.render().el);
 
         self.setGrid(10, '#FFFFFF');
-    };
-};
+    }
+
+    /**
+     * Inform the user of some event.
+     *
+     * Do NOT use this for internal messages or debugging.
+     *
+     * @param level The level of 'severity' of the message. 0=info, 1=warning, 2=error
+     * @param message The message to show
+     * @param duration Duration, in seconds, to show the message. 0=forever
+     */
+    informUser(level, message, duration) {
+        // TODO: Write into a status area
+        // Write to console
+        switch(level) {
+            case 0:
+                console.log(message);
+                break;
+            case 1:
+                console.warn(message);
+                break;
+            case 2:
+                console.error(message);
+                break;
+            default:
+                console.log(message);
+        }
+    }
+
+    /**
+     * Save current model value and then update with value in the Python process.
+     *
+     * This makes two calls to the server: first a PUT to save the current model, and
+     * second a GET to retrieve the new values. If either of these fails, the method will fail
+     * and not make any changes to its inputs.
+     *
+     * If this succeeds, the value of the model in the Paper instance will be replaced with the
+     * new value sent from the server in the Python process.
+     *
+     * @param url The HTTP server that is running in the Python process
+     * @param paper Instance of Paper that has model in 'model' attribute.
+     */
+    refreshModel(url, paper) {
+        // Inform user of progress (1)
+        console.debug("paper.model=", paper.model);
+        this.informUser(0, "Refresh: save current values from model");
+        // First save our version of the model
+        let clientModel = paper.model;
+        let clientData = JSON.stringify(clientModel.toJSON());
+        console.debug(`Sending to ${url}: ` + clientData);
+        $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
+            // On failure inform user and stop
+            .fail(error => this.informUser(
+                2, "Fatal error: cannot save current model before refresh: " + error))
+            // On success, continue on to fetch new model
+            .done(data => {
+                // Inform user of progress (2)
+                this.informUser(0, "Refresh: load new model values from Python program");
+                $.ajax({url: url, dataType: "json"})
+                    // If we got the model, save it
+                    .done(data => {paper.model.fromJSON(data)})
+                    // Otherwise fail
+                    .fail((jqXHR, textStatus, errorThrown) => {
+                        this.informUser(2, "Fatal error: Could not retrieve new model from Python program: " +
+                            textStatus + ", error=" + errorThrown);
+                    });
+            });
+    }
+}

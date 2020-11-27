@@ -23,6 +23,7 @@ web_server = None
 
 def visualize(
     flowsheet, name: str = "flowsheet", save_as=None, browser: bool = True, port=None,
+        log_level=logger.WARNING
 ):
     """Visualizes the flowsheet in a web application.
     
@@ -34,6 +35,7 @@ def visualize(
         name: Name of flowsheet to display as the title of the visualization
         save_as: If a string or path then save to a file.
         browser: If true, open a browser
+        log_level: An IDAES logging level, see :mod:`idaes.logger`, to set for all the visualiztion
 
     Returns:
         None.
@@ -43,9 +45,13 @@ def visualize(
     """
     global web_server
 
+    _init_logging(log_level)
+
     if web_server is None:
         web_server = FlowsheetServer(port=port)
         web_server.start()
+    else:
+        _log.info(f"Using HTTP server on localhost, port {web_server.port}")
 
     web_server.add_flowsheet(name, flowsheet, save_as)
 
@@ -55,3 +61,7 @@ def visualize(
         success = webbrowser.open(url + f"?id={name}")
         _log.debug(f"Opened in browser window: {success}")
 
+
+def _init_logging(lvl):
+    ui_logger = logger.getIdaesLogger("ui", level=lvl, tag="ui")
+    ui_logger.setLevel(lvl)
