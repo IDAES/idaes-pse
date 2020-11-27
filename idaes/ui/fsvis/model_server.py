@@ -15,9 +15,9 @@
 # app.py - Flask server
 # model_server.py - Server that has a reference to the model and allows the javascript to make
 # requests to get the updated model
-# fsvis.py - Starts the flask server and the model server and opens the web browser to the 
+# fsvis.py - Starts the flask server and the model server and opens the web browser to the
 # visualization
-# 
+#
 # Example communication:
 # 1. User calls m.fs.visualize("test")
 # 2. flowsheet_model.py calls idaes.ui.fsvis.visualize()
@@ -28,7 +28,7 @@
 #    was updated
 # 7. User clicks Refresh Graph on the javascript
 # 8. Javscript makes an ajax GET request to the model server.
-# 9. model_server.py's SimpleModelServerHandler do_GET gets called and serializes the updated model 
+# 9. model_server.py's SimpleModelServerHandler do_GET gets called and serializes the updated model
 #    and returns it
 # 10. Javascript receives the serialized model and displays it
 
@@ -40,6 +40,7 @@ import socket
 import threading
 from typing import Dict, Union
 from urllib.parse import urlparse
+
 # package
 from idaes import logger
 from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
@@ -47,8 +48,6 @@ from . import persist
 from ..flowsheet_serializer import FlowsheetSerializer
 
 _log = logger.getLogger(__name__)
-# Debugging:
-_log.setLevel(logger.DEBUG)
 
 # Directories
 _this_dir = Path(__file__).parent.absolute()
@@ -67,7 +66,7 @@ class FlowsheetServer(http.server.HTTPServer):
         """Create HTTP server
         """
         self._port = port or find_free_port()
-        _log.debug(f"Starting local HTTP server on port {self._port}")
+        _log.info(f"Starting HTTP server on localhost, port {self._port}")
         super().__init__(("127.0.0.1", self._port), FlowsheetServerHandler)
         self._dsm = persist.DataStoreManager()
         self._flowsheets = {}
@@ -87,7 +86,7 @@ class FlowsheetServer(http.server.HTTPServer):
     def _run(self):
         """Run in a separate thread.
         """
-        _log.info(f"Serve forever on localhost:{self._port}")
+        _log.debug(f"Serve forever on localhost:{self._port}")
         try:
             self.serve_forever()
         except Exception:
@@ -129,6 +128,7 @@ class FlowsheetServer(http.server.HTTPServer):
 class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     """Handle requests from the IDAES flowsheet visualization (IFV) web page.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -145,7 +145,9 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         u, id_ = self._parse_flowsheet_url(self.path)
         _log.debug(f"do_GET: path={self.path} id=={id_}")
         if u.path in ("/app", "/fs") and id_ is None:
-            self.send_error(400, message=f"Query parameter 'id' is required for '{u.path}'")
+            self.send_error(
+                400, message=f"Query parameter 'id' is required for '{u.path}'"
+            )
         if u.path == "/app":
             self._get_app(id_)
         elif u.path == "/fs":
@@ -195,8 +197,9 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
                 try:
                     fs_store_dict = json.loads(fs_store_data)
                 except Exception as err:
-                    self.send_error(500, message="Cannot parse stored JSON data",
-                                explain=str(err))
+                    self.send_error(
+                        500, message="Cannot parse stored JSON data", explain=str(err)
+                    )
                     return
         # Get flowsheet from memory
         try:
@@ -218,20 +221,24 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
                 # in the *values* inside the streams and units may have occurred
                 fs_merged = {
                     "model": fs_obj_dict["model"],
-                    "cells": fs_store_dict["cells"]
+                    "cells": fs_store_dict["cells"],
                 }
             else:
                 if _log.isEnabledFor(logger.DEBUG):
-                    num_diffs = len(model_diff)
-                    plural = "s" if num_diffs > 1 else ""
-                    _log.debug(f"Stored flowsheet and model in memory differ by {num_diffs} change{plural}; "
-                               f"updating JointJS display data")
+                    num_diffs, plural = (
+                        len(model_diff),
+                        "s" if len(model_diff) > 1 else "",
+                    )
+                    _log.debug(
+                        f"Stored flowsheet and model in memory differ by {num_diffs} change{plural}; "
+                        f"updating JointJS display data"
+                    )
                 # modify the JointJS display info in 'cells' based on the diff
                 merged_cells = model_jointjs_conversion(model_diff, fs_store_dict)
                 # the merged value has the new model info plus the updated 'cells'
                 fs_merged = {
                     "model": fs_obj_dict["model"],
-                    "cells": merged_cells["cells"]
+                    "cells": merged_cells["cells"],
                 }
         assert fs_merged
         # Save merged flowsheet
@@ -249,20 +256,23 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         """Process a request to store data.
         """
         u, id_ = self._parse_flowsheet_url(self.path)
-        _log.debug(f"do_PUT: path={self.path} id={id_}")
+        _log.debug(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
-            self.send_error(400, message=f"Query parameter 'id' is required for '{u.path}'")
+            self.send_error(
+                400, message=f"Query parameter 'id' is required for '{u.path}'"
+            )
         if u.path == "/fs":
-            self._put_fs(u, id_)
+            self._put_fs(id_)
 
-    def _put_fs(self, url, id_):
-        # read  flowsheet from request
-        data = utf8_decode(self.server.rfile.read())
+    def _put_fs(self, id_):
+        # read  flowsheet from request (read(LENGTH) is required to avoid hanging)
+        read_len = int(self.headers.get("Content-Length", "-1"))
+        data = utf8_decode(self.rfile.read(read_len))
         # save flowsheet
-        self.server.save_flowsheet(data)
+        self.server.save_flowsheet(id_, data)
         self.send_response(200, message="success")
 
-    # ===
+    # === Internal methods ===
 
     def _write_json(self, code, data):
         str_json = json.dumps(data)
@@ -289,15 +299,30 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
             id_ = queries.get("id", None)
         return u, id_
 
+    # === Logging ===
+
+    def log_message(self, fmt, *args):
+        """Override to send messages to our module logger instead of stderr
+        """
+        msg = "%s - - [%s] %s" % (
+            self.address_string(),
+            self.log_date_time_string(),
+            fmt % args,
+        )
+        _log.debug(msg)
+
 
 def utf8_encode(s: str):
     return s.encode(encoding="utf-8")
 
+
 def utf8_decode(b: bytes):
     return b.decode(encoding="utf-8")
 
+
 def find_free_port():
     import time
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("127.0.0.1", 0))
     port = s.getsockname()[1]
