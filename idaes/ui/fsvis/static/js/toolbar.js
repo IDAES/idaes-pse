@@ -1,13 +1,8 @@
 export class Toolbar { 
-    constructor(graph, paper, paperScroller) {
-        this._graph = graph;
+    constructor(app, paper) {
+        this._app = app;
         this._paper = paper;
-        this._paperScroller = paperScroller;
-
-        // We need to save this to a variable so that we can access it later
-        self = this;
-
-        self.setupToolbar();
+        this.setupToolbar();
     }
 
     setGrid(gridSize, color) {
@@ -32,11 +27,11 @@ export class Toolbar {
         let url = `/fs?id=${ model_id }`;
         let model_server_url = $("#model-server-url").data("modelurl");
 
-        var toolbar = new joint.ui.Toolbar({
+        let toolbar = new joint.ui.Toolbar({
             autoToggle: true,
             references: {
-                paper: self._paper,
-                paperScroller: self._paperScroller
+                paper: this._paper,
+                paperScroller: this._paper.paperScroller
             },
             tools: [
                 { type: 'button', name: 'refresh', text: 'Refresh Graph'},
@@ -60,15 +55,15 @@ export class Toolbar {
             ],
         });
 
-        toolbar.on('refresh:pointerclick', event => this.refreshModel(url, self._paper));
+        toolbar.on('refresh:pointerclick', () => this._app.refreshModel(url, this._paper));
 
         // Note: it is not good style to embed all the processing here.
         // Instead, call functions as in the refresh:pointerclick event above.
 
-        toolbar.on('labels:change', function(value, event) {
+        toolbar.on('labels:change', (value, event) => {
             // Go through all of the links and set the display values
-            if (value == true) {
-                self._paper.model.getLinks().forEach(function (link) {
+            if (value === true) {
+                this._paper._graph.getLinks().forEach(function (link) {
                     link.label(0, {
                         attrs: {
                             text: {
@@ -80,7 +75,7 @@ export class Toolbar {
                 });
             }
             else {
-                self._paper.model.getLinks().forEach(function (link) {
+                this._paper._graph.getLinks().forEach(function (link) {
                     link.label(0, {
                         attrs: {
                             text: {
@@ -93,34 +88,35 @@ export class Toolbar {
             }
         });
 
-        toolbar.on('save:pointerclick', function(event) {
-            // Send an ajax POST request to the flask server with the jointjs model
-            // This request also sets the request header to Source: save_button so 
-            // that the server knows to save the jointjs model to a file
-            // If this isn't set then the flask server will just save the jointjs 
-            // to the database rather than saving it to the file
-            $.ajax({
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(self._graph.toJSON()),
-                dataType: 'json',
-                url: url,
-                beforeSend: function(request) {
-                    request.setRequestHeader("Source", "save_button");
-                },
-                success: function (e) {
-                },
-                error: function(error) {
-                    console.log(error);
-                }
-            });
-        });
+        toolbar.on('save:pointerclick', () => this._app.saveModel(url, this._paper.graph));
+        // {
+        //     // Send an ajax POST request to the flask server with the jointjs model
+        //     // This request also sets the request header to Source: save_button so
+        //     // that the server knows to save the jointjs model to a file
+        //     // If this isn't set then the flask server will just save the jointjs
+        //     // to the database rather than saving it to the file
+        //     $.ajax({
+        //         type: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(self._graph.toJSON()),
+        //         dataType: 'json',
+        //         url: url,
+        //         beforeSend: function(request) {
+        //             request.setRequestHeader("Source", "save_button");
+        //         },
+        //         success: function (e) {
+        //         },
+        //         error: function(error) {
+        //             console.log(error);
+        //         }
+        //     });
+        // });
 
         toolbar.on('svg:pointerclick', function(event) {
             // Make sure to hide all of the vertices and bars on the links 
             // so they don't show up in the SVG
-            self._paper.hideTools()
-            self._paper.toSVG(function(svg) {
+            this._paper.hideTools()
+            this._paper.toSVG(function(svg) {
                 new joint.ui.Lightbox({
                     image: 'data:image/svg+xml,' + encodeURIComponent(svg),
                     downloadable: true,
@@ -134,92 +130,26 @@ export class Toolbar {
             });
         });
 
-        toolbar.on('grid:change', function(value, event) {
-            if (value == true) {
-                self.setGrid(10, '#BBBBBB');
+        toolbar.on('grid:change', (value, event) => {
+            if (value === true) {
+                this.setGrid(10, '#BBBBBB');
             }
             else {
-                self.setGrid(10, '#FFFFFF');
+                this.setGrid(10, '#FFFFFF');
             }
         });
 
-        toolbar.on('sizeBox:option:select', function(value, event) {
+        toolbar.on('sizeBox:option:select', (value, event) => {
             $('#idaes-canvas').css({ width: value["content"], height: value["content"] });
         });
 
-        toolbar.on('help:pointerclick', function(event) {
-            window.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
+        toolbar.on('help:pointerclick', (event) => {
+            globalThis.open("https://idaes-pse.readthedocs.io/en/stable/user_guide/vis/index.html")
         });
 
         $('#toolbar-container').append(toolbar.render().el);
 
-        self.setGrid(10, '#FFFFFF');
+        this.setGrid(10, '#FFFFFF');
     }
 
-    /**
-     * Inform the user of some event.
-     *
-     * Do NOT use this for internal messages or debugging.
-     *
-     * @param level The level of 'severity' of the message. 0=info, 1=warning, 2=error
-     * @param message The message to show
-     * @param duration Duration, in seconds, to show the message. 0=forever
-     */
-    informUser(level, message, duration) {
-        // TODO: Write into a status area
-        // Write to console
-        switch(level) {
-            case 0:
-                console.log(message);
-                break;
-            case 1:
-                console.warn(message);
-                break;
-            case 2:
-                console.error(message);
-                break;
-            default:
-                console.log(message);
-        }
-    }
-
-    /**
-     * Save current model value and then update with value in the Python process.
-     *
-     * This makes two calls to the server: first a PUT to save the current model, and
-     * second a GET to retrieve the new values. If either of these fails, the method will fail
-     * and not make any changes to its inputs.
-     *
-     * If this succeeds, the value of the model in the Paper instance will be replaced with the
-     * new value sent from the server in the Python process.
-     *
-     * @param url The HTTP server that is running in the Python process
-     * @param paper Instance of Paper that has model in 'model' attribute.
-     */
-    refreshModel(url, paper) {
-        // Inform user of progress (1)
-        console.debug("paper.model=", paper.model);
-        this.informUser(0, "Refresh: save current values from model");
-        // First save our version of the model
-        let clientModel = paper.model;
-        let clientData = JSON.stringify(clientModel.toJSON());
-        console.debug(`Sending to ${url}: ` + clientData);
-        $.ajax({url: url, type: 'PUT', contentType: "application/json", data: clientData})
-            // On failure inform user and stop
-            .fail(error => this.informUser(
-                2, "Fatal error: cannot save current model before refresh: " + error))
-            // On success, continue on to fetch new model
-            .done(data => {
-                // Inform user of progress (2)
-                this.informUser(0, "Refresh: load new model values from Python program");
-                $.ajax({url: url, dataType: "json"})
-                    // If we got the model, save it
-                    .done(data => {paper.model.fromJSON(data)})
-                    // Otherwise fail
-                    .fail((jqXHR, textStatus, errorThrown) => {
-                        this.informUser(2, "Fatal error: Could not retrieve new model from Python program: " +
-                            textStatus + ", error=" + errorThrown);
-                    });
-            });
-    }
 }
