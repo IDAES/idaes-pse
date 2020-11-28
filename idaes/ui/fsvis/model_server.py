@@ -10,27 +10,11 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+"""
+Visualization server back-end.
 
-# Communication between the difference pieces of the visualization
-# app.py - Flask server
-# model_server.py - Server that has a reference to the model and allows the javascript to make
-# requests to get the updated model
-# fsvis.py - Starts the flask server and the model server and opens the web browser to the
-# visualization
-#
-# Example communication:
-# 1. User calls m.fs.visualize("test")
-# 2. flowsheet_model.py calls idaes.ui.fsvis.visualize()
-# 3. fsvis.py starts the flask server (app.py) and the model server (model_server.py)
-# 4. fsvis.py opens a web browser to localhost:port/app?id=test&modelurl=localhost:model_port
-# 5. Web browser requests the serialized model from the flask server and displays it using rappid
-# 6. User makes a change to the model. model_server.py's model gets updated because the model reference
-#    was updated
-# 7. User clicks Refresh Graph on the javascript
-# 8. Javscript makes an ajax GET request to the model server.
-# 9. model_server.py's SimpleModelServerHandler do_GET gets called and serializes the updated model
-#    and returns it
-# 10. Javascript receives the serialized model and displays it
+The main class is `FlowsheetServer`, which is instantiated from the `visualize()` function.
+"""
 
 # stdlib
 import http.server
@@ -43,7 +27,7 @@ from urllib.parse import urlparse
 
 # package
 from idaes import logger
-from idaes.ui.flowsheet_comparer import compare_models, model_jointjs_conversion
+from idaes.ui.flowsheet_comparer import FlowsheetDiff
 from . import persist
 from ..flowsheet_serializer import FlowsheetSerializer
 
@@ -55,11 +39,41 @@ _static_dir = _this_dir / "static"
 _template_dir = _this_dir / "templates"
 
 
+class FlowsheetNotFound(Exception):
+    def __init__(self, id_, location):
+        super().__init__(f"Flowsheet {id_} not found in {location}")
+        self.location = location  # to help distinguish
+
+
+class FlowsheetNotFoundInDatastore(FlowsheetNotFound):
+    def __init__(self, id_):
+        super().__init__(id_, "datastore")
+
+
+class FlowsheetNotFoundInMemory(FlowsheetNotFound):
+    def __init__(self, id_):
+        super().__init__(id_, "Python process memory")
+
+
+class FlowsheetUnknown(Exception):
+    def __init__(self, id_):
+        super().__init__(f"Unrecognized flowsheet '{id_}'")
+
+
+class ProcessingError(Exception):
+    """Use for errors processing input."""
+
+    pass
+
+
 class FlowsheetServer(http.server.HTTPServer):
     """A simple HTTP server that runs in its own thread.
 
     This server is used for *all* models for a given process, so every request needs to contain
     the ID of the model that should be used in that transaction.
+
+    The only methods that the visualization function needs to call are the constructor, `start()` to
+     start running the server, and `add_flowsheet()`, to a add a new flowsheet.
     """
 
     def __init__(self, port=None):
@@ -70,7 +84,7 @@ class FlowsheetServer(http.server.HTTPServer):
         super().__init__(("127.0.0.1", self._port), FlowsheetServerHandler)
         self._dsm = persist.DataStoreManager()
         self._flowsheets = {}
-        self._fss = FlowsheetSerializer()
+        self._thr = None
 
     @property
     def port(self):
@@ -83,16 +97,6 @@ class FlowsheetServer(http.server.HTTPServer):
         self._thr.setDaemon(True)
         self._thr.start()
 
-    def _run(self):
-        """Run in a separate thread.
-        """
-        _log.debug(f"Serve forever on localhost:{self._port}")
-        try:
-            self.serve_forever()
-        except Exception:
-            _log.info("Shutting down server")
-            self.shutdown()
-
     def add_flowsheet(self, id_, flowsheet, save_as):
         """Add a flowsheet, and also the method of saving it.
         """
@@ -100,29 +104,112 @@ class FlowsheetServer(http.server.HTTPServer):
         store = persist.DataStore.create(save_as)
         _log.debug(f"Flowsheet '{id_}' storage is {store}")
         self._dsm.add(id_, store)
-        # Serialize as JSON string
-        fs_dict = FlowsheetSerializer().serialize(flowsheet, id_)
-        store.save(fs_dict)
+        # First try to update, so as not to overwrite saved value
+        try:
+            self.update_flowsheet(id_)
+        except FlowsheetNotFoundInDatastore:
+            _log.debug(f"No existing flowsheet found in {store}: saving new value")
+            # If not found in datastore, save new value
+            fs_dict = FlowsheetSerializer().serialize(flowsheet, id_)
+            store.save(fs_dict)
+        else:
+            _log.debug(f"Existing flowsheet found in {store}: saving merged value")
+
+    # === Public methods called only by HTTP handler ===
 
     def save_flowsheet(self, id_, flowsheet: Union[Dict, str]):
         """Save the flowsheet to the appropriate store.
-        """
-        self._dsm.save(id_, flowsheet)
 
-    def load_flowsheet(self, id_) -> Union[Dict, str]:
+        Raises:
+            ProcessingError, if parsing of JSON failed (see :meth:`DataStoreManager.save()`)
+        """
+        try:
+            self._dsm.save(id_, flowsheet)
+        except ValueError as err:
+            raise ProcessingError(str(err))
+
+    def update_flowsheet(self, id_: str) -> Dict:
+        """Update flowsheet.
+
+        The returned flowsheet is also saved to the datastore.
+
+        Args:
+            id_: Identifier of flowsheet to update.
+
+        Returns:
+            Merged value of flowsheets in datastore and current value in memory
+
+        Raises:
+            FlowsheetUnknown if the flowsheet id is not known
+            FlowsheetNotFound (subclass) if the flowsheet id is known, but it can't be retrieved
+            ProcessingError for internal errors
+        """
+        # Get saved flowsheet from datastore
+        try:
+            saved = self._load_flowsheet(id_)
+        except KeyError:
+            raise FlowsheetUnknown(id_)
+        except ValueError:
+            raise FlowsheetNotFoundInDatastore(id_)
+        # Get current value from memory
+        try:
+            obj = self._get_flowsheet_obj(id_)
+        except KeyError:
+            raise FlowsheetNotFoundInMemory(id_)
+        try:
+            obj_dict = self._serialize_flowsheet(id_, obj)
+        except ValueError as err:
+            raise ProcessingError(f"Cannot serialize flowsheet: {err}")
+        # Compare saved and current value
+        #diff, _ = compare_models(saved, obj_dict)
+        diff = FlowsheetDiff(saved, obj_dict)
+        print(f"@@ diff: compare\n** SAVED **\n{saved}\nMEMORY\n{obj_dict}\nDIFF\n{diff}")
+        # If no difference, merged value is saved value
+        if not diff:
+            _log.debug("Stored flowsheet is the same as the flowsheet in memory")
+            merged = saved
+        # Otherwise, set merged value to current model + new layout.
+        # Save this merged value before returning it
+        else:
+            if _log.isEnabledFor(logger.DEBUG):
+                num, pl = len(diff), "s" if len(diff) > 1 else ""
+                _log.debug(
+                    f"Stored flowsheet and model in memory differ by {num} item{pl}"
+                )
+            #diff_cells = model_jointjs_conversion(diff, saved)
+            merged = {"model": obj_dict["model"], "cells": diff.layout}
+            _log.debug(f"Saving updated flowsheet")
+            self.save_flowsheet(id_, merged)
+        # Return merged value
+        return merged
+
+    # === Internal methods ===
+
+    def _load_flowsheet(self, id_) -> Union[Dict, str]:
         return self._dsm.load(id_)
 
-    def get_flowsheet_obj(self, id_):
+    def _get_flowsheet_obj(self, id_):
         """Get a flowsheet with the given ID.
         """
         return self._flowsheets[id_]
 
-    def serialize_flowsheet(self, flowsheet, id_):
+    @staticmethod
+    def _serialize_flowsheet(id_, flowsheet):
         try:
             result = FlowsheetSerializer().serialize(flowsheet, id_)
         except (AttributeError, KeyError) as err:
             raise ValueError(f"Error serializing flowsheet: {err}")
         return result
+
+    def _run(self):
+        """Run in a separate thread.
+        """
+        _log.debug(f"Serve forever on localhost:{self._port}")
+        try:
+            self.serve_forever()
+        except Exception as err:
+            _log.info(f"Shutting down server due to error: {err}")
+            self.shutdown()
 
 
 class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
@@ -130,6 +217,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     """
 
     def __init__(self, *args, **kwargs):
+        self.directory = None  # silence warning about initialization outside constructor
         super().__init__(*args, **kwargs)
 
     # === GET ===
@@ -169,86 +257,24 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     def _get_fs(self, id_: str):
         """Get updated flowsheet.
 
-        Algorithm:
-            1. get saved flowsheet (if any) from datastore
-            2. get flowsheet object from memory
-            3. if both flowsheets exist, merge them (otherwise use the memory flowsheet)
-            4. save merged flowsheet to the datastore (this way datastore mirrors what app shows)
-            5. return merged flowsheet to app
-
         Args:
             id_: Flowsheet identifier
 
         Returns:
             None
         """
-        # Get flowsheet from datastore
-        fs_store_data, fs_store_dict = None, None
         try:
-            fs_store_data = self.server.load_flowsheet(id_)
-            _log.debug("Found stored flowsheet")
-        except KeyError:
-            _log.debug("No stored flowsheet found, using flowsheet from memory")
-            pass  # this is ok; could happen initially
-        if fs_store_data is not None:
-            if isinstance(fs_store_data, dict):
-                fs_store_dict = fs_store_data
-            else:
-                try:
-                    fs_store_dict = json.loads(fs_store_data)
-                except Exception as err:
-                    self.send_error(
-                        500, message="Cannot parse stored JSON data", explain=str(err)
-                    )
-                    return
-        # Get flowsheet from memory
-        try:
-            fs_obj = self.server.get_flowsheet_obj(id_)
-        except KeyError:
-            self.send_error(404, message=f"No flowsheet found in memory for id={id_}")
+            merged = self.server.update_flowsheet(id_)
+        except FlowsheetUnknown as err:
+            # User error: user asked for a flowsheet by an unknown ID
+            self.send_error(404, message=str(err))
             return
-        fs_obj_dict = FlowsheetSerializer().serialize(fs_obj, id_)
-        # Merge datastore and memory flowsheets
-        if fs_store_dict is None:
-            # no stored value, so use value from memory
-            fs_merged = fs_obj_dict
-        else:
-            # update the 'cells' part to reflect the new 'model' part
-            model_diff, _ = compare_models(fs_store_dict, fs_obj_dict)
-            if not model_diff:  # model parts are the same
-                _log.debug("Stored flowsheet and model in memory are the same")
-                # Still need to update the model with the values from the object, since changes
-                # in the *values* inside the streams and units may have occurred
-                fs_merged = {
-                    "model": fs_obj_dict["model"],
-                    "cells": fs_store_dict["cells"],
-                }
-            else:
-                if _log.isEnabledFor(logger.DEBUG):
-                    num_diffs, plural = (
-                        len(model_diff),
-                        "s" if len(model_diff) > 1 else "",
-                    )
-                    _log.debug(
-                        f"Stored flowsheet and model in memory differ by {num_diffs} change{plural}; "
-                        f"updating JointJS display data"
-                    )
-                # modify the JointJS display info in 'cells' based on the diff
-                merged_cells = model_jointjs_conversion(model_diff, fs_store_dict)
-                # the merged value has the new model info plus the updated 'cells'
-                fs_merged = {
-                    "model": fs_obj_dict["model"],
-                    "cells": merged_cells["cells"],
-                }
-        assert fs_merged
-        # Save merged flowsheet
-        if fs_merged is fs_store_dict:
-            _log.debug("Flowsheet has not changed so skipping save of merged value")
-        else:
-            _log.debug("Storing merged flowsheet")
-            self.server.save_flowsheet(id_, fs_merged)
-        # Return merged flowsheet to app
-        self._write_json(200, fs_merged)
+        except (FlowsheetNotFound, ProcessingError) as err:
+            # Internal error: flowsheet ID is found, but other things are missing
+            self.send_error(500, message=str(err))
+            return
+        # Return merged flowsheet
+        self._write_json(200, merged)
 
     # === PUT ===
 
@@ -269,7 +295,11 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         read_len = int(self.headers.get("Content-Length", "-1"))
         data = utf8_decode(self.rfile.read(read_len))
         # save flowsheet
-        self.server.save_flowsheet(id_, data)
+        try:
+            self.server.save_flowsheet(id_, data)
+        except ProcessingError as err:
+            self.send_error(400, message="Invalid flowsheet", explain=str(err))
+            return
         self.send_response(200, message="success")
 
     # === Internal methods ===

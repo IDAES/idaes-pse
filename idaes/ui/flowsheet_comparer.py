@@ -12,367 +12,228 @@
 ##############################################################################
 # stdlib
 import copy
-from enum import Enum
-from jsonschema import validate
+import json
+from typing import Dict, List, Tuple
 
 
-class UnknownModelDiffException():
-    pass
+class FlowsheetDiff:
+    """Compute a flowsheet model 'diff' and use that to compute an updated layout.
 
-
-class Action(Enum):
-    REMOVE = 1
-    ADD = 2
-    CHANGE = 3
-
-
-def compare_models(existing_model, new_model, keep_old_model=False):
+    Flowsheets are serialized by the core library. See :func:`validate()` for the required format.
     """
-    Compares two models that are in this format
+    def __init__(self, old_flowsheet: Dict, new_flowsheet: Dict, validate=True):
+        """Construct with old and new flowsheet, and compute the diff and new layout
 
-    .. code-block:: json
+        Args:
+            old_flowsheet: Old flowsheet value
+            new_flowsheet: New flowsheet value
+            validate: If True, validate each flowsheet before doing the diff
+        Raises:
+            ValueError if either flowsheet is invalid
+        """
+        if validate:
+            ok, why = validate_flowsheet(old_flowsheet)
+            if not ok:
+                raise ValueError(f"invalid old_flowsheet value: {why}")
+            ok, why = validate_flowsheet(new_flowsheet)
+            if not ok:
+                raise ValueError(f"invalid new_flowsheet value: {why}")
+        self._old, self._new = old_flowsheet, new_flowsheet
+        self._diff = self._compute_diff()
+        self._layout = self._compute_layout() if self._diff else None
 
-        {
-            "model": {
-                "id": "id", 
-                "unit_models": {
-                    "M101": {
-                        "image": "mixer.svg", 
-                        "type": "mixer"
-                        "performance_contents": {
-                            "0": {
-                                "Variable": "Heat Duty", 
-                                "Value": "0.0"
-                            }
-                        },
-                        "stream_contents": {
-                            "0": {
-                                "Variable": "temperature", 
-                                "Inlet": ".01", 
-                                "Outlet": "12"
-                            }
-                        }
-                    }
-                },
-                "arcs": {
-                    "s03": {
-                        "source": "M101", 
-                        "dest": "H101", 
-                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
-                    }
-                }
-            },
-            "cells": [{ "--jointjs code--": "--jointjs code--" }]
-        }
+    @property
+    def layout(self):
+        return self._layout
 
-    :param existing_model: The current model to compare against
-    :param new_model: The new model that has changes
-    :return: A diff between the models in this format: 
+    def __len__(self):
+        n = 0
+        for action_values in self._diff.values():
+            for class_values in action_values.values():
+                n += len(class_values)
+        return n
 
-    .. code-block:: json
+    def __bool__(self):
+        return len(self) > 0
 
-        {
-            "M111": {
-                "type": "flash", 
-                "image": "flash.svg", 
-                "action": "1", 
-                "class": "unit model"
-            },
-            "s03": {
-                "source": "M101", 
-                "dest": "F102", 
-                "label": "Hello World", 
-                "action": "3", 
-                "class": "arc"
-            }, 
-            "s11": {
-                "source": "H101", 
-                "dest": "F102", 
-                "label": "molar flow ('Vap', 'hydrogen') 0.5", 
-                "action": "2", 
-                "class": "arc"
-            }
-        }
+    def __str__(self):
+        return json.dumps(self._diff, indent=2)
 
-    """
-    diff_model = {}
-    model_schema = {
-        "type" : "object",
-        "properties" : {
-            "id" : {"type" : ["number", "string"]},
-            "unit_models" : {
-                "type" : "object",
-            },
-            "arcs" : {
-                "type" : "object",
-            }
-        },
-        "required" : ["id", "unit_models", "arcs"]
-    }
+    def _compute_diff(self) -> Dict:
+        diff = {"add": {}, "remove": {}, "change": {}}
+        old_model, new_model = self._old["model"], self._new["model"]
+        for cls in "unit_models", "arcs":
+            for k in diff.keys():
+                diff[k][cls] = {}
+            old_data, new_data = old_model[cls], new_model[cls]
+            # Add/change
+            for key in new_data:
+                if key not in old_data:
+                    diff["add"][cls][key] = copy.deepcopy(new_data[key])
+                elif old_data[key] != new_data[key]:
+                    diff["change"][cls][key] = copy.deepcopy(new_data[key])
+            # Remove
+            for key in old_data:
+                if key not in new_data:
+                    diff["remove"][cls][key] = True
+        return diff
 
-    # Copy the new model into the out_json's model key
-    out_json = dict(existing_model)
-    try:
-        out_json["model"] = new_model["model"]
-    except KeyError as error:
-        msg = "Unable to find 'model' section of new model json"
-        raise KeyError(msg)
+    def _compute_layout(self) -> List:
+        """Based on the old and new flowsheets provided in the constructor, compute the layout
+        that should be placed in the "cells" of the new flowsheet.
 
-    try:
-        existing_model = existing_model["model"]
-    except KeyError as error:
-        msg = "Unable to find 'model' section of existing model json"
-        raise KeyError(msg)
-
-    validate(instance=existing_model, schema=model_schema)
-    validate(instance=new_model["model"], schema=model_schema)
-
-    
-    # If the existing model is empty then return an empty diff_model 
-    # and the full json from the new model
-    if existing_model["unit_models"] == {} and \
-        existing_model["arcs"] == {}:
-        return {}, new_model
-
-    # If the models are the same return an empty diff_model and the full json from
-    # the new model. This will happen when the user moves something in the 
-    # graph but doesn't change the actual idaes model or when comparing a new
-    # model to the existing model via the refresh graph button and the model hasn't
-    # changed
-    if existing_model == new_model["model"]:
-        if not keep_old_model:
-            return {}, new_model
-        else:
-            return {}, existing_model
-
-    try:
-        new_model = new_model["model"]
-    except KeyError as error:
-        msg = "Unable to find 'model' section of new model json"
-        raise KeyError(msg)
-
-    unit_model_schema = {
-        "type" : "object",
-        "properties" : {
-            "type" : {"type" : "string"},
-            "image" : {"type" : "string"}
-        },
-    }
-
-    # Check for new or changed unit models
-    #
-    # Note that when we are constructing the diff_model object, we need to make sure
-    # to copy (not reference) the values in the 'new_model' input, otherwise the subsequent
-    # assignment statements will modify the input value.
-    for item, value in new_model["unit_models"].items():
-        validate(instance=value, schema=unit_model_schema)
-        if item not in existing_model["unit_models"]:
-            diff_model[item] = copy.deepcopy(value)
-            diff_model[item]["action"] = Action.ADD.value
-            diff_model[item]["class"] = "unit model"
-        elif existing_model["unit_models"][item] != value:
-            diff_model[item] = copy.deepcopy(value)
-            diff_model[item]["action"] = Action.CHANGE.value
-            diff_model[item]["class"] = "unit model"
-        elif existing_model["unit_models"][item] == value:
-            pass
-        else:
-            msg = ("Unknown diff between new model and existing_model. "
-                   "Key: " + str(item) + " new model value: " + str(value) + ", "
-                   "existing model value: " + str(existing_model["unit_models"][item]))
-            raise UnknownModelDiffException(msg)
-
-    # Check for unit models that have been removed
-    for item, value in existing_model["unit_models"].items():
-        validate(instance=value, schema=unit_model_schema)
-        if item not in new_model["unit_models"]:
-            diff_model[item] = copy.deepcopy(value)
-            diff_model[item]["action"] = Action.REMOVE.value
-            diff_model[item]["class"] = "unit model"
-
-    arc_schema = {
-        "type" : "object",
-        "properties" : {
-            "source" : {"type" : "string"},
-            "dest" : {"type" : "string"},
-            "label" : {"type" : "string"}
-        }
-    }
-
-    # Check for new or changed arcs
-    for item, value in new_model["arcs"].items():
-        validate(instance=value, schema=arc_schema)
-        if item not in existing_model["arcs"]:
-            diff_model[item] = copy.deepcopy(value)
-            diff_model[item]["action"] = Action.ADD.value
-            diff_model[item]["class"] = "arc"
-        elif existing_model["arcs"][item] != value:
-            diff_model[item] = copy.deepcopy(value)
-            diff_model[item]["action"] = Action.CHANGE.value
-            diff_model[item]["class"] = "arc"
-        else:
-            pass
-
-    # Check for arcs that have been removed
-    for item, value in existing_model["arcs"].items():
-        validate(instance=value, schema=arc_schema)
-        if item not in new_model["arcs"]:
-            diff_model[item] = copy.deepcopy(value)
-            diff_model[item]["action"] = Action.REMOVE.value
-            diff_model[item]["class"] = "arc"
-
-
-    return diff_model, out_json
-
-
-def model_jointjs_conversion(diff_model, current_json):
-    """
-    Converts a model diff (output from compare_models) to jointjs
-    :param diff_model: A diff between the models in this format:
-
-    .. code-block:: json
-
-        {
-            "M111": {
-                "type": "flash", 
-                "image": "flash.svg", 
-                "action": "1", 
-                "class": "unit model"
-            }, 
-            "s03": {
-                "source": "M101", 
-                "dest": "F102", 
-                "label": "Hello World", 
-                "action": "3", 
-                "class": "arc"
-            }, 
-            "s11": {
-                "source": "H101", 
-                "dest": "F102", 
-                "label": "molar flow ('Vap', 'hydrogen') 0.5", 
-                "action": "2", 
-                "class": "arc"
-            }
-        }
-
-    :param current_json: The json from jointjs and the current model. In this format:
-
-    .. code-block:: json
-
-        {
-            "cells": [{ "--jointjs code--": "--jointjs code--" }],
-            "model": {
-                "id": "id", 
-                "unit_models": {
-                    "M101": {
-                        "image": "mixer.svg", 
-                        "type": "mixer"
-                        "performance contents": {
-                            "0": {
-                                "Variable": "Heat Duty", 
-                                "Value": "0.0"
-                            }
-                        },
-                        "stream contents": {
-                            "0": {
-                                "Variable": "temperature", 
-                                "Inlet": ".01", 
-                                "Outlet": "12"
-                            }
-                        }
-                    }
-                },
-                "arcs": {
-                    "s03": {
-                        "source": "M101", 
-                        "dest": "H101", 
-                        "label": "molar flow ('Vap', 'hydrogen') 0.5"
-                    }
-                }
-            }
-        }
-
-    """
-    new_json = dict(current_json)
-    x = 50
-    y = 50
-    for name, values in diff_model.items():
-        x += 100
-        y += 100
-        found = False
-        for item in current_json["cells"]:
-            if name == item["id"]:
-                # If the action is not removed then update the values
-                # If it is removed then just remove it from the new_json
-                new_json["cells"].remove(item)
-
-                if values["action"] != Action.REMOVE.value:
-                    if values["class"] == "arc":
-                        item["id"] = name
-                        item["source"]["id"] = values["source"]
-                        item["target"]["id"] = values["dest"]
-                        item["labels"][0]["attrs"]["text"]["text"] = values["label"]
-                        new_json["cells"].append(item)
-                    elif values["class"] == "unit model":
-                        item["id"] = name
-                        item["attrs"]["label"]["text"] = name
-                        item["attrs"]["image"]["xlinkHref"] = values["image"]
-                        item["attrs"]["root"]["title"] = values["type"]
-                        new_json["cells"].append(item)
-                    else:
-                        # if the class isn't a unit model or an arc then throw an 
-                        # exception because we don't know what this is
-                        raise UnknownModelDiffException("Unknown model item class")
-                found = True
-                break
-
-        if not found:
-            if values["class"] == "arc":
-                new_item = {
-                    "type": "standard.Link",
-                    "source": {"id": values["source"]},
-                    "target": {"id": values["dest"]},
-                    "router": {"name": "orthogonal", "padding": 10},
-                    "connector": {"name": "normal", 
-                                  "attrs": {"line": {"stroke": "#5c9adb"}}},
-                    "id": name,
-                    "labels": [{
-                        "attrs": {
-                            "rect": {"fill": "#d7dce0", 
-                                     "stroke": "#FFFFFF", 
-                                     'stroke-width': 1},
-                            "text": {
-                                "text": values["label"],
-                                "fill": 'black',
-                                'text-anchor': 'left',
-                            },
-                        },
-                        "position": {
-                            "distance": 0.66,
-                            "offset": -40
-                        },
-                    }],
-                    "z": 2
-                }
-            elif values["class"] == "unit model":
-                new_item = {
-                    "type": "standard.Image",
-                    "id": name,
-                    "position": {"x": x, "y": y},
-                    "size": {"width": 50, "height": 50},
-                    "angle": 0,
-                    "z": 1,
-                    "attrs": {
-                        "image": {"xlinkHref": values["image"]},
-                        "label": {"text": name},
-                        "root": {"title": values["type"]},
-                    }
-                }
+        Returns:
+            New layout to put into the "cells" of the new flowsheet dict
+        """
+        layout, x, y = [], 50, 50
+        # Add
+        for cls in self._diff["add"]:
+            for id_ in self._diff["add"][cls]:
+                values = self._diff["add"][cls][id_]
+                if cls == "arcs":
+                    new_item = self._new_arc(id_, values)
+                else:
+                    new_item = self._new_unit_model(id_, values, x, y)
+                    x, y = x + 100, y + 100
+                layout.append(new_item)
+        # Change, remove, and simply copy
+        for item in self._old["cells"]:
+            id_ = item["id"]
+            cls = "arcs" if "source" in item else "unit_models"
+            if id_ in self._diff["remove"][cls]:
+                continue
+            elif id_ in self._diff["change"][cls]:
+                values = self._diff["change"][cls][id_]
+                if cls == "arcs":
+                    new_item = self._update_arc(item, values)
+                else:
+                    new_item = self._update_unit_model(item, values)
+                layout.append(new_item)
             else:
-                # if the class isn't a unit model or an arc then throw an 
-                # exception because we don't know what this is
-                raise UnknownModelDiffException("Unknown model item class")
+                layout.append(copy.deepcopy(item))
+        return layout
 
-            new_json["cells"].append(new_item)
+    @staticmethod
+    def _new_arc(name, values):
+        return {
+            "type": "standard.Link",
+            "source": {"id": values["source"]},
+            "target": {"id": values["dest"]},
+            "router": {"name": "orthogonal", "padding": 10},
+            "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}},
+            "id": name,
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1},
+                        "text": {
+                            "text": values["label"],
+                            "fill": "black",
+                            "text-anchor": "left",
+                        },
+                    },
+                    "position": {"distance": 0.66, "offset": -40},
+                }
+            ],
+            "z": 2,
+        }
 
-    return new_json
+    @staticmethod
+    def _update_arc(item, values):
+        new_item = copy.deepcopy(item)
+        new_item["source"]["id"] = values["source"]
+        new_item["target"]["id"] = values["dest"]
+        new_item["labels"][0]["attrs"]["text"]["text"] = values["label"]
+        return new_item
+
+    @staticmethod
+    def _new_unit_model(name, values, x, y):
+        return {
+            "type": "standard.Image",
+            "id": name,
+            "position": {"x": x, "y": y},
+            "size": {"width": 50, "height": 50},
+            "angle": 0,
+            "z": 1,
+            "attrs": {
+                "image": {"xlinkHref": values["image"]},
+                "label": {"text": name},
+                "root": {"title": values["type"]},
+            },
+        }
+
+    @staticmethod
+    def _update_unit_model(item, values):
+        new_item = copy.deepcopy(item)
+        new_item["attrs"]["image"]["xlinkHref"] = values["image"]
+        new_item["attrs"]["root"]["title"] = values["type"]
+        return new_item
+
+
+def validate_flowsheet(fs: Dict) -> Tuple[bool, str]:
+    """Validate a flowsheet.
+
+    Expected format is below.
+
+    .. code-block:: json
+
+        {
+            "model": {
+                "id": "<model name>",
+                "unit_models": {
+                    "<component name>": {
+                        "image": "<image name>",
+                        "type": "<component type name>",
+                        ..<more values from model>..
+                    },
+                    ...
+                },
+                "arcs": {
+                    "<arc name>": {
+                        "source": "<component name>",
+                        "dest": "<component name>",
+                        "label": "<label text>"
+                    },
+                    ...
+                }
+            },
+            "cells": [
+                {"id": "<component_name>", ..<values used by JointJS>..},
+                ...
+            ]
+        }
+
+    Args:
+        fs: Flowsheet to validate
+
+    Return:
+        Tuple of (True, "") for OK, and (False, "<message>") for failure
+    """
+    # very quick and dirty validation, but it does make for nice clean error messages
+    for key in "model", "cells":
+        if key not in fs:
+            return False, f"Missing top-level key '{key}'"
+    model, component_ids = fs["model"], set()
+    for key2 in "id", "unit_models", "arcs":
+        if key2 not in model:
+            return False, f"The flowsheet model is missing key '{key2}'"
+        if key2 == "unit_models":
+            for ckey, cval in model[key2].items():
+                for key3 in "image", "type":
+                    if key3 not in cval:
+                        return False, f"Unit model '{ckey}' is missing key '{key3}'"
+                component_ids.add(ckey)
+        elif key2 == "arcs":
+            for akey, aval in model[key2].items():
+                for key3 in "source", "dest", "label":
+                    if key3 not in aval:
+                        return False, f"Arc '{akey}' is missing key '{key3}'"
+                component_ids.add(akey)
+    cells = fs["cells"]
+    for i, cell in enumerate(cells):
+        if "id" not in cell:
+            return False, f"Cell #{i + 1} is missing key 'id'"
+        cell_id = cell["id"]
+        if cell_id not in component_ids:
+            return False, f"Cell id '{cell_id}' not found in unit models or arcs"
+    return True, ""

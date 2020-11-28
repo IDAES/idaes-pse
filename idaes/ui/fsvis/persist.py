@@ -33,7 +33,7 @@ class DataStore(ABC):
         pass
 
     @abstractmethod
-    def load(self) -> Union[Dict, str]:
+    def load(self) -> Dict:
         pass
 
     @classmethod
@@ -61,43 +61,65 @@ class DataStore(ABC):
 
 
 class FileDataStore(DataStore):
-    def __init__(self, path):
+    def __init__(self, path: Path):
         self._p = path
-        self._is_json = False
+
+    @property
+    def path(self) -> Path:
+        return Path(str(self._p))  # return a copy
 
     def save(self, data):
         with self._p.open("w") as fp:
             if isinstance(data, dict):
-                json.dump(data, fp)
-                self._is_json = True
+                try:
+                    json.dump(data, fp)
+                except TypeError:
+                    raise ValueError(f"Writing JSON failed: {err}")
             else:
                 fp.write(data)
-                self._is_json = False
 
     def load(self):
-        with self._p.open("r") as fp:
-            if self._is_json:
-                data = json.load(fp)
-            else:
-                data = fp.read()
+        try:
+            with self._p.open("r") as fp:
+                try:
+                    data = json.load(fp)
+                except json.JSONDecodeError as err:
+                    raise ValueError(f"Reading JSON failed: {err}")
+        except FileNotFoundError:
+            # normalize errors finding stored object to ValueError
+            raise ValueError(f"File '{self._p}' not found")
         return data
 
     def __str__(self):
         return f"file storage at '{self._p}'"
+
+    def __eq__(self, other):
+        return self._p == other.path
 
 
 class MemoryDataStore(DataStore):
     def __init__(self):
         self._data = None
 
-    def save(self, data):
-        self._data = data
+    def save(self, data: Union[str, Dict]):
+        if isinstance(data, dict):
+            self._data = data
+        else:
+            try:
+                self._data = json.loads(data)
+            except json.JSONDecodeError as err:
+                raise ValueError("Parsing JSON failed: {err}")
 
-    def load(self):
+    def load(self) -> Dict:
+        if self._data is None:
+            raise ValueError("Data is empty")
         return self._data
 
     def __str__(self):
         return "memory storage"
+
+    def __eq__(self, other):
+        return True
 
 
 class DataStoreManager:
@@ -107,24 +129,63 @@ class DataStoreManager:
         self._id_store = {}
         self._id_path = {}  # maps identifiers to Path objects
 
-    def add(self, id_: str, store: DataStore):
+    def add(self, id_: str, store: DataStore) -> bool:
         """Add an identifier and associated storage location.
+
+        If the same datastore is already there, do nothing.
 
         Args:
             id_: Identifier
             store: Where to store it
+        Returns:
+            True if we added a new store, False if we did nothing
         """
-        self._id_store[id_] = store
-
-    def _check_id(self, id_: str):
-        if id_ not in self._id_store:
-            raise KeyError(f"No storage associated with identifier '{id_}'")
+        if id_ in self._id_store and self._id_store[id_] == store:
+            _log.debug(f"Use existing store, {self._id_store[id_]}, for '{id_}'")
+            added = False
+        else:
+            self._id_store[id_] = store
+            added = True
+        return added
 
     def save(self, id_: str, data: Union[Dict, str]):
-        self._check_id(id_)
-        self._id_store[id_].save(data)
+        """Save flowsheet with given identifier.
 
-    def load(self, id_: str) -> Union[Dict, str]:
-        self._check_id(id_)
-        return self._id_store[id_].load()
+        Args:
+            id_: Flowsheet identifier
+            data: Data for the flowsheet, either as serialized JSON or a Python dict
+
+        Returns:
+            None
+
+        Raises:
+            KeyError if the flowsheet is not found
+            ValueError on JSON errors
+        """
+        self._find(id_).save(data)
+        _log.debug(f"Flowsheet '{id_}' saved")
+
+    def load(self, id_: str) -> Dict:
+        """Load a flowhseet with a given identifier.
+
+        Args:
+            id_: Flowsheet identifier
+
+        Returns:
+            Flowsheet (always as a dict, no matter how it was saved)
+
+        Raises:
+            KeyError if the flowsheet is not found
+            ValueError on JSON errors
+        """
+        value = self._find(id_).load()
+        _log.debug(f"Flowsheet '{id_}' loaded")
+        return value
+
+    def _find(self, id_: str):
+        try:
+            store = self._id_store[id_]
+        except KeyError:
+            raise KeyError(f"Unknown flowsheet '{id_}'")
+        return store
 
