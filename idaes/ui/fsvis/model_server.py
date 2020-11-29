@@ -161,27 +161,21 @@ class FlowsheetServer(http.server.HTTPServer):
         except ValueError as err:
             raise ProcessingError(f"Cannot serialize flowsheet: {err}")
         # Compare saved and current value
-        #diff, _ = compare_models(saved, obj_dict)
         diff = FlowsheetDiff(saved, obj_dict)
-        print(f"@@ diff: compare\n** SAVED **\n{saved}\nMEMORY\n{obj_dict}\nDIFF\n{diff}")
-        # If no difference, merged value is saved value
+        _log.debug(f"diff: {diff}")
         if not diff:
+            # If no difference do nothing
             _log.debug("Stored flowsheet is the same as the flowsheet in memory")
             merged = saved
-        # Otherwise, set merged value to current model + new layout.
-        # Save this merged value before returning it
         else:
-            if _log.isEnabledFor(logger.DEBUG):
-                num, pl = len(diff), "s" if len(diff) > 1 else ""
-                _log.debug(
-                    f"Stored flowsheet and model in memory differ by {num} item{pl}"
-                )
-            #diff_cells = model_jointjs_conversion(diff, saved)
-            merged = {"model": obj_dict["model"], "cells": diff.layout}
-            _log.debug(f"Saving updated flowsheet")
-            self.save_flowsheet(id_, merged)
-        # Return merged value
-        return merged
+            # Otherwise, save this merged value before returning it
+            num, pl = len(diff), "s" if len(diff) > 1 else ""
+            _log.debug(
+                f"Stored flowsheet and model in memory differ by {num} item{pl}"
+            )
+            self.save_flowsheet(id_, diff.merged())
+        # Return [a copy of the] merged value
+        return diff.merged(do_copy=True)
 
     # === Internal methods ===
 
