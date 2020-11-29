@@ -20,6 +20,11 @@ class FlowsheetDiff:
     """Compute a flowsheet model 'diff' and use that to compute an updated layout.
 
     Flowsheets are serialized by the core library. See :func:`validate()` for the required format.
+
+    Example usage::
+
+        diff =  FlowsheetDiff(saved_flowsheet, new_flowsheet)
+        merged_flowsheet = {"model": new_flowsheet["model"], "cells": diff.layout}
     """
     def __init__(self, old_flowsheet: Dict, new_flowsheet: Dict, validate=True):
         """Construct with old and new flowsheet, and compute the diff and new layout
@@ -39,19 +44,35 @@ class FlowsheetDiff:
             if not ok:
                 raise ValueError(f"invalid new_flowsheet value: {why}")
         self._old, self._new = old_flowsheet, new_flowsheet
+        self._len = None
         self._diff = self._compute_diff()
         self._layout = self._compute_layout() if self._diff else None
 
-    @property
-    def layout(self):
-        return self._layout
+    def merged(self, do_copy: bool = False) -> Dict:
+        """Return merged flowsheet.
+
+        If the diff is empty, this will be the 'old_flowsheet' (or a copy) passed to the constructor.
+
+        Args:
+            do_copy: If True, return a copy so modifying the returned dict won't affect input arguments.
+
+        Returns:
+            Merged dict with structure as described in :func:`validate_flowsheet()`.
+        """
+        if bool(self):
+            result = {
+                "model": copy.deepcopy(self._new["model"]) if do_copy else self._new["model"],
+                "cells": self._layout
+            }
+        else:
+            # diff is empty, return 'old' object
+            result = copy.deepcopy(self._old) if do_copy else self._old
+        return result
 
     def __len__(self):
-        n = 0
-        for action_values in self._diff.values():
-            for class_values in action_values.values():
-                n += len(class_values)
-        return n
+        if self._len is None:
+            return 0
+        return self._len
 
     def __bool__(self):
         return len(self) > 0
@@ -62,6 +83,7 @@ class FlowsheetDiff:
     def _compute_diff(self) -> Dict:
         diff = {"add": {}, "remove": {}, "change": {}}
         old_model, new_model = self._old["model"], self._new["model"]
+        n = 0
         for cls in "unit_models", "arcs":
             for k in diff.keys():
                 diff[k][cls] = {}
@@ -70,12 +92,16 @@ class FlowsheetDiff:
             for key in new_data:
                 if key not in old_data:
                     diff["add"][cls][key] = copy.deepcopy(new_data[key])
+                    n += 1
                 elif old_data[key] != new_data[key]:
                     diff["change"][cls][key] = copy.deepcopy(new_data[key])
+                    n += 1
             # Remove
             for key in old_data:
                 if key not in new_data:
                     diff["remove"][cls][key] = True
+                    n += 1
+        self._len = n
         return diff
 
     def _compute_layout(self) -> List:
