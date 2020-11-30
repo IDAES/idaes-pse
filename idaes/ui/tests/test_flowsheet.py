@@ -11,12 +11,25 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import copy
-from pprint import pprint
+import json
+from pathlib import Path
+
 import pytest
 
 from idaes.ui.flowsheet import FlowsheetSerializer, FlowsheetDiff, validate_flowsheet
+from idaes.generic_models.properties.swco2 import SWCO2ParameterBlock
+from idaes.generic_models.unit_models import Heater, PressureChanger
+from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
+from pyomo.environ import Expression, TransformationFactory, ConcreteModel
+from pyomo.network import Arc
+from idaes.core import FlowsheetBlock
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
+from idaes.generic_models.unit_models import Flash, Mixer
 
 # === Sample data ===
+
+test_dir = Path(__file__).parent
 
 base_model = {
     "model": {
@@ -64,6 +77,110 @@ def models():
         # done
         models[n] = model
     return models
+
+
+@pytest.fixture(scope="module")
+def demo_flowsheet():
+    """Semi-complicated demonstration flowsheet.
+    """
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.BT_props = BTXParameterBlock()
+    m.fs.M01 = Mixer(default={"property_package": m.fs.BT_props})
+    m.fs.H02 = Heater(default={"property_package": m.fs.BT_props})
+    m.fs.F03 = Flash(default={"property_package": m.fs.BT_props})
+    m.fs.s01 = Arc(source=m.fs.M01.outlet, destination=m.fs.H02.inlet)
+    m.fs.s02 = Arc(source=m.fs.H02.outlet, destination=m.fs.F03.inlet)
+    TransformationFactory("network.expand_arcs").apply_to(m.fs)
+
+    m.fs.properties = SWCO2ParameterBlock()
+    m.fs.main_compressor = PressureChanger(
+      default={'dynamic': False,
+               'property_package': m.fs.properties,
+               'compressor': True,
+               'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+
+    m.fs.bypass_compressor = PressureChanger(
+        default={'dynamic': False,
+                 'property_package': m.fs.properties,
+                 'compressor': True,
+                 'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+
+    m.fs.turbine = PressureChanger(
+      default={'dynamic': False,
+               'property_package': m.fs.properties,
+               'compressor': False,
+               'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+    m.fs.boiler = Heater(default={'dynamic': False,
+                                  'property_package': m.fs.properties,
+                                  'has_pressure_change': True})
+    m.fs.FG_cooler = Heater(default={'dynamic': False,
+                                     'property_package': m.fs.properties,
+                                     'has_pressure_change': True})
+    m.fs.pre_boiler = Heater(default={'dynamic': False,
+                                      'property_package': m.fs.properties,
+                                      'has_pressure_change': False})
+    m.fs.HTR_pseudo_tube = Heater(default={'dynamic': False,
+                                       'property_package': m.fs.properties,
+                                       'has_pressure_change': True})
+    m.fs.LTR_pseudo_tube = Heater(default={'dynamic': False,
+                                       'property_package': m.fs.properties,
+                                       'has_pressure_change': True})
+    # Set numerics
+    m.fs.turbine.ratioP.fix(1 / 3.68)
+    m.fs.turbine.efficiency_isentropic.fix(0.927)
+    m.fs.turbine.initialize()
+    m.gross_cycle_power_output = \
+        Expression(expr=(-m.fs.turbine.work_mechanical[0] -
+                         m.fs.main_compressor.work_mechanical[0] -
+                         m.fs.bypass_compressor.work_mechanical[0]))
+    # account for generator loss = 1.5% of gross power output
+    m.net_cycle_power_output = Expression(expr=0.985 * m.gross_cycle_power_output)
+    m.total_cycle_power_input = Expression(
+        expr=(m.fs.boiler.heat_duty[0] + m.fs.pre_boiler.heat_duty[0] +
+              m.fs.FG_cooler.heat_duty[0]))
+    m.cycle_efficiency = Expression(
+        expr=m.net_cycle_power_output / m.total_cycle_power_input * 100)
+    # Expression to compute recovered duty in recuperators
+    m.recuperator_duty = Expression(
+        expr=(m.fs.HTR_pseudo_tube.heat_duty[0] +
+              m.fs.LTR_pseudo_tube.heat_duty[0]))
+    return m.fs
+
+
+@pytest.fixture(scope="module")
+def flash_flowsheet():
+    # Model and flowsheet
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    # Flash properties
+    m.fs.properties = BTXParameterBlock(default={"valid_phase": ('Liq', 'Vap'),
+                                                 "activity_coeff_model": "Ideal",
+                                                 "state_vars": "FTPz"})
+    # Flash unit
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+    m.fs.flash.inlet.flow_mol.fix(1)
+    m.fs.flash.inlet.temperature.fix(368)
+    m.fs.flash.inlet.pressure.fix(101325)
+    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+    m.fs.flash.heat_duty.fix(0)
+    m.fs.flash.deltaP.fix(0)
+    return m.fs
+
+
+@pytest.fixture(scope="module")
+def demo_flowsheet_json():
+    json_file = test_dir / "demo_flowsheet.json"
+    s = json_file.open().read()
+    return s
+
+
+@pytest.fixture(scope="module")
+def flash_flowsheet_json():
+    json_file = test_dir / "flash_flowsheet.json"
+    s = json_file.open().read()
+    return s
 
 # === Tests ===
 
@@ -118,1332 +235,55 @@ def test_merge(models):
                 assert cell["attrs"]["image"]["xlinkHref"] == "changed.svg"
 
 
+@pytest.mark.unit
+def test_validate_flowsheet(models):
+    # these have a type error since they are not iterable at all
+    pytest.raises(TypeError, validate_flowsheet, None)
+    pytest.raises(TypeError, validate_flowsheet, 123)
+    # these are missing the top-level keys (but are sort of iterable, so no type error)
+    assert validate_flowsheet("hello")[0] is False
+    assert validate_flowsheet([])[0] is False
+    # empty one fails
+    assert validate_flowsheet({})[0] is False
+    # the minimal ones we manually constructed will pass
+    for model in models.values():
+        assert validate_flowsheet(model)[0]
+    # now try tweaks on the minimal ones
+    m = models[2]["model"]
+    # remove image
+    image = m["unit_models"]["U1"]["image"]
+    del m["unit_models"]["U1"]["image"]
+    assert validate_flowsheet(m)[0] is False
+    m["unit_models"]["U1"]["image"] = image  # restore it
+    # mess up a unit model ID
+    m["unit_models"]["U-FOO"] = m["unit_models"]["U1"]
+    del m["unit_models"]["U1"]
+    assert validate_flowsheet(m)[0] is False
+    m["unit_models"]["U1"] = m["unit_models"]["U-FOO"]
+    del m["unit_models"]["U-FOO"]
+    # mess up an arc ID
+    m["arcs"]["A-FOO"] = m["arcs"]["A1"]
+    del m["arcs"]["A1"]
+    assert validate_flowsheet(m)[0] is False
+    m["arcs"]["A1"] = m["arcs"]["A-FOO"]
+    del m["arcs"]["A-FOO"]
 
-# @pytest.mark.unit
-# def test_compare_models_edge_cases():
-#     # Both empty models
-#     existing_model = {"model": {"id": 1, "unit_models": {}, "arcs": {}}}
-#
-#     new_model = {"model": {"id": 2, "unit_models": {}, "arcs": {}}}
-#
-#     diff_model, out_json = fc.compare_models(existing_model, new_model)
-#     assert diff_model == {}
-#
-#     # Existing model is empty
-#     existing_model = {"model": {"id": 1, "unit_models": {}, "arcs": {}}}
-#
-#     new_model = {
-#         "model": {
-#             "id": 0,
-#             "unit_models": {
-#                 "M101": {"type": "mixer", "image": "mixer.svg"},
-#                 "H101": {"type": "heater", "image": "heater_2.svg"},
-#             },
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#
-#     diff_model, out_json = fc.compare_models(existing_model, new_model)
-#
-#     # Since the existing model is empty we return an empty diff_model and
-#     # return new_model as the output json
-#     diff_model_truth = {}
-#     assert diff_model == diff_model_truth
-#     assert out_json == new_model
-#
-#     # New model is empty
-#     existing_model = {
-#         "model": {
-#             "id": 0,
-#             "unit_models": {
-#                 "M101": {"type": "mixer", "image": "mixer.svg"},
-#                 "H101": {"type": "heater", "image": "heater_2.svg"},
-#             },
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#
-#     new_model = {"model": {"id": 1, "unit_models": {}, "arcs": {}}}
-#
-#     diff_model, out_json = fc.compare_models(existing_model, new_model)
-#
-#     assert diff_model == {
-#         "M101": {
-#             "type": "mixer",
-#             "image": "mixer.svg",
-#             "action": Action.REMOVE.value,
-#             "class": "unit model",
-#         },
-#         "H101": {
-#             "type": "heater",
-#             "image": "heater_2.svg",
-#             "action": Action.REMOVE.value,
-#             "class": "unit model",
-#         },
-#         "s03": {
-#             "source": "M101",
-#             "dest": "H101",
-#             "label": "hello",
-#             "action": Action.REMOVE.value,
-#             "class": "arc",
-#         },
-#     }
-#
-#     # The models are the same
-#     model = {
-#         "model": {
-#             "id": 0,
-#             "unit_models": {
-#                 "M101": {"type": "mixer", "image": "mixer.svg"},
-#                 "H101": {"type": "heater", "image": "heater_2.svg"},
-#             },
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#
-#     diff_model, out_json = fc.compare_models(model, model)
-#     assert diff_model == {}
-#
-#
-# @pytest.mark.unit
-# def test_compare_models_errors():
-#     # Both empty
-#     existing_model = {}
-#     new_model = {}
-#
-#     with pytest.raises(KeyError):
-#         fc.compare_models(existing_model, new_model)
-#
-#     # New model is missing the id
-#     existing_model = {
-#         "model": {
-#             "id": 0,
-#             "unit_models": {
-#                 "M101": {"type": "mixer", "image": "mixer.svg"},
-#                 "H101": {"type": "heater", "image": "heater_2.svg"},
-#             },
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#     new_model = {
-#         "model": {
-#             "unit_models": {
-#                 "M101": {"type": "mixer", "image": "mixer.svg"},
-#                 "H101": {"type": "heater", "image": "heater_2.svg"},
-#             },
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#
-#     with pytest.raises(ValidationError):
-#         fc.compare_models(existing_model, new_model)
-#
-#     # Existing model is the wrong format
-#     existing_model = {
-#         "model": {
-#             "id": 0,
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#     new_model = {
-#         "model": {
-#             "id": 0,
-#             "unit_models": {
-#                 "M101": {"type": "mixer", "image": "mixer.svg"},
-#                 "H101": {"type": "heater", "image": "heater_2.svg"},
-#             },
-#             "arcs": {"s03": {"source": "M101", "dest": "H101", "label": "hello"}},
-#         }
-#     }
-#
-#     with pytest.raises(ValidationError):
-#         fc.compare_models(existing_model, new_model)
-#
-#
-# @pytest.mark.unit
-# def test_model_jointjs_conversion():
-#     # Test unit model addition
-#     original_jointjs = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     diff_model = {
-#         "F222": {
-#             "type": "flash",
-#             "image": "flash.svg",
-#             "action": Action.ADD.value,
-#             "class": "unit model",
-#         }
-#     }
-#
-#     new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
-#     jointjs_truth = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 150, "y": 150},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "F222",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "flash.svg"},
-#                     "label": {"text": "F222"},
-#                     "root": {"title": "flash"},
-#                 },
-#             },
-#         ]
-#     }
-#
-#     assert new_jointjs == jointjs_truth
-#
-#     # Test unit model removal
-#     original_jointjs = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     diff_model = {
-#         "M101": {
-#             "type": "mixer",
-#             "image": "mixer.svg",
-#             "action": Action.REMOVE.value,
-#             "class": "unit model",
-#         }
-#     }
-#
-#     new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
-#     jointjs_truth = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     assert new_jointjs == jointjs_truth
-#
-#     # Test arc addition
-#     original_jointjs = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     diff_model = {
-#         "s01": {
-#             "source": "M101",
-#             "dest": "F111",
-#             "label": "foo",
-#             "action": Action.ADD.value,
-#             "class": "arc",
-#         }
-#     }
-#
-#     new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
-#     jointjs_truth = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {"id": "M101"},
-#                 "target": {"id": "F111"},
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s01",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "foo",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     assert new_jointjs == jointjs_truth
-#
-#     # Test arc change
-#     original_jointjs = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     diff_model = {
-#         "s04": {
-#             "source": "M101",
-#             "dest": "F111",
-#             "label": "asdf",
-#             "action": Action.CHANGE.value,
-#             "class": "arc",
-#         }
-#     }
-#
-#     new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
-#     jointjs_truth = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "M101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F111",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "asdf",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     assert new_jointjs == jointjs_truth
-#
-#     # Test arc removal
-#     original_jointjs = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "right",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "H101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "topLeft",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s04",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "hello",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     diff_model = {
-#         "s04": {
-#             "source": "M101",
-#             "dest": "F111",
-#             "label": "asdf",
-#             "action": Action.REMOVE.value,
-#             "class": "arc",
-#         }
-#     }
-#
-#     new_jointjs = fc.model_jointjs_conversion(diff_model, original_jointjs)
-#     jointjs_truth = {
-#         "cells": [
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 100, "y": 100},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "M101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "mixer.svg"},
-#                     "label": {"text": "M101"},
-#                     "root": {"title": "mixer"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Image",
-#                 "position": {"x": 200, "y": 200},
-#                 "size": {"width": 50, "height": 50},
-#                 "angle": 0,
-#                 "id": "H101",
-#                 "z": 1,
-#                 "attrs": {
-#                     "image": {"xlinkHref": "heater_2.svg"},
-#                     "label": {"text": "H101"},
-#                     "root": {"title": "heater"},
-#                 },
-#             },
-#             {
-#                 "type": "standard.Link",
-#                 "source": {
-#                     "anchor": {
-#                         "name": "bottomRight",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "R101",
-#                 },
-#                 "target": {
-#                     "anchor": {
-#                         "name": "left",
-#                         "args": {"rotate": "false", "padding": 0},
-#                     },
-#                     "id": "F101",
-#                 },
-#                 "router": {"name": "orthogonal", "padding": 10},
-#                 "connector": {
-#                     "name": "normal",
-#                     "attrs": {"line": {"stroke": "#5c9adb"}},
-#                 },
-#                 "id": "s05",
-#                 "labels": [
-#                     {
-#                         "attrs": {
-#                             "rect": {
-#                                 "fill": "#d7dce0",
-#                                 "stroke": "#FFFFFF",
-#                                 "stroke-width": 1,
-#                             },
-#                             "text": {
-#                                 "text": "world",
-#                                 "fill": "black",
-#                                 "text-anchor": "left",
-#                             },
-#                         },
-#                         "position": {"distance": 0.66, "offset": -40},
-#                     }
-#                 ],
-#                 "z": 2,
-#             },
-#         ]
-#     }
-#
-#     assert new_jointjs == jointjs_truth
+
+@pytest.mark.unit
+def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
+    """Simple regression test vs. stored data.
+    """
+    test_dict = FlowsheetSerializer(demo_flowsheet, "demo").as_dict()
+    test_json = json.dumps(test_dict)
+    assert test_json == demo_flowsheet_json
+
+
+@pytest.mark.unit
+def test_flowsheet_serializer_flash(flash_flowsheet, flash_flowsheet_json):
+    """Simple regression test vs. stored data.
+    """
+    test_dict = FlowsheetSerializer(flash_flowsheet, "demo").as_dict()
+    test_json = json.dumps(test_dict)
+    assert test_json == flash_flowsheet_json
+
+
