@@ -27,9 +27,8 @@ from urllib.parse import urlparse
 
 # package
 from idaes import logger
-from idaes.ui.flowsheet_comparer import FlowsheetDiff
+from ..flowsheet import FlowsheetDiff, FlowsheetSerializer
 from . import persist
-from ..flowsheet_serializer import FlowsheetSerializer
 
 _log = logger.getLogger(__name__)
 
