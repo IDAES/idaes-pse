@@ -290,7 +290,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
     jobs:
       - idaes_dev:
           context: IDAES
