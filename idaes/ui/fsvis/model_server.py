@@ -109,7 +109,7 @@ class FlowsheetServer(http.server.HTTPServer):
         except FlowsheetNotFoundInDatastore:
             _log.debug(f"No existing flowsheet found in {store}: saving new value")
             # If not found in datastore, save new value
-            fs_dict = FlowsheetSerializer().serialize(flowsheet, id_)
+            fs_dict = FlowsheetSerializer(flowsheet, id_).as_dict()
             store.save(fs_dict)
         else:
             _log.debug(f"Existing flowsheet found in {store}: saving merged value")
@@ -189,7 +189,7 @@ class FlowsheetServer(http.server.HTTPServer):
     @staticmethod
     def _serialize_flowsheet(id_, flowsheet):
         try:
-            result = FlowsheetSerializer().serialize(flowsheet, id_)
+            result = FlowsheetSerializer(flowsheet, id_).as_dict()
         except (AttributeError, KeyError) as err:
             raise ValueError(f"Error serializing flowsheet: {err}")
         return result

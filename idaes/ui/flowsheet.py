@@ -39,6 +39,50 @@ class FileBaseNameExistsError(Exception):
 
 
 class FlowsheetSerializer:
+    """
+    Serializes the flowsheet into one dict with two sections.
+
+    The "model" section contains the id of the flowsheet and the
+    unit models and arcs. This will be used to compare the model and convert
+    to jointjs
+
+    The "cells" section is the jointjs readable code.
+
+    .. code-block:: json
+
+    {
+        "model": {
+            "id": "id",
+            "unit_models": {
+                "M101": {
+                    "image": "mixer.svg",
+                    "type": "mixer",
+                    "performance_contents": {
+                        "0": {
+                            "Variable": "Heat Duty",
+                            "Value": "0.0"
+                        }
+                    },
+                    "stream_contents": {
+                        "0": {
+                            "Variable": "temperature",
+                            "Inlet": ".01",
+                            "Outlet": "12"
+                        }
+                    }
+                }
+            },
+            "arcs": {
+                "s03": {
+                    "source": "M101",
+                    "dest": "H101",
+                    "label": "molar flow ("Vap", "hydrogen") 0.5"
+                }
+            }
+        },
+        "cells": [{ "--jointjs code--": "--jointjs code--" }]
+    }
+    """
     #: Regular expression identifying inlets by last component of ports' name
     INLET_REGEX = re.compile(
         r"^in_|^feed_|^inlet_|^in$|^feed$|^inlet$|_in$|_feed$|_inlet$", re.IGNORECASE
@@ -49,83 +93,32 @@ class FlowsheetSerializer:
         re.IGNORECASE,
     )
 
-    def __init__(self):
+    def __init__(self, flowsheet, name):
+        """Serialize input flowsheet with given name
+        """
+        # setup
         self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
         self.arcs = {}  # {Arc.getname(): Arc}
         self.ports = {}  # {Port: parent_unit}
         self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
         self.orphaned_ports = {}
         self.labels = {}
-        self.out_json = {"model": {}}
+        self._out_json = {"model": {}}
         self.serialized_contents = defaultdict(dict)
-        self.name = ""
-        self.flowsheet = None
         self._used_ports = set()
         self._known_endpoints = set()
         self._unit_name_used_count = defaultdict(lambda: 0)
-        self._logger = idaes.logger.getLogger(__name__)
-
-    def serialize(self, flowsheet, name):
-        """
-        Serializes the flowsheet into one dict with two sections.
-
-        The "model" section contains the id of the flowsheet and the
-        unit models and arcs. This will be used to compare the model and convert
-        to jointjs
-
-        The "cells" section is the jointjs readable code.
-
-        .. code-block:: json
-
-        {
-            "model": {
-                "id": "id", 
-                "unit_models": {
-                    "M101": {
-                        "image": "mixer.svg", 
-                        "type": "mixer",
-                        "performance_contents": {
-                            "0": {
-                                "Variable": "Heat Duty", 
-                                "Value": "0.0"
-                            }
-                        },
-                        "stream_contents": {
-                            "0": {
-                                "Variable": "temperature", 
-                                "Inlet": ".01", 
-                                "Outlet": "12"
-                            }
-                        }
-                    }
-                },
-                "arcs": {
-                    "s03": {
-                        "source": "M101", 
-                        "dest": "H101", 
-                        "label": "molar flow ("Vap", "hydrogen") 0.5"
-                    }
-                }
-            },
-            "cells": [{ "--jointjs code--": "--jointjs code--" }]
-        }
-
-        :param flowsheet: The flowsheet to save. Usually fetched from the model.
-        :param name: The name of the flowsheet. This will be used as the model id
-        :return: None
-
-        Usage example:
-            m = ConcreteModel()
-            m.fs = FlowsheetBlock(...)
-            ...
-            serializer = FlowsheetSerializer()
-            serializer.save(m.fs, "output_file")
-        """
+        self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
+        # serialize
         self._ingest_flowsheet()
+        #print(f"@@ after ingest: arcs={self.arcs}, ports={self.ports}, edges={self.edges}, "
+        #      f"labels={self.labels}, serialized_contents={self.serialized_contents}")
         self._construct_output_json()
-        return self.out_json
+
+    def as_dict(self):
+        return self._out_json
 
     def _ingest_flowsheet(self):
         # Stores information on the connectivity and components of the input flowsheet
@@ -326,9 +319,9 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
-        self.out_json["model"]["id"] = self.name
-        self.out_json["model"]["unit_models"] = {}
-        self.out_json["model"]["arcs"] = {}
+        self._out_json["model"]["id"] = self.name
+        self._out_json["model"]["unit_models"] = {}
+        self._out_json["model"]["arcs"] = {}
 
         for unit_model in self.unit_models.values():
             unit_name = unit_model["name"]
@@ -345,17 +338,17 @@ class FlowsheetSerializer:
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 
-            self.out_json["model"]["unit_models"][unit_name] = unit_contents
+            self._out_json["model"]["unit_models"][unit_name] = unit_contents
 
         for edge, edge_info in self.edges.items():
-            self.out_json["model"]["arcs"][edge] = {
+            self._out_json["model"]["arcs"][edge] = {
                 "source": edge_info["source"].getname(),
                 "dest": edge_info["dest"].getname(),
                 "label": self.labels[edge],
             }
 
     def _construct_jointjs_json(self):
-        self.out_json["cells"] = []
+        self._out_json["cells"] = []
 
         # Start out in the top left corner until we get a better inital layout
         x_pos = 10
@@ -365,7 +358,6 @@ class FlowsheetSerializer:
         for component, unit_attrs in self.unit_models.items():
             try:
                 self._create_image_jointjs_json(
-                    self.out_json,
                     x_pos,
                     y_pos,
                     unit_attrs["name"],
@@ -378,7 +370,6 @@ class FlowsheetSerializer:
                     f'Unable to find icon for {unit_attrs["type"]}. Using default icon'
                 )
                 self._create_image_jointjs_json(
-                    self.out_json,
                     x_pos,
                     y_pos,
                     unit_attrs["name"],
@@ -418,7 +409,6 @@ class FlowsheetSerializer:
             source_port = "out"
             dest_port = "in"
             self._create_link_jointjs_json(
-                self.out_json,
                 source_port,
                 dest_port,
                 ports_dict["source"].getname(),
@@ -428,7 +418,7 @@ class FlowsheetSerializer:
             )
 
     def _create_image_jointjs_json(
-        self, out_json, x_pos, y_pos, name, image, title, port_groups
+        self, x_pos, y_pos, name, image, title, port_groups
     ):
         # Create the jointjs for a given image
         entry = {}
@@ -452,10 +442,10 @@ class FlowsheetSerializer:
             "label": {"text": name},
             "root": {"title": title},
         }
-        out_json["cells"].append(entry)
+        self._out_json["cells"].append(entry)
 
     def _create_link_jointjs_json(
-        self, out_json, source_port, dest_port, source_id, dest_id, name, label
+        self, source_port, dest_port, source_id, dest_id, name, label
     ):
         # Create the joint js for a link
         # Set the padding to 10. Makayla saw it in a jointjs example
@@ -498,7 +488,7 @@ class FlowsheetSerializer:
             ],
             "z": z,
         }
-        out_json["cells"].append(entry)
+        self._out_json["cells"].append(entry)
 
     class _PseudoUnit:
         """
