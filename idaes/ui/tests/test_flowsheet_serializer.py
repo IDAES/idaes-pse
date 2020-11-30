@@ -22,7 +22,7 @@ from idaes.generic_models.unit_models.pressure_changer import \
     ThermodynamicAssumption
 from idaes.generic_models.properties.swco2 import SWCO2ParameterBlock
 from idaes.generic_models.unit_models import Heater, PressureChanger
-from idaes.ui.flowsheet_serializer import FlowsheetSerializer
+from idaes.ui.flowsheet import FlowsheetSerializer
 from idaes.ui.icon_mapping import icon_mapping
 from idaes.ui.link_position_mapping import link_position_mapping
 
