@@ -31,9 +31,9 @@ Model Arguments:
 * number_of_zones: the number of water wall zones are required to maintain the overall energy balance
 * calculate_PA_SA_flows: Depending on the user's selection, this feature builds different parts of the model (config argument: calculate_PA_SA_flows=True or False).
 
-    * Option1 assumes that users know primary air flowrate, and secondary air flowrate (calculate_PA_SA_flows=False).
-    * Option2 assumes that the users provide stoichiometric ratio and primary air to coal ratio to calculate primary air and secondary air flowrates (calculate_PA_SA_flows=True).
-
+  - Option1 assumes that users know primary air flowrate and secondary air flowrate (if calculate_PA_SA_flows is False).
+  - Option2 assumes that the users provide stoichiometric ratio and primary air to coal ratio to calculate primary air and secondary air flowrates (if calculate_PA_SA_flows is True).
+    
 * has_platen_superheater: True/False if a platen superheater will be included in the flowsheet
 * has_roof_backpass: True if a roof and backpass heater will be included in the flowsheet
 * surrogate_dictionary: user must provide a dictionary with surrogate models for water wall zones, platen and roof superheaters, NOx, and flyash
@@ -49,16 +49,16 @@ Model inputs (variable name):
 * Coal composition in dry basis (mf_C_coal_dry)
 * coal flowrate (coal_flowrate_raw)
 * moisture content in the coal (mf_H2O_coal_raw)
-* stoichiometric ratio (SR)*
+* stoichiometric ratio (SR)\*
 * primary air to coal ratio (ratioPA2coal)\*
 * heat flux (or heat_duty) to water wall zones, platen superheater, and roof superheater
 
-\* not required if calculate_PA_SA_flows=False
+\* not required if calculate_PA_SA_flows is False
 
 Model outputs:
 
 * flue_gas_outlet (flow_mol, enth_mol, pressure)
-* heat duty to water wall (ww_heat), platen superheater (platen_heat)*, and roof and backpass (roof_heat)*
+* heat duty to water wall (ww_heat), platen superheater (platen_heat)\*, and roof and backpass (roof_heat)\*
 
 Note that platen_heat and roof_heat are only constructed if arguments are equat True
 
@@ -104,8 +104,8 @@ The main constraints in the model satisfy the energy balance and calculate flue 
 
 where:
 
-* flow_mol_comp in mol/s
-* temperature in K
-* pressure in Pa
+* Flow_mol_comp in mol/s
+* Temperature in K
+* Pressure in Pa
 * Heat duty in W
 * Coal mass flow after removing the moisture content kg/s

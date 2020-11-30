@@ -24,10 +24,11 @@ Main Assumptions:
 
 The model has two inlets:
 
-* primary air inlet: PA, flow rate and composition either provided by user
-  or calculated by model
-* secondary air inlet: SA, flow rate and composition calculated by the model
-* primary_air_moist: primary air plus vaporized moisture (after mill)
+* primary air inlet: PA, flow rate and composition
+
+* secondary air inlet: SA, flow rate and composition
+
+* primary_air_moist: primary air minus vaporized moisture (calculated)
 
 
 The model has two outlets:
@@ -43,8 +44,7 @@ Notes:
 2. PA to raw coal flow rate ratio can be specified by a flowsheet constraint
 3. Fraction of coal moisture vaporized in mill should be consistent with
    the surrogate model (typically 0.6)
-4. Moisture mass fration in raw coal is a user input and
- should be consistent with the values used to train the surrogate model
+4. Moisture mass fraction in raw coal is a user input and should be consistent with the values used to train the surrogate model
 
 
 Surrogate models need to be provided by the user:
@@ -53,7 +53,7 @@ Surrogate models need to be provided by the user:
 * 1 for platen super heater
 * 1 for roof and backpass
 * 1 for NOx prediction
-* 1 for flyash.
+* 1 for flyash
 
 Note that the user can provide either surrogate models or fixed numeric values
 
@@ -180,8 +180,9 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # Insert user provided custom surrogate model function
         # self.config.surrogate_function(self)
         if self.config.surrogate_dictionary is None:
-            raise ConfigurationError('user needs to provide '
-                                     'a dictionary of surrogates')
+            raise ConfigurationError('User needs to provide '
+                                     'a dictionary of surrogates'.format(self.
+                                                                         name))
 
         self.primary_air = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
