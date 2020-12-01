@@ -100,11 +100,78 @@ your changes in the layout to the destination that you passed to "save_as", in t
 
 User Guide
 ----------
-.. More detailed guided tour of functionality -- leverage notebook from quickstart
+This section describes each of the sections of the IFV interface.
 
-Reference
----------
-.. Alphabetical reference of functionality
+Title bar
+^^^^^^^^^
+At the top of the window is the IDAES project logo and the name of the flowsheet.
+
+Graph actions
+^^^^^^^^^^^^^
+
+Units
+    *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
+    The two types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
+    outlets. Units can be moved by clicking and dragging them. If you double-click on a unit, it
+    will rotate 90 degrees.
+
+Lines
+    The lines connecting units, also called "arcs", can also be manipulated by clicking and dragging.
+    If you double-click on a line, you will create a new segment that can be used for routing the line
+    around objects.
+
+Stream annotations
+
+Menu actions
+^^^^^^^^^^^^
+Below the title bar is a traditional application menu bar, and below that is a set of buttons for rapid access
+to many of the actions from the menu.
+
+File actions
+    * Refresh
+    * Save
+    * Export
+    * Quit
+
+View actions
+    * Grid
+    * Zoom
+    * Canvas size
+
+Help actions
+   * About
+   * Documentation
+
+Advanced
+--------
+This section provides some additional details for developers or more advanced users.
+
+Client/server architecture
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+The ``visualize()`` command works by starting an HTTP server in a separate thread, and serving
+requests from the UI (or any other requester). The server only responds to requests from your computer,
+not the internet. When you exit the script or Jupyter Notebook that called `visualize` then you will also
+stop the server -- and the associated IFV page will no longer be able to save or refresh the flowsheet.
+The architecture diagram is shown below::
+
+
+    +-------------------+                        +--------------------+
+    |                   |                        |    Web browser     |
+    | Python script     |                        +--------------------+
+    | or Jupyter        |    +---------------+   | IFV web interface  |
+    | Notebook          |    | HTTP server   |   +--------------------+
+    |                   |    | running in    |   ||   +--+           ||
+    | m = model         |    | a separate    |   ||   +--+           ||
+    | m.fs = flowsheet  |    | thread        |   ||     |      +--+  ||
+    |                   |    |            <--------->   +----> +--+  ||
+    | m.fs.visualize()+----->+  Load/Save    |   |                   ||
+    |                   |    |     ^         |   +--------------------|
+    +-------------------+    +---------------+   +--------------------+
+                                   |
+                                   |
+                            +------v--------------+
+                            |   Local Storage     |
+                            +---------------------+
 
 
 
