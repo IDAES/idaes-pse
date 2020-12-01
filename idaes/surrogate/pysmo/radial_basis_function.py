@@ -10,20 +10,26 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from __future__ import division, print_function
-from six import string_types
 
-import random
+# Imports from the python standard library
+from __future__ import division, print_function
 from builtins import int, str
+import itertools
+import os.path
+import pprint
+import random
+import warnings
+# Imports from third parties
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+import pickle
 from pyomo.environ import *
 import scipy.optimize as opt
-import warnings
-import itertools
+from six import string_types
+# Imports from IDAES namespace
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
-from matplotlib import pyplot as plt
-import os.path, pickle
+
 
 
 """
@@ -1123,8 +1129,6 @@ class RadialBasisFunctions:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)
