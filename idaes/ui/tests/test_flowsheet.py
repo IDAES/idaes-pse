@@ -269,7 +269,7 @@ def test_validate_flowsheet(models):
     del m["arcs"]["A-FOO"]
 
 
-@pytest.mark.unit
+@pytest.mark.component
 def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
     """Simple regression test vs. stored data.
     """
@@ -287,3 +287,7 @@ def test_flowsheet_serializer_flash(flash_flowsheet, flash_flowsheet_json):
     assert test_json == flash_flowsheet_json
 
 
+@pytest.mark.unit
+def test_flowsheet_serializer_invalid():
+    m = ConcreteModel()
+    pytest.raises(ValueError, FlowsheetSerializer, m, "bad")

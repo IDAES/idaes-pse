@@ -93,9 +93,33 @@ class FlowsheetSerializer:
         re.IGNORECASE,
     )
 
-    def __init__(self, flowsheet, name):
+    def __init__(self, flowsheet, name: str, validate: bool = True):
         """Serialize input flowsheet with given name
+
+        Args:
+            flowsheet: The flowsheet to serialize
+            name: The name of the flowsheet (also called its 'id' in some contexts)
+            validate: If True, validate that the flowsheet is a reaonsable IDAES model, first
+        Raises:
+            ValueError if validation is on and flowsheet is found to be invalid
         """
+        # validate, if so directed
+        if validate:
+            if not hasattr(flowsheet, "component_objects") or not callable(flowsheet.component_objects):
+                raise ValueError("Flowsheet missing function 'component_objects'")
+            try:
+                n_obj = 0
+                for objtype in Arc, Block:
+                    for obj in flowsheet.component_objects(objtype, descend_into=False):
+                        n_obj += 1
+                        if not hasattr(obj, "getname") or not callable(obj.getname):
+                            raise ValueError("Flowsheet component missing function 'getname'")
+            except ValueError:
+                raise
+            except Exception as err:
+                raise ValueError(f"Flowsheet 'component_objects' cannot be navigated: {err}")
+            if n_obj == 0:
+                raise ValueError("Flowsheet has no Arcs or unit Blocks")
         # setup
         self.unit_models = {}  # {unit: {"name": unit.getname(), "type": str?}}
         self.arcs = {}  # {Arc.getname(): Arc}
@@ -113,8 +137,6 @@ class FlowsheetSerializer:
         self.flowsheet = flowsheet
         # serialize
         self._ingest_flowsheet()
-        #print(f"@@ after ingest: arcs={self.arcs}, ports={self.ports}, edges={self.edges}, "
-        #      f"labels={self.labels}, serialized_contents={self.serialized_contents}")
         self._construct_output_json()
 
     def as_dict(self):
