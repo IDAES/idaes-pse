@@ -22,8 +22,8 @@ web_server = None
 
 
 def visualize(
-    flowsheet, name: str = "flowsheet", save_as=None, browser: bool = True, port=None,
-        log_level=logger.WARNING
+    flowsheet, name: str = "flowsheet", save_as=None, browser: bool = True, port: int = None,
+        log_level: int =logger.WARNING
 ):
     """Visualizes the flowsheet in a web application.
     
@@ -35,6 +35,7 @@ def visualize(
         name: Name of flowsheet to display as the title of the visualization
         save_as: If a string or path then save to a file.
         browser: If true, open a browser
+        port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, see :mod:`idaes.logger`, to set for all the visualiztion
 
     Returns:
