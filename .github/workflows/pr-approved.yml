@@ -44,3 +44,25 @@ jobs:
       - name: Run pytest (not integration)
         run: |
           pytest -m 'integration'
+  pytest-coverage:
+    name: Run pytest (complete) with coverage report
+    runs-on: ubuntu-latest
+    needs: [check-skip]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.7'
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Run pytest (complete) with cov
+        run: |
+          pytest --cov
+      - name: Upload coverage report to Codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          bash <(curl -s https://codecov.io/bash)
