@@ -43,44 +43,8 @@ class FlowsheetSerializer:
 
     The "model" section contains the id of the flowsheet and the
     unit models and arcs. This will be used to compare the model and convert
-    to jointjs
-
-    The "cells" section is the jointjs readable code.
-
-    .. code-block:: json
-
-        {
-            "model": {
-                "id": "id",
-                "unit_models": {
-                    "M101": {
-                        "image": "mixer.svg",
-                        "type": "mixer",
-                        "performance_contents": {
-                            "0": {
-                                "Variable": "Heat Duty",
-                                "Value": "0.0"
-                            }
-                        },
-                        "stream_contents": {
-                            "0": {
-                                "Variable": "temperature",
-                                "Inlet": ".01",
-                                "Outlet": "12"
-                            }
-                        }
-                    }
-                },
-                "arcs": {
-                    "s03": {
-                        "source": "M101",
-                        "dest": "H101",
-                        "label": "molar flow ("Vap", "hydrogen") 0.5"
-                    }
-                }
-            },
-            "cells": [{ "--jointjs code--": "--jointjs code--" }]
-        }
+    to jointjs. The "cells" section is the jointjs readable code.
+    See :func:`validate_flowsheet` for details on the format.
     """
     #: Regular expression identifying inlets by last component of ports' name
     INLET_REGEX = re.compile(
@@ -719,9 +683,9 @@ def validate_flowsheet(fs: Dict) -> Tuple[bool, str]:
                     "<component name>": {
                         "image": "<image name>",
                         "type": "<component type name>",
-                        ..<more values from model>..
+                        "...": "more values..."
                     },
-                    ...
+                    "...": "etc."
                 },
                 "arcs": {
                     "<arc name>": {
@@ -729,12 +693,12 @@ def validate_flowsheet(fs: Dict) -> Tuple[bool, str]:
                         "dest": "<component name>",
                         "label": "<label text>"
                     },
-                    ...
+                    "...": "etc."
                 }
             },
             "cells": [
-                {"id": "<component_name>", ..<values used by JointJS>..},
-                ...
+                {"id": "<component_name>", "...": "other values used by JointJS.."},
+                "..."
             ]
         }
 
