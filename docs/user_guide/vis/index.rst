@@ -28,8 +28,7 @@ a directory where you want to save your work, then click on the "New" button in 
 a new notebook. You may have multiple options under the "Python" sub-menu; make sure you select a Python installation
 that has IDAES already installed.
 
-OK, now that we have a new notebook, we need to create an IDAES flowsheet to visualized. Since the details of how
-to do this are not our main concern, just cut and paste the following code (taken from the Flash unit tutorial)
+We need to create, in this Jupyter Notebook, an IDAES flowsheet to visualize. Paste the following code (taken from the Flash unit tutorial)
 into the first cell in the notebook::
 
     from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
@@ -61,8 +60,7 @@ Run that cell (hit shift-enter), and you should see some output from the last ca
 
     2020-11-24 08:41:53 [INFO] idaes.init.fs.flash: Initialization Complete: optimal - Optimal Solution Found
 
-This means the initialization succeeded, and you can move on. If you see, something else -- well, many things could
-have gone wrong -- but one common problem is you see something like this ::
+This means the initialization succeeded, and you can move on. If you see instead something like this ::
 
     ---------------------------------------------------------------------------
     ModuleNotFoundError                       Traceback (most recent call last)
@@ -77,8 +75,8 @@ have gone wrong -- but one common problem is you see something like this ::
 
 In this case, you probably didn't run the notebook within a Python environment where IDAES is installed. See if
 there are other Python environments, or "kernels", you can run under the 'Kernel -> Change kernel' menu. If not,
-review the :ref:`installation instructions <IDAES Installation>`, close this notebook and exit the current running Jupyter, and try again to run
-the command "jupyter notebook" right after setting up your environment to be the one in which you installed IDAES.
+review the :ref:`installation instructions <IDAES Installation>`, close this notebook and exit the current running
+Jupyter, and try again to run the command "jupyter notebook" right after setting up your environment to be the one in which you installed IDAES.
 
 Before continuing, save the notebook ('File -> Save' or Ctrl-S) with an appropriate name, like "Hello World".
 
@@ -87,34 +85,18 @@ our initialized (but not solved) model. In the new cell, type in and run (shift-
 
     m.fs.visualize("Hello, World", save_as="hello_world.json")
 
-This will produce some diagnostic output, but more importantly it should create a new browser tab or window with the
-IFV displaying the flowsheet. This will look similar to this:
+This will create a new browser tab or window with the IFV displaying the flowsheet:
 
 .. image:: ../../_images/ifv_helloworld_1.png
     :width: 800
 
-You'll notice that the layout is not too great, and in fact if you look closely you'll see that the components
-have just been placed in a diagonal. You can try rearranging the diagram with the mouse (the components can all
-be moved), and for more details on the available functions, see the next section. By default the IFV will auto-save
+For the initial layout, the components
+have just been placed in a diagonal. You can rearrange the diagram with the mouse (the components can all
+be moved), and for more details on the available functions, see the next section. If you hit "Save", the IFV will save
 your changes in the layout to the destination that you passed to "save_as", in this case the file
 "hello_world.json", in the current directory.
 
 .. TODO Tell user how to see values on the unit model and streams
-
-But before that, try one more thing.
-Go back to the Jupyter notebook and solve the Flash optimization problem, but adding and running a new cell with
-the following code::
-
-    solver = SolverFactory('ipopt')
-    status = solver.solve(m, tee=True)
-
-Since this is such a simple optimization problem, the solver should finish very quickly with, at the bottom
-of its diagnostic output, the message ``EXIT: Optimal Solution Found``.
-
-Now go back to your IFV window and click on "Refresh Graph". You should see updated values reflecting the
-parameter values from the solution.
-
-.. TODO Point out how the values have changed to reflect solved model
 
 User Guide
 ----------
@@ -124,84 +106,5 @@ Reference
 ---------
 .. Alphabetical reference of functionality
 
-OLD CONTENT:
 
-Overview
---------
-
-The Flowsheet Visualizer is a service that starts a flask server to
-display an interactive webpage with the current flowsheet's unit models and
-arcs. Users may manipulate the display by clicking and dragging the unit 
-models, streams, and stream labels.
-
-Installation instructions
--------------------------
-
-1. :ref:`Ensure that the latest IDAES is installed. <getting_started/index:Installation>` 
-
-.. _usage:
-
-Usage
------
-
-1. Create a flowsheet in a Jupyter Notebook. For the purpose of these 
-   instructions the model will be `m` and the flowsheet will be `m.fs`
-
-2. Call the method `visualize()` from the flowsheet with a model name 
-   as a string:
-   `m.fs.visualize('model_name')`
-
-.. image:: ../../_images/modelvis/fs_visualize_jupyter_notebook.png
-
-3. A webpage should display:
-
-.. image:: ../../_images/modelvis/initial_layout.png
-
-If a webpage does not display then copy and
-paste the URL that outputs from the visualize command:
-
-.. image:: ../../_images/modelvis/circled_url.png
-
-4. Manipulate the layout of the model display as desired:
-
-.. image:: ../../_images/modelvis/modified_layout.png
-
-5. If the flowsheet is later modified, click the Refresh Graph button to
-   see the changes.
-
-The displayed layout is preserved as much as possible, with new components
-appearing along a diagonal line. 
-
-.. note::
-    This feature is still under development. 
-    Several types of changes to the flowsheet currently cause the entire user-
-    modified layout to be lost. Consider saving the layout often (see below).
-
-.. image:: ../../_images/modelvis/new_unit_model_layout.png
-
-6. Save the displayed layout using the save button on the visualization page. 
-   This writes the visualization to a file in the user's home directory under 
-   `.idaes/viz` using the model name provided to `visualize()`. 
-   In this example the filename would be `model_name.viz`.
-
-.. _streamlabels:
-
-Stream Labels
--------------
-
-The initial layout loads with the stream labels hidden. Show or hide all of 
-the stream labels by clicking the button with the speech bubbles, 
-on the toolbar.
-
-Show or hide an individual label by right clicking on the stream or its label.
-
-.. _miscfeatures:
-
-Misc. Features
---------------
-
-* Right click on an icon to rotate it by 90 degrees.
-
-* Create anchor points on a stream by left clicking on the stream. The stream 
-  will be forced to connect through each anchor point, typically adding right angles.
 
