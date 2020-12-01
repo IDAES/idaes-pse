@@ -126,25 +126,6 @@ def demo_flowsheet():
     m.fs.LTR_pseudo_tube = Heater(default={'dynamic': False,
                                        'property_package': m.fs.properties,
                                        'has_pressure_change': True})
-    # Set numerics
-    m.fs.turbine.ratioP.fix(1 / 3.68)
-    m.fs.turbine.efficiency_isentropic.fix(0.927)
-    m.fs.turbine.initialize()
-    m.gross_cycle_power_output = \
-        Expression(expr=(-m.fs.turbine.work_mechanical[0] -
-                         m.fs.main_compressor.work_mechanical[0] -
-                         m.fs.bypass_compressor.work_mechanical[0]))
-    # account for generator loss = 1.5% of gross power output
-    m.net_cycle_power_output = Expression(expr=0.985 * m.gross_cycle_power_output)
-    m.total_cycle_power_input = Expression(
-        expr=(m.fs.boiler.heat_duty[0] + m.fs.pre_boiler.heat_duty[0] +
-              m.fs.FG_cooler.heat_duty[0]))
-    m.cycle_efficiency = Expression(
-        expr=m.net_cycle_power_output / m.total_cycle_power_input * 100)
-    # Expression to compute recovered duty in recuperators
-    m.recuperator_duty = Expression(
-        expr=(m.fs.HTR_pseudo_tube.heat_duty[0] +
-              m.fs.LTR_pseudo_tube.heat_duty[0]))
     return m.fs
 
 
