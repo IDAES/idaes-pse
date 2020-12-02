@@ -111,28 +111,6 @@ user specified temperature.}"""))
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -196,9 +174,8 @@ see property package for documentation.}"""))
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=True)
 
-        self.control_volume.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+        # Note: No momentum balance added for the condenser as the condenser
+        # outlet pressure is a spec set by the user.
 
         # Get liquid and vapor phase objects from the property package
         # to be used below. Avoids repition.
@@ -247,9 +224,8 @@ see property package for documentation.}"""))
         # Reference to the heat duty
         self.heat_duty = Reference(self.control_volume.heat[:])
 
-        # Reference to the pressure drop (if set to True)
-        if self.config.has_pressure_change:
-            self.deltaP = Reference(self.control_volume.deltaP[:])
+        self.condenser_pressure = Reference(
+            self.control_volume.properties_out[:].pressure)
 
     def _make_ports(self):
 
@@ -706,7 +682,8 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, solver=None, outlvl=idaeslog.NOTSET):
+    def initialize(self, state_args=None, solver=None, optarg=None,
+                   outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
         # the top tray or take it as an argument to this method.
@@ -723,32 +700,47 @@ see property package for documentation.}"""))
                     "selected for temperature_spec config argument."
                 )
 
+        if solver is None:
+            init_log.warning("Solver not provided. Default solver(ipopt) "
+                             " being used for initialization.")
+            solver = get_default_solver()
+
+        if state_args is None:
+            state_args = {}
+            state_dict = (
+                self.control_volume.properties_in[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()
 
         # Initialize the inlet and outlet state blocks
-        self.control_volume.initialize(outlvl=outlvl)
+        flags = self.control_volume.initialize(state_args=state_args,
+                                               solver=solver,
+                                               optarg=optarg,
+                                               outlvl=outlvl,
+                                               hold_state=True)
 
         # Activate the total condenser spec
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.activate()
 
-        if solver is not None:
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete, {}.".format(idaeslog.condition(res))
-            )
-        else:
-            init_log.warning(
-                "Solver not provided during initialization, proceeding"
-                " with deafult solver in idaes.")
-            solver = get_default_solver()
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete, {}.".format(idaeslog.condition(res))
-            )
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self, tee=slc.tee)
+        init_log.info(
+            "Initialization Complete, {}.".format(idaeslog.condition(res))
+        )
+
+        self.control_volume.release_state(flags=flags)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
