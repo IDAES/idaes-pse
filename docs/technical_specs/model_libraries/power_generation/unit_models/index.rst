@@ -16,3 +16,5 @@ Unit Models
     phase_separator
     drum
     downcomer
+    steamheater
+    boiler_fireside
