@@ -12,7 +12,7 @@
 ##############################################################################
 import pytest
 
-from idaes.ui.icon_mapping import icon_mapping
+from idaes.ui.icons import UnitModelIcon
 
 
 @pytest.mark.unit
@@ -40,4 +40,4 @@ from idaes.ui.icon_mapping import icon_mapping
 )
 @pytest.mark.unit
 def test_icon_mapping(test_input, expected):
-    assert icon_mapping(test_input) == expected
+    assert UnitModelIcon(test_input).icon == expected

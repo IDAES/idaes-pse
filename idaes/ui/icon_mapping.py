@@ -10,8 +10,20 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+"""
+Map from names of unit models to the SVG icons that represent them.
+"""
 
-def icon_mapping(unit_model_type):
+
+def icon_mapping(unit_model_type: str) -> str:
+    """Get the icon for a given unit model type.
+
+    Args:
+        unit_model_type: Name of unit model type
+
+    Returns:
+        Name of the associated icon, including ".svg" extension
+    """
     mapping = {
         "cstr": "reactor_c.svg",
         "flash": "flash.svg",

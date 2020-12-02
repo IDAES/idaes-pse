@@ -28,8 +28,7 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
-from idaes.ui.link_position_mapping import link_position_mapping
-from idaes.ui.icon_mapping import icon_mapping
+from idaes.ui.icons import UnitModelIcon
 
 _log = logger.getLogger(__name__)
 
@@ -38,13 +37,90 @@ class FileBaseNameExistsError(Exception):
     pass
 
 
+def validate_flowsheet(fs: Dict) -> Tuple[bool, str]:
+    """Validate a flowsheet.
+
+    Expected format is below.
+
+    .. code-block:: json
+
+        {
+            "model": {
+                "id": "<model name>",
+                "unit_models": {
+                    "<component name>": {
+                        "image": "<image name>",
+                        "type": "<component type name>",
+                        "...": "more values..."
+                    },
+                    "...": "etc."
+                },
+                "arcs": {
+                    "<arc name>": {
+                        "source": "<component name>",
+                        "dest": "<component name>",
+                        "label": "<label text>"
+                    },
+                    "...": "etc."
+                }
+            },
+            "cells": [
+                {"id": "<component_name>", "...": "other values used by JointJS.."},
+                "..."
+            ]
+        }
+
+    Args:
+        fs: Flowsheet to validate
+
+    Return:
+        Tuple of (True, "") for OK, and (False, "<message>") for failure
+    """
+    # very quick and dirty validation, but it does make for nice clean error messages
+    for key in "model", "cells":
+        if key not in fs:
+            return False, f"Missing top-level key '{key}'"
+    model, component_ids = fs["model"], set()
+    for key2 in "id", "unit_models", "arcs":
+        if key2 not in model:
+            return False, f"The flowsheet model is missing key '{key2}'"
+        if key2 == "unit_models":
+            for ckey, cval in model[key2].items():
+                for key3 in "image", "type":
+                    if key3 not in cval:
+                        return False, f"Unit model '{ckey}' is missing key '{key3}'"
+                component_ids.add(ckey)
+        elif key2 == "arcs":
+            for akey, aval in model[key2].items():
+                for key3 in "source", "dest", "label":
+                    if key3 not in aval:
+                        return False, f"Arc '{akey}' is missing key '{key3}'"
+                component_ids.add(akey)
+    cells = fs["cells"]
+    # Check if all cell id's are in the model
+    cell_ids = set()
+    for i, cell in enumerate(cells):
+        if "id" not in cell:
+            return False, f"Cell #{i + 1} is missing key 'id'"
+        cell_id = cell["id"]
+        if cell_id not in component_ids:
+            return False, f"Cell id '{cell_id}' not found in unit models or arcs"
+        cell_ids.add(cell_id)
+    # Check if all model id's are in the cells
+    if cell_ids != component_ids:
+        missing = component_ids - cell_ids
+        sfx = "s" if len(missing) > 1 else ""
+        return False, f"Component id{sfx} {missing} {'are' if sfx else 'is'} not in the layout cells"
+    return True, ""
+
+
 class FlowsheetSerializer:
     """Serializes the flowsheet into one dict with two sections.
 
     The "model" section contains the id of the flowsheet and the
     unit models and arcs. This will be used to compare the model and convert
     to jointjs. The "cells" section is the jointjs readable code.
-    See :func:`validate_flowsheet` for details on the format.
+    See :py:func:`validate_flowsheet` for details on the format.
     """
     #: Regular expression identifying inlets by last component of ports' name
     INLET_REGEX = re.compile(
@@ -311,10 +387,11 @@ class FlowsheetSerializer:
         for unit_model in self.unit_models.values():
             unit_name = unit_model["name"]
             unit_type = unit_model["type"]
+            unit_icon = UnitModelIcon(unit_type)
 
             unit_contents = {
                 "type": unit_type,
-                "image": "/images/icons/" + icon_mapping(unit_type),
+                "image": "/images/icons/" + unit_icon.icon,
             }
             if unit_name in self.serialized_contents:
                 for pfx in "performance", "stream":
@@ -340,15 +417,17 @@ class FlowsheetSerializer:
         y_pos = 10
         y_starting_pos = 10
 
+        default_icon = UnitModelIcon()
         for component, unit_attrs in self.unit_models.items():
+            unit_icon = UnitModelIcon(unit_attrs["type"])
             try:
                 self._create_image_jointjs_json(
                     x_pos,
                     y_pos,
                     unit_attrs["name"],
-                    icon_mapping(unit_attrs["type"]),
+                    unit_icon.icon,
                     unit_attrs["type"],
-                    link_position_mapping[unit_attrs["type"]],
+                    unit_icon.link_positions,
                 )
             except KeyError as e:
                 self._logger.info(
@@ -358,9 +437,9 @@ class FlowsheetSerializer:
                     x_pos,
                     y_pos,
                     unit_attrs["name"],
-                    icon_mapping("default"),
+                    default_icon.icon,
                     unit_attrs["type"],
-                    link_position_mapping["default"],
+                    default_icon.link_positions,
                 )
 
             # If x_pos it greater than 700 then start another diagonal line
@@ -492,7 +571,7 @@ class FlowsheetSerializer:
 class FlowsheetDiff:
     """Compute a flowsheet model 'diff' and use that to compute an updated layout.
 
-    Flowsheets are serialized by the core library. See :func:`validate()` for the required format.
+    Flowsheets are serialized by the core library. See :func:`validate_flowsheet` for the required format.
 
     Example usage::
 
@@ -669,78 +748,3 @@ class FlowsheetDiff:
         return new_item
 
 
-def validate_flowsheet(fs: Dict) -> Tuple[bool, str]:
-    """Validate a flowsheet.
-
-    Expected format is below.
-
-    .. code-block:: json
-
-        {
-            "model": {
-                "id": "<model name>",
-                "unit_models": {
-                    "<component name>": {
-                        "image": "<image name>",
-                        "type": "<component type name>",
-                        "...": "more values..."
-                    },
-                    "...": "etc."
-                },
-                "arcs": {
-                    "<arc name>": {
-                        "source": "<component name>",
-                        "dest": "<component name>",
-                        "label": "<label text>"
-                    },
-                    "...": "etc."
-                }
-            },
-            "cells": [
-                {"id": "<component_name>", "...": "other values used by JointJS.."},
-                "..."
-            ]
-        }
-
-    Args:
-        fs: Flowsheet to validate
-
-    Return:
-        Tuple of (True, "") for OK, and (False, "<message>") for failure
-    """
-    # very quick and dirty validation, but it does make for nice clean error messages
-    for key in "model", "cells":
-        if key not in fs:
-            return False, f"Missing top-level key '{key}'"
-    model, component_ids = fs["model"], set()
-    for key2 in "id", "unit_models", "arcs":
-        if key2 not in model:
-            return False, f"The flowsheet model is missing key '{key2}'"
-        if key2 == "unit_models":
-            for ckey, cval in model[key2].items():
-                for key3 in "image", "type":
-                    if key3 not in cval:
-                        return False, f"Unit model '{ckey}' is missing key '{key3}'"
-                component_ids.add(ckey)
-        elif key2 == "arcs":
-            for akey, aval in model[key2].items():
-                for key3 in "source", "dest", "label":
-                    if key3 not in aval:
-                        return False, f"Arc '{akey}' is missing key '{key3}'"
-                component_ids.add(akey)
-    cells = fs["cells"]
-    # Check if all cell id's are in the model
-    cell_ids = set()
-    for i, cell in enumerate(cells):
-        if "id" not in cell:
-            return False, f"Cell #{i + 1} is missing key 'id'"
-        cell_id = cell["id"]
-        if cell_id not in component_ids:
-            return False, f"Cell id '{cell_id}' not found in unit models or arcs"
-        cell_ids.add(cell_id)
-    # Check if all model id's are in the cells
-    if cell_ids != component_ids:
-        missing = component_ids - cell_ids
-        sfx = "s" if len(missing) > 1 else ""
-        return False, f"Component id{sfx} {missing} {'are' if sfx else 'is'} not in the layout cells"
-    return True, ""
