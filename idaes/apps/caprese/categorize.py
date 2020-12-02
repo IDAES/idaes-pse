@@ -16,7 +16,7 @@ CATEGORY_TYPE_MAP = {
         VariableCategory.MEASUREMENT: nmpc_var.MeasuredVar,
         }
 
-def categorize_dae_variables(dae_vars, time, inputs):
+def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
     t0 = time.first()
     t1 = time.get_finite_elements()[1]
     deriv_vars = []
@@ -28,6 +28,15 @@ def categorize_dae_variables(dae_vars, time, inputs):
     # TODO: give user ability to specify measurements and disturbances
     measured_vars = []
 
+    if measurements is not None:
+        infer_measurements = False
+        user_measurements = ComponentSet(measurements)
+        updated_user_measurements = ComponentSet(measurements)
+        user_measured_vars = []
+    else:
+        infer_measurements = True
+        updated_user_measurements = ComponentSet()
+
     dae_map = ComponentMap([(v[t0], v) for v in dae_vars])
     t0_vardata = list(dae_map.keys())
 
@@ -37,10 +46,16 @@ def categorize_dae_variables(dae_vars, time, inputs):
     updated_input_set = ComponentSet(inputs)
 
     for var0 in t0_vardata:
-        if var0 in updated_input_set:
-            input_set.remove(var0)
+        if var0 in input_set:
+            updated_input_set.remove(var0)
             time_slice = dae_map.pop(var0)
             input_vars.append(time_slice)
+
+        if var0 in updated_user_measurements:
+            updated_user_measurements.remove(var0)
+            # Don't pop measured vars. They will be popped elsewhere.
+            time_slice = dae_map[var0]
+            user_measured_vars.append(time_slice)
 
         parent = var0.parent_component()
         if not isinstance(parent, DerivativeVar):
@@ -87,7 +102,7 @@ def categorize_dae_variables(dae_vars, time, inputs):
             deriv_vars.append(deriv_slice)
             diff_vars.append(state_slice)
 
-    if input_set:
+    if updated_input_set:
         raise RuntimeError('Not all inputs could be found')
     assert len(deriv_vars) == len(diff_vars)
 
@@ -110,6 +125,11 @@ def categorize_dae_variables(dae_vars, time, inputs):
             VariableCategory.FIXED: fixed_vars,
             VariableCategory.MEASUREMENT: measured_vars,
             }
+    if measurements is not None:
+        # If the user provided their own measurements,
+        # override the inferred measurements. Assume the user
+        # will modify the state of their variables appropriately.
+        category_list_map[VariableCategory.MEASUREMENT] = user_measured_vars
     category_dict = {
             category: [
                 Reference(ref.referent, ctype=ctype)

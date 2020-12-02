@@ -74,7 +74,12 @@ class _DynamicBlockData(_BlockData):
                 )
         self.scalar_vars = scalar_vars
         self.dae_vars = dae_vars
-        category_dict = categorize_dae_variables(dae_vars, time, inputs)
+        category_dict = categorize_dae_variables(
+                dae_vars,
+                time,
+                inputs,
+                measurements=measurements,
+                )
         self.category_dict = category_dict
 
         self._add_category_blocks()
