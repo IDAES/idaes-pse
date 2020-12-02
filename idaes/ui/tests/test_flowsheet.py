@@ -250,13 +250,22 @@ def test_validate_flowsheet(models):
     del m["arcs"]["A-FOO"]
 
 
+def _canonicalize(d):
+    for cell in d["cells"]:
+        if "ports" in cell:
+            items = cell["ports"]["items"]
+            cell["ports"]["items"] = sorted(items, key=lambda x: x["group"])
+
+
 @pytest.mark.component
 def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
     """Simple regression test vs. stored data.
     """
     test_dict = FlowsheetSerializer(demo_flowsheet, "demo").as_dict()
-    test_json = json.dumps(test_dict)
-    assert test_json == demo_flowsheet_json
+    stored_dict = json.loads(demo_flowsheet_json)
+    _canonicalize(test_dict)
+    _canonicalize(stored_dict)
+    assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
 
 
 @pytest.mark.unit
@@ -264,8 +273,21 @@ def test_flowsheet_serializer_flash(flash_flowsheet, flash_flowsheet_json):
     """Simple regression test vs. stored data.
     """
     test_dict = FlowsheetSerializer(flash_flowsheet, "demo").as_dict()
-    test_json = json.dumps(test_dict)
-    assert test_json == flash_flowsheet_json
+    stored_dict = json.loads(flash_flowsheet_json)
+    _canonicalize(test_dict)
+    _canonicalize(stored_dict)
+    assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
+
+
+def _show_json(test=None, stored=None):
+    import sys
+    print("-" * 60)
+    print("TEST VALUE")
+    json.dump(test, sys.stdout)
+    print()
+    print("-" * 60)
+    print("STORED VALUE")
+    json.dump(stored, sys.stdout)
 
 
 @pytest.mark.unit
