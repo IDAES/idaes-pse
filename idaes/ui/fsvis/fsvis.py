@@ -24,7 +24,7 @@ web_server = None
 def visualize(
     flowsheet, name: str = "flowsheet", save_as=None, browser: bool = True, port: int = None,
         log_level: int =logger.WARNING
-):
+) -> int:
     """Visualizes the flowsheet in a web application.
     
     Opens a browser window to display the visualization app, as well as
@@ -39,7 +39,7 @@ def visualize(
         log_level: An IDAES logging level, see :mod:`idaes.logger`, to set for all the visualiztion
 
     Returns:
-        None.
+        Port number where server is listening
 
     Raises:
         ValueError if the data storage at 'save_as' can't be opened
@@ -61,6 +61,8 @@ def visualize(
     if browser:
         success = webbrowser.open(url + f"?id={name}")
         _log.debug(f"Opened in browser window: {success}")
+
+    return web_server.port
 
 
 def _init_logging(lvl):

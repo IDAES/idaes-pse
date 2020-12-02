@@ -30,10 +30,20 @@ class DataStore(ABC):
 
     @abstractmethod
     def save(self, data: Union[Dict, str]):
+        """Save data.
+
+        Args:
+            data: Data to save.
+        """
         pass
 
     @abstractmethod
     def load(self) -> Dict:
+        """Load data.
+
+        Returns:
+            data, as a dict (even if string of JSON was passed as input to `save()`)
+        """
         pass
 
     @classmethod
@@ -52,12 +62,21 @@ class DataStore(ABC):
         elif isinstance(dest, Path):
             return FileDataStore(dest)
         elif dest is None:
+            print("create memory store")
             return MemoryDataStore()
         else:
             raise ValueError(f"Unknown destination '{dest}' for type '{type(dest)}'")
 
     def __str__(self):
+        """Return string version of self.
+
+        Used for equality tests, so make sure this is unique as needed for equality tests
+        between stores to behave correctly.
+        """
         return "generic storage; should not be used directly"
+
+    def __eq__(self, other):
+        return str(other) == str(self)
 
 
 class FileDataStore(DataStore):
@@ -69,16 +88,27 @@ class FileDataStore(DataStore):
         return Path(str(self._p))  # return a copy
 
     def save(self, data):
+        """Save data to a file.
+
+        Args:
+            data: If a dict, must be serializable by `json.dump()`, otherwise
+                  treated as a string of JSON (e.g. '{"name": "value"}')
+
+        Returns:
+            None
+        """
+        _log.debug(f"Save to file: {self._p}")
         with self._p.open("w") as fp:
             if isinstance(data, dict):
                 try:
                     json.dump(data, fp)
-                except TypeError:
+                except TypeError as err:
                     raise ValueError(f"Writing JSON failed: {err}")
             else:
-                fp.write(data)
+                fp.write(str(data))
 
     def load(self):
+        _log.debug(f"Load from file: {self._p}")
         try:
             with self._p.open("r") as fp:
                 try:
@@ -93,20 +123,32 @@ class FileDataStore(DataStore):
     def __str__(self):
         return f"file storage at '{self._p}'"
 
-    def __eq__(self, other):
-        return self._p == other.path
-
 
 class MemoryDataStore(DataStore):
     def __init__(self):
         self._data = None
 
     def save(self, data: Union[str, Dict]):
+        """Store data in memory.
+
+        Args:
+            data: If a dict, must be serializable by `json.dump()`, otherwise
+                  treated as a string of JSON (e.g. '{"name": "value"}').
+                  This is enforced even though, obviously, the data can be "saved"
+                  in memory even if it is *not* JSON-serializable
+
+        Returns:
+            None
+        """
         if isinstance(data, dict):
+            try:
+                json.dumps(data)
+            except TypeError as err:
+                raise ValueError(f"Input is not serializable as JSON: {err}")
             self._data = data
         else:
             try:
-                self._data = json.loads(data)
+                self._data = json.loads(str(data))
             except json.JSONDecodeError as err:
                 raise ValueError("Parsing JSON failed: {err}")
 
@@ -117,9 +159,6 @@ class MemoryDataStore(DataStore):
 
     def __str__(self):
         return "memory storage"
-
-    def __eq__(self, other):
-        return True
 
 
 class DataStoreManager:
