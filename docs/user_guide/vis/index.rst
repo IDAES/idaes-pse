@@ -3,14 +3,20 @@
 IDAES Flowsheet Visualizer
 ===========================
 
+.. contents::
+    :depth: 2
+
 Concepts
 --------
-The IDAES Flowsheet Visualizer, or IFV for short, is a graphical user interface to help understand an IDAES flowsheet.
-It uses the visual language of traditional process engineering diagrams, somewhat simplified, to display
+The IDAES Flowsheet Visualizer, or IFV for short, is a graphical user interface for viewing an IDAES flowsheet.
+It uses the visual language of traditional process engineering diagrams to display
 the components of a given flowsheet,
-their connections, and values associated with unit models and streams. At this time, it is read-only, i.e. nothing
-you can do with the flowsheet will alter the underlying IDAES models. On the other hand, the tool is wired so that
-changes in the underlying models can be shown in real-time in the IFV.
+their connections, and values associated with unit models and streams. While the changes made from the UI do
+not affect the underlying model, changes in the flowsheet -- e.g., from Python code or from solvers updating the
+stream values -- are immediately available to be displayed in the IFV. The IFV does not require running a
+separate program, as its functionality is embedded in the invoking Python code (see the `Client/server architecture <ifv-architecture>`_ for details).
+Starting and stopping the IFV is fast and does not consume many resources, a fact which we hope encourages
+its frequent use.
 
 Quickstart
 ----------
@@ -73,34 +79,48 @@ This means the initialization succeeded, and you can move on. If you see instead
 
     ModuleNotFoundError: No module named 'pyomo'
 
-In this case, you probably didn't run the notebook within a Python environment where IDAES is installed. See if
-there are other Python environments, or "kernels", you can run under the 'Kernel -> Change kernel' menu. If not,
-review the :ref:`installation instructions <IDAES Installation>`, close this notebook and exit the current running
-Jupyter, and try again to run the command "jupyter notebook" right after setting up your environment to be the one in which you installed IDAES.
+In this case, you probably didn't run the notebook within a Python environment where IDAES is installed. To fix,
+first try other Python environments, or "kernels", from under the '*Kernel -> Change kernel*' menu. If that
+doesn't work, review the :ref:`installation instructions <IDAES Installation>` instructions.
+To pick up changes in the installation, the best thing to do is close this notebook and exit the current running
+Jupyter. Then, from inside the installed IDAES environment, try again to run the command ``jupyter notebook``.
 
-Before continuing, save the notebook ('File -> Save' or Ctrl-S) with an appropriate name, like "Hello World".
+Optionally, save the notebook ('File -> Save' or Ctrl-S) with an appropriate name, like "Flowsheet visualization quickstart".
 
 When you ran the cell above, it created a new blank cell for you to continue editing. We will use this cell to visualize
 our initialized (but not solved) model. In the new cell, type in and run (shift-enter) the following code::
 
-    m.fs.visualize("Hello, World", save_as="hello_world.json")
+    m.fs.visualize("Hello World", save_as="hello_world.json")
 
 This will create a new browser tab or window with the IFV displaying the flowsheet:
 
 .. image:: ../../_images/ifv_helloworld_1.png
     :width: 800
 
-For the initial layout, the components
-have just been placed in a diagonal. You can rearrange the diagram with the mouse (the components can all
-be moved), and for more details on the available functions, see the next section. If you hit "Save", the IFV will save
-your changes in the layout to the destination that you passed to "save_as", in this case the file
-"hello_world.json", in the current directory.
+For the initial layout, you can see that the unit models and other components
+have just been placed in a diagonal. You can rearrange icons and lines on the diagram with the mouse.
+For more details on this and other functions, see the next section. If you hit ``Save``, the IFV will save
+your changes in the layout to the destination that you passed to "save_as" (in this case the file
+"hello_world.json") in the current directory.
 
 .. TODO Tell user how to see values on the unit model and streams
 
+When you are done using the IFV, you can simply close the browser tab. If you quit the Python program that
+invoked it, which is in this case the Jupyter Notebook, then the IFV will be cut off from the source flowsheet and
+will lose its ability to save, export, or refresh. Generally, you will want to quit both the IFV and the Python
+program at the same time.
+
+That's the end of our quick tour of the IFV. Please see below for descriptions of the full functionality.
+Happy visualizing!
+
 User Guide
 ----------
+
 This section describes each of the sections of the IFV interface.
+
+It also describes the `visualize()` function used to start the IFV:
+
+.. .. autofunction:: idaes.ui.fsvis.fsvis.visualize
 
 Title bar
 ^^^^^^^^^
@@ -111,40 +131,78 @@ Graph actions
 
 Units
     *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
-    The two types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
+    The three types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
     outlets. Units can be moved by clicking and dragging them. If you double-click on a unit, it
     will rotate 90 degrees.
 
 Lines
-    The lines connecting units, also called "arcs", can also be manipulated by clicking and dragging.
+    The lines connecting units, also called "arcs", can be manipulated by clicking and dragging.
     If you double-click on a line, you will create a new segment that can be used for routing the line
     around objects.
 
-Stream annotations
+Annotations
+    Both the units and the arcs have associated values that can be shown. See the
+    :ref:`View:Labels <ifv-action-view>` action.
 
 Menu actions
 ^^^^^^^^^^^^
-Below the title bar is a traditional application menu bar, and below that is a set of buttons for rapid access
-to many of the actions from the menu.
+In the current interface, all the actions described below are on a "button bar".
+The structure of this documentation reflects the planned next-generation interface, which
+will have a traditional application menu, below which is a set of buttons [#f1]_ for rapid access.
+
+.. _ifv-action-file:
 
 File actions
-    * Refresh
-    * Save
-    * Export
-    * Quit
+    * |ifv-refresh| Refresh - Refresh with view with any changes made to the flowsheet in Python.
+      This also has the effect of saving the current layout. Changes in the units or their connections will of
+      course alter the layout.
+    * |ifv-save| Save - Save the current layout to the data store that was specified with the visualization
+      was launched. This does *not* update with any changes made to the flowsheet in Python. Neither does it
+      have any effect on the Python flowsheet values (the IFV can never modify the flowsheet).
+    * |ifv-export| Export - Save the flowsheet as a Scalable Vector Graphics (SVG) file, a common format for
+      images that consist of "vector" elements like boxes, lines, and text. SVG files can be viewed like images
+      by most programs that allow image viewing, and even edited with a program like `Inkscape <https://inkscape.org/>`_.
+    * Quit - Close the UI window.
+
+.. |ifv-refresh| image:: ../../_images/icons/refresh-24px.svg
+.. |ifv-save| image:: ../../_images/icons/save-24px.svg
+.. |ifv-export| image:: ../../_images/icons/export.svg
+
+.. _ifv-action-view:
 
 View actions
-    * Grid
-    * Zoom
-    * Canvas size
+    * Labels - Toggle view of the annotations, or labels
+    * Grid - Toggle a background "grid"
+    * Zoom - Zoom the view of the flowsheet within the canvas. This is a label for a set of related options:
+        * |ifv-zoom-in| Zoom in - Zoom in by 25%
+        * |ifv-zoom-out| Zoom out - Zoom out by 25%
+        * |ifv-zoom-reset| Reset - Reset zoom to 100%
+    * Canvas size - Change the size of the "canvas" on which the flowsheet is drawn. This lets you adapt
+      the IFV for different display (screen) sizes.
 
-Help actions
-   * About
-   * Documentation
+.. |ifv-zoom-in| image:: ../../_images/icons/zoom_in-24px.svg
+.. |ifv-zoom-out| image:: ../../_images/icons/zoom_out-24px.svg
+.. |ifv-zoom-reset| image:: ../../_images/icons/zoom_out_map-24px.svg
+
+.. _ifv-action-help:
+
+|ifv-help| Help actions
+   * About - General information about the IFV
+
+.. TBD  * Documentation - Links to the online documentation
+
+.. |ifv-help| image:: ../../_images/icons/help_outline-24px.svg
+
+Notes
++++++
+.. [#f1] Button icons shown here use `Google Material Design system icons <https://material.io/design/iconography/system-icons.html#design-principles>`_. These are provided under the Apache 2.0 license.
+    They were not modified for this use.
 
 Advanced
 --------
 This section provides some additional details for developers or more advanced users.
+
+.. _ifv-architecture:
 
 Client/server architecture
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,26 +210,45 @@ The ``visualize()`` command works by starting an HTTP server in a separate threa
 requests from the UI (or any other requester). The server only responds to requests from your computer,
 not the internet. When you exit the script or Jupyter Notebook that called `visualize` then you will also
 stop the server -- and the associated IFV page will no longer be able to save or refresh the flowsheet.
-The architecture diagram is shown below::
+The architecture diagram is shown below.
 
+.. note ; the figure below was generated with asciiflow infinity, but is just text and can
+.. be edited in any way. For HTML and PDF these are rendered as nice little diagrams by the
+.. Sphinx plugin "sphinxcontrib.aafig" using the Python "aafigure" https://pypi.org/project/aafigure/ package
+
+.. aafig::
 
     +-------------------+                        +--------------------+
     |                   |                        |    Web browser     |
-    | Python script     |                        +--------------------+
-    | or Jupyter        |    +---------------+   | IFV web interface  |
-    | Notebook          |    | HTTP server   |   +--------------------+
-    |                   |    | running in    |   ||   +--+           ||
-    | m = model         |    | a separate    |   ||   +--+           ||
-    | m.fs = flowsheet  |    | thread        |   ||     |      +--+  ||
-    |                   |    |            <--------->   +----> +--+  ||
-    | m.fs.visualize()+----->+  Load/Save    |   |                   ||
-    |                   |    |     ^         |   +--------------------|
-    +-------------------+    +---------------+   +--------------------+
+    |  'Python script'  |                        +--------------------+
+    |  'or Jupyter'     |    +---------------+   | IFV web interface  |
+    |  'Notebook'       |    | 'HTTP server' |   +--------------------+
+    |                   |    | 'running in'  |   |    +--+            |
+    |                   |    | 'a separate'  |   |    +--+            |
+    |                   |    | 'thread'      |   |      |      +--+   |
+    |                   |    |               <--->      +----> +--+   |
+    |  m.fs.visualize   +---->  Load/Save    |   |                    |
+    |                   |    |               |   |                    |
+    +-------------------+    +-----^---------+   +--------------------+
                                    |
                                    |
                             +------v--------------+
                             |   Local Storage     |
                             +---------------------+
 
+Persistence architecture
+^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. py:currentmodule:: idaes.ui.fsvis.persist
 
+The saving of the model uses the the module :mod:`idaes.ui.fsvis.persist`.
+This module implements the well-known "|factory-link|", which makes it easy to extend by adding
+a new :class:`~.DataStore` sub-class and updating the logic in the factory method,
+:func:`~.DataStore.create`, to create and return instances of that class for a given input type.
+The input in this case comes from the ``save_as`` argument to the *visualize()* method.
+
+.. |factory-link| raw:: html
+
+    <a href="https://en.wikipedia.org/wiki/Factory_(object-oriented_programming)" target="_blank" style="text-decoration: none;">factory pattern</a>
+
+.. TODO: add an example of extending it, e.g. to save in an S3 bucket

@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxarg.ext',
     'sphinx.ext.doctest',
+    'sphinxcontrib.aafig',
 ]
 
 # Avoid duplicating heading labels across parallely constructed documentation

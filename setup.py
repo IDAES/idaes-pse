@@ -78,6 +78,7 @@ kwargs = dict(
     extras_require={
         # For developers. Only installed if [dev] is added to package name
         "dev": [
+            "aafigure==0.6",  # ascii-art ->to-> figures in Sphinx docs
             "alabaster>=0.7.7",
             # temporarily hold coverage version due to avoid bug in coveralls
             # -alee 12/20/2019
