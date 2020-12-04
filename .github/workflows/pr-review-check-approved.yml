@@ -1,0 +1,125 @@
+name: Check PR approved status
+
+on:
+  pull_request_review:
+    types:
+      - submitted
+      - edited
+      - dismissed
+
+env:
+  PR_APPROVED_LABEL_NAME: 'approved'
+
+jobs:
+  check-approved:
+    name: Check if PR is approved
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR reviews and set approved label
+        uses: actions/github-script@master
+        with:
+          github-token: ${{ secrets.IDAES_BUILD_TOKEN }}
+          script: |
+            const ReviewState = {
+              dismissed: "DISMISSED",
+              approved: "APPROVED",
+              changesRequested: "CHANGES_REQUESTED",
+              commented: "COMMENTED",
+            };
+            const minCountApproved = 2;
+            const specialReviewer = 'idaes-build';
+            const reviewEvent = context.payload;
+            const pullRequest = reviewEvent.pull_request;
+
+            function prettyPrint(obj, what) {
+              const indent = 2;
+              console.log(`${what}:`);
+              console.log(JSON.stringify(obj, null, indent));
+            }
+
+            // check count of approved reviews after selecting latest for each reviewer
+            async function selectLatestPerUser(reviews) {
+              const latestByUser = {};
+              reviews.forEach((r) => {
+                // the reviews are in chronological order (earliest to latest)
+                // so to get the latest for each user we can use an Object as a map and loop over all reviews
+                // at each iteration, a more recent review for that user will replace an earlier one set before it
+                // "COMMENTED" reviews are skipped since they don't change the approval status
+                if (r.state != ReviewState.commented) {
+                  latestByUser[r.user.login] = r;
+                }
+              });
+              return Object.values(latestByUser);
+            }
+
+            // without paginating, the information will be incorrect when the number of reviews
+            // exceeds the maximum response size (30 by default)
+            const fetchedReviews = await github.paginate(
+              github.pulls.listReviews, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pullRequest.number,
+              })
+              .then(
+               reviews => reviews
+              );
+
+            const countFetched = fetchedReviews.length;
+            const latestFetched = fetchedReviews[fetchedReviews.length - 1];
+            console.log(`Fetched ${countFetched} reviews.`);
+            prettyPrint(latestFetched, 'Latest fetched review');
+
+            const latestReviews = await selectLatestPerUser(fetchedReviews);
+            console.log(`There are ${latestReviews.length} up-to-date reviews from unique reviewers.`);
+
+            const countApproved = latestReviews.filter(r => r.state === ReviewState.approved).length;
+            console.log(`${countApproved} approving reviews (at least ${minCountApproved} required).`);
+            const isApproved = countApproved >= minCountApproved;
+            console.log(`Approved: ${isApproved}`);
+
+
+            async function ensureLabelPresence({labelName, shouldBePresent}) {
+              const commonArgs = {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullRequest.number,
+              };
+              const {data: labels} = await github.issues.listLabelsOnIssue({
+                ...commonArgs
+              });
+              prettyPrint(labels, 'Current labels');
+              const isPresent = labels.filter(label => label.name === labelName).length == 1;
+              const msg = `Label ${labelName} ${isPresent ? "is" : "is not"} present, when it ${shouldBePresent ? "should": "should not"} be present.`
+              console.log(msg);
+              const alreadyPresent = shouldBePresent && isPresent;
+              const needsAdding = shouldBePresent && !isPresent;
+              const needsRemoving = !shouldBePresent && isPresent;
+              const alreadyAbsent = !shouldBePresent && !isPresent;
+              if (needsAdding) {
+                console.log(`Label ${labelName} will be added.`);
+                await github.issues.addLabels({
+                  ...commonArgs,
+                  labels: [labelName]
+                });
+              } else if (needsRemoving) {
+                console.log(`Label ${labelName} will be removed.`);
+                try {
+                  await github.issues.removeLabel({
+                    ...commonArgs,
+                    name: labelName,
+                  });
+                } catch (error) {
+                  if (error.status === 404) {
+                    console.log(`Could not remove label ${labelName} (label not found).`);
+                    console.log('This is generally not an issue, and is probably due to the label being removed while this workflow was running.');
+                  }
+                }
+              } else if (alreadyPresent || alreadyAbsent) {
+                console.log(`Label ${labelName} is already in desired state, no further action needed.`);
+              }
+            }
+            const labelName = process.env.PR_APPROVED_LABEL_NAME;
+            await ensureLabelPresence({
+              labelName: labelName,
+              shouldBePresent: isApproved,
+            });
