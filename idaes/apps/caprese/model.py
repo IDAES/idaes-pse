@@ -40,6 +40,7 @@ from pyomo.environ import (
         )
 from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, declare_custom_block
+from pyomo.core.base.suffix import Suffix
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.modeling import unique_component_name
@@ -535,6 +536,65 @@ class _DynamicBlockData(_BlockData):
                     self.generate_time_in_sample(ts, tolerance=tolerance))
 
         return data
+
+    def add_ipopt_suffixes(self):
+        self.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
+        self.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
+
+        self.ipopt_zL_in = Suffix(direction=Suffix.EXPORT)
+        self.ipopt_zU_in = Suffix(direction=Suffix.EXPORT)
+
+        self.dual = Suffix(direction=Suffix.IMPORT_EXPORT)
+
+    def update_ipopt_multipliers(self):
+        self.ipopt_zL_in.update(self.ipopt_zL_out)
+        self.ipopt_zU_in.update(self.ipopt_zU_out)
+
+    def advance_ipopt_multipliers(self,
+            t_shift,
+            ctype=(
+                DiffVar,
+                AlgVar,
+                InputVar,
+                ),
+            tolerance=1e-8,
+            ):
+        # We are interested in advancing the multipliers we
+        # sent to IPOPT.
+        zL = self.ipopt_zL_in
+        zU = self.ipopt_zU_in
+        time = self.time
+        # The outer loop is over time so we don't have to call
+        # `find_nearest_index` for every variable.
+        # I am assuming that `find_nearest_index` is slower than
+        # accessing `component_objects`
+        for t in time:
+            ts = t + t_shift
+            idx = time.find_nearest_index(ts, tolerance)
+            if idx is None:
+                # t + sample_time is outside the model's "horizon"
+                continue
+            ts = time[idx]
+            for var in self.component_objects(ctype):
+                if var[t] in zL and var[ts] in zL:
+                    zL[var[t]] = zL[var[ts]]
+                if var[t] in zU and var[ts] in zU:
+                    zU[var[t]] = zU[var[ts]]
+
+    def advance_ipopt_multipliers_one_sample(self,
+            ctype=(
+                DiffVar,
+                AlgVar,
+                InputVar,
+                ),
+            tolerance=1e-8,
+            ):
+        sample_time = self.sample_time
+        self.advance_ipopt_multipliers(
+                sample_time,
+                ctype=ctype,
+                tolerance=tolerance,
+                )
 
 class DynamicBlock(Block):
     _ComponentDataClass = _DynamicBlockData
