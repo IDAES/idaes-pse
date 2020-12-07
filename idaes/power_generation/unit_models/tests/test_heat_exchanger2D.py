@@ -69,6 +69,7 @@ def build_unit():
                                "radial_elements": 5,
                                "tube_inner_diameter": 0.035,
                                "tube_thickness": 0.0035,
+                               "has_header": True,
                                "header_radial_elements": 5,
                                "header_inner_diameter": 0.3,
                                "header_wall_thickness": 0.03})
@@ -90,7 +91,7 @@ def build_unit():
 
     # material inputs
     m.fs.unit.therm_cond_wall = 43.0      # Carbon steel 1% C in W/m/K
-    m.fs.unit.density_wall = 7850         # kg/m3 or 0.284 lb/in3
+    m.fs.unit.dens_wall = 7850            # kg/m3 or 0.284 lb/in3
     m.fs.unit.cp_wall = 510.8             # J/kg-K (0.05 to 0.25 % C)
     m.fs.unit.Young_modulus = 2.00e5      # 200 GPa (29,000 ksi)
     m.fs.unit.Possion_ratio = 0.29
