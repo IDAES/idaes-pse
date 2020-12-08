@@ -83,9 +83,6 @@ kwargs = dict(
             # -alee 12/20/2019
             "coverage==4.5.4",
             "flake8",
-            "flask>=1.0",
-            "flask-bower",
-            "flask-restful",
             "jsonschema",
             "jupyter_contrib_nbextensions",
             "mock",
