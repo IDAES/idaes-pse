@@ -122,34 +122,23 @@ class enth_mol_ig_comp():
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
-        units = cobj.parent_block().get_metadata().derived_units
-
-        cobj.enth_mol_form_vap_comp_ref = Var(
-                doc="Vapor phase molar heat of formation @ Tref",
-                units=units["energy_mole"])
-        set_param_value(cobj,
-                        param="enth_mol_form_vap_comp_ref",
-                        units=units["energy_mole"])
 
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
         tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.kiloK)
-        
-        units = b.params.get_metadata().derived_units
 
-        h = (pyunits.convert((cobj.cp_mol_ig_comp_coeff_A*(t-tr) +
+        h = (cobj.cp_mol_ig_comp_coeff_A*(t-tr) +
              (cobj.cp_mol_ig_comp_coeff_B/2)*(t**2-tr**2) +
              (cobj.cp_mol_ig_comp_coeff_C/3)*(t**3-tr**3) +
              (cobj.cp_mol_ig_comp_coeff_D/4)*(t**4-tr**4) -
              cobj.cp_mol_ig_comp_coeff_E*(1/t-1/tr) +
              cobj.cp_mol_ig_comp_coeff_F -
-             cobj.cp_mol_ig_comp_coeff_H), units["energy_mole"]) + cobj.enth_mol_form_vap_comp_ref)
+             cobj.cp_mol_ig_comp_coeff_H)
 
-        # units = b.params.get_metadata().derived_units
-        # return pyunits.convert(h, units["energy_mole"])
-        return h
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(h, units["energy_mole"])
 
 
 class entr_mol_ig_comp():
