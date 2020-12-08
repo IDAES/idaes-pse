@@ -1,8 +1,8 @@
-Steam/Water Valve
-=================
+Steam Valve
+===========
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.valve_steam;SteamValve
+  pair: idaes.power_generation.unit_models.helm.valve_steam;HelmValve
 
 .. module:: idaes.power_generation.unit_models.helm.valve_steam
 
@@ -21,7 +21,7 @@ Example
   from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
   from idaes.core import FlowsheetBlock
-  from idaes.power_generation.unit_models.helm import SteamValve
+  from idaes.power_generation.unit_models.helm import HelmValve
   from idaes.generic_models.properties import iapws95
   from idaes.ui.report import degrees_of_freedom, active_equalities
 
@@ -31,7 +31,7 @@ Example
   m = ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.valve = SteamValve(default={"property_package": m.fs.properties})
+  m.fs.valve = HelmValve(default={"property_package": m.fs.properties})
 
   hin = iapws95.htpx(T=880, P=2.4233e7)
   # set inlet
