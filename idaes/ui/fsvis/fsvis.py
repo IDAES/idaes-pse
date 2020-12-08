@@ -23,7 +23,7 @@ web_server = None
 
 def visualize(
     flowsheet, name: str = "flowsheet", save_as=None, browser: bool = True, port: int = None,
-        log_level: int =logger.WARNING
+        log_level: int =logger.WARNING, quiet = False
 ) -> int:
     """Visualizes the flowsheet in a web application.
     
@@ -37,6 +37,7 @@ def visualize(
         browser: If true, open a browser
         port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, see :mod:`idaes.logger`, to set for all the visualiztion
+        quiet: If True, suppress printing any messages to standard output (console)
 
     Returns:
         Port number where server is listening
@@ -51,16 +52,31 @@ def visualize(
     if web_server is None:
         web_server = FlowsheetServer(port=port)
         web_server.start()
+        if not quiet:
+            print("Started visualization server")
     else:
         _log.info(f"Using HTTP server on localhost, port {web_server.port}")
 
-    web_server.add_flowsheet(name, flowsheet, save_as)
+    new_name = web_server.add_flowsheet(name, flowsheet, save_as)
+    if new_name != name:
+        _log.warning(f"Flowsheet name changed: old='{name}' new='{new_name}'")
+        if not quiet:
+            print(f"Flowsheet name changed to '{new_name}'")
+        name = new_name
 
     # Open a browser window for the UI
-    url = f"http://localhost:{web_server.port}/app"
+    url = f"http://localhost:{web_server.port}/app?id={name}"
     if browser:
-        success = webbrowser.open(url + f"?id={name}")
-        _log.debug(f"Opened in browser window: {success}")
+        success = webbrowser.open(url)
+        if success:
+            _log.debug(f"Flowsheet opened in browser window")
+        else:
+            _log.warning(f"Could not open flowsheet URL '{url}' in browser")
+            if not quiet:
+                print("Error: Unable to open flowsheet in web browser.")
+
+    if not quiet:
+        print(f"Flowsheet visualization at: {url}")
 
     return web_server.port
 

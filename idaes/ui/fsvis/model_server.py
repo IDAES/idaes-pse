@@ -20,6 +20,7 @@ The main class is `FlowsheetServer`, which is instantiated from the `visualize()
 import http.server
 import json
 from pathlib import Path
+import re
 import socket
 import threading
 from typing import Dict, Union
@@ -96,9 +97,20 @@ class FlowsheetServer(http.server.HTTPServer):
         self._thr.setDaemon(True)
         self._thr.start()
 
-    def add_flowsheet(self, id_, flowsheet, save_as):
+    def add_flowsheet(self, id_, flowsheet, save_as) -> str:
         """Add a flowsheet, and also the method of saving it.
+
+        Args:
+            id_: Name of flowsheet
+            flowsheet: Flowsheet object
+            save_as: File, path, etc. passed to :meth:`persist.DataStore.create()` to save the
+                     changes made from the UI.
+
+        Returns:
+            Name of flowsheet, modified as necessary to be URL friendly
         """
+        # replace all but 'unreserved' (RFC 3896) chars with a dash; remove duplicate dashes
+        id_ = re.sub(r"-+", "-", re.sub(r"[^a-zA-Z0-9-._~]", "-", id_))
         self._flowsheets[id_] = flowsheet
         store = persist.DataStore.create(save_as)
         _log.debug(f"Flowsheet '{id_}' storage is {store}")
@@ -113,6 +125,7 @@ class FlowsheetServer(http.server.HTTPServer):
             store.save(fs_dict)
         else:
             _log.debug(f"Existing flowsheet found in {store}: saving merged value")
+        return id_
 
     # === Public methods called only by HTTP handler ===
 
@@ -229,6 +242,7 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(
                 400, message=f"Query parameter 'id' is required for '{u.path}'"
             )
+            return
         if u.path == "/app":
             self._get_app(id_)
         elif u.path == "/fs":
