@@ -30,7 +30,7 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from idaes.power_generation.unit_models.helm import HelmValve
+from idaes.power_generation.unit_models import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
@@ -99,7 +99,7 @@ def create_model(
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
         default={"phase_presentation": iapws95.PhaseType.LG})
     # Create the valve and tank models
-    m.fs.valve_1 = HelmValve(default={
+    m.fs.valve_1 = SteamValve(default={
         "dynamic": False,
         "has_holdup": False,
         "material_balance_type": MaterialBalanceType.componentTotal,
@@ -108,7 +108,7 @@ def create_model(
         "has_holdup": True,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
-    m.fs.valve_2 = HelmValve(default={
+    m.fs.valve_2 = SteamValve(default={
         "dynamic": False,
         "has_holdup": False,
         "material_balance_type": MaterialBalanceType.componentTotal,
