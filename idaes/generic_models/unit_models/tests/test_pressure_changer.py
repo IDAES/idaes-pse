@@ -306,11 +306,11 @@ class TestBTX_isothermal(object):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
-        assert abs(btx.fs.unit.outlet.flow_mol[0] *
+        assert abs(value(btx.fs.unit.outlet.flow_mol[0] *
                    (btx.fs.unit.control_volume.properties_in[0]
                     .enth_mol_phase['Liq'] -
                     btx.fs.unit.control_volume.properties_out[0]
-                    .enth_mol_phase['Liq'])) <= 1e-6
+                    .enth_mol_phase['Liq']))) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -463,10 +463,10 @@ class TestIAPWS(object):
                          iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
         assert abs(value(
-                iapws.fs.unit.outlet.flow_mol[0] *
-                (iapws.fs.unit.inlet.enth_mol[0] -
-                 iapws.fs.unit.outlet.enth_mol[0]) +
-                iapws.fs.unit.work_mechanical[0])) <= 1e-6
+                   iapws.fs.unit.outlet.flow_mol[0] *
+                   (iapws.fs.unit.inlet.enth_mol[0] -
+                    iapws.fs.unit.outlet.enth_mol[0]) +
+                   iapws.fs.unit.work_mechanical[0])) <= 1e-6
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
