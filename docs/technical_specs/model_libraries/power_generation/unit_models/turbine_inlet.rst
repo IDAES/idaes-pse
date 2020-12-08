@@ -2,7 +2,7 @@ Turbine (Inlet Stage)
 =====================
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.turbine_inlet;TurbineInletStage
+  pair: idaes.power_generation.unit_models.helm.turbine_inlet;HelmTurbineInletStage
 
 .. module:: idaes.power_generation.unit_models.helm.turbine_inlet
 
@@ -25,7 +25,7 @@ Example
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = TurbineInletStage(default={"property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineInletStage(default={"property_package": m.fs.properties})
     hin = iapws95.htpx(T=880*units.K, P=2.4233e7*units.Pa)
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(hin)
@@ -140,11 +140,11 @@ infeasible problem.
 TurbineInletStage Class
 -----------------------
 
-.. autoclass:: TurbineInletStage
+.. autoclass:: HelmTurbineInletStage
   :members:
 
 TurbineInletStageData Class
 ---------------------------
 
-.. autoclass:: TurbineInletStageData
+.. autoclass:: HelmTurbineInletStageData
   :members:

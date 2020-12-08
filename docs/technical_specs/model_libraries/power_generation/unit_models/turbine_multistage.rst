@@ -2,7 +2,7 @@ Turbine (Multistage)
 ====================
 
 .. index::
-  pair: idaes.power_generation.unit_models.helm.turbine_multistage;TurbineMultistage
+  pair: idaes.power_generation.unit_models.helm.turbine_multistage;HelmTurbineMultistage
 
 .. module:: idaes.power_generation.unit_models.helm.turbine_multistage
 
@@ -42,7 +42,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
 
   from idaes.core import FlowsheetBlock
   from idaes.unit_models import Heater
-  from idaes.power_generation.unit_models.helm import TurbineMultistage
+  from idaes.power_generation.unit_models.helm import HelmTurbineMultistage
   from idaes.generic_models.properties import iapws95
 
   solver = SolverFactory('ipopt')
@@ -51,7 +51,7 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   m = ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.turb = TurbineMultistage(default={
+  m.fs.turb = HelmTurbineMultistage(default={
       "property_package": m.fs.properties,
       "num_hp": 7,
       "num_ip": 14,
@@ -167,11 +167,11 @@ in inlet stage, outlet stage, or valves that do not pair well with the specified
 TurbineMultistage Class
 -----------------------
 
-.. autoclass:: TurbineMultistage
+.. autoclass:: HelmTurbineMultistage
   :members:
 
 TurbineMultistageData Class
 ---------------------------
 
-.. autoclass:: TurbineMultistageData
+.. autoclass:: HelmTurbineMultistageData
   :members:
