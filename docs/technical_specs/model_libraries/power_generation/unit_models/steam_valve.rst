@@ -1,5 +1,5 @@
-Steam Valve
-===========
+HelmValve
+=========
 
 .. index::
   pair: idaes.power_generation.unit_models.helm.valve_steam;HelmValve
@@ -103,14 +103,14 @@ This just calls the initialization routine from PressureChanger, but it is wrapp
 a function to ensure the state after initialization is the same as before initialization.
 The arguments to the initialization method are the same as PressureChanger.
 
-SteamValve Class
+HelmValve Class
 ----------------
 
-.. autoclass:: SteamValve
+.. autoclass:: HelmValve
   :members:
 
-SteamValveData Class
+HelmValveData Class
 ---------------------
 
-.. autoclass:: SteamValveData
+.. autoclass:: HelmValveData
   :members:
