@@ -4,7 +4,7 @@ Turbine (Outlet Stage)
 .. index::
   pair: idaes.power_generation.unit_models.helm.turbine_outlet;HelmTurbineOutletStage
 
-.. module:: idaes.power_generation.unit_models.turbine_outlet
+.. module:: idaes.power_generation.unit_models.helm.turbine_outlet
 
 This is a steam power generation turbine model for the outlet stage. The turbine outlet model is based on:
 
