@@ -317,7 +317,7 @@ class TestStateBlock(object):
             pytest.approx(0.56498, abs=1e-4)
             
     @pytest.mark.integration
-    def test_temp_swing(self,model):
+    def test_temp_swing(self):
         # Create a flash model with the CO2-H2O property package
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
