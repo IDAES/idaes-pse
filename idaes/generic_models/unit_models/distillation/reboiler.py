@@ -39,8 +39,10 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
-    PropertyNotSupportedError
+    PropertyNotSupportedError, ConfigurationError
 from idaes.core.util.testing import get_default_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 
 _log = idaeslog.getIdaesLogger(__name__)
 
@@ -225,6 +227,7 @@ see property package for documentation.}"""))
         # Add object reference to variables of the control volume
         # Reference to the heat duty
         self.heat_duty = Reference(self.control_volume.heat[:])
+
         # Reference to the pressure drop (if set to True)
         if self.config.has_pressure_change:
             self.deltaP = Reference(self.control_volume.deltaP[:])
@@ -476,6 +479,18 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the
                     # distillate port
                     self.vapor_reboil.add(self.e_vap_flow, k)
+                else:
+                    # when it is flow indexed by phase or indexed by
+                    # both phase and component.
+                    var = self.control_volume.properties_out[:].\
+                        component(local_name)[...]
+
+                    # add the reference and variable name to the bottoms port
+                    self.bottoms.add(Reference(var), k)
+
+                    # add the reference and variable name to the
+                    # vapor outlet port
+                    self.vapor_reboil.add(Reference(var), k)
             elif "enth" in local_name:
                 if "phase" not in local_name:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
@@ -545,40 +560,82 @@ see property package for documentation.}"""))
                         "while building ports for the reboiler. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, solver=None, outlvl=0):
-
-        # TODO: Fix the inlets to the reboiler to the vapor flow from
-        # the top tray or take it as an argument to this method.
+    def initialize(self, state_args=None, solver=None, optarg=None,
+                   outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        # Initialize the inlet and outlet state blocks
-        self.control_volume.initialize(outlvl=outlvl)
+        if solver is None:
+            init_log.warning("Solver not provided. Default solver(ipopt) "
+                             " being used for initialization.")
+            solver = get_default_solver()
 
-        if solver is not None:
+        # Initialize the inlet and outlet state blocks. Calling the state
+        # blocks initialize methods directly so that custom set of state args
+        # can be passed to the inlet and outlet state blocks as control_volume
+        # initialize method initializes the state blocks with the same
+        # state conditions.
+        flags = self.control_volume.properties_in. \
+            initialize(state_args=state_args,
+                       solver=solver,
+                       optarg=optarg,
+                       outlvl=outlvl,
+                       hold_state=True)
+
+        # Initialize outlet state block at same conditions of inlet except
+        # the temperature. Set the temperature to a temperature guess based
+        # on the desired boilup_ratio.
+        temp_guess = 0.5 * (
+            self.control_volume.properties_in[0].temperature_dew.value -
+            self.control_volume.properties_in[0].
+            temperature_bubble.value) + \
+            self.control_volume.properties_in[0].temperature_bubble.value
+
+        state_args_outlet = {}
+        state_dict_outlet = (
+            self.control_volume.properties_in[
+                self.flowsheet().config.time.first()]
+            .define_port_members())
+
+        for k in state_dict_outlet.keys():
+            if state_dict_outlet[k].is_indexed():
+                state_args_outlet[k] = {}
+                for m in state_dict_outlet[k].keys():
+                    state_args_outlet[k][m] = state_dict_outlet[k][m].value
+            else:
+                if k != "temperature":
+                    state_args_outlet[k] = state_dict_outlet[k].value
+                else:
+                    state_args_outlet[k] = temp_guess
+
+        self.control_volume.properties_out.initialize(
+            state_args=state_args_outlet,
+            solver=solver,
+            optarg=optarg,
+            outlvl=outlvl,
+            hold_state=False)
+
+        if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solver.solve(self, tee=slc.tee)
             init_log.info(
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )
         else:
-            init_log.warning(
-                "Solver not provided during initialization, proceeding"
-                " with deafult solver in idaes.")
-            solver = get_default_solver()
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
-            init_log.info(
-                "Initialization Complete, {}.".format(idaeslog.condition(res))
-            )
+            raise ConfigurationError(
+                "State vars fixed but degrees of freedom "
+                "for reboiler is not zero during "
+                "initialization. Please ensure that the boilup_ratio "
+                "or the outlet temperature is fixed.")
+
+        self.control_volume.properties_in.\
+            release_state(flags=flags, outlvl=outlvl)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
         if hasattr(self, "heat_duty"):
             var_dict["Heat Duty"] = self.heat_duty[time_point]
-        if hasattr(self, "deltaP"):
-            var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}
 

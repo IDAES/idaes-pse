@@ -196,7 +196,7 @@ see reaction package for documentation.}"""))
             balance_type=self.config.material_balance_type,
             has_rate_reactions=True,
             has_equilibrium_reactions=self.config.has_equilibrium_reactions,
-            has_phase_equilibrium=self.config.has_equilibrium_reactions)
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,

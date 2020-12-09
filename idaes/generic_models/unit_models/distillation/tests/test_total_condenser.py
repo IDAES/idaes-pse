@@ -28,12 +28,9 @@ from idaes.generic_models.unit_models.distillation.condenser import CondenserTyp
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables, \
-    fixed_variables_set, activated_constraints_set
+    number_variables, number_total_constraints, number_unused_variables
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util.exceptions import PropertyPackageError
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
@@ -46,24 +43,19 @@ def test_config():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = PhysicalParameterTestBlock()
 
-
-
     m.fs.unit = Condenser(
         default={"property_package": m.fs.properties,
                  "condenser_type": CondenserType.totalCondenser,
                  "temperature_spec": TemperatureSpec.customTemperature})
 
-    assert len(m.fs.unit.config) == 10
+    assert len(m.fs.unit.config) == 8
     assert m.fs.unit.config.condenser_type == CondenserType.totalCondenser
     assert m.fs.unit.config.material_balance_type == \
         MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
         EnergyBalanceType.useDefault
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.has_pressure_change
     assert hasattr(m.fs.unit, "heat_duty")
-
+    assert hasattr(m.fs.unit, "condenser_pressure")
 
 
 class TestBTXIdeal(object):
@@ -80,8 +72,7 @@ class TestBTXIdeal(object):
         m.fs.unit = Condenser(
             default={"property_package": m.fs.properties,
                      "condenser_type": CondenserType.totalCondenser,
-                     "temperature_spec": TemperatureSpec.atBubblePoint,
-                     "has_pressure_change": True})
+                     "temperature_spec": TemperatureSpec.atBubblePoint})
 
         return m
 
@@ -99,8 +90,7 @@ class TestBTXIdeal(object):
         m.fs.unit = Condenser(
             default={"property_package": m.fs.properties,
                      "condenser_type": CondenserType.totalCondenser,
-                     "temperature_spec": TemperatureSpec.atBubblePoint,
-                     "has_pressure_change": True})
+                     "temperature_spec": TemperatureSpec.atBubblePoint})
 
         return m
 
@@ -130,8 +120,8 @@ class TestBTXIdeal(object):
         assert hasattr(btx_ftpz.fs.unit.distillate, "temperature")
         assert hasattr(btx_ftpz.fs.unit.distillate, "pressure")
 
-        assert number_variables(btx_ftpz.fs.unit) == 49
-        assert number_total_constraints(btx_ftpz.fs.unit) == 42
+        assert number_variables(btx_ftpz.fs.unit) == 48
+        assert number_total_constraints(btx_ftpz.fs.unit) == 41
         assert number_unused_variables(btx_ftpz) == 1
 
         assert hasattr(btx_fctp.fs.unit, "reflux_ratio")
@@ -154,8 +144,8 @@ class TestBTXIdeal(object):
         assert hasattr(btx_fctp.fs.unit.distillate, "temperature")
         assert hasattr(btx_fctp.fs.unit.distillate, "pressure")
 
-        assert number_variables(btx_fctp.fs.unit) == 51
-        assert number_total_constraints(btx_fctp.fs.unit) == 45
+        assert number_variables(btx_fctp.fs.unit) == 50
+        assert number_total_constraints(btx_fctp.fs.unit) == 44
         assert number_unused_variables(btx_fctp) == 1
 
     @pytest.mark.unit
@@ -163,7 +153,7 @@ class TestBTXIdeal(object):
 
         # Fix the total condenser variables (FTPz)
         btx_ftpz.fs.unit.reflux_ratio.fix(1)
-        btx_ftpz.fs.unit.deltaP.fix(0)
+        btx_ftpz.fs.unit.condenser_pressure.fix(101325)
 
         # Fix the inputs (typically this will be the vapor from the top tray)
         btx_ftpz.fs.unit.inlet.flow_mol.fix(1)
@@ -176,7 +166,7 @@ class TestBTXIdeal(object):
 
         # Fix the total condenser variables (FcTP)
         btx_fctp.fs.unit.reflux_ratio.fix(1)
-        btx_fctp.fs.unit.deltaP.fix(0)
+        btx_fctp.fs.unit.condenser_pressure.fix(101325)
 
         # Fix the inputs (typically this will be the outlet vapor from the top tray)
         btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
@@ -242,7 +232,7 @@ class TestBTXIdeal(object):
                 value(btx_ftpz.fs.unit.distillate.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-33711.313, abs=1e-3) ==
+        assert (pytest.approx(-33711.313, rel=1e-4) ==
                 value(btx_ftpz.fs.unit.heat_duty[0]))
 
         # Reflux port
@@ -266,7 +256,7 @@ class TestBTXIdeal(object):
                 value(btx_fctp.fs.unit.distillate.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-33711.295, abs=1e-1) ==
+        assert (pytest.approx(-33711.295, rel=1e-4) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
     @pytest.mark.initialize
