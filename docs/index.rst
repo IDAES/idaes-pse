@@ -14,7 +14,7 @@ of the full range of advanced fossil energy systems, including chemical looping
 and other transformational |CO2| capture technologies, as well as integration with
 other new technologies such as supercritical |CO2|.
 
-For more information about the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <platform>`.
+For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <user_guide/concepts>`.
 
 Collaborating institutions
 --------------------------
@@ -48,7 +48,6 @@ Contents
     advanced_user_guide/index
     tutorials_examples
     technical_specs/index
-    platform
     license
     copyright
 
