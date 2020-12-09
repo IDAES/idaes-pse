@@ -127,7 +127,7 @@ The not integration tag skips some tests that are slow. If you like, you can run
 
 Update IDAES
 ^^^^^^^^^^^^^^^^^^^^^^^
-The master branch of idaes-pse is frequently updated and a new IDAES release occurs quarterly. It is recommended that you update your fork and local repositories and conda environment periodically. 
+The main branch of idaes-pse is frequently updated and a new IDAES release occurs quarterly. It is recommended that you update your fork and local repositories and conda environment periodically. 
 
 .. code-block:: sh
     

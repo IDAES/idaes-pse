@@ -10,23 +10,27 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
+# Imports from the python standard library
 from __future__ import division
-
-from six import string_types
-
+#from builtins import int, str
+import os.path
+import pprint
 import random
 import warnings
-#from builtins import int, str
-
+# Imports from third parties
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy.optimize as opt
-from matplotlib import pyplot as plt
+import pickle
 from pyomo.environ import *
 from pyomo.core.expr.visitor import replace_expressions
+import scipy.optimize as opt
 from scipy.special import comb as comb
+from six import string_types
+# Imports from IDAES namespace
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
-import os.path, pickle
+
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
@@ -1312,11 +1316,10 @@ class PolynomialRegression:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
+ 
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)
 
     def confint_regression(self, confidence=0.95):
         """
