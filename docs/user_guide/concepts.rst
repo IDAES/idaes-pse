@@ -13,8 +13,8 @@ components of that platform.
 IDAES-IP
 --------
 
-Overview
-^^^^^^^^
+Description
+^^^^^^^^^^^
 The IDAES integrated platform (IDAES-IP) supports the full process modeling lifecycle from conceptual design to dynamic optimization and
 control within a single modeling environment. At the center of this platform is the Core Modeling Framework
 (:term:`IDAES-CMF`) which leverages the open source, U.S. Department of Energy-funded extensible algebraic modeling
