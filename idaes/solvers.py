@@ -39,7 +39,7 @@ def download_binaries(
     release=None,
     url=None,
     insecure=False,
-    cert=None,
+    cacert=None,
     verbose=False,
     platform="auto"):
     """
@@ -57,7 +57,7 @@ def download_binaries(
     idaes._create_bin_dir()
     solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")
     libs_tar = os.path.join(idaes.bin_directory, "idaes-lib.tar.gz")
-    fd = FileDownloader(insecure=insecure, cert=cert)
+    fd = FileDownloader(insecure=insecure, cacert=cacert)
     arch = fd.get_sysinfo()
     if arch[1] != 64:
         _log.error("IDAES Extensions currently only supports 64bit Python.")

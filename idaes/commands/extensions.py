@@ -70,11 +70,11 @@ def get_extensions_platforms():
     is_flag=True,
     help="Don't verify download location")
 @click.option(
-    "--cert",
-    help="Local certificate file"
+    "--cacert",
+    help="Specify certificate file to verify download location",
     default=None)
 @click.option("--verbose", help="Show details", is_flag=True)
-def get_extensions(release, url, insecure, cert, verbose, platform):
+def get_extensions(release, url, insecure, cacert, verbose, platform):
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -82,7 +82,8 @@ def get_extensions(release, url, insecure, cert, verbose, platform):
         click.echo("\n* You must provide either a release or url not both.")
     elif url is not None or release is not None:
         click.echo("Getting files...")
-        idaes.solvers.download_binaries(release, url, insecure, cert, verbose, platform)
+        idaes.solvers.download_binaries(
+            release, url, insecure, cacert, verbose, platform)
         click.echo("Done")
         print_extensions_version()
     else:
