@@ -55,15 +55,16 @@ def get_extensions_platforms():
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--release",
-    help="Official binary release to download",
+    help="Optional, sepcify an official binary release to download",
     default=None)
 @click.option(
     "--url",
-    help="URL to download solvers/libraries from, release must not be specified",
+    help="Optional, URL to download solvers/libraries from",
     default=None)
 @click.option(
     "--platform",
-    help="Platform to download binaries for (default=auto)",
+    help="Platform to download binaries for see. Use idaes get-extensions-platforms"
+         " for a list of available platforms (default=auto)",
     default="auto")
 @click.option(
     "--insecure",
