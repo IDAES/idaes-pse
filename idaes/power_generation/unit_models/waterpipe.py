@@ -11,7 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Pipe model for water or steam
+Pipe model for water or steam, Liq or Vap phase must be provided (mixed phase
+not supported).
 
 main equations:
 
@@ -133,8 +134,9 @@ see property package for documentation.}"""))
     CONFIG.declare("water_phase", ConfigValue(
         default='Liq',
         domain=In(['Liq', 'Vap']),
-        description='water phase',
-        doc='''Define water phase for property calls'''))
+        description='Water phase',
+        doc='''Define water phase for property calls,
+mixed phase not supported'''))
 
     def build(self):
         """
@@ -232,7 +234,7 @@ see property package for documentation.}"""))
         self.velocity = Var(
                 self.flowsheet().config.time,
                 initialize=10.0,
-                doc='Liquid water velocity inside pipe')
+                doc='Fluid velocity inside pipe')
 
         # Reynolds number
         self.N_Re = Var(
@@ -270,7 +272,7 @@ see property package for documentation.}"""))
 
         # Equation for calculating velocity
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Vecolity of fluid inside pipe")
+                         doc="Velocity of fluid inside pipe")
         def velocity_eqn(b, t):
             return b.velocity[t]*0.25*const.pi*b.diameter**2\
                 * b.number_of_pipes == \
@@ -397,7 +399,7 @@ see property package for documentation.}"""))
         init_log.info_high(
                 "Initialization Step 3 {}.".format(idaeslog.condition(res))
             )
-        blk.control_volume.release_state(flags, outlvl+1)
+        blk.control_volume.release_state(flags, outlvl)
         init_log.info("Initialization Complete.")
 
     def calculate_scaling_factors(self):

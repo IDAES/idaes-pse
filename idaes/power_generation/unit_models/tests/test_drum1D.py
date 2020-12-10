@@ -48,7 +48,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
 # from idaes.power_generation.unit_models.drum_1D import Drum1D
 from idaes.power_generation.unit_models.drum1D import Drum1D
-
+import idaes.core.util.scaling as iscale
 from idaes.core.util.testing import get_default_solver, initialization_tester
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -76,7 +76,7 @@ def build_drum1D():
     m.fs.unit.drum_length.fix(15.3256)
     m.fs.unit.level[:].fix(0.6)
     m.fs.unit.number_downcomer.fix(6)
-    m.fs.unit.downcomer_di.fix(0.38)
+    m.fs.unit.downcomer_diameter.fix(0.38)
     m.fs.unit.temperature_ambient[:].fix(298.15)
     m.fs.unit.insulation_thickness.fix(0.145)
 
@@ -100,6 +100,8 @@ def test_basic_build(build_drum1D):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_drum1D(build_drum1D):
+    m = build_drum1D
+    iscale.calculate_scaling_factors(m)
     state_args_water_steam = {'flow_mol': 14409.02,  # mol/s
                               'pressure': 12024201.99,  # Pa
                               'enth_mol': 28365.2608}  # j/mol
@@ -127,7 +129,6 @@ def test_run_drum1D(build_drum1D):
     m.fs.unit.feedwater_inlet.enth_mol[:].fix()
 
     optarg = {"tol": 1e-7,
-              "linear_solver": "ma27",
               "max_iter": 40}
     solver.options = optarg
     # solve model

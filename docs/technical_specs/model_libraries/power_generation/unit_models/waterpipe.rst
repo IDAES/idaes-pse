@@ -82,4 +82,4 @@ Dynamic Model
 -------------
 
 The dynamic model version of the steam heater model can be constructed by selecting dynamic=True. 
-If dynamic = True, the material accumulation holdups are constructed.
+If dynamic = True, the material accumulation holdups are constructed. While, the metal energy holdup is not consideed.
