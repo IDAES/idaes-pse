@@ -63,7 +63,7 @@ def get_extensions_platforms():
     default=None)
 @click.option(
     "--platform",
-    help="Platform to download binaries for see. Use idaes get-extensions-platforms"
+    help="Platform to download binaries for. Use idaes get-extensions-platforms"
          " for a list of available platforms (default=auto)",
     default="auto")
 @click.option(
