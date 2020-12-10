@@ -9,7 +9,7 @@ Drum 1D Model
 Introduction
 ------------
 The 1-D drum model is similar to the 0-D drum model, however, the 1-D heat conduction through the radius or thickness of the drum wall is modeled. 
-The heat conduction through insulation is modeled as steady state and no energy holdup or accumulation in the insulation layer is considered. While, the drum metal is actually dynamic with energy holdup considered.
+The heat conduction through insulation is modeled as steady state and no energy holdup or accumulation in the insulation layer is considered. Dynamics and energy holdup are accounted for in the drum metal.
 
 Similar to the drum model, the drum 1D model consists of three main sub-unit operations: 
 

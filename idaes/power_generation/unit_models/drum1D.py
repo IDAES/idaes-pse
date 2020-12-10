@@ -579,14 +579,14 @@ discretizing length domain (default=3)"""))
                 term = 0
             return term == 4 * b.diff_therm_metal\
                 * (b.radial_domain.first() + b.radial_domain[2]) \
-                    / (b.radial_domain[2] - b.radial_domain.first())**2\
+                / (b.radial_domain[2] - b.radial_domain.first())**2\
                 / (3 * b.radial_domain.first() + b.radial_domain[2]) * (
                     b.drum_wall_temperature[t, b.radial_domain[2]] - b.
                     drum_wall_temperature[t, b.radial_domain.first()]
                     ) + 8 * b.diff_therm_metal / b.therm_cond_metal\
                 * b.heat_transfer_in[t] * b.radial_domain.first() / \
                 (b.radial_domain[2] - b.radial_domain.first()) \
-                    / (3 * b.radial_domain.first() + b.radial_domain[2])\
+                / (3 * b.radial_domain.first() + b.radial_domain[2])\
                 * (b.control_volume.properties_out[t].temperature
                    - b.drum_wall_temperature[t, b.radial_domain.first()])
 
@@ -600,12 +600,12 @@ discretizing length domain (default=3)"""))
             return term == 4 * b.diff_therm_metal * (b.radial_domain.last()
                                                      + b.radial_domain[-2]) / \
                 (b.radial_domain.last() - b.radial_domain[-2])**2 \
-                    / (3 * b.radial_domain.last() + b.radial_domain[-2])\
+                / (3 * b.radial_domain.last() + b.radial_domain[-2])\
                 * (b.drum_wall_temperature[t, b.radial_domain[-2]] - b.
                    drum_wall_temperature[t, b.radial_domain.last()])\
                 + 8 * b.diff_therm_metal / b.therm_cond_metal\
                 * b.heat_transfer_out[t] * b.radial_domain.last() \
-                    / (b.radial_domain.last() - b.radial_domain[-2])\
+                / (b.radial_domain.last() - b.radial_domain[-2])\
                 / (3 * b.radial_domain.last() + b.radial_domain[-2]) * (
                     b.temperature_ambient[t]
                     - b.drum_wall_temperature[t, b.radial_domain.last()])
@@ -629,7 +629,8 @@ discretizing length domain (default=3)"""))
                 / (-log10(b.control_volume.properties_out[t].
                           pressure / 2.2048e7))**1.65 *\
                 (0.1 + (b.control_volume.properties_out[t].temperature
-                        - b.drum_wall_temperature[t, b.radial_domain.first()])**2)\
+                        - b.drum_wall_temperature[t, b.
+                                                  radial_domain.first()])**2)\
                 * b.frac_wet_area[t]
 
         # Expressure for insulation heat transfer (conduction)
@@ -706,7 +707,7 @@ discretizing length domain (default=3)"""))
                                                       b.radial_domain[i-1]]
                                 + b.radial_domain[i] * b.
                                 drum_wall_temperature[t, b.radial_domain[i]])
-                                for i in range(2, len(b.radial_domain) + 1)))
+                         for i in range(2, len(b.radial_domain) + 1)))
 
         for index_r, value_r in enumerate(self.radial_domain, 1):
             self.rindex[value_r] = index_r
@@ -728,7 +729,7 @@ discretizing length domain (default=3)"""))
                                 + b.radial_domain[j] * b.
                                 drum_wall_temperature[t, b.radial_domain[j]]
                                 ) for j in range(2, b.rindex[r].value
-                                                     + 1)))
+                                                 + 1)))
 
         @self.Expression(self.flowsheet().config.time,
                          self.radial_domain,
@@ -1171,16 +1172,13 @@ discretizing length domain (default=3)"""))
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.connection_material_balance.items():
-            sf = iscale.get_scaling_factor(
-                1e-4, default=1)
+            sf = iscale.get_scaling_factor(1e-4, default=1)
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.connection_enthalpy_balance.items():
-            sf = iscale.get_scaling_factor(
-                1e-4, default=1)
+            sf = iscale.get_scaling_factor(1e-4, default=1)
             iscale.constraint_scaling_transform(c, sf)
 
         for t, c in self.connection_pressure_balance.items():
-            sf = iscale.get_scaling_factor(
-                1e-6, default=1)
+            sf = iscale.get_scaling_factor(1e-6, default=1)
             iscale.constraint_scaling_transform(c, sf)
