@@ -491,7 +491,7 @@ objects linked to all inlet states and the mixed state,
         """
         pp = self.config.property_package
         # Get phase component list(s)
-        pc_set = pp.get_phase_component_set()
+        pc_set = mixed_block.phase_component_set
 
         # Get units metadata
         units = pp.get_metadata()
@@ -580,7 +580,7 @@ objects linked to all inlet states and the mixed state,
             # Write phase-component balances
             @self.Constraint(
                 self.flowsheet().config.time,
-                self.config.property_package.component_list,
+                mixed_block.component_list,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, j):
@@ -590,7 +590,7 @@ objects linked to all inlet states and the mixed state,
                         for i in range(len(inlet_blocks))
                     )
                     - mixed_block[t].get_material_flow_terms(p, j)
-                    for p in b.config.property_package.phase_list
+                    for p in mixed_block.phase_list
                     if (p, j) in pc_set
                 )
 
@@ -607,10 +607,10 @@ objects linked to all inlet states and the mixed state,
                             for i in range(len(inlet_blocks))
                         )
                         - mixed_block[t].get_material_flow_terms(p, j)
-                        for j in b.config.property_package.component_list
+                        for j in mixed_block.component_list
                         if (p, j) in pc_set
                     )
-                    for p in b.config.property_package.phase_list
+                    for p in mixed_block.phase_list
                 )
 
         elif mb_type == MaterialBalanceType.elementTotal:
@@ -639,13 +639,13 @@ objects linked to all inlet states and the mixed state,
                 sum(
                     sum(
                         inlet_blocks[i][t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list
+                        for p in mixed_block.phase_list
                     )
                     for i in range(len(inlet_blocks))
                 )
                 - sum(
                     mixed_block[t].get_enthalpy_flow_terms(p)
-                    for p in b.config.property_package.phase_list
+                    for p in mixed_block.phase_list
                 )
             )
 
@@ -992,7 +992,7 @@ objects linked to all inlet states and the mixed state,
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, j), c in self.material_mixing_equations.items():
-                    for i, p in enumerate(self.config.property_package.phase_list):
+                    for i, p in enumerate(self.mixed_state.phase_list):
                         ft = self.mixed_state[t].get_material_flow_terms(p, j)
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
@@ -1001,7 +1001,7 @@ objects linked to all inlet states and the mixed state,
                             s = _s if _s < s else s
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.total:
-                pc_set = self.config.property_package.get_phase_component_set()
+                pc_set = self.mixed_state.phase_component_set
                 for t, c in self.material_mixing_equations.items():
                     for i, (p, j) in enumerate(pc_set):
                         ft = self.mixed_state[t].get_material_flow_terms(p, j)

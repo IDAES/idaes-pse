@@ -20,7 +20,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 __Author__ = "John Eslick"
 
 from pyomo.common.config import In
-from pyomo.environ import Var, sqrt, SolverFactory, value, Param
+from pyomo.environ import Var, sqrt, SolverFactory, value, Param, units as pyunits
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
 from idaes.core import declare_process_block_class
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -45,11 +45,13 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         super().build()
 
         self.flow_coeff = Var(
-            initialize=0.0333, doc="Turbine flow coefficient [kg*C^0.5/s/Pa]"
+            initialize=0.0333, doc="Turbine flow coefficient [kg*C^0.5/s/Pa]",
+            units=pyunits.kg*pyunits.K**0.5/pyunits.s/pyunits.Pa
         )
         self.eff_dry = Var(initialize=0.87, doc="Turbine dry isentropic efficiency")
         self.design_exhaust_flow_vol = Var(
-            initialize=6000.0, doc="Design exit volumetirc flowrate [m^3/s]"
+            initialize=6000.0, doc="Design exit volumetirc flowrate [m^3/s]",
+            units=pyunits.m**3/pyunits.s
         )
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_isentropic.unfix()
@@ -68,7 +70,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
                 + 0.0638 * f ** 2
                 - 0.0328 * f
                 + 0.0064
-            )
+            )*pyunits.J/pyunits.mol
 
         @self.Constraint(self.flowsheet().config.time, doc="Stodola eq. choked flow")
         def stodola_equation(b, t):
@@ -78,7 +80,8 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return flow ** 2 * mw ** 2 * (Tin - 273.15) == (
+
+            return flow ** 2 * mw ** 2 * (Tin) == (
                 cf ** 2 * Pin ** 2 * (1 - Pr ** 2))
 
         @self.Constraint(self.flowsheet().config.time, doc="Efficiency correlation")
@@ -153,7 +156,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             if not calculate_cf:
                 cf = self.flow_coeff
                 self.inlet.flow_mol[t].fix(
-                    value(cf * Pin * sqrt(1 - Pr ** 2) / mw / sqrt(Tin - 273.15))
+                    value(cf * Pin * sqrt(1 - Pr ** 2) / mw / sqrt(Tin))
                 )
 
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -164,13 +167,16 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         self.outlet.pressure.fix()
         if calculate_cf:
             self.flow_coeff.unfix()
+            self.inlet.flow_mol.unfix()
+            self.inlet.flow_mol[0].fix()
             flow = self.control_volume.properties_in[0].flow_mol
             mw = self.control_volume.properties_in[0].mw
             Tin = self.control_volume.properties_in[0].temperature
             Pin = self.control_volume.properties_in[0].pressure
             Pr = self.ratioP[0]
             self.flow_coeff.value = value(
-                flow * mw * sqrt((Tin - 273.15)/(1 - Pr ** 2))/Pin)
+                flow * mw * sqrt(Tin/(1 - Pr ** 2))/Pin)
+
         else:
             self.inlet.flow_mol.unfix()
 
@@ -178,6 +184,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         self.efficiency_correlation.activate()
         slvr = SolverFactory(solver)
         slvr.options = optarg
+        self.display()
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
@@ -197,5 +204,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         super().calculate_scaling_factors()
         for t, c in self.stodola_equation.items():
             s = iscale.get_scaling_factor(
-                self.control_volume.properties_in[t].flow_mol)**2
+                self.control_volume.properties_in[t].flow_mol,
+                default=1,
+                warning=True)**2
             iscale.constraint_scaling_transform(c, s)

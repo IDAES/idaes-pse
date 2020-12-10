@@ -306,11 +306,11 @@ class TestBTX_isothermal(object):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
-        assert abs(btx.fs.unit.outlet.flow_mol[0] *
+        assert abs(value(btx.fs.unit.outlet.flow_mol[0] *
                    (btx.fs.unit.control_volume.properties_in[0]
                     .enth_mol_phase['Liq'] -
                     btx.fs.unit.control_volume.properties_out[0]
-                    .enth_mol_phase['Liq'])) <= 1e-6
+                    .enth_mol_phase['Liq']))) <= 1e-6
 
     @pytest.mark.ui
     @pytest.mark.unit
@@ -395,9 +395,8 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_units(self, iapws):
         assert_units_consistent(iapws)
-        # TODO: Add these checks once IAPWS has units
-        # assert_units_equivalent(iapws.fs.unit.work_mechanical[0], units.W)
-        # assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
+        assert_units_equivalent(iapws.fs.unit.work_mechanical[0], units.W)
+        assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
@@ -464,10 +463,10 @@ class TestIAPWS(object):
                          iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
         assert abs(value(
-                iapws.fs.unit.outlet.flow_mol[0] *
-                (iapws.fs.unit.inlet.enth_mol[0] -
-                 iapws.fs.unit.outlet.enth_mol[0]) +
-                iapws.fs.unit.work_mechanical[0])) <= 1e-6
+                   iapws.fs.unit.outlet.flow_mol[0] *
+                   (iapws.fs.unit.inlet.enth_mol[0] -
+                    iapws.fs.unit.outlet.enth_mol[0]) +
+                   iapws.fs.unit.work_mechanical[0])) <= 1e-6
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -495,7 +494,7 @@ class TestIAPWS(object):
             Tout = cases["Tout"][i]
             Pin = cases["Pin"][i]*1000
             Pout = cases["Pout"][i]*1000
-            hin = iapws95.htpx(T=Tin, P=Pin)
+            hin = iapws95.htpx(T=Tin*units.K, P=Pin*units.Pa)
             W = cases["W"][i]*1000
             Tis = cases["Tisen"][i]
             xout = cases["xout"][i]
@@ -797,9 +796,11 @@ class Test_costing(object):
                 m.fs.unit.costing.purchase_cost,
                 m.fs.unit.costing.total_cost_eq)
 
+        assert_units_consistent(m.fs.unit)
+
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(70141.395, 1e-5)
+            pytest.approx(70115.0, 1e-5)
 
     @pytest.mark.component
     def test_compressor(self):
@@ -826,9 +827,12 @@ class Test_costing(object):
         calculate_variable_from_constraint(
                     m.fs.unit.costing.purchase_cost,
                     m.fs.unit.costing.cp_cost_eq)
+
+        assert_units_consistent(m.fs.unit)
+
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334540.7, 1e-5)
+            pytest.approx(334648, 1e-5)
 
     @pytest.mark.component
     def test_turbine(self):
@@ -845,13 +849,12 @@ class Test_costing(object):
         Tin = 500  # K
         Pin = 1000000  # Pa
         Pout = 700000  # Pa
-        hin = iapws95.htpx(Tin, Pin)
+        hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
         m.fs.unit.inlet.enth_mol[0].fix(hin)
         m.fs.unit.inlet.pressure[0].fix(Pin)
 
         m.fs.unit.deltaP.fix(Pout - Pin)
         m.fs.unit.efficiency_isentropic.fix(0.9)
-        m.fs.unit.work_mechanical.display()
 
         m.fs.unit.initialize()
 
@@ -860,6 +863,9 @@ class Test_costing(object):
                     m.fs.unit.costing.purchase_cost,
                     m.fs.unit.costing.cp_cost_eq)
         assert degrees_of_freedom(m) == 0
+
+        assert_units_consistent(m.fs.unit)
+
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value ==\
-            pytest.approx(213129.6059, 1e-5)
+            pytest.approx(213199, 1e-5)

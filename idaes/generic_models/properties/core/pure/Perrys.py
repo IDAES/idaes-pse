@@ -27,6 +27,8 @@ from idaes.generic_models.properties.core.generic.utility import \
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
 class cp_mol_liq_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         cobj.cp_mol_liq_comp_coeff_1 = Var(
             doc="Parameter 1 for liquid phase molar heat capacity",
@@ -68,6 +70,7 @@ class cp_mol_liq_comp():
                         units=pyunits.J*pyunits.kmol**-1*pyunits.K**-5,
                         index="5")
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific heat capacity
         T = pyunits.convert(T, to_units=pyunits.K)
@@ -82,6 +85,8 @@ class cp_mol_liq_comp():
 
 
 class enth_mol_liq_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
@@ -95,6 +100,7 @@ class enth_mol_liq_comp():
                         param="enth_mol_form_liq_comp_ref",
                         units=units["energy_mole"])
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific enthalpy
         T = pyunits.convert(T, to_units=pyunits.K)
@@ -114,6 +120,8 @@ class enth_mol_liq_comp():
 
 
 class entr_mol_liq_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
@@ -127,6 +135,7 @@ class entr_mol_liq_comp():
                         param="entr_mol_form_liq_comp_ref",
                         units=units["entropy_mole"])
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # Specific entropy
         T = pyunits.convert(T, to_units=pyunits.K)
@@ -149,6 +158,8 @@ class entr_mol_liq_comp():
 # -----------------------------------------------------------------------------
 # Densities
 class dens_mol_liq_comp():
+
+    @staticmethod
     def build_parameters(cobj):
         cobj.dens_mol_liq_comp_coeff_1 = Var(
                 doc="Parameter 1 for liquid phase molar density",
@@ -182,6 +193,7 @@ class dens_mol_liq_comp():
                         units=None,
                         index="4")
 
+    @staticmethod
     def return_expression(b, cobj, T):
         # pg. 2-98
         T = pyunits.convert(T, to_units=pyunits.K)

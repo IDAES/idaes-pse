@@ -22,6 +22,7 @@ from idaes.generic_models.flowsheets.demo_flowsheet import (
 
 from pyomo.environ import value
 from pyomo.network import Arc
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
@@ -72,6 +73,11 @@ def test_initialize_flowsheet(model):
         1.367, 1e-3)
     assert model.fs.F03.liq_outlet.flow_mol[0].expr.value == pytest.approx(
         0.633, 1e-3)
+
+
+@pytest.mark.integration
+def test_unit_consistency(model):
+    assert_units_consistent(model)
 
 
 @pytest.mark.unit

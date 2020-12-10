@@ -16,13 +16,14 @@ Workspace classes and functions.
 # stdlib
 import logging
 import os
+import re
 from typing import List
+from urllib.parse import urlparse
 import uuid
-import yaml
 
 # third-party
 import jsonschema
-import six
+import yaml
 
 # local
 from .errors import (
@@ -52,7 +53,7 @@ CONFIG_SCHEMA = {
                 "type": "string",
                 "description": "directory containing Sphinx HTML docs",
             },
-            "default": "{dmf_root}/docs/build/html",
+            "default": "https://idaes-pse.readthedocs.io/en/stable,{dmf_root}/docs/build/html"
         },
         "description": {
             "description": "A human-readable description of the workspace",
@@ -165,7 +166,9 @@ class Workspace(object):
             (str) path: Path for root of workspace
             (bool) create: Create the workspace if it does not exist.
             (bool) existing_ok: If create is True, and the workspace exists, just continue
-            (bool) add_defaults: Add default values to new config
+            (bool) add_defaults: Add default values to new configuration.
+                    These values are found in the JSON Schema that is stored in the module variable
+                    `CONFIG_SCHEMA`, and substituted by logic in :meth:`WorkspaceConfiguration.get_fields`.
             html_paths: One or more paths to HTML docs (or None)
         Raises:
             WorkspaceNotFoundError: if ws is not found (and create is false)
@@ -234,11 +237,13 @@ class Workspace(object):
     def _configure_defaults(self):
         """Add default values to the workspace configuration.
 
+        The default values are provided by the w
+
         Note: this will *overwrite* any existing values!
         """
         values = {
             key: val
-            for key, (desc, val) in WorkspaceConfig()
+            for key, (desc, val) in WorkspaceConfiguration()
             .get_fields(only_defaults=True)
             .items()
         }
@@ -368,12 +373,19 @@ class Workspace(object):
             return contents.copy()
 
     def _expand_path(self, path):
-        # leave paths bracketed by _underscores_ alone
-        if len(path) > 2 and path[0] == "_" and path[-1] == "_":
-            return path
-        return os.path.realpath(
-            path.format(ws_root=self.root, dmf_root=self._install_dir)
-        )
+        # leave paths bracketed by _underscores_ as-is
+        if re.match(r"^_.*_$", path):
+            pass
+        else:
+            # See if this is a file or web URL.
+            # Do substitution on file paths, but leave web URLs alone.
+            parsed = urlparse(path)
+            if (not parsed.netloc) and parsed.path:
+                # Do substitution of '{ws_root}' and '{dmf_root}' in the path
+                path = os.path.realpath(
+                    path.format(ws_root=self.root, dmf_root=self._install_dir)
+                )
+        return path
 
     def _write_conf(self, contents):
         #: type (dict) -> None
@@ -403,64 +415,75 @@ class Workspace(object):
         return self.meta.get(self.CONF_DESC, "none")
 
 
-class WorkspaceConfig(object):
+class WorkspaceConfiguration(object):
+    """Interface to the :data:`CONFIG_SCHEMA` JSON Schema that specifies the fields in the
+       workspace configuration.
+    """
     DEFAULTS = {"string": "", "number": 0, "boolean": False, "array": []}
 
     def __init__(self):
         self._schema = jsonschema.Draft4Validator(CONFIG_SCHEMA)
 
-    def get_fields(self, only_defaults=False):
-        """Get all possible metadata fields for workspace config.
+    def get_fields(self, only_defaults=False) -> dict:
+        """Get the metadata fields that are in a workspace config[uration], with default values
+        provided for each field.
 
-        These values come out of the configuration schema.
-        Keys starting with a leading underscore, like '_id', are
-        skipped.
+        The default values come out of the configuration schema in :data:`CONFIG_SCHEMA`.
+        Keys starting with a leading underscore, like '_id', are skipped.
 
         Args:
-            only_defaults: Only include fields that have a default
-                                value in the schema.
-        Returns:
-            dict: Keys are field name, values are (field description, value).
-                  The 'value' gives a default value. Its type is either
-                  a list, a number, bool, or a string; the list may be empty.
-        """
-        prop = CONFIG_SCHEMA["properties"]
-        result = {}
+            only_defaults: Do not return fields that are not given a default value in the schema.
 
-        for key, item in six.iteritems(prop):
+        Returns:
+            Keys are field name, values are (field description, value). The 'value' is the default value.
+            Its type is either a list, a number, boolean, or a string.
+        """
+        result = {}  # return value
+
+        # Loop over all properties in the schema
+        for key, item in CONFIG_SCHEMA["properties"].items():
+            # Skip properties whose name starts with a leading underscore
             if key.startswith("_"):
                 continue
-            desc = item["description"]
-            type_ = item["type"]
-            # morph unknown types to string
+            desc, type_ = item["description"], item["type"]
+            # Coerce unknown types to string (but print a warning, as this is not expected)
             if type_ not in self.DEFAULTS:
                 _log.warning(
                     'Unknown schema type "{}".' 'Using "string" instead'.format(type_)
                 )
                 type_ = "string"
-            # figure out value type, look for default values
+            # Based on value type, extract default value
             default_value = None
             if type_ == "array":
-                itype = item["items"]["type"]
-                idesc = item["items"]["description"]
-                desc = "{}. Each item is a {}".format(desc, idesc)
-                type_ = itype
+                # Arrays need special processing
+                item_type, item_desc = item["items"]["type"], item["items"]["description"]
+                desc = "{}. Each item is a {}".format(desc, item_desc)
+                type_ = item_type
+                # Use default either (1) inside the list of items, or (2) outside for the whole property
                 if "default" in item["items"]:
                     default_value = [item["items"]["default"]]
                 elif "default" in item:
                     # default is comma-separated list
                     default_value = item["default"].split(",")
-                else:
-                    default_value = []
             elif "default" in item:
+                # For everything else, simply get the "default" key
                 default_value = item["default"]
-
-            if default_value is None and only_defaults:
-                continue
-
-            if default_value is None:
-                default_value = self.DEFAULTS[type_]
-            result[key] = (desc, default_value)
+            # Set result, except if we are in 'only_defaults' mode and there is no default value
+            if only_defaults:
+                if default_value is None:
+                    _log.debug(f"(only_defaults mode) NOT setting default value for {key}: no value provided")
+                else:
+                    # Set the value
+                    result[key] = (desc, default_value)
+                    _log.debug(f"(only_defaults mode) setting default value for {key} to: {default_value}")
+            else:
+                # If not in only_defaults mode, use an internal default value based on the type when there
+                # is no default value in the schema.
+                if default_value is None:
+                    default_value = self.DEFAULTS[type_]
+                # Set the value
+                result[key] = (desc, default_value)
+                _log.debug(f"setting default value for {key} to: {default_value}")
 
         return result
 

@@ -39,6 +39,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
     PropertyPackageError, PropertyNotSupportedError
 from idaes.core.util.testing import get_default_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 _log = idaeslog.getLogger(__name__)
 
@@ -149,7 +150,7 @@ see property package for documentation.}"""))
 
         # Create a dict to set up the inlet state blocks
         state_block_args = dict(**self.config.property_package_args)
-        state_block_args["has_phase_equilibrium"] = False
+        state_block_args["has_phase_equilibrium"] = True
         state_block_args["defined_state"] = True
 
         for i in inlet_list:
@@ -172,7 +173,6 @@ see property package for documentation.}"""))
 
         self._add_material_balance()
         self._add_energy_balance()
-
         self._add_pressure_balance()
 
         # Get liquid and vapor phase objects from the property package
@@ -300,10 +300,10 @@ see property package for documentation.}"""))
         def pressure_drop_equation(self, t):
             if self.config.has_pressure_change:
                 return self.properties_out[t].pressure == \
-                    self.properties_in_vap[t].pressure - self.deltaP[t]
+                    self.properties_in_liq[t].pressure - self.deltaP[t]
             else:
                 return self.properties_out[t].pressure == \
-                    self.properties_in_vap[t].pressure
+                    self.properties_in_liq[t].pressure
 
     def _add_ports(self):
         """Method to construct the ports for the tray."""
@@ -381,26 +381,30 @@ see property package for documentation.}"""))
         member_list = self.properties_out[0].define_port_members()
 
         for k in member_list:
+
+            local_name = member_list[k].local_name
+
             # Create references and populate the intensive variables
-            if "flow" not in k and "frac" not in k and "enth" not in k:
+            if "flow" not in local_name and "frac" not in local_name \
+                    and "enth" not in local_name:
                 if not member_list[k].is_indexed():
                     var = self.properties_out[:].\
-                        component(member_list[k].local_name)
+                        component(local_name)
                 else:
                     var = self.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                 # add the reference and variable name to the port
                 port.add(Reference(var), k)
 
-            elif "frac" in k:
+            elif "frac" in local_name:
 
                 # Mole/mass frac is typically indexed
                 index_set = member_list[k].index_set()
 
                 # if state var is not mole/mass frac by phase
-                if "phase" not in k:
-                    if "mole" in k:  # check mole basis/mass basis
+                if "phase" not in local_name:
+                    if "mole" in local_name:  # check mole basis/mass basis
 
                         # The following conditionals are required when a
                         # mole frac or mass frac is a state var i.e. will be
@@ -427,7 +431,7 @@ see property package for documentation.}"""))
                                 "No mole_frac_phase_comp or flow_mol_phase or"
                                 " flow_mol_phase_comp variables encountered "
                                 "while building ports for the condenser. ")
-                    elif "mass" in k:
+                    elif "mass" in local_name:
                         if hasattr(self.properties_out[0],
                                    "mass_frac_phase_comp") and \
                             hasattr(self.properties_out[0],
@@ -492,12 +496,12 @@ see property package for documentation.}"""))
                     # state vars in the port and therefore access directly
                     # from the state block.
                     var = self.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+                        component(local_name)[...]
 
                     # add the reference and variable name to the port
                     port.add(Reference(var), k)
-            elif "flow" in k:
-                if "phase" not in k:
+            elif "flow" in local_name:
+                if "phase" not in local_name:
 
                     # Assumes that here the var is total flow or component
                     # flow. However, need to extract the flow by phase from
@@ -509,13 +513,12 @@ see property package for documentation.}"""))
                     if not member_list[k].is_indexed():
                         # if state var is not flow_mol/flow_mass
                         # by phase
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        local_name_flow = local_name + "_phase"
 
                         # Rule to link the flow to the port
                         def rule_flow(self, t):
                             return sum(self.properties_out[t].
-                                       component(local_name)[p]
+                                       component(local_name_flow)[p]
                                        for p in phase) * (side_sf)
 
                         # add the reference and variable name to the port
@@ -526,10 +529,9 @@ see property package for documentation.}"""))
                         port.add(expr, k)
                     else:
                         # when it is flow comp indexed by component list
-                        str_split = \
-                            str(member_list[k].local_name).split("_")
+                        str_split = local_name.split("_")
                         if len(str_split) == 3 and str_split[-1] == "comp":
-                            local_name = str_split[0] + "_" + \
+                            local_name_flow = str_split[0] + "_" + \
                                 str_split[1] + "_phase_" + "comp"
 
                         # Get the indexing set i.e. component list
@@ -538,23 +540,61 @@ see property package for documentation.}"""))
                         # Rule to link the flow to the port
                         def rule_flow(self, t, i):
                             return sum(self.properties_out[t].
-                                       component(local_name)[p, i]
+                                       component(local_name_flow)[p, i]
                                        for p in phase) * (side_sf)
                         expr = Expression(self.flowsheet().time,
                                           index_set,
                                           rule=rule_flow)
                         self.add_component("e_flow_" + port.local_name,
                                            expr)
-                        port.add(expr, k)
-            elif "enth" in k:
-                if "phase" not in k:
+                        port.add(expr, local_name)
+                elif "phase" in local_name:
+                    # flow is indexed by phase and comp
+                    # Get the indexing sets i.e. component list and phase list
+                    component_set = self.config.\
+                        property_package.component_list
+
+                    phase_set = self.config.\
+                        property_package.phase_list
+
+                    def rule_flow(self, t, p, i):
+                        if (phase is self._liquid_set and
+                                p in self._liquid_set) or \
+                                (phase is self._vapor_set and
+                                 p in self._vapor_set) :
+                            # pass appropriate phase flow values to port
+                            return (self.properties_out[t].
+                                    component(local_name)[p, i]) * (side_sf)
+                        else:
+                            # return small number for phase that should not
+                            # be in the appropriate port. For example,
+                            # the state vars will be flow_mol_phase_comp
+                            # which will include all phases. The liq port
+                            # should have the correct references to the liq
+                            # phase flow but the vapor phase flow should be 0.
+                            return 1e-8
+
+                    expr = Expression(self.flowsheet().time,
+                                      phase_set,
+                                      component_set,
+                                      rule=rule_flow)
+                    self.add_component("e_" + local_name + port.local_name,
+                                       expr)
+                    port.add(expr, k)
+                else:
+                    raise PropertyPackageError(
+                        "Unrecognized flow state variable encountered "
+                        "while building ports for the tray. Please follow "
+                        "the naming convention outlined in the documentation "
+                        "for state variables.")
+            elif "enth" in local_name:
+                if "phase" not in local_name:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
                     if not member_list[k].is_indexed():
                         # if state var is not enth_mol/enth_mass
                         # by phase, add _phase string to extract the right
                         # value from the state block
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        local_name_phase = local_name + "_phase"
                     else:
                         raise PropertyPackageError(
                             "Enthalpy is indexed but the variable "
@@ -565,7 +605,7 @@ see property package for documentation.}"""))
                     # Rule to link the phase enthalpy to the port.
                     def rule_enth(self, t):
                         return sum(self.properties_out[t].
-                                   component(local_name)[p]
+                                   component(local_name_phase)[p]
                                    for p in phase)
 
                     expr = Expression(self.flowsheet().time,
@@ -575,7 +615,7 @@ see property package for documentation.}"""))
                     # add the reference and variable name to the port
                     port.add(expr, k)
 
-                elif "phase" in k:
+                elif "phase" in local_name:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
                     # reference irrespective of the reflux, distillate and
@@ -583,10 +623,10 @@ see property package for documentation.}"""))
 
                     if not member_list[k].is_indexed():
                         var = self.properties_out[:].\
-                            component(member_list[k].local_name)
+                            component(local_name)
                     else:
                         var = self.properties_out[:].\
-                            component(member_list[k].local_name)[...]
+                            component(local_name)[...]
 
                     # add the reference and variable name to the port
                     port.add(Reference(var), k)
@@ -597,7 +637,8 @@ see property package for documentation.}"""))
                         "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
+                   state_args_vap=None, solver=None, optarg=None,
+                   outlvl=idaeslog.NOTSET):
 
         # TODO:
         # 1. Check initialization for dynamic mode. Currently not supported.
@@ -626,74 +667,155 @@ see property package for documentation.}"""))
                     "Vapor side draw split fraction not fixed but "
                     "has_vapor_side_draw set to True.")
 
-        # Initialize the inlet state blocks
+        # Create initial guess if not provided by using current values
+        if self.config.is_feed_tray and state_args_feed is None:
+            state_args_feed = {}
+            state_args_liq = {}
+            state_args_vap = {}
+            state_dict = (
+                self.properties_in_feed[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if "flow" in k:
+                    if state_dict[k].is_indexed():
+                        state_args_feed[k] = {}
+                        state_args_liq[k] = {}
+                        state_args_vap[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args_feed[k][m] = \
+                                state_dict[k][m].value
+                            state_args_liq[k][m] = \
+                                0.1 * state_dict[k][m].value
+                            state_args_vap[k][m] = \
+                                0.1 * state_dict[k][m].value
+
+                    else:
+                        state_args_feed[k] = state_dict[k].value
+                        state_args_liq[k] = 0.1 * state_dict[k].value
+                        state_args_vap[k] = 0.1 * state_dict[k].value
+                else:
+                    if state_dict[k].is_indexed():
+                        state_args_feed[k] = {}
+                        state_args_liq[k] = {}
+                        state_args_vap[k] = {}
+                        for m in state_dict[k].keys():
+                            state_args_feed[k][m] = \
+                                state_dict[k][m].value
+                            state_args_liq[k][m] = \
+                                state_dict[k][m].value
+                            state_args_vap[k][m] = \
+                                state_dict[k][m].value
+
+                    else:
+                        state_args_feed[k] = state_dict[k].value
+                        state_args_liq[k] = state_dict[k].value
+                        state_args_vap[k] = state_dict[k].value
+
+        # Create initial guess if not provided by using current values
+        if not self.config.is_feed_tray and state_args_liq is None:
+            state_args_liq = {}
+            state_dict = (
+                self.properties_in_liq[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args_liq[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_liq[k][m] = state_dict[k][m].value
+                else:
+                    state_args_liq[k] = state_dict[k].value
+
+        # Create initial guess if not provided by using current values
+        if not self.config.is_feed_tray and state_args_vap is None:
+            state_args_vap = {}
+            state_dict = (
+                self.properties_in_vap[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args_vap[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_vap[k][m] = state_dict[k][m].value
+                else:
+                    state_args_vap[k] = state_dict[k].value
+
         if self.config.is_feed_tray:
-            self.properties_in_feed.initialize(state_args=state_args_feed,
-                                               solver=solver,
-                                               outlvl=outlvl)
-        self.properties_in_liq.initialize(state_args=state_args_liq,
-                                          solver=solver,
-                                          outlvl=outlvl)
-        self.properties_in_vap.initialize(state_args=state_args_vap,
-                                          solver=solver,
-                                          outlvl=outlvl)
+            feed_flags = self.properties_in_feed.initialize(
+                outlvl=outlvl,
+                solver=solver,
+                optarg=optarg,
+                hold_state=True,
+                state_args=state_args_feed,
+                state_vars_fixed=False)
+
+        liq_in_flags = self.properties_in_liq. \
+            initialize(outlvl=outlvl,
+                       solver=solver,
+                       optarg=optarg,
+                       hold_state=True,
+                       state_args=state_args_liq,
+                       state_vars_fixed=False)
+
+        vap_in_flags = self.properties_in_vap. \
+            initialize(outlvl=outlvl,
+                       solver=solver,
+                       optarg=optarg,
+                       hold_state=True,
+                       state_args=state_args_vap,
+                       state_vars_fixed=False)
 
         # state args to initialize the mixed outlet state block
         state_args_mixed = {}
 
-        if self.config.is_feed_tray and state_args_feed is not None:
+        if self.config.is_feed_tray:
 
-            # if initial guess provided for the feed stream, initialize the
-            # mixed state block at the same condition.
+            # if feed tray, initialize the mixed state block at
+            # the same condition.
             state_args_mixed = state_args_feed
         else:
-            state_dict = \
-                self.properties_out[self.flowsheet().config.time.first()].\
-                define_state_vars()
-            if self.config.is_feed_tray:
-                for k in state_dict.keys():
-                    if state_dict[k].is_indexed():
-                        state_args_mixed[k] = {}
-                        for m in state_dict[k].keys():
-                            state_args_mixed[k][m] = \
-                                self.properties_in_feed[self.flowsheet().
-                                                        config.time.first()].\
-                                component(state_dict[k].local_name)[m].value
-                    else:
-                        state_args_mixed[k] = \
-                            self.properties_in_feed[self.flowsheet().
-                                                    config.time.first()].\
-                            component(state_dict[k].local_name).value
-
-            else:
-                # if not feed tray, initialize mixed state block at average of
-                # vap/liq inlets except pressure. While this is crude, it
-                # will work for most combination of state vars.
-                for k in state_dict.keys():
-                    if k == "pressure":
-                        # Take the lowest pressure and this is the liq inlet
-                        state_args_mixed[k] = self.properties_in_liq[0].\
-                            component(state_dict[k].local_name).value
-                    elif state_dict[k].is_indexed():
-                        state_args_mixed[k] = {}
-                        for m in state_dict[k].keys():
-                            state_args_mixed[k][m] = \
-                                0.5 * (self.properties_in_liq[0].
-                                       component(state_dict[k].local_name)[m].
-                                       value + self.properties_in_vap[0].
-                                       component(state_dict[k].local_name)[m].
-                                       value)
-                    else:
-                        state_args_mixed[k] = \
+            # if not feed tray, initialize mixed state block at average of
+            # vap/liq inlets except pressure. While this is crude, it
+            # will work for most combination of state vars.
+            state_dict = (
+                self.properties_in_liq[
+                    self.flowsheet().config.time.first()]
+                .define_port_members())
+            for k in state_dict.keys():
+                if k == "pressure":
+                    # Take the lowest pressure and this is the liq inlet
+                    state_args_mixed[k] = self.properties_in_liq[0].\
+                        component(state_dict[k].local_name).value
+                elif state_dict[k].is_indexed():
+                    state_args_mixed[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args_mixed[k][m] = \
                             0.5 * (self.properties_in_liq[0].
-                                   component(state_dict[k].local_name).value +
-                                   self.properties_in_vap[0].
-                                   component(state_dict[k].local_name).value)
+                                   component(state_dict[k].local_name)[m].
+                                   value + self.properties_in_vap[0].
+                                   component(state_dict[k].local_name)[m].
+                                   value)
+                else:
+                    state_args_mixed[k] = \
+                        0.5 * (self.properties_in_liq[0].
+                               component(state_dict[k].local_name).value +
+                               self.properties_in_vap[0].
+                               component(state_dict[k].local_name).value)
 
         # Initialize the mixed outlet state block
-        self.properties_out.initialize(state_args=state_args_mixed,
-                                       solver=solver,
-                                       outlvl=outlvl)
+        self.properties_out. \
+            initialize(outlvl=outlvl,
+                       solver=solver,
+                       optarg=optarg,
+                       hold_state=False,
+                       state_args=state_args_mixed,
+                       state_vars_fixed=False)
+
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
 
@@ -724,7 +846,7 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
+        init_log.info(
             "Mass balance solve {}.".format(idaeslog.condition(res))
         )
 
@@ -737,23 +859,36 @@ see property package for documentation.}"""))
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
+        init_log.info(
             "Mass and energy balance solve {}.".format(idaeslog.condition(res))
         )
 
         # Activate pressure balance
         self.pressure_drop_equation.activate()
-
         try:
             self.properties_out[:].pressure.unfix()
         except AttributeError:
             pass
 
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
-        init_log.info_high(
-            "Mass, energy and pressure balance solve {}.".
-            format(idaeslog.condition(res)))
+        if degrees_of_freedom(self) == 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = solver.solve(self, tee=slc.tee)
+            init_log.info(
+                "Mass, energy and pressure balance solve {}.".
+                format(idaeslog.condition(res)))
+        else:
+            raise Exception("State vars fixed but degrees of freedom "
+                            "for tray block is not zero during "
+                            "initialization.")
+
+        self.properties_in_liq.release_state(flags=liq_in_flags,
+                                             outlvl=outlvl)
+        self.properties_in_vap.release_state(flags=vap_in_flags,
+                                             outlvl=outlvl)
+
         init_log.info(
             "Initialization complete, status {}.".
             format(idaeslog.condition(res)))
+
+        if self.config.is_feed_tray:
+            return feed_flags

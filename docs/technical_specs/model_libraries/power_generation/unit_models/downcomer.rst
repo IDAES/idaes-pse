@@ -8,7 +8,7 @@ Downcomer Model
 
 Introduction
 ------------
-The Downcomer model consist of a simple pipe model (or a set of pipes) where the inlet stream is the Drum outlet and the outlet stream connects with the WaterWall (section 1).
+The Downcomer model consists of a simple pipe model (or a set of pipes) where the inlet stream is the Drum outlet and the outlet stream connects with the WaterWall (section 1).
 The model simply calculates the pressure change due to friction and gravity, which involves the calculation of fluid velocity, Reynolds number, and friction factor (using Darcy’s correlation). 
 
 Property package: This model requires the Helmholtz EoS (IAPWS95) property package with the mixed phase option, therefore, the phase equilibrium calculations are handled by the property package.

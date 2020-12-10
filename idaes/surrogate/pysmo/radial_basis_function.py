@@ -10,20 +10,26 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from __future__ import division, print_function
-from six import string_types
 
-import random
+# Imports from the python standard library
+from __future__ import division, print_function
 from builtins import int, str
+import itertools
+import os.path
+import pprint
+import random
+import warnings
+# Imports from third parties
+from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+import pickle
 from pyomo.environ import *
 import scipy.optimize as opt
-import warnings
-import itertools
+from six import string_types
+# Imports from IDAES namespace
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
-from matplotlib import pyplot as plt
-import os.path, pickle
+
 
 
 """
@@ -133,7 +139,7 @@ class RadialBasisFunctions:
     """
     The RadialBasisFunctions class generates a radial basis function fitting for a training data set.
 
-    The class must first be initialized by calling **RadialBasisFunctions**. Regression is then carried out by calling the method ``rbf_training``.
+    The class must first be initialized by calling **RadialBasisFunctions**. Regression is then carried out by calling the method ``training``.
 
     For a given dataset with n features :math:`x_{1},\ldots,x_{n}`, RadialBasisFunctions is able to consider six types of basis transformations:
         - Linear ('linear')
@@ -143,7 +149,7 @@ class RadialBasisFunctions:
         - Inverse multiquadric ('imq')
         - Thin-plate spline ('spline')
 
-    ``rbf_training`` selects the best hyperparameters (regularization parameter :math:`\lambda` and shape parameter :math:`\sigma`, where necessary) by evaluating the leave-one-out cross-validation error for each (:math:`\lambda,\sigma`) pair.
+    ``training`` selects the best hyperparameters (regularization parameter :math:`\lambda` and shape parameter :math:`\sigma`, where necessary) by evaluating the leave-one-out cross-validation error for each (:math:`\lambda,\sigma`) pair.
 
     It should be noted that the all the training points are treated as centres for the RBF, resulting in a square system.
 
@@ -156,8 +162,8 @@ class RadialBasisFunctions:
         >>> p = d.get_feature_vector()
         
         # Train RBF model and predict output for an test data x_test
-        >>> results = d.rbf_training()
-        >>> predictions = d.rbf_predict_output(results, x_test)
+        >>> d.training()
+        >>> predictions = d.predict_output(x_test)
 
     Args:
         XY_data (Numpy Array or Pandas Dataframe)             : The dataset for RBF training. **XY_data** is expected to contain the features (X) and output (Y) data, with the output values (Y) in the last column.
@@ -1123,8 +1129,6 @@ class RadialBasisFunctions:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)

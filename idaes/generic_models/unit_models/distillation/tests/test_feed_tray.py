@@ -55,7 +55,7 @@ def test_config():
     assert not m.fs.unit.config.has_vapor_side_draw
 
 
-class TestBTXIdeal(object):
+class TestBTXIdeal():
     @pytest.fixture(scope="class")
     def btx_ftpz(self):
         m = ConcreteModel()

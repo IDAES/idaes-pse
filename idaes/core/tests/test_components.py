@@ -21,9 +21,9 @@ import types
 from pyomo.environ import ConcreteModel, Set, Param, Var, units as pyunits
 
 from idaes.core.components import (Component, Solute, Solvent,
-                                   Ion, Anion, Cation)
+                                   Ion, Anion, Cation, Apparent)
 from idaes.core.phases import (LiquidPhase, VaporPhase, SolidPhase, Phase,
-                               PhaseType)
+                               PhaseType, AqueousPhase)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.property_meta import PropertyClassMetadata
 
@@ -86,11 +86,13 @@ class TestComponent():
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
         m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
         m.Phase = Phase()
 
         assert m.comp3._is_phase_valid(m.Liq)
         assert not m.comp3._is_phase_valid(m.Sol)
         assert not m.comp3._is_phase_valid(m.Vap)
+        assert not m.comp3._is_phase_valid(m.Aqu)
         assert not m.comp3._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
@@ -101,6 +103,7 @@ class TestComponent():
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
         assert m.comp4._is_phase_valid(m.Vap)
+        assert not m.comp4._is_phase_valid(m.Aqu)
         assert not m.comp4._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
@@ -111,18 +114,32 @@ class TestComponent():
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
         assert not m.comp5._is_phase_valid(m.Vap)
+        assert not m.comp5._is_phase_valid(m.Aqu)
         assert not m.comp5._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
-    def test_is_phase_valid_LV(self, m):
+    def test_is_phase_valid_aqueous(self, m):
         m.comp6 = Component(default={
+            "valid_phase_types": PhaseType.aqueousPhase})
+
+        assert not m.comp6._is_phase_valid(m.Liq)
+        assert not m.comp6._is_phase_valid(m.Sol)
+        assert not m.comp6._is_phase_valid(m.Vap)
+        # Generic components are never valid in the aqueous phase
+        assert not m.comp6._is_phase_valid(m.Aqu)
+        assert not m.comp6._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_phase_valid_LV(self, m):
+        m.comp7 = Component(default={
             "valid_phase_types": [PhaseType.liquidPhase,
                                   PhaseType.vaporPhase]})
 
-        assert m.comp6._is_phase_valid(m.Liq)
-        assert not m.comp6._is_phase_valid(m.Sol)
-        assert m.comp6._is_phase_valid(m.Vap)
-        assert not m.comp6._is_phase_valid(m.Phase)
+        assert m.comp7._is_phase_valid(m.Liq)
+        assert not m.comp7._is_phase_valid(m.Sol)
+        assert m.comp7._is_phase_valid(m.Vap)
+        assert not m.comp7._is_phase_valid(m.Aqu)
+        assert not m.comp7._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
     def test_create_parameters(self):
@@ -224,49 +241,65 @@ class TestSolute():
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Component(default={
+        m.comp3 = Solute(default={
             "valid_phase_types": PhaseType.liquidPhase})
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
         m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
         m.Phase = Phase()
 
         assert m.comp3._is_phase_valid(m.Liq)
         assert not m.comp3._is_phase_valid(m.Sol)
         assert not m.comp3._is_phase_valid(m.Vap)
+        assert not m.comp3._is_phase_valid(m.Aqu)
         assert not m.comp3._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Component(default={
+        m.comp4 = Solute(default={
             "valid_phase_types": PhaseType.vaporPhase})
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
         assert m.comp4._is_phase_valid(m.Vap)
+        assert not m.comp4._is_phase_valid(m.Aqu)
         assert not m.comp4._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Component(default={
+        m.comp5 = Solute(default={
             "valid_phase_types": PhaseType.solidPhase})
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
         assert not m.comp5._is_phase_valid(m.Vap)
+        assert not m.comp5._is_phase_valid(m.Aqu)
         assert not m.comp5._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
+    def test_is_phase_valid_aqueous(self, m):
+        m.comp6 = Solute(default={
+            "valid_phase_types": PhaseType.aqueousPhase})
+
+        assert not m.comp6._is_phase_valid(m.Liq)
+        assert not m.comp6._is_phase_valid(m.Sol)
+        assert not m.comp6._is_phase_valid(m.Vap)
+        assert m.comp6._is_phase_valid(m.Aqu)
+        assert not m.comp6._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):
-        m.comp6 = Component(default={
+        m.comp7 = Solute(default={
             "valid_phase_types": [PhaseType.liquidPhase,
                                   PhaseType.vaporPhase]})
 
-        assert m.comp6._is_phase_valid(m.Liq)
-        assert not m.comp6._is_phase_valid(m.Sol)
-        assert m.comp6._is_phase_valid(m.Vap)
-        assert not m.comp6._is_phase_valid(m.Phase)
+        assert m.comp7._is_phase_valid(m.Liq)
+        assert not m.comp7._is_phase_valid(m.Sol)
+        assert m.comp7._is_phase_valid(m.Vap)
+        assert not m.comp7._is_phase_valid(m.Aqu)
+        assert not m.comp7._is_phase_valid(m.Phase)
 
 
 class TestSovent():
@@ -310,49 +343,65 @@ class TestSovent():
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
-        m.comp3 = Component(default={
+        m.comp3 = Solvent(default={
             "valid_phase_types": PhaseType.liquidPhase})
 
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
         m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
         m.Phase = Phase()
 
         assert m.comp3._is_phase_valid(m.Liq)
         assert not m.comp3._is_phase_valid(m.Sol)
         assert not m.comp3._is_phase_valid(m.Vap)
+        assert not m.comp3._is_phase_valid(m.Aqu)
         assert not m.comp3._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
     def test_is_phase_valid_vapor(self, m):
-        m.comp4 = Component(default={
+        m.comp4 = Solvent(default={
             "valid_phase_types": PhaseType.vaporPhase})
 
         assert not m.comp4._is_phase_valid(m.Liq)
         assert not m.comp4._is_phase_valid(m.Sol)
         assert m.comp4._is_phase_valid(m.Vap)
+        assert not m.comp4._is_phase_valid(m.Aqu)
         assert not m.comp4._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
     def test_is_phase_valid_solid(self, m):
-        m.comp5 = Component(default={
+        m.comp5 = Solvent(default={
             "valid_phase_types": PhaseType.solidPhase})
 
         assert not m.comp5._is_phase_valid(m.Liq)
         assert m.comp5._is_phase_valid(m.Sol)
         assert not m.comp5._is_phase_valid(m.Vap)
+        assert not m.comp5._is_phase_valid(m.Aqu)
         assert not m.comp5._is_phase_valid(m.Phase)
 
     @pytest.mark.unit
     def test_is_phase_valid_LV(self, m):
-        m.comp6 = Component(default={
+        m.comp6 = Solvent(default={
             "valid_phase_types": [PhaseType.liquidPhase,
                                   PhaseType.vaporPhase]})
 
         assert m.comp6._is_phase_valid(m.Liq)
         assert not m.comp6._is_phase_valid(m.Sol)
         assert m.comp6._is_phase_valid(m.Vap)
+        assert not m.comp6._is_phase_valid(m.Aqu)
         assert not m.comp6._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_phase_valid_aqueous(self, m):
+        m.comp7 = Solvent(default={
+            "valid_phase_types": PhaseType.aqueousPhase})
+
+        assert not m.comp7._is_phase_valid(m.Liq)
+        assert not m.comp7._is_phase_valid(m.Sol)
+        assert not m.comp7._is_phase_valid(m.Vap)
+        assert m.comp7._is_phase_valid(m.Aqu)
+        assert not m.comp7._is_phase_valid(m.Phase)
 
 
 class TestIon():
@@ -401,11 +450,13 @@ class TestIon():
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
         m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
         m.Phase = Phase()
 
-        assert m.comp._is_phase_valid(m.Liq)
+        assert not m.comp._is_phase_valid(m.Liq)
         assert not m.comp._is_phase_valid(m.Sol)
         assert not m.comp._is_phase_valid(m.Vap)
+        assert m.comp._is_phase_valid(m.Aqu)
         assert not m.comp._is_phase_valid(m.Phase)
 
 
@@ -470,11 +521,13 @@ class TestAnion():
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
         m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
         m.Phase = Phase()
 
-        assert m.comp._is_phase_valid(m.Liq)
+        assert not m.comp._is_phase_valid(m.Liq)
         assert not m.comp._is_phase_valid(m.Sol)
         assert not m.comp._is_phase_valid(m.Vap)
+        assert m.comp._is_phase_valid(m.Aqu)
         assert not m.comp._is_phase_valid(m.Phase)
 
 
@@ -539,9 +592,117 @@ class TestCation():
         m.Liq = LiquidPhase()
         m.Sol = SolidPhase()
         m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
         m.Phase = Phase()
 
-        assert m.comp._is_phase_valid(m.Liq)
+        assert not m.comp._is_phase_valid(m.Liq)
         assert not m.comp._is_phase_valid(m.Sol)
         assert not m.comp._is_phase_valid(m.Vap)
+        assert m.comp._is_phase_valid(m.Aqu)
         assert not m.comp._is_phase_valid(m.Phase)
+
+
+class TestApparent():
+    @pytest.fixture(scope="class")
+    def m(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        m.comp = Apparent()
+
+        return m
+
+    @pytest.mark.unit
+    def test_config(self, m):
+        assert m.comp.config.valid_phase_types is None
+        assert not m.comp.config._component_list_exists
+
+    @pytest.mark.unit
+    def test_populate_component_list(self, m):
+        assert isinstance(m.component_list, Set)
+
+        for j in m.component_list:
+            assert j in ["comp"]
+
+    @pytest.mark.unit
+    def test_is_solute(self, m):
+        assert m.comp.is_solute()
+
+    @pytest.mark.unit
+    def test_is_solvent(self, m):
+        assert not m.comp.is_solvent()
+
+    @pytest.mark.unit
+    def test_is_phase_valid_no_assignment(self, m):
+        assert m.comp._is_phase_valid("foo")
+
+    @pytest.mark.unit
+    def test_is_phase_valid_liquid(self, m):
+        m.comp3 = Apparent(default={
+            "valid_phase_types": PhaseType.liquidPhase})
+
+        m.Liq = LiquidPhase()
+        m.Sol = SolidPhase()
+        m.Vap = VaporPhase()
+        m.Aqu = AqueousPhase()
+        m.Phase = Phase()
+
+        assert m.comp3._is_phase_valid(m.Liq)
+        assert not m.comp3._is_phase_valid(m.Sol)
+        assert not m.comp3._is_phase_valid(m.Vap)
+        assert not m.comp3._is_phase_valid(m.Aqu)
+        assert not m.comp3._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_phase_valid_vapor(self, m):
+        m.comp4 = Apparent(default={
+            "valid_phase_types": PhaseType.vaporPhase})
+
+        assert not m.comp4._is_phase_valid(m.Liq)
+        assert not m.comp4._is_phase_valid(m.Sol)
+        assert m.comp4._is_phase_valid(m.Vap)
+        assert not m.comp4._is_phase_valid(m.Aqu)
+        assert not m.comp4._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_phase_valid_solid(self, m):
+        m.comp5 = Apparent(default={
+            "valid_phase_types": PhaseType.solidPhase})
+
+        assert not m.comp5._is_phase_valid(m.Liq)
+        assert m.comp5._is_phase_valid(m.Sol)
+        assert not m.comp5._is_phase_valid(m.Vap)
+        assert not m.comp5._is_phase_valid(m.Aqu)
+        assert not m.comp5._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_phase_valid_aqueous(self, m):
+        m.comp6 = Apparent(default={
+            "valid_phase_types": PhaseType.aqueousPhase})
+
+        assert not m.comp6._is_phase_valid(m.Liq)
+        assert not m.comp6._is_phase_valid(m.Sol)
+        assert not m.comp6._is_phase_valid(m.Vap)
+        assert m.comp6._is_phase_valid(m.Aqu)
+        assert not m.comp6._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_phase_valid_LV(self, m):
+        m.comp7 = Apparent(default={
+            "valid_phase_types": [PhaseType.liquidPhase,
+                                  PhaseType.vaporPhase]})
+
+        assert m.comp7._is_phase_valid(m.Liq)
+        assert not m.comp7._is_phase_valid(m.Sol)
+        assert m.comp7._is_phase_valid(m.Vap)
+        assert not m.comp7._is_phase_valid(m.Aqu)
+        assert not m.comp7._is_phase_valid(m.Phase)
+
+    @pytest.mark.unit
+    def test_is_aqueous_phase_valid(self, m):
+        assert m.comp._is_aqueous_phase_valid()

@@ -11,5 +11,6 @@ from .control_volume_base import (ControlVolumeBlockData, CONFIG_Template,
                                   MomentumBalanceType, FlowDirection)
 from .control_volume0d import ControlVolume0DBlock
 from .control_volume1d import ControlVolume1DBlock
-from .phases import Phase, LiquidPhase, SolidPhase, VaporPhase, PhaseType
+from .phases import (
+    Phase, LiquidPhase, SolidPhase, VaporPhase, PhaseType, AqueousPhase)
 from .components import Component, Solvent, Solute, Ion, Cation, Anion
