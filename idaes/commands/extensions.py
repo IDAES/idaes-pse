@@ -65,8 +65,16 @@ def get_extensions_platforms():
     "--platform",
     help="Platform to download binaries for (default=auto)",
     default="auto")
+@click.option(
+    "--insecure",
+    is_flag=True,
+    help="Don't verify download location")
+@click.option(
+    "--cert",
+    help="Local certificate file"
+    default=None)
 @click.option("--verbose", help="Show details", is_flag=True)
-def get_extensions(release, url, verbose, platform):
+def get_extensions(release, url, insecure, cert, verbose, platform):
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -74,12 +82,11 @@ def get_extensions(release, url, verbose, platform):
         click.echo("\n* You must provide either a release or url not both.")
     elif url is not None or release is not None:
         click.echo("Getting files...")
-        idaes.solvers.download_binaries(release, url, verbose, platform)
+        idaes.solvers.download_binaries(release, url, insecure, cert, verbose, platform)
         click.echo("Done")
         print_extensions_version()
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
-
 
 
 @cb.command(name="ver-extensions", help="Get solver and library IDAES package version")
