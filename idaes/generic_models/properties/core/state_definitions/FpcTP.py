@@ -21,6 +21,11 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def set_metadata(b):
@@ -32,6 +37,19 @@ def define_state(b):
     # FpcTP contains full information on the phase equilibrium, so flash
     # calculations re not always needed
     b.always_flash = False
+
+    # Check that only necessary state_bounds are defined
+    expected_keys = ["flow_mol_phase_comp", "enth_mol",
+                     "temperature", "pressure"]
+    if (b.params.config.state_bounds is not None and
+            any(b.params.config.state_bounds.keys()) not in expected_keys):
+        for k in b.params.config.state_bounds.keys():
+            if k not in expected_keys:
+                raise ConfigurationError(
+                    "{} - found unexpected state_bounds key {}. Please ensure "
+                    "bounds are provided only for expected state variables "
+                    "and that you have typed the variable names correctly."
+                    .format(b.name, k))
 
     units = b.params.get_metadata().derived_units
     # Get bounds and initial values from config args
