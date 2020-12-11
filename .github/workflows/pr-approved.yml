@@ -46,7 +46,7 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: '.'
-      - name: Run pytest (not integration)
+      - name: Run pytest (integration)
         run: |
           pytest -m 'integration'
   pytest-coverage:
