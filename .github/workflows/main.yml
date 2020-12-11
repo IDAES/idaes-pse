@@ -28,6 +28,7 @@ jobs:
         python-version:
           - '3.6'
           - '3.7'
+          - '3.8'
         os:
           - ubuntu-18.04
           - windows-latest
