@@ -41,7 +41,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: '.'
+          install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
         run: |
           pytest -m 'integration' --cov
