@@ -18,6 +18,10 @@ on:
         description: Git hash (optional)
         required: false
 
+env:
+  # default Python version to use for checks that do not require multiple versions
+  DEFAULT_PYTHON_VERSION: '3.7'
+
 jobs:
   pytest:
     name: All tests (py${{ matrix.python-version }}/${{ matrix.os }})
@@ -56,7 +60,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
@@ -77,7 +81,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Run pylint
         uses: ./.github/actions/pylint
   pytest-coverage:
@@ -88,7 +92,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:

@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [labeled]
 
+env:
+  # default Python version to use for checks that do not require multiple versions
+  DEFAULT_PYTHON_VERSION: '3.7'
+
 jobs:
   check-skip:
     name: Check if integration tests should run
@@ -54,7 +58,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.7'
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
