@@ -23,6 +23,11 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
 from idaes.generic_models.properties.core.state_definitions.FTPx import (
     state_initialization)
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 # TODO : Need a way to get a guess for T during initialization
@@ -38,6 +43,23 @@ def define_state(b):
     # FTPx formulation always requires a flash, so set flag to True
     # TODO: should have some checking to make sure developers implement this properly
     b.always_flash = True
+
+    # Check that only necessary state_bounds are defined
+    expected_keys = ["flow_mol", "enth_mol", "temperature", "pressure"]
+    if (b.params.config.state_bounds is not None and
+            any(b.params.config.state_bounds.keys()) not in expected_keys):
+        for k in b.params.config.state_bounds.keys():
+            if "mole_frac" in k:
+                _log.warning("{} - found state_bounds argument for {}."
+                             " Mole fraction bounds are set automatically and "
+                             "this argument will be ignored."
+                             .format(b.name, k))
+            elif k not in expected_keys:
+                raise ConfigurationError(
+                    "{} - found unexpected state_bounds key {}. Please ensure "
+                    "bounds are provided only for expected state variables "
+                    "and that you have typed the variable names correctly."
+                    .format(b.name, k))
 
     units = b.params.get_metadata().derived_units
     # Get bounds and initial values from config args
