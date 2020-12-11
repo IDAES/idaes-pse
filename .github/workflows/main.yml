@@ -51,7 +51,10 @@ jobs:
           install-target: '.'
       - name: Run pytest (all)
         run: |
-          pytest
+          pytest --cov
+      - name: Upload coverage report to Codecov
+        run: |
+          bash <(curl -s https://codecov.io/bash)
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest
@@ -84,22 +87,3 @@ jobs:
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Run pylint
         uses: ./.github/actions/pylint
-  pytest-coverage:
-    name: Run pytest with coverage report
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
-      - name: Set up idaes
-        uses: ./.github/actions/setup-idaes
-        with:
-          install-target: -r requirements-dev.txt
-      - name: Run pytest with cov
-        run: |
-          pytest --cov
-      - name: Upload coverage report to Codecov
-        run: |
-          bash <(curl -s https://codecov.io/bash)
