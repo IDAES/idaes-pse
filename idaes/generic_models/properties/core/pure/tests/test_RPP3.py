@@ -48,8 +48,9 @@ def frame():
                                  'B': 4.595e-4,
                                  'C': 2.521e-6,
                                  'D': -0.859e-9},
-        "enth_mol_form_vap_comp_ref": -57.797e3,
-        "entr_mol_form_vap_comp_ref": 45.13,
+        "enth_mol_form_vap_comp_ref": (-57.797e3, pyunits.cal/pyunits.mol),
+        "entr_mol_form_vap_comp_ref": (45.13,
+                                       pyunits.cal/pyunits.mol/pyunits.K),
         "pressure_sat_comp_coeff": {'A': 18.3036,
                                     'B': 3816.44,
                                     'C': -46.13}}
@@ -111,7 +112,8 @@ def test_enth_mol_ig_comp(frame):
     enth_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Var)
-    assert value(frame.params.enth_mol_form_vap_comp_ref) == -57797.0
+    assert value(frame.params.enth_mol_form_vap_comp_ref) == (
+        pytest.approx(-241822.6, abs=1e-1))
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -128,7 +130,8 @@ def test_entr_mol_ig_comp(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
 
     assert isinstance(frame.params.entr_mol_form_vap_comp_ref, Var)
-    assert value(frame.params.entr_mol_form_vap_comp_ref) == 45.13
+    assert value(frame.params.entr_mol_form_vap_comp_ref) == (
+        pytest.approx(188.8, abs=1e-1))
 
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)

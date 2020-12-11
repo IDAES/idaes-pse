@@ -24,8 +24,7 @@ from .process_base import (declare_process_block_class,
 from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
-from idaes.generic_models.properties.core.generic.utility import \
-    set_param_value
+from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
 
 
@@ -129,7 +128,7 @@ class ComponentData(ProcessBlockData):
         for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Var(units=u))
-                set_param_value(self, p, u)
+                set_param_from_config(self, p)
 
     def is_solute(self):
         raise TypeError(

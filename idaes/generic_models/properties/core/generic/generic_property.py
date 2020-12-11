@@ -55,6 +55,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 def set_param_value(b, param, units):
+    # We cannot use the standard method in core.util.misc as here the parameter
+    # data is directly attached ot the config block, rather than in a parameter
+    # data entry.
     param_obj = getattr(b, param)
     config = getattr(b.config, param)
     if isinstance(config, tuple):
