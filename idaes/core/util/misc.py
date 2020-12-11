@@ -290,7 +290,7 @@ def set_param_from_config(b, param, config=None, index=None):
         # 11 Dec 2020 - There is currently a bug in Pyomo where trying to
         # convert the units of a unitless quantity results in a TypeError.
         # To avoid this, we check here for cases where both the parameter and
-        # value are unitless and just set the value directly.
+        # user provided value are unitless and bypass unit conversion.
         if ((units is None or units is pyo.units.dimensionless) and
                 (p_data[1] is None or p_data[1] is pyo.units.dimensionless)):
             param_obj.value = p_data[0]
