@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [labeled]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check-skip:
     name: Check if integration tests should run

@@ -13,6 +13,10 @@ env:
   # default Python version to use for checks that do not require multiple versions
   DEFAULT_PYTHON_VERSION: '3.7'
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   pytest:
     name: Tests (py${{ matrix.python-version }}/${{ matrix.os }})
