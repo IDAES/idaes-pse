@@ -23,6 +23,7 @@ import json
 full_path = os.path.realpath(__file__)
 directory = os.path.dirname(full_path)
 
+
 ''' The costing exponents dictionary contains information from the QGESS on
 capital cost scaling methodology (DOE/NETL-2019/1784). Specifically it includes
 scaling exponents, valid ranges for the scaled parameter, and units for those
@@ -31,7 +32,7 @@ neccessarily the units that the reference parameter value will be given in.
 This dictionary is nested with the following structure:
     tech type --> account --> property name --> property value'''
 
-with open(directory + "\BB_costing_exponents.json", 'r') as file:
+with open(os.path.join(directory, "BB_costing_exponents.json"), 'r') as file:
     BB_costing_exponents = json.load(file)
 
 
@@ -46,9 +47,9 @@ following
 the naming convention x.x.a and x.x.b.
 This dictionary is nested with the following structure:
 tech type --> CCS --> account --> property name --> property values'''
-with open(directory + "\BB_costing_parameters.json", 'r') as file:
+with open(os.path.join(directory,"BB_costing_parameters.json"), 'r') as file:
     BB_costing_params = json.load(file)
 
 
-with open(directory + "\sCO2_costing_parameters.json", 'r') as file:
+with open(os.path.join(directory, "sCO2_costing_parameters.json"), 'r') as file:
     sCO2_costing_params = json.load(file)
