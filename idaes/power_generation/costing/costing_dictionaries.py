@@ -19,9 +19,9 @@ __version__ = "1.0.0"
 
 import os
 import json
+from pyomo.common.fileutils import this_file_dir
 
-full_path = os.path.realpath(__file__)
-directory = os.path.dirname(full_path)
+directory = this_file_dir()
 
 
 ''' The costing exponents dictionary contains information from the QGESS on
