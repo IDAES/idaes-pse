@@ -64,6 +64,15 @@ def read_data(fname, mw):
             data["U"].append(float(row[4])*mw*1000)
             data["H"].append(float(row[5])*mw*1000)
             data["S"].append(float(row[6])*mw*1000)
+            #Some things are undefined at critical point.
+            try:
+                data["visc"].append(float(row[11]))
+            except:
+                data["visc"].append(None)
+            try:
+                data["tc"].append(float(row[12]))
+            except:
+                data["tc"].append(None)
             data["phase"].append(row[13])
     return data
 
@@ -195,6 +204,16 @@ class TestHelm(object):
     pdata = "prop_iapws95_nist_webbook.txt"
     pdata_sat = "sat_prop_iapws95_nist_webbook.txt"
     onein = 10
+
+    @pytest.fixture(scope="class")
+    def model_transport(self):
+        # This model is used to test transport properties
+        model = ConcreteModel()
+        model.prop_param = iapws95.Iapws95ParameterBlock()
+        model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param}
+        )
+        return model
 
     @pytest.fixture(scope="class")
     def model(self):
@@ -395,3 +414,24 @@ class TestHelm(object):
             binary_derivative_test(f=model.func_h, x0=delta(rho), x1=tau(T))
             binary_derivative_test(f=model.func_f, x0=delta(rho), x1=tau(T))
             binary_derivative_test(f=model.func_g, x0=delta(rho), x1=tau(T))
+
+    def test_transport(self, model_transport):
+        """ Test transport properties.  The tolerances are pretty forgiving here.
+        The values are closer for the most part, but the estimation methods
+        aren't the same or are super sensitive near the critical point.  Just
+        want a sanity check not for high accuracy.
+        """
+        m = model_transport
+        data = read_data(self.pdata, self.mw)
+        for i, T in enumerate(data["T"]):
+            m.prop_in.temperature.set_value(T)
+            m.prop_in.pressure = data["P"][i]
+            ph = {"vapor":"Vap", "liquid":"Liq", "supercritical":"Liq"}[data["phase"][i]]
+            mu = value(m.prop_in.visc_d_phase[ph])
+            tc = value(m.prop_in.therm_cond_phase[ph])
+            if abs(self.Pc - data["P"][i]) < 2e6 and abs(self.Tc - T) < 20:
+                #undefined at critical point and vers sensitive close to it.
+                continue
+            print(f"T = {T}, P = {data['P'][i]}, TC = {data['tc'][i]}, Visc = {data['visc'][i]}")
+            assert tc == pytest.approx(data["tc"][i], rel=2.5e-1)
+            assert mu == pytest.approx(data["visc"][i], rel=2.5e-1)
