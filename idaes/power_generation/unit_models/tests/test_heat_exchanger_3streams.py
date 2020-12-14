@@ -62,6 +62,7 @@ def build_unit():
     )
     return m
 
+
 @pytest.mark.unit
 def test_basic_build(build_unit):
     """Make a turbine model and make sure it doesn't throw exception"""
@@ -73,7 +74,6 @@ def test_basic_build(build_unit):
     assert m.fs.unit.config.has_pressure_change
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -145,11 +145,11 @@ def test_run_unit(build_unit):
         TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
     assert degrees_of_freedom(m) == 0
-    assert (pytest.approx(434.677, abs=1e-3) ==
+    assert (pytest.approx(434.650, abs=1e-3) ==
             value(m.fs.unit.side_1_outlet.temperature[0]))
-    assert (pytest.approx(522.152, abs=1e-3) ==
+    assert (pytest.approx(522.135, abs=1e-3) ==
             value(m.fs.unit.side_2_outlet.temperature[0]))
-    assert (pytest.approx(642.025, abs=1e-3) ==
+    assert (pytest.approx(642.115, abs=1e-3) ==
             value(m.fs.unit.side_3_outlet.temperature[0]))
     # energy balance
     assert (pytest.approx(0, abs=1e-3) ==
@@ -162,15 +162,15 @@ def test_run_unit(build_unit):
     assert (pytest.approx(0, abs=1e-3) ==
             value(+ m.fs.unit.side_2.properties_in[0].flow_mol
                   * m.fs.unit.side_2.properties_in[0].enth_mol
-                   - m.fs.unit.side_2.properties_out[0].flow_mol
-                   * m.fs.unit.side_2.properties_out[0].enth_mol
+                  - m.fs.unit.side_2.properties_out[0].flow_mol
+                  * m.fs.unit.side_2.properties_out[0].enth_mol
                   + m.fs.unit.heat_duty_side_2[0])
             )
     assert (pytest.approx(0, abs=1e-3) ==
             value(+ m.fs.unit.side_3.properties_in[0].flow_mol
                   * m.fs.unit.side_3.properties_in[0].enth_mol
-                   - m.fs.unit.side_3.properties_out[0].flow_mol
-                   * m.fs.unit.side_3.properties_out[0].enth_mol
+                  - m.fs.unit.side_3.properties_out[0].flow_mol
+                  * m.fs.unit.side_3.properties_out[0].enth_mol
                   + m.fs.unit.heat_duty_side_3[0])
             )
     # pressure drop

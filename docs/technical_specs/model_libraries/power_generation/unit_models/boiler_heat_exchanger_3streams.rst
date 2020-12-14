@@ -7,7 +7,7 @@ Heat Exchanger With Three Streams
 .. currentmodule:: idaes.power_generation.unit_models.heat_exchanger_3streams
 
 The HeatExchangerWith3Streams model consists of a heat exchanger with three inlets, `side_1` represents the hot stream, while `side_2` and `side_3` are cold streams.
-This model is a simplyfied generic heat exchanger model with lumped UA (the product of the overall heat transfer coefficient and the heat transfer area).
+This model is a simplified generic heat exchanger model with lumped UA (the product of the overall heat transfer coefficient and the heat transfer area).
 
 In a power plant flowsheet this model is used to represent an air preheater unit. This is because modeling the Ljungström type preheater is quite challenging since it involves not only the hot and cold gas streams but also the energy stored in and relased from the metal parts. 
 
@@ -15,8 +15,8 @@ In a power plant flowsheet this model is used to represent an air preheater unit
 Degrees of Freedom
 ------------------
 
-Aside from the inlet conditions, a heat exchanger 3 inlets model usually has six degrees
-of freedom, which can be fixed for it to be fully specified. Things that are
+Aside from the inlet conditions, a 3 inlet heat exchanger model usually has six degrees
+of freedom, which must be fixed for it to be fully specified. Things that are
 frequently fixed are two of:
 
 * UA_side_2 - lumped overall heat transfer and heat transfer area of side 2
@@ -30,8 +30,8 @@ frequently fixed are two of:
 Model Structure
 ---------------
 
-The ``HeatExchangerWith3Streams`` model contains three ``ControlVolume0DBlock`` blocks. By default the
-hot side is named ``side_1`` and two cold sides are named ``side_2 and side_3``. These names are not configurable.
+The ``HeatExchangerWith3Streams`` model contains three ``ControlVolume0DBlock`` blocks. The
+hot side is named ``side_1`` and two cold sides are named ``side_2`` and ``side_3``. These names are not configurable.
 The sign convention is that duty is positive for heat flowing from the hot side to the cold
 side.
 

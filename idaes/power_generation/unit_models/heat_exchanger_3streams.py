@@ -348,21 +348,23 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                                     doc='Temperature difference '
                                     'at side 3 outlet')
 
-        # Driving force side 2
+        # Driving force side 2 (Underwood approximation)
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Log mean temperature difference calculation")
+                         doc="Log mean temperature difference calculation "
+                         "using Underwood approximation")
         def LMTD_side_2(b, t):
             return b.temperature_driving_force_side_2[t] == \
-                ((b.side_2_inlet_dT[t]**0.3241
-                  + b.side_2_outlet_dT[t]**0.3241)/1.99996)**(1/0.3241)
+                ((b.side_2_inlet_dT[t]**0.333333
+                  + b.side_2_outlet_dT[t]**0.333333)/2)**(1/0.333333)
 
-        # Driving force side 3
+        # Driving force side 3 (Underwood approximation)
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Log mean temperature difference calculation")
+                         doc="Log mean temperature difference calculation "
+                         "using Underwood approximation")
         def LMTD_side_3(b, t):
             return b.temperature_driving_force_side_3[t] == \
-                ((b.side_3_inlet_dT[t]**0.3241
-                  + b.side_3_outlet_dT[t]**0.3241)/1.99996)**(1/0.3241)
+                ((b.side_3_inlet_dT[t]**0.333333
+                  + b.side_3_outlet_dT[t]**0.333333)/2)**(1/0.333333)
 
         # Heat duty side 2
         @self.Constraint(self.flowsheet().config.time,
