@@ -113,10 +113,11 @@ export class Toolbar {
         // });
 
         toolbar.on('svg:pointerclick', (event) => {
+            let p = this._paper.paper;
             // Make sure to hide all of the vertices and bars on the links 
             // so they don't show up in the SVG
-            this._paper.hideTools()
-            this._paper.toSVG(function(svg) {
+            p.hideTools();
+            p.toSVG(function(svg) {
                 new joint.ui.Lightbox({
                     image: 'data:image/svg+xml,' + encodeURIComponent(svg),
                     downloadable: true,
