@@ -317,3 +317,5 @@ see property package for documentation.}"""))
         # release feed tray state once initialization is complete
         self.tray[self.config.feed_tray_location].properties_in_feed.\
             release_state(flags=feed_flags, outlvl=outlvl)
+
+        raise Exception(res)

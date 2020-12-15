@@ -210,10 +210,13 @@ see property package for documentation.}"""))
                 # Option 2: if this is false, then user has selected
                 # custom temperature spec and needs to fix an outlet
                 # temperature.
+                idx = next(iter(self.control_volume.properties_out[
+                    self.flowsheet().config.time.first()].temperature_bubble))
+
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
                         temperature == self.control_volume.properties_out[t].\
-                        temperature_bubble
+                        temperature_bubble[idx]
                 self.eq_total_cond_spec = Constraint(self.flowsheet().time,
                                                      rule=rule_total_cond)
 
@@ -716,9 +719,9 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args[k] = {}
                     for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
+                        state_args[k][m] = value(state_dict[k][m])
                 else:
-                    state_args[k] = state_dict[k].value
+                    state_args[k] = value(state_dict[k])
 
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()

@@ -29,7 +29,7 @@ import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Set
+from pyomo.environ import Reference, Expression, Var, Set, value
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -685,16 +685,16 @@ see property package for documentation.}"""))
                         state_args_vap[k] = {}
                         for m in state_dict[k].keys():
                             state_args_feed[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
                             state_args_liq[k][m] = \
-                                0.1 * state_dict[k][m].value
+                                value(0.1 * state_dict[k][m])
                             state_args_vap[k][m] = \
-                                0.1 * state_dict[k][m].value
+                                value(0.1 * state_dict[k][m])
 
                     else:
-                        state_args_feed[k] = state_dict[k].value
-                        state_args_liq[k] = 0.1 * state_dict[k].value
-                        state_args_vap[k] = 0.1 * state_dict[k].value
+                        state_args_feed[k] = value(state_dict[k])
+                        state_args_liq[k] = 0.1 * value(state_dict[k])
+                        state_args_vap[k] = 0.1 * value(state_dict[k])
                 else:
                     if state_dict[k].is_indexed():
                         state_args_feed[k] = {}
@@ -702,16 +702,16 @@ see property package for documentation.}"""))
                         state_args_vap[k] = {}
                         for m in state_dict[k].keys():
                             state_args_feed[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
                             state_args_liq[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
                             state_args_vap[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
 
                     else:
-                        state_args_feed[k] = state_dict[k].value
-                        state_args_liq[k] = state_dict[k].value
-                        state_args_vap[k] = state_dict[k].value
+                        state_args_feed[k] = value(state_dict[k])
+                        state_args_liq[k] = value(state_dict[k])
+                        state_args_vap[k] = value(state_dict[k])
 
         # Create initial guess if not provided by using current values
         if not self.config.is_feed_tray and state_args_liq is None:
@@ -725,9 +725,9 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args_liq[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_liq[k][m] = state_dict[k][m].value
+                        state_args_liq[k][m] = value(state_dict[k][m])
                 else:
-                    state_args_liq[k] = state_dict[k].value
+                    state_args_liq[k] = value(state_dict[k])
 
         # Create initial guess if not provided by using current values
         if not self.config.is_feed_tray and state_args_vap is None:
@@ -741,9 +741,9 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args_vap[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_vap[k][m] = state_dict[k][m].value
+                        state_args_vap[k][m] = value(state_dict[k][m])
                 else:
-                    state_args_vap[k] = state_dict[k].value
+                    state_args_vap[k] = value(state_dict[k])
 
         if self.config.is_feed_tray:
             feed_flags = self.properties_in_feed.initialize(
@@ -789,23 +789,38 @@ see property package for documentation.}"""))
             for k in state_dict.keys():
                 if k == "pressure":
                     # Take the lowest pressure and this is the liq inlet
-                    state_args_mixed[k] = self.properties_in_liq[0].\
-                        component(state_dict[k].local_name).value
+                    state_args_mixed[k] = value(self.properties_in_liq[0].
+                                                component(state_dict[k].
+                                                          local_name))
                 elif state_dict[k].is_indexed():
                     state_args_mixed[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_mixed[k][m] = \
-                            0.5 * (self.properties_in_liq[0].
-                                   component(state_dict[k].local_name)[m].
-                                   value + self.properties_in_vap[0].
-                                   component(state_dict[k].local_name)[m].
-                                   value)
+                        if "flow" in k:
+                            state_args_mixed[k][m] = \
+                                (value(self.properties_in_liq[0].
+                                 component(state_dict[k].local_name)[m]) +
+                                 value(self.properties_in_vap[0].
+                                 component(state_dict[k].local_name)[m]))
+                        else:
+                            state_args_mixed[k][m] = \
+                                0.5 * (value(self.properties_in_liq[0].
+                                       component(state_dict[k].local_name)[m]) +
+                                       value(self.properties_in_vap[0].
+                                       component(state_dict[k].local_name)[m]))
+
                 else:
-                    state_args_mixed[k] = \
-                        0.5 * (self.properties_in_liq[0].
-                               component(state_dict[k].local_name).value +
-                               self.properties_in_vap[0].
-                               component(state_dict[k].local_name).value)
+                    if "flow" in k:
+                        state_args_mixed[k] = \
+                            0.5* (value(self.properties_in_liq[0].
+                             component(state_dict[k].local_name)) +
+                             value(self.properties_in_vap[0].
+                             component(state_dict[k].local_name)))
+                    else:
+                        state_args_mixed[k] = \
+                            0.5 * (value(self.properties_in_liq[0].
+                                   component(state_dict[k].local_name)) +
+                                   value(self.properties_in_vap[0].
+                                   component(state_dict[k].local_name)))
 
         # Initialize the mixed outlet state block
         self.properties_out. \
