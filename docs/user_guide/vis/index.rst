@@ -118,9 +118,30 @@ User Guide
 
 This section describes each of the sections of the IFV interface.
 
-It also describes the `visualize()` function used to start the IFV:
+Invocation
+^^^^^^^^^^
+To start the IDAES Flowsheert Visualizer (IFV), you run the `visualize()` method for an existing
+flowsheet. This can be done from a script or a Jupyter notebook. Either way, the default action
+is to start a web server in a separate thread, and a browser window to show the flowsheet.
 
+.. TODO: Uncomment once changes in functionality are merged, so this module exists!
 .. .. autofunction:: idaes.ui.fsvis.fsvis.visualize
+
+**Note**: The visualization server runs in its own thread. If the program that it is running in stops,
+the visualization UI will not be able to save or refresh its view. This is not an issue in Jupyter Notebooks,
+since they run until the user explicitly closes them.
+But if you are running from a script, you need to do something to avoid having the program exit after
+the `visualize()` method returns (which happens very quickly). For example, loop forever in a try/catch clause
+that will handle KeyboardInterrupt exceptions::
+
+    # Example code for a script, to keep program running after starting visualize() thread
+    my_model.fs.visualize()  # this returns immediately
+    try:
+        print("Type ^C to stop the program")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Program stopped")
 
 Title bar
 ^^^^^^^^^
