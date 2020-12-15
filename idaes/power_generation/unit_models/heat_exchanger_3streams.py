@@ -389,7 +389,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
     def _make_co_current_side_2(self):
         """
-        Add temperature driving force Constraints for counter-current flow.
+        Add temperature driving force Constraints for co-current flow.
 
 
         """
@@ -429,7 +429,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
     def _make_co_current_side_3(self):
         """
-        Add temperature driving force Constraints for counter-current flow.
+        Add temperature driving force Constraints for co-current flow.
         """
         # Temperature Differences
         @self.Constraint(self.flowsheet().config.time,
