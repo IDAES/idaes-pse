@@ -54,6 +54,11 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("cp_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component specific heats"))
+    CONFIG.declare("cp_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component specific heats"
+        ))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies"))
     CONFIG.declare("enth_mol_ig_comp", ConfigValue(
