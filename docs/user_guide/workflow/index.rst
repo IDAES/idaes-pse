@@ -9,3 +9,4 @@ IDAES Integrated Platform. Below is the list of the documented workflows.
 
    general
    data_rec_parmest
+   data_qc
