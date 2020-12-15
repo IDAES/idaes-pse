@@ -112,7 +112,7 @@ export class Toolbar {
         //     });
         // });
 
-        toolbar.on('svg:pointerclick', function(event) {
+        toolbar.on('svg:pointerclick', (event) => {
             // Make sure to hide all of the vertices and bars on the links 
             // so they don't show up in the SVG
             this._paper.hideTools()
