@@ -17,7 +17,7 @@ parameters, costing exponents, etc.) from the json files.
 First, open json file, then create a python dictionary that gets imported into
 power_plant_costing.py
 
-Three python dictionaries are returned:
+Three python dictionaries that are loaded:
 * BB_costing_exponents
 * BB_costing_params
 * sCO2_costing_params

@@ -110,10 +110,10 @@ def get_PP_costing(self, cost_accounts,
     self.costing = Block()
     self.costing.library = 'PP'
 
-    # find flowsheet block
+    # find flowsheet block to create global costing parameters
     try:
         fs = self.flowsheet()
-    except:
+    except AttributeError:
         fs = self.parent_block()
 
     # build flowsheet level parameters CE_index = year 
@@ -189,20 +189,21 @@ def get_PP_costing(self, cost_accounts,
             AttributeError("{} technology not supported".format(self.name))
 
     # check that all accounts use the same process parameter
-    process_params = set()
+    param_check = None
     for account in cost_accounts:
         param = BB_costing_exponents[str(tech)][account]['Process Parameter']
-        process_params.add(param)
-
-    if len(process_params) > 1:
-        raise ValueError('Cost accounts do not use'
-                         ' the same process parameter.')
+        if param_check is None:
+            param_check = param
+        elif param != param_check:
+            raise ValueError("{} cost accounts selected do not use "
+                             " the same process parameter".format(self.name))
 
     # check that the user passed the correct units
     ref_units = BB_costing_params[str(tech)][ccs][cost_accounts[0]]['Units']
     if units != ref_units:
-        raise Exception('Account %s uses units of %s. Units of %s were passed.'
-                        % (cost_accounts[0], ref_units, units))
+        raise ValueError('Account %s uses units of %s. '
+                         'Units of %s were passed.'
+                         % (cost_accounts[0], ref_units, units))
 
     # construct dictionaries
     account_names = {}
@@ -333,7 +334,9 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     '''
     # check to see if a costing block already exists
     if hasattr(self, 'costing'):
-        raise Exception('Unit model has already been costed')
+        raise AttributeError("{} already has an attribute costing. "
+                             "Check that you are not calling get_costing"
+                             " twice on the same model".format(self.name))
 
     # create a costing Block
     self.costing = Block()
@@ -343,7 +346,7 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     # find flowsheet block to create global costing parameters
     try:
         fs = self.flowsheet()
-    except:
+    except AttributeError:
         fs = self.parent_block()
 
     # build flowsheet level parameters CE_index = year 
@@ -431,7 +434,8 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
                      'Natural gas-fired heater', 'Recuperator']:
 
         if temp_C is None:
-            raise Exception('A temperature is required for %s' % equipment)
+            raise ValueError('Temperature argument is '
+                             'required to cost %s equipment' % equipment)
 
         else:
             self.costing.temperature = Var(initialize=500,
@@ -504,16 +508,18 @@ def get_ASU_cost(self, scaled_param):
 
     # check to see if a costing block already exists
     if hasattr(self, 'costing'):
-        raise Exception('Unit model has already been costed')
+        raise AttributeError("{} already has an attribute costing. "
+                             "Check that you are not calling get_costing"
+                             " twice on the same model".format(self.name))
 
     # create a costing Block
     self.costing = Block()
     self.costing.library = 'ASU'
 
-    # find flowsheet block
+    # find flowsheet block to create global costing parameters
     try:
         fs = self.flowsheet()
-    except:
+    except AttributeError:
         fs = self.parent_block()
 
     # build flowsheet level parameters CE_index = year 
