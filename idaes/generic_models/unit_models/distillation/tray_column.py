@@ -22,6 +22,7 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Arc, Port
 from pyomo.environ import value, Integers, RangeSet, TransformationFactory
+from pyomo.util.infeasible import log_infeasible_constraints
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.distillation import Tray, Condenser, \
@@ -165,42 +166,64 @@ see property package for documentation.}"""))
         # Create set for constructing indexed trays
         if self.config.number_of_trays is not None:
             self.tray_index = RangeSet(1, self.config.number_of_trays)
+            self.rectification_index = RangeSet(
+                1, self.config.feed_tray_location - 1)
+            self.stripping_index = RangeSet(
+                self.config.feed_tray_location + 1,
+                self.config.number_of_trays)
+
         else:
             raise ConfigurationError("The config argument number_of_trays "
                                      "needs to specified and cannot be None.")
 
         # Add trays
-
         # TODO:
         # 1. Add support for multiple feed tray locations
         # 2. Add support for specifying which trays have side draws
-        self.tray = Tray(self.tray_index,
-                         default={"has_liquid_side_draw":
-                                  self.config.has_liquid_side_draw,
-                                  "has_vapor_side_draw":
-                                  self.config.has_vapor_side_draw,
-                                  "has_heat_transfer":
-                                  self.config.has_heat_transfer,
-                                  "has_pressure_change":
-                                  self.config.has_pressure_change,
-                                  "property_package":
-                                  self.config.property_package,
-                                  "property_package_args":
-                                  self.config.property_package_args},
-                         initialize={self.config.feed_tray_location:
-                                     {"is_feed_tray": True,
-                                      "has_liquid_side_draw":
-                                      self.config.has_liquid_side_draw,
-                                      "has_vapor_side_draw":
-                                      self.config.has_vapor_side_draw,
-                                      "has_heat_transfer":
-                                      self.config.has_heat_transfer,
-                                      "has_pressure_change":
-                                      self.config.has_pressure_change,
-                                      "property_package":
-                                      self.config.property_package,
-                                      "property_package_args":
-                                      self.config.property_package_args}})
+        self.rectification_section = Tray(
+            self.rectification_index,
+            default={"has_liquid_side_draw":
+                     self.config.has_liquid_side_draw,
+                     "has_vapor_side_draw":
+                     self.config.has_vapor_side_draw,
+                     "has_heat_transfer":
+                     self.config.has_heat_transfer,
+                     "has_pressure_change":
+                     self.config.has_pressure_change,
+                     "property_package":
+                     self.config.property_package,
+                     "property_package_args":
+                     self.config.property_package_args})
+
+        self.feed_tray = Tray(
+            default={"is_feed_tray": True,
+                     "has_liquid_side_draw":
+                     self.config.has_liquid_side_draw,
+                     "has_vapor_side_draw":
+                     self.config.has_vapor_side_draw,
+                     "has_heat_transfer":
+                     self.config.has_heat_transfer,
+                     "has_pressure_change":
+                     self.config.has_pressure_change,
+                     "property_package":
+                     self.config.property_package,
+                     "property_package_args":
+                     self.config.property_package_args})
+
+        self.stripping_section = Tray(
+            self.stripping_index,
+            default={"has_liquid_side_draw":
+                     self.config.has_liquid_side_draw,
+                     "has_vapor_side_draw":
+                     self.config.has_vapor_side_draw,
+                     "has_heat_transfer":
+                     self.config.has_heat_transfer,
+                     "has_pressure_change":
+                     self.config.has_pressure_change,
+                     "property_package":
+                     self.config.property_package,
+                     "property_package_args":
+                     self.config.property_package_args})
 
         # Add condenser
         self.condenser = Condenser(
@@ -223,39 +246,73 @@ see property package for documentation.}"""))
         self.feed = Port(extends=self.tray[self.config.feed_tray_location].
                          feed)
 
+        # Add extensions to rectification section
+
+        # Add extensions to stripping section
+
         # Construct arcs between trays, condenser, and reboiler
         self._make_arcs()
         TransformationFactory("network.expand_arcs").apply_to(self)
 
-    def _make_arcs(self):
-        # make arcs
-        self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
-        self.vap_stream_index = RangeSet(1, self.config.number_of_trays + 1)
+    def _make_rectification_arcs(self):
 
         def rule_liq_stream(self, i):
-            if i == 0:
-                return {"source": self.condenser.reflux,
-                        "destination": self.tray[i + 1].liq_in}
-            elif i == self.config.number_of_trays:
-                return {"source": self.tray[i].liq_out,
-                        "destination": self.reboiler.inlet}
-            else:
-                return {"source": self.tray[i].liq_out,
-                        "destination": self.tray[i + 1].liq_in}
+            return {"source": self.rectification_section[i].liq_out,
+                    "destination": self.rectification_section[i + 1].liq_in}
 
         def rule_vap_stream(self, i):
-            if i == 1:
-                return {"source": self.tray[i].vap_out,
-                        "destination": self.condenser.inlet}
-            elif i == self.config.number_of_trays + 1:
-                return {"source": self.reboiler.vapor_reboil,
-                        "destination": self.tray[i - 1].vap_in}
-            else:
-                return {"source": self.tray[i].vap_out,
-                        "destination": self.tray[i - 1].vap_in}
+            return {"source": self.rectification_section[i].vap_out,
+                    "destination": self.rectification_section[i - 1].vap_in}
 
-        self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
-        self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
+        self.rectification_section.liq_stream = Arc(
+            self.rectification_index, rule=rule_liq_stream)
+        self.rectification_section.vap_stream = Arc(
+            self.rectification_index, rule=rule_vap_stream)
+
+    def _make_stripping_arcs(self):
+
+        def rule_liq_stream(self, i):
+            return {"source": self.stripping_section[i].liq_out,
+                    "destination": self.stripping_section[i + 1].liq_in}
+
+        def rule_vap_stream(self, i):
+            return {"source": self.stripping_section[i].vap_out,
+                    "destination": self.stripping_section[i - 1].vap_in}
+
+        self.stripping_section.liq_stream = Arc(
+            self.stripping_index, rule=rule_liq_stream)
+        self.stripping_section.vap_stream = Arc(
+            self.stripping_index, rule=rule_vap_stream)
+
+    # def _make_arcs(self):
+    #     # make arcs
+    #     self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
+    #     self.vap_stream_index = RangeSet(1, self.config.number_of_trays + 1)
+    #
+    #     def rule_liq_stream(self, i):
+    #         if i == 0:
+    #             return {"source": self.condenser.reflux,
+    #                     "destination": self.tray[i + 1].liq_in}
+    #         elif i == self.config.number_of_trays:
+    #             return {"source": self.tray[i].liq_out,
+    #                     "destination": self.reboiler.inlet}
+    #         else:
+    #             return {"source": self.tray[i].liq_out,
+    #                     "destination": self.tray[i + 1].liq_in}
+    #
+    #     def rule_vap_stream(self, i):
+    #         if i == 1:
+    #             return {"source": self.tray[i].vap_out,
+    #                     "destination": self.condenser.inlet}
+    #         elif i == self.config.number_of_trays + 1:
+    #             return {"source": self.reboiler.vapor_reboil,
+    #                     "destination": self.tray[i - 1].vap_in}
+    #         else:
+    #             return {"source": self.tray[i].vap_out,
+    #                     "destination": self.tray[i - 1].vap_in}
+    #
+    #     self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
+    #     self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
 
     def propagate_stream_state(self, source=None,
                                destination=None):
@@ -318,4 +375,5 @@ see property package for documentation.}"""))
         self.tray[self.config.feed_tray_location].properties_in_feed.\
             release_state(flags=feed_flags, outlvl=outlvl)
 
+        log_infeasible_constraints(self)
         raise Exception(res)
