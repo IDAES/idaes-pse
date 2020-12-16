@@ -97,6 +97,7 @@ kwargs = dict(
             # note: 4/22/2020, removed the version requirement here
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
+            "sphinxcontrib-aafig",
             "sphinx-argparse",
         ]
     },
