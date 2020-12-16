@@ -27,8 +27,11 @@ h1 {
 h2 {
     font-size: 140%;
 }
-/* Override some of the decorations on definition lists */
-.rst-content dl:not(.docutils) dt,  rst-content dl:not(.docutils) dt:first-child {
+/* Override some of the decorations on definition lists.
+ * By only modifying the "simple" class of 'dl', we do not change the display properties of
+ * Python methods and classes (which also use definition lists).
+ */
+.rst-content dl.simple dt,  .rst-content dl.simple dt:first-child {
     background-color: transparent;
     border: none;
     font-weight: bold;
