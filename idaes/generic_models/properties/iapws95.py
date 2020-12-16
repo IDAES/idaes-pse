@@ -84,17 +84,17 @@ def iapws95_available():
     return _available(_so)
 
 
-def htpx(T, P=None, x=None):
+def htpx(T=None, P=None, x=None):
     """
     Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
 
-    User must provided values for one (and only one) of arguments P and x.
+    User must provided values for two of T, P, or x.
 
     Args:
-        T: Temperature [K] (between 200 and 3000)
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated steam
+        T: Temperature with units (between 200 and 3000 K)
+        P: Pressure with units (between 1 and 1e9 Pa), None if saturated vapor
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
 
@@ -103,7 +103,8 @@ def htpx(T, P=None, x=None):
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
     return _htpx(T=T, P=P, x=x, prop=prop,
-                 Tmin=270, Tmax=3e3, Pmin=1e-4, Pmax=1e6)
+                 Tmin=270*pyunits.K, Tmax=3e3*pyunits.K,
+                 Pmin=1e-4*pyunits.kPa, Pmax=1e6*pyunits.kPa)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -118,26 +119,29 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             component_list=Set(initialize=["H2O"]),
             phase_equilibrium_idx=Set(initialize=[1]),
             phase_equilibrium_list={1: ["H2O", ("Vap", "Liq")]},
-            mw=Param(initialize=0.01801528,
-                     doc="Molecular weight [kg/mol]",
-                     units=pyunits.kg/pyunits.mol),
+            mw=Param(
+                initialize=0.01801528,
+                doc="Molecular weight",
+                units=pyunits.kg/pyunits.mol),
             temperature_crit=Param(
                 initialize=647.096,
-                doc="Critical temperature [K]",
+                doc="Critical temperature",
                 units=pyunits.K),
-            pressure_crit=Param(initialize=2.2064e7,
-                                doc="Critical pressure [Pa]",
-                                units=pyunits.Pa),
-            dens_mass_crit=Param(initialize=322,
-                                 doc="Critical density [kg/m3]",
-                                 units=pyunits.kg/pyunits.m**3),
+            pressure_crit=Param(
+                initialize=2.2064e7,
+                doc="Critical pressure",
+                units=pyunits.Pa),
+            dens_mass_crit=Param(
+                initialize=322,
+                doc="Critical density",
+                units=pyunits.kg/pyunits.m**3),
             specific_gas_constant=Param(
                 initialize=461.51805,
-                doc="Water Specific Gas Constant [J/kg/K]",
+                doc="Water Specific Gas Constant",
                 units=pyunits.J/pyunits.kg/pyunits.K),
-            pressure_bounds=(0.1, 1e9),
-            temperature_bounds=(250, 2500),
-            enthalpy_bounds=(0, 1e5),
+            pressure_bounds=(0.1*pyunits.Pa, 1e9*pyunits.Pa),
+            temperature_bounds=(250*pyunits.Pa, 2500*pyunits.K),
+            enthalpy_bounds=(0*pyunits.J/pyunits.mol, 1e5*pyunits.J/pyunits.mol),
         )
         super().build()
         # Thermal conductivity parameters.
