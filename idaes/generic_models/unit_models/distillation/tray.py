@@ -811,7 +811,7 @@ see property package for documentation.}"""))
                 else:
                     if "flow" in k:
                         state_args_mixed[k] = \
-                            0.5* (value(self.properties_in_liq[0].
+                            (value(self.properties_in_liq[0].
                              component(state_dict[k].local_name)) +
                              value(self.properties_in_vap[0].
                              component(state_dict[k].local_name)))
