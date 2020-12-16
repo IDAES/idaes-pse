@@ -66,24 +66,28 @@ Run that cell (hit shift-enter), and you should see some output from the last ca
 
     2020-11-24 08:41:53 [INFO] idaes.init.fs.flash: Initialization Complete: optimal - Optimal Solution Found
 
-This means the initialization succeeded, and you can move on. If you see instead something like this ::
+This means the initialization succeeded, and you can move on.
 
-    ---------------------------------------------------------------------------
-    ModuleNotFoundError                       Traceback (most recent call last)
-    <ipython-input-2-ad88ea7f7460> in <module>
-    ----> 1 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
-          2 from idaes.core import FlowsheetBlock
-          3 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-          4     import BTXParameterBlock
-          5 from idaes.generic_models.unit_models import Flash
+.. warning::
 
-    ModuleNotFoundError: No module named 'pyomo'
+    If you see instead something like the following, you probably didn't run the notebook within
+    a Python environment where IDAES is installed. To fix, first try other Python environments, or "kernels",
+    from under the '*Kernel -> Change kernel*' menu. If that doesn't work, review
+    the :ref:`installation instructions <IDAES Installation>`.
+    To pick up changes in the installation, the best thing to do is close this notebook and exit the current running
+    Jupyter. Then, from inside the installed IDAES environment, try again to run the command ``jupyter notebook`` ::
 
-In this case, you probably didn't run the notebook within a Python environment where IDAES is installed. To fix,
-first try other Python environments, or "kernels", from under the '*Kernel -> Change kernel*' menu. If that
-doesn't work, review the :ref:`installation instructions <IDAES Installation>` instructions.
-To pick up changes in the installation, the best thing to do is close this notebook and exit the current running
-Jupyter. Then, from inside the installed IDAES environment, try again to run the command ``jupyter notebook``.
+        ---------------------------------------------------------------------------
+        ModuleNotFoundError                       Traceback (most recent call last)
+        <ipython-input-2-ad88ea7f7460> in <module>
+        ----> 1 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
+              2 from idaes.core import FlowsheetBlock
+              3 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
+              4     import BTXParameterBlock
+              5 from idaes.generic_models.unit_models import Flash
+
+        ModuleNotFoundError: No module named 'pyomo'
+
 
 Optionally, save the notebook ('File -> Save' or Ctrl-S) with an appropriate name, like "Flowsheet visualization quickstart".
 
@@ -120,56 +124,38 @@ This section describes each of the sections of the IFV interface.
 
 Invocation
 ^^^^^^^^^^
-To start the IDAES Flowsheert Visualizer (IFV), you run the `visualize()` method for an existing
+To start the IDAES Flowsheert Visualizer (IFV), you run the `visualize()` method (see below for
+full signature) for an existing
 flowsheet. This can be done from a script or a Jupyter notebook. Either way, the default action
-is to start a web server in a separate thread, and a browser window to show the flowsheet.
+is to start a web server in a separate thread, and open a browser window to show the flowsheet.
 
-.. TODO: Uncomment once changes in functionality are merged, so this module exists!
-.. .. autofunction:: idaes.ui.fsvis.fsvis.visualize
+.. py:currentmodule:: idaes.ui.fsvis.fsvis
 
-**Note**: The visualization server runs in its own thread. If the program that it is running in stops,
-the visualization UI will not be able to save or refresh its view. This is not an issue in Jupyter Notebooks,
-since they run until the user explicitly closes them.
-But if you are running from a script, you need to do something to avoid having the program exit after
-the `visualize()` method returns (which happens very quickly). For example, loop forever in a try/catch clause
-that will handle KeyboardInterrupt exceptions::
+.. autofunction:: visualize
 
-    # Example code for a script, to keep program running after starting visualize() thread
-    my_model.fs.visualize()  # this returns immediately
-    try:
-        print("Type ^C to stop the program")
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Program stopped")
+GUI
+^^^
+The rest of this section describes the main components of the graphical web user interface.
+
+.. image:: ../../_images/ifv_annotated_screenshot.png
+    :width: 800
+
+Layout
+    Refer to the diagram above.
+    At the top of the window is the IDAES project logo and the name of the flowsheet, in what we call the
+    title bar. Below this is the menu of actions, and below that is the graph of the flowsheet.
 
 Title bar
-^^^^^^^^^
-At the top of the window is the IDAES project logo and the name of the flowsheet.
++++++++++
+The title bar contains the IDAES logo and the name of the flowsheet being visualized.
 
-Graph actions
-^^^^^^^^^^^^^
-
-Units
-    *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
-    The three types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
-    outlets. Units can be moved by clicking and dragging them. If you double-click on a unit, it
-    will rotate 90 degrees.
-
-Lines
-    The lines connecting units, also called "arcs", can be manipulated by clicking and dragging.
-    If you double-click on a line, you will create a new segment that can be used for routing the line
-    around objects.
-
-Annotations
-    Both the units and the arcs have associated values that can be shown. See the
-    :ref:`View:Labels <ifv-action-view>` action.
-
-Menu actions
-^^^^^^^^^^^^
+Menu
+++++
+The menu provides access to the IFV "actions", such as saving the flowsheet or toggling labels.
 In the current interface, all the actions described below are on a "button bar".
 The structure of this documentation reflects the planned next-generation interface, which
-will have a traditional application menu, below which is a set of buttons [#f1]_ for rapid access.
+will have a traditional application menu, below which is a set of buttons(1)
+for rapid access.
 
 .. _ifv-action-file:
 
@@ -194,10 +180,10 @@ File actions
 View actions
     * Labels - Toggle view of the annotations, or labels
     * Grid - Toggle a background "grid"
-    * Zoom - Zoom the view of the flowsheet within the canvas. This is a label for a set of related options:
-        * |ifv-zoom-in| Zoom in - Zoom in by 25%
-        * |ifv-zoom-out| Zoom out - Zoom out by 25%
-        * |ifv-zoom-reset| Reset - Reset zoom to 100%
+    * Zoom - Zoom the view of the flowsheet within the canvas. This is a label for a set of related options.
+    * |ifv-zoom-in| Zoom in - Zoom in by 25%
+    * |ifv-zoom-out| Zoom out - Zoom out by 25%
+    * |ifv-zoom-reset| Reset - Reset zoom to 100%
     * Canvas size - Change the size of the "canvas" on which the flowsheet is drawn. This lets you adapt
       the IFV for different display (screen) sizes.
 
@@ -214,10 +200,29 @@ View actions
 
 .. |ifv-help| image:: ../../_images/icons/help_outline-24px.svg
 
-Notes
+(1) Unmodified from
+`Google Material Design system icons <https://material.io/design/iconography/system-icons.html#design-principles>`_
+
+Graph
 +++++
-.. [#f1] Button icons shown here use `Google Material Design system icons <https://material.io/design/iconography/system-icons.html#design-principles>`_. These are provided under the Apache 2.0 license.
-    They were not modified for this use.
+
+The graph area is where you can rearrange the flowsheet as you need and zoom in on particular sections.
+The main visual components are called Units, Lines, and Annotations.
+
+Units
+    *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
+    The three types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
+    outlets. Units can be moved by clicking and dragging them. If you double-click on a unit, it
+    will rotate 90 degrees.
+
+Lines
+    The lines connecting units, also called "arcs", can be manipulated by clicking and dragging.
+    If you double-click on a line, you will create a new segment that can be used for routing the line
+    around objects.
+
+Annotations
+    Both the units and the arcs have associated values that can be shown. See the
+    :ref:`View:Labels <ifv-action-view>` action.
 
 Advanced
 --------
