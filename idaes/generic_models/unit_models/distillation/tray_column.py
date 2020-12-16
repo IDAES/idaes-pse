@@ -251,7 +251,11 @@ see property package for documentation.}"""))
         # Add extensions to stripping section
 
         # Construct arcs between trays, condenser, and reboiler
-        self._make_arcs()
+        self._make_rectification_arcs()
+        self._make_stripping_arcs()
+        self._make_feed_arcs()
+        self._make_condenser_arcs()
+        self._make_reboiler_arcs()
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def _make_rectification_arcs(self):
@@ -290,35 +294,57 @@ see property package for documentation.}"""))
         self.stripping_vap_stream = Arc(
             self._stripping_stream_index, rule=rule_vap_stream)
 
-    # def _make_arcs(self):
-    #     # make arcs
-    #     self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
-    #     self.vap_stream_index = RangeSet(1, self.config.number_of_trays + 1)
-    #
-    #     def rule_liq_stream(self, i):
-    #         if i == 0:
-    #             return {"source": self.condenser.reflux,
-    #                     "destination": self.tray[i + 1].liq_in}
-    #         elif i == self.config.number_of_trays:
-    #             return {"source": self.tray[i].liq_out,
-    #                     "destination": self.reboiler.inlet}
-    #         else:
-    #             return {"source": self.tray[i].liq_out,
-    #                     "destination": self.tray[i + 1].liq_in}
-    #
-    #     def rule_vap_stream(self, i):
-    #         if i == 1:
-    #             return {"source": self.tray[i].vap_out,
-    #                     "destination": self.condenser.inlet}
-    #         elif i == self.config.number_of_trays + 1:
-    #             return {"source": self.reboiler.vapor_reboil,
-    #                     "destination": self.tray[i - 1].vap_in}
-    #         else:
-    #             return {"source": self.tray[i].vap_out,
-    #                     "destination": self.tray[i - 1].vap_in}
-    #
-    #     self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
-    #     self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
+    def _make_feed_arcs(self):
+
+        self.feed_liq_in = Arc(
+            source=self.rectification_section[
+                self.config.feed_tray_location - 1].liq_out,
+            destination=self.feed_tray.liq_in
+        )
+
+        self.feed_liq_out = Arc(
+            source=self.feed_tray.liq_out,
+            destination=self.stripping_section[
+                self.config.feed_tray_location + 1].liq_in
+        )
+
+        self.feed_vap_in = Arc(
+            source=self.stripping_section[
+                self.config.feed_tray_location + 1].vap_out,
+            destination=self.feed_tray.vap_in
+        )
+
+        self.feed_vap_out = Arc(
+            source=self.feed_tray.vap_out,
+            destination=self.rectification_section[
+                self.config.feed_tray_location - 1].vap_in
+        )
+
+    def _make_condenser_arcs(self):
+
+        self.condenser_vap_in = Arc(
+            source=self.rectification_section[1].vap_out,
+            destination=self.condenser.inlet
+        )
+
+        self.condenser_reflux_out = Arc(
+            source=self.condenser.outlet,
+            destination=self.rectification_section[1].liq_in
+        )
+
+    def _make_reboiler_arcs(self):
+
+        self.reboiler_liq_in = Arc(
+            source=self.stripping_section[
+                self.config.number_of_trays].vap_out,
+            destination=self.condenser.inlet
+        )
+
+        self.reboiler_vap_out = Arc(
+            source=self.reboiler.vapor_reboil,
+            destination=self.stripping_section[
+                self.config.number_of_trays].vap_in
+        )
 
     def propagate_stream_state(self, source=None,
                                destination=None):
