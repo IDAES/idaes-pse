@@ -32,4 +32,6 @@ h2 {
     background-color: transparent;
     border: none;
     font-weight: bold;
+    color: rgb(64, 64, 64);
+    font-size: 110%;
 }
