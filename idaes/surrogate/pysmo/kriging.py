@@ -10,15 +10,20 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
+# Imports from the python standard library
+import os.path
+import pprint
+# Imports from third parties
+from matplotlib import pyplot as plt
 import numpy as np
+import pandas as pd
+import pickle
+from pyomo.core import Param, exp
 from scipy.optimize import basinhopping
 import scipy.optimize as opt
-import pandas as pd
-from pyomo.core import Param, exp
+# Imports from IDAES namespace
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
-import os.path, pickle
-from matplotlib import pyplot as plt
-
 
 class MyBounds(object):
     """
@@ -654,8 +659,7 @@ class KrigingModel:
         s = self._report()
         print(s)
 
-    def _repr_pretty_(self):
-        import pprint
+    def _repr_pretty_(self, p, cycle=False):
         s = self._report()
-        j = pprint.PrettyPrinter(width=80)
-        j.pprint(s)
+        p.text(s)
+

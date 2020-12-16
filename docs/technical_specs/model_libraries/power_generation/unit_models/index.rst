@@ -16,3 +16,9 @@ Unit Models
     phase_separator
     drum
     downcomer
+    steamheater
+    boiler_fireside
+    watertank
+    boiler_heat_exchanger2D
+    drum1D
+    waterpipe

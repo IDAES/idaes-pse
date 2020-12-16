@@ -187,7 +187,7 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def visualize(self, model_name, browser=True, overwrite=False):
+    def visualize(self, model_name, **kwargs):
         """
         Starts up a flask server that serializes the model and pops up a 
         webpage with the visualization
@@ -195,15 +195,13 @@ within this flowsheet if not otherwise specified,
         Args:
             model_name : The name of the model that flask will use as an argument
                          for the webpage
-            browser : If True a browser window/tab will be opened with the 
-                      visualization. Defaults to True
-            overwrite : If True the visualization ignores any saved visualization 
-                        file
+        Keyword Args:
+            **kwargs: Additional keywords for :func:`idaes.ui.fsvis.visualize()`
 
         Returns:
             None
         """
-        visualize(self, model_name, browser, overwrite)
+        visualize(self, model_name, **kwargs)
 
     def get_costing(self, module=costing, year=None):
         self.costing = pe.Block()
