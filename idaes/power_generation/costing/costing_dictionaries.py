@@ -12,6 +12,16 @@
 ##############################################################################
 """
 Python script to read costing components
+This script reads the library of costing components (scaled cost, reference
+parameters, costing exponents, etc.) from the json files.
+First, open json file, then create a python dictionary that gets imported into
+power_plant_costing.py
+
+Three python dictionaries are returned:
+* BB_costing_exponents
+* BB_costing_params
+* sCO2_costing_params
+
 
 """
 __author__ = "Costing Team (A. Noring and M. Zamarripa)"

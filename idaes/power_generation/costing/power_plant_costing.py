@@ -102,7 +102,9 @@ def get_PP_costing(self, cost_accounts,
 
     # check to see if a costing block already exists
     if hasattr(self, 'costing'):
-        raise Exception('Pyomo block has already been costed')
+        raise AttributeError("{} already has an attribute costing. "
+                             "Check that you are not calling get_costing"
+                             " twice on the same model".format(self.name))
 
     # create a costing Block
     self.costing = Block()
@@ -183,14 +185,18 @@ def get_PP_costing(self, cost_accounts,
             cost_accounts = NGCC_preloaded_accounts[cost_accounts]
         elif tech == 7:
             cost_accounts = AUSC_preloaded_accounts[cost_accounts]
+        else:
+            AttributeError("{} technology not supported".format(self.name))
 
     # check that all accounts use the same process parameter
     process_params = set()
     for account in cost_accounts:
         param = BB_costing_exponents[str(tech)][account]['Process Parameter']
         process_params.add(param)
+
     if len(process_params) > 1:
-        raise Exception('Cost accounts do not use the same process parameter.')
+        raise ValueError('Cost accounts do not use'
+                         ' the same process parameter.')
 
     # check that the user passed the correct units
     ref_units = BB_costing_params[str(tech)][ccs][cost_accounts[0]]['Units']
@@ -334,7 +340,7 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     self.costing.library = 'sCO2'
     self.costing.equipment = equipment
 
-    # find flowsheet block
+    # find flowsheet block to create global costing parameters
     try:
         fs = self.flowsheet()
     except:

@@ -13,7 +13,7 @@ A capital cost methodology is developed in this module, both bare and erected co
 The Power Plant Costing Library contains two main costing functions `get_PP_costing` and `get_SCO2_unit_cost`.
 The first function (get_PP_costing) can be called to include cost correlations for equipment typically used in simulation of 7 technologies: supercritical pulverized coal plants (SCPC),
 subcritical pulverized coal plants, Two-stage IGCC, Single-stage IGCC, Single-stage dry-feed IGCC, natural gas air-fired plant (NGCC), and advanced ultra-supercritical PC (AUSC).
-Whilst, `get_sCO2_unit_cost` can be called to include cost correlations for equipment in supercritical CO2 power cycle plants.
+Similarly, `get_sCO2_unit_cost` can be called to include cost correlations for equipment in supercritical CO2 power cycle plants.
 
 Details are given for each method later in this documentation, 
 however, there are many similarities between methods as discribed below:
