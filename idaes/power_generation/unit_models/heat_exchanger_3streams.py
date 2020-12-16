@@ -354,8 +354,8 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                          "using Underwood approximation")
         def LMTD_side_2(b, t):
             return b.temperature_driving_force_side_2[t] == \
-                ((b.side_2_inlet_dT[t]**0.333333
-                  + b.side_2_outlet_dT[t]**0.333333)/2)**(1/0.333333)
+                ((b.side_2_inlet_dT[t]**(1/3)
+                  + b.side_2_outlet_dT[t]**(1/3))/2)**(3)
 
         # Driving force side 3 (Underwood approximation)
         @self.Constraint(self.flowsheet().config.time,
@@ -363,8 +363,8 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                          "using Underwood approximation")
         def LMTD_side_3(b, t):
             return b.temperature_driving_force_side_3[t] == \
-                ((b.side_3_inlet_dT[t]**0.333333
-                  + b.side_3_outlet_dT[t]**0.333333)/2)**(1/0.333333)
+                ((b.side_3_inlet_dT[t]**(1/3)
+                  + b.side_3_outlet_dT[t]**(1/3))/2)**(3)
 
         # Heat duty side 2
         @self.Constraint(self.flowsheet().config.time,
