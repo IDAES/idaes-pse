@@ -75,9 +75,9 @@ kwargs = dict(
             "idaes = idaes.commands.base:command_base",
         ]
     },
+    # Only installed if [<key>] is added to package name
     extras_require={
-        # For developers. Only installed if [dev] is added to package name
-        "dev": [
+        "dev": [  # Developer extra packages
             "aafigure==0.6",  # ascii-art ->to-> figures in Sphinx docs
             "alabaster>=0.7.7",
             # temporarily hold coverage version due to avoid bug in coveralls
@@ -98,7 +98,7 @@ kwargs = dict(
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
             "sphinxcontrib-aafig",
-            "sphinx-argparse",
+            "sphinx-argparse"
         ]
     },
     package_data={
