@@ -166,9 +166,9 @@ see property package for documentation.}"""))
         # Create set for constructing indexed trays
         if self.config.number_of_trays is not None:
             self.tray_index = RangeSet(1, self.config.number_of_trays)
-            self.rectification_index = RangeSet(
+            self._rectification_index = RangeSet(
                 1, self.config.feed_tray_location - 1)
-            self.stripping_index = RangeSet(
+            self._stripping_index = RangeSet(
                 self.config.feed_tray_location + 1,
                 self.config.number_of_trays)
 
@@ -255,6 +255,8 @@ see property package for documentation.}"""))
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def _make_rectification_arcs(self):
+        self._rectification_stream_index = RangeSet(
+            1, self.config.feed_tray_location - 1)
 
         def rule_liq_stream(self, i):
             return {"source": self.rectification_section[i].liq_out,
@@ -264,12 +266,16 @@ see property package for documentation.}"""))
             return {"source": self.rectification_section[i].vap_out,
                     "destination": self.rectification_section[i - 1].vap_in}
 
-        self.rectification_section.liq_stream = Arc(
-            self.rectification_index, rule=rule_liq_stream)
-        self.rectification_section.vap_stream = Arc(
-            self.rectification_index, rule=rule_vap_stream)
+        self.rectification_liq_stream = Arc(
+            self._rectification_stream_index, rule=rule_liq_stream)
+        self.rectification_vap_stream = Arc(
+            self._rectification_stream_index, rule=rule_vap_stream)
 
     def _make_stripping_arcs(self):
+
+        self._stripping_stream_index = RangeSet(
+            self.config.feed_tray_location + 1,
+            self.config.number_of_trays - 1)
 
         def rule_liq_stream(self, i):
             return {"source": self.stripping_section[i].liq_out,
@@ -279,10 +285,10 @@ see property package for documentation.}"""))
             return {"source": self.stripping_section[i].vap_out,
                     "destination": self.stripping_section[i - 1].vap_in}
 
-        self.stripping_section.liq_stream = Arc(
-            self.stripping_index, rule=rule_liq_stream)
-        self.stripping_section.vap_stream = Arc(
-            self.stripping_index, rule=rule_vap_stream)
+        self.stripping_liq_stream = Arc(
+            self._stripping_stream_index, rule=rule_liq_stream)
+        self.stripping_vap_stream = Arc(
+            self._stripping_stream_index, rule=rule_vap_stream)
 
     # def _make_arcs(self):
     #     # make arcs
