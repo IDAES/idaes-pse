@@ -1,7 +1,7 @@
-import { Toolbar } from './toolbar.js';
 
 export class Paper {
-    constructor(model_id) {
+    constructor(app) {
+        this._app = app;
         var standard = joint.shapes.standard;
         var width = 800;
         var height = 800;
@@ -37,11 +37,14 @@ export class Paper {
 
         self.setupEvents();
 
-        var toolbar = new Toolbar(self._graph, self._paper, self._paperScroller);
     }
 
     get graph() {
-        return self._graph
+        return this._graph
+    }
+
+    set graph(data) {
+        this._graph.fromJSON(data);
     }
 
     get paper() {
@@ -53,9 +56,8 @@ export class Paper {
     }
 
     setupEvents() {
-        var data_model = $("#model").data("model");
-        var model_id = data_model.model.id;
-        var url = "/fs?id=".concat(model_id);
+        let model_id = $("#idaes-fs-name").data("flowsheetId");
+        let url = "/fs?id=".concat(model_id);
 
         // /images/icons rotate 90 degrees on right click. Replaces browser 
         // context menu
@@ -92,24 +94,24 @@ export class Paper {
         // This is essentially the saving mechanism (for a server instance) for 
         // right now
         // See the comments above the save button for more saving TODOs
-        self._paper.on('paper:mouseleave', evt => {
-            $.ajax({
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(self._graph.toJSON()),
-                dataType: 'json',
-                url: url,
-                success: function (data) {
-                },
-                error: function(error) {
-                    console.log(error);
-                }
-            });
-        });
+        self._paper.on('paper:mouseleave', () => {this._app.saveModel(url, self._graph)});
+        //     $.ajax({
+        //         type: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(self._graph.toJSON()),
+        //         dataType: 'json',
+        //         url: url,
+        //         success: function (data) {
+        //         },
+        //         error: function(error) {
+        //             console.log(error);
+        //         }
+        //     });
+        // });
 
         // Link labels will appear and disapper on right click. Replaces browser context menu
         self._paper.on("link:contextmenu", function(linkView, evt) {
-            if (linkView.model.label(0)["attrs"]["text"]["display"] == 'none') {
+            if (linkView.model.label(0)["attrs"]["text"]["display"] === 'none') {
                 linkView.model.label(0, {
                     attrs: {
                         text: {

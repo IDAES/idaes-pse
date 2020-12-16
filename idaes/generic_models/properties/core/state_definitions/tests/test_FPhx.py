@@ -35,6 +35,8 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 
 # Mark module as all unit tests
@@ -57,6 +59,73 @@ def test_set_metadata():
     set_metadata(m.props)
 
     assert m.props.get_metadata().properties["enth_mol"] == {'method': None}
+
+
+class TestInvalidBounds(object):
+    def test_bad_name(self):
+        m = ConcreteModel()
+
+        m.params = DummyParameterBlock(default={
+                "components": {"c1": {}, "c2": {}, "c3": {}},
+                "phases": {
+                    "p1": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
+                "state_bounds": {"foo": (None, None, None)}})
+
+        # Create a dummy state block
+        m.props = Block([1])
+        m.props[1].config = ConfigBlock()
+        m.props[1].config.declare("defined_state", ConfigValue(default=False))
+        add_object_reference(m.props[1], "params", m.params)
+
+        with pytest.raises(
+                ConfigurationError,
+                match="props\[1\] - found unexpected state_bounds key foo. "
+                "Please ensure bounds are provided only for expected state "
+                "variables and that you have typed the variable names "
+                "correctly."):
+            define_state(m.props[1])
+
+    def test_mole_frac(self, caplog):
+        m = ConcreteModel()
+        
+        caplog.set_level(
+            idaeslog.WARNING,
+            logger=("idaes.generic_models.properties.core."))
+
+        m.params = DummyParameterBlock(default={
+                "components": {"c1": {}, "c2": {}, "c3": {}},
+                "phases": {
+                    "p1": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.s,
+                               "length": pyunits.m,
+                               "mass": pyunits.kg,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.K},
+                "state_bounds": {"mole_frac_comp": (None, None, None)}})
+
+        # Create a dummy state block
+        m.props = Block([1])
+        m.props[1].config = ConfigBlock()
+        m.props[1].config.declare("defined_state", ConfigValue(default=False))
+        add_object_reference(m.props[1], "params", m.params)
+        m.props[1].enth_mol_phase = {"p1": 1}
+
+        define_state(m.props[1])
+
+        assert ("props[1] - found state_bounds argument for mole_frac_comp."
+                " Mole fraction bounds are set automatically and "
+                "this argument will be ignored." in caplog.text)
 
 
 class Test1PhaseDefinedStateFalseNoBounds(object):

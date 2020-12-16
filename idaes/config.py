@@ -60,7 +60,8 @@ default_config = """
         "unit",
         "control_volume",
         "properties",
-        "reactions"
+        "reactions",
+        "ui"
     ],
     "logging":{
         "version":1,
