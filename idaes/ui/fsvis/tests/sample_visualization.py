@@ -15,13 +15,22 @@ This is a sample visualization script. This script builds a simple model and
 calls visualize("sample_visualization") in order to pop up a webpage with 
 a sample visualization.
 """
+import sys
+import time
 from idaes.generic_models.flowsheets.demo_flowsheet import build_flowsheet
 
 
 def main():
     m = build_flowsheet()
     m.fs.visualize("sample_visualization")
+    print("Starting server. Press Control-C to stop.")
+    try:
+        while 1:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Stopped.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
