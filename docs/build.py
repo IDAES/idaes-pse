@@ -37,7 +37,7 @@ def pipeline(*commands, **params):
         first = False
 
 
-def run_apidoc(clean=True):
+def run_apidoc(clean=True, **kwargs):
     """Run the sphinx-apidoc extension to build API docs.
     """
     if clean:
@@ -50,7 +50,14 @@ def run_apidoc(clean=True):
     os.environ["SPHINX_APIDOC_OPTIONS"] = "members,ignore-module-all,noindex"
     _run(
         "apidoc",
-        ["sphinx-apidoc", "--module-first", "--output-dir", "apidoc", "../idaes", "../idaes/*tests*"],
+        [
+            "sphinx-apidoc",
+            "--module-first",
+            "--output-dir",
+            "apidoc",
+            "../idaes",
+            "../idaes/*tests*",
+        ],
         60,
     )
     postprocess_apidoc(Path("apidoc"))
@@ -78,7 +85,7 @@ def postprocess_apidoc(root):
                     output_file.write(line)
 
 
-def run_html(clean=True):
+def run_html(clean=True, vb=0, timeout=0, **kwargs):
     """Run sphinx-build to create HTML.
     """
     build_dir = "build"
@@ -91,10 +98,14 @@ def run_html(clean=True):
         os.unlink(output_file)
     # run
     print_status("Run sphinx-build")
+    if vb > 0:
+        verbosity = "-" + "v" * vb
+    else:
+        verbosity = "-q"
     _run(
         "html",
-        ["sphinx-build", "-M", "html", ".", build_dir, "-w", output_file, "-q"],
-        180,
+        ["sphinx-build", "-M", "html", ".", build_dir, "-w", output_file] + [verbosity],
+        timeout,
     )
     # check output file
     print_status("Check output file")
@@ -104,8 +115,8 @@ def run_html(clean=True):
         with open(output_file) as outf:
             for line in outf:
                 num_lines += 1
-                num_warnings = num_warnings+1 if "WARNING: " in line else num_warnings
-                num_errors = num_errors+1 if "ERROR: " in line else num_errors
+                num_warnings = num_warnings + 1 if "WARNING: " in line else num_warnings
+                num_errors = num_errors + 1 if "ERROR: " in line else num_errors
     if num_lines > 0:
         raise CommandError(
             "html",
@@ -161,18 +172,30 @@ def main() -> int:
         help="Do not clean files before running commands",
     )
     prs.add_argument(
+        "-t",
+        "--timeout",
+        dest="timeout",
+        help="Timeout (in seconds) for sphinx-build (default=180)",
+        default=180,
+        type=int
+    )
+    prs.add_argument(
         "-v",
         "--verbose",
         action="count",
         dest="vb",
         default=0,
-        help="Print some debugging information",
+        help="Verbosity for `sphinx-build`; also some debug information from this program",
     )
     args = prs.parse_args()
+    verbosity = 0
     if args.vb > 0:
         _log.setLevel(logging.DEBUG)
+        verbosity = args.vb
     try:
-        pipeline("apidoc", "html", clean=not args.dirty)
+        pipeline(
+            "apidoc", "html", clean=not args.dirty, vb=verbosity, timeout=args.timeout
+        )
     except CommandError as err:
         print_error(err.command, err.message)
         return -1
