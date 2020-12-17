@@ -10,6 +10,9 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+import sys
+import os
+sys.path.append(os.path.abspath('..')) # current folder is ~/examples
 from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_unucertainty
 import pandas as pd
 from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
