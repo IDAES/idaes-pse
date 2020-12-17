@@ -474,9 +474,7 @@ class TestIAPWS(object):
     def test_verify(self, iapws_turb):
         iapws = iapws_turb
         # Verify the turbine results against 3 known test cases
-
         # Case Data (90% isentropic efficency)
-        # Run with Aspen Plus v10 using iapws-95
         cases = {
             "F": (1000, 1000, 1000),  # mol/s
             "Tin": (500, 800, 400),  # K

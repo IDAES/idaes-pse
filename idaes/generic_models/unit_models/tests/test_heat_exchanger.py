@@ -38,6 +38,8 @@ from idaes.generic_models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern)
 
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_underwood_callback)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -563,6 +565,32 @@ class TestIAPWS_countercurrent(object):
 
         return m
 
+    @pytest.fixture(scope="class")
+    def iapws_underwood(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "delta_temperature_callback": delta_temperature_underwood_callback,
+                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+
+        m.fs.unit.inlet_1.flow_mol[0].fix(100)
+        m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+        m.fs.unit.inlet_2.flow_mol[0].fix(100)
+        m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+        m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+        m.fs.unit.area.fix(1000)
+        m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        return m
+
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iapws):
@@ -643,6 +671,23 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.component
     def test_solve(self, iapws):
         results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_underwood(self, iapws_underwood):
+        initialization_tester(iapws_underwood)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_underwood(self, iapws_underwood):
+        results = solver.solve(iapws_underwood)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \
