@@ -98,8 +98,10 @@ our initialized (but not solved) model. In the new cell, type in and run (shift-
 
 This will create a new browser tab or window with the IFV displaying the flowsheet:
 
-.. image:: ../../_images/ifv_helloworld_1.png
+.. figure:: ../../_images/ifv_helloworld_screenshot.png
     :width: 800
+
+    Screenshot of the IDAES flowsheet visualizer web interface, showing Flash flowsheet
 
 For the initial layout, you can see that the unit models and other components
 have just been placed in a diagonal. You can rearrange icons and lines on the diagram with the mouse.
@@ -137,8 +139,10 @@ GUI
 ^^^
 The rest of this section describes the main components of the graphical web user interface.
 
-.. image:: ../../_images/ifv_annotated_screenshot.png
+.. figure:: ../../_images/ifv_annotated_screenshot.png
     :width: 800
+
+    Screenshot of the IFV user interface, with annotations for the different components.
 
 Layout
     Refer to the diagram above.
