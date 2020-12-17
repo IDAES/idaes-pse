@@ -10,16 +10,16 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-
+import sys
+import os
+sys.path.append(os.path.abspath('..')) # current folder is ~/examples
 from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_unucertainty
 import pandas as pd
 from NRTL_model_scripts import NRTL_model, NRTL_model_opt
 
-
 variable_name = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
-
-#  https://github.com/IDAES/examples-pse/blob/main/src/Tutorials/Advanced/ParamEst/BT_NRTL_dataset.csv
-data = pd.read_csv('BT_NRTL_dataset.csv')
+current_path = os.path.dirname(os.path.realpath(__file__))
+data = pd.read_csv(os.path.join(current_path, 'BT_NRTL_dataset.csv'))
 
 def SSE(model, data):
     expr = ((float(data["vap_benzene"]) -

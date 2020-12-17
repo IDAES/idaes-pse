@@ -30,7 +30,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_theta_cov_propagation1(self):
-        from idaes.apps.uncertainty_propagation.tests.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
+        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
                                   [4,16.0],[5,15.6],[7,19.8]],
@@ -53,7 +53,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_theta_cov_propagation2(self):
-        from idaes.apps.uncertainty_propagation.tests.NRTL_model_scripts import NRTL_model, NRTL_model_opt
+        from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
         variable_name = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
         data = pd.read_csv('BT_NRTL_dataset.csv')
         def SSE(model, data):
@@ -81,7 +81,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception1(self):
-        from idaes.apps.uncertainty_propagation.tests.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
+        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
                                   [4,16.0],[5,15.6],[7,19.8]],
@@ -99,7 +99,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception2(self):
-        from idaes.apps.uncertainty_propagation.tests.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
+        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
                                   [4,16.0],[5,15.6],[7,19.8]],
@@ -118,7 +118,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception3(self):
-        from idaes.apps.uncertainty_propagation.tests.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
+        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
                                   [4,16.0],[5,15.6],[7,19.8]],
