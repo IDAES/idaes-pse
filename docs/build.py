@@ -29,18 +29,22 @@ class CommandError(Exception):
 
 
 def pipeline(*commands, **params):
+    dry_run = params.get("dry_run", False)
+    if dry_run:
+        print_header("Dry run", first=True)
     first = True
     for cmd in commands:
         func = globals()[f"run_{cmd}"]
-        print_header(cmd, first=first)
+        if not dry_run:
+            print_header(cmd, first=first)
         func(**params)
         first = False
 
 
-def run_apidoc(clean=True, **kwargs):
+def run_apidoc(clean=True, dry_run=False, **kwargs):
     """Run the sphinx-apidoc extension to build API docs.
     """
-    if clean:
+    if clean and not dry_run:
         # remove old docs
         print_status("Remove old docs")
         for old_rst in glob.glob("apidoc/*.rst"):
@@ -59,8 +63,10 @@ def run_apidoc(clean=True, **kwargs):
             "../idaes/*tests*",
         ],
         60,
+        dry_run
     )
-    postprocess_apidoc(Path("apidoc"))
+    if not dry_run:
+        postprocess_apidoc(Path("apidoc"))
 
 
 def postprocess_apidoc(root):
@@ -85,17 +91,18 @@ def postprocess_apidoc(root):
                     output_file.write(line)
 
 
-def run_html(clean=True, vb=0, timeout=0, **kwargs):
+def run_html(clean=True, vb=0, timeout=0, dry_run=False, **kwargs):
     """Run sphinx-build to create HTML.
     """
     build_dir = "build"
     output_file = "sphinx-errors.txt"
-    if clean:
-        if os.path.exists(build_dir):
-            print_status(f"Remove build dir '{build_dir}'")
-            shutil.rmtree(build_dir)
-    if os.path.exists(output_file):
-        os.unlink(output_file)
+    if not dry_run:
+        if clean:
+            if os.path.exists(build_dir):
+                print_status(f"Remove build dir '{build_dir}'")
+                shutil.rmtree(build_dir)
+        if os.path.exists(output_file):
+            os.unlink(output_file)
     # run
     print_status("Run sphinx-build")
     if vb > 0:
@@ -106,7 +113,10 @@ def run_html(clean=True, vb=0, timeout=0, **kwargs):
         "html",
         ["sphinx-build", "-M", "html", ".", build_dir, "-w", output_file] + [verbosity],
         timeout,
+        dry_run
     )
+    if dry_run:
+        return
     # check output file
     print_status("Check output file")
     num_lines = num_warnings = num_errors = 0
@@ -126,10 +136,14 @@ def run_html(clean=True, vb=0, timeout=0, **kwargs):
         )
 
 
-def _run(what, args, timeout):
+def _run(what, args, timeout, not_really):
     """Run a command with a timeout.
     """
-    _log.debug(f"command='{' '.join(args)}'")
+    command_line = ' '.join(args)
+    if not_really:
+        print(f"Command: {command_line}")
+        return
+    _log.debug(f"command={command_line}")
     try:
         proc = subprocess.Popen(args)
     except Exception as err:
@@ -172,12 +186,19 @@ def main() -> int:
         help="Do not clean files before running commands",
     )
     prs.add_argument(
+        "-d",
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="Show commands to be executed",
+    )
+    prs.add_argument(
         "-t",
         "--timeout",
         dest="timeout",
         help="Timeout (in seconds) for sphinx-build (default=180)",
         default=180,
-        type=int
+        type=int,
     )
     prs.add_argument(
         "-v",
@@ -194,12 +215,14 @@ def main() -> int:
         verbosity = args.vb
     try:
         pipeline(
-            "apidoc", "html", clean=not args.dirty, vb=verbosity, timeout=args.timeout
+            "apidoc", "html", clean=not args.dirty, vb=verbosity, timeout=args.timeout,
+            dry_run=args.dry_run
         )
     except CommandError as err:
         print_error(err.command, err.message)
         return -1
-    print_header("SUCCESS")
+    if not args.dry_run:
+        print_header("SUCCESS")
     return 0
 
 
