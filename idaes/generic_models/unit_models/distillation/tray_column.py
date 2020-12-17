@@ -195,9 +195,6 @@ see property package for documentation.}"""))
                      "property_package_args":
                      self.config.property_package_args})
 
-        self.rectification_section.display()
-        raise Exception()
-
         self.feed_tray = Tray(
             default={"is_feed_tray": True,
                      "has_liquid_side_draw":
@@ -282,7 +279,7 @@ see property package for documentation.}"""))
 
         self._stripping_stream_index = RangeSet(
             self.config.feed_tray_location + 1,
-            self.config.number_of_trays - 2)
+            self.config.number_of_trays - 1)
 
         def rule_liq_stream(self, i):
             return {"source": self.stripping_section[i].liq_out,
