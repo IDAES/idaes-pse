@@ -22,3 +22,4 @@ Unit Models
     boiler_heat_exchanger2D
     drum1D
     waterpipe
+    boiler_heat_exchanger_3streams
