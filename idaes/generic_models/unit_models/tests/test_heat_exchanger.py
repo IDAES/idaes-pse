@@ -167,16 +167,12 @@ def test_costing():
 
     assert degrees_of_freedom(m) == 0
 
+    m.fs.unit.get_costing()
+
     m.fs.unit.initialize()
 
-    m.fs.unit.get_costing()
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.base_cost,
-                m.fs.unit.costing.base_cost_eq)
-
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.purchase_cost,
-                m.fs.unit.costing.cp_cost_eq)
+    assert m.fs.unit.costing.purchase_cost.value == \
+        pytest.approx(529738.6793, 1e-5)
 
     assert_units_consistent(m.fs.unit.costing)
 
@@ -219,14 +215,14 @@ def test_costing_book():
     m.fs.costing.CE_index = 550
     m.fs.unit.costing.hx_os = 1.0
     calculate_variable_from_constraint(
-            m.fs.unit.costing.base_cost,
-            m.fs.unit.costing.base_cost_eq)
+            m.fs.unit.costing.base_cost_per_unit,
+            m.fs.unit.costing.base_cost_per_unit_eq)
 
     calculate_variable_from_constraint(
             m.fs.unit.costing.purchase_cost,
             m.fs.unit.costing.cp_cost_eq)
 
-    assert m.fs.unit.costing.base_cost.value == \
+    assert value(m.fs.unit.costing.base_cost) == \
         pytest.approx(78802.0518, 1e-5)
     assert m.fs.unit.costing.purchase_cost.value == \
         pytest.approx(417765.1377, 1e-5)

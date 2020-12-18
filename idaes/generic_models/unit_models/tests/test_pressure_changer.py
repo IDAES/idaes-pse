@@ -777,24 +777,17 @@ class Test_costing(object):
         m.fs.unit.deltaP.fix(50000)
         m.fs.unit.efficiency_pump.fix(0.9)
         iscale.calculate_scaling_factors(m)
-        m.fs.unit.initialize()
 
         assert degrees_of_freedom(m) == 0
 
         m.fs.unit.get_costing(pump_type='centrifugal',
                               Mat_factor='nickel',
                               pump_motor_type_factor='enclosed')
-        calculate_variable_from_constraint(
-                    m.fs.unit.costing.motor_purchase_cost,
-                    m.fs.unit.costing.cp_motor_cost_eq)
 
-        calculate_variable_from_constraint(
-                m.fs.unit.costing.pump_purchase_cost,
-                m.fs.unit.costing.cp_pump_cost_eq)
-
-        calculate_variable_from_constraint(
-                m.fs.unit.costing.purchase_cost,
-                m.fs.unit.costing.total_cost_eq)
+        m.fs.unit.initialize()
+        # check costing block initialization
+        assert m.fs.unit.costing.purchase_cost.value == \
+            pytest.approx(70115.019, abs=1e-2)
 
         assert_units_consistent(m.fs.unit)
 
@@ -820,19 +813,20 @@ class Test_costing(object):
         m.fs.unit.efficiency_isentropic.fix(0.9)
         iscale.calculate_scaling_factors(m)
 
+        assert degrees_of_freedom(m) == 0
+
+        m.fs.unit.get_costing(mover_type="compressor")
+
         m.fs.unit.initialize()
 
-        assert degrees_of_freedom(m) == 0
-        m.fs.unit.get_costing(mover_type="compressor")
-        calculate_variable_from_constraint(
-                    m.fs.unit.costing.purchase_cost,
-                    m.fs.unit.costing.cp_cost_eq)
+        assert m.fs.unit.costing.purchase_cost.value == \
+            pytest.approx(334598.679, abs=1e-3)
 
         assert_units_consistent(m.fs.unit)
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334648, 1e-5)
+            pytest.approx(334598.679, abs=1e-3)
 
     @pytest.mark.component
     def test_turbine(self):
@@ -855,13 +849,14 @@ class Test_costing(object):
 
         m.fs.unit.deltaP.fix(Pout - Pin)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        # build costing block before initializing the unit
+        m.fs.unit.get_costing()
 
         m.fs.unit.initialize()
+        # check costing initialization is working
+        assert m.fs.unit.costing.purchase_cost.value ==\
+            pytest.approx(213199, 1e-5)
 
-        m.fs.unit.get_costing()
-        calculate_variable_from_constraint(
-                    m.fs.unit.costing.purchase_cost,
-                    m.fs.unit.costing.cp_cost_eq)
         assert degrees_of_freedom(m) == 0
 
         assert_units_consistent(m.fs.unit)

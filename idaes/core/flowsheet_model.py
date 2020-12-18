@@ -203,10 +203,10 @@ within this flowsheet if not otherwise specified,
         """
         visualize(self, model_name, **kwargs)
 
-    def get_costing(self, module=costing, year=None):
+    def get_costing(self, module=costing, year=None, integer_n_units=False):
         self.costing = pe.Block()
 
-        module.global_costing_parameters(self.costing, year)
+        module.global_costing_parameters(self.costing, year=year, integer_n_units=integer_n_units)
 
     def _get_stream_table_contents(self, time_point=0):
         """

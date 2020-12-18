@@ -30,6 +30,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyPackageError,
                                         BalanceTypeNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
+import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -652,6 +653,11 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
+
+        # if costing block exists, deactivate
+        if hasattr(blk, "costing"):
+            blk.costing.deactivate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
@@ -659,9 +665,13 @@ Must be True if dynamic = True,
             "Initialization Step 2 {}.".format(idaeslog.condition(results))
         )
 
+        # if costing block exists, activate and initialize
+        if hasattr(blk, "costing"):
+            blk.costing.activate()
+            costing.initialize(blk.costing)
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl+1)
+        blk.control_volume.release_state(flags, outlvl)
 
         init_log.info('Initialization Complete: {}'
                       .format(idaeslog.condition(results)))

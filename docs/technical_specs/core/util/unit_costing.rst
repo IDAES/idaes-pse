@@ -28,17 +28,24 @@ In addition, the first time `get_costing` is called for a unit operation within 
 on the flowsheet object (i.e. `flowsheet.unit.costing`) in order to hold any global parameters relating to costing. The most 
 common of these paramters is the cost normalization parameter based on the year selected by the user.
 
+An initialize method for costing components has been developed. This method is called by the unit.initialize() or it can be imported by the user to initialize costing blocks.
+If get_costing() is called before unit.initialize(), the initialize method will deactivate the costing block, initialize the unit model as normal, and then activate the costing block and initialize costing constraints.
+
 .. note:: The global paramters are created when the first instance of `get_costing` is called and use the values provided there for initialization. Subsequent `get_costing` calls use the existing paramters, and do not change the initialized values. i.e. any "year" argument provided to a `get_costing` call after the first will be ignored.
 
  
 Table 1. Main Variables added to the unit block ("self.costing").
 
-=========================== ====================== ============ =============================================================================
-Variable                    Symbol                 Units        Notes
-=========================== ====================== ============ =============================================================================
-Purchase cost               :math:`purchase\_cost` dollars      Purchase cost
-Base cost                   :math:`base\_cost`     unitless     Base cost
-=========================== ====================== ============ =============================================================================
+=========================== ============================ ============ =============================================================================
+Variable                    Symbol                       Units        Notes
+=========================== ============================ ============ =============================================================================
+Purchase cost               :math:`purchase\_cost`       dollars      Purchase cost
+Base cost per unit          :math:`base\_cost_per_unit`  unitless     Base cost per unit
+Base cost                   :math:`base\_cost`           unitless     Base cost (base cost per unit * number of units)
+Number of units             :math:`number\_of\_units`    unitless     Number of units to be costed (to take advantage of the economics of scale)
+=========================== ============================ ============ =============================================================================
+
+.. note:: number of units by default is fixed to 1 and the user must unfix this variable to optimize the number of units. Also, `number of units` can be built as a continuous variable or an integer variable. If latest, the user must provide an mip solver. Use the global costing argument for this purpose (integer_n_units=True or False).
 
 Example
 -------
@@ -76,17 +83,10 @@ Below is a simple example of how to add cost correlations to a flowsheet includi
     m.fs.unit.area.fix(1000)  # m2
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)  # W/m2K
     
-    m.fs.unit.initialize()
     m.fs.unit.get_costing(module=costing, length_factor='12ft')
-    # initialize costing equations
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.base_cost,
-                m.fs.unit.costing.base_cost_eq)
-    
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.purchase_cost,
-                m.fs.unit.costing.cp_cost_eq)
-    
+
+    m.fs.unit.initialize()
+
     opt = SolverFactory('ipopt')
     opt.options = {'tol': 1e-6, 'max_iter': 50}
     results = opt.solve(m, tee=True)
@@ -105,7 +105,7 @@ the units to ft^2. The use of Pyomo-unit conversion tools is under development.
 IDAES Costing Module
 --------------------
 
-A default costing module has been developed primarily based on purchase cost correlations 
+A default costing module has been developed primarily based on base cost and purchase cost correlations 
 from the following reference with some exceptions (noted in the documentation as appropiate).
 
 Process and Product Design Principles: Synthesis, Analysis, and Evaluation. Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons. Chapter 22. Cost Accounting and Capital Cost Estimation
@@ -121,6 +121,8 @@ heat exchanger              :math:`area`               ft^2
 pump                        :math:`fluid_{work}`       ft^3/s     
 compressor                  :math:`mechanical_{work}`  hp         
 turbine                     :math:`mechanical_{work}`  hp         
+vessels                     :math:`D and L`            ft         
+fired heaters               :math:`heat\_duty`         BTU/hr         
 =========================== =========================  ===========
 
 
@@ -133,7 +135,11 @@ The purchse cost is computed based on the base unit cost and three correction fa
 
 .. math:: self.costing.purchase\_cost = pressure\_factor*material\_factor*L\_factor*self.costing.base\_cost*(CE_{index}/500)
 
-.. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{area*hx\_os} + \alpha_{3}*(\log{area*hx\_os})^{2})}
+.. math:: self.costing.base\_cost\_per\unit = \exp{(\alpha_{1} - \alpha_{2}*\log{area*hx\_os} + \alpha_{3}*(\log{area*hx\_os})^{2})}
+
+.. math:: self.costing.base\_cost = self.costing.base\_cost\_per\unit * self.costing.number\_of\_units
+
+.. math:: area  = self.area / self.costing.number\_of\_units
 
 where:
 
@@ -142,6 +148,7 @@ where:
 * length_factor - is the tube length correction factor
 * CE_index - is a global parameter for Chemical Enginering cost index for years 2010-2019
 * hx_os - heat exchanger oversize factor (default = 1)
+* area is a reference object and (self.area is the model variable)
 
 The heat exchanger costing method has three arguments, hx_type = heat exchanger type, FM_Mat = construction material factor, and FL = tube length factor.
 
@@ -261,9 +268,15 @@ Finally, the purchase cost of the pump is obtained in Eq. 22.15. (Seider et al.)
 
 .. math:: S = QH^{0.5}
 
-.. math:: self.costing.pump\_base\_cost = \exp{(9.7171 - 0.6019*\log{S} + 0.0519*(\log{S})^{2})}
+.. math:: self.costing.pump\_base\_cost\_per\unit = \exp{(9.7171 - 0.6019*\log{S} + 0.0519*(\log{S})^{2})}
 
 .. math:: self.costing.pump\_purchase\_cost = F_{T}*material\_factor*self.costing.pump\_base\_cost*(CE_{index}/500)
+
+.. math:: self.costing.base\_cost = self.costing.pump\_base\_cost\_per\unit * self.costing.number\_of\_units
+
+.. math:: Q  = self.Q / self.costing.number\_of\_units
+
+.. note:: the same number of units have been considered for pumps and the pump motor
 
 where:
 
@@ -310,7 +323,11 @@ A centrifugal pump is usually driven by an electric motor, the `self.costing.mot
 
 .. math:: self.motor_purchase_cost = FT * self.costing.motor\_base\_cost * (CE_{index}/500)  (Eq. 22.20)
 
-.. math:: self.costing.motor\_base\_cost = \exp{(5.8259 + 0.13141\log{PC} + 0.053255(\log{PC})^{2} + 0.028628(\log{PC})^{3} - 0.0035549(\log{PC})^{4})}  (Eq. 22.19)
+.. math:: self.costing.motor\_base\_cost = self.costing.motor\_base\_cost\_per\unit * self.costing.number\_of\_units
+
+.. math:: Q  = self.Q / self.costing.number\_of\_units
+
+.. math:: self.costing.self.costing.motor\_base\_cost\_per\unit = \exp{(5.8259 + 0.13141\log{PC} + 0.053255(\log{PC})^{2} + 0.028628(\log{PC})^{3} - 0.0035549(\log{PC})^{4})}  (Eq. 22.19)
 
 .. math:: PC = \frac{P_{T}}{\eta_{P}\eta_{M}} = \frac{P_{B}}{\eta_{M}} = \frac{Q H \rho}{33000\eta_{P}\eta_{M}}    (Eq. 22.16)
 
@@ -347,19 +364,29 @@ External Gear Pumps
 External gear pumps are not as common as the contrifugal pump, and various methods can be used to correlate base cost. Eq. 22.21 in Seider et al.
 Here the purchase cost is computed as a function of the volumetric flowrate (Q) in gpm Eq. 22.22 in Seider et al.
 
-.. math:: self.costing.pump\_base\_cost = \exp{(7.6964 + 0.1986\log{Q} + 0.0291(\log{Q})^{2})}
 
 .. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost * (CE_{index}/500)
 
+.. math:: self.costing.pump\_base\_cost = self.costing.pump\_base\_cost\_per\unit * self.costing.number\_of\_units
+
+. math:: self.costing.self.costing.pump\_base\_cost\_per\unit  = \exp{(7.6964 + 0.1986\log{Q} + 0.0291(\log{Q})^{2})}
+
+.. math:: Q  = self.Q / self.costing.number\_of\_units
 
 Reciprocating Plunger Pumps
 +++++++++++++++++++++++++++
 
 The cost correlation method used here is based on the brake horsepower (PB).
 
-.. math:: self.costing.pump\_base\_cost = \exp{(7.8103 + 0.26986\log{PB} + 0.06718(\log{PB})^{2})} (Eq. 22.23)
-
 .. math:: self.costing.pump\_purchase\_cost = material\_factor * self.costing.pump\_base\_cost * (CE_{index}/500)  (Eq. 22.22)
+
+.. math:: self.costing.pump\_base\_cost = self.costing.pump\_base\_cost\_per\unit * self.costing.number\_of\_units
+
+.. math:: self.costing.pump\_base\_cost\_per\unit = \exp{(7.8103 + 0.26986\log{PB} + 0.06718(\log{PB})^{2})} (Eq. 22.23)
+
+.. math:: PB = f(Q)
+
+.. math:: Q  = self.Q / self.costing.number\_of\_units
 
 Table 9. Materials of construction factors for reciprocating plunger pumps.
 
@@ -393,7 +420,11 @@ driver mover type, and material factor (Mat_factor).
 
 .. math:: self.costing.purchase\_cost = (CE_{index}/500)* F_{D} * material\_factor * self.costing.base\_cost
 
-.. math:: self.costing.base\_cost = \exp{(\alpha_{1} + \alpha_{2}*\log{mechanical_{work}})}
+.. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
+
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(\alpha_{1} + \alpha_{2}*\log{mechanical_{work}})}
+
+.. math:: mechanical_{work} = self.mechanical_{work} / self.costing.number\_of\_units
 
 where: 
 
@@ -460,7 +491,11 @@ Finally, the purchase cost of the fan is given by base cost, material factor, an
 
 .. math:: self.costing.purchase\_cost = (CE_{index}/500) * head\_factor * material\_factor * self.costing.base\_cost
 
-.. math:: self.costing.base\_cost = \exp{(\alpha_{1} - \alpha_{2}*\log{Q} + \alpha_{3}*(\log{Q})^{2})}
+.. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
+
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(\alpha_{1} - \alpha_{2}*\log{Q} + \alpha_{3}*(\log{Q})^{2})}
+
+.. math:: Q  = self.Q / self.costing.number\_of\_units
 
 
 Table 14. Head Factor, FH, for fans
@@ -500,13 +535,20 @@ The purchase cost is given by the material factor and base cost. While, the base
 
 .. math:: self.costing.purchase\_cost = material\_factor * self.costing.base\_cost
 
+.. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
+
 Centrigugal turbo blower (valid from PC = 5 to 1000 Hp):
 
-.. math:: self.costing.base\_cost = \exp{(6.8929 + 0.7900*\log{Pc})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(6.8929 + 0.7900*\log{Pc})}
 
 Rotary straight-lobe blower (valid from PC = 1 to 1000 Hp):
 
-.. math:: self.costing.base\_cost = \exp{(7.59176 + 0.79320*\log{Pc} - 0.012900*(\log{Pc})^{2})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(7.59176 + 0.79320*\log{Pc} - 0.012900*(\log{Pc})^{2})}
+
+.. math:: Pc = f(Q)
+
+.. math:: Q = self.Q / self.costing.number\_of\_units
+
 
 Fired Heater
 ^^^^^^^^^^^^
@@ -533,31 +575,33 @@ The pressure design factor is given by (where P is pressure in psig and it is va
 The base cost changes depending on the fuel type:
 fuel:
 
-.. math:: self.base\_cost = \exp{(0.32325 + 0.766*\log{heat\_duty})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(0.32325 + 0.766*\log{heat\_duty})}
 
 reformer:
 
-.. math:: self.base\_cost = 0.859*heat\_duty^{0.81}
+.. math:: self.costing.base\_cost\_per\_unit = 0.859*heat\_duty^{0.81}
 
 pyrolysis:
 
-.. math:: self.base\_cost = 0.650*heat\_duty^{0.81}
+.. math:: self.costing.base\_cost\_per\_unit = 0.650*heat\_duty^{0.81}
 
 hot_water:
 
-.. math:: self.base\_cost = \exp{(9.593- 0.3769*\log{heat\_duty} + 0.03434*(\log{heat\_duty})^{2})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(9.593- 0.3769*\log{heat\_duty} + 0.03434*(\log{heat\_duty})^{2})}
 
 salts:
 
-.. math:: self.base\_cost = 12.32*heat\_duty^{0.64}
+.. math:: self.costing.base\_cost\_per\_unit = 12.32*heat\_duty^{0.64}
 
 dowtherm_a:
 
-.. math:: self.base\_cost = 12.74*heat\_duty^{0.65}
+.. math:: self.costing.base\_cost\_per\_unit = 12.74*heat\_duty^{0.65}
 
 steam_boiler:
 
-.. math:: self.base\_cost = 0.367*heat\_duty^{0.77}
+.. math:: self.costing.base\_cost\_per\_unit = 0.367*heat\_duty^{0.77}
+
+.. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
 
 Finally, the purchase cost is given by:
 
@@ -616,27 +660,31 @@ however, the user must calculate the shell wall minimum thickness computd from t
 The base cost of the vessel is given by:
 Horizontal vessels (option1: 1000 < W < 920,000 lb):
 
-.. math:: self.base\_cost = \exp{(8.9552 - 0.2330*\log{weight} + 0.04333*(\log{weight})^{2})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(8.9552 - 0.2330*\log{weight} + 0.04333*(\log{weight})^{2})}
 
 Vertical vessels (option1: 4200 < W < 1M lb):
 
-.. math:: self.base\_cost = \exp{(8.9552 - 0.2330*\log{weight} + 0.04333*(\log{weight})^{2})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(8.9552 - 0.2330*\log{weight} + 0.04333*(\log{weight})^{2})}
 
 Vertical vessels (option2: 9,000 < W < 2.5M lb):
 
-.. math:: self.base\_cost = \exp{(7.2756 - 0.18255*\log{weight} + 0.02297*(\log{weight})^{2})}
+.. math:: self.costing.base\_cost\_per\_unit = \exp{(7.2756 - 0.18255*\log{weight} + 0.02297*(\log{weight})^{2})}
+
+.. math:: self.costing.base\_cost = self.costing.base\_cost\_per\_unit * self.costing.number\_of\_units
+
+.. math:: weight = self.weight / self.costing.number\_of\_units
 
 The vessel purchase cost is given by:
 
-.. math:: self.vessel\_purchase\_cost = (CE_{index}/500) * material\_factor * self.base\_cost + self.base\_cost\_platf\_ladders
+.. math:: self.vessel\_purchase\_cost = (CE_{index}/500) * material\_factor * self.base\_cost + (self.base\_cost\_platf\_ladders * self.costing.number\_of\_units)
 
-note that if PL = 'False', the cost of platforms and ladders is fixed to 0.
+note that if PL = 'False', the cost of platforms and ladders is not included.
 
 The final purchase cost is given by:
 
-.. math:: self.purchase\_cost = self.vessel\_purchase\_cost + self.purchase\_cost\_trays
+.. math:: self.purchase\_cost = self.vessel\_purchase\_cost + (self.purchase\_cost\_trays * self.costing.number\_of\_units)
 
-note that if plates='False', the cost of trays is fixed to 0.
+note that if plates='False', the cost of trays is not included.
 
 
 Base Cost of Platforms and ladders
@@ -689,4 +737,3 @@ The tray base cost is then calculated as:
 The purchase cost of the trays is given by:
 
 .. math:: self.purchase\_cost\_trays = (CE_{index}/500)* self.number\_trays * self.number\_tray\_factor * self.type\_tray\_factor * self.tray\_material\_factor * self.base\_cost\_trays
-
