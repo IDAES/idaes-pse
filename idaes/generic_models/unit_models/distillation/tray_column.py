@@ -397,7 +397,16 @@ see property package for documentation.}"""))
             self.propagate_stream_state(
                 source=self.feed_tray.vap_out,
                 destination=self.rectification_section[i].vap_in)
-            self.rectification_section[i].initialize()
+
+            if i == 1:
+                rect_liq_flags = self.rectification_section[i]. \
+                    initialize(hold_state_liq=True, hold_state_vap=False)
+            elif i == len(self._rectification_index):
+                rect_vap_flags = \
+                    self.rectification_section[i]. \
+                    initialize(hold_state_liq=False, hold_state_vap=True)
+            else:
+                self.rectification_section[i].initialize()
 
         # initialize the stripping section
         for i in self._stripping_index:
@@ -407,59 +416,33 @@ see property package for documentation.}"""))
             self.propagate_stream_state(
                 source=self.reboiler.vapor_reboil,
                 destination=self.stripping_section[i].vap_in)
-            self.stripping_section[i].initialize()
+            if i == self.config.feed_tray_location + 1:
+                strip_liq_flags = self.stripping_section[i]. \
+                    initialize(hold_state_liq=True, hold_state_vap=False)
+            elif i == self.config.number_of_trays:
+                strip_vap_flags = self.stripping_section[i]. \
+                    initialize(hold_state_liq=False, hold_state_vap=True)
+            else:
+                self.stripping_section[i].initialize()
 
-        # solve the rectification block
-        self.rectification_section[1].liq_in.flow_mol.fix()
-        self.rectification_section[1].liq_in.temperature.fix()
-        self.rectification_section[1].liq_in.pressure.fix()
-        self.rectification_section[1].liq_in.mole_frac_comp[0, "benzene"].fix()
-        self.rectification_section[1].liq_in.mole_frac_comp[0, "toluene"].fix()
+        # Create temp block to add rectification section and expanded arcs
+        self._temp_block = Block()
 
-        self.rectification_section[4].vap_in.flow_mol.fix()
-        self.rectification_section[4].vap_in.temperature.fix()
-        self.rectification_section[4].vap_in.pressure.fix()
-        self.rectification_section[4].vap_in.mole_frac_comp[0, "benzene"].fix()
-        self.rectification_section[4].vap_in.mole_frac_comp[0, "toluene"].fix()
-
-        self.rectification_temp_block = Block()
-
-        self.rectification_temp_block.trays = Reference(
+        self._temp_block.rectification_trays = Reference(
             {i: t for i, t in self.rectification_section.items()})
-        self.rectification_temp_block.expanded_liq_streams = Reference(
+        self._temp_block.expanded_rect_liq_streams = Reference(
             [self.rectification_liq_stream[i].expanded_block
              for i in self._rectification_stream_index])
-        self.rectification_temp_block.expanded_vap_streams = Reference(
+        self._temp_block.expanded_rect_vap_streams = Reference(
             [self.rectification_vap_stream[i].expanded_block
              for i in self._rectification_stream_index])
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self.rectification_temp_block, tee=slc.tee)
+            res = solver.solve(self._temp_block, tee=slc.tee)
         init_log.info(
-            "Column initialization status {}.".format(idaeslog.condition(res))
+            "Rectification section initialization status {}.".
+            format(idaeslog.condition(res))
         )
-
-        self.stripping_section[self.config.feed_tray_location + 1]. \
-            liq_in.flow_mol.fix()
-        self.stripping_section[self.config.feed_tray_location + 1]. \
-            liq_in.temperature.fix()
-        self.stripping_section[self.config.feed_tray_location + 1]. \
-            liq_in.pressure.fix()
-        self.stripping_section[self.config.feed_tray_location + 1]. \
-            liq_in.mole_frac_comp[0, "benzene"].fix()
-        self.stripping_section[self.config.feed_tray_location + 1]. \
-            liq_in.mole_frac_comp[0, "toluene"].fix()
-
-        self.stripping_section[self.config.number_of_trays]. \
-            vap_in.flow_mol.fix()
-        self.stripping_section[self.config.number_of_trays]. \
-            vap_in.temperature.fix()
-        self.stripping_section[self.config.number_of_trays]. \
-            vap_in.pressure.fix()
-        self.stripping_section[self.config.number_of_trays]. \
-            vap_in.mole_frac_comp[0, "benzene"].fix()
-        self.stripping_section[self.config.number_of_trays]. \
-            vap_in.mole_frac_comp[0, "toluene"].fix()
 
         self.stripping_temp_block = Block()
 
@@ -475,7 +458,8 @@ see property package for documentation.}"""))
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self.stripping_temp_block, tee=slc.tee)
         init_log.info(
-            "Column initialization status {}.".format(idaeslog.condition(res))
+            "Stripping section initialization status {}."
+            .format(idaeslog.condition(res))
         )
 
         raise Exception(res)
