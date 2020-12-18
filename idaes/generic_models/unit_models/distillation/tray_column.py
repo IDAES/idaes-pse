@@ -468,6 +468,7 @@ see property package for documentation.}"""))
             properties_in_liq. \
             release_state(flags=strip_liq_flags, outlvl=outlvl)
 
+        # Adding the feed tray to temp block solve
         self._temp_block.feed_tray = Reference(self.feed_tray)
         self._temp_block.expanded_feed_liq_stream_in = Reference(
             self.feed_liq_in.expanded_block)
@@ -485,10 +486,52 @@ see property package for documentation.}"""))
             .format(idaeslog.condition(res))
         )
 
-        raise Exception(res)
+        self.rectification_section[1]. \
+            properties_in_liq. \
+            release_state(flags=rect_liq_flags, outlvl=outlvl)
+
+        # Adding the condenser to the temp block solve
+        self._temp_block.condenser = Reference(self.condenser)
+        self._temp_block.expanded_condenser_vap_in = Reference(
+            self.condenser_vap_in.expanded_block)
+        self._temp_block.expanded_condenser_reflux_out = Reference(
+            self.condenser_reflux_out.expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block, tee=slc.tee)
+        init_log.info(
+            "Column section + Condenser initialization status {}."
+            .format(idaeslog.condition(res))
+        )
+
+        self.stripping_section[self.config.number_of_trays]. \
+            properties_in_vap. \
+            release_state(flags=strip_vap_flags, outlvl=outlvl)
+
+        # Adding the condenser to the temp block solve
+        self._temp_block.reboiler = Reference(self.reboiler)
+        self._temp_block.expanded_reboiler_liq_in = Reference(
+            self.reboiler_liq_in.expanded_block)
+        self._temp_block.expanded_reboiler_vap_out = Reference(
+            self.reboiler_vap_out.expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block, tee=slc.tee)
+        init_log.info(
+            "Column section + Condenser + Reboiler initialization status {}."
+            .format(idaeslog.condition(res))
+        )
+
+        # deactiavte the block after initialization solve
+        self._temp_block.deactivate()
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self, tee=slc.tee)
+        init_log.info(
+            "Column initialization complete. {}."
+            .format(idaeslog.condition(res))
+        )
 
         # release feed tray state once initialization is complete
         self.feed_tray.properties_in_feed.\
             release_state(flags=feed_flags, outlvl=outlvl)
-
-        raise Exception(res)
