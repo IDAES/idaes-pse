@@ -637,7 +637,8 @@ see property package for documentation.}"""))
                         "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, optarg=None,
+                   state_args_vap=None, hold_state_liq=False,
+                   hold_state_vap=False, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         # TODO:
@@ -896,14 +897,26 @@ see property package for documentation.}"""))
                             "for tray block is not zero during "
                             "initialization.")
 
-        self.properties_in_liq.release_state(flags=liq_in_flags,
-                                             outlvl=outlvl)
-        self.properties_in_vap.release_state(flags=vap_in_flags,
-                                             outlvl=outlvl)
-
         init_log.info(
             "Initialization complete, status {}.".
             format(idaeslog.condition(res)))
 
-        if self.config.is_feed_tray:
+        if not self.config.is_feed_tray:
+            if not hold_state_vap:
+                self.properties_in_vap.release_state(flags=vap_in_flags,
+                                                     outlvl=outlvl)
+            if not hold_state_liq:
+                self.properties_in_liq.release_state(flags=liq_in_flags,
+                                                     outlvl=outlvl)
+            if hold_state_liq and hold_state_vap:
+                return liq_in_flags, vap_in_flags
+            elif hold_state_vap:
+                return vap_in_flags
+            elif hold_state_liq:
+                return liq_in_flags
+        else:
+            self.properties_in_liq.release_state(flags=liq_in_flags,
+                                                 outlvl=outlvl)
+            self.properties_in_vap.release_state(flags=vap_in_flags,
+                                                 outlvl=outlvl)
             return feed_flags
