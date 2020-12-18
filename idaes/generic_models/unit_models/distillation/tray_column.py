@@ -444,21 +444,44 @@ see property package for documentation.}"""))
             format(idaeslog.condition(res))
         )
 
-        self.stripping_temp_block = Block()
-
-        self.stripping_temp_block.trays = Reference(
+        self._temp_block.stripping_trays = Reference(
             {i: t for i, t in self.stripping_section.items()})
-        self.stripping_temp_block.expanded_liq_streams = Reference(
+        self._temp_block.expanded_strip_liq_streams = Reference(
             [self.stripping_liq_stream[i].expanded_block
              for i in self._stripping_stream_index])
-        self.stripping_temp_block.expanded_vap_streams = Reference(
+        self._temp_block.expanded_strip_vap_streams = Reference(
             [self.stripping_vap_stream[i].expanded_block
              for i in self._stripping_stream_index])
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self.stripping_temp_block, tee=slc.tee)
+            res = solver.solve(self._temp_block, tee=slc.tee)
         init_log.info(
             "Stripping section initialization status {}."
+            .format(idaeslog.condition(res))
+        )
+
+        self.rectification_section[len(self._rectification_index)]. \
+            properties_in_vap. \
+            release_state(flags=rect_vap_flags, outlvl=outlvl)
+
+        self.stripping_section[self.config.feed_tray_location + 1]. \
+            properties_in_liq. \
+            release_state(flags=strip_liq_flags, outlvl=outlvl)
+
+        self._temp_block.feed_tray = Reference(self.feed_tray)
+        self._temp_block.expanded_feed_liq_stream_in = Reference(
+            self.feed_liq_in.expanded_block)
+        self._temp_block.expanded_feed_liq_stream_out = Reference(
+            self.feed_liq_out.expanded_block)
+        self._temp_block.expanded_feed_vap_stream_in = Reference(
+            self.feed_vap_in.expanded_block)
+        self._temp_block.expanded_feed_vap_stream_out = Reference(
+            self.feed_vap_out.expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block, tee=slc.tee)
+        init_log.info(
+            "Column section initialization status {}."
             .format(idaeslog.condition(res))
         )
 
