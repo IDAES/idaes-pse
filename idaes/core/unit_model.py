@@ -30,7 +30,6 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyPackageError,
                                         BalanceTypeNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.unit_costing as costing
 import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -667,6 +666,7 @@ Must be True if dynamic = True,
 
         # if costing block exists, activate and initialize
         if hasattr(blk, "costing"):
+            import idaes.core.util.unit_costing as costing
             blk.costing.activate()
             costing.initialize(blk.costing)
         # ---------------------------------------------------------------------

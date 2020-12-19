@@ -206,7 +206,8 @@ within this flowsheet if not otherwise specified,
     def get_costing(self, module=costing, year=None, integer_n_units=False):
         self.costing = pe.Block()
 
-        module.global_costing_parameters(self.costing, year=year, integer_n_units=integer_n_units)
+        module.global_costing_parameters(self.costing, year=year,
+                                         integer_n_units=integer_n_units)
 
     def _get_stream_table_contents(self, time_point=0):
         """
