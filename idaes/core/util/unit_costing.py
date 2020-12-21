@@ -34,7 +34,7 @@ def global_costing_parameters(self, year=None, integer_n_units=False):
 
     self.CE_index = Param(mutable=True, initialize=ce_index_dic[year],
                           doc='Chemical Engineering Plant Cost Index $ year')
-    
+
     if integer_n_units not in [True, False]:
         raise ValueError('integer_n_units must be True or False')
     self.integer = integer_n_units
