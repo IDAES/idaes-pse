@@ -372,13 +372,13 @@ class HelmholtzThermoExpressions(object):
         mw = self.param.mw
         # 1.) convert units to those expected by external functions
         if h is not None:
-            h = pyunits.convert(h/mw, to_units=pyunits.kJ/pyunits.kg)
+            h *= self.param.uc_J_per_mol_to_kJ_per_kg
         if u is not None:
-            u = pyunits.convert(u/mw, to_units=pyunits.kJ/pyunits.kg)
+            u *= self.param.uc_J_per_mol_to_kJ_per_kg
         if s is not None:
-            s = pyunits.convert(s/mw, to_units=pyunits.kJ/pyunits.kg/pyunits.K)
+            s *= self.param.uc_J_per_molK_to_kJ_per_kgK
         if p is not None:
-            p = pyunits.convert(p, to_units=pyunits.kPa)
+            p *= self.param.uc_Pa_to_kPa
         if T is not None:
             tau = self.param.temperature_crit/T
         # 2.) find the block with the external functions
@@ -439,41 +439,31 @@ class HelmholtzThermoExpressions(object):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_s"])
         s = blk.func_s(delta_liq, tau)*(1-x) + blk.func_s(delta_vap, tau)*x
-        s = pyunits.convert(s*self.param.mw,
-                            to_units=pyunits.J/pyunits.mol/pyunits.K)
-        return s
+        return s * self.param.uc_kJ_per_kgK_to_J_per_molK
 
     def h(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_h"])
         h = blk.func_h(delta_liq, tau)*(1-x) + blk.func_h(delta_vap, tau)*x
-        h = pyunits.convert(h*self.param.mw,
-                            to_units=pyunits.J/pyunits.mol)
-        return h
+        return h * self.param.uc_kJ_per_kg_to_J_per_mol
 
     def u(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_u"])
         u = blk.func_u(delta_liq, tau)*(1-x) + blk.func_u(delta_vap, tau)*x
-        u = pyunits.convert(u*self.param.mw,
-                            to_units=pyunits.J/pyunits.mol)
-        return u
+        return u * self.param.uc_kJ_per_kg_to_J_per_mol
 
     def g(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_g"])
         g = blk.func_g(delta_liq, tau)*(1-x) + blk.func_g(delta_vap, tau)*x
-        g = pyunits.convert(g*self.param.mw,
-                            to_units=pyunits.J/pyunits.mol)
-        return g
+        return g * self.param.uc_kJ_per_kg_to_J_per_mol
 
     def f(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         self.add_funcs(names=["func_f"])
         f = blk.func_f(delta_liq, tau)*(1-x) + blk.func_f(delta_vap, tau)*x
-        f = pyunits.convert(f*self.param.mw,
-                            to_units=pyunits.J/pyunits.mol)
-        return f
+        return f * self.param.uc_kJ_per_kg_to_J_per_mol
 
     def p(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
@@ -481,8 +471,7 @@ class HelmholtzThermoExpressions(object):
         # The following line looks a bit weird, but it is okay.  When in the
         # two-phase region the pressure for both phases is the same
         p = blk.func_p(delta_liq, tau)*(1-x) + blk.func_p(delta_vap, tau)*x
-        p = pyunits.convert(p, to_units=pyunits.Pa)
-        return p
+        return p * self.param.uc_kPa_to_Pa
 
     def v(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
@@ -651,6 +640,20 @@ change.
             doc="Smooth max parameter (pressure under)",
             units=pyunits.kPa)
 
+        # Unit conversion factors. Currently assume everything except external
+        # functions are on a molar basis with base SI units.  Most of these are
+        # used to convert quanties related to external functions.  Not using
+        # pyunits convert since these conversions are just prefixes.  Mass
+        # to moles is a simple conversions, since this is only one component
+        self.uc_J_per_mol_to_kJ_per_kg = pyunits.kJ/self.mw/1000/pyunits.J
+        self.uc_kJ_per_kg_to_J_per_mol = self.mw*pyunits.J*1000/pyunits.kJ
+        # Entropy type units are same as energy type units since K is left as is
+        self.uc_J_per_molK_to_kJ_per_kgK = self.uc_J_per_mol_to_kJ_per_kg
+        self.uc_kJ_per_kgK_to_J_per_molK = self.uc_kJ_per_kg_to_J_per_mol
+        # Pressure conversions
+        self.uc_kPa_to_Pa = 1000*pyunits.Pa/pyunits.kPa
+        self.uc_Pa_to_kPa = pyunits.kPa/pyunits.Pa/1000
+
         # TODO<jce> leaving flow to not break things, but plan to remove
         self.set_default_scaling("flow_mol", 1e-4)
         self.set_default_scaling("flow_mol_comp", 1e-4)
@@ -677,8 +680,7 @@ change.
         self.set_default_scaling("enth_mol_sat_phase", 1e-2, index="Liq")
         self.set_default_scaling("enth_mol_sat_phase", 1e-4, index="Vap")
         self.set_default_scaling("dh_vap_mol", 1e-4)
-        self.set_default_scaling(
-            "energy_internal_mol_phase", 1e-2, index="Liq")
+        self.set_default_scaling("energy_internal_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("energy_internal_mol_phase", 1e-4)
         self.set_default_scaling("enth_mol_phase", 1e-2, index="Liq")
         self.set_default_scaling("enth_mol_phase", 1e-4, index="Vap")
@@ -915,7 +917,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         self.flow_mol = Var(
             initialize=1,
-            doc="Total flow [mol/s]",
+            doc="Total flow",
             units=pyunits.mol/pyunits.s
         )
 
@@ -923,23 +925,23 @@ class HelmholtzStateBlockData(StateBlockData):
             self.pressure = Var(
                 domain=PositiveReals,
                 initialize=params.default_pressure_value,
-                doc="Pressure [Pa]",
+                doc="Pressure",
                 bounds=params.default_pressure_bounds,
                 units=pyunits.Pa)
             self.enth_mol = Var(
                 initialize=params.default_enthalpy_value,
-                doc="Total molar enthalpy (J/mol)",
+                doc="Total molar enthalpy",
                 bounds=params.default_enthalpy_bounds,
                 units=pyunits.J/pyunits.mol)
 
-            P = pyunits.convert(self.pressure, to_units=pyunits.kPa)
-            h_mass = pyunits.convert(self.enth_mol / self.mw,
-                                     to_units=pyunits.kJ/pyunits.kg)
+            # P is in kPa and h_mass is in kJ/kg for external func calls
+            P = self.pressure * params.uc_Pa_to_kPa
+            h_mass = self.enth_mol * params.uc_J_per_mol_to_kJ_per_kg
             phase_set = params.config.phase_presentation
 
             self.temperature = Expression(
                 expr=self.temperature_crit / self.func_tau(h_mass, P),
-                doc="Temperature (K)")
+                doc="Temperature")
 
             if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
                 self.vapor_frac = Expression(
@@ -963,21 +965,21 @@ class HelmholtzStateBlockData(StateBlockData):
             self.temperature = Var(
                 domain=PositiveReals,
                 initialize=params.default_temperature_value,
-                doc="Temperature [K]",
+                doc="Temperature",
                 bounds=params.default_temperature_bounds,
                 units=pyunits.K)
 
             self.pressure = Var(
                 domain=PositiveReals,
                 initialize=params.default_pressure_value,
-                doc="Pressure [Pa]",
+                doc="Pressure",
                 bounds=params.default_pressure_bounds,
                 units=pyunits.Pa)
 
             self.vapor_frac = Var(
                 initialize=0.0,
                 units=pyunits.dimensionless,
-                doc="Vapor fraction [none]"
+                doc="Vapor fraction"
                 # No bounds here, since it is often (usually) on it's bound
                 # and that's not the best for IPOPT
             )
@@ -993,14 +995,18 @@ class HelmholtzStateBlockData(StateBlockData):
 
     def _tpx_phase_eq(self):
         # Saturation pressure
-        eps_pu = self.config.parameters.smoothing_pressure_under
-        eps_po = self.config.parameters.smoothing_pressure_over
-        priv_plist = self.config.parameters.private_phase_list
-        plist = self.config.parameters.phase_list
-        rhoc = self.config.parameters.dens_mass_crit
+        params = self.config.parameters
+        eps_pu = params.smoothing_pressure_under
+        eps_po = params.smoothing_pressure_over
+        priv_plist = params.private_phase_list
+        plist = params.phase_list
+        rhoc = params.dens_mass_crit
 
-        P = pyunits.convert(self.pressure, to_units=pyunits.kPa)
-        Psat = pyunits.convert(self.pressure_sat, to_units=pyunits.kPa)
+        # Convert presssures to kPa for external functions and nicer scaling in
+        # the compimentarity-type constraints.
+        P = self.pressure * params.uc_Pa_to_kPa
+        Psat = self.pressure_sat * params.uc_Pa_to_kPa
+
         vf = self.vapor_frac
         tau = self.tau
 
@@ -1053,12 +1059,13 @@ class HelmholtzStateBlockData(StateBlockData):
         Callable method for Block construction
         """
         super().build(*args)
+        params = self.config.parameters
 
         # Check if the library is available.
-        self.available = self.config.parameters.available
+        self.available = params.available
         if not self.available:
             _log.error("Library file '{}' not found. Was it installed?".format(
-                    self.config.parameters.plib
+                    params.plib
                 )
             )
 
@@ -1068,33 +1075,33 @@ class HelmholtzStateBlockData(StateBlockData):
         # Thermo expression writer
         te = HelmholtzThermoExpressions(
             blk=self,
-            parameters=self.config.parameters
+            parameters=params
         )
 
         # Which state vars to use
-        self.state_vars = self.config.parameters.state_vars
+        self.state_vars = params.state_vars
         # The private phase list contains phases that may be present and is
         # used internally.  If using the single mixed phase option the phase
         # list would be mixed while the private phase list would be
         # ["Liq, "Vap"]
-        phlist = self.config.parameters.private_phase_list
-        pub_phlist = self.config.parameters.phase_list
-        component_list = self.config.parameters.component_list
-        phase_set = self.config.parameters.config.phase_presentation
+        phlist = params.private_phase_list
+        pub_phlist = params.phase_list
+        component_list = params.component_list
+        phase_set = params.config.phase_presentation
         self.phase_equilibrium_list = \
-            self.config.parameters.phase_equilibrium_list
+            params.phase_equilibrium_list
 
         # Expressions that link to some parameters in the param block, which
         # are commonly needed, this lets you get the parameters with scale
         # factors directly from the state block
         self.temperature_crit = Expression(
-            expr=self.config.parameters.temperature_crit)
+            expr=params.temperature_crit)
         self.pressure_crit = Expression(
-            expr=self.config.parameters.pressure_crit)
+            expr=params.pressure_crit)
         self.dens_mass_crit = Expression(
-            expr=self.config.parameters.dens_mass_crit)
+            expr=params.dens_mass_crit)
         self.mw = Expression(
-            expr=self.config.parameters.mw, doc="molecular weight [kg/mol]"
+            expr=params.mw, doc="molecular weight [kg/mol]"
         )
 
         # create the appropriate state variables
@@ -1102,10 +1109,11 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Some parameters/variables show up in several expressions, so to
         # enhance readability and compactness, give them short aliases
-        Tc = self.config.parameters.temperature_crit
-        rhoc = self.config.parameters.dens_mass_crit
+        Tc = params.temperature_crit
+        rhoc = params.dens_mass_crit
         mw = self.mw
-        P = pyunits.convert(self.pressure, to_units=pyunits.kPa)
+        # P is pressure in kPa for external function calls
+        P = self.pressure * params.uc_Pa_to_kPa
         T = self.temperature
         vf = self.vapor_frac
 
@@ -1127,7 +1135,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Saturation pressure
         self.pressure_sat = Expression(
-            expr=pyunits.convert(self.func_p_sat(tau), to_units=pyunits.Pa),
+            expr=self.func_p_sat(tau) * params.uc_kPa_to_Pa,
             doc="Saturation pressure (Pa)"
         )
 
@@ -1167,11 +1175,12 @@ class HelmholtzStateBlockData(StateBlockData):
         # Saturated Enthalpy
         def rule_enth_mol_sat_phase(b, p):
             if p == "Liq":
-                return pyunits.convert(mw * self.func_hlpt(P, self.tau_sat),
-                                       to_units=pyunits.J/pyunits.mol)
+                return (self.func_hlpt(P, self.tau_sat) *
+                    params.uc_kJ_per_kg_to_J_per_mol)
+
             elif p == "Vap":
-                return pyunits.convert(mw * self.func_hvpt(P, self.tau_sat),
-                                       to_units=pyunits.J/pyunits.mol)
+                return (self.func_hvpt(P, self.tau_sat) *
+                    params.uc_kJ_per_kg_to_J_per_mol)
 
         self.enth_mol_sat_phase = Expression(
             phlist,
@@ -1187,8 +1196,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Internal Energy
         def rule_energy_internal_mol_phase(b, p):
-            return pyunits.convert(mw * self.func_u(delta[p], tau),
-                                   to_units=pyunits.J/pyunits.mol)
+            return self.func_u(delta[p], tau) * params.uc_kJ_per_kg_to_J_per_mol
 
         self.energy_internal_mol_phase = Expression(
             phlist,
@@ -1198,8 +1206,7 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Enthalpy
         def rule_enth_mol_phase(b, p):
-            return pyunits.convert(mw * self.func_h(delta[p], tau),
-                                   to_units=pyunits.J/pyunits.mol)
+            return self.func_h(delta[p], tau) * params.uc_kJ_per_kg_to_J_per_mol
 
         self.enth_mol_phase = Expression(
             phlist,
@@ -1209,8 +1216,8 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase Entropy
         def rule_entr_mol_phase(b, p):
-            return pyunits.convert(mw * self.func_s(delta[p], tau),
-                                   to_units=pyunits.J/pyunits.mol/pyunits.K)
+            return (self.func_s(delta[p], tau) *
+                params.uc_kJ_per_kgK_to_J_per_molK)
 
         self.entr_mol_phase = Expression(
             phlist,
@@ -1220,8 +1227,8 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase constant pressure heat capacity, cp
         def rule_cp_mol_phase(b, p):
-            return pyunits.convert(mw * self.func_cp(delta[p], tau),
-                                   to_units=pyunits.J/pyunits.mol/pyunits.K)
+            return (self.func_cp(delta[p], tau) *
+                params.uc_kJ_per_kgK_to_J_per_molK)
 
         self.cp_mol_phase = Expression(
             phlist,
@@ -1231,8 +1238,8 @@ class HelmholtzStateBlockData(StateBlockData):
 
         # Phase constant pressure heat capacity, cv
         def rule_cv_mol_phase(b, p):
-            return pyunits.convert(mw * self.func_cv(delta[p], tau),
-                                   to_units=pyunits.J/pyunits.mol/pyunits.K)
+            return (self.func_cv(delta[p], tau) *
+                params.uc_kJ_per_kgK_to_J_per_molK)
 
         self.cv_mol_phase = Expression(
             phlist,

@@ -144,14 +144,14 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
         self.tc_L0 = Param(
             RangeSet(0, 5),
             initialize={
-                0: 2.443221e-3,
-                1: 1.323095e-2,
-                2: 6.770357e-3,
-                3: -3.454586e-3,
-                4: 4.096266e-4,
+                0: 2.443221e0,
+                1: 1.323095e1,
+                2: 6.770357e0,
+                3: -3.454586e0,
+                4: 4.096266e-1,
             },
             doc="0th order thermal conductivity parameters",
-            units=pyunits.K*pyunits.m/pyunits.mW)
+        )
 
         self.tc_L1 = Param(
             RangeSet(0, 5),
@@ -281,13 +281,12 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
         def rule_tc(b, p):
             L0 = self.config.parameters.tc_L0
             L1 = self.config.parameters.tc_L1
-            return pyunits.convert(
+            return (
                 (sqrt(1.0 / tau) / sum(L0[i] * tau ** i for i in L0) *
                  exp(delta[p] * sum(
                      (tau - 1)**i * sum(L1[i, j] * (delta[p] - 1)**j
                                         for j in range(0, 6))
-                     for i in range(0, 5)))),
-                to_units=pyunits.W/pyunits.K/pyunits.m)
+                     for i in range(0, 5)))))*pyunits.W/pyunits.K/pyunits.m
 
         self.therm_cond_phase = Expression(
             phlist, rule=rule_tc, doc="Thermal conductivity [W/K/m]"
@@ -304,11 +303,10 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
                 exp(delta[p] * sum((tau - 1)**i *
                                    sum(H1[i, j] * (delta[p] - 1)**j
                                        for j in range(0, 7))
-                                   for i in range(0, 6))) *
-                pyunits.Pa*pyunits.s)
+                                   for i in range(0, 6))) * pyunits.Pa*pyunits.s)
 
         self.visc_d_phase = Expression(
-            phlist, rule=rule_mu, doc="Viscosity (dynamic) [Pa*s]"
+            phlist, rule=rule_mu, doc="Viscosity (dynamic)"
         )
 
         # Phase kinimatic viscosity
@@ -316,5 +314,5 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
             return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
         self.visc_k_phase = Expression(
-            phlist, rule=rule_nu, doc="Kinematic viscosity [m^2/s]"
+            phlist, rule=rule_nu, doc="Kinematic viscosity"
         )
