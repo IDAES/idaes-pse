@@ -64,94 +64,172 @@ def _available(shared_lib):
     return os.path.isfile(shared_lib)
 
 
-# python external function object name to ASL user function name
+# Python external function object name to ASL user function name and units of
+# measure, in the function description comments delta = density/critical density
+# and tau = critical temperature/temperature
 _external_function_map = {
-    "func_p": {"fname": "p",
-               "units": pyunits.kPa,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_u": {"fname": "u",
-               "units": pyunits.kJ/pyunits.kg,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_s": {"fname": "s",
-               "units": pyunits.kJ/pyunits.kg/pyunits.K,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_h": {"fname": "h",
-               "units": pyunits.kJ/pyunits.kg,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_hvpt": {"fname": "hvpt",
-                  "units": pyunits.kJ/pyunits.kg,
-                  "arg_units": [pyunits.kPa, pyunits.dimensionless]},
-    "func_hlpt": {"fname": "hlpt",
-                  "units": pyunits.kJ/pyunits.kg,
-                  "arg_units": [pyunits.kPa, pyunits.dimensionless]},
-    "func_svpt": {"fname": "svpt", "units": None, "arg_units": [None, None]},
-    "func_slpt": {"fname": "slpt", "units": None, "arg_units": [None, None]},
-    "func_uvpt": {"fname": "uvpt", "units": None, "arg_units": [None, None]},
-    "func_ulpt": {"fname": "ulpt", "units": None, "arg_units": [None, None]},
-    "func_tau": {"fname": "tau",
-                 "units": pyunits.dimensionless,
-                 "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
-    "memo_test_tau": {"fname": "memo_test_tau", "units": None, "arg_units": [None, None]},
-    "func_tau_sp": {"fname": "tau_sp",
-                    "units": pyunits.dimensionless,
-                    "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K,
-                                  pyunits.kPa]},
-    "func_tau_up": {"fname": "tau_up",
-                    "units": pyunits.dimensionless,
-                    "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
-    "func_p_stau": {"fname": "p_stau",
-                    "units": pyunits.kPa,
-                    "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K,
-                                  pyunits.dimensionless]},
-    "func_vf": {"fname": "vf",
-                "units": pyunits.dimensionless,
-                "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
-    "func_vfs": {"fname": "vfs",
-                 "units": pyunits.dimensionless,
-                 "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K, pyunits.kPa]},
-    "func_vfu": {"fname": "vfu",
-                 "units": pyunits.dimensionless,
-                 "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
-    "func_g": {"fname": "g",
-               "units": pyunits.kJ/pyunits.kg,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_f": {"fname": "f",
-               "units": pyunits.kJ/pyunits.kg,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_cv": {"fname": "cv",
-                "units": pyunits.kJ/pyunits.kg/pyunits.K,
-                "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_cp": {"fname": "cp",
-                "units": pyunits.kJ/pyunits.kg/pyunits.K,
-                "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_w": {"fname": "w",
-               "units": pyunits.m/pyunits.s,
-               "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
-    "func_delta_liq": {"fname": "delta_liq",
-                       "units": pyunits.dimensionless,
-                       "arg_units": [pyunits.kPa, None]},
-    "func_delta_vap": {"fname": "delta_vap",
-                       "units": pyunits.dimensionless,
-                       "arg_units": [pyunits.kPa, None]},
-    "func_delta_sat_l": {"fname": "delta_sat_l", "units": None, "arg_units": [None, None]},
-    "func_delta_sat_v": {"fname": "delta_sat_v", "units": None, "arg_units": [None, None]},
-    "func_p_sat": {"fname": "p_sat",
-                   "units": pyunits.kPa,
-                   "arg_units": [pyunits.dimensionless]},
-    "func_tau_sat": {"fname": "tau_sat",
-                     "units": pyunits.dimensionless,
-                     "arg_units": [pyunits.kPa]},
-    "func_phi0": {"fname": "phi0", "units": None, "arg_units": [None, None]},
-    "func_phi0_delta": {"fname": "phi0_delta", "units": None, "arg_units": [None, None]},
-    "func_phi0_delta2": {"fname": "phi0_delta2", "units": None, "arg_units": [None, None]},
-    "func_phi0_tau": {"fname": "phi0_tau", "units": None, "arg_units": [None, None]},
-    "func_phi0_tau2": {"fname": "phi0_tau2", "units": None, "arg_units": [None, None]},
-    "func_phir": {"fname": "phir", "units": None, "arg_units": [None, None]},
-    "func_phir_delta": {"fname": "phir_delta", "units": None, "arg_units": [None, None]},
-    "func_phir_delta2": {"fname": "phir_delta2", "units": None, "arg_units": [None, None]},
-    "func_phir_tau": {"fname": "phir_tau", "units": None, "arg_units": [None, None]},
-    "func_phir_tau2": {"fname": "phir_tau2", "units": None, "arg_units": [None, None]},
-    "func_phir_delta_tau": {"fname": "phir_delta_tau", "units": None, "arg_units": [None, None]},
+    "func_p": { # pressure as a function of delta and tau
+        "fname": "p",
+        "units": pyunits.kPa,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_u": { # internal energy as a function fo delta and tau
+        "fname": "u",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_s": { # entropy as a function of delta and tau
+        "fname": "s",
+        "units": pyunits.kJ/pyunits.kg/pyunits.K,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_h": { # enthalpy as a function of delta and tau
+        "fname": "h",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_hvpt": { # vapor enthalpy as a function of pressure and tau
+        "fname": "hvpt",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_hlpt": { # liquid enthalpy as a function of pressure and tau
+        "fname": "hlpt",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_svpt": { # vapor entropy as a function of pressure and tau
+        "fname": "svpt",
+        "units": pyunits.kJ/pyunits.kg/pyunits.K,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_slpt": { # liquid entropy as a function of pressure and tau
+        "fname": "slpt",
+        "units": pyunits.kJ/pyunits.kg/pyunits.K,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_uvpt": { # vapor internal energy as a function of  pressure and tau
+        "fname": "uvpt",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_ulpt": { # liquid internal energy as a function of  pressure and tau
+        "fname": "ulpt",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_tau": { # tau as a function of enthalpy and pressure
+        "fname": "tau",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
+    "memo_test_tau": { # for memoization testing only, see func_tau
+        "fname": "memo_test_tau",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
+    "func_tau_sp": { # tau as a function of entropy and pressure
+        "fname": "tau_sp",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K, pyunits.kPa]},
+    "func_tau_up": { # tau as a function of internal energy and pressure
+        "fname": "tau_up",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
+    "func_p_stau": { # pressure as a function of entropy and tau
+        "fname": "p_stau",
+        "units": pyunits.kPa,
+        "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K, pyunits.dimensionless]},
+    "func_vf": { # vapor fraction as a function of enthalpy and pressure
+        "fname": "vf",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
+    "func_vfs": {  # vapor fraction as a function of entropy and pressure
+        "fname": "vfs",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg/pyunits.K, pyunits.kPa]},
+    "func_vfu": { # vapor fraction as a function of internal energy and pressure
+        "fname": "vfu",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kJ/pyunits.kg, pyunits.kPa]},
+    "func_g": { # Gibbs free energy as a function of delta and tau
+        "fname": "g",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_f": { # Helmholtz free energy as a function of delta and tau
+        "fname": "f",
+        "units": pyunits.kJ/pyunits.kg,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_cv": { # Constant volume heat capacity as a function of delta and tau
+        "fname": "cv",
+        "units": pyunits.kJ/pyunits.kg/pyunits.K,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_cp": { # Constant pressure heat capacity as a function of delta and tau
+        "fname": "cp",
+        "units": pyunits.kJ/pyunits.kg/pyunits.K,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_w": { # Speed of sound as a function of delta and tau
+        "fname": "w",
+        "units": pyunits.m/pyunits.s,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_delta_liq": { # Liquid delta as a function of pressure and tau
+        "fname": "delta_liq",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_delta_vap": { # vapor delta as a function of pressure and tau
+        "fname": "delta_vap",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kPa, pyunits.dimensionless]},
+    "func_delta_sat_l": { # saturated liquid delta as a function of tau
+        "fname": "delta_sat_l",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless]},
+    "func_delta_sat_v": { # saturated vapor delta as a function of tau
+        "fname": "delta_sat_v",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless]},
+    "func_p_sat": { # saturation pressure as a function of tau
+        "fname": "p_sat",
+        "units": pyunits.kPa,
+        "arg_units": [pyunits.dimensionless]},
+    "func_tau_sat": { # saturation tau as a function of pressure
+        "fname": "tau_sat",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.kPa]},
+    # phi functions, phi is dimensionless Helmholtz free energy ((fM)/(RT)).
+    # underscores after phi represent partial derivatives
+    "func_phi0": { # ideal part of phi as a function of delta and tau
+        "fname": "phi0",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_phi0_delta": { # phi0_delta(delta)
+        "fname": "phi0_delta",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless]},
+    "func_phi0_delta2": { # phi0_delta_delta(delta)
+        "fname": "phi0_delta2",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless]},
+    "func_phi0_tau": { # phi0_tau(tau)
+        "fname": "phi0_tau",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless]},
+    "func_phi0_tau2": { # phi0_tau_tau(tau)
+        "fname": "phi0_tau2",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless]},
+    "func_phir": { # residual part of phi as a fuction of delta and tau
+        "fname": "phir",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_phir_delta": { # phir_delta(delta, tau)
+        "fname": "phir_delta",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_phir_delta2": { # phir_delta_delta(delta, tau)
+        "fname": "phir_delta2",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_phir_tau": { # phir_tau(delta, tau)
+        "fname": "phir_tau",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_phir_tau2": { # phir_tau_tau(delta, tau)
+        "fname": "phir_tau2",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
+    "func_phir_delta_tau": { # phir_delta_tau(delta, tau)
+        "fname": "phir_delta_tau",
+        "units": pyunits.dimensionless,
+        "arg_units": [pyunits.dimensionless, pyunits.dimensionless]},
 }
 
 
