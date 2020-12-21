@@ -58,8 +58,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 def _available(shared_lib):
-    """Make sure the compiled library functions are available. Yes, in Windows
-    the .so extension is still used.
+    """Make sure the compiled library functions are available.
     """
     return os.path.isfile(shared_lib)
 
@@ -273,66 +272,65 @@ class PhaseType(enum.Enum):
     G = 4  # Assume only vapor is pressent
 
 
-def _htpx(T, prop=None, P=None, x=None,
-          Tmin=200, Tmax=1200, Pmin=1e-3, Pmax=1e6):
+def _htpx(
+    T=None, prop=None, P=None, x=None,
+    Tmin=200*pyunits.K, Tmax=1200*pyunits.K,
+    Pmin=1e-3*pyunits.kPa, Pmax=1e6*pyunits.kPa):
     """
     Convenience function to calculate enthalpy from temperature and either
     pressure or vapor fraction. This function can be used for inlet streams and
     initialization where temperature is known instead of enthalpy.
-
-    User must provide values for one (and only one) of arguments P and x.
-
+    User must provide values for one of these sets of values: {T, P}, {T, x},
+    or {P, x}.
     Args:
         T: Temperature (between Tmin and Tmax)
-        Tmin: Lower bound on allowed temperatures [K]
-        Tmax: Upper bound on allowed temperatures [K]
-        Pmin: Lower bound on allowed pressures [kPa]
-        PmaxL Upper bound on allowed pressures [kPa]
+        Tmin: Lower bound on allowed temperatures
+        Tmax: Upper bound on allowed temperatures
+        Pmin: Lower bound on allowed pressures
+        Pmax: Upper bound on allowed pressures
         prop: Property block to use for the enthalpy calcuations
         P: Pressure (between Pmin and Pmax), None if saturated
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
-
     Returns:
         Total molar enthalpy [J/mol].
     """
-    if not (P is None) ^ (x is None):
-        raise ConfigurationError("htpx must be provided with one (and only "
-                                 "one) of arguments P and x.")
+    model = ConcreteModel()
+    model.param = prop.config.parameters
+    te = HelmholtzThermoExpressions(model, parameters=model.param)
+    te.add_funcs(["func_p_sat"])
+    Tmin = pyunits.convert(Tmin, pyunits.K)
+    Tmax = pyunits.convert(Tmax, pyunits.K)
+    Pmin = pyunits.convert(Pmin, pyunits.Pa)
+    Pmax = pyunits.convert(Pmax, pyunits.Pa)
 
-    T = pyunits.convert(T, to_units=pyunits.K)
-    if not Tmin <= value(T) <= Tmax:
-        raise ConfigurationError("T = {}, ({} <= T <= {} [K])"
-                                 .format(value(T), Tmin, Tmax))
+    if not sum((P is None, T is None, x is None)) == 1:
+        raise ConfigurationError(
+            "htpx function must be provided exaclty two of the arguments T, P, x")
+    if T is not None:
+        T = pyunits.convert(T, to_units=pyunits.K)
+        if not value(Tmin) <= value(T) <= value(Tmax):
+            raise ConfigurationError("T = {}, ({} <= T <= {}) [K]".format(
+                value(T), value(Tmin), value(Tmax)))
     if P is not None:
-        P = pyunits.convert(P, to_units=pyunits.kPa)
-        if not (Pmin <= value(P) <= Pmax):
-            raise ConfigurationError("P = {}, ({} <= P <= {} [kPa])"
-                                     .format(value(P), Pmin, Pmax))
+        P = pyunits.convert(P, to_units=pyunits.Pa)
+        if not (value(Pmin) <= value(P) <= value(Pmax)):
+            raise ConfigurationError("P = {}, ({} <= P <= {}) [kPa]".format(
+                value(P), value(Pmin), value(Pmax)))
+        if T is not None:
+            # P, T may be underspecified, but assume you know it's clearly a
+            # vapor of liquid so figure out which and set x.
+            psat = value(pyunits.convert(
+                model.func_p_sat(model.param.temperature_crit/T),
+                to_units=pyunits.Pa))
+            if value(P) < psat:
+                x = 1
+            else:
+                x = 0
     if x is not None and not 0 <= x <= 1:
         raise ConfigurationError("x = {}, (0 <= x <= 1)".format(x))
 
-    model = ConcreteModel()
-    model.param = prop.config.parameters
-    model.prop = prop
-    Tc = model.param.temperature_crit
-    Pc = model.param.pressure_crit
-
-    if x is None:
-        Tsat = Tc / prop.func_tau_sat(P)
-        if value(T) < value(Tsat) or value(P) > value(Pc):  # liquid
-            return value(pyunits.convert(prop.func_hlpt(P, Tc/T) * prop.mw,
-                                         to_units=pyunits.J/pyunits.mol))
-        else:  # vapor
-            return value(pyunits.convert(prop.func_hvpt(P, Tc/T) * prop.mw,
-                                         to_units=pyunits.J/pyunits.mol))
-    if P is None:
-        Psat = prop.func_p_sat(Tc/T)  # kPa
-        return (
-            value(pyunits.convert(
-                prop.func_hlpt(Psat, Tc/T) * prop.mw * (1 - x) +
-                prop.func_hvpt(Psat, Tc/T) * prop.mw * x,
-                to_units=pyunits.J/pyunits.mol)))
+    return value(te.h(T=T, p=P, x=x))
 
 
 class HelmholtzThermoExpressions(object):

@@ -84,26 +84,24 @@ def iapws95_available():
     return _available(_so)
 
 
-def htpx(T, P=None, x=None):
+def htpx(T=None, P=None, x=None):
     """
     Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
-
-    User must provided values for one (and only one) of arguments P and x.
-
+    User must provided values for two of T, P, or x.
     Args:
-        T: Temperature [K] (between 200 and 3000)
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated steam
+        T: Temperature with units (between 200 and 3000 K)
+        P: Pressure with units (between 1 and 1e9 Pa), None if saturated vapor
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
-
     Returns:
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
     return _htpx(T=T, P=P, x=x, prop=prop,
-                 Tmin=270, Tmax=3e3, Pmin=1e-4, Pmax=1e6)
+                 Tmin=270*pyunits.K, Tmax=3e3*pyunits.K,
+                 Pmin=1e-4*pyunits.kPa, Pmax=1e6*pyunits.kPa)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
