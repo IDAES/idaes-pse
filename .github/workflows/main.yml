@@ -52,10 +52,13 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: -r requirements-dev.txt
+          install-target: '.'
       - name: Run pytest (all)
-        run: |
-          pytest --cov
+        uses: ./.github/actions/pytest
+        with:
+          # empty markexpr will cause all tests to be collected
+          markexpr: ''
+          extra-args: --cov
       - name: Upload coverage report to Codecov
         run: |
           bash <(curl -s https://codecov.io/bash)
