@@ -222,7 +222,7 @@ Units
 Lines
     The lines connecting units, also called "arcs", can be manipulated by clicking and dragging.
     If you double-click on a line, you will create a new segment that can be used for routing the line
-    around objects. You can elminate a segment by clicking on the dot that appears as you hover over
+    around objects. You can eliminate a segment by clicking on the dot that appears as you hover over
     the line.
 
 Annotations
