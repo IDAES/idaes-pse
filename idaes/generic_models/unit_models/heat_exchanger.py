@@ -29,7 +29,6 @@ from pyomo.environ import (
     Block,
     units as pyunits
 )
-
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -486,10 +485,8 @@ class HeatExchangerData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit without heat transfer equation
         # if costing block exists, deactivate
-        try:
+        if hasattr(self, "costing"):
             self.costing.deactivate()
-        except AttributeError:
-            pass
 
         self.heat_transfer_equation.deactivate()
 
@@ -539,11 +536,10 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-        # if costing block exists, activate
-        try:
+        # if costing block exists, activate and initialize
+        if hasattr(self, "costing"):
             self.costing.activate()
-        except AttributeError:
-            pass
+            costing.initialize(self.costing)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {
@@ -572,15 +568,12 @@ class HeatExchangerData(UnitModelBlockData):
             time_point=time_point,
         )
 
-    def get_costing(self, module=costing, hx_type='U-tube',
-                    Mat_factor='stainless steel/stainless steel',
-                    length_factor='12ft', year=None):
+    def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)
 
         self.costing = Block()
-        module.hx_costing(self.costing, hx_type=hx_type, Mat_factor=Mat_factor,
-                          length_factor=length_factor)
+        module.hx_costing(self.costing, **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -615,8 +608,12 @@ class HeatExchangerData(UnitModelBlockData):
         for t, c in self.unit_heat_balance.items():
             iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
 
-        for t,c in self.delta_temperature_in_equation.items():
+        for t, c in self.delta_temperature_in_equation.items():
             iscale.constraint_scaling_transform(c, sf_dT1[t])
 
-        for t,c in self.delta_temperature_out_equation.items():
+        for t, c in self.delta_temperature_out_equation.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t])
+
+        if hasattr(self, "costing"):
+            # import costing scaling factors
+            costing.calculate_scaling_factors(self.costing)
