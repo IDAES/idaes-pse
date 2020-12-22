@@ -126,7 +126,7 @@ This section describes each of the sections of the IFV interface.
 
 Invocation
 ^^^^^^^^^^
-To start the IDAES Flowsheert Visualizer (IFV), you run the `visualize()` method (see below for
+To start the IDAES Flowsheet Visualizer (IFV), you run the `visualize()` method (see below for
 full signature) for an existing
 flowsheet. This can be done from a script or a Jupyter notebook. Either way, the default action
 is to start a web server in a separate thread, and open a browser window to show the flowsheet.
@@ -216,13 +216,14 @@ The main visual components are called Units, Lines, and Annotations.
 Units
     *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
     The three types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
-    outlets. Units can be moved by clicking and dragging them. If you double-click on a unit, it
+    outlets. Units can be moved by clicking and dragging them. If you right-click on a unit, it
     will rotate 90 degrees.
 
 Lines
     The lines connecting units, also called "arcs", can be manipulated by clicking and dragging.
     If you double-click on a line, you will create a new segment that can be used for routing the line
-    around objects.
+    around objects. You can elminate a segment by clicking on the dot that appears as you hover over
+    the line.
 
 Annotations
     Both the units and the arcs have associated values that can be shown. See the
