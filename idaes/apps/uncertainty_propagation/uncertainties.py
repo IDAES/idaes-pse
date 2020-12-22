@@ -19,6 +19,7 @@ import pyomo.contrib.parmest.parmest as parmest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import shutil
+import warnings
 
 
 def quantify_propagate_unucertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
@@ -72,6 +73,8 @@ def quantify_propagate_unucertainty(model_function, model_uncertain,  data, thet
         When diagnostic_mode entry is not Boolean
     Exception
         When solver_options entry is not None and a Dictionary
+    Warnings
+        When an element of theta_names includes a space
     """
     if not isinstance(tee, bool):
         raise Exception('tee  must be boolean.')
@@ -80,6 +83,10 @@ def quantify_propagate_unucertainty(model_function, model_uncertain,  data, thet
     if not solver_options==None:
         if not isinstance(solver_options, dict):
             raise Exception('solver_options must be dictionary.')
+
+    for _ in theta_names:
+        if " " in _:
+            warnings.warn('The current version does not support any space in theta_names.')
 
     parmest_class = parmest.Estimator(model_function, data, theta_names, obj_function,
                  tee, diagnostic_mode, solver_options)
