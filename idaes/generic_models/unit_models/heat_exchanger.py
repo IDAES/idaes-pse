@@ -29,7 +29,6 @@ from pyomo.environ import (
     Block,
     units as pyunits
 )
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -537,7 +536,7 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side.release_state(flags2, outlvl=outlvl)
 
         init_log.info("Initialization Completed, {}".format(idaeslog.condition(res)))
-        # if costing block exists, activate
+        # if costing block exists, activate and initialize
         if hasattr(self, "costing"):
             self.costing.activate()
             costing.initialize(self.costing)

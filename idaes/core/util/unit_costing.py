@@ -36,7 +36,8 @@ def global_costing_parameters(self, year=None, integer_n_units=False):
                           doc='Chemical Engineering Plant Cost Index $ year')
 
     if integer_n_units not in [True, False]:
-        raise ValueError('integer_n_units must be True or False')
+        raise ValueError('{} - integer_n_units must be'
+                         ' True or False'.format(self.name))
     self.integer = integer_n_units
 
 
@@ -110,7 +111,7 @@ def hx_costing(self, hx_type='U-tube',
     _make_vars(self)
 
     self.L_factor = Param(mutable=True, initialize=1.12,
-                          doc='Hx tube length correction factor, FL')
+                          doc='HX tube length correction factor, FL')
 
     self.pressure_factor = Var(initialize=1,
                                domain=NonNegativeReals,
@@ -122,7 +123,7 @@ def hx_costing(self, hx_type='U-tube',
                                'factor - Mat_factor')
 
     self.hx_os = Param(mutable=True, initialize=1.1,
-                       doc='Hx oversize factor 1.1 to 1.5',
+                       doc='HX oversize factor 1.1 to 1.5',
                        units=pyunits.ft**-2)
 
     # select length correction factor
@@ -297,8 +298,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
     if self.parent_block().config.compressor is False:
         #                           -1*work_hp because work is negative
         def CP_rule(self):
-            return self.purchase_cost == self.number_of_units \
-                * 530*(-1/pyunits.hp * work_hp)**0.81
+            return self.purchase_cost == self.number_of_units *\
+                530*(-1/pyunits.hp * work_hp)**0.81
         self.cp_cost_eq = Constraint(rule=CP_rule)
 
     # if compressor is True
@@ -407,7 +408,10 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                     material_factor_reciprocal_pumps[Mat_factor]
                 self.FT = 1
             else:
-                raise Exception('pump type is not supported')
+                raise ValueError('{} - pump type not supported. '
+                                 'Please see documentation for '
+                                 'supported options.'.format(self.name,
+                                                             pump_type))
 
             # pump cost correlations ---------------------------------
             def base_pump_rule(self):
@@ -431,7 +435,10 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             + 0.26986*log(PB)
                             + 0.06718*log(PB)**2)
                 else:
-                    raise Exception('pump type not supported')
+                    raise ValueError('{} - pump type not supported. '
+                                     'Please see documentation for '
+                                     'supported options.'.format(self.name,
+                                                                 pump_type))
             self.base_pump_cost_per_unit_eq = Constraint(rule=base_pump_rule)
 
             @self.Expression(doc="Base cost for all units installed")
@@ -496,18 +503,13 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
         # (costing not needed)
         elif (self.parent_block().config.
               thermodynamic_assumption.name) == 'isothermal':
-            raise Exception('compressors '
-                            'blowers/fan with isthoermal assmption '
-                            'are two simple to be costed')
-
+            raise ValueError('{} - pressure changers with isothermal '
+                             'assumption are too simple to be costed. '.
+                             format(self.name, mover_type))
         # if config.compressor is = True
         # if thermodynamic_assumption is not = Pump
         # (pressure changer could be a Fan, Blower, or Compressor)
         else:
-            # w = self.parent_block().\
-            #     work_mechanical[self.parent_block().flowsheet().
-            #                     config.time.first()]
-
             # The user has to select mover_type [compressor or Fan or Blower]
             if mover_type == "compressor":
                 # Compressor Purchase Cost Correlation
@@ -569,7 +571,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         properties_in[0].flow_vol*60  # 1ft3/s*60s/min = ft3/m
                 # end volumetric flow units
                 else:
-                    raise Exception('volumetric flowrate units not supported')
+                    raise ValueError('{} - volumetric flowrate units '
+                                     'not supported. '
+                                     'Please see documentation for list of '
+                                     'supported units.'.format(self.name,
+                                                               mover_type))
 
                 # fan cost correlation
                 c_alf1 = {'centrifugal_backward': 11.0757,
@@ -652,7 +658,10 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
             else:
-                raise ValueError('mover type not supported')
+                raise ValueError('{} - mover type not supported. '
+                                 'Please see documentation for list of '
+                                 'supported mover types.'.format(self.name,
+                                                                 mover_type))
 
 
 def vessel_costing(self, alignment='horizontal',
@@ -846,11 +855,17 @@ def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
                     309.9*(D/pyunits.foot)**0.63316 *
                     (L/pyunits.foot)**0.80161)
             else:
-                raise Exception('L_D_range option not supported')
+                raise ValueError('{} - L_D_range option not supported. '
+                                 'Please see documentation for list of '
+                                 'supported options.'.format(self.name,
+                                                             L_D_range))
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     else:
-        raise Exception('alignment not supported')
+        raise ValueError('{} - vessel alignment type not supported. '
+                                 'Please see documentation for list of '
+                                 'supported options.'.format(self.name,
+                                                             alignment))
 
 
 def plates_cost(self,
@@ -987,7 +1002,10 @@ def fired_heater_costing(self,
             return self.base_cost_per_unit ==\
                 0.367*(Q/pyunits.BTU*pyunits.hr)**0.77
         else:
-            raise Exception('fired heater type not supported')
+            raise ValueError('{} - fired heater type not supported. '
+                                 'Please see documentation for list of '
+                                 'supported FH types.'.format(self.name,
+                                                              fired_type))
     self.base_cost_per_unit_eq = Constraint(rule=CB_rule)
 
     @self.Expression(doc="Base cost for all units installed")

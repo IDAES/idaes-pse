@@ -28,8 +28,8 @@ In addition, the first time `get_costing` is called for a unit operation within 
 on the flowsheet object (i.e. `flowsheet.unit.costing`) in order to hold any global parameters relating to costing. The most 
 common of these paramters is the cost normalization parameter based on the year selected by the user.
 
-An initialize method for costing components has been developed. This method is called by the unit.initialize() or it can be imported by the user to initialize costing blocks.
-If get_costing() is called before unit.initialize(), the initialize method will deactivate the costing block, initialize the unit model as normal, and then activate the costing block and initialize costing constraints.
+The unit costing module also contains an `initialize` method which can be used to estimate initial values for costing variables based on the current state of the associated unit model. This method can be called directly from the `unit_costing` module to initialize a specific costing block, or can be incorporated into a unit model initialization procedure. This method has been incorporated into the `initialize` method of all the models in the core unit model library.
+Therefore, if get_costing() is called before unit.initialize(), the initialize method will deactivate the costing block, initialize the unit model as normal, and then activate the costing block and initialize costing block.
 
 .. note:: The global paramters are created when the first instance of `get_costing` is called and use the values provided there for initialization. Subsequent `get_costing` calls use the existing paramters, and do not change the initialized values. i.e. any "year" argument provided to a `get_costing` call after the first will be ignored.
 

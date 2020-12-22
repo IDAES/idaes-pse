@@ -37,7 +37,6 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
-import idaes.core.util.unit_costing as costing
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
