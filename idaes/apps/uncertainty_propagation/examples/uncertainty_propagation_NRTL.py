@@ -13,7 +13,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath('..')) # current folder is ~/examples
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_unucertainty
+from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty
 import pandas as pd
 from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
 
@@ -28,4 +28,4 @@ def SSE(model, data):
              model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
     return expr*1E4
 
-obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)

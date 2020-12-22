@@ -13,7 +13,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath('..')) # current folder is ~/examples
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_unucertainty
+from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty
 import pandas as pd
 from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
 from pyomo.environ import *
@@ -37,4 +37,4 @@ model_uncertain.rate_constant = Var(initialize = 0.5)
 model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
 
 
-obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)
+obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)

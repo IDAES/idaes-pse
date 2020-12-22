@@ -13,7 +13,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath('..')) # current folder is ~/examples
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_unucertainty
+from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty
 import pandas as pd
 from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
 
@@ -32,4 +32,4 @@ def SSE(model, data):
     return expr
 
 
-obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
+obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)

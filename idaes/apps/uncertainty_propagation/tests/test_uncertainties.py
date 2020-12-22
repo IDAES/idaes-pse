@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from mock import patch
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_unucertainty, propagate_uncertainty, get_sensitivity
+from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty, get_sensitivity
 from pyomo.opt import SolverFactory
 from pyomo.environ import *
 import pyomo.contrib.parmest.parmest as parmest
@@ -32,7 +32,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
-    def test_quantify_propagate_unucertainty1(self):
+    def test_quantify_propagate_uncertainty1(self):
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -42,7 +42,7 @@ class TestUncertaintyPropagation:
             expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
             return expr
     
-        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
+        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
 
         np.testing.assert_almost_equal(obj, 4.331711213656886)
         np.testing.assert_almost_equal(theta[variable_name[0]], 19.142575284617866)
@@ -52,7 +52,7 @@ class TestUncertaintyPropagation:
         assert propagation_c == {}
         
         
-    def test_quantify_propagate_unucertainty2(self):
+    def test_quantify_propagate_uncertainty2(self):
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -66,7 +66,7 @@ class TestUncertaintyPropagation:
         model_uncertain.rate_constant = Var(initialize = 0.5)
         model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
 
-        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)
+        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)
 
         np.testing.assert_almost_equal(obj, 4.331711213656886)
         np.testing.assert_almost_equal(theta[variable_name[0]], 19.142575284617866)
@@ -127,7 +127,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
-    def test_quantify_propagate_unucertainty_NRTL(self):
+    def test_quantify_propagate_uncertainty_NRTL(self):
         from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
         variable_name = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
         current_path = os.path.dirname(os.path.realpath(__file__))
@@ -138,7 +138,7 @@ class TestUncertaintyPropagation:
                     (float(data["liq_benzene"]) -
                      model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
             return expr*1E4
-        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
 
         np.testing.assert_almost_equal(obj, 0.004663348837044143)
         np.testing.assert_almost_equal(theta[variable_name[0]],  0.4781086784101746)
@@ -181,7 +181,7 @@ class TestUncertaintyPropagation:
             return expr
         tee = 1
         with pytest.raises(Exception):
-            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee)
+            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee)
 
 
     @pytest.mark.unit
@@ -200,7 +200,7 @@ class TestUncertaintyPropagation:
         tee = False
         diagnostic_mode = 1
         with pytest.raises(Exception):
-            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode)
+            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode)
 
 
     @pytest.mark.unit
@@ -220,5 +220,5 @@ class TestUncertaintyPropagation:
         diagnostic_mode = False
         solver_options = [1e-8]
         with pytest.raises(Exception):
-            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_unucertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode,solver_options)
+            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode,solver_options)
 

@@ -22,7 +22,7 @@ import shutil
 import warnings
 
 
-def quantify_propagate_unucertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
+def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
                  tee=False, diagnostic_mode=False, solver_options=None):
     """This function calculates error propagation of the objective function and constraints.  
     
