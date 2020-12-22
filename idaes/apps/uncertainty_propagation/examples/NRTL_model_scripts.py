@@ -22,6 +22,18 @@ import idaes.logger as idaeslog
 from pyomo.environ import *
 
 def NRTL_model(data):
+    """This function generates an instance of the NRTL Pyomo model using 'data' as the input argument
+    
+    Parameters
+    ----------
+    data: pandas DataFrame, list of dictionaries, or list of json file names
+        Data that is used to build an instance of the Pyomo model
+    
+    Returns
+    -------
+    m: an instance of the Pyomo model
+        for estimating parameters and covariance
+    """
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = BTXParameterBlock(default={"valid_phase":
@@ -72,7 +84,20 @@ def NRTL_model(data):
 
 
 def NRTL_model_opt(theta, theta_names):
-
+    """This function generates an instance of the NRTL Pyomo model using 'theta' and 'theta_names'  as the input arguments
+    
+    Parameters
+    ----------
+    theta: dict
+        Estimated parameters 
+    theta_names: list of strings
+        List of estimated Var names
+    
+    Returns
+    -------
+    m: an instance of the Pyomo model
+        for uncertainty propagation
+    """
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
       
