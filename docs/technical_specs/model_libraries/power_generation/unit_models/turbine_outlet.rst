@@ -2,9 +2,9 @@ Turbine (Outlet Stage)
 ======================
 
 .. index::
-  pair: idaes.power_generation.unit_models.turbine_outlet;TurbineOutletStage
+  pair: idaes.power_generation.unit_models.helm.turbine_outlet;HelmTurbineOutletStage
 
-.. module:: idaes.power_generation.unit_models.turbine_outlet
+.. module:: idaes.power_generation.unit_models.helm.turbine_outlet
 
 This is a steam power generation turbine model for the outlet stage. The turbine outlet model is based on:
 
@@ -18,13 +18,13 @@ Example
 
     from pyomo.environ import ConcreteModel, SolverFactory
     from idaes.core import FlowsheetBlock
-    from idaes.power_generation.unit_models import TurbineOutletStage
+    from idaes.power_generation.unit_models import HelmTurbineOutletStage
     from idaes.generic_models.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = TurbineOutletStage(default={"property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineOutletStage(default={"property_package": m.fs.properties})
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(47115)
     m.fs.turb.inlet[:].flow_mol.fix(15000)
@@ -132,11 +132,11 @@ infeasible problem.
 TurbineOutletStage Class
 ------------------------
 
-.. autoclass:: TurbineOutletStage
+.. autoclass:: HelmTurbineOutletStage
   :members:
 
 TurbineOutletStageData Class
 ----------------------------
 
-.. autoclass:: TurbineOutletStageData
+.. autoclass:: HelmTurbineOutletStageData
   :members:
