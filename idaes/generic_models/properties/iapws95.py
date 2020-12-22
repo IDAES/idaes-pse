@@ -196,7 +196,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
         # Ordinary Water Substance "
         self.visc_H0 = Param(
             RangeSet(0, 4),
-            initialize={0: 1.67752e4, 1: 2.20462e4, 2: 0.6366564e4, 3: -0.241605e4},
+            initialize={0: 1.67752, 1: 2.20462, 2: 0.6366564, 3: -0.241605},
             doc="0th order viscosity parameters",
             units=1/pyunits.s/pyunits.Pa
         )
@@ -300,7 +300,7 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
             # The units of this are really weird, so I am just going to append
             # units to the expression rather than give units to the parameters
             return (
-                sqrt(1.0 / tau) / sum(H0[i] * tau ** i for i in H0) *
+                1e-4 * sqrt(1.0 / tau) / sum(H0[i] * tau ** i for i in H0) *
                 exp(delta[p] * sum((tau - 1)**i *
                     sum(H1[i, j] * (delta[p] - 1)**j for j in range(0, 7))
                 for i in range(0, 6))))
