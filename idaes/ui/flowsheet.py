@@ -28,7 +28,6 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.icons import UnitModelIcon
 
 _log = logger.getLogger(__name__)
@@ -382,6 +381,8 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
+        from idaes.core.util.tables import create_stream_table_dataframe # deferred to avoid circular import
+
         # Get the stream table and add it to the model json
         self._stream_table_df = create_stream_table_dataframe(self.arcs)
         
