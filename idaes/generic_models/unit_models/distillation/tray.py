@@ -642,7 +642,7 @@ see property package for documentation.}"""))
                    outlvl=idaeslog.NOTSET):
 
         # TODO:
-        # 1. Check initialization for dynamic mode. Currently not supported.
+        # 1. Initialization for dynamic mode. Currently not supported.
         # 2. Handle unfixed side split fraction vars
         # 3. Better logic to handle and fix state vars.
 
@@ -798,32 +798,39 @@ see property package for documentation.}"""))
                     for m in state_dict[k].keys():
                         if "flow" in k:
                             state_args_mixed[k][m] = \
-                                (value(self.properties_in_liq[0].
-                                 component(state_dict[k].local_name)[m]) +
-                                 value(self.properties_in_vap[0].
-                                 component(state_dict[k].local_name)[m]))
+                                round(value(self.properties_in_liq[0].
+                                      component(state_dict[k].local_name)[m])
+                                      + value(self.properties_in_vap[0].
+                                      component(state_dict[k].local_name)[m]),
+                                      3)
                         else:
                             state_args_mixed[k][m] = \
-                                0.5 * (value(self.properties_in_liq[0].
-                                       component(state_dict[k].local_name)[m]) +
-                                       value(self.properties_in_vap[0].
-                                       component(state_dict[k].local_name)[m]))
+                                0.5 * round(
+                                    value(self.properties_in_liq[0].
+                                          component(state_dict[k].
+                                                    local_name)[m]) +
+                                    value(self.properties_in_vap[0].
+                                          component(state_dict[k].
+                                                    local_name)[m]), 3)
 
                 else:
                     if "flow" in k:
                         state_args_mixed[k] = \
-                            (value(self.properties_in_liq[0].
-                             component(state_dict[k].local_name)) +
-                             value(self.properties_in_vap[0].
-                             component(state_dict[k].local_name)))
+                            round(value(self.properties_in_liq[0].
+                                  component(state_dict[k].local_name)) +
+                                  value(self.properties_in_vap[0].
+                                  component(state_dict[k].local_name)), 3)
                     else:
                         state_args_mixed[k] = \
-                            0.5 * (value(self.properties_in_liq[0].
-                                   component(state_dict[k].local_name)) +
-                                   value(self.properties_in_vap[0].
-                                   component(state_dict[k].local_name)))
+                            0.5 * round(value(self.properties_in_liq[0].
+                                        component(state_dict[k].local_name)) +
+                                        value(self.properties_in_vap[0].
+                                        component(state_dict[k].local_name)),
+                                        3)
 
         # Initialize the mixed outlet state block
+        # if not self.config.is_feed_tray:
+        #     raise Exception(state_args_mixed)
         self.properties_out. \
             initialize(outlvl=outlvl,
                        solver=solver,
