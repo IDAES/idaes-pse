@@ -28,6 +28,7 @@ from pyomo.network.port import Port
 
 # package
 from idaes import logger
+from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.icons import UnitModelIcon
 
 _log = logger.getLogger(__name__)
@@ -166,6 +167,7 @@ class FlowsheetSerializer:
         self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
         self.orphaned_ports = {}
         self.labels = {}
+        self._stream_table_df = None
         self._out_json = {"model": {}}
         self.serialized_contents = defaultdict(dict)
         self._used_ports = set()
@@ -380,6 +382,22 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
+        # Get the stream table and add it to the model json
+        self._stream_table_df = create_stream_table_dataframe(self.arcs)
+        
+        # Change the index of the pandas dataframe to not be the variables
+        self._stream_table_df = self._stream_table_df.reset_index().rename(columns={"index": "Variable"})
+        self._stream_table_df = self._stream_table_df.reset_index().rename(columns={"index": ""})
+
+        # Parse the names of the variables to get rid of flow_mol_phase_comp
+        self._stream_table_df['Variable'] = self._stream_table_df['Variable'].map(lambda x: x.replace("flow_mol_phase_comp ", "") if "flow_mol_phase_comp" in x else x)
+
+        # Puts df in this format for easier parsing in the javascript table:
+        # {'index': ["('Liq', 'benzene')", "('Liq', 'toluene')", "('Liq', 'hydrogen')", "('Liq', 'methane')", "('Vap', 'benzene')", "('Vap', 'toluene')", "('Vap', 'hydrogen')", "('Vap', 'methane')", 'temperature', 'pressure'], 
+        # 'columns': ['s03', 's04', 's05', 's06', 's08', 's09', 's10'], 
+        # 'data': [[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [298.15, 298.15, 298.15, 298.15, 298.15, 298.15, 298.15], [101325.0, 101325.0, 101325.0, 101325.0, 101325.0, 101325.0, 101325.0]]}
+        self._out_json["model"]["stream_table"] = self._stream_table_df.to_dict("split")
+
         self._out_json["model"]["id"] = self.name
         self._out_json["model"]["unit_models"] = {}
         self._out_json["model"]["arcs"] = {}

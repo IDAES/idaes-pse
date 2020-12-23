@@ -1,4 +1,5 @@
 import { Paper } from './paper.js';
+import { StreamTable } from './stream_table.js';
 import { Toolbar } from './toolbar.js';
 
 export class App {
@@ -9,6 +10,7 @@ export class App {
             .done((model) => {
                 this.renderModel(model);
                 this.toolbar = new Toolbar(this, this.paper);
+                this.stream_table = new StreamTable(this, model);
             })
             .fail((error) => { console.log(error) });
     }
