@@ -60,7 +60,7 @@ kwargs = dict(
         "pint",
         "psutil",
         "pyutilib>=6.0.0",
-        "pyomo>=5.7.2,==5.7.*",
+        "pyomo>5.7.1,<6",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
