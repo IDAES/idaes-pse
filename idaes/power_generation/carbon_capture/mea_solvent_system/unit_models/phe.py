@@ -552,45 +552,44 @@ class PHEData(UnitModelBlockData):
                             doc='Overall heat transfer coefficient')
         #----------------------------------------------------------------------
         #capacitance of hot and cold fluid
-        #since the number of channels is same for all passes,need only one
-        def rule_Caph(blk,t):
-            return blk.mh_in[t]*blk.cp_hot[t]/blk.Np[1]
-        self.Caph = Expression(self.flowsheet().config.time,
+        def rule_Caph(blk,t,p):
+            return blk.mh_in[t]*blk.cp_hot[t]/blk.Np[p]
+        self.Caph = Expression(self.flowsheet().config.time,self.PH,
                             rule=rule_Caph,
                             doc='hotfluid capacitance rate')
 
-        def rule_Capc(blk,t):
-            return blk.mc_in[t]*blk.cp_cold[t]/blk.Np[1]
-        self.Capc = Expression(self.flowsheet().config.time,
+        def rule_Capc(blk,t,p):
+            return blk.mc_in[t]*blk.cp_cold[t]/blk.Np[p]
+        self.Capc = Expression(self.flowsheet().config.time,self.PH,
                             rule=rule_Capc,
                             doc='coldfluid capacitance rate')
 
         #----------------------------------------------------------------------
         #min n max capacitance and capacitance ratio
-        def rule_Cmin(blk,t):
-            return 0.5*(blk.Caph[t] + blk.Capc[t] - \
-                      ((blk.Caph[t] - blk.Capc[t])**2 + 0.00001)**0.5)
-        self.Cmin = Expression(self.flowsheet().config.time,
+        def rule_Cmin(blk,t,p):
+            return 0.5*(blk.Caph[t,p] + blk.Capc[t,p] - \
+                      ((blk.Caph[t,p] - blk.Capc[t,p])**2 + 0.00001)**0.5)
+        self.Cmin = Expression(self.flowsheet().config.time,self.PH,
                             rule=rule_Cmin,
                             doc='minimum capacitance rate')
 
-        def rule_Cmax(blk,t):
-            return 0.5*(blk.Caph[t] + blk.Capc[t] + \
-                      ((blk.Caph[t] - blk.Capc[t])**2 + 0.00001)**0.5)
-        self.Cmax = Expression(self.flowsheet().config.time,
+        def rule_Cmax(blk,t,p):
+            return 0.5*(blk.Caph[t,p] + blk.Capc[t,p] + \
+                      ((blk.Caph[t,p] - blk.Capc[t,p])**2 + 0.00001)**0.5)
+        self.Cmax = Expression(self.flowsheet().config.time,self.PH,
                             rule=rule_Cmax,
                             doc='maximum capacitance rate')
 
-        def rule_CR(blk,t):
-            return blk.Cmin[t]/blk.Cmax[t]
-        self.CR = Expression(self.flowsheet().config.time,
+        def rule_CR(blk,t,p):
+            return blk.Cmin[t,p]/blk.Cmax[t,p]
+        self.CR = Expression(self.flowsheet().config.time,self.PH,
                             rule=rule_CR,
                             doc='capacitance ratio')
 
         #----------------------------------------------------------------------
         #Number of Transfer units for sub heat exchanger
         def rule_NTU(blk,t,p):
-            return blk.U[t,p]*blk.plate_area/blk.Cmin[t]
+            return blk.U[t,p]*blk.plate_area/blk.Cmin[t,p]
         self.NTU = Expression(self.flowsheet().config.time,self.PH,
                             rule=rule_NTU,
                             doc='Number of Transfer Units')
@@ -599,10 +598,10 @@ class PHEData(UnitModelBlockData):
         #effectiveness of sub-heat exchangers
         def rule_Ecf(blk,t,p):
             if blk.P.value%2 == 0:
-                return (1-exp(-blk.NTU[t,p]*(1-blk.CR[t])))/ \
-                   (1-blk.CR[t]*exp(-blk.NTU[t,p]*(1-blk.CR[t])))
+                return (1-exp(-blk.NTU[t,p]*(1-blk.CR[t,p])))/ \
+                   (1-blk.CR[t,p]*exp(-blk.NTU[t,p]*(1-blk.CR[t,p])))
             elif blk.P.value%2 == 1:
-                return (1-exp(-blk.NTU[t,p]*(1+blk.CR[t])))/(1+blk.CR[t])
+                return (1-exp(-blk.NTU[t,p]*(1+blk.CR[t,p])))/(1+blk.CR[t,p])
 
         self.Ecf= Expression(self.flowsheet().config.time,self.PH,
                              rule=rule_Ecf,
@@ -612,7 +611,7 @@ class PHEData(UnitModelBlockData):
         #Energy balance equations for hot fluid in sub-heat exhanger
         def rule_Ebh_eq(blk,t,p):
             return blk.Th_out[t,p]== blk.Th_in[t,p]-\
-                   blk.Ecf[t,p]*blk.Cmin[t]/blk.Caph[t]*(blk.Th_in[t,p]-blk.Tc_in[t,p])
+                   blk.Ecf[t,p]*blk.Cmin[t,p]/blk.Caph[t,p]*(blk.Th_in[t,p]-blk.Tc_in[t,p])
 
         self.Ebh_eq= Constraint(self.flowsheet().config.time,self.PH,
                                 rule=rule_Ebh_eq,
@@ -630,7 +629,7 @@ class PHEData(UnitModelBlockData):
         #Energy balance equations for cold fluid in sub-heat exhanger
         def rule_Ebc_eq(blk,t,p):
             return blk.Tc_out[t,p]==blk.Tc_in[t,p]+ \
-                   blk.Ecf[t,p]*blk.Cmin[t]/blk.Capc[t]*(blk.Th_in[t,p]-blk.Tc_in[t,p])
+                   blk.Ecf[t,p]*blk.Cmin[t,p]/blk.Capc[t,p]*(blk.Th_in[t,p]-blk.Tc_in[t,p])
 
         self.Ebc_eq= Constraint(self.flowsheet().config.time,self.PH,
                                 rule=rule_Ebc_eq,
@@ -696,7 +695,7 @@ class PHEData(UnitModelBlockData):
                    outlvl=5, solver='ipopt',  optarg={'tol': 1e-6}):
 
         '''
-        Initialisation routine for Sump unit (default solver ipopt)
+        Initialisation routine for PHE unit (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
