@@ -12,6 +12,7 @@ Contents
     phase_def
     state_definition
     phase_equilibrium
+    global_options
     developers
 
 Introduction
