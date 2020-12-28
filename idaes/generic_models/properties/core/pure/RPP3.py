@@ -60,13 +60,8 @@ class cp_mol_ig_comp():
               cobj.cp_mol_ig_comp_coeff_B*T +
               cobj.cp_mol_ig_comp_coeff_A)
 
-        base_units = b.params.get_metadata().default_units
-        cp_units = (base_units["mass"] *
-                    base_units["length"]**2 *
-                    base_units["time"]**-2 *
-                    base_units["amount"]**-1 *
-                    base_units["temperature"]**-1)
-        return pyunits.convert(cp, cp_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(cp, units["heat_capacity_mole"])
 
 
 class enth_mol_ig_comp():
@@ -76,16 +71,13 @@ class enth_mol_ig_comp():
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
-        base_units = cobj.parent_block().get_metadata().default_units
-        h_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
+        if cobj.parent_block().config.include_enthalpy_of_formation:
+            units = cobj.parent_block().get_metadata().derived_units
 
-        cobj.enth_mol_form_vap_comp_ref = Var(
-                doc="Vapor phase molar heat of formation @ Tref",
-                units=h_units)
-        set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
+            cobj.enth_mol_form_vap_comp_ref = Var(
+                    doc="Vapor phase molar heat of formation @ Tref",
+                    units=units["energy_mole"])
+            set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
 
     @staticmethod
     def return_expression(b, cobj, T):
@@ -93,18 +85,18 @@ class enth_mol_ig_comp():
         T = pyunits.convert(T, to_units=pyunits.K)
         Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
 
-        base_units = b.params.get_metadata().default_units
-        h_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1)
+        units = b.params.get_metadata().derived_units
+
+        h_form = (cobj.enth_mol_form_vap_comp_ref if
+                  b.params.config.include_enthalpy_of_formation
+                  else 0*units["energy_mole"])
 
         h = (pyunits.convert(
                 (cobj.cp_mol_ig_comp_coeff_D/4)*(T**4-Tr**4) +
                 (cobj.cp_mol_ig_comp_coeff_C/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_ig_comp_coeff_B/2)*(T**2-Tr**2) +
-                cobj.cp_mol_ig_comp_coeff_A*(T-Tr), h_units) +
-             cobj.enth_mol_form_vap_comp_ref)
+                cobj.cp_mol_ig_comp_coeff_A*(T-Tr), units["energy_mole"]) +
+             h_form)
 
         return h
 
@@ -116,16 +108,11 @@ class entr_mol_ig_comp():
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
-        base_units = cobj.parent_block().get_metadata().default_units
-        s_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1 *
-                   base_units["temperature"]**-1)
+        units = cobj.parent_block().get_metadata().derived_units
 
         cobj.entr_mol_form_vap_comp_ref = Var(
                 doc="Vapor phase molar entropy of formation @ Tref",
-                units=s_units)
+                units=units["entropy_mole"])
         set_param_from_config(cobj, param="entr_mol_form_vap_comp_ref")
 
     @staticmethod
@@ -134,18 +121,13 @@ class entr_mol_ig_comp():
         T = pyunits.convert(T, to_units=pyunits.K)
         Tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.K)
 
-        base_units = b.params.get_metadata().default_units
-        s_units = (base_units["mass"] *
-                   base_units["length"]**2 *
-                   base_units["time"]**-2 *
-                   base_units["amount"]**-1 *
-                   base_units["temperature"]**-1)
+        units = b.params.get_metadata().derived_units
 
         s = (pyunits.convert(
                 (cobj.cp_mol_ig_comp_coeff_D/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_ig_comp_coeff_C/2)*(T**2-Tr**2) +
                 cobj.cp_mol_ig_comp_coeff_B*(T-Tr) +
-                cobj.cp_mol_ig_comp_coeff_A*log(T/Tr), s_units) +
+                cobj.cp_mol_ig_comp_coeff_A*log(T/Tr), units["entropy_mole"]) +
              cobj.entr_mol_form_vap_comp_ref)
 
         return s
@@ -183,11 +165,8 @@ class pressure_sat_comp():
                     (pyunits.convert(T, to_units=pyunits.K) +
                      cobj.pressure_sat_comp_coeff_C)))*pyunits.mmHg
 
-        base_units = b.params.get_metadata().default_units
-        p_units = (base_units["mass"] *
-                   base_units["length"]**-1 *
-                   base_units["time"]**-2)
-        return pyunits.convert(psat, to_units=p_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(psat, to_units=units["pressure"])
 
     @staticmethod
     def dT_expression(b, cobj, T):
@@ -196,9 +175,6 @@ class pressure_sat_comp():
                     (pyunits.convert(T, to_units=pyunits.K) +
                      cobj.pressure_sat_comp_coeff_C)**2)
 
-        base_units = b.params.get_metadata().default_units
-        dp_units = (base_units["mass"] *
-                    base_units["length"]**-1 *
-                    base_units["time"]**-2 *
-                    base_units["temperature"]**-1)
-        return pyunits.convert(p_sat_dT, to_units=dp_units)
+        units = b.params.get_metadata().derived_units
+        return pyunits.convert(p_sat_dT,
+                               to_units=units["pressure"]/units["temperature"])
