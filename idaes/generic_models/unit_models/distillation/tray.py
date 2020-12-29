@@ -726,7 +726,8 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args_liq[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_liq[k][m] = value(state_dict[k][m])
+                        state_args_liq[k][m] = \
+                            value(state_dict[k][m])
                 else:
                     state_args_liq[k] = value(state_dict[k])
 
@@ -742,7 +743,8 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args_vap[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_vap[k][m] = value(state_dict[k][m])
+                        state_args_vap[k][m] = \
+                            value(state_dict[k][m])
                 else:
                     state_args_vap[k] = value(state_dict[k])
 
@@ -798,35 +800,32 @@ see property package for documentation.}"""))
                     for m in state_dict[k].keys():
                         if "flow" in k:
                             state_args_mixed[k][m] = \
-                                round(value(self.properties_in_liq[0].
-                                      component(state_dict[k].local_name)[m])
-                                      + value(self.properties_in_vap[0].
-                                      component(state_dict[k].local_name)[m]),
-                                      3)
+                                value(self.properties_in_liq[0].
+                                      component(state_dict[k].local_name)[m]) \
+                                + value(self.properties_in_vap[0].
+                                        component(state_dict[k].local_name)[m])
+
                         else:
                             state_args_mixed[k][m] = \
-                                0.5 * round(
-                                    value(self.properties_in_liq[0].
-                                          component(state_dict[k].
-                                                    local_name)[m]) +
-                                    value(self.properties_in_vap[0].
-                                          component(state_dict[k].
-                                                    local_name)[m]), 3)
+                                0.5 * (value(self.properties_in_liq[0].
+                                             component(state_dict[k].
+                                                       local_name)[m]) +
+                                       value(self.properties_in_vap[0].
+                                       component(state_dict[k].local_name)[m]))
 
                 else:
                     if "flow" in k:
                         state_args_mixed[k] = \
-                            round(value(self.properties_in_liq[0].
-                                  component(state_dict[k].local_name)) +
-                                  value(self.properties_in_vap[0].
-                                  component(state_dict[k].local_name)), 3)
+                            value(self.properties_in_liq[0].
+                                  component(state_dict[k].local_name)) +\
+                            value(self.properties_in_vap[0].
+                                  component(state_dict[k].local_name))
                     else:
                         state_args_mixed[k] = \
-                            0.5 * round(value(self.properties_in_liq[0].
-                                        component(state_dict[k].local_name)) +
-                                        value(self.properties_in_vap[0].
-                                        component(state_dict[k].local_name)),
-                                        3)
+                            0.5 * (value(self.properties_in_liq[0].
+                                         component(state_dict[k].local_name)) +
+                                   value(self.properties_in_vap[0].
+                                         component(state_dict[k].local_name)))
 
         # Initialize the mixed outlet state block
         # if not self.config.is_feed_tray:

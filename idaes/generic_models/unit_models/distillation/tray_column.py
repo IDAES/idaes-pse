@@ -360,7 +360,8 @@ see property package for documentation.}"""))
         for v in source.vars:
             for i in destination.vars[v]:
                 if not destination.vars[v][i].fixed:
-                    destination.vars[v][i].value = value(source.vars[v][i])
+                    destination.vars[v][i].value = \
+                        round(value(source.vars[v][i]), 2)
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
@@ -397,7 +398,6 @@ see property package for documentation.}"""))
             self.propagate_stream_state(
                 source=self.feed_tray.vap_out,
                 destination=self.rectification_section[i].vap_in)
-
             if i == 1:
                 rect_liq_flags = self.rectification_section[i]. \
                     initialize(hold_state_liq=True, hold_state_vap=False)
