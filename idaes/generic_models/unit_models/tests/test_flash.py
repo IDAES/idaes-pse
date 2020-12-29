@@ -38,7 +38,6 @@ from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
@@ -327,6 +326,12 @@ class TestIAPWS(object):
         assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
         iapws.fs.unit.diameter.fix(2)
         iapws.fs.unit.length.fix(4)
+        # initialize unit with costing block
+        iapws.fs.unit.initialize()
+        # check costing initialized correct
+        assert (pytest.approx(86957.195, abs=1e-3) ==
+                value(iapws.fs.unit.costing.purchase_cost))
+
         results = solver.solve(iapws)
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -338,4 +343,3 @@ class TestIAPWS(object):
                 value(iapws.fs.unit.costing.purchase_cost))
 
         assert_units_consistent(iapws.fs.unit.costing)
-

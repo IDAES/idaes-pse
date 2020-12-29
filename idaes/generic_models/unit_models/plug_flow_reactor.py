@@ -290,9 +290,7 @@ domain,
 
         return {"vars": var_dict}
 
-    def get_costing(self, alignment='horizontal', Mat_factor='carbon_steel',
-                    weight_limit='option1', L_D_range='option1', PL=True,
-                    year=None, module=costing):
+    def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
@@ -305,8 +303,4 @@ domain,
         self.diameter_eq = Constraint(expr=self.volume
                                       == (self.length*const.pi
                                           * self.diameter**2)/4)
-        module.pfr_costing(self.costing, alignment=alignment,
-                           Mat_factor=Mat_factor,
-                           weight_limit=weight_limit,
-                           L_D_range=L_D_range,
-                           PL=PL)
+        module.pfr_costing(self.costing, **kwargs)
