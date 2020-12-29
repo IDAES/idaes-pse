@@ -59,7 +59,7 @@ def test_basic_scaling():
     iscale.calculate_scaling_factors(m)
 
     # check scaling on select variables
-    assert iscale.get_scaling_factor(m.fs.cv.volume[0]) == 1e-3
+    assert iscale.get_scaling_factor(m.fs.cv.volume[0]) == 1e-2
     assert iscale.get_scaling_factor(m.fs.cv.deltaP[0]) == 1040  # 10x the properties pressure scaling factor
     assert iscale.get_scaling_factor(m.fs.cv.properties_in[0].flow_vol) == 100
 
