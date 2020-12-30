@@ -1542,17 +1542,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Set scaling for variables in order of appearance -----------------------
         if hasattr(self, "volume"):
-            for t, v in self.volume.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.volume[t],
-                        default=1e-2, warning=True)
-                    iscale.set_scaling_factor(v, sf)
+            if iscale.get_scaling_factor(self.volume) is None:
+                sf = iscale.get_scaling_factor(
+                    self.volume, default=1e-2, warning=True)
+                iscale.set_scaling_factor(self.volume, sf)
+
+        if hasattr(self, "phase_fraction"):
+            if iscale.get_scaling_factor(self.phase_fraction) is None:
+                # phase fraction typically between 0.1 and 1
+                iscale.set_scaling_factor(self.phase_fraction, 10)
 
         if hasattr(self, "material_holdup"):
             for (t, p, j), v in self.material_holdup.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(self.volume[t])
+                    sf *= iscale.get_scaling_factor(self.phase_fraction[t, p])
                     sf *= iscale.get_scaling_factor(
                         self.properties_out[t].get_material_density_terms(p, j),
                         default=1, warning=True)
@@ -1598,26 +1602,18 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "rate_reaction_extent"):
-            for (t, r), v in self.rate_reaction_extent.items():
-                if iscale.get_scaling_factor(v) is None:
-                    # extent of reaction typically between 0.01 and 1
-                    iscale.set_scaling_factor(v, 10)
+            if iscale.get_scaling_factor(self.rate_reaction_extent) is None:
+                # extent of reaction typically between 0.01 and 1
+                iscale.set_scaling_factor(self.rate_reaction_extent, 10)
 
         if hasattr(self, "equilibrium_reaction_extent"):
-            for (t, r), v in self.equilibrium_reaction_extent.items():
-                if iscale.get_scaling_factor(v) is None:
-                    # extent of reaction typically between 0.01 and 1
-                    iscale.set_scaling_factor(v, 10)
-
-        if hasattr(self, "phase_fraction"):
-            for (t, p), v in self.phase_fraction.items():
-                if iscale.get_scaling_factor(v) is None:
-                    # phase fraction typically between 0.1 and 1
-                    iscale.set_scaling_factor(v, 10)
+            if iscale.get_scaling_factor(self.equilibrium_reaction_extent) is None:
+                # extent of reaction typically between 0.01 and 1
+                iscale.set_scaling_factor(self.equilibrium_reaction_extent, 10)
 
         if hasattr(self, "element_holdup"):
             for (t, e), v in self.element_holdup.items():
-                # minimum scaling factor for elemental_hold up components
+                # minimum scaling factor for elemental_hold up terms
                 sf_list = []
                 flow_basis = self.properties_out[t].get_material_flow_basis()
                 for p, j in phase_component_set:
@@ -1648,7 +1644,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         if hasattr(self, "elemental_mass_transfer_term"):
             for (t, e), v in self.elemental_mass_transfer_term.items():
-                # minimum scaling factor for elemental_flow components
+                # minimum scaling factor for elemental_flow terms
                 sf_list = []
                 flow_basis = self.properties_out[t].get_material_flow_basis()
                 if iscale.get_scaling_factor(v) is None:
@@ -1671,6 +1667,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, p), v in self.energy_holdup.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(self.volume[t])
+                    sf = iscale.get_scaling_factor(self.phase_fraction[t, p])
                     sf *= iscale.get_scaling_factor(
                         self.properties_out[t].get_energy_density_terms(p),
                         default=1, warning=True)
@@ -1683,36 +1680,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "heat"):
-            for t, v in self.heat.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.heat[t],
-                        default=1e-6, warning=True)
-                    iscale.set_scaling_factor(v, sf)
+            if iscale.get_scaling_factor(self.heat) is None:
+                sf = iscale.get_scaling_factor(
+                    self.heat, default=1e-6, warning=True)
+                iscale.set_scaling_factor(self.heat, sf)
 
         if hasattr(self, "work"):
-            for t, v in self.work.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.work[t],
-                        default=1e-6, warning=True)
-                    iscale.set_scaling_factor(v, sf)
+            if iscale.get_scaling_factor(self.work) is None:
+                sf = iscale.get_scaling_factor(
+                    self.work, default=1e-6, warning=True)
+                iscale.set_scaling_factor(self.work, sf)
 
         if hasattr(self, "enthalpy_transfer"):
-            for t, v in self.enthalpy_transfer.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.min_scaling_factor(
-                        [self.properties_out[t].get_enthalpy_flow_terms(p)
-                         for p in phase_list])
-                    iscale.set_scaling_factor(v, sf)
+            if iscale.get_scaling_factor(self.enthalpy_transfer) is None:
+                sf = iscale.min_scaling_factor(
+                    [self.properties_out[0].get_enthalpy_flow_terms(p)
+                     for p in phase_list])
+                iscale.set_scaling_factor(self.enthalpy_transfer, sf)
 
         if hasattr(self, "deltaP"):
-            for t, v in self.deltaP.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = 10 * iscale.get_scaling_factor(
-                        self.properties_in[t].pressure,
-                        default=1, warning=True)
-                    iscale.set_scaling_factor(v, sf)
+            if iscale.get_scaling_factor(self.deltaP) is None:
+                sf = 10 * iscale.get_scaling_factor(
+                    self.properties_in[0].pressure,
+                    default=1, warning=True)
+                iscale.set_scaling_factor(self.deltaP, sf)
 
         # Transform constraints in order of appearance -----------------------
         if hasattr(self, "material_holdup_calculation"):
@@ -1751,10 +1742,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 # constraints with different names.
                 _log.warning(f"Unknown material balance type {mb_type}")
 
-        # TODO: check element balance scaling
         if hasattr(self, "element_balances"):
             for (t, e), c in self.element_balances.items():
-                # minimum scaling factor for elemental_flow components
+                # minimum scaling factor for elemental_flow terms
                 sf_list = []
                 flow_basis = self.properties_out[t].get_material_flow_basis()
                 if iscale.get_scaling_factor(c) is None:

@@ -247,8 +247,8 @@ def test_full_auto_scaling_mbtype_element():
             "reaction_package": m.fs.rp,
             "dynamic": True})
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.add_total_element_balances(has_mass_transfer=True)
 
