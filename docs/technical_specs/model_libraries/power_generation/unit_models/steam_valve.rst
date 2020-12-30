@@ -1,16 +1,16 @@
-Steam/Water Valve
-=================
+HelmValve
+=========
 
 .. index::
-  pair: idaes.power_generation.unit_models.valve_steam;SteamValve
+  pair: idaes.power_generation.unit_models.helm.valve_steam;HelmValve
 
-.. module:: idaes.power_generation.unit_models.valve_steam
+.. module:: idaes.power_generation.unit_models.helm.valve_steam
 
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
 This model inherits the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` 
-with the adiabatic options. Beyond the base pressure changer model this provides a pressure 
+<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>`
+with the adiabatic options. Beyond the base pressure changer model this provides a pressure
 flow relation as a function of the valve opening fraction.
 
 Example
@@ -21,7 +21,7 @@ Example
   from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
   from idaes.core import FlowsheetBlock
-  from idaes.power_generation.unit_models import SteamValve
+  from idaes.power_generation.unit_models.helm import HelmValve
   from idaes.generic_models.properties import iapws95
   from idaes.ui.report import degrees_of_freedom, active_equalities
 
@@ -31,7 +31,7 @@ Example
   m = ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = iapws95.Iapws95ParameterBlock()
-  m.fs.valve = SteamValve(default={"property_package": m.fs.properties})
+  m.fs.valve = HelmValve(default={"property_package": m.fs.properties})
 
   hin = iapws95.htpx(T=880, P=2.4233e7)
   # set inlet
@@ -103,14 +103,14 @@ This just calls the initialization routine from PressureChanger, but it is wrapp
 a function to ensure the state after initialization is the same as before initialization.
 The arguments to the initialization method are the same as PressureChanger.
 
-SteamValve Class
+HelmValve Class
 ----------------
 
-.. autoclass:: SteamValve
+.. autoclass:: HelmValve
   :members:
 
-SteamValveData Class
+HelmValveData Class
 ---------------------
 
-.. autoclass:: SteamValveData
+.. autoclass:: HelmValveData
   :members:
