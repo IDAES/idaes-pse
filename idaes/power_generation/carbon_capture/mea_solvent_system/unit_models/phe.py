@@ -27,12 +27,12 @@ channels         1   2   3  Np                       1   2   3  Np
 
 P  : number of passes(same for both fluids)
 if P is even: PHE is in counter-current mode
-if P is odd : PHE  is in co-currnet mode
+if P is odd : PHE  is in co-current mode
 Np : number of channels in a pass(should be even for balanced PHE)
 Hot and cold fluids flow alternatively in the channels.
 
 Note: Total Heat transfer area of the PHE can be increased by adding more plates,
-which is equilvalent to increasing the number of channels in a pass(NC)
+which is equilvalent to increasing the number of channels in a pass(Np)
 
 Detailed model equations can be found in the paper :
 Akula, P., Eslick, J., Bhattacharyya, D. and Miller, D.C., 2019.
@@ -41,18 +41,10 @@ as Part of a Solvent-Based Post-Combustion CO2 Capture System.
 In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
 
 """
-from __future__ import division
-
-# Import Python libraries
-import os
-import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import Param, Var, RangeSet,Constraint, Expression,\
-                          PositiveIntegers,SolverFactory, \
-                          NonNegativeReals, value, Var,log,exp,\
-                          units as pyunits
-
+from pyomo.environ import Param, RangeSet, Constraint, Expression,\
+    SolverFactory, value, Var, exp, units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -74,16 +66,20 @@ __author__ = "Paul Akula"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
 class plate_param(object):
-    L=1.657
-    w=0.833
-    b=0.0038
-    kp=16.2
-    bp=0.0006
-    Dp=0.3
-    Np=[12,12,12,12]
-    Ap = L*w
-    De = 2*b
+    '''
+    Details of a smooth plate.
+    For Chevron plates, enlargement factor may be incorporated into the plate area
+    '''
+    L = 1.657               # plate length
+    w = 0.833               # plate width
+    b = 0.0038              # gap between two plates forming a channel
+    kp = 16.2               # plate thermal conductivity
+    bp = 0.0006             # plate thickness
+    Dp = 0.3                # plate port diameter
+    Ap = L * w              # plate area
+    De = 2 * b              # channel equivalent diameter
 
 
 @declare_process_block_class("PHE")
@@ -93,7 +89,7 @@ class PHEData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
 
-    #Configuration template for fluid specific  arguments
+    # Configuration template for fluid specific  arguments
     _SideCONFIG = ConfigBlock()
 
     CONFIG.declare("passes", ConfigValue(
@@ -103,7 +99,7 @@ class PHEData(UnitModelBlockData):
         doc="""Number of passes for both the hot and cold fluid"""))
 
     CONFIG.declare("channel_list", ConfigValue(
-        default=[12,12,12,12],
+        default=[12, 12, 12, 12],
         domain=list,
         description="Number of channels for each pass",
         doc="""Number of channels to be used in each pass"""))
@@ -195,10 +191,9 @@ class PHEData(UnitModelBlockData):
 
     # Create individual config blocks for hot and cold sides
     CONFIG.declare("hot_side",
-                   _SideCONFIG(doc="hot fluid config arguments"))
+                   _SideCONFIG(doc="Hot fluid config arguments"))
     CONFIG.declare("cold_side",
-                   _SideCONFIG(doc="cold fluid config arguments"))
-
+                   _SideCONFIG(doc="Cold fluid config arguments"))
 
     def build(self):
         # Call UnitModel.build to setup model
@@ -206,18 +201,18 @@ class PHEData(UnitModelBlockData):
 
         # Consistency check for number of passes and channels in each pass
         for i in self.config.channel_list:
-            if not isinstance(i,int):
+            if not isinstance(i, int):
                 raise ConfigurationError("number of channels ({}) must be"
                                          " an integer".format(i))
 
         if (self.config.passes != len(self.config.channel_list)):
             raise ConfigurationError(
-            "The number of elements in the channel list: {}  "
-            " does not match the number of passes ({}) given. "
-            "Please provide as integers, the number of channels of each pass".format(
-            self.config.channel_list,self.config.passes))
+                "The number of elements in the channel list: {}  "
+                " does not match the number of passes ({}) given. "
+                "Please provide as integers, the number of channels of each pass".format(
+                    self.config.channel_list, self.config.passes))
 
-        #======================================================================
+        # ======================================================================
         # Build hot-side  Control Volume (Lean Solvent)
         self.hot_side = ControlVolume0DBlock(default={
             "dynamic": self.config.dynamic,
@@ -237,7 +232,7 @@ class PHEData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        #======================================================================
+        # ======================================================================
         # Build cold-side  Control Volume(Rich solvent)
         self.cold_side = ControlVolume0DBlock(default={
             "dynamic": self.config.dynamic,
@@ -257,59 +252,69 @@ class PHEData(UnitModelBlockData):
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        #======================================================================
+        # ======================================================================
         # Add Ports to control volumes
-        #hot-side
-        self.add_inlet_port(name ="hot_inlet",
+        # hot-side
+        self.add_inlet_port(name="hot_inlet",
                             block=self.hot_side, doc='inlet Port')
         self.add_outlet_port(name="hot_outlet",
-                            block=self.hot_side, doc='outlet Port')
+                             block=self.hot_side, doc='outlet Port')
 
-        #cold-side
-        self.add_inlet_port(name ="cold_inlet",
+        # cold-side
+        self.add_inlet_port(name="cold_inlet",
                             block=self.cold_side, doc='inlet Port')
         self.add_outlet_port(name="cold_outlet",
-                            block=self.cold_side, doc='outlet Port')
-        #======================================================================
-        #Add performace equation method
+                             block=self.cold_side, doc='outlet Port')
+        # ======================================================================
+        # Add performace equation method
         self._make_params()
         self._make_performance_method()
 
     def _make_params(self):
-        self.P = Param(initialize=self.config.passes,#len(plate_param.Np),
-                       doc = "Total number of passes for hot or cold fluid")
+        self.P = Param(initialize=self.config.passes,
+                       units=None,
+                       doc="Total number of passes for hot or cold fluid")
         self.PH = RangeSet(self.P,
                            doc="Set of hot fluid passes")
         self.PC = RangeSet(self.P,
                            doc="Set of cold fluid passes(equal to PH)")
-        self.plate_thermal_cond = Param(initialize= plate_param.kp,
-                                    doc=" plate thermal conductivity (W/m/K)")
-        self.plate_thick  = Param(initialize=plate_param.bp,
-                                doc="plate thickness [m]")
-        self.plate_gap    = Param(initialize=plate_param.b,
-                               doc="plate gap [m]")
+        self.plate_thermal_cond = Param(initialize=plate_param.kp,
+                                        units=pyunits.W / pyunits.m / pyunits.K,
+                                        doc="Plate thermal conductivity")
+        self.plate_thick = Param(initialize=plate_param.bp,
+                                 units=pyunits.m,
+                                 doc="Plate thickness")
+        self.plate_gap = Param(initialize=plate_param.b,
+                               units=pyunits.m,
+                               doc="Plate gap")
         self.plate_length = Param(initialize=plate_param.L,
-                                  doc="plate length [m]")
-        self.plate_width  = Param(initialize=plate_param.w,
-                                doc="plate width [m]")
-        self.plate_area   = Param(initialize=plate_param.Ap,
-                                doc=" area [m2]")
-        self.channel_dia  = Param(initialize=plate_param.De,
-                                doc=" channel equivalent diameter [m]")
-        self.port_dia     = Param(initialize=plate_param.Dp,
-                                doc=" port diameter of plate [m]")
-        self.Np           = Param(self.PH,
-                         doc="Number of channels in each pass", mutable=True)
+                                  units=pyunits.m,
+                                  doc="Plate length ")
+        self.plate_width = Param(initialize=plate_param.w,
+                                 units=pyunits.m,
+                                 doc="Plate width ")
+        self.plate_area = Param(initialize=plate_param.Ap,
+                                units=pyunits.m**2,
+                                doc="Area ")
+        self.channel_dia = Param(initialize=plate_param.De,
+                                 units=pyunits.m,
+                                 doc=" Channel equivalent diameter")
+        self.port_dia = Param(initialize=plate_param.Dp,
+                              units=pyunits.m,
+                              doc=" Port diameter of plate ")
+        self.Np = Param(self.PH,
+                        units=None,
+                        doc="Number of channels in each pass", mutable=True)
         for i in self.PH:
-            self.Np[i] = self.config.channel_list[i-1]
+            self.Np[i] = self.config.channel_list[i - 1]
 
-        #heat transfer parameters
-        self.param_a = Var(initialize=0.3,bounds=(0.2,0.4),
-                          doc='Nusselt parameter')
-        self.param_b = Var(initialize=0.663,bounds=(0.3,0.7),
-                          doc='Nusselt parameter')
-        self.param_c = Var(initialize=1/3.0,bounds=(1e-5,2),
-                          doc='Nusselt parameter')
+        # heat transfer parameters
+        self.param_a = Var(initialize=0.3, bounds=(0.2, 0.4), units=None,
+                           doc='Nusselt parameter')
+        self.param_b = Var(initialize=0.663, bounds=(0.3, 0.7), units=None,
+                           doc='Nusselt parameter')
+        self.param_c = Var(initialize=1 / 3.0, bounds=(1e-5, 2), units=None,
+                           doc='Nusselt parameter')
         self.param_a.fix(0.4)
         self.param_b.fix(0.663)
         self.param_c.fix(0.333)
@@ -320,380 +325,402 @@ class PHEData(UnitModelBlockData):
         add_object_reference(self, "component_list_ref",
                              self.config.hot_side.property_package.component_list)
 
-        add_object_reference(self, "solvent_list",
-                             self.config.hot_side.property_package.component_list_solvent)
+        add_object_reference(
+            self,
+            "solvent_list",
+            self.config.hot_side.property_package.component_list_solvent)
+
         add_object_reference(self, "cp_ref",
                              self.config.hot_side.property_package.cp_param)
 
-        def rule_trh(blk,t):
-            return (blk.hot_side.properties_out[t].temperature/
+        def rule_trh(blk, t):
+            return (blk.hot_side.properties_out[t].temperature /
                     blk.hot_side.properties_in[t].temperature)
         self.trh = Expression(self.flowsheet().config.time, rule=rule_trh,
-                doc='ratio of hot outlet temperature to hot inlet temperature')
+                              doc='Ratio of hot outlet temperature to hot'
+                                  'inlet temperature')
 
-        def rule_trc(blk,t):
-            return (blk.cold_side.properties_out[t].temperature/
+        def rule_trc(blk, t):
+            return (blk.cold_side.properties_out[t].temperature /
                     blk.cold_side.properties_in[t].temperature)
         self.trc = Expression(self.flowsheet().config.time, rule=rule_trc,
-              doc='ratio of cold outlet temperature to cold inlet temperature')
+                              doc='Ratio of cold outlet temperature to cold'
+                                  ' inlet temperature')
 
-        def rule_cp_comp_hot(blk,t, j):
-            return 1e3*(
+        def rule_cp_comp_hot(blk, t, j):
+            return 1e3 * (
                 blk.cp_ref[j, 1] +
-                blk.cp_ref[j, 2]/2*blk.hot_side.properties_in[t].temperature*
-                (blk.trh[t]+1) +
-                blk.cp_ref[j, 3]/3*(blk.hot_side.properties_in[t].temperature**2)*
+                blk.cp_ref[j, 2] / 2 * blk.hot_side.properties_in[t].temperature *
+                (blk.trh[t] + 1) +
+                blk.cp_ref[j, 3] / 3 * (blk.hot_side.properties_in[t].temperature**2) *
                 (blk.trh[t]**2 + blk.trh[t] + 1) +
-                blk.cp_ref[j, 4]/4*(blk.hot_side.properties_in[t].temperature**3)*
-                (blk.trh[t]+1)*(blk.trh[t]**2 + 1) +
-                blk.cp_ref[j, 5]/5*(blk.hot_side.properties_in[t].temperature**4)*
-                (blk.trh[t]**4+blk.trh[t]**3+blk.trh[t]**2+blk.trh[t] + 1))
+                blk.cp_ref[j, 4] / 4 * (blk.hot_side.properties_in[t].temperature**3) *
+                (blk.trh[t] + 1) * (blk.trh[t]**2 + 1) +
+                blk.cp_ref[j, 5] / 5 * (blk.hot_side.properties_in[t].temperature**4) *
+                (blk.trh[t]**4 + blk.trh[t]**3 + blk.trh[t]**2 + blk.trh[t] + 1))
 
         self.cp_comp_hot = Expression(self.flowsheet().config.time,
-                self.solvent_list,
-                rule=rule_cp_comp_hot,
-                doc='component mean specific heat capacity btw inlet and outlet'
-                                ' of hot-side temperature')
+                                      self.solvent_list,
+                                      rule=rule_cp_comp_hot,
+                                      doc='Component mean specific heat capacity'
+                                      ' btw inlet and outlet'
+                                      ' of hot-side temperature')
 
-        def rule_cp_hot(blk,t):
-            return sum(blk.cp_comp_hot[t,j]*
-                       blk.hot_side.properties_in[t].mass_frac1[j]
+        def rule_cp_hot(blk, t):
+            return sum(blk.cp_comp_hot[t, j] *
+                       blk.hot_side.properties_in[t].mass_frac_co2_free[j]
                        for j in blk.solvent_list)
-        self.cp_hot = Expression(self.flowsheet().config.time,rule=rule_cp_hot,
-                    doc='hot-side mean specific heat capacity on free CO2 basis')
+        self.cp_hot = Expression(self.flowsheet().config.time, rule=rule_cp_hot,
+                                 doc='Hot-side mean specific heat capacity on'
+                                     'free CO2 basis')
 
-        def rule_cp_comp_cold(blk,t, j):
-            return 1e3*(
+        def rule_cp_comp_cold(blk, t, j):
+            return 1e3 * (
                 blk.cp_ref[j, 1] +
-                blk.cp_ref[j, 2]/2*blk.cold_side.properties_in[t].temperature*
-                (blk.trc[t]+1) +
-                blk.cp_ref[j, 3]/3*(blk.cold_side.properties_in[t].temperature**2)*
+                blk.cp_ref[j, 2] / 2 * blk.cold_side.properties_in[t].temperature *
+                (blk.trc[t] + 1) +
+                blk.cp_ref[j, 3] / 3 * (blk.cold_side.properties_in[t].temperature**2) *
                 (blk.trc[t]**2 + blk.trc[t] + 1) +
-                blk.cp_ref[j, 4]/4*(blk.cold_side.properties_in[t].temperature**3)*
-                (blk.trc[t]+1)*(blk.trc[t]**2 + 1) +
-                blk.cp_ref[j, 5]/5*(blk.cold_side.properties_in[t].temperature**4)*
-                (blk.trc[t]**4+blk.trc[t]**3+blk.trc[t]**2+blk.trc[t] + 1))
+                blk.cp_ref[j, 4] / 4 * (blk.cold_side.properties_in[t].temperature**3) *
+                (blk.trc[t] + 1) * (blk.trc[t]**2 + 1) +
+                blk.cp_ref[j, 5] / 5 * (blk.cold_side.properties_in[t].temperature**4) *
+                (blk.trc[t]**4 + blk.trc[t]**3 + blk.trc[t]**2 + blk.trc[t] + 1))
 
         self.cp_comp_cold = Expression(self.flowsheet().config.time,
-                          self.solvent_list,
-                          rule=rule_cp_comp_cold,
-                 doc='component mean specific heat capacity btw inlet and outlet'
-                              ' of cold-side temperature')
+                                       self.solvent_list,
+                                       rule=rule_cp_comp_cold,
+                                       doc='Component mean specific heat capacity'
+                                           'btw inlet and outlet'
+                                           ' of cold-side temperature')
 
-        def rule_cp_cold(blk,t):
-            return sum(blk.cp_comp_cold[t,j]*
-                       blk.cold_side.properties_in[t].mass_frac1[j]
+        def rule_cp_cold(blk, t):
+            return sum(blk.cp_comp_cold[t, j] *
+                       blk.cold_side.properties_in[t].mass_frac_co2_free[j]
                        for j in blk.solvent_list)
-        self.cp_cold = Expression(self.flowsheet().config.time,rule=rule_cp_cold,
-                doc='cold-side mean specific heat capacity on free CO2 basis')
-
+        self.cp_cold = Expression(self.flowsheet().config.time, rule=rule_cp_cold,
+                                  doc='Cold-side mean specific heat capacity'
+                                      'on free CO2 basis')
 
         # Model Variables
         self.Th_in = Var(self.flowsheet().config.time,
-                         self.PH, initialize=393,
-                         doc="hot Temperature IN of pass")
+                         self.PH, initialize=393, units=pyunits.K,
+                         doc="Hot Temperature IN of pass")
         self.Th_out = Var(self.flowsheet().config.time,
-                          self.PH, initialize=325,
-                          doc="hot Temperature OUT of pass")
+                          self.PH, initialize=325, units=pyunits.K,
+                          doc="Hot Temperature OUT of pass")
         self.Tc_in = Var(self.flowsheet().config.time,
-                         self.PH, initialize=320,
-                         doc="cold Temperature IN of pass")
+                         self.PH, initialize=320, units=pyunits.K,
+                         doc="Cold Temperature IN of pass")
         self.Tc_out = Var(self.flowsheet().config.time,
-                          self.PH, initialize=390,
-                          doc="cold Temperature OUT of pass")
+                          self.PH, initialize=390, units=pyunits.K,
+                          doc="Cold Temperature OUT of pass")
 
-        #======================================================================
+        # ======================================================================
         # PERFORMANCE EQUATIONS
 
-        #---------------MASS BALANCE CONSTRAINTS------------------------------
-        def rule_eq_hotside_sumx(bk,t):
+        # ---------------MASS BALANCE CONSTRAINTS------------------------------
+        def rule_eq_hotside_sumx(bk, t):
             return bk.hot_side.properties_out[t].flow_mol == \
-                   sum(bk.hot_side.properties_out[t].flow_mol_comp[j]
-                   for j in bk.component_list_ref)
-        self.eq_hotside_sumx= Constraint(self.flowsheet().config.time,
-                                         rule=rule_eq_hotside_sumx)
+                sum(bk.hot_side.properties_out[t].flow_mol_comp[j]
+                    for j in bk.component_list_ref)
+        self.eq_hotside_sumx = Constraint(self.flowsheet().config.time,
+                                          rule=rule_eq_hotside_sumx)
 
-        def rule_eq_coldside_sumx(bk,t):
+        def rule_eq_coldside_sumx(bk, t):
             return bk.cold_side.properties_out[t].flow_mol == \
-                   sum(bk.cold_side.properties_out[t].flow_mol_comp[j]
-                   for j in bk.component_list_ref)
-        self.eq_coldside_sumx= Constraint(self.flowsheet().config.time,
-                                         rule=rule_eq_coldside_sumx)
+                sum(bk.cold_side.properties_out[t].flow_mol_comp[j]
+                    for j in bk.component_list_ref)
+        self.eq_coldside_sumx = Constraint(self.flowsheet().config.time,
+                                           rule=rule_eq_coldside_sumx)
 
-        #----------------------------------------------------------------------
-        #mass flow rate in kg/s
-        def rule_mh_in(blk,t):
-            return blk.hot_side.properties_in[t].flow_mol*\
-                   blk.hot_side.properties_in[t].mw_ave
-        self.mh_in = Expression(self.flowsheet().config.time,rule=rule_mh_in,
-                                doc='hotside mass flow rate [kg/s]')
+        # ----------------------------------------------------------------------
+        # mass flow rate in kg/s
+        def rule_mh_in(blk, t):
+            return blk.hot_side.properties_in[t].flow_mol *\
+                blk.hot_side.properties_in[t].mw
+        self.mh_in = Expression(self.flowsheet().config.time, rule=rule_mh_in,
+                                doc='Hotside mass flow rate [kg/s]')
 
-        def rule_mc_in(blk,t):
-            return blk.cold_side.properties_in[t].flow_mol*\
-                   blk.cold_side.properties_in[t].mw_ave
-        self.mc_in = Expression(self.flowsheet().config.time,rule=rule_mc_in,
-                                doc='coldside mass flow rate [kg/s]')
+        def rule_mc_in(blk, t):
+            return blk.cold_side.properties_in[t].flow_mol *\
+                blk.cold_side.properties_in[t].mw
+        self.mc_in = Expression(self.flowsheet().config.time, rule=rule_mc_in,
+                                doc='Coldside mass flow rate [kg/s]')
 
-        #----------------------------------------------------------------------
-        #port mass velocity[kg/m2.s]
-        def rule_Gph(blk,t):
-            return (4*blk.mh_in[t]*7)/(22*blk.port_dia**2)
+        # ----------------------------------------------------------------------
+        # port mass velocity[kg/m2.s]
+        def rule_Gph(blk, t):
+            return (4 * blk.mh_in[t] * 7) / (22 * blk.port_dia**2)
 
-        self.Gph = Expression(self.flowsheet().config.time,rule=rule_Gph,
-                                doc='hotside port mass velocity[kg/m2.s]')
+        self.Gph = Expression(self.flowsheet().config.time, rule=rule_Gph,
+                              doc='Hotside port mass velocity[kg/m2.s]')
 
-        def rule_Gpc(blk,t):
-            return (4*blk.mc_in[t]*7)/(22*blk.port_dia**2)
+        def rule_Gpc(blk, t):
+            return (4 * blk.mc_in[t] * 7) / (22 * blk.port_dia**2)
 
-        self.Gpc = Expression(self.flowsheet().config.time,rule=rule_Gpc,
-                                doc='coldside port mass velocity[kg/m2.s]')
+        self.Gpc = Expression(self.flowsheet().config.time, rule=rule_Gpc,
+                              doc='Coldside port mass velocity[kg/m2.s]')
 
-        #----------------------------------------------------------------------
-        #Reynold & Prandtl numbers
-        def rule_Re_h(blk,t,p):
-            return blk.mh_in[t]*blk.channel_dia/(blk.Np[p]*blk.plate_width*
-                   blk.plate_gap*blk.hot_side.properties_in[t].visc_d)
-        self.Re_h = Expression(self.flowsheet().config.time,self.PH,
-                                rule=rule_Re_h,
-                                doc='hotside Reynolds number')
+        # ----------------------------------------------------------------------
+        # Reynold & Prandtl numbers
+        def rule_Re_h(blk, t, p):
+            return blk.mh_in[t] * blk.channel_dia /\
+                (blk.Np[p] * blk.plate_width *
+                 blk.plate_gap * blk.hot_side.properties_in[t].visc_d)
+        self.Re_h = Expression(self.flowsheet().config.time, self.PH,
+                               rule=rule_Re_h,
+                               doc='Hotside Reynolds number')
 
-        def rule_Re_c(blk,t,p):
-            return blk.mc_in[t]*blk.channel_dia/(blk.Np[p]*blk.plate_width*
-                   blk.plate_gap*blk.cold_side.properties_in[t].visc_d)
-        self.Re_c = Expression(self.flowsheet().config.time,self.PH,
-                                rule=rule_Re_c,
-                                doc='coldside Reynolds number')
+        def rule_Re_c(blk, t, p):
+            return blk.mc_in[t] * blk.channel_dia /\
+                (blk.Np[p] * blk.plate_width *
+                 blk.plate_gap * blk.cold_side.properties_in[t].visc_d)
+        self.Re_c = Expression(self.flowsheet().config.time, self.PH,
+                               rule=rule_Re_c,
+                               doc='Coldside Reynolds number')
 
-        def rule_Pr_h(blk,t):
-            return blk.cp_hot[t]*blk.hot_side.properties_in[t].visc_d/\
-                   blk.hot_side.properties_in[t].thermal_cond
+        def rule_Pr_h(blk, t):
+            return blk.cp_hot[t] * blk.hot_side.properties_in[t].visc_d /\
+                blk.hot_side.properties_in[t].thermal_cond
         self.Pr_h = Expression(self.flowsheet().config.time,
-                                rule=rule_Pr_h,
-                                doc='hotside Prandtl number')
+                               rule=rule_Pr_h,
+                               doc='Hotside Prandtl number')
 
-        def rule_Pr_c(blk,t):
-            return blk.cp_cold[t]*blk.cold_side.properties_in[t].visc_d/\
-                   blk.cold_side.properties_in[t].thermal_cond
+        def rule_Pr_c(blk, t):
+            return blk.cp_cold[t] * blk.cold_side.properties_in[t].visc_d /\
+                blk.cold_side.properties_in[t].thermal_cond
         self.Pr_c = Expression(self.flowsheet().config.time,
-                                rule=rule_Pr_c,
-                                doc='coldside Prandtl number')
-        #----------------------------------------------------------------------
-        #Film heat transfer coefficients
-        def rule_hotside_transfer_coef(blk,t,p):
-            return (blk.hot_side.properties_in[t].thermal_cond/blk.channel_dia*
-                    blk.param_a*blk.Re_h[t,p]**blk.param_b*blk.Pr_h[t]**blk.param_c)
+                               rule=rule_Pr_c,
+                               doc='Coldside Prandtl number')
+        # ----------------------------------------------------------------------
+        # Film heat transfer coefficients
+
+        def rule_hotside_transfer_coef(blk, t, p):
+            return (blk.hot_side.properties_in[t].thermal_cond / blk.channel_dia *
+                    blk.param_a * blk.Re_h[t, p]**blk.param_b *
+                    blk.Pr_h[t]**blk.param_c)
 
         self.h_hot = Expression(self.flowsheet().config.time,
-                                self.PH,rule=rule_hotside_transfer_coef,
-                                doc='hotside heat transfer coefficient')
+                                self.PH, rule=rule_hotside_transfer_coef,
+                                doc='Hotside heat transfer coefficient')
 
-        def rule_coldside_transfer_coef(blk,t,p):
-            return (blk.cold_side.properties_in[t].thermal_cond/blk.channel_dia*
-                    blk.param_a*blk.Re_c[t,p]**blk.param_b*blk.Pr_c[t]**blk.param_c)
+        def rule_coldside_transfer_coef(blk, t, p):
+            return (blk.cold_side.properties_in[t].thermal_cond / blk.channel_dia *
+                    blk.param_a * blk.Re_c[t, p]**blk.param_b *
+                    blk.Pr_c[t]**blk.param_c)
 
         self.h_cold = Expression(self.flowsheet().config.time,
-                                self.PH,rule=rule_coldside_transfer_coef,
-                                doc='coldside heat transfer coefficient')
+                                 self.PH, rule=rule_coldside_transfer_coef,
+                                 doc='Coldside heat transfer coefficient')
 
-        #----------------------------------------------------------------------
-        #Friction factor calculation
-        def rule_fric_h(blk,t):
-            return 18.29*blk.Re_h[t,1]**(-0.652)
+        # ----------------------------------------------------------------------
+        # Friction factor calculation
+        def rule_fric_h(blk, t):
+            return 18.29 * blk.Re_h[t, 1]**(-0.652)
         self.fric_h = Expression(self.flowsheet().config.time,
-                                rule=rule_fric_h,
-                                doc='hotside friction factor')
+                                 rule=rule_fric_h,
+                                 doc='Hotside friction factor')
 
-        def rule_fric_c(blk,t):
-            return 1.441*self.Re_c[t,1]**(-0.206)
+        def rule_fric_c(blk, t):
+            return 1.441 * self.Re_c[t, 1]**(-0.206)
         self.fric_c = Expression(self.flowsheet().config.time,
-                                rule=rule_fric_c,
-                                doc='coldside friction factor')
+                                 rule=rule_fric_c,
+                                 doc='Coldside friction factor')
 
-        #----------------------------------------------------------------------
-        #pressure drop calculation
-        def rule_hotside_dP(blk,t):
-            return (2*blk.fric_h[t]*(blk.plate_length+blk.port_dia)*
-                blk.P*blk.Gph[t]**2)/(blk.hot_side.properties_in[t].dens_mass*blk.channel_dia) +\
-                1.4*(blk.P*blk.Gph[t]**2*0.5/blk.hot_side.properties_in[t].dens_mass)\
-                + blk.hot_side.properties_in[t].dens_mass*9.81*(blk.plate_length+blk.port_dia)
+        # ----------------------------------------------------------------------
+        # pressure drop calculation
+        def rule_hotside_dP(blk, t):
+            return (2 * blk.fric_h[t] * (blk.plate_length + blk.port_dia) *
+                    blk.P * blk.Gph[t]**2) /\
+                (blk.hot_side.properties_in[t].dens_mass *
+                 blk.channel_dia) + 1.4 * blk.P * blk.Gph[t]**2 * 0.5 /\
+                blk.hot_side.properties_in[t].dens_mass + \
+                blk.hot_side.properties_in[t].dens_mass * \
+                9.81 * (blk.plate_length + blk.port_dia)
 
         self.dP_h = Expression(self.flowsheet().config.time,
-                                rule=rule_hotside_dP,
-                                doc='hotside pressure drop  [Pa]')
+                               rule=rule_hotside_dP,
+                               doc='Hotside pressure drop  [Pa]')
 
-        def rule_coldside_dP(blk,t):
-            return (2*blk.fric_c[t]*(blk.plate_length+blk.port_dia)*
-                blk.P*blk.Gpc[t]**2)/(blk.cold_side.properties_in[t].dens_mass*blk.channel_dia) +\
-                1.4*(blk.P*blk.Gpc[t]**2*0.5/blk.cold_side.properties_in[t].dens_mass)\
-                + blk.cold_side.properties_in[t].dens_mass*9.81*(blk.plate_length+blk.port_dia)
+        def rule_coldside_dP(blk, t):
+            return (2 * blk.fric_c[t] * (blk.plate_length + blk.port_dia) *
+                    blk.P * blk.Gpc[t]**2) /\
+                (blk.cold_side.properties_in[t].dens_mass * blk.channel_dia) +\
+                1.4 * (blk.P * blk.Gpc[t]**2 * 0.5 /
+                       blk.cold_side.properties_in[t].dens_mass) + \
+                blk.cold_side.properties_in[t].dens_mass * \
+                9.81 * (blk.plate_length + blk.port_dia)
 
         self.dP_c = Expression(self.flowsheet().config.time,
-                                rule=rule_coldside_dP,
-                                doc='coldside pressure drop  [Pa]')
+                               rule=rule_coldside_dP,
+                               doc='Coldside pressure drop  [Pa]')
 
-        def rule_eq_deltaP_hot(blk,t):
-            return  blk.hot_side.deltaP[t] == -blk.dP_h[t]
-        self.eq_deltaP_hot= Constraint(self.flowsheet().config.time,
-                                       rule=rule_eq_deltaP_hot)
+        def rule_eq_deltaP_hot(blk, t):
+            return blk.hot_side.deltaP[t] == -blk.dP_h[t]
+        self.eq_deltaP_hot = Constraint(self.flowsheet().config.time,
+                                        rule=rule_eq_deltaP_hot)
 
-        def rule_eq_deltaP_cold(blk,t):
-            return  blk.cold_side.deltaP[t] == -blk.dP_c[t]
-        self.eq_deltaP_cold= Constraint(self.flowsheet().config.time,
-                                       rule=rule_eq_deltaP_cold)
+        def rule_eq_deltaP_cold(blk, t):
+            return blk.cold_side.deltaP[t] == -blk.dP_c[t]
+        self.eq_deltaP_cold = Constraint(self.flowsheet().config.time,
+                                         rule=rule_eq_deltaP_cold)
 
-        #----------------------------------------------------------------------
-        #Overall heat transfer coefficients
-        def rule_U(blk,t,p):
-            return 1.0/\
-                 (1.0/blk.h_hot[t,p] + blk.plate_gap/blk.plate_thermal_cond +
-                  1.0/blk.h_cold[t,p])
-        self.U = Expression(self.flowsheet().config.time,self.PH,
+        # ----------------------------------------------------------------------
+        # Overall heat transfer coefficients
+        def rule_U(blk, t, p):
+            return 1.0 /\
+                (1.0 / blk.h_hot[t, p] + blk.plate_gap / blk.plate_thermal_cond +
+                 1.0 / blk.h_cold[t, p])
+        self.U = Expression(self.flowsheet().config.time, self.PH,
                             rule=rule_U,
                             doc='Overall heat transfer coefficient')
-        #----------------------------------------------------------------------
-        #capacitance of hot and cold fluid
-        def rule_Caph(blk,t,p):
-            return blk.mh_in[t]*blk.cp_hot[t]/blk.Np[p]
-        self.Caph = Expression(self.flowsheet().config.time,self.PH,
-                            rule=rule_Caph,
-                            doc='hotfluid capacitance rate')
+        # ----------------------------------------------------------------------
+        # capacitance of hot and cold fluid
 
-        def rule_Capc(blk,t,p):
-            return blk.mc_in[t]*blk.cp_cold[t]/blk.Np[p]
-        self.Capc = Expression(self.flowsheet().config.time,self.PH,
-                            rule=rule_Capc,
-                            doc='coldfluid capacitance rate')
+        def rule_Caph(blk, t, p):
+            return blk.mh_in[t] * blk.cp_hot[t] / blk.Np[p]
+        self.Caph = Expression(self.flowsheet().config.time, self.PH,
+                               rule=rule_Caph,
+                               doc='Hotfluid capacitance rate')
 
-        #----------------------------------------------------------------------
-        #min n max capacitance and capacitance ratio
-        def rule_Cmin(blk,t,p):
-            return 0.5*(blk.Caph[t,p] + blk.Capc[t,p] - \
-                      ((blk.Caph[t,p] - blk.Capc[t,p])**2 + 0.00001)**0.5)
-        self.Cmin = Expression(self.flowsheet().config.time,self.PH,
-                            rule=rule_Cmin,
-                            doc='minimum capacitance rate')
+        def rule_Capc(blk, t, p):
+            return blk.mc_in[t] * blk.cp_cold[t] / blk.Np[p]
+        self.Capc = Expression(self.flowsheet().config.time, self.PH,
+                               rule=rule_Capc,
+                               doc='Coldfluid capacitance rate')
 
-        def rule_Cmax(blk,t,p):
-            return 0.5*(blk.Caph[t,p] + blk.Capc[t,p] + \
-                      ((blk.Caph[t,p] - blk.Capc[t,p])**2 + 0.00001)**0.5)
-        self.Cmax = Expression(self.flowsheet().config.time,self.PH,
-                            rule=rule_Cmax,
-                            doc='maximum capacitance rate')
+        # ----------------------------------------------------------------------
+        # min n max capacitance and capacitance ratio
+        def rule_Cmin(blk, t, p):
+            return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] -
+                          ((blk.Caph[t, p] - blk.Capc[t, p])**2 + 0.00001)**0.5)
+        self.Cmin = Expression(self.flowsheet().config.time, self.PH,
+                               rule=rule_Cmin,
+                               doc='Minimum capacitance rate')
 
-        def rule_CR(blk,t,p):
-            return blk.Cmin[t,p]/blk.Cmax[t,p]
-        self.CR = Expression(self.flowsheet().config.time,self.PH,
-                            rule=rule_CR,
-                            doc='capacitance ratio')
+        def rule_Cmax(blk, t, p):
+            return 0.5 * (blk.Caph[t, p] + blk.Capc[t, p] +
+                          ((blk.Caph[t, p] - blk.Capc[t, p])**2 + 0.00001)**0.5)
+        self.Cmax = Expression(self.flowsheet().config.time, self.PH,
+                               rule=rule_Cmax,
+                               doc='Maximum capacitance rate')
 
-        #----------------------------------------------------------------------
-        #Number of Transfer units for sub heat exchanger
-        def rule_NTU(blk,t,p):
-            return blk.U[t,p]*blk.plate_area/blk.Cmin[t,p]
-        self.NTU = Expression(self.flowsheet().config.time,self.PH,
-                            rule=rule_NTU,
-                            doc='Number of Transfer Units')
+        def rule_CR(blk, t, p):
+            return blk.Cmin[t, p] / blk.Cmax[t, p]
+        self.CR = Expression(self.flowsheet().config.time, self.PH,
+                             rule=rule_CR,
+                             doc='Capacitance ratio')
 
-        #----------------------------------------------------------------------
-        #effectiveness of sub-heat exchangers
-        def rule_Ecf(blk,t,p):
-            if blk.P.value%2 == 0:
-                return (1-exp(-blk.NTU[t,p]*(1-blk.CR[t,p])))/ \
-                   (1-blk.CR[t,p]*exp(-blk.NTU[t,p]*(1-blk.CR[t,p])))
-            elif blk.P.value%2 == 1:
-                return (1-exp(-blk.NTU[t,p]*(1+blk.CR[t,p])))/(1+blk.CR[t,p])
+        # ----------------------------------------------------------------------
+        # Number of Transfer units for sub heat exchanger
+        def rule_NTU(blk, t, p):
+            return blk.U[t, p] * blk.plate_area / blk.Cmin[t, p]
+        self.NTU = Expression(self.flowsheet().config.time, self.PH,
+                              rule=rule_NTU,
+                              doc='Number of Transfer Units')
 
-        self.Ecf= Expression(self.flowsheet().config.time,self.PH,
-                             rule=rule_Ecf,
-                             doc='effectiveness for sub-HX')
+        # ----------------------------------------------------------------------
+        # effectiveness of sub-heat exchangers
+        def rule_Ecf(blk, t, p):
+            if blk.P.value % 2 == 0:
+                return (1 - exp(-blk.NTU[t, p] * (1 - blk.CR[t, p]))) / \
+                    (1 - blk.CR[t, p] *
+                     exp(-blk.NTU[t, p] * (1 - blk.CR[t, p])))
+            elif blk.P.value % 2 == 1:
+                return (1 - exp(-blk.NTU[t, p] * (1 + blk.CR[t, p]))) / (1 + blk.CR[t, p])
 
-        #----------------------------------------------------------------------
-        #Energy balance equations for hot fluid in sub-heat exhanger
-        def rule_Ebh_eq(blk,t,p):
-            return blk.Th_out[t,p]== blk.Th_in[t,p]-\
-                   blk.Ecf[t,p]*blk.Cmin[t,p]/blk.Caph[t,p]*(blk.Th_in[t,p]-blk.Tc_in[t,p])
+        self.Ecf = Expression(self.flowsheet().config.time, self.PH,
+                              rule=rule_Ecf,
+                              doc='Effectiveness for sub-HX')
 
-        self.Ebh_eq= Constraint(self.flowsheet().config.time,self.PH,
-                                rule=rule_Ebh_eq,
-                                doc='hot fluid sub-heat exchanger energy balance')
+        # ----------------------------------------------------------------------
+        # Energy balance equations for hot fluid in sub-heat exhanger
+        def rule_Ebh_eq(blk, t, p):
+            return blk.Th_out[t, p] == blk.Th_in[t, p] -\
+                blk.Ecf[t, p] * blk.Cmin[t, p] / blk.Caph[t, p] * \
+                (blk.Th_in[t, p] - blk.Tc_in[t, p])
 
-        #Hot fluid exit temperature
-        def rule_Tout_hot(blk,t):
-            return blk.Th_out[t,blk.P.value]==\
-                   blk.hot_side.properties_out[t].temperature
+        self.Ebh_eq = Constraint(self.flowsheet().config.time, self.PH,
+                                 rule=rule_Ebh_eq,
+                                 doc='Hot fluid sub-heat exchanger energy balance')
 
-        self.Tout_hot_eq= Constraint(self.flowsheet().config.time,
-                                rule=rule_Tout_hot,
-                                doc='hot fluid exit temperature')
+        # Hot fluid exit temperature
+        def rule_Tout_hot(blk, t):
+            return blk.Th_out[t, blk.P.value] ==\
+                blk.hot_side.properties_out[t].temperature
 
-        #Energy balance equations for cold fluid in sub-heat exhanger
-        def rule_Ebc_eq(blk,t,p):
-            return blk.Tc_out[t,p]==blk.Tc_in[t,p]+ \
-                   blk.Ecf[t,p]*blk.Cmin[t,p]/blk.Capc[t,p]*(blk.Th_in[t,p]-blk.Tc_in[t,p])
+        self.Tout_hot_eq = Constraint(self.flowsheet().config.time,
+                                      rule=rule_Tout_hot,
+                                      doc='Hot fluid exit temperature')
 
-        self.Ebc_eq= Constraint(self.flowsheet().config.time,self.PH,
-                                rule=rule_Ebc_eq,
-                                doc='cold fluid sub-heat exchanger energy balance')
+        # Energy balance equations for cold fluid in sub-heat exhanger
+        def rule_Ebc_eq(blk, t, p):
+            return blk.Tc_out[t, p] == blk.Tc_in[t, p] + \
+                blk.Ecf[t, p] * blk.Cmin[t, p] / blk.Capc[t, p] * \
+                (blk.Th_in[t, p] - blk.Tc_in[t, p])
 
-        #Cold fluid exit temperature
-        def rule_Tout_cold(blk,t):
-            return blk.Tc_out[t,1] ==\
-                   blk.cold_side.properties_out[t].temperature
+        self.Ebc_eq = Constraint(self.flowsheet().config.time, self.PH,
+                                 rule=rule_Ebc_eq,
+                                 doc='Cold fluid sub-heat exchanger energy balance')
 
-        self.Tout_cold_eq= Constraint(self.flowsheet().config.time,
-                                rule=rule_Tout_cold,
-                                doc='cold fluid exit temperature')
+        # Cold fluid exit temperature
+        def rule_Tout_cold(blk, t):
+            return blk.Tc_out[t, 1] ==\
+                blk.cold_side.properties_out[t].temperature
 
-        #----------------------------------------------------------------------
-        #Energy balance boundary conditions
-        def rule_hot_BCIN(blk,t):
-                return blk.Th_in[t,1] == \
-                       blk.hot_side.properties_in[t].temperature
+        self.Tout_cold_eq = Constraint(self.flowsheet().config.time,
+                                       rule=rule_Tout_cold,
+                                       doc='Cold fluid exit temperature')
 
-        self.hot_BCIN= Constraint(self.flowsheet().config.time,
-                            rule=rule_hot_BCIN,
-                            doc='hot fluid inlet boundary conditions')
+        # ----------------------------------------------------------------------
+        # Energy balance boundary conditions
+        def rule_hot_BCIN(blk, t):
+            return blk.Th_in[t, 1] == \
+                blk.hot_side.properties_in[t].temperature
 
-        def rule_cold_BCIN(blk,t):
-                return blk.Tc_in[t,blk.P.value]  ==\
-                       blk.cold_side.properties_in[t].temperature
-        self.cold_BCIN= Constraint(self.flowsheet().config.time,
-                            rule=rule_cold_BCIN,
-                            doc='cold fluid inlet boundary conditions')
+        self.hot_BCIN = Constraint(self.flowsheet().config.time,
+                                   rule=rule_hot_BCIN,
+                                   doc='Hot fluid inlet boundary conditions')
 
-        Pset = [i for i in range(1,self.P.value)]
-        def rule_hot_BC(blk,t,p):
-                return blk.Th_out[t,p]== blk.Th_in[t,p+1]
-        self.hot_BC= Constraint(self.flowsheet().config.time,Pset,
-                            rule=rule_hot_BC,
-                            doc='hot fluid boundary conditions: change of pass')
+        def rule_cold_BCIN(blk, t):
+            return blk.Tc_in[t, blk.P.value] ==\
+                blk.cold_side.properties_in[t].temperature
+        self.cold_BCIN = Constraint(self.flowsheet().config.time,
+                                    rule=rule_cold_BCIN,
+                                    doc='Cold fluid inlet boundary conditions')
 
-        def rule_cold_BC(blk,t,p):
-                return blk.Tc_out[t,p+1] == blk.Tc_in[t,p]
-        self.cold_BC= Constraint(self.flowsheet().config.time,Pset,
-                            rule=rule_cold_BC,
-                            doc='cold fluid boundary conditions: change of pass')
+        Pset = [i for i in range(1, self.P.value)]
 
-        #----------------------------------------------------------------------
-        #Energy transferred
-        def rule_QH(blk,t):
-            return blk.mh_in[t]*blk.cp_hot[t]*\
-                  (blk.hot_side.properties_in[t].temperature -
-                   blk.hot_side.properties_out[t].temperature)
-        self.QH= Expression(self.flowsheet().config.time, rule=rule_QH,
-                            doc='Heat lost by hot fluid')
+        def rule_hot_BC(blk, t, p):
+            return blk.Th_out[t, p] == blk.Th_in[t, p + 1]
+        self.hot_BC = Constraint(self.flowsheet().config.time, Pset,
+                                 rule=rule_hot_BC,
+                                 doc='Hot fluid boundary conditions: change of pass')
 
-        def rule_QC(blk,t):
-            return blk.mc_in[t]*blk.cp_cold[t]*\
-                  (blk.cold_side.properties_out[t].temperature -
-                   blk.cold_side.properties_in[t].temperature)
-        self.QC= Expression(self.flowsheet().config.time, rule=rule_QH,
-                            doc='Heat gain by cold fluid')
+        def rule_cold_BC(blk, t, p):
+            return blk.Tc_out[t, p + 1] == blk.Tc_in[t, p]
+        self.cold_BC = Constraint(self.flowsheet().config.time, Pset,
+                                  rule=rule_cold_BC,
+                                  doc='Cold fluid boundary conditions: change of pass')
 
+        # ----------------------------------------------------------------------
+        # Energy transferred
+        def rule_QH(blk, t):
+            return blk.mh_in[t] * blk.cp_hot[t] *\
+                (blk.hot_side.properties_in[t].temperature -
+                 blk.hot_side.properties_out[t].temperature)
+        self.QH = Expression(self.flowsheet().config.time, rule=rule_QH,
+                             doc='Heat lost by hot fluid')
 
-    def initialize(blk, hotside_state_args={},coldside_state_args={},
-                   outlvl=5, solver='ipopt',  optarg={'tol': 1e-6}):
+        def rule_QC(blk, t):
+            return blk.mc_in[t] * blk.cp_cold[t] *\
+                (blk.cold_side.properties_out[t].temperature -
+                 blk.cold_side.properties_in[t].temperature)
+        self.QC = Expression(self.flowsheet().config.time, rule=rule_QH,
+                             doc='Heat gain by cold fluid')
 
+    def initialize(blk, hotside_state_args={}, coldside_state_args={},
+                   outlvl=5, solver='ipopt', optarg={'tol': 1e-6}):
         '''
         Initialisation routine for PHE unit (default solver ipopt)
 
@@ -726,22 +753,22 @@ class PHEData(UnitModelBlockData):
         opt.options = optarg
 
         hotside_state_args = {
-                    'flow_mol'    :value(blk.hot_inlet.flow_mol[0]),
-                    'temperature' :value(blk.hot_inlet.temperature[0]),
-                    'pressure'    :value(blk.hot_inlet.pressure[0]),
-                    'mole_frac'   :
-                            {'H2O':value(blk.hot_inlet.mole_frac[0,'H2O']),
-                            'CO2' :value(blk.hot_inlet.mole_frac[0,'CO2']),
-                            'MEA' :value(blk.hot_inlet.mole_frac[0,'MEA'])}}
+            'flow_mol': value(blk.hot_inlet.flow_mol[0]),
+            'temperature': value(blk.hot_inlet.temperature[0]),
+            'pressure': value(blk.hot_inlet.pressure[0]),
+            'mole_frac_comp':
+            {'H2O': value(blk.hot_inlet.mole_frac_comp[0, 'H2O']),
+             'CO2': value(blk.hot_inlet.mole_frac_comp[0, 'CO2']),
+             'MEA': value(blk.hot_inlet.mole_frac_comp[0, 'MEA'])}}
 
         coldside_state_args = {
-                    'flow_mol'    :value(blk.cold_inlet.flow_mol[0]),
-                    'temperature' :value(blk.cold_inlet.temperature[0]),
-                    'pressure'    :value(blk.cold_inlet.pressure[0]),
-                    'mole_frac'   :
-                            {'H2O':value(blk.cold_inlet.mole_frac[0,'H2O']),
-                            'CO2' :value(blk.cold_inlet.mole_frac[0,'CO2']),
-                            'MEA' :value(blk.cold_inlet.mole_frac[0,'MEA'])}}
+            'flow_mol': value(blk.cold_inlet.flow_mol[0]),
+            'temperature': value(blk.cold_inlet.temperature[0]),
+            'pressure': value(blk.cold_inlet.pressure[0]),
+            'mole_frac_comp':
+            {'H2O': value(blk.cold_inlet.mole_frac_comp[0, 'H2O']),
+             'CO2': value(blk.cold_inlet.mole_frac_comp[0, 'CO2']),
+             'MEA': value(blk.cold_inlet.mole_frac_comp[0, 'MEA'])}}
 
         # ---------------------------------------------------------------------
         # Initialize the INLET properties
@@ -749,36 +776,36 @@ class PHEData(UnitModelBlockData):
         print('STEP 1: PROPERTY INITIALIZATION')
         print("======================INLET Properties========================")
         blk.hot_side.properties_in.initialize(
-                                         state_args=hotside_state_args,
-                                         outlvl=outlvl,
-                                         optarg=optarg,
-                                         solver=solver,
-                                         hold_state=True)
+            state_args=hotside_state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True)
         blk.cold_side.properties_in.initialize(
-                                         state_args=coldside_state_args,
-                                         outlvl=outlvl,
-                                         optarg=optarg,
-                                         solver=solver,
-                                         hold_state=True)
+            state_args=coldside_state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True)
         # Initialize the OUTLET properties
         print("======================OUTLET Properties=======================")
         blk.hot_side.properties_out.initialize(
-                                         state_args=hotside_state_args,
-                                         outlvl=outlvl,
-                                         optarg=optarg,
-                                         solver=solver,
-                                         hold_state=False)
+            state_args=hotside_state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=False)
 
         blk.cold_side.properties_out.initialize(
-                                         state_args=coldside_state_args,
-                                         outlvl=outlvl,
-                                         optarg=optarg,
-                                         solver=solver,
-                                         hold_state=False)
-        #----------------------------------------------------------------------
+            state_args=coldside_state_args,
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=False)
+        # ----------------------------------------------------------------------
         print('==========================STEP 2==============================')
         print('STEP 2: solve PHE model')
-        #solve step 2
+        # solve step 2
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info("STEP 2 Complete: {}.".format(idaeslog.condition(res)))

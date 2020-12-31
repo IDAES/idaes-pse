@@ -15,60 +15,65 @@ Test for plate heat exchanger model
 
 Author: Paul Akula
 """
+# Import Python libraries
 import sys
 import os
+
+# Import Pyomo libraries
 from pyomo.environ import ConcreteModel, SolverFactory, value
+
+# Import IDAES Libraries
 from idaes.core import FlowsheetBlock
 
 # Access mea_column_files dir from the current dir (tests dir)
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from unit_models.phe import PHE
-from property_package.liquid_prop import  LiquidParameterBlock
+from property_package.liquid_prop import LiquidParameterBlock
 
 
 solver = SolverFactory('ipopt')
+
 
 def test_build(run=False):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Set up property package
-    m.fs.hotside_properties  = LiquidParameterBlock()
+    m.fs.hotside_properties = LiquidParameterBlock()
     m.fs.coldside_properties = LiquidParameterBlock()
 
-    #create instance of plate heat exchanger  on flowsheet
-    m.fs.hx = PHE(default={'passes':4,
-                           'channel_list': [12,12,12,12],
-                      "hot_side": {
-                                   "property_package": m.fs.hotside_properties
-                                   },
-                      "cold_side":
-                                   {
-                                   "property_package": m.fs.coldside_properties
-                                     }})
+    # create instance of plate heat exchanger  on flowsheet
+    m.fs.hx = PHE(default={'passes': 4,
+                           'channel_list': [12, 12, 12, 12],
+                           "hot_side": {
+                               "property_package": m.fs.hotside_properties
+                           },
+                           "cold_side":
+                           {
+                               "property_package": m.fs.coldside_properties
+                           }})
     for t in m.fs.time:
         # hot fluid
         m.fs.hx.hot_inlet.flow_mol[t].fix(81.6322)
         m.fs.hx.hot_inlet.temperature[t].fix(392.23)
         m.fs.hx.hot_inlet.pressure[t].fix(182840)
-        m.fs.hx.hot_inlet.mole_frac[t,"CO2"].fix(0.01585)
-        m.fs.hx.hot_inlet.mole_frac[t,"H2O"].fix(0.87457)
-        m.fs.hx.hot_inlet.mole_frac[t,"MEA"].fix(0.10958)
+        m.fs.hx.hot_inlet.mole_frac_comp[t, "CO2"].fix(0.01585)
+        m.fs.hx.hot_inlet.mole_frac_comp[t, "H2O"].fix(0.87457)
+        m.fs.hx.hot_inlet.mole_frac_comp[t, "MEA"].fix(0.10958)
 
-        #cold fluid
+        # cold fluid
         m.fs.hx.cold_inlet.flow_mol[t].fix(84.7399)
         m.fs.hx.cold_inlet.temperature[t].fix(326.36)
         m.fs.hx.cold_inlet.pressure[t].fix(182840)
-        m.fs.hx.cold_inlet.mole_frac[t,"CO2"].fix(0.04142)
-        m.fs.hx.cold_inlet.mole_frac[t,"H2O"].fix(0.85078)
-        m.fs.hx.cold_inlet.mole_frac[t,"MEA"].fix(0.10780)
+        m.fs.hx.cold_inlet.mole_frac_comp[t, "CO2"].fix(0.04142)
+        m.fs.hx.cold_inlet.mole_frac_comp[t, "H2O"].fix(0.85078)
+        m.fs.hx.cold_inlet.mole_frac_comp[t, "MEA"].fix(0.10780)
 
     if run:
-       m.fs.hx.initialize(outlvl=0)
-       # Testing PHE
-       assert value(m.fs.hx.QH[0]) == value(m.fs.hx.QC[0])
+        m.fs.hx.initialize(outlvl=0)
+        # Testing PHE
+        assert value(m.fs.hx.QH[0]) == value(m.fs.hx.QC[0])
+
 
 if __name__ == "__main__":
-          test_build(run=True)
-
-
+    test_build(run=True)

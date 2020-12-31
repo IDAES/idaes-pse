@@ -21,105 +21,122 @@ Pilot Solvent Test Unit(PSTU) MEA data at the National Carbon Capture Center(NCC
 Author: Paul Akula, Anuja Deshpande
 
 """
+# Import Python libraries
 import sys
 import os
-from pyomo.environ import ConcreteModel, SolverFactory
-from idaes.core import FlowsheetBlock
 import pytest
-import numpy as np
 
+# Import Pyomo libraries
+from pyomo.environ import ConcreteModel, SolverFactory
+
+# Import IDAES Libraries
+from idaes.core import FlowsheetBlock
 
 # Access mea_column_files dir from the current dir (tests dir)
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from unit_models.column import PackedColumn
-from property_package.vapor_prop  import  VaporParameterBlock
-from property_package.liquid_prop import  LiquidParameterBlock
+from property_package.vapor_prop import VaporParameterBlock
+from property_package.liquid_prop import LiquidParameterBlock
 
 # -----------------------------------------------------------------------------
 solver = SolverFactory('ipopt')
 
 # spacial domain finite elemets and finite element list
 x_nfe = 10
-x_nfe_list = [i/x_nfe for i in range(x_nfe+1)]
+x_nfe_list = [i / x_nfe for i in range(x_nfe + 1)]
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
 
 def test_build(run=False):
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Set up property package
-    m.fs.vapor_properties  = VaporParameterBlock()
+    m.fs.vapor_properties = VaporParameterBlock()
     m.fs.liquid_properties = LiquidParameterBlock()
 
-    #create instance of column for absorption process on flowsheet
+    # create instance of column for absorption process on flowsheet
     m.fs.abs = PackedColumn(default={
-                      "process_type": "Absorber",
-                      "finite_elements": x_nfe,
-                      "length_domain_set":x_nfe_list,
-                      "transformation_method": "dae.finite_difference",
-                      "flow_type":"counter_current",
-                      "vapor_side": {
-                                   "transformation_scheme": "BACKWARD",
-                                   "property_package": m.fs.vapor_properties,
-                                   "has_pressure_change": False,
-                                   "pressure_drop_type": None},
-                      "liquid_side":
-                                   {
-                                   "transformation_scheme": "FORWARD",
-                                   "property_package": m.fs.liquid_properties
-                                     }})
+        "process_type": "Absorber",
+        "finite_elements": x_nfe,
+        "length_domain_set": x_nfe_list,
+        "transformation_method": "dae.finite_difference",
+        "flow_type": "counter_current",
+        "vapor_side": {
+            "transformation_scheme": "BACKWARD",
+            "property_package": m.fs.vapor_properties,
+            "has_pressure_change": False,
+            "pressure_drop_type": None},
+        "liquid_side":
+        {
+            "transformation_scheme": "FORWARD",
+            "property_package": m.fs.liquid_properties
+        }})
 
     # Fix input variable values according to dataset K5
     m.fs.abs.dia_col.fix(0.64)
     m.fs.abs.length_col.fix(18)
     for t in m.fs.time:
-        #vapor
+        # vapor
         m.fs.abs.vap_in_flow[t].fix(21.39759)
         m.fs.abs.vap_in_temperature[t].fix(316.93)
         m.fs.abs.bot_pressure[t].fix(106940)
-        m.fs.abs.vap_in_mole_frac[t,"CO2"].fix(0.091961)
-        m.fs.abs.vap_in_mole_frac[t,"H2O"].fix(0.0813)
-        m.fs.abs.vap_in_mole_frac[t,"N2"].fix(0.74074)
-        m.fs.abs.vap_in_mole_frac[t,"O2"].fix(0.086)
-        #liquid
+        m.fs.abs.vap_in_mole_frac[t, "CO2"].fix(0.091961)
+        m.fs.abs.vap_in_mole_frac[t, "H2O"].fix(0.0813)
+        m.fs.abs.vap_in_mole_frac[t, "N2"].fix(0.74074)
+        m.fs.abs.vap_in_mole_frac[t, "O2"].fix(0.086)
+        # liquid
         m.fs.abs.liq_in_flow[t].fix(37.55)
         m.fs.abs.liq_in_temperature[t].fix(314.72)
-        m.fs.abs.liq_in_mole_frac[t,"CO2"].fix(0.0143317)
-        m.fs.abs.liq_in_mole_frac[t,"H2O"].fix(0.872002816)
-        m.fs.abs.liq_in_mole_frac[t,"MEA"].fix(0.113665474)
+        m.fs.abs.liq_in_mole_frac[t, "CO2"].fix(0.0143317)
+        m.fs.abs.liq_in_mole_frac[t, "H2O"].fix(0.872002816)
+        m.fs.abs.liq_in_mole_frac[t, "MEA"].fix(0.113665474)
 
     assert m.fs.abs.config.liquid_side.transformation_scheme == 'FORWARD'
-    assert m.fs.abs.config.vapor_side.transformation_scheme ==  'BACKWARD'
+    assert m.fs.abs.config.vapor_side.transformation_scheme == 'BACKWARD'
     assert m.fs.abs.config.process_type == 'Absorber'
 
     if run:
-       # Initialize the model
-       m.fs.abs.initialize(outlvl=0)
-       # Step change in solvent flowrate
-       for t in m.fs.time:
-           m.fs.abs.liq_in_flow[t].fix(81.1758015)
-       solver.solve(m.fs)
+        # Initialize the model
+        m.fs.abs.initialize(outlvl=0)
+        # Step change in solvent flowrate
+        for t in m.fs.time:
+            m.fs.abs.liq_in_flow[t].fix(81.1758015)
+        solver.solve(m.fs)
 
         # Outlet Stream Condition Testing
-       assert m.fs.abs.vapor_phase.properties[0, 1].temperature.value == pytest.approx(334.217558472983,abs=1e-4)
-       assert m.fs.abs.vapor_phase.properties[0, 1].pressure.value == pytest.approx(107650,abs=1e-4)
-       assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['CO2'].value == pytest.approx(0.001381727469397588,abs=1e-4)
-       assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['H2O'].value == pytest.approx(3.1578290854895257,abs=1e-4)
-       assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['N2'].value == pytest.approx(15.8567508,abs=1e-4)
-       assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['O2'].value == pytest.approx(1.33176,abs=1e-4)
+        assert m.fs.abs.vapor_phase.properties[0, 1].temperature.value ==\
+            pytest.approx(334.217558472983, abs=1e-4)
+        assert m.fs.abs.vapor_phase.properties[0, 1].pressure.value ==\
+            pytest.approx(107650, abs=1e-4)
+        assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['CO2'].value ==\
+            pytest.approx(0.001381727469397588, abs=1e-4)
+        assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['H2O'].value ==\
+            pytest.approx(3.1578290854895257, abs=1e-4)
+        assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['N2'].value ==\
+            pytest.approx(15.8567508, abs=1e-4)
+        assert m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['O2'].value ==\
+            pytest.approx(1.33176, abs=1e-4)
 
-       assert m.fs.abs.liquid_phase.properties[0, 0].temperature.value == pytest.approx(346.18066794977636,abs=1e-4)
-       assert m.fs.abs.liquid_phase.properties[0, 0].pressure.value == pytest.approx(107650,abs=1e-4)
-       assert m.fs.abs.liquid_phase.properties[0, 0].flow_mol_comp['CO2'].value == pytest.approx(3.2404456409756026,abs=1e-4)
-       assert m.fs.abs.liquid_phase.properties[0, 0].flow_mol_comp['H2O'].value == pytest.approx(69.64961775603548,abs=1e-4)
-       assert m.fs.abs.liquid_phase.properties[0, 0].flow_mol_comp['MEA'].value == pytest.approx(9.41801649003,abs=1e-4)
+        assert m.fs.abs.liquid_phase.properties[0, 0].temperature.value ==\
+            pytest.approx(346.18066794977636, abs=1e-4)
+        assert m.fs.abs.liquid_phase.properties[0, 0].pressure.value ==\
+            pytest.approx(107650, abs=1e-4)
+        assert m.fs.abs.liquid_phase.properties[0, 0].flow_mol_comp['CO2'].value ==\
+            pytest.approx(3.2404456409756026, abs=1e-4)
+        assert m.fs.abs.liquid_phase.properties[0, 0].flow_mol_comp['H2O'].value ==\
+            pytest.approx(69.64961775603548, abs=1e-4)
+        assert m.fs.abs.liquid_phase.properties[0, 0].flow_mol_comp['MEA'].value ==\
+            pytest.approx(9.41801649003, abs=1e-4)
 
-       # # Performance Testing - CO2 Capture %
-       co2_cap_percentage = (1 - (m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['CO2'].value/(m.fs.abs.vap_in_mole_frac[0,"CO2"].value*m.fs.abs.vap_in_flow[0].value)))*100
-       assert co2_cap_percentage == pytest.approx(99.94383460029593,abs=1e-4)
+        # # Performance Testing - CO2 Capture %
+        co2_cap_percentage =\
+            (1 - (m.fs.abs.vapor_phase.properties[0, 1].flow_mol_comp['CO2'].value / (
+             m.fs.abs.vap_in_mole_frac[0, "CO2"].value *
+             m.fs.abs.vap_in_flow[0].value))) * 100
+        assert co2_cap_percentage == pytest.approx(99.94383460029593, abs=1e-4)
+
 
 if __name__ == "__main__":
-          test_build(run=True)
-
-
+    test_build(run=True)
