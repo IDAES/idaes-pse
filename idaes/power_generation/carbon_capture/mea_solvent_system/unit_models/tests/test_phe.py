@@ -29,7 +29,7 @@ from idaes.core import FlowsheetBlock
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from unit_models.phe import PHE
-from property_package.liquid_prop import LiquidParameterBlock
+from properties.liquid_prop import LiquidParameterBlock
 
 
 solver = SolverFactory('ipopt')

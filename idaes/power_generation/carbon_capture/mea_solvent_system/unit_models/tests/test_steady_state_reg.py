@@ -36,8 +36,8 @@ from idaes.core import FlowsheetBlock
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from unit_models.column import PackedColumn
-from property_package.vapor_prop import VaporParameterBlock
-from property_package.liquid_prop import LiquidParameterBlock
+from properties.vapor_prop import VaporParameterBlock
+from properties.liquid_prop import LiquidParameterBlock
 
 # -----------------------------------------------------------------------------
 solver = SolverFactory('ipopt')
