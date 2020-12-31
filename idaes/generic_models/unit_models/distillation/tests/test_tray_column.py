@@ -19,24 +19,18 @@ import pytest
 from pyomo.environ import (ConcreteModel, TerminationCondition,
                            SolverStatus, value)
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-                        MomentumBalanceType)
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.distillation import TrayColumn
 from idaes.generic_models.unit_models.distillation.condenser \
     import CondenserType, TemperatureSpec
 from idaes.generic_models.properties.activity_coeff_models.\
     BTX_activity_coeff_VLE import BTXParameterBlock
-from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables, \
-    fixed_variables_set, activated_constraints_set
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import get_default_solver, \
     PhysicalParameterTestBlock, initialization_tester
 
-from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
-
-from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.generic.generic_property \
+    import GenericParameterBlock
 
 from idaes.generic_models.properties.core.examples.BT_ideal \
     import configuration
