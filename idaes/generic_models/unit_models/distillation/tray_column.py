@@ -508,7 +508,7 @@ see property package for documentation.}"""))
             properties_in_vap. \
             release_state(flags=strip_vap_flags, outlvl=outlvl)
 
-        # Adding the condenser to the temp block solve
+        # Adding the reboiler to the temp block solve
         self._temp_block.reboiler = Reference(self.reboiler)
         self._temp_block.expanded_reboiler_liq_in = Reference(
             self.reboiler_liq_in.expanded_block)
