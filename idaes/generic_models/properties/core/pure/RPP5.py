@@ -146,7 +146,7 @@ class pressure_sat_comp():
     def build_parameters(cobj):
         cobj.pressure_sat_comp_coeff_A = Var(
                 doc="Antoine A coefficient for calculating Psat",
-                units=.dimensionless)
+                units=pyunits.dimensionless)
         set_param_from_config(cobj, param="pressure_sat_comp_coeff", index="A")
 
         cobj.pressure_sat_comp_coeff_B = Var(
