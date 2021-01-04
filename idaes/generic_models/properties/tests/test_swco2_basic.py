@@ -203,6 +203,16 @@ class TestHelm(object):
     pdata_sat = "sat_prop_swco2_nist_webbook.txt"
 
     @pytest.fixture(scope="class")
+    def model_transport(self):
+        # This model is used to test transport properties
+        model = ConcreteModel()
+        model.prop_param = swco2.SWCO2ParameterBlock()
+        model.prop_in = swco2.SWCO2StateBlock(
+            default={"parameters": model.prop_param}
+        )
+        return model
+
+    @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
         model.prop = self.pparam_construct()
@@ -468,3 +478,20 @@ class TestHelm(object):
             binary_derivative_test(f=model.func_w, x0=delta(rho), x1=tau(T))
             binary_derivative_test(f=model.func_f, x0=delta(rho), x1=tau(T))
             binary_derivative_test(f=model.func_g, x0=delta(rho), x1=tau(T))
+
+    def test_transport(self, model_transport):
+        """ Test transport properties.  The tolerances are pretty forgiving here.
+        The values are closer for the most part, but the estimation methods
+        aren't the same or are super sensitive near the critical point.  Just
+        want a sanity check not for high accuracy.
+        """
+        m = model_transport
+        data = read_data(self.pdata, self.mw)
+        for i, T in enumerate(data["T"]):
+            m.prop_in.temperature.set_value(T)
+            m.prop_in.pressure = data["P"][i]
+            ph = {"vapor":"Vap", "liquid":"Liq", "supercritical":"Liq"}[data["phase"][i]]
+            mu = value(m.prop_in.visc_d_phase[ph])
+            tc = value(m.prop_in.therm_cond_phase[ph])
+            assert tc == pytest.approx(data["tc"][i], rel=2.5e-1)
+            assert mu == pytest.approx(data["visc"][i], rel=2.5e-1)

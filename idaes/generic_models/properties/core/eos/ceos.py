@@ -347,6 +347,8 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
+    # TODO: Need to add functions to calculate cp
+
     @staticmethod
     def enth_mol_phase(blk, p):
         pobj = blk.params.get_phase(p)

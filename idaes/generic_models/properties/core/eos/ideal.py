@@ -62,6 +62,23 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
+    def cp_mol_phase(b, p):
+        return sum(b.mole_frac_phase_comp[p, j]*b.cp_mol_phase_comp[p, j]
+                   for j in b.components_in_phase(p))
+
+    @staticmethod
+    def cp_mol_phase_comp(b, p, j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return get_method(b, "cp_mol_ig_comp", j)(
+                b, cobj(b, j), b.temperature)
+        elif pobj.is_liquid_phase():
+            return get_method(b, "cp_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+    @staticmethod
     def enth_mol_phase(b, p):
         return sum(b.mole_frac_phase_comp[p, j]*b.enth_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
