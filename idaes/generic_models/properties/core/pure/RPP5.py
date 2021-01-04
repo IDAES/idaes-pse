@@ -21,8 +21,7 @@ All parameter indicies based on conventions used by the source
 
 from pyomo.environ import exp, value, log, Var, units as pyunits
 
-from idaes.generic_models.properties.core.generic.utility import \
-    set_param_value
+from idaes.core.util.misc import set_param_from_config
 
 
 # -----------------------------------------------------------------------------
