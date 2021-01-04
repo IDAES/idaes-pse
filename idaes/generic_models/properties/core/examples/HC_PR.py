@@ -14,7 +14,7 @@
 Hydrocarbon processing phase equilibrium package using Peng-Robinson EoS.
 
 Example property package using the Generic Property Package Framework.
-This example shows how to set up a property package to do hyfrocarbon
+This example shows how to set up a property package to do hydrocarbon
 processing phase equilibrium in the generic framework using Peng-Robinson
 equation along with methods drawn from the pre-built IDAES property libraries.
 
