@@ -1,4 +1,5 @@
 from pyomo.core.base.var import IndexedVar
+from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
 # If I subclass Var here without overriding __new__,
 # instances of this class will be SimpleVar or IndexedVar.
@@ -24,13 +25,16 @@ class _NmpcVector(IndexedVar):
     def _generate_referenced_vars(self):
         _slice = self.referent.duplicate()
         # This class should only be instantiated as a reference...
+        assert type(_slice) is IndexedComponent_slice
+        # _slice looks something like BLOCK[:].var[:]
+        assert _slice._call_stack[-1][0] == IndexedComponent_slice.get_item
+        assert _slice._call_stack[-1][1] == slice(None)
+        assert _slice._call_stack[-2][0] == IndexedComponent_slice.get_attribute
+        assert _slice._call_stack[-3][0] == IndexedComponent_slice.slice_info
         _slice._call_stack.pop()
         _slice._len -= 1
         for var in _slice:
             yield var
-        # TODO: assert some properties of the call stack here
-        # popped item is a getitem, slice
-        # last remaining item is a getattr, NmpcVar
 
     def set_setpoint(self, setpoint):
         referent_gen = self._generate_referenced_vars()
