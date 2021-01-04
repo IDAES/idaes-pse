@@ -101,10 +101,10 @@ def test_cp_mol_ig_comp(frame):
 
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(33.517, abs=1e-3)
+    assert value(expr) == pytest.approx(33.518, abs=1e-3)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(34.333, abs=1e-3)
+    assert value(expr) == pytest.approx(34.334, abs=1e-3)
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
 
@@ -118,10 +118,10 @@ def test_enth_mol_ig_comp(frame):
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(-240973.700, abs=1e-3)
+    assert value(expr) == pytest.approx(-240973.683, abs=1e-3)
 
     frame.props[1].temperature.value = 400
-    assert value(expr) == pytest.approx(-237521.774, abs=1e-3)
+    assert value(expr) == pytest.approx(-237521.691, abs=1e-3)
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
@@ -155,12 +155,12 @@ def test_pressure_sat_comp(frame):
 
     expr = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(3173.066, abs=1e-3)
+    assert value(expr) == pytest.approx(0.0317, abs=1e-3)
 
     frame.props[1].temperature.value = 373.15
-    assert value(expr) == pytest.approx(100939.24, rel=1e-4)
+    assert value(expr) == pytest.approx(1.0094, rel=1e-4)
 
-    assert_units_equivalent(expr, pyunits.Pa)
+    assert_units_equivalent(expr, pyunits.bar)
 
 
 @pytest.mark.unit
@@ -191,4 +191,4 @@ def test_pressure_sat_comp_dT(frame):
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
 
-    assert_units_equivalent(expr, pyunits.Pa/pyunits.K)
+    assert_units_equivalent(expr, pyunits.bar/pyunits.degK)

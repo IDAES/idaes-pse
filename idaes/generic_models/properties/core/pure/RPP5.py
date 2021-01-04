@@ -23,7 +23,7 @@ from pyomo.environ import exp, value, log, Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
 
-import idaes.core.util.constants
+from idaes.core.util.constants import Constants as const
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
@@ -65,7 +65,7 @@ class cp_mol_ig_comp():
               cobj.cp_mol_ig_comp_coeff_a3*T**3 +
               cobj.cp_mol_ig_comp_coeff_a2*T**2 +
               cobj.cp_mol_ig_comp_coeff_a1*T +
-              cobj.cp_mol_ig_comp_coeff_a0) * gas_constant)
+              cobj.cp_mol_ig_comp_coeff_a0) * const.gas_constant)
 
         units = b.params.get_metadata().derived_units
         return pyunits.convert(cp, units["heat_capacity_mole"])
@@ -98,7 +98,7 @@ class enth_mol_ig_comp():
                 (cobj.cp_mol_ig_comp_coeff_a3/4)*(T**4-Tr**4) +
                 (cobj.cp_mol_ig_comp_coeff_a2/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_ig_comp_coeff_a1/2)*(T**2-Tr**2) +
-                cobj.cp_mol_ig_comp_coeff_a0*(T-Tr)) * gas_constant,
+                cobj.cp_mol_ig_comp_coeff_a0*(T-Tr)) * const.gas_constant,
                 units["energy_mole"]) + cobj.enth_mol_form_vap_comp_ref)
 
         return h
@@ -131,7 +131,7 @@ class entr_mol_ig_comp():
                 (cobj.cp_mol_ig_comp_coeff_a3/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_ig_comp_coeff_a2/2)*(T**2-Tr**2) +
                 cobj.cp_mol_ig_comp_coeff_a1*(T-Tr) +
-                cobj.cp_mol_ig_comp_coeff_a0*log(T/Tr)) * gas_constant,
+                cobj.cp_mol_ig_comp_coeff_a0*log(T/Tr)) * const.gas_constant,
                 units["entropy_mole"])  +
                 cobj.entr_mol_form_vap_comp_ref)
 
@@ -166,11 +166,12 @@ class pressure_sat_comp():
 
         return (10**(cobj.pressure_sat_comp_coeff_A -
                     (cobj.pressure_sat_comp_coeff_B /
-                    (T + cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.K))))
+                    (T + cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.degK)))
+                    * pyunits.bar)
 
     @staticmethod
     def dT_expression(b, cobj, T):
         return (pressure_sat_comp.return_expression(b, cobj, T) *
                     cobj.pressure_sat_comp_coeff_B *
                     log(10)/(T +
-                             cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.K)**2)
+                             cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.degK)**2)
