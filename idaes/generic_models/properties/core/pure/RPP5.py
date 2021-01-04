@@ -164,14 +164,27 @@ class pressure_sat_comp():
         if dT:
             return pressure_sat_comp.dT_expression(b, cobj, T)
 
-        return (10**(cobj.pressure_sat_comp_coeff_A -
+        psat =  (10**(cobj.pressure_sat_comp_coeff_A -
                     (cobj.pressure_sat_comp_coeff_B /
                     (T + cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.degK)))
                     * pyunits.bar)
 
+        base_units = b.params.get_metadata().default_units
+        p_units = (base_units["mass"] *
+                   base_units["length"]**-1 *
+                   base_units["time"]**-2)
+        return pyunits.convert(psat, to_units=p_units)
+
     @staticmethod
     def dT_expression(b, cobj, T):
-        return (pressure_sat_comp.return_expression(b, cobj, T) *
+        p_sat_dT = (pressure_sat_comp.return_expression(b, cobj, T) *
                     cobj.pressure_sat_comp_coeff_B *
                     log(10)/(T +
                              cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.degK)**2)
+
+        base_units = b.params.get_metadata().default_units
+        dp_units = (base_units["mass"] *
+                    base_units["length"]**-1 *
+                    base_units["time"]**-2 *
+                    base_units["temperature"]**-1)
+        return pyunits.convert(p_sat_dT, to_units=dp_units)

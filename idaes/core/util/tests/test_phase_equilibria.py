@@ -272,7 +272,7 @@ def test_Txy_data_no_liq():
 
     model.params = GenericParameterBlock(default=configuration)
 
-    TD = Txy_data(model, 'methane', 'ethane', 101325, num_points = 3, temperature = 350,
+    TD = Txy_data(model, 'methane', 'ethane', 101325 , num_points = 3, temperature = 298,
     print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'methane'

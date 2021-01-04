@@ -155,12 +155,12 @@ def test_pressure_sat_comp(frame):
 
     expr = pressure_sat_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(0.0317, abs=1e-3)
+    assert value(expr) == pytest.approx(3173.066, abs=1e-3)
 
     frame.props[1].temperature.value = 373.15
-    assert value(expr) == pytest.approx(1.0094, rel=1e-4)
+    assert value(expr) == pytest.approx(100939.248, rel=1e-3)
 
-    assert_units_equivalent(expr, pyunits.bar)
+    assert_units_equivalent(expr, pyunits.Pa)
 
 
 @pytest.mark.unit
@@ -191,4 +191,4 @@ def test_pressure_sat_comp_dT(frame):
 
     assert value(expr) == pytest.approx(dPdT, 1e-4)
 
-    assert_units_equivalent(expr, pyunits.bar/pyunits.degK)
+    assert_units_equivalent(expr, pyunits.Pa/pyunits.degK)
