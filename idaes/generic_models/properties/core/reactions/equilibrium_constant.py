@@ -17,8 +17,7 @@ from pyomo.environ import exp, Var, units as pyunits
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     ConcentrationForm
-from idaes.generic_models.properties.core.generic.utility import \
-    set_param_value
+from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
@@ -26,6 +25,8 @@ from idaes.core.util.exceptions import BurntToast, ConfigurationError
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
 class van_t_hoff():
+
+    @staticmethod
     def build_parameters(rblock, config):
         parent = rblock.parent_block()
         units = parent.get_metadata().derived_units
@@ -63,19 +64,14 @@ class van_t_hoff():
         rblock.k_eq_ref = Var(
                 doc="Equilibrium constant at reference state",
                 units=e_units)
-        set_param_value(rblock,
-                        param="k_eq_ref",
-                        units=e_units,
-                        config=config)
+        set_param_from_config(rblock, param="k_eq_ref", config=config)
 
         rblock.T_eq_ref = Var(
                 doc="Reference temperature for equilibrium constant",
                 units=units["temperature"])
-        set_param_value(rblock,
-                        param="T_eq_ref",
-                        units=units["temperature"],
-                        config=config)
+        set_param_from_config(rblock, param="T_eq_ref", config=config)
 
+    @staticmethod
     def return_expression(b, rblock, r_idx, T):
         units = rblock.parent_block().get_metadata().derived_units
 

@@ -44,6 +44,7 @@ from pyomo.environ import (
     exp,
     sqrt,
     log,
+    units as pyunits
 )
 
 # Import IDAES
@@ -77,25 +78,24 @@ def swco2_available():
     return _available(_so)
 
 
-def htpx(T, P=None, x=None):
+def htpx(T=None, P=None, x=None):
     """
     Convenience function to calculate enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
-
-    User must provided values for one (and only one) of arguments P and x.
-
+    User must provided values for two of T, P, or x.
     Args:
-        T: Temperature [K] (between 200 and 3000)
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated vapor
+        T: Temperature with units (between 200 and 3000 K)
+        P: Pressure with units (between 1 and 1e9 Pa), None if saturated vapor
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
-
     Returns:
         Total molar enthalpy [J/mol].
     """
     prop = SWCO2StateBlock(default={"parameters": SWCO2ParameterBlock()})
-    return _htpx(T=T, P=P, x=x, prop=prop, Tmin=200, Tmax=3e3, Pmin=0.1, Pmax=1e9)
+    return _htpx(T=T, P=P, x=x, prop=prop,
+                 Tmin=200*pyunits.K, Tmax=3e3*pyunits.K,
+                 Pmin=1e-4*pyunits.kPa, Pmax=1e6*pyunits.kPa)
 
 
 @declare_process_block_class("SWCO2ParameterBlock")
@@ -110,17 +110,23 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             component_list=Set(initialize=["CO2"]),
             phase_equilibrium_idx=Set(initialize=[1]),
             phase_equilibrium_list={1: ["CO2", ("Vap", "Liq")]},
-            mw=Param(initialize=0.0440098, doc="Molecular weight [kg/mol]"),
+            mw=Param(initialize=0.0440098,
+                     doc="Molecular weight [kg/mol]",
+                     units=pyunits.kg/pyunits.mol),
             temperature_crit=Param(
                 initialize=304.1282,
                 doc="Critical temperature [K]",
-            ),
-            pressure_crit=Param(initialize=7.377e6, doc="Critical pressure [Pa]"),
-            dens_mass_crit=Param(initialize=467.6, doc="Critical density [kg/m3]"),
+                units=pyunits.K),
+            pressure_crit=Param(initialize=7.377e6,
+                                doc="Critical pressure [Pa]",
+                                units=pyunits.Pa),
+            dens_mass_crit=Param(initialize=467.6,
+                                 doc="Critical density [kg/m3]",
+                                 units=pyunits.kg/pyunits.m**3),
             specific_gas_constant=Param(
                 initialize=188.9241,
                 doc="CO2 Specific Gas Constant [J/kg/K]",
-            ),
+                units=pyunits.J/pyunits.kg/pyunits.K),
             pressure_bounds=(0.1, 1e9),
             temperature_bounds=(210, 2500),
             enthalpy_bounds=(-2e4, 1e5),
@@ -157,16 +163,22 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
             doc="0 density limit thermal conductivity parameters",
         )
 
-        self.tc_d = Param(
-            RangeSet(1, 5),
-            initialize={
-                1: 2.447164e-2,
-                2: 8.705605e-5,
-                3: -6.547950e-8,
-                4: 6.594919e-11,
-            },
-            doc="residual thermal conductivity parameters",
-        )
+        self.tc_d_1 = Param(
+            initialize=2.447164e-5*self.dens_mass_crit,
+            doc="Residual thermal conductivity parameter",
+            units=pyunits.W/pyunits.K/pyunits.m)
+        self.tc_d_2 = Param(
+            initialize=8.705605e-8*self.dens_mass_crit**2,
+            doc="Residual thermal conductivity parameter",
+            units=pyunits.W/pyunits.K/pyunits.m)
+        self.tc_d_3 = Param(
+            initialize=-6.547950e-11*self.dens_mass_crit**3,
+            doc="Residual thermal conductivity parameter",
+            units=pyunits.W/pyunits.K/pyunits.m)
+        self.tc_d_4 = Param(
+            initialize=6.594919e-14*self.dens_mass_crit**4,
+            doc="Residual thermal conductivity parameter",
+            units=pyunits.W/pyunits.K/pyunits.m)
 
         # Viscosity parameters
         # "Fenghour et al. (1998) with critial enhancment Vesovic et al. (1990)
@@ -183,17 +195,27 @@ class SWCO2ParameterBlockData(HelmholtzParameterBlockData):
         )
 
         # The indexing looks a little weird here, but it's from the source
-        self.visc_d = Param(
-            {(1, 1), (2, 1), (6, 4), (8, 1), (8, 2)},
-            initialize={
-                (1, 1): 0.4071119e-2,
-                (2, 1): 0.7198037e-4,
-                (6, 4): 0.2411697e-16,
-                (8, 1): 0.2971072e-22,
-                (8, 2): -0.1627888e-22,
-            },
-            doc="residual viscosity parameters",
-        )
+        self.visc_d_1_1 = Param(
+            initialize=0.4071119e-8*self.dens_mass_crit,
+            doc="Residual viscosity parameter",
+            units=pyunits.Pa*pyunits.s)
+        self.visc_d_2_1 = Param(
+            initialize=0.7198037e-10*self.dens_mass_crit**2,
+            doc="Residual viscosity parameter",
+            units=pyunits.Pa*pyunits.s)
+        self.visc_d_6_4 = Param(
+            initialize=0.2411697e-22*self.dens_mass_crit**6,
+            doc="Residual viscosity parameter",
+            units=pyunits.Pa*pyunits.s)
+        self.visc_d_8_1 = Param(
+            initialize=0.2971072e-28*self.dens_mass_crit**8,
+            doc="Residual viscosity parameter",
+            units=pyunits.Pa*pyunits.s)
+        self.visc_d_8_2 = Param(
+            initialize=-0.1627888e-28*self.dens_mass_crit**8,
+            doc="Residual viscosity parameter",
+            units=pyunits.Pa*pyunits.s)
+
         self.set_default_scaling("therm_cond_phase", 1e2, index="Liq")
         self.set_default_scaling("therm_cond_phase", 1e1, index="Vap")
         self.set_default_scaling("visc_d_phase", 1e5, index="Liq")
@@ -222,44 +244,50 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
         phlist = self.config.parameters.private_phase_list
         T = self.temperature
         rho = self.dens_mass_phase
+        delta = self.dens_phase_red
 
         # Phase Thermal conductiviy
         def rule_tc(b, p):
-            b = self.config.parameters.tc_b
-            c = self.config.parameters.tc_c
-            d = self.config.parameters.tc_d
+            params = self.config.parameters
+            b = params.tc_b
+            c = params.tc_c
             cint_over_k = (
-                1.0 + exp(-183.5/T)*sum(c[i]*(T/100)**(2-i) for i in c)
+                1.0 + exp(-183.5*pyunits.K/T) *
+                sum(c[i]*(T/100/pyunits.K)**(2-i) for i in c)
             )
-            Ts = T/251.196
+            Ts = T/(251.196*pyunits.K)
             G = sum(b[i]/Ts**i for i in b)
-            return 1e-3*(
-                0.475598*sqrt(T)*(1 + 2.0/5.0*cint_over_k)/G +
-                sum(d[i]*rho[p]**i for i in d)
-            )
+            return (
+                0.475598/1e3 * pyunits.W/pyunits.K/pyunits.m *
+                   sqrt(T/pyunits.K)*(1 + 2.0/5.0*cint_over_k)/G +
+                params.tc_d_1*delta[p] +
+                params.tc_d_2*delta[p]**2 +
+                params.tc_d_3*delta[p]**3 +
+                params.tc_d_4*delta[p]**4)
 
         self.therm_cond_phase = Expression(
             phlist,
             rule=rule_tc,
-            doc="Thermal conductivity [W/K/m]",
-        )
+            doc="Thermal conductivity [W/K/m]")
 
         # Phase dynamic viscosity
         def rule_mu(b, p):
-            a = self.config.parameters.visc_a
-            d = self.config.parameters.visc_d
-            Ts = T/251.196
-            return 1e-6*(
-                1.00697*sqrt(T)/exp(sum(a[i]*log(Ts)**i for i in a)) +
-                d[1,1]*rho[p] +
-                d[2,1]*rho[p]**2 +
-                d[6,4]*rho[p]**6/Ts**3 +
-                d[8,1]*rho[p]**8 +
-                d[8,2]*rho[p]**8/Ts
-            )
+            params = self.config.parameters
+            a = params.visc_a
+            Ts = T/(251.196*pyunits.K)
+            return (
+                1.00697/1e6*pyunits.Pa*pyunits.s*sqrt(T/pyunits.K) /
+                    exp(sum(a[i]*log(Ts)**i for i in a)) +
+                params.visc_d_1_1*delta[p] +
+                params.visc_d_2_1*delta[p]**2 +
+                params.visc_d_6_4*delta[p]**6/Ts**3 +
+                params.visc_d_8_1*delta[p]**8 +
+                params.visc_d_8_2*delta[p]**8/Ts)
 
         self.visc_d_phase = Expression(
-            phlist, rule=rule_mu, doc="Viscosity (dynamic) [Pa*s]"
+            phlist,
+            rule=rule_mu,
+            doc="Viscosity (dynamic)"
         )
 
         # Phase kinimatic viscosity
@@ -267,5 +295,5 @@ class SWCO2StateBlockData(HelmholtzStateBlockData):
             return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
         self.visc_k_phase = Expression(
-            phlist, rule=rule_nu, doc="Kinematic viscosity [m^2/s]"
+            phlist, rule=rule_nu, doc="Kinematic viscosity"
         )

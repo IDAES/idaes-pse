@@ -20,7 +20,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 __Author__ = "John Eslick"
 
 from pyomo.common.config import In
-from pyomo.environ import Var, sqrt, SolverFactory, value, Param
+from pyomo.environ import Var, sqrt, SolverFactory, value, Param, units as pyunits
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
 from idaes.core import declare_process_block_class
 from idaes.core.util import from_json, to_json, StoreSpec
@@ -36,7 +36,7 @@ _log = idaeslog.getLogger(__name__)
     "HelmTurbineOutletStage",
     doc="Outlet stage steam turbine model",
 )
-class TurbineOutletStageData(HelmIsentropicTurbineData):
+class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
     CONFIG = HelmIsentropicTurbineData.CONFIG()
@@ -45,11 +45,13 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
         super().build()
 
         self.flow_coeff = Var(
-            initialize=0.0333, doc="Turbine flow coefficient [kg*C^0.5/s/Pa]"
+            initialize=0.0333, doc="Turbine flow coefficient [kg*C^0.5/s/Pa]",
+            units=pyunits.kg*pyunits.K**0.5/pyunits.s/pyunits.Pa
         )
         self.eff_dry = Var(initialize=0.87, doc="Turbine dry isentropic efficiency")
         self.design_exhaust_flow_vol = Var(
-            initialize=6000.0, doc="Design exit volumetirc flowrate [m^3/s]"
+            initialize=6000.0, doc="Design exit volumetirc flowrate [m^3/s]",
+            units=pyunits.m**3/pyunits.s
         )
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_isentropic.unfix()
@@ -68,7 +70,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
                 + 0.0638 * f ** 2
                 - 0.0328 * f
                 + 0.0064
-            )
+            )*pyunits.J/pyunits.mol
 
         @self.Constraint(self.flowsheet().config.time, doc="Stodola eq. choked flow")
         def stodola_equation(b, t):
@@ -78,6 +80,7 @@ class TurbineOutletStageData(HelmIsentropicTurbineData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
+
             return flow ** 2 * mw ** 2 * (Tin) == (
                 cf ** 2 * Pin ** 2 * (1 - Pr ** 2))
 

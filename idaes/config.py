@@ -17,7 +17,7 @@ import os
 import importlib
 
 _log = logging.getLogger(__name__)
-default_binary_release = "2.2.1"
+default_binary_release = "2.2.2"
 binary_platform_map = {
     "rhel6": "centos6",
     "rhel7": "centos7",
@@ -60,7 +60,8 @@ default_config = """
         "unit",
         "control_volume",
         "properties",
-        "reactions"
+        "reactions",
+        "ui"
     ],
     "logging":{
         "version":1,

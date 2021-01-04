@@ -2,9 +2,9 @@ Turbine (Stage)
 ===============
 
 .. index::
-  pair: idaes.power_generation.unit_models.turbine_stage;TurbineStage
+  pair: idaes.power_generation.unit_models.helm.turbine_stage;HelmTurbineStage
 
-.. module:: idaes.power_generation.unit_models.turbine_stage
+.. module:: idaes.power_generation.unit_models.helm.turbine_stage
 
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
@@ -21,13 +21,13 @@ Example
     from pyomo.environ import ConcreteModel, SolverFactory
 
     from idaes.core import FlowsheetBlock
-    from idaes.power_generation.unit_models import TurbineStage
+    from idaes.power_generation.unit_models.helm import HelmTurbineStage
     from idaes.generic_models.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = TurbineStage(default={"property_package": m.fs.properties})
+    m.fs.turb = HelmTurbineStage(default={"property_package": m.fs.properties})
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(70000)
     m.fs.turb.inlet[:].flow_mol.fix(15000)
@@ -89,11 +89,11 @@ The arguments to the initialization method are the same as PressureChanger.
 TurbineStage Class
 ------------------
 
-.. autoclass:: TurbineStage
+.. autoclass:: HelmTurbineStage
   :members:
 
 TurbineStageData Class
 ----------------------
 
-.. autoclass:: TurbineStageData
+.. autoclass:: HelmTurbineStageData
   :members:

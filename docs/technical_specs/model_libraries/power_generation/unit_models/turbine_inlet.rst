@@ -2,9 +2,9 @@ Turbine (Inlet Stage)
 =====================
 
 .. index::
-  pair: idaes.power_generation.unit_models.turbine_inlet;TurbineInletStage
+  pair: idaes.power_generation.unit_models.helm.turbine_inlet;HelmTurbineInletStage
 
-.. module:: idaes.power_generation.unit_models.turbine_inlet
+.. module:: idaes.power_generation.unit_models.helm.turbine_inlet
 
 This is a steam power generation turbine model for the inlet stage.
 The turbine inlet model is based on:
@@ -17,16 +17,16 @@ Example
 
 .. testcode::
 
-    from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+    from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory, units
     from idaes.core import FlowsheetBlock
-    from idaes.power_generation.unit_models import TurbineInletStage
+    from idaes.power_generation.unit_models.helm import TurbineInletStage
     from idaes.generic_models.properties import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.turb = TurbineInletStage(default={"property_package": m.fs.properties})
-    hin = iapws95.htpx(T=880, P=2.4233e7)
+    m.fs.turb = HelmTurbineInletStage(default={"property_package": m.fs.properties})
+    hin = iapws95.htpx(T=880*units.K, P=2.4233e7*units.Pa)
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(hin)
     m.fs.turb.inlet[:].flow_mol.fix(26000/4.0)
@@ -140,11 +140,11 @@ infeasible problem.
 TurbineInletStage Class
 -----------------------
 
-.. autoclass:: TurbineInletStage
+.. autoclass:: HelmTurbineInletStage
   :members:
 
 TurbineInletStageData Class
 ---------------------------
 
-.. autoclass:: TurbineInletStageData
+.. autoclass:: HelmTurbineInletStageData
   :members:

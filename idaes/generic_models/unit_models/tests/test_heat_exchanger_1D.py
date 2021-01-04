@@ -586,22 +586,21 @@ class TestIAPWS_cocurrent(object):
 
     @pytest.mark.integration
     def test_units(self, iapws):
-        # TODO: Add these checks in once the IAPWS package has units
-        # assert_units_equivalent(iapws.fs.unit.shell_area, pyunits.m**2)
-        # assert_units_equivalent(iapws.fs.unit.shell_length, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.tube_area, pyunits.m**2)
-        # assert_units_equivalent(iapws.fs.unit.tube_length, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.d_shell, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.d_tube_outer, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.d_tube_inner, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.N_tubes, pyunits.dimensionless)
-        # assert_units_equivalent(
-        #     iapws.fs.unit.shell_heat_transfer_coefficient,
-        #     pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(
-        #     iapws.fs.unit.tube_heat_transfer_coefficient,
-        #     pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(iapws.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(iapws.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            iapws.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            iapws.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
 
         assert_units_consistent(iapws)
 
@@ -756,22 +755,21 @@ class TestIAPWS_countercurrent(object):
 
     @pytest.mark.integration
     def test_units(self, iapws):
-        # TODO: Add these checks in once the IAPWS package has units
-        # assert_units_equivalent(iapws.fs.unit.shell_area, pyunits.m**2)
-        # assert_units_equivalent(iapws.fs.unit.shell_length, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.tube_area, pyunits.m**2)
-        # assert_units_equivalent(iapws.fs.unit.tube_length, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.d_shell, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.d_tube_outer, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.d_tube_inner, pyunits.m)
-        # assert_units_equivalent(iapws.fs.unit.N_tubes, pyunits.dimensionless)
-        # assert_units_equivalent(
-        #     iapws.fs.unit.shell_heat_transfer_coefficient,
-        #     pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(
-        #     iapws.fs.unit.tube_heat_transfer_coefficient,
-        #     pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.shell_area, pyunits.m**2)
+        assert_units_equivalent(iapws.fs.unit.shell_length, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.tube_area, pyunits.m**2)
+        assert_units_equivalent(iapws.fs.unit.tube_length, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.d_shell, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.d_tube_outer, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.d_tube_inner, pyunits.m)
+        assert_units_equivalent(iapws.fs.unit.N_tubes, pyunits.dimensionless)
+        assert_units_equivalent(
+            iapws.fs.unit.shell_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(
+            iapws.fs.unit.tube_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.temperature_wall, pyunits.K)
 
         assert_units_consistent(iapws)
 

@@ -35,7 +35,13 @@ def _hash(fname):
     return str(fh.hexdigest())
 
 
-def download_binaries(release=None, url=None, verbose=False, platform="auto"):
+def download_binaries(
+    release=None,
+    url=None,
+    insecure=False,
+    cacert=None,
+    verbose=False,
+    platform="auto"):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
@@ -51,8 +57,11 @@ def download_binaries(release=None, url=None, verbose=False, platform="auto"):
     idaes._create_bin_dir()
     solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")
     libs_tar = os.path.join(idaes.bin_directory, "idaes-lib.tar.gz")
-    fd = FileDownloader()
+    fd = FileDownloader(insecure=insecure, cacert=cacert)
     arch = fd.get_sysinfo()
+    if arch[1] != 64:
+        _log.error("IDAES Extensions currently only supports 64bit Python.")
+        raise RuntimeError("IDAES Extensions currently only supports 64bit Python.")
     if platform == "auto":
         platform = arch[0]
         if platform == "linux":

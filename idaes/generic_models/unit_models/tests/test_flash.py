@@ -38,7 +38,6 @@ from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
 
-
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
@@ -249,9 +248,8 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_units(self, iapws):
         assert_units_consistent(iapws)
-        # TODO :Add these checks in once the IAPWS package has units added
-        # assert_units_equivalent(iapws.fs.unit.heat_duty[0], units.W)
-        # assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
+        assert_units_equivalent(iapws.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
@@ -328,6 +326,12 @@ class TestIAPWS(object):
         assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
         iapws.fs.unit.diameter.fix(2)
         iapws.fs.unit.length.fix(4)
+        # initialize unit with costing block
+        iapws.fs.unit.initialize()
+        # check costing initialized correct
+        assert (pytest.approx(86957.195, abs=1e-3) ==
+                value(iapws.fs.unit.costing.purchase_cost))
+
         results = solver.solve(iapws)
         # Check for optimal solution
         assert results.solver.termination_condition == \
@@ -337,3 +341,5 @@ class TestIAPWS(object):
                 value(iapws.fs.unit.costing.base_cost))
         assert (pytest.approx(97660.6169, abs=1e3) ==
                 value(iapws.fs.unit.costing.purchase_cost))
+
+        assert_units_consistent(iapws.fs.unit.costing)

@@ -10,7 +10,7 @@ HelmPhaseSeparator Model
 Introduction
 ------------
 
-The HelmPhaseSeparator model consist of a simple phase separator to be used only with the Helmholtz equation of state. 
+The HelmPhaseSeparator model consists of a simple phase separator to be used only with the Helmholtz equation of state. 
 The two-phase mixture at the inlet is separated into the vapor and liquid streams at the two corresponding outlets. This simple unit includes one state block (mixed_state) for the inlet, and two state blocks, one for liquid (liq_state) and the other for vapor (vap_state). 
 Note that this water-specific flash model replaces IDAES' generic flash unit operation model.
 

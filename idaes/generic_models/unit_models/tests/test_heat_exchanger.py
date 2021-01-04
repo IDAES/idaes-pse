@@ -38,6 +38,8 @@ from idaes.generic_models.unit_models.heat_exchanger import (
     HeatExchanger,
     HeatExchangerFlowPattern)
 
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_underwood_callback)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -167,16 +169,14 @@ def test_costing():
 
     assert degrees_of_freedom(m) == 0
 
+    m.fs.unit.get_costing()
+
     m.fs.unit.initialize()
 
-    m.fs.unit.get_costing()
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.base_cost,
-                m.fs.unit.costing.base_cost_eq)
+    assert m.fs.unit.costing.purchase_cost.value == \
+        pytest.approx(529738.6793, 1e-5)
 
-    calculate_variable_from_constraint(
-                m.fs.unit.costing.purchase_cost,
-                m.fs.unit.costing.cp_cost_eq)
+    assert_units_consistent(m.fs.unit.costing)
 
     results = solver.solve(m)
 
@@ -217,14 +217,14 @@ def test_costing_book():
     m.fs.costing.CE_index = 550
     m.fs.unit.costing.hx_os = 1.0
     calculate_variable_from_constraint(
-            m.fs.unit.costing.base_cost,
-            m.fs.unit.costing.base_cost_eq)
+            m.fs.unit.costing.base_cost_per_unit,
+            m.fs.unit.costing.base_cost_per_unit_eq)
 
     calculate_variable_from_constraint(
             m.fs.unit.costing.purchase_cost,
             m.fs.unit.costing.cp_cost_eq)
 
-    assert m.fs.unit.costing.base_cost.value == \
+    assert value(m.fs.unit.costing.base_cost) == \
         pytest.approx(78802.0518, 1e-5)
     assert m.fs.unit.costing.purchase_cost.value == \
         pytest.approx(417765.1377, 1e-5)
@@ -561,6 +561,32 @@ class TestIAPWS_countercurrent(object):
 
         return m
 
+    @pytest.fixture(scope="class")
+    def iapws_underwood(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "delta_temperature_callback": delta_temperature_underwood_callback,
+                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+
+        m.fs.unit.inlet_1.flow_mol[0].fix(100)
+        m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+        m.fs.unit.inlet_2.flow_mol[0].fix(100)
+        m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+        m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+        m.fs.unit.area.fix(1000)
+        m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        return m
+
     @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, iapws):
@@ -602,13 +628,12 @@ class TestIAPWS_countercurrent(object):
 
     @pytest.mark.integration
     def test_units(self, iapws):
-        # TODO: Add these checks in once the IAPWS package has units
-        # assert_units_equivalent(
-        #     iapws.fs.unit.overall_heat_transfer_coefficient,
-        #     pyunits.W/pyunits.m**2/pyunits.K)
-        # assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
-        # assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
-        # assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
+        assert_units_equivalent(
+            iapws.fs.unit.overall_heat_transfer_coefficient,
+            pyunits.W/pyunits.m**2/pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.area, pyunits.m**2)
+        assert_units_equivalent(iapws.fs.unit.delta_temperature_in, pyunits.K)
+        assert_units_equivalent(iapws.fs.unit.delta_temperature_out, pyunits.K)
 
         assert_units_consistent(iapws)
 
@@ -642,6 +667,23 @@ class TestIAPWS_countercurrent(object):
     @pytest.mark.component
     def test_solve(self, iapws):
         results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_underwood(self, iapws_underwood):
+        initialization_tester(iapws_underwood)
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve_underwood(self, iapws_underwood):
+        results = solver.solve(iapws_underwood)
 
         # Check for optimal solution
         assert results.solver.termination_condition == \

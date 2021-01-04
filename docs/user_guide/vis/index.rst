@@ -18,7 +18,7 @@ models, streams, and stream labels.
 Installation instructions
 -------------------------
 
-1. :ref:`Ensure that the latest IDAES is installed. <getting_started:Installation>` 
+1. :ref:`Ensure that the latest IDAES is installed. <getting_started/index:Installation>` 
 
 .. _usage:
 
