@@ -11,11 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Benzene-Toluene phase equilibrium package using ideal liquid and vapor.
+CO2-bmimPF6 phase equilibrium package using ideal liquid and vapor.
 
 Example property package using the Generic Property Package Framework.
-This exmample shows how to set up a property package to do benzene-toluene
-phase equilibrium in the generic framework using ideal liquid and vapor
+This exmample shows how to set up a property package to do CO2-Ionic Liquid
+phase equilibrium in the generic framework using Peng-robinsons EOS
 assumptions along with methods drawn from the pre-built IDAES property
 libraries.
 """
