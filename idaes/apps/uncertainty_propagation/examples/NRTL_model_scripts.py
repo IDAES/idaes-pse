@@ -140,13 +140,6 @@ def NRTL_model_opt(theta, theta_names):
     m.fs.flash.deltaP.fix(0)
     
 
-    m.obj = Objective(expr = 0*m.fs.properties.tau['benzene','toluene'] + exp(-m.fs.properties.alpha['toluene','benzene'].value * m.fs.properties.tau['toluene','benzene']), sense=minimize)
-    
-    # fix theta, getattr(model, v) not work..So, used dictionary to specify it
-    # will handle the issue
-    variable_dic ={theta_names[0]: m.fs.properties.tau['benzene','toluene'], theta_names[1]: m.fs.properties.tau['toluene','benzene'] }
-    for v in theta_names:
-        variable_dic[v].setlb(theta[v])
-        variable_dic[v].setub(theta[v])
+    m.obj = Objective(expr = 0*m.fs.properties.tau["benzene","toluene"] + exp(-m.fs.properties.alpha['toluene','benzene'].value * m.fs.properties.tau['toluene','benzene']), sense=minimize)
     return m
 

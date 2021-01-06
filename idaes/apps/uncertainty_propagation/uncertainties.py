@@ -87,10 +87,22 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     for _ in theta_names:
         if " " in _:
             warnings.warn('The current version does not support any space in theta_names.')
+    
+    # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
+    # Save original variables name in to var_dic
+    # Remove all "'" in theta_names 
+    var_dic = {}
+    for i in range(len(theta_names)):
+        var_dic[theta_names[i].replace("'", '')] = theta_names[i]
+        if "'" in theta_names[i]:
+            theta_names[i] = theta_names[i].replace("'", '')
 
     parmest_class = parmest.Estimator(model_function, data, theta_names, obj_function,
                  tee, diagnostic_mode, solver_options)
-    obj, theta, cov = parmest_class.theta_est(calc_cov=True)
+    obj, theta,cov = parmest_class.theta_est(calc_cov=True)
+
+    # Revert theta_names to be original
+    theta_names = [var_dic[v] for v in theta_names] 
 
     propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names)
     return obj, theta, cov, propagation_f, propagation_c
@@ -111,6 +123,12 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         Covariance matrix of parameters 
     theta_names: list of strings
         List of estimated Var names
+    var_dic: dictionary
+        If any original variable contains "'", need an auxiliary dictionary 
+        with keys theta_namess without "'", values with "'".
+        e.g)
+        var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 
+                  'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
     tee: bool, optional
         Indicates that ef solver output should be teed
     solver_options: dict, optional
@@ -132,16 +150,25 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         When model_uncertain is neither 'ConcreteModel' nor 'function'.
     """
     # define Pyomo model
-    # note: when model_uncertain is Pyomo ConcreteModel, thetas are fixed in this function
     if type(model_uncertain).__name__ == 'ConcreteModel':
         model = model_uncertain
-        for v in theta_names:
-            getattr(model, v).setlb(theta[v])
-            getattr(model, v).setub(theta[v])
     elif type(model_uncertain).__name__ == 'function':
         model = model_uncertain(theta,theta_names)
     else:
         raise Exception('model_uncertain must be either python function or Pyomo ConcreteModel.')
+
+    # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
+    # Save original variables name in to var_dic
+    # Remove all "'" in theta_names     
+    var_dic = {}
+    for i in range(len(theta_names)):
+        var_dic[theta_names[i].replace("'", '')] = theta_names[i]
+        if "'" in theta_names[i]:
+            theta_names[i] = theta_names[i].replace("'", '')
+    # Fix the estiamted paramerters 
+    for v in theta_names:
+        eval('model.'+var_dic[v]).setlb(theta[v])
+        eval('model.'+var_dic[v]).setub(theta[v])
 
     # get gradient of the objective function, constraints, and the column number of each theta
     gradient_f, gradient_c,line_dic = get_sensitivity(model, theta_names)

@@ -70,11 +70,5 @@ def rooney_biegler_model_opt(theta, theta_names):
     model.rate_constant = pyo.Var(initialize = 0.5)
     
     model.obj = pyo.Objective(expr = model.asymptote*( 1 - pyo.exp(-model.rate_constant*10  )  ), sense=pyo.minimize)
-    
-    # fix theta with the estimated values    
-    for v in theta_names:
-        getattr(model, v).setlb(theta[v])
-        getattr(model, v).setub(theta[v])
-
     return model
 
