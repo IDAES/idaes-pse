@@ -129,7 +129,7 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_quantify_propagate_uncertainty_NRTL(self):
         from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
-        variable_name = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
+        variable_name = ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
         current_path = os.path.dirname(os.path.realpath(__file__))
         data = pd.read_csv(os.path.join(current_path, 'BT_NRTL_dataset.csv'))
         def SSE(model, data):
