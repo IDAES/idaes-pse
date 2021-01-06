@@ -84,26 +84,24 @@ def iapws95_available():
     return _available(_so)
 
 
-def htpx(T, P=None, x=None):
+def htpx(T=None, P=None, x=None):
     """
     Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
-
-    User must provided values for one (and only one) of arguments P and x.
-
+    User must provided values for two of T, P, or x.
     Args:
-        T: Temperature [K] (between 200 and 3000)
-        P: Pressure [Pa] (between 1 and 1e9), None if saturated steam
+        T: Temperature with units (between 200 and 3000 K)
+        P: Pressure with units (between 1 and 1e9 Pa), None if saturated vapor
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
-
     Returns:
         Total molar enthalpy [J/mol].
     """
     prop = Iapws95StateBlock(default={"parameters": Iapws95ParameterBlock()})
     return _htpx(T=T, P=P, x=x, prop=prop,
-                 Tmin=270, Tmax=3e3, Pmin=1e-4, Pmax=1e6)
+                 Tmin=270*pyunits.K, Tmax=3e3*pyunits.K,
+                 Pmin=1e-4*pyunits.kPa, Pmax=1e6*pyunits.kPa)
 
 
 @declare_process_block_class("Iapws95ParameterBlock")
@@ -146,14 +144,15 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
         self.tc_L0 = Param(
             RangeSet(0, 5),
             initialize={
-                0: 2.443221e-3,
-                1: 1.323095e-2,
-                2: 6.770357e-3,
-                3: -3.454586e-3,
-                4: 4.096266e-4,
+                0: 2.443221e0,
+                1: 1.323095e1,
+                2: 6.770357e0,
+                3: -3.454586e0,
+                4: 4.096266e-1,
             },
             doc="0th order thermal conductivity parameters",
-            units=pyunits.K*pyunits.m/pyunits.mW)
+            units=pyunits.K*pyunits.m/pyunits.W
+        )
 
         self.tc_L1 = Param(
             RangeSet(0, 5),
@@ -199,6 +198,7 @@ class Iapws95ParameterBlockData(HelmholtzParameterBlockData):
             RangeSet(0, 4),
             initialize={0: 1.67752, 1: 2.20462, 2: 0.6366564, 3: -0.241605},
             doc="0th order viscosity parameters",
+            units=1/pyunits.s/pyunits.Pa
         )
 
         self.visc_H1 = Param(
@@ -283,13 +283,11 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
         def rule_tc(b, p):
             L0 = self.config.parameters.tc_L0
             L1 = self.config.parameters.tc_L1
-            return pyunits.convert(
-                (sqrt(1.0 / tau) / sum(L0[i] * tau ** i for i in L0) *
-                 exp(delta[p] * sum(
-                     (tau - 1)**i * sum(L1[i, j] * (delta[p] - 1)**j
-                                        for j in range(0, 6))
-                     for i in range(0, 5)))),
-                to_units=pyunits.W/pyunits.K/pyunits.m)
+            return (
+                sqrt(1.0 / tau) / sum(L0[i] * tau ** i for i in L0) *
+                exp(delta[p] * sum((tau - 1)**i *
+                    sum(L1[i, j] * (delta[p] - 1)**j for j in range(0, 6))
+                for i in range(0, 5))))
 
         self.therm_cond_phase = Expression(
             phlist, rule=rule_tc, doc="Thermal conductivity [W/K/m]"
@@ -302,15 +300,13 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
             # The units of this are really weird, so I am just going to append
             # units to the expression rather than give units to the parameters
             return (
-                1e-4*sqrt(1.0 / tau) / sum(H0[i] * tau ** i for i in H0) *
+                1e-4 * sqrt(1.0 / tau) / sum(H0[i] * tau ** i for i in H0) *
                 exp(delta[p] * sum((tau - 1)**i *
-                                   sum(H1[i, j] * (delta[p] - 1)**j
-                                       for j in range(0, 7))
-                                   for i in range(0, 6))) *
-                pyunits.Pa*pyunits.s)
+                    sum(H1[i, j] * (delta[p] - 1)**j for j in range(0, 7))
+                for i in range(0, 6))))
 
         self.visc_d_phase = Expression(
-            phlist, rule=rule_mu, doc="Viscosity (dynamic) [Pa*s]"
+            phlist, rule=rule_mu, doc="Viscosity (dynamic)"
         )
 
         # Phase kinimatic viscosity
@@ -318,5 +314,5 @@ class Iapws95StateBlockData(HelmholtzStateBlockData):
             return self.visc_d_phase[p] / self.dens_mass_phase[p]
 
         self.visc_k_phase = Expression(
-            phlist, rule=rule_nu, doc="Kinematic viscosity [m^2/s]"
+            phlist, rule=rule_nu, doc="Kinematic viscosity"
         )
