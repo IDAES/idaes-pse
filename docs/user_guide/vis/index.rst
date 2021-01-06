@@ -34,7 +34,7 @@ a directory where you want to save your work, then click on the "New" button in 
 a new notebook. You may have multiple options under the "Python" sub-menu; make sure you select a Python installation
 that has IDAES already installed.
 
-We need to create, in this Jupyter Notebook, an IDAES flowsheet to visualize. Paste the following code (taken from the Flash unit tutorial)
+We need to create, in this Jupyter Notebook, an IDAES flowsheet to visualize. Paste the following code (taken from the Flash unit tutorial; for more information on what this code is actually doing, see the full tutorial in the :doc:`tutorials section <../../tutorials_examples>`)
 into the first cell in the notebook::
 
     from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
@@ -68,7 +68,7 @@ Run that cell (hit shift-enter), and you should see some output from the last ca
 
 This means the initialization succeeded, and you can move on.
 
-.. warning::
+.. note::
 
     If you see instead something like the following, you probably didn't run the notebook within
     a Python environment where IDAES is installed. To fix, first try other Python environments, or "kernels",
@@ -215,12 +215,12 @@ The main visual components are called Units, Lines, and Annotations.
 
 Units
     *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
-    The three types of units are IDAES unit models (such as a Flash, Mixer, or Splitter), inlets, or
-    outlets. Units can be moved by clicking and dragging them. If you right-click on a unit, it
-    will rotate 90 degrees.
+    In addition to different shapes for the different IDAES unit models, there are also designated
+    shapes for inlets and outlets. All units can be moved by clicking and dragging them.
+    If you right-click on a unit, it will rotate 90 degrees.
 
 Lines
-    The lines connecting units, also called "arcs", can be manipulated by clicking and dragging.
+    The lines connecting units can be manipulated by clicking and dragging.
     If you double-click on a line, you will create a new segment that can be used for routing the line
     around objects. You can eliminate a segment by clicking on the dot that appears as you hover over
     the line.
