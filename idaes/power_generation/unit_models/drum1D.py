@@ -872,29 +872,26 @@ discretizing length domain (default=3)"""))
         # Calculate stress based on EN12952 standard
         # -----------------------------------------------------------------
         # mechanical stress of circumferential direction
-        drum_thickness = self.drum_thickness
         # mean radius
-        r_ms_drum = self.drum_ri + drum_thickness/2
-
-        # downcomer inner diameter
-        downcomer_diameter = self.downcomer_diameter
+        r_ms_drum = self.drum_ri + self.drum_thickness/2
 
         # thickness of downcomer //m
-        pipe_th = Param(initialize=0.0254,
-                        mutable=True,
-                        doc="Thickness of Downcomer")
+        self.downcomer_thickness = Param(initialize=0.0254,
+                                         mutable=True,
+                                         doc="Thickness of Downcomer")
 
-        # mean diameter of downcomer.
-        # pipe_d=pipe_d(inner)+pipe_th=pipe_d(outer)-pipe_th
-        pipe_d = downcomer_diameter + pipe_th
+        # mean diameter of downcomer
+        # pipe_d = pipe_d(inner) + self.downcomer_thickness ==
+        # pipe_d(outer)-self.downcomer_thickness
+        pipe_d = self.downcomer_diameter + self.downcomer_thickness
 
         # mechanical coefficients
-        k_m_A = -1.14 * (pipe_th / drum_thickness)**2 \
-            - 0.89 * (pipe_th / drum_thickness) + 1.43
-        k_m_B = 0.326 * (pipe_th / drum_thickness)**2 \
-            - 0.59 * (pipe_th / drum_thickness) + 1.08
+        k_m_A = -1.14 * (self.downcomer_thickness / self.drum_thickness)**2 \
+            - 0.89 * (self.downcomer_thickness / self.drum_thickness) + 1.43
+        k_m_B = 0.326 * (self.downcomer_thickness / self.drum_thickness)**2 \
+            - 0.59 * (self.downcomer_thickness / self.drum_thickness) + 1.08
         k_m_C = pipe_d / (2 * r_ms_drum) * sqrt((2 * r_ms_drum)
-                                                / (2 * drum_thickness))
+                                                / (2 * self.drum_thickness))
         k_m = 2.2 + exp(k_m_A) * k_m_C**k_m_B
 
         # thermal stress concentration factor
@@ -912,7 +909,7 @@ discretizing length domain (default=3)"""))
                          'for Drum (EN 12952-3)')
         def sigma_p(b, t):
             return 0.1 * 1E-5 * b.control_volume.properties_out[t].\
-                    pressure * r_ms_drum / drum_thickness
+                    pressure * r_ms_drum / self.drum_thickness
 
         # thermal stress at circumferential direction
         @self.Expression(self.flowsheet().config.time,
