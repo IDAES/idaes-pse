@@ -78,7 +78,7 @@ def test_visualize(flash_model):
     resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
     data = resp.json()
     # Validate the modified model
-    expected = {'model': {'id': 'Flash', 'unit_models': {}, 'arcs': {}}, 'cells': []}
+    expected = {'model': {'id': 'Flash', 'stream_table': {'columns': ['', 'Variable'], 'data': [], 'index': []}, 'unit_models': {}, 'arcs': {}}, 'cells': []}
     assert data == expected
 
 
