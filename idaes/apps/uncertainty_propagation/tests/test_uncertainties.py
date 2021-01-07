@@ -16,6 +16,7 @@ sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import approx
 from mock import patch
 from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty, get_sensitivity
 from pyomo.opt import SolverFactory
@@ -44,11 +45,11 @@ class TestUncertaintyPropagation:
     
         obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
 
-        np.testing.assert_almost_equal(obj, 4.331711213656886)
-        np.testing.assert_almost_equal(theta[variable_name[0]], 19.142575284617866)
-        np.testing.assert_almost_equal(theta[variable_name[1]], 0.53109137696521)
-        np.testing.assert_almost_equal(cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
-        np.testing.assert_almost_equal(propagation_f['objective'], 5.45439337747349)
+        assert obj == approx(4.331711213656886)
+        assert theta[variable_name[0]] == approx(19.142575284617866)
+        assert theta[variable_name[1]] == approx(0.53109137696521)
+        assert cov == approx(np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
+        assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
         
         
@@ -68,11 +69,11 @@ class TestUncertaintyPropagation:
 
         obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)
 
-        np.testing.assert_almost_equal(obj, 4.331711213656886)
-        np.testing.assert_almost_equal(theta[variable_name[0]], 19.142575284617866)
-        np.testing.assert_almost_equal(theta[variable_name[1]], 0.53109137696521)
-        np.testing.assert_almost_equal(cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
-        np.testing.assert_almost_equal(propagation_f['objective'], 5.45439337747349)
+        assert obj == approx(4.331711213656886)
+        assert theta[variable_name[0]] == approx(19.142575284617866)
+        assert theta[variable_name[1]] == approx(0.53109137696521)
+        assert cov == approx(np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
+        assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
     
     def test_propagate_uncertainty(self):
@@ -93,7 +94,7 @@ class TestUncertaintyPropagation:
 
         propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
 
-        np.testing.assert_almost_equal(propagation_f['objective'], 5.45439337747349)
+        assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
         
     def test_get_sensitivity(self):
@@ -117,10 +118,10 @@ class TestUncertaintyPropagation:
             getattr(model_uncertain, v).setub(theta[v])
         gradient_f, gradient_c, line_dic =  get_sensitivity(model_uncertain, variable_name)
         
-        np.testing.assert_almost_equal(gradient_f, np.array([0.99506259, 0.945148]))
-        np.testing.assert_almost_equal(gradient_c, np.array([[-1000, -1000, -1000]]))
-        np.testing.assert_almost_equal(line_dic['asymptote'], 1)
-        np.testing.assert_almost_equal(line_dic['rate_constant'], 2)
+        assert gradient_f == approx(np.array([0.99506259, 0.945148]))
+        assert gradient_c == approx(np.array([[-1000, -1000, -1000]]))
+        assert line_dic['asymptote'] == approx(1)
+        assert line_dic['rate_constant'] == approx(2)
         
     
     @pytest.mark.unit
@@ -140,17 +141,17 @@ class TestUncertaintyPropagation:
             return expr*1E4
         obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
 
-        np.testing.assert_almost_equal(obj, 0.004663348837044143)
-        np.testing.assert_almost_equal(theta[variable_name[0]],  0.4781086784101746)
-        np.testing.assert_almost_equal(theta[variable_name[1]],  -0.40924465377598657)
-        np.testing.assert_almost_equal(cov, np.array([[0.00213426, -0.00163064], [-0.00163064, 0.00124591]]))
-        np.testing.assert_almost_equal(propagation_f['objective'], 0.00014333989649382864)
-        np.testing.assert_almost_equal(propagation_c['constraints 4'], 0.000084167318885)
-        np.testing.assert_almost_equal(propagation_c['constraints 5'], 0.0002455439364710466)
-        np.testing.assert_almost_equal(propagation_c['constraints 6'], 0.0008215307761164211)
-        np.testing.assert_almost_equal(propagation_c['constraints 7'], 0.0001749469866777253)
-        np.testing.assert_almost_equal(propagation_c['constraints 8'], 0.0005214685823573828)
-        np.testing.assert_almost_equal(propagation_c['constraints 9'], 0.00024951071782077465)
+        assert obj == approx(0.004663348837044143)
+        assert theta[variable_name[0]] == approx( 0.4781086784101746)
+        assert theta[variable_name[1]] == approx( -0.40924465377598657)
+        assert cov == approx(np.array([[0.00213426, -0.00163064], [-0.00163064, 0.00124591]]))
+        assert propagation_f['objective'] == approx(0.00014)
+        assert propagation_c['constraints 4'] == approx(0.000084)
+        assert propagation_c['constraints 5'] == approx(0.00025)
+        assert propagation_c['constraints 6'] == approx(0.00082)
+        assert propagation_c['constraints 7'] == approx(0.00017)
+        assert propagation_c['constraints 8'] == approx(0.00052)
+        assert propagation_c['constraints 9'] == approx(0.00025)
 
 
 
