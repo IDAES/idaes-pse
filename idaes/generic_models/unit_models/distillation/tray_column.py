@@ -425,45 +425,55 @@ see property package for documentation.}"""))
             else:
                 self.stripping_section[i].initialize()
 
-        # Create temp block to add rectification section and expanded arcs
+        # For initialization purposes and to enable solving individual sections
+        # creating a temp block. Note that this temp block is a reference to
+        # the rectification, stripping, and feed sections. Also, expanded arcs
+        # are added to the temp block as the initialization solve proceeds.
         self._temp_block = Block()
 
-        self._temp_block.rectification_trays = Reference(
-            {i: t for i, t in self.rectification_section.items()})
-        self._temp_block.expanded_rect_liq_streams = Reference(
-            [self.rectification_liq_stream[i].expanded_block
-             for i in self._rectification_stream_index])
-        self._temp_block.expanded_rect_vap_streams = Reference(
-            [self.rectification_vap_stream[i].expanded_block
-             for i in self._rectification_stream_index])
+        self._temp_block.rectification = Block()
+
+        # adding reference to the rectification section and the expanded
+        # vapor and liquid arcs
+        self._temp_block.rectification.trays = Reference(
+            self.rectification_section)
+        self._temp_block.rectification.expanded_liq_stream = Reference(
+            self.rectification_liq_stream[:].expanded_block)
+        self._temp_block.rectification.expanded_vap_stream = Reference(
+            self.rectification_vap_stream[:].expanded_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block, tee=slc.tee)
+            res = solver.solve(self._temp_block.rectification, tee=slc.tee)
         init_log.info(
             "Rectification section initialization status {}.".
             format(idaeslog.condition(res))
         )
 
-        self._temp_block.stripping_trays = Reference(
-            {i: t for i, t in self.stripping_section.items()})
-        self._temp_block.expanded_strip_liq_streams = Reference(
-            [self.stripping_liq_stream[i].expanded_block
-             for i in self._stripping_stream_index])
-        self._temp_block.expanded_strip_vap_streams = Reference(
-            [self.stripping_vap_stream[i].expanded_block
-             for i in self._stripping_stream_index])
+        self._temp_block.stripping = Block()
+
+        # adding reference to the stripping section and the expanded
+        # vapor and liquid arcs
+        self._temp_block.stripping.trays = Reference(self.stripping_section)
+        self._temp_block.stripping.expanded_liq_stream = Reference(
+            self.stripping_liq_stream[:].expanded_block)
+        self._temp_block.stripping.expanded_vap_stream = Reference(
+            self.stripping_vap_stream[:].expanded_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block, tee=slc.tee)
+            res = solver.solve(self._temp_block.stripping, tee=slc.tee)
         init_log.info(
             "Stripping section initialization status {}."
             .format(idaeslog.condition(res))
         )
 
+        # releasing the fixed inlets for the vap in to the rectification
+        # to enable connection with the feed tray vap out
         self.rectification_section[len(self._rectification_index)]. \
             properties_in_vap. \
             release_state(flags=rect_vap_flags, outlvl=outlvl)
 
+        # releasing the fixed inlets for the liq in to the stripping
+        # to enable connection with the feed tray liq out
         self.stripping_section[self.config.feed_tray_location + 1]. \
             properties_in_liq. \
             release_state(flags=strip_liq_flags, outlvl=outlvl)
