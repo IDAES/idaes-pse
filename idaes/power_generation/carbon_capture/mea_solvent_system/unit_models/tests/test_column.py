@@ -62,7 +62,6 @@ class TestColumn:
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
             "transformation_method": "dae.finite_difference",
-            "flow_type": "counter_current",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,
@@ -148,7 +147,6 @@ class TestColumn:
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
             "transformation_method": "dae.finite_difference",
-            "flow_type": "counter_current",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
                 "property_package": m.fs.vapor_properties,

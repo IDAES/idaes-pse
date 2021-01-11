@@ -67,7 +67,6 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
      HeatExchangerFlowPattern as FlowPattern
-from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
@@ -90,27 +89,6 @@ class PackedColumnData(UnitModelBlockData):
     # Configuration template for phase specific  arguments
     _PhaseCONFIG = ConfigBlock()
 
-    # Unit level config arguments applicable to all phases
-    CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
-            **default** = useDefault.
-            **Valid values:** {
-            **useDefault** - get flag from parent (default = False),
-            **True** - set as a dynamic model,
-            **False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=True,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-            Must be True if dynamic = True,
-            **default** - False.
-            **Valid values:** {
-            **True** - construct holdup terms,
-            **False** - do not construct holdup terms}"""))
     CONFIG.declare("area_definition", ConfigValue(
         default=DistributedVars.variant,
         domain=In(DistributedVars),
@@ -321,19 +299,17 @@ class PackedColumnData(UnitModelBlockData):
 
     #==========================================================================
         """ Set argument values for vapor and liquid sides"""
-        # Consistency check for process type
-        if (self.config.process_type
-                not in ['Absorber', 'Stripper', 'Regenerator']):
-            raise ConfigurationError("{} got an invalid value for process_type "
-                                     " process type must be"
-                                     " 'Absorber', 'Stripper', or 'Regenerator'"
-                                     .format(self.name))
 
         # Set flow directions for the control volume blocks
         # Gas flows from 0 to 1, Liquid flows from 1 to 0
-        if self.config.flow_type == "counter_current":
+        if self.config.flow_type == FlowPattern.countercurrent:
             set_direction_vapor = FlowDirection.forward
             set_direction_liquid = FlowDirection.backward
+        else:
+            raise NotImplementedError(
+                "{} control volume class has implemented only counter-current "
+                "flow pattern. Please contact the "
+                "developer of the unit model you are using.".format(self.name))
 
         # Set  material balance to componentTotal as default
         self.config.liquid_side.material_balance_type = \
@@ -1178,9 +1154,11 @@ class PackedColumnData(UnitModelBlockData):
                 from_json(blk, fname=fname_init,
                           wts=StoreSpec(ignore_missing=True))
                 if not blk.config.dynamic:
-                    blk.make_steady_state_column_profile()
+                    pass # TO dO :
+                    #blk.make_steady_state_column_profile()
                 if blk.config.dynamic:
-                    blk.make_dynamic_column_profile()
+                    pass  # TO DO
+                    #blk.make_dynamic_column_profile()
             else:
                 blk._default_init(*args, **kwargs)
                 # save result

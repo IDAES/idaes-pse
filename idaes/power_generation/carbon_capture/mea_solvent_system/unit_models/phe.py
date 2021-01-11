@@ -104,20 +104,6 @@ class PHEData(UnitModelBlockData):
         description="Number of channels for each pass",
         doc="""Number of channels to be used in each pass"""))
 
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
-        default=False,
-        description="Dynamic model flag ",
-        doc="The PHE model operates at steady-state,"
-            " the inputs are index by time when conneted to a dynamic,"
-            " model"))
-
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([False]),
-        description="Holdup construction flag",
-        doc="Indicates whether holdup terms should be constructed or not."))
-
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentTotal,
         domain=In(MaterialBalanceType),
