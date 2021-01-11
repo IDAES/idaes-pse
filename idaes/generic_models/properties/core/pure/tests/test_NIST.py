@@ -25,7 +25,8 @@ Authors: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
+from pyomo.environ import \
+    ConcreteModel, Block, Expression, value, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -54,6 +55,7 @@ def frame():
         "pressure_sat_comp_coeff": {'A': 3.55959,  # units bar, K
                                     'B': 643.748,
                                     'C': -198.043}}
+    m.params.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -64,6 +66,7 @@ def frame():
 
     def get_metadata(self):
         return m.meta_object
+    m.get_metadata = types.MethodType(get_metadata, m)
     m.params.get_metadata = types.MethodType(get_metadata, m.params)
 
     # Add necessary parameters to parameter block
@@ -101,6 +104,9 @@ def test_cp_mol_ig_comp(frame):
     assert isinstance(frame.params.cp_mol_ig_comp_coeff_H, Var)
     assert value(frame.params.cp_mol_ig_comp_coeff_H) == -241.8264
 
+    assert isinstance(frame.params.enth_mol_form_vap_comp_ref, Expression)
+    assert value(frame.params.enth_mol_form_vap_comp_ref) == -241.8264*1e3
+
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(35.22, abs=1e-2)
@@ -110,9 +116,25 @@ def test_cp_mol_ig_comp(frame):
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
 
+
 @pytest.mark.unit
 def test_enth_mol_ig_comp(frame):
     enth_mol_ig_comp.build_parameters(frame.params)
+
+    expr = enth_mol_ig_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == pytest.approx(-2130.5 - 241826.4, rel=1e-3)
+
+    frame.props[1].temperature.value = 600
+    assert value(expr) == pytest.approx(1445 - 241826.4, rel=1e-3)
+
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+
+
+@pytest.mark.unit
+def test_enth_mol_ig_comp_no_formation(frame):
+    enth_mol_ig_comp.build_parameters(frame.params)
+    frame.params.config.include_enthalpy_of_formation = False
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -123,9 +145,11 @@ def test_enth_mol_ig_comp(frame):
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
+
 @pytest.mark.unit
-def test_entr_mol_ig_comp(frame):
+def test_entr_mol_ig_comp_no_formation(frame):
     entr_mol_ig_comp.build_parameters(frame.params)
+    frame.params.config.include_entropy_of_formation = False
 
     expr = entr_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
@@ -135,6 +159,7 @@ def test_entr_mol_ig_comp(frame):
     assert value(expr) == pytest.approx(213.1, rel=1e-3)
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
+
 
 @pytest.mark.unit
 def test_pressure_sat_comp(frame):
