@@ -518,24 +518,19 @@ see property package for documentation.}"""))
             properties_in_vap. \
             release_state(flags=strip_vap_flags, outlvl=outlvl)
 
-        # Adding the reboiler to the temp block solve
-        self._temp_block.reboiler = Reference(self.reboiler)
-        self._temp_block.expanded_reboiler_liq_in = Reference(
-            self.reboiler_liq_in.expanded_block)
-        self._temp_block.expanded_reboiler_vap_out = Reference(
-            self.reboiler_vap_out.expanded_block)
+        # Delete the _temp_block as next solve is solving the entire column.
+        # If we add the reboiler to the temp block, it will be similar to
+        # solving the original block. This ensures that if
+        # initialize is triggered twice, there is no implicit replacing
+        # component error.
+        self.del_component(self._temp_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block, tee=slc.tee)
+            res = solver.solve(self, tee=slc.tee)
         init_log.info(
             "Column section + Condenser + Reboiler initialization status {}."
             .format(idaeslog.condition(res))
         )
-
-        # Delete the _temp_block after initialization. This ensures that if
-        # initialize is triggered twice, there is no implicit replacing
-        # component error.
-        self.del_component(self._temp_block)
 
         # release feed tray state once initialization is complete
         self.feed_tray.properties_in_feed.\
