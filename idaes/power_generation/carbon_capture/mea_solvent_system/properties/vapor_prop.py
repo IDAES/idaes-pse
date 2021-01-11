@@ -150,7 +150,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                               mutable=False,
                               initialize=cp_param_dict,
                               units=pyunits.J / (pyunits.mol * pyunits.K),
-                              doc="ideal gas heat capacity parameters")
+                              doc="Ideal gas heat capacity parameters")
 
         # Viscosity constants
         #CO2 & H2O
@@ -236,102 +236,29 @@ class PhysicalParameterData(PhysicalParameterBlock):
                   units=pyunits.m**2 / pyunits.s,
                   doc="Diffusion volume parameter for binary diffusivity")
 
-        # Transport  parameters
-        # reference:  Billet and Schultes, 1999
-        packing_dict = {
-            'mellapak_250Y': {
-                'a': 250,      # specific surface Area of packing (m2/m3)
-                'S': 0.017,    # Channel Angle (m)
-                'eps': 0.97,   # Porosity (m3/m3)
-                'LpA': 237,   # ratio of packing length to cross sectional area
-                'Cv': 0.357,  # vapor packing specific Constant
-                'Cl': 0.5,    # liquid packing specific Constant
-                'C1': 5,  # Stichmair-Bravo-Fair pressure drop parameter
-                'C2': 3,  # Stichmair-Bravo-Fair pressure drop parameter
-                'C3': 0.45}}  # Stichmair-Bravo-Fair pressure drop paramete
-
-        self.eps_p = Param(initialize=packing_dict['mellapak_250Y']['eps'],
-                           units=None,
-                           doc="Packing void space m3/m3")
-        self.LpA = Param(initialize=packing_dict['mellapak_250Y']['LpA'],
-                         units=1 / pyunits.m,
-                         doc="Packing specific wetted perimeter m/m2")
-        self.S = Param(initialize=packing_dict['mellapak_250Y']['S'],
-                       units=pyunits.m,
-                       doc="Parameter related to packing geometry ")
-        self.a = Param(initialize=packing_dict['mellapak_250Y']['a'],
-                       units=pyunits.m**2 / pyunits.m**3,
-                       doc="Packing specific surface area m2/m3")
-        self.dia_hydraulic = Param(initialize=4 * packing_dict['mellapak_250Y']['eps'] /
-                                   packing_dict['mellapak_250Y']['a'],
-                                   units=pyunits.m,
-                                   doc="Hydraulic diameter [m]")
-
-        # interfacial area model parameters
-        # reference: Tsai 2010,. Chinen et al, 2018
-        self.ae_para = Var(initialize=1.42)
-        self.ae_parb = Var(initialize=0.12)
-        self.ae_para.fix()
-        self.ae_parb.fix()
-
-        # holdup model parameters: epsilon
-        # reference :Chinen et al, 2018
-        self.eps_para = Var(initialize=11.45)
-        self.eps_parb = Var(initialize=0.6471)
-        self.eps_para.fix()
-        self.eps_parb.fix()
-
-        # specific constants for volumetric mass transfer coefficients
-        # reference:  Billet and Schultes, 1999
-        self.Cv = Var(initialize=packing_dict['mellapak_250Y']['Cv'])
-        self.Cl = Var(initialize=packing_dict['mellapak_250Y']['Cl'])
-        self.Cv.fix()
-        self.Cl.fix()
-
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({
-            'flow_mol':
-            {'method': None, 'units': 'mol/s'},
-            'pressure':
-            {'method': None, 'units': 'Pa'},
-            'temperature':
-            {'method': None, 'units': 'K'},
-            'mole_frac_comp':
-            {'method': None, 'units': None},
-            'flow_mol_comp':
-            {'method': '_flow_mol_comp', 'units': 'mol/s'},
-            'mw':
-            {'method': '_mw', 'units': 'kg/mol'},
-            'conc_mol':
-            {'method': '_conc_mol', 'units': 'mol/m^3'},
-            'conc_mol_comp':
-            {'method': '_conc_mol_comp', 'units': 'mol/m^3'},
-            'dens_mass':
-            {'method': '_dens_mass', 'units': 'kg/m^3'},
-            'cp_mol':
-            {'method': '_cp_mol', 'units': 'J/mol.K'},
-            'cp_mol_mean':
-            {'method': '_cp_mol_mean', 'units': 'J/mol.K'},
-            'cp_mol_comp':
-            {'method': '_cp_mol_comp', 'units': 'J/mol.K'},
-            'cp_mol_comp_mean':
-            {'method': '_cp_mol_comp_mean', 'units': 'J/mol.K'},
-            'enth_mol_mean':
-            {'method': '_enth_mol_mean', 'units': 'J/s'},
-            'enth_mol_vap_density':
-            {'method': '_enth_mol_vap_density', 'units': 'J/m^3'},
-            'diffus':
-            {'method': '_diffus', 'units': 'm^2/s'},
-            'visc_d':
-            {'method': '_visc_d', 'units': 'kg/m.s'},
-            'visc_d_comp':
-            {'method': '_visc_d_comp', 'units': 'kg/m.s'},
-            'therm_cond':
-            {'method': '_therm_cond', 'units': 'J/m.K.s'},
-            'therm_cond_comp':
-            {'method': '_therm_cond_comp', 'units': 'J/m.K.s'}
-        })
+            'flow_mol': {'method': None, 'units': 'mol/s'},
+            'pressure': {'method': None, 'units': 'Pa'},
+            'temperature': {'method': None, 'units': 'K'},
+            'mole_frac_comp': {'method': None, 'units': None},
+            'flow_mol_comp': {'method': '_flow_mol_comp', 'units': 'mol/s'},
+            'mw': {'method': '_mw', 'units': 'kg/mol'},
+            'conc_mol': {'method': '_conc_mol', 'units': 'mol/m^3'},
+            'conc_mol_comp': {'method': '_conc_mol_comp', 'units': 'mol/m^3'},
+            'dens_mass': {'method': '_dens_mass', 'units': 'kg/m^3'},
+            'cp_mol': {'method': '_cp_mol', 'units': 'J/mol.K'},
+            'cp_mol_mean': {'method': '_cp_mol_mean', 'units': 'J/mol.K'},
+            'cp_mol_comp': {'method': '_cp_mol_comp', 'units': 'J/mol.K'},
+            'cp_mol_comp_mean': {'method': '_cp_mol_comp_mean', 'units': 'J/mol.K'},
+            'enth_mol_mean': {'method': '_enth_mol_mean', 'units': 'J/s'},
+            'enth_mol_vap_density': {'method': '_enth_mol_vap_density', 'units': 'J/m^3'},
+            'diffus': {'method': '_diffus', 'units': 'm^2/s'},
+            'visc_d': {'method': '_visc_d', 'units': 'kg/m.s'},
+            'visc_d_comp': {'method': '_visc_d_comp', 'units': 'kg/m.s'},
+            'therm_cond': {'method': '_therm_cond', 'units': 'J/m.K.s'},
+            'therm_cond_comp': {'method': '_therm_cond_comp', 'units': 'J/m.K.s'}})
 
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,

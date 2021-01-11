@@ -65,6 +65,8 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.generic_models.unit_models.heat_exchanger_1D import \
+     HeatExchangerFlowPattern as FlowPattern
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 from idaes.core.control_volume1d import DistributedVars
@@ -83,7 +85,7 @@ class PackedColumnData(UnitModelBlockData):
     """Standard Continous Differential Contactor (CDC)  Model Class."""
 
     # Configuration template for unit level arguments applicable to both phases
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
 
     # Configuration template for phase specific  arguments
     _PhaseCONFIG = ConfigBlock()
@@ -152,12 +154,14 @@ class PackedColumnData(UnitModelBlockData):
         doc="""Number of collocation points to use per finite element when
             discretizing length domain (default=3)"""))
     CONFIG.declare("flow_type", ConfigValue(
-        default="counter_current",
-        domain=In(['counter_current']),
+        default=FlowPattern.countercurrent,
+        domain=In(FlowPattern),
         description="Flow configuration of PackedColumn",
-        doc="""Flow configuration of PackedColumn
-                - counter_current: gas side flows from 0 to 1
-                                   liquid side flows from 1 to 0"""))
+        doc="""PackedColumn flow pattern
+        **default** - FlowPattern.countercurrent.
+        **Valid values:** {
+        **FlowPattern.countercurrent** - countercurrent flow,
+        **FlowPattern.cocurrent** - cocurrent flow}"""))
     _PhaseCONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentTotal,
         domain=In(MaterialBalanceType),
@@ -463,23 +467,43 @@ class PackedColumnData(UnitModelBlockData):
                              "t",
                              self.flowsheet().config.time)
 
-        # Add object references - Transport parameters
-        add_object_reference(self,
-                             "eps_ref",
-                             self.config.vapor_side.property_package.eps_p)
-        add_object_reference(self,
-                             "a_ref",
-                             self.config.vapor_side.property_package.a)
+        # Transport  parameters
+        # reference:  Billet and Schultes, 1999
+        packing_dict = {
+            'mellapak_250Y': {
+                'a': 250,      # specific surface Area of packing (m2/m3)
+                'S': 0.017,    # Channel Angle (m)
+                'eps': 0.97,   # Porosity (m3/m3)
+                'LpA': 237,   # ratio of packing length to cross sectional area
+                'Cv': 0.357,  # vapor packing specific Constant
+                'Cl': 0.5,    # liquid packing specific Constant
+                'C1': 5,  # Stichmair-Bravo-Fair pressure drop parameter
+                'C2': 3,  # Stichmair-Bravo-Fair pressure drop parameter
+                'C3': 0.45}}  # Stichmair-Bravo-Fair pressure drop paramete
 
-        add_object_reference(self,
-                             "Cl_ref",
-                             self.config.vapor_side.property_package.Cl)
-        add_object_reference(self,
-                             "Cv_ref",
-                             self.config.vapor_side.property_package.Cv)
-        add_object_reference(self,
-                             "dh_ref",
-                             self.config.vapor_side.property_package.dia_hydraulic)
+        self.eps_ref = Param(initialize=packing_dict['mellapak_250Y']['eps'],
+                             units=None,
+                             doc="Packing void space m3/m3")
+        self.LpA = Param(initialize=packing_dict['mellapak_250Y']['LpA'],
+                         units=1 / pyunits.m,
+                         doc="Packing specific wetted perimeter m/m2")
+        self.S = Param(initialize=packing_dict['mellapak_250Y']['S'],
+                       units=pyunits.m,
+                       doc="Parameter related to packing geometry ")
+        self.a_ref = Param(initialize=packing_dict['mellapak_250Y']['a'],
+                           units=pyunits.m**2 / pyunits.m**3,
+                           doc="Packing specific surface area m2/m3")
+        self.dh_ref = Param(initialize=4 * packing_dict['mellapak_250Y']['eps'] /
+                                   packing_dict['mellapak_250Y']['a'],
+                                   units=pyunits.m,
+                                   doc="Hydraulic diameter [m]")
+
+        # specific constants for volumetric mass transfer coefficients
+        # reference:  Billet and Schultes, 1999
+        self.Cv_ref = Var(initialize=packing_dict['mellapak_250Y']['Cv'])
+        self.Cl_ref = Var(initialize=packing_dict['mellapak_250Y']['Cl'])
+        self.Cv_ref.fix()
+        self.Cl_ref.fix()
 
         # Add object references - others
         R_ref = CONST.gas_constant
@@ -1569,7 +1593,7 @@ class PackedColumnData(UnitModelBlockData):
                 init_log.info("Scaleup: {}.".format(idaeslog.condition(res)))
 
         if not blk.config.dynamic:
-            blk.make_steady_state_column_profile()
+            #blk.make_steady_state_column_profile()
             print('=============STEADY-STATE INITIALIZATION COMPLETE=========')
 
         if blk.config.dynamic:
@@ -1624,10 +1648,10 @@ class PackedColumnData(UnitModelBlockData):
 
             print('===================INITIALIZATION COMPLETE=================')
 
-            if not blk.config.dynamic:
-                blk.make_steady_state_column_profile()
-            if blk.config.dynamic:
-                blk.make_dynamic_column_profile()
+            # if not blk.config.dynamic:
+            #     blk.make_steady_state_column_profile()
+            # if blk.config.dynamic:
+            #     blk.make_dynamic_column_profile()
 
     def fix_initial_condition(blk):
         '''

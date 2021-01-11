@@ -87,7 +87,7 @@ class PHEData(UnitModelBlockData):
     """
     PHE Unit Model Class
     """
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
 
     # Configuration template for fluid specific  arguments
     _SideCONFIG = ConfigBlock()
