@@ -1117,6 +1117,7 @@ class PackedColumnData(UnitModelBlockData):
                 blk.vapor_phase.properties[t, 0].pressure
 
     #==========================================================================
+
     # Model initialization routine
     def initialize(blk, method='default', *args, **kwargs):
         """
@@ -1170,8 +1171,7 @@ class PackedColumnData(UnitModelBlockData):
                       state_vars_fixed=False,
                       homotopy_steps_m=[0, 0.1, 0.2,
                                         0.3, 0.4, 0.5, 0.6, 0.8, 1],
-                      homotopy_steps_h=[0, 0.1, 0.2, 0.3,
-                                        0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                      homotopy_steps_h= [0, 0.1, 0.2, 0.3,0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
                       outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6}):
         """
         Initialisation routine for MEA PackedColumn unit (default solver ipopt).

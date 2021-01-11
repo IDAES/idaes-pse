@@ -21,11 +21,10 @@ import sys
 import os
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, value, TerminationCondition
+from pyomo.environ import ConcreteModel, value, TerminationCondition, SolverFactory
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
-from idaes.core.util.testing import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 # Access mea_column_files dir from the current dir (tests dir)
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -33,7 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 from unit_models.phe import PHE
 from properties.liquid_prop import LiquidParameterBlock
 
-solver = get_default_solver()
+solver = SolverFactory('ipopt')
 
 class TestPlateHeatExchanger:
     '''
@@ -111,7 +110,6 @@ class TestPlateHeatExchanger:
                                }})
         return m
 
-
     @pytest.fixture(scope="module", params=['dataset1', 'dataset2'])
     def set_input_output(self, phe_model, measurement, request):
         for t in phe_model.fs.time:
@@ -150,7 +148,6 @@ class TestPlateHeatExchanger:
                       'coldside_temperature_expectation': Tc_out}
             return output
 
-
     @pytest.mark.unit
     def test_phe_build(self, phe_model):
         assert phe_model.fs.hx.config.dynamic is False
@@ -159,11 +156,6 @@ class TestPlateHeatExchanger:
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_phe_validation(self, phe_model, set_input_output):
-
-        optarg = {"tol": 1e-7,
-                  "linear_solver": "mumps",
-                  "max_iter": 40}
-        solver.options = optarg
 
         phe_model.fs.hx.initialize()
         res = solver.solve(phe_model)
