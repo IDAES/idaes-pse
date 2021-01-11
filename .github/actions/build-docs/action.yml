@@ -1,0 +1,11 @@
+name: Build Sphinx docs
+description: Requires the setup-idaes action to be run before this
+# TODO add options as inputs as needed
+runs:
+  using: "composite"
+  steps:
+    - name: Build Sphinx docs (HTML)
+      shell: bash
+      run: |
+        cd docs/
+        python build.py
