@@ -105,7 +105,10 @@ class ModuleClassWalker(Walker):
         self._warn = not suppress_warnings
         self._parent = parent_class
         # build regular expression of things to exclude
-        expr_list, psep = [], '/'
+        expr_list = []
+        psep = os.path.sep
+        if psep == "\\":
+            psep = "\\\\"
         if exclude_testdirs:
             expr_list.append(r'{sl}tests?{sl}'.format(sl=psep))
         if exclude_tests:
@@ -117,10 +120,9 @@ class ModuleClassWalker(Walker):
         if exclude_dirs:
             for ed in exclude_dirs:
                 expr_list.append('{sl}{d}'.format(sl=psep, d=ed))
-        # print(f"@@ expr_list={expr_list}")
         self._exclude_expr = re.compile(r'|'.join(expr_list))
         self._history = []
-        # print('@@ exclude expr={}'.format(self._exclude_expr.pattern))
+        _log.debug('exclude expr={}'.format(self._exclude_expr.pattern))
 
     def walk(self, visitor):
         modules = self._get_modules()
