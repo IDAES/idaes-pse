@@ -54,6 +54,11 @@ def frame():
                                     'B': 1.45838,
                                     'C': -2.77580,
                                     'D': -1.23303}}
+    m.params.config.include_enthalpy_of_formation = True
+
+    # Also need to dummy configblock on the model for the test
+    m.config = ConfigBlock(implicit=True)
+    m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
@@ -120,6 +125,24 @@ def test_enth_mol_ig_comp(frame):
 
     frame.props[1].temperature.value = 400
     assert value(expr) == pytest.approx(-237522.824, abs=1e-3)
+
+    assert_units_equivalent(expr, pyunits.J/pyunits.mol)
+
+
+@pytest.mark.unit
+def test_enth_mol_ig_comp_no_form(frame):
+    frame.config.include_enthalpy_of_formation = False
+    frame.params.config.include_enthalpy_of_formation = False
+    enth_mol_ig_comp.build_parameters(frame.params)
+
+    assert not hasattr(frame.params, "enth_mol_form_vap_comp_ref")
+
+    expr = enth_mol_ig_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == pytest.approx(-240990.825 + 241830, abs=1e-3)
+
+    frame.props[1].temperature.value = 400
+    assert value(expr) == pytest.approx(-237522.824 + 241830, abs=1e-3)
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
