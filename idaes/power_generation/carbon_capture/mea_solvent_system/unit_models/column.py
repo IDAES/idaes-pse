@@ -11,30 +11,29 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-IDAES Continous Differential Contactor (CDC) Model, MEA GEN1 PackedColumn
+IDAES Continous Differential Contactor (CDC) Model, MEA GEN1 PackedColumn.
 
 Schematic Diagram:
 
-        Clean Gas  <----+     +<---- Lean Solvent
-                        |     |
-                       +----  -+ --- L,  z=1.0
-                       |      /|
-                       |     / |
-                       |    /  |
-                       |  ABS  |
-                       |  /    |
-                       | /     |
-                       |/      |
-                       +-------+ --- 0, z=0.0
-                        |     |
-        Flue gas ------>+     +---->Rich Solvent
+    Clean Gas  <----+     +<---- Lean Solvent
+                    |     |
+                   +----  -+ --- L,  z=1.0
+                   |      /|
+                   |     / |
+                   |    /  |
+                   |  ABS  |
+                   |  /    |
+                   | /     |
+                   |/      |
+                   +-------+ --- 0, z=0.0
+                    |     |
+    Flue gas ------>+     +---->Rich Solvent
 
     z: dimensionless distance in axial direction
     L: column length
     L*z: distance in axial direction
     The column height can be changed without changing the discretiation
     by changing L.
-
 
 Detailed model equations can be found in the supplimentary information
 of the paper :
@@ -44,6 +43,7 @@ MEA-Based Post-Combustion CO2 Capture Process
 Under Part-Load and Variable Capture Operation,
 Industrial & Engineering Chemistry Research,2020. (submitted)
 """
+
 # Import Python libraries and third-party
 import os
 import numpy as np

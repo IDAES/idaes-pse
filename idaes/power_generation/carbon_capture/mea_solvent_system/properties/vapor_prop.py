@@ -276,35 +276,33 @@ class VaporStateBlockMethods(StateBlock):
                    state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-8}):
-        '''
+        """
         Initialization routine for property package.
+
         Keyword Arguments:
-            state_args : Dictionary with initial guesses for the state vars
-                         chosen. Note that if this method is triggered
-                         through the control volume, and if initial guesses
-                         were not provided at the unit model level, the
-                         control volume passes the inlet values as initial
-                         guess.
-                         Keys for the state_args dictionary are:
-                         flow_mol, temperature, pressure and mole_frac_comp
-            outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
-                     initialization (default = "ipopt")
-            hold_state : flag indicating whether the initialization routine
-                         should unfix any state variables fixed during
-                         initialization (default=False).
-                         - True - states varaibles are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 relase_state method
+        state_args :
+            Dictionary with initial guesses for the state vars chosen.
+            Note that if this method is triggered through the control volume,
+            and if initial guesses were not provided at the unit model level,
+            the control volume passes the inlet values as initial guess.
+            Keys for the state_args dictionary are:
+                flow_mol, temperature, pressure and mole_frac_comp
+        outlvl : sets output level of initialization routine
+        optarg : solver options dictionary object (default=None)
+        solver : str indicating whcih solver to use during initialization
+            (default = "ipopt")
+        hold_state :
+            flag indicating whether the initialization routine should unfix any
+            state variables fixed during initialization (default=False).
+            - True - states varaibles are not unfixed, and  a dict of returned
+                     containing flags for which states were fixed during
+                     initialization.
+            - False - state variables are unfixed after initialization by calling
+                     the relase_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
-        '''
+        """
 
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
@@ -373,15 +371,16 @@ class VaporStateBlockMethods(StateBlock):
                 blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
-        '''
+        """
         Method to release state variables fixed during initialisation.
+
         Keyword Arguments:
-            flags : dict containing information of which state variables
-                    were fixed during initialization, and should now be
-                    unfixed. This dict is returned by initialize if
-                    hold_state=True.
-            outlvl : sets output level of of logging
-        '''
+        flags :
+            dict containing information of which state variables were fixed
+            during initialization, and should now be unfixed. This dict is
+            returned by initialize if hold_state=True.
+        outlvl : sets output level of of logging
+        """
         if flags is None:
             return
 

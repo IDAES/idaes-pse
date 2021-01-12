@@ -15,7 +15,7 @@ IDAES PLATE HEAT EXCHANGER MODEL (PHE) USING EFFECTIVENESS-NTU METHOD
 
 Schematic diagram
 
-hot fluid----->|                                                   |<-- cold fluid
+hot fluid----->|                                                   |<--- cold fluid
 (even channels)|      Pass 1   |     Pass 2 to P-1 |    Pass P     |(odd channels)
                |    ___     ___|                   |    ___     ___|
                |   |   |   |   |                   |   |   |   |   |
@@ -39,7 +39,6 @@ Akula, P., Eslick, J., Bhattacharyya, D. and Miller, D.C., 2019.
 Modelling and Parameter Estimation of a Plate Heat Exchanger
 as Part of a Solvent-Based Post-Combustion CO2 Capture System.
 In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
-
 """
 
 # Import Pyomo libraries
@@ -68,10 +67,11 @@ _log = idaeslog.getLogger(__name__)
 
 
 class plate_param(object):
-    '''
-    Details of a smooth plate.
-    For Chevron plates, enlargement factor may be incorporated into the plate area
-    '''
+    """
+    Basic charateristics of a typical plate (smooth).
+    For Chevron plates, surface enlargement factor may be incorporated into
+    the plate area
+    """
     L = 1.657               # plate length
     w = 0.833               # plate width
     b = 0.0038              # gap between two plates forming a channel
@@ -84,9 +84,8 @@ class plate_param(object):
 
 @declare_process_block_class("PHE")
 class PHEData(UnitModelBlockData):
-    """
-    PHE Unit Model Class
-    """
+    """Plate Heat Exchanger(PHE) Unit Model."""
+
     CONFIG = UnitModelBlockData.CONFIG()
 
     # Configuration template for fluid specific  arguments
