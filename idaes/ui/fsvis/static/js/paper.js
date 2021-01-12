@@ -63,6 +63,28 @@ export class Paper {
         // context menu
         self._paper.on("element:contextmenu", function(cellView, evt) {
             cellView.model.rotate(90)
+            // This is needed to keep the text labels for the unit models in the correct orientation
+            // x and y were specifically picked to keep the label in the same place 
+            // in relation to the unit model (bottom middle)
+            let x = 0
+            let y = 0
+            if (cellView.model.angle() == 0) {
+                x = 0
+                y = 5
+            }
+            else if (cellView.model.angle() == 90) {
+                x = 38
+                y = -35
+            }
+            else if (cellView.model.angle() == 180) {
+                x = 0
+                y = -72
+            }
+            else if (cellView.model.angle() == 270) {
+                x = -38
+                y = -34
+            }
+            cellView.model.attr("label/transform", "translate(" + x + ", " + y + ") rotate(-" + cellView.model.angle() + ")")
         });
 
         // Adds link tools (adding vertices, moving segments) to links when your 
