@@ -92,7 +92,7 @@ export class StreamTable {
 
         // Set up the table csv export
         document.querySelector("#export-table-csv-btn").addEventListener("click", function() {
-            this._gridOptions.api.exportDataAsCsv({suppressQuotes: true});
+            app._gridOptions.api.exportDataAsCsv({suppressQuotes: true});
         });
     };
 };
