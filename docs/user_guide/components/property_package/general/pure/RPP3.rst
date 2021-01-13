@@ -49,10 +49,11 @@ Units are calories per gram-mole kelvin and Kelvin.
    ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{cal/mol}\cdotp\text{K}^2`", ""
    ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{cal/mol}\cdotp\text{K}^3`", ""
    ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{cal/mol}\cdotp\text{K}^4`", ""
-   ":math:`\Delta h_{\text{form, Vap}}`", "enth_mol_form_vap_comp_ref", ":math:`\text{cal/mol}`", "Molar heat of formation at reference state"
+   ":math:`\Delta h_{\text{form, Vap}}`", "enth_mol_form_vap_comp_ref", "Base units", "Molar heat of formation at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation.
+    Units of molar heat of formation will be derived from the base units defined for the property package.
 
 Ideal Gas Molar Entropy
 ------------------------
@@ -72,10 +73,11 @@ Units are calories per gram-mole kelvin and Kelvin.
    ":math:`B`", "cp_mol_ig_comp_coeff_B", ":math:`\text{cal/mol}\cdotp\text{K}^2`", ""
    ":math:`C`", "cp_mol_ig_comp_coeff_C", ":math:`\text{cal/mol}\cdotp\text{K}^3`", ""
    ":math:`D`", "cp_mol_ig_comp_coeff_D", ":math:`\text{cal/mol}\cdotp\text{K}^4`", ""
-   ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", ":math:`\text{cal/mol}\cdotp\text{K}`", "Standard molar entropy of formation at reference state"
+   ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", "Base units", "Standard molar entropy of formation at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation .
+    Units of molar entropy of formation will be derived from the base units defined for the property package.
 
 Saturation (Vapor) Pressure
 ---------------------------
