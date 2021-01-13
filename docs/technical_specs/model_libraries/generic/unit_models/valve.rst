@@ -91,7 +91,7 @@ be time-indexed.
 Initialization
 --------------
 
-This just calls the initialization routine from PressureChanger.  Either and
+This just calls the initialization routine from PressureChanger. Either and
 outlet pressure value or deltaP can be specified to aid the initialization.
 
 Valve Class
