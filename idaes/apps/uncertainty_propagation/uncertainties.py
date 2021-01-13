@@ -19,8 +19,7 @@ import pyomo.contrib.parmest.parmest as parmest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import shutil
-import warnings
-
+import logging
 
 def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
                  tee=False, diagnostic_mode=False, solver_options=None):
@@ -84,28 +83,29 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         if not isinstance(solver_options, dict):
             raise Exception('solver_options must be dictionary.')
 
-    for _ in theta_names:
-        if " " in _:
-            warnings.warn('The current version does not support any space in theta_names.')
     
-    # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
-    # Save original variables name in to var_dic
-    # Remove all "'" in theta_names 
-    var_dic = {}
-    for i in range(len(theta_names)):
-        var_dic[theta_names[i].replace("'", '')] = theta_names[i]
-        if "'" in theta_names[i]:
-            theta_names[i] = theta_names[i].replace("'", '')
-
+    # Remove all "'" and " " in theta_names
+    variable_clean = False
+    for _ in theta_names:
+        if " " in _ or "'" in _:
+            variable_clean = True    
+    if variable_clean:
+        theta_names, var_dic = clean_variable_name(theta_names)
     parmest_class = parmest.Estimator(model_function, data, theta_names, obj_function,
                  tee, diagnostic_mode, solver_options)
     obj, theta,cov = parmest_class.theta_est(calc_cov=True)
-
+    
+    # Convert theta keys to the original name 
     # Revert theta_names to be original
-    theta_names = [var_dic[v] for v in theta_names] 
-
+    if variable_clean:
+        theta_out = {}
+        for i in var_dic.keys():
+            theta_out[var_dic[i]] = theta[i]
+        theta_names = [var_dic[v] for v in theta_names] 
+    else:
+        theta_out = theta 
     propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names)
-    return obj, theta, cov, propagation_f, propagation_c
+    return obj, theta_out, cov, propagation_f, propagation_c
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector, expectation, and variance of the objective function and constraints
@@ -157,18 +157,21 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     else:
         raise Exception('model_uncertain must be either python function or Pyomo ConcreteModel.')
 
-    # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
-    # Save original variables name in to var_dic
     # Remove all "'" in theta_names     
-    var_dic = {}
-    for i in range(len(theta_names)):
-        var_dic[theta_names[i].replace("'", '')] = theta_names[i]
-        if "'" in theta_names[i]:
-            theta_names[i] = theta_names[i].replace("'", '')
-    # Fix the estiamted paramerters 
-    for v in theta_names:
-        eval('model.'+var_dic[v]).setlb(theta[v])
-        eval('model.'+var_dic[v]).setub(theta[v])
+    variable_clean = False
+    for _ in theta_names:
+        if " " in _ or "'" in _:
+            variable_clean = True
+    if variable_clean:
+        theta_names, var_dic = clean_variable_name(theta_names)
+        # Fix the estiamted paramerters 
+        for v in theta_names:
+            eval('model.'+var_dic[v]).setlb(theta[v])
+            eval('model.'+var_dic[v]).setub(theta[v])
+    else:
+        for v in theta_names:
+            eval('model.'+v).setlb(theta[v])
+            eval('model.'+v).setub(theta[v])
 
     # get gradient of the objective function, constraints, and the column number of each theta
     gradient_f, gradient_c,line_dic = get_sensitivity(model, theta_names)
@@ -236,7 +239,7 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     gradient_c: numpy.ndarray
         gradient vector of the constraints with respect to all decision variables at the optimal solution
         Each row contains column number, row number, and value
-        If no constraint exists, return [[-1000,-1000,-1000]]
+        If no constraint exists, return []
     line_dic: dict
         column numbers of the theta_names in the model. Index starts from 1
     Raises
@@ -282,14 +285,15 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     # load gradient of the objective function
     gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
     # load gradient of all constraints (sparse)
-    # If no constraint exists, return [[-1000,-1000,-1000]]
+    # If no constraint exists, return []
     num_constraints = len(list(model.component_data_objects(Constraint,
                                                             active=True,
                                                             descend_into=True)))
     if num_constraints > 0 :
         gradient_c = np.loadtxt("./GJH/A_print.txt")
     else:
-        gradient_c = np.array([[-1000,-1000,-1000]])
+        gradient_c = np.array([])
+
     # remove all generated files
     shutil.move("col_row.nl", "./GJH/")
     shutil.move("col_row.col", "./GJH/")
@@ -322,3 +326,34 @@ def line_num(file_name, target):
                 return int(count)
             count += 1
     raise Exception("col_row.col should includes target")
+
+def clean_variable_name(theta_names):
+    """This eunction removes all ' and spaces in theta_names.
+    
+    Parameters
+    ----------
+    theta_names: list of strings
+        List of Var names
+    
+    Returns
+    -------
+    theta_names_out: list of strings
+        List of Var names after removing  all ' and spaces
+    var_dic: dict
+       dictionary with keys converted theta_names and values origianl theta_names 
+    """
+
+    # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
+    # Save original variables name in to var_dic
+    # Remove all "'" and " " in theta_names
+    var_dic = {}
+    theta_names_out = []
+    for i in range(len(theta_names)):
+        if "'" in theta_names[i] or " " in theta_names[i] :
+            logging.warning(' '+theta_names[i] + " includes ' or space. Removed all ' and spaces to use parmest_class.theta_est(calc_cov=True)")
+        theta_tmp = theta_names[i].replace("'", '')
+        theta_tmp = theta_tmp.replace(" ", '')
+        theta_names_out.append(theta_tmp)
+        var_dic[theta_tmp] = theta_names[i]
+    return theta_names_out, var_dic
+
