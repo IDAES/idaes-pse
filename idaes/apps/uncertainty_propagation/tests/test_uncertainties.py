@@ -139,7 +139,7 @@ class TestUncertaintyPropagation:
                     (float(data["liq_benzene"]) -
                      model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
             return expr*1E4
-        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE, tee=True)
         assert obj == approx(0.004663348837044143)
         assert theta[variable_name[0]] == approx( 0.4781086784101746)
         assert theta[variable_name[1]] == approx( -0.40924465377598657)
@@ -147,7 +147,7 @@ class TestUncertaintyPropagation:
         assert propagation_f['objective'] == approx(0.00014333989649382864)
         assert propagation_c['constraints 4'] == approx(0.000084167318885)
         assert propagation_c['constraints 5'] == approx(0.0002455439364710466)
-       # assert propagation_c['constraints 6'] == approx(0.0008215307761164211)
+        assert propagation_c['constraints 6'] == approx(0.0008215307761164211)
         assert propagation_c['constraints 7'] == approx(0.0001749469866777253)
         assert propagation_c['constraints 8'] == approx(0.0005214685823573828)
         assert propagation_c['constraints 9'] == approx(0.00024951071782077465)
