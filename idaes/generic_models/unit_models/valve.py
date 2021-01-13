@@ -33,6 +33,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 _log = idaeslog.getLogger(__name__)
 
@@ -87,8 +88,11 @@ def pressure_flow_default_callback(b):
     )
     b.Cv.fix()
 
+    b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
+    b.pressure_flow_equation_scale = lambda x : x**2
+
     @b.Constraint(b.flowsheet().config.time)
-    def pressure_flow_default_rule(b2, t):
+    def pressure_flow_equation(b2, t):
         Po = b2.control_volume.properties_out[t].pressure
         Pi = b2.control_volume.properties_in[t].pressure
         F = b2.control_volume.properties_in[t].flow_mol
@@ -233,6 +237,24 @@ class ValveData(PressureChangerData):
 
         # reload original spec
         from_json(self, sd=istate, wts=sp)
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "pressure_flow_equation_scale"):
+            ff = self.pressure_flow_equation_scale
+        else:
+            ff = lambda x : x
+
+        if hasattr(self, "pressure_flow_equation"):
+            for t, c in self.pressure_flow_equation.items():
+                iscale.set_scaling_factor(
+                    c,
+                    ff(iscale.get_scaling_factor(
+                        self.flow_var[t],
+                        default=1,
+                        warning=True)))
+
 
     def _get_performance_contents(self, time_point=0):
         pc = super()._get_performance_contents(time_point=time_point)
