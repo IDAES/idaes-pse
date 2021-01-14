@@ -58,7 +58,7 @@ Units are :math:`\text{J/mol}`.
    ":math:`H`", "cp_mol_ig_comp_coeff_H", ":math:`\text{kJ/mol}`", ""
 
 .. note::
-    This correlation uses the same parameters as for the ideal gas heat capacity with additional parameters `F` and `H`. These parameters account for the enthalpy at the reference state defined by NIST, where `F` is the constant of integration and `H` is the standard molar heat of formation. Note that the default form of the expression used by NIST subtracts the heat of formation from the specific enthalpy.
+    This correlation uses the same parameters as for the ideal gas heat capacity with additional parameters `F` and `H`. These parameters account for the enthalpy at the reference state defined by NIST, where `F` is the constant of integration and `H` is the standard molar heat of formation. Note that the default form of the expression used by NIST subtracts the heat of formation from the specific enthalpy. This behavior can be controlled using the global configuration argument `include_enthalpy_of_formation` - if this is set to `True` (the default setting), then the `H` term is not used when calculating specific enthalpies.
     Due to the division of temperature by 1000 in the expression form, most temperature units are in kilo-Kelvins and reference enthalpies (F and H) are in kJ/mol.
 
 Ideal Gas Molar Entropy

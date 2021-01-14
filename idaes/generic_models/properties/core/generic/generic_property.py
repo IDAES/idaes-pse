@@ -149,6 +149,14 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="Dict containing definition of base units of measurement to use "
         "with property package."))
 
+    # Property package options
+    CONFIG.declare("include_enthalpy_of_formation", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Include enthalpy of formation in property calculations",
+        doc="Flag indiciating whether enthalpy of formation should be included"
+        " when calculating specific enthalpies."))
+
     def build(self):
         '''
         Callable method for Block construction.
