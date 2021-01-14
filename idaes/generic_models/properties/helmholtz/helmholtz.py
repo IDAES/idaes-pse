@@ -563,7 +563,9 @@ change.
             default=None,
             domain=tuple,
             description="Tuple providing default temperature bounds",
-            doc="Tuple providing default temperature bounds",
+            doc="""This is an optional tuple providing default temperature bounds.
+The elements of the tuple should include units of temperature.
+"""
         ),
     )
 
@@ -573,7 +575,9 @@ change.
             default=None,
             domain=tuple,
             description="Tuple providing default pressure bounds",
-            doc="Tuple providing default pressure bounds",
+            doc="""This is an optional tuple providing default pressure bounds
+The elements of the tuple should include units of pressure.
+"""
         ),
     )
 
@@ -582,8 +586,10 @@ change.
         ConfigValue(
             default=None,
             domain=tuple,
-            description="Tuple providing default enthalpy pre mass bounds",
-            doc="Tuple providing default enthalpy pre mass bounds",
+            description="Tuple providing default enthalpy per mole bounds",
+            doc="""This is an optional tuple providing default enthalpy per mole bounds.
+The elements of the tuple should include units of energy/mass.
+"""
         ),
     )
 
@@ -592,8 +598,10 @@ change.
         ConfigValue(
             default=None,
             domain=tuple,
-            description="Tuple providing default molar enthalpy bounds",
-            doc="Tuple providing default molar enthalpy bounds",
+            description="Tuple providing default enthalpy per mass bounds",
+            doc="""This is an optional tuple providing default enthalpy per mole bounds.
+The elements of the tuple should include units of energy/ammount.
+"""
         ),
     )
 
