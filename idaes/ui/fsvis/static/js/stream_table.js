@@ -1,9 +1,22 @@
 export class StreamTable {
     constructor(app, model) {
         this._app = app;
+        this.initTable(model);
+    };
+
+    initTable(model) {
+        // Clear the table first in case this is a call on refresh then call all of the methods to fill the table and setup the events
+        this.clearTable();
         this.fillTable(model);
         this.setupEvents();
-    };
+    }
+
+    clearTable() {
+        // Clear the table
+        $("#hide-fields-list").empty();
+        console.log(document.querySelector("#stream-table-data"))
+        $("#stream-table-data").empty();
+    }
 
     fillTable(model) {
         // This method fills the table with the streams and information from the model
@@ -80,13 +93,16 @@ export class StreamTable {
         document.querySelector("#hide-table-btn").addEventListener("click", function() {
             let container = document.querySelector("#stream-table-container");
             let hide_fields_dropdown = document.querySelector("#hide-fields-dropdown");
+            let export_csv_button = document.querySelector("#export-table-csv-btn");
             if (container.style.display === "none") {
                 container.style.display = "block";
                 hide_fields_dropdown.style.display = "block";
+                export_csv_button.style.display = "block";
             } 
             else {
                 container.style.display = "none";
                 hide_fields_dropdown.style.display = "none";
+                export_csv_button.style.display = "none";
             };
         });
 

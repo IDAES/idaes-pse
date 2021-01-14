@@ -387,8 +387,12 @@ class FlowsheetSerializer:
         self._stream_table_df = create_stream_table_dataframe(self.arcs)
         
         # Change the index of the pandas dataframe to not be the variables
-        self._stream_table_df = self._stream_table_df.reset_index().rename(columns={"index": "Variable"})
-        self._stream_table_df = self._stream_table_df.reset_index().rename(columns={"index": ""})
+        self._stream_table_df = (
+            create_stream_table_dataframe(self.arcs)
+                # Change the index of the pandas dataframe to not be the variables
+            .reset_index().rename(columns={"index": "Variable"})
+            .reset_index().rename(columns={"index": ""})
+        )
 
         # Parse the names of the variables to get rid of flow_mol_phase_comp
         self._stream_table_df['Variable'] = self._stream_table_df['Variable'].map(lambda x: x.replace("flow_mol_phase_comp ", "") if "flow_mol_phase_comp" in x else x)

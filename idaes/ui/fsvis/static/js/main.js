@@ -78,7 +78,10 @@ export class App {
                 this.informUser(0, "Refresh: load new model values from Python program");
                 $.ajax({url: url, dataType: "json"})
                     // If we got the model, save it
-                    .done(data => {paper.graph = data}) // uses setter
+                    .done(data => {
+                        paper.graph = data;  // uses setter
+                        this.stream_table.initTable(data)
+                    }) 
                     // Otherwise fail
                     .fail((jqXHR, textStatus, errorThrown) => {
                         this.informUser(2, "Fatal error: Could not retrieve new model from Python program: " +
