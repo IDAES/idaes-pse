@@ -55,6 +55,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 def set_param_value(b, param, units):
+    # We cannot use the standard method in core.util.misc as here the parameter
+    # data is directly attached to the config block, rather than in a parameter
+    # data entry.
     param_obj = getattr(b, param)
     config = getattr(b.config, param)
     if isinstance(config, tuple):
@@ -145,6 +148,14 @@ class GenericParameterData(PhysicalParameterBlock):
         description="Base units for property package",
         doc="Dict containing definition of base units of measurement to use "
         "with property package."))
+
+    # Property package options
+    CONFIG.declare("include_enthalpy_of_formation", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Include enthalpy of formation in property calculations",
+        doc="Flag indiciating whether enthalpy of formation should be included"
+        " when calculating specific enthalpies."))
 
     def build(self):
         '''
@@ -639,6 +650,9 @@ class GenericParameterData(PhysicalParameterBlock):
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
              'dens_mol_phase': {'method': '_dens_mol_phase'},
+             'cp_mol': {'method': '_cp_mol'},
+             'cp_mol_phase': {'method': '_cp_mol_phase'},
+             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'enth_mol': {'method': '_enth_mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
@@ -1362,6 +1376,40 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_dens_mol_phase)
         except AttributeError:
             self.del_component(self.dens_mol_phase)
+            raise
+
+    def _cp_mol(self):
+        try:
+            def rule_cp_mol(b):
+                return sum(b.cp_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.cp_mol = Expression(rule=rule_cp_mol,
+                                     doc="Mixture molar heat capacity")
+        except AttributeError:
+            self.del_component(self.cp_mol)
+            raise
+
+    def _cp_mol_phase(self):
+        try:
+            def rule_cp_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mol_phase(b, p)
+            self.cp_mol_phase = Expression(self.params.phase_list,
+                                           rule=rule_cp_mol_phase)
+        except AttributeError:
+            self.del_component(self.cp_mol_phase)
+            raise
+
+    def _cp_mol_phase_comp(self):
+        try:
+            def rule_cp_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mol_phase_comp(b, p, j)
+            self.cp_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_cp_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.cp_mol_phase_comp)
             raise
 
     def _enth_mol(self):

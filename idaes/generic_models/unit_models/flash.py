@@ -277,9 +277,7 @@ see property package for documentation.}"""))
 
         return DataFrame.from_dict(stream_attributes, orient="columns")
 
-    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
-                    weight_limit='option1', L_D_range='option1', PL=True,
-                    year=None, module=costing):
+    def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
@@ -293,8 +291,4 @@ see property package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             doc='vessel diameter',
                             units=units_meta('length'))
-        module.flash_costing(self.costing, alignment=alignment,
-                             Mat_factor=Mat_factor,
-                             weight_limit=weight_limit,
-                             L_D_range=L_D_range,
-                             PL=PL)
+        module.flash_costing(self.costing, **kwargs)
