@@ -361,7 +361,7 @@ see property package for documentation.}"""))
             for i in destination.vars[v]:
                 if not destination.vars[v][i].fixed:
                     destination.vars[v][i].value = \
-                        round(value(source.vars[v][i]), 2)
+                        value(source.vars[v][i])
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
