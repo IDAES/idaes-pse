@@ -336,7 +336,8 @@ def line_num(file_name, target):
 
 def clean_variable_name(theta_names):
     """This eunction removes all ' and spaces in theta_names.
-    
+       Note: The  current theta_est(calc_cov=True) of parmest in Pyomo
+       doesn't allow ' and spaces in the variable names    
     Parameters
     ----------
     theta_names: list of strings
