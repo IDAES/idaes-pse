@@ -139,18 +139,36 @@ class TestUncertaintyPropagation:
                     (float(data["liq_benzene"]) -
                      model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
             return expr*1E4
-        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE, tee=True)
-        assert obj == approx(0.004663348837044143)
-        assert theta[variable_name[0]] == approx( 0.4781086784101746)
-        assert theta[variable_name[1]] == approx( -0.40924465377598657)
-        np.testing.assert_almost_equal(cov, np.array([[0.00213426, -0.00163064], [-0.00163064, 0.00124591]]))
-        assert propagation_f['objective'] == approx(0.00014333989649382864)
-        assert propagation_c['constraints 4'] == approx(0.000084167318885)
-        assert propagation_c['constraints 5'] == approx(0.0002455439364710466)
-        assert propagation_c['constraints 6'] == approx(0.0008215307761164211)
-        assert propagation_c['constraints 7'] == approx(0.0001749469866777253)
-        assert propagation_c['constraints 8'] == approx(0.0005214685823573828)
-        assert propagation_c['constraints 9'] == approx(0.00024951071782077465)
+        obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+        assert obj == approx(5.074968578304798)
+        assert theta[variable_name[0]] == approx(-0.8987624039723433)
+        assert theta[variable_name[1]] == approx(1.4104861106603803)
+        np.testing.assert_almost_equal(cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
+        assert propagation_f['objective'] == approx(0.0021199499778127204)
+        assert propagation_c['constraints 4'] == approx(0.008473482674782129)
+        assert propagation_c['constraints 5'] == approx(0.0004612914088240769)
+        assert propagation_c['constraints 6'] == approx(0.003094158491940104)
+        assert propagation_c['constraints 7'] == approx(0.011260188179282066)
+        assert propagation_c['constraints 8'] == approx(0.014194289370065335)
+        assert propagation_c['constraints 9'] == approx( 0.005670725779499914)
+
+    @pytest.mark.unit
+    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
+    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
+    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
+    def test_quantify_propagate_uncertainty_NRTL_exception(self):
+        from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt_infeasible
+        variable_name = ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
+        current_path = os.path.dirname(os.path.realpath(__file__))
+        data = pd.read_csv(os.path.join(current_path, 'BT_NRTL_dataset.csv'))
+        def SSE(model, data):
+            expr = ((float(data["vap_benzene"]) -
+                     model.fs.flash.vap_outlet.mole_frac_comp[0, "benzene"])**2 +
+                    (float(data["liq_benzene"]) -
+                     model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
+            return expr*1E4
+        with pytest.raises(Exception):
+            obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt_infeasible, data, variable_name, SSE)
 
 
     @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")

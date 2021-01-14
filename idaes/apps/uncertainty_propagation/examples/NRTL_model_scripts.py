@@ -83,8 +83,8 @@ def NRTL_model(data):
     return m
 
 
-def NRTL_model_opt(theta, theta_names):
-    """This function generates an instance of the NRTL Pyomo model using 'theta' and 'theta_names'  as the input arguments
+def NRTL_model_opt():
+    """This function generates an instance of the NRTL Pyomo model
     
     Parameters
     ----------
@@ -100,46 +100,116 @@ def NRTL_model_opt(theta, theta_names):
     """
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-      
-    props = m.fs.properties = BTXParameterBlock(default={"valid_phase":
+    m.fs.properties = BTXParameterBlock(default={"valid_phase":
                                                  ('Liq', 'Vap'),
                                                  "activity_coeff_model":
                                                  'NRTL'})
-    # Fix NRTL specific variables
-    # alpha values (set at 0.3)
-    props.alpha["benzene", "benzene"].fix(0)
-    props.alpha["benzene", "toluene"].fix(0.3)
-    props.alpha["toluene", "toluene"].fix(0)
-    props.alpha["toluene", "benzene"].fix(0.3)
-
-    # initial tau values
-    props.tau["benzene", "benzene"].fix(0)
-    props.tau["benzene", "toluene"].fixed = False #To get the gradients of theta, kaug requires the theta to be unfirxed 
-    props.tau["toluene", "toluene"].fix(0)
-    props.tau["toluene", "benzene"].fixed = False #To get the gradients of theta, kaug requires the theta to be unfirxed 
-
-    # Set bounds on variables to be estimated
-    props.tau["benzene", "toluene"].setlb(-5)
-    props.tau["benzene", "toluene"].setub(5)
-
-    props.tau["toluene", "benzene"].setlb(-5)
-    props.tau["toluene", "benzene"].setub(5)
-
-
     m.fs.flash = Flash(default={"property_package": m.fs.properties})
 
-    # Inlet specifications given above
+    # Initialize at a certain inlet condition
     m.fs.flash.inlet.flow_mol.fix(1)
     m.fs.flash.inlet.temperature.fix(368)
     m.fs.flash.inlet.pressure.fix(101325)
-    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix()
+    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
     m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
- 
+    # Set Flash unit specifications
     m.fs.flash.heat_duty.fix(0)
     m.fs.flash.deltaP.fix(0)
-    
 
+    # Fix NRTL specific variables
+    # alpha values (set at 0.3)
+    m.fs.properties.alpha["benzene", "benzene"].fix(0)
+    m.fs.properties.alpha["benzene", "toluene"].fix(0.3)
+    m.fs.properties.alpha["toluene", "toluene"].fix(0)
+    m.fs.properties.alpha["toluene", "benzene"].fix(0.3)
+
+    # initial tau values
+    m.fs.properties.tau["benzene", "benzene"].fix(0)
+    m.fs.properties.tau["benzene", "toluene"].fix(0.1690)
+    m.fs.properties.tau["toluene", "toluene"].fix(0)
+    m.fs.properties.tau["toluene", "benzene"].fix(-0.1559)
+
+    # Initialize the flash unit
+    m.fs.flash.initialize(outlvl=idaeslog.INFO_LOW)
+
+    # Fix at actual temperature
+    m.fs.flash.inlet.temperature.fix(float(368))
+
+    # Set bounds on variables to be estimated
+    m.fs.properties.tau["benzene", "toluene"].setlb(-5)
+    m.fs.properties.tau["benzene", "toluene"].setub(5)
+
+    m.fs.properties.tau["toluene", "benzene"].setlb(-5)
+    m.fs.properties.tau["toluene", "benzene"].setub(5)
+    
+    # To use kaug
+    # objective function required
+    # need to unfix the variables
     m.obj = Objective(expr = 0*m.fs.properties.tau["benzene","toluene"] + exp(-m.fs.properties.alpha['toluene','benzene'].value * m.fs.properties.tau['toluene','benzene']), sense=minimize)
+    m.fs.properties.tau["benzene", "toluene"].fixed = False # To use kaug
+    m.fs.properties.tau["toluene", "benzene"].fixed = False
     return m
 
+
+def NRTL_model_opt_infeasible():
+    """This function generates an instance of the NRTL Pyomo model
+    
+    Parameters
+    ----------
+    theta: dict
+        Estimated parameters 
+    theta_names: list of strings
+        List of estimated Var names
+    
+    Returns
+    -------
+    m: an instance of the Pyomo model
+        for uncertainty propagation
+    """
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                 ('Liq', 'Vap'),
+                                                 "activity_coeff_model":
+                                                 'NRTL'})
+    m.fs.flash = Flash(default={"property_package": m.fs.properties})
+
+    # Initialize at a certain inlet condition
+    m.fs.flash.inlet.flow_mol.fix(1)
+    m.fs.flash.inlet.temperature.fix(368)
+    m.fs.flash.inlet.pressure.fix(101325)
+    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
+    # Set Flash unit specifications
+    m.fs.flash.heat_duty.fix(0)
+    m.fs.flash.deltaP.fix(0)
+
+    # Fix NRTL specific variables
+    # alpha values (set at 0.3)
+    m.fs.properties.alpha["benzene", "benzene"].fix(0)
+    m.fs.properties.alpha["benzene", "toluene"].fix(0.3)
+    m.fs.properties.alpha["toluene", "toluene"].fix(0)
+    m.fs.properties.alpha["toluene", "benzene"].fix(0.3)
+
+    # initial tau values
+    m.fs.properties.tau["benzene", "benzene"].fix(0)
+    m.fs.properties.tau["benzene", "toluene"].fix(0.1690)
+    m.fs.properties.tau["toluene", "toluene"].fix(0)
+    m.fs.properties.tau["toluene", "benzene"].fix(-0.1559)
+
+    # Set bounds on variables to be estimated
+    m.fs.properties.tau["benzene", "toluene"].setlb(-5)
+    m.fs.properties.tau["benzene", "toluene"].setub(5)
+
+    m.fs.properties.tau["toluene", "benzene"].setlb(-5)
+    m.fs.properties.tau["toluene", "benzene"].setub(5)
+
+    # To use kaug
+    # objective function required
+    # need to unfix the variables
+    m.obj = Objective(expr = 0*m.fs.properties.tau["benzene","toluene"] + exp(-m.fs.properties.alpha['toluene','benzene'].value * m.fs.properties.tau['toluene','benzene']), sense=minimize)
+    m.fs.properties.tau["benzene", "toluene"].fixed = False
+    m.fs.properties.tau["toluene", "benzene"].fixed = False
+    return m

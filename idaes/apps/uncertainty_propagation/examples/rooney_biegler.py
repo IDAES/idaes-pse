@@ -48,8 +48,8 @@ def rooney_biegler_model(data):
     return model
 
 
-def rooney_biegler_model_opt(theta, theta_names):
-    """This function generates an instance of the rooney & biegler Pyomo model using 'theta' and 'theta_names'  as the input arguments
+def rooney_biegler_model_opt():
+    """This function generates an instance of the rooney & biegler Pyomo model 
     
     Parameters
     ----------

@@ -15,9 +15,9 @@ import os
 sys.path.append(os.path.abspath('..')) # current folder is ~/examples
 from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty
 import pandas as pd
-from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
+from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt_infeasible
 
-variable_name = ["fs.properties.tau['benzene', 'toluene']", "fs.properties.tau['toluene','benzene']"]
+variable_name = ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
 current_path = os.path.dirname(os.path.realpath(__file__))
 data = pd.read_csv(os.path.join(current_path, 'BT_NRTL_dataset.csv'))
 def SSE(model, data):
@@ -27,4 +27,4 @@ def SSE(model, data):
              model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
     return expr*1E4
 
-obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt_infeasible, data, variable_name, SSE)

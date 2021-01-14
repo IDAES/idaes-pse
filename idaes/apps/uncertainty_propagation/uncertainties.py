@@ -21,6 +21,8 @@ from pyomo.opt import SolverFactory
 import shutil
 import logging
 
+logger = logging.getLogger('idaes.apps.uncertainty_propagation')
+
 def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
                  tee=False, diagnostic_mode=False, solver_options=None):
     """This function calculates error propagation of the objective function and constraints.  
@@ -32,7 +34,6 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         'data' as the input argument
     model_uncertain: function
         Function that generates an instance of the Pyomo model using
-        'theta' and 'theta_names'  as the input arguments
     data: pandas DataFrame, list of dictionaries, or list of json file names
         Data that is used to build an instance of the Pyomo model and 
         build the objective function
@@ -104,7 +105,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_names = [var_dic[v] for v in theta_names] 
     else:
         theta_out = theta 
-    propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names)
+    propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
     return obj, theta_out, cov, propagation_f, propagation_c
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
@@ -116,7 +117,6 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     ----------
     model_uncertain: function or Pyomo ConcreteModel
         function: Function that generates an instance of the Pyomo model using
-        'theta' and 'theta_names;  as the input argument
     theta: dict
         Estimated parameters 
     cov: numpy.ndarray
@@ -153,7 +153,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     if type(model_uncertain).__name__ == 'ConcreteModel':
         model = model_uncertain
     elif type(model_uncertain).__name__ == 'function':
-        model = model_uncertain(theta,theta_names)
+        model = model_uncertain()
     else:
         raise Exception('model_uncertain must be either python function or Pyomo ConcreteModel.')
 
@@ -172,9 +172,8 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         for v in theta_names:
             eval('model.'+v).setlb(theta[v])
             eval('model.'+v).setub(theta[v])
-
     # get gradient of the objective function, constraints, and the column number of each theta
-    gradient_f, gradient_c,line_dic = get_sensitivity(model, theta_names)
+    gradient_f, gradient_c,line_dic = get_sensitivity(model, theta_names, tee)
     
     # calculate error propagation g*cov*g 
     # objective function: 
@@ -246,6 +245,8 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     ------
     RuntimeError
         When ipopt or kaug or dotsens is not available
+    Exception
+        When ipopt fails 
     """
     #Create the solver plugin using the ASL interface
     ipopt = SolverFactory('ipopt',solver_io='nl')
@@ -261,16 +262,22 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
         raise RuntimeError('dotsens is not available')
     
     # Declare Suffixes
+    model.dual = Suffix(direction = Suffix.IMPORT)
     model.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
     model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
     model.ipopt_zL_in = Suffix(direction=Suffix.EXPORT)
     model.ipopt_zU_in = Suffix(direction=Suffix.EXPORT)
 
-    #: K_AUG SUFFIXES
+    # K_AUG SUFFIXES
     model.dof_v = Suffix(direction=Suffix.EXPORT)  #: SUFFIX FOR K_AUG
     model.rh_name = Suffix(direction=Suffix.IMPORT)  #: SUFFIX FOR K_AUG AS WELL
     kaug.options["print_kkt"] = ""
-    ipopt.solve(model,tee=tee)
+    results = ipopt.solve(model,tee=tee)
+
+    # Rasie Exception if ipopt fails 
+    if (results.solver.status == pyomo.opt.SolverStatus.warning):
+        raise Exception(results.solver.Message)
+    
     for o in model.component_objects(Objective, active=True):
         f_mean = value(o)
     model.ipopt_zL_in.update(model.ipopt_zL_out)
@@ -348,12 +355,16 @@ def clean_variable_name(theta_names):
     # Remove all "'" and " " in theta_names
     var_dic = {}
     theta_names_out = []
+    clean = False
     for i in range(len(theta_names)):
         if "'" in theta_names[i] or " " in theta_names[i] :
-            logging.warning(' '+theta_names[i] + " includes ' or space. Removed all ' and spaces to use parmest_class.theta_est(calc_cov=True)")
+            logger.warning(theta_names[i] + " includes ' or space.")
+            clean = True
         theta_tmp = theta_names[i].replace("'", '')
         theta_tmp = theta_tmp.replace(" ", '')
         theta_names_out.append(theta_tmp)
         var_dic[theta_tmp] = theta_names[i]
+    if clean:
+       logger.warning("All ' and spaces in theta_names are removed.")
     return theta_names_out, var_dic
 
