@@ -557,6 +557,46 @@ change.
         ),
     )
 
+    CONFIG.declare(
+        "temperature_bounds",
+        ConfigValue(
+            default=None,
+            domain=tuple,
+            description="Tuple providing default temperature bounds",
+            doc="Tuple providing default temperature bounds",
+        ),
+    )
+
+    CONFIG.declare(
+        "pressure_bounds",
+        ConfigValue(
+            default=None,
+            domain=tuple,
+            description="Tuple providing default pressure bounds",
+            doc="Tuple providing default pressure bounds",
+        ),
+    )
+
+    CONFIG.declare(
+        "enthalpy_mol_bounds",
+        ConfigValue(
+            default=None,
+            domain=tuple,
+            description="Tuple providing default enthalpy pre mass bounds",
+            doc="Tuple providing default enthalpy pre mass bounds",
+        ),
+    )
+
+    CONFIG.declare(
+        "enthalpy_mass_bounds",
+        ConfigValue(
+            default=None,
+            domain=tuple,
+            description="Tuple providing default molar enthalpy bounds",
+            doc="Tuple providing default molar enthalpy bounds",
+        ),
+    )
+
     def _set_parameters(
         self,
         library,
@@ -606,6 +646,32 @@ change.
         # Location of the *.so or *.dll file for external functions
         # Phase list
         self.available = _available(self.plib)
+
+        #if state var bounds are provided in config, override the defaults
+        if self.config.temperature_bounds is not None:
+            self.default_temperature_bounds = (
+                pyunits.convert(self.config.temperature_bounds[0], pyunits.K),
+                pyunits.convert(self.config.temperature_bounds[1], pyunits.K)
+            )
+        if self.config.pressure_bounds is not None:
+            self.default_pressure_bounds = (
+                pyunits.convert(self.config.pressure_bounds[0], pyunits.Pa),
+                pyunits.convert(self.config.pressure_bounds[1], pyunits.Pa)
+            )
+        if self.config.enthalpy_mol_bounds is not None:
+            u = pyunits.J/pyunits.mol
+            self.default_enthalpy_bounds = (
+                pyunits.convert(self.config.enthalpy_mol_bounds[0], u),
+                pyunits.convert(self.config.enthalpy_mol_bounds[1], u)
+            )
+        if self.config.enthalpy_mass_bounds is not None:
+            u = pyunits.J/pyunits.mol
+            lb = self.config.enthalpy_mass_bounds[0]*self.mw
+            ub = self.config.enthalpy_mass_bounds[1]*self.mw
+            self.default_enthalpy_bounds = (
+                pyunits.convert(lb, u),
+                pyunits.convert(ub, u)
+            )
 
         # Create Component objects
         for c in self.component_list:
