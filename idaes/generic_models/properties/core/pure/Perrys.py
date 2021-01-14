@@ -75,12 +75,13 @@ class enth_mol_liq_comp():
         if not hasattr(cobj, "cp_mol_liq_comp_coeff_1"):
             cp_mol_liq_comp.build_parameters(cobj)
 
-        units = cobj.parent_block().get_metadata().derived_units
+        if cobj.parent_block().config.include_enthalpy_of_formation:
+            units = cobj.parent_block().get_metadata().derived_units
 
-        cobj.enth_mol_form_liq_comp_ref = Var(
-                doc="Liquid phase molar heat of formation @ Tref",
-                units=units["energy_mole"])
-        set_param_from_config(cobj, param="enth_mol_form_liq_comp_ref")
+            cobj.enth_mol_form_liq_comp_ref = Var(
+                    doc="Liquid phase molar heat of formation @ Tref",
+                    units=units["energy_mole"])
+            set_param_from_config(cobj, param="enth_mol_form_liq_comp_ref")
 
     @staticmethod
     def return_expression(b, cobj, T):
@@ -90,13 +91,17 @@ class enth_mol_liq_comp():
 
         units = b.params.get_metadata().derived_units
 
+        h_form = (cobj.enth_mol_form_liq_comp_ref if
+                  b.params.config.include_enthalpy_of_formation
+                  else 0*units["energy_mole"])
+
         h = (pyunits.convert(
                 (cobj.cp_mol_liq_comp_coeff_5/5)*(T**5-Tr**5) +
                 (cobj.cp_mol_liq_comp_coeff_4/4)*(T**4-Tr**4) +
                 (cobj.cp_mol_liq_comp_coeff_3/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_liq_comp_coeff_2/2)*(T**2-Tr**2) +
                 cobj.cp_mol_liq_comp_coeff_1*(T-Tr), units["energy_mole"]) +
-             cobj.enth_mol_form_liq_comp_ref)
+             h_form)
 
         return h
 
