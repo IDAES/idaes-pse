@@ -19,7 +19,7 @@ Retrieved: September 13th, 2019
 
 All parameter indicies and units based on conventions used by the source
 """
-from pyomo.environ import log, Var, units as pyunits
+from pyomo.environ import Expression, log, Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
 
@@ -70,6 +70,14 @@ class cp_mol_ig_comp():
             units=pyunits.kJ*pyunits.mol**-1)
         set_param_from_config(cobj, param="cp_mol_ig_comp_coeff", index="H")
 
+        # As the H parameter is the specific heat of formation, create an
+        # Expression which converts this to the base units with standard name
+        units = cobj.parent_block().get_metadata().derived_units
+        cobj.enth_mol_form_vap_comp_ref = Expression(
+            expr=pyunits.convert(cobj.cp_mol_ig_comp_coeff_H,
+                                 to_units=units["energy_mole"]),
+            doc="Vapor phase molar heat of formation @ Tref")
+
     @staticmethod
     def return_expression(b, cobj, T):
         # Specific heat capacity (const. P)  via the Shomate equation
@@ -97,13 +105,17 @@ class enth_mol_ig_comp():
         t = pyunits.convert(T, to_units=pyunits.kiloK)
         tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.kiloK)
 
+        h_form = b.params.config.include_enthalpy_of_formation
+        H = (cobj.cp_mol_ig_comp_coeff_H if not h_form
+             else 0*pyunits.kJ*pyunits.mol**-1)
+
         h = (cobj.cp_mol_ig_comp_coeff_A*(t-tr) +
              (cobj.cp_mol_ig_comp_coeff_B/2)*(t**2-tr**2) +
              (cobj.cp_mol_ig_comp_coeff_C/3)*(t**3-tr**3) +
              (cobj.cp_mol_ig_comp_coeff_D/4)*(t**4-tr**4) -
              cobj.cp_mol_ig_comp_coeff_E*(1/t-1/tr) +
              cobj.cp_mol_ig_comp_coeff_F -
-             cobj.cp_mol_ig_comp_coeff_H)
+             H)
 
         units = b.params.get_metadata().derived_units
         return pyunits.convert(h, units["energy_mole"])
@@ -120,6 +132,7 @@ class entr_mol_ig_comp():
     def return_expression(b, cobj, T):
         # Specific entropy via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
+
         s = (cobj.cp_mol_ig_comp_coeff_A*log(t/pyunits.kiloK) +  # need to make unitless
              cobj.cp_mol_ig_comp_coeff_B*t +
              (cobj.cp_mol_ig_comp_coeff_C/2)*t**2 +
