@@ -42,7 +42,6 @@ class ValveFunctionType(Enum):
     linear = 1
     quick_opening = 2
     equal_percentage = 3
-    custom = 4
 
 
 def linear_cb(b):
@@ -67,8 +66,8 @@ def equal_percentage_cb(b):
     """
     Equal percentage valve function callback.
     """
-    self.alpha = pyo.Var(initialize=1, doc="Valve function parameter")
-    self.alpha.fix()
+    b.alpha = pyo.Var(initialize=100, doc="Valve function parameter")
+    b.alpha.fix()
     @b.Expression(b.flowsheet().config.time)
     def valve_function(b2, t):
         return b2.alpha ** (b2.valve_opening[t] - 1)
@@ -239,13 +238,39 @@ class ValveData(PressureChangerData):
         from_json(self, sd=istate, wts=sp)
 
     def calculate_scaling_factors(self):
+        """
+        Calculte pressure flow constraint scaling from flow variable scale.
+        """
+        # The valve of the valve opening and the output of the valve function
+        # expression are between 0 and 1, so the only thing that needs to be
+        # scaled here is the pressure-flow constraint, which can be scaled by
+        # using the flow varable scale.  The flow variable could be defined
+        # in differnt ways, so the flow variable is determined here from a
+        # "flow_var[t]" reference set in the pressure-flow callback. The flow
+        # term could be in verious forms, so an optional
+        # "pressure_flow_equation_scale" function can be defined in the callback
+        # as well.  The pressure flow function could be flow = f(Pin, Pout), but
+        # it could also be flow**2 = f(Pin, Pout), ... The so
+        # "pressure_flow_equation_scale" provides the form of the LHS side as
+        # a function of the flow variable.
+
         super().calculate_scaling_factors()
 
+        # Do some error trapping.
+        if not hasattr(self, "pressure_flow_equation"):
+            raise AttributeError(
+                "Pressure-flow callback must define pressure_flow_equation[t]")
+        # Check for flow term form if none assume flow = f(Pin, Pout)
         if hasattr(self, "pressure_flow_equation_scale"):
             ff = self.pressure_flow_equation_scale
         else:
             ff = lambda x : x
+        # if the "flow_var" is not set raise an exception
+        if not hasattr(self, "flow_var"):
+            raise AttributeError(
+                "Pressure-flow callback must define flow_var[t] reference")
 
+        # Calculate and set the pressure-flow relation scale.
         if hasattr(self, "pressure_flow_equation"):
             for t, c in self.pressure_flow_equation.items():
                 iscale.set_scaling_factor(
@@ -254,7 +279,6 @@ class ValveData(PressureChangerData):
                         self.flow_var[t],
                         default=1,
                         warning=True)))
-
 
     def _get_performance_contents(self, time_point=0):
         pc = super()._get_performance_contents(time_point=time_point)
