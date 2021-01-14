@@ -68,23 +68,29 @@ export class Paper {
             // in relation to the unit model (bottom middle)
             let x = 0
             let y = 0
-            if (cellView.model.angle() == 0) {
-                x = 0
-                y = 5
+            const angle = cellView.model.angle()
+            switch (angle) {
+                case 0:
+                    x = 0;
+                    y = 5;
+                    break;
+                case 90:
+                    x = 38;
+                    y = -35;
+                    break;
+                case 180:
+                    x = 0;
+                    y = -72;
+                    break;
+                case 270:
+                    x = -38;
+                    y = -34;
+                    break;
+                default:
+                    x = 0;
+                    y = 0;
             }
-            else if (cellView.model.angle() == 90) {
-                x = 38
-                y = -35
-            }
-            else if (cellView.model.angle() == 180) {
-                x = 0
-                y = -72
-            }
-            else if (cellView.model.angle() == 270) {
-                x = -38
-                y = -34
-            }
-            cellView.model.attr("label/transform", "translate(" + x + ", " + y + ") rotate(-" + cellView.model.angle() + ")")
+            cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
         });
 
         // Adds link tools (adding vertices, moving segments) to links when your 
