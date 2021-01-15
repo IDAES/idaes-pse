@@ -54,6 +54,11 @@ def frame():
         "pressure_sat_comp_coeff": {'A': 5.11564,
                                     'B': 1687.537,
                                     'C': 230.14}}
+    m.params.config.include_enthalpy_of_formation = True
+
+    # Also need to dummy configblock on the model for the test
+    m.config = ConfigBlock(implicit=True)
+    m.config.include_enthalpy_of_formation = True
 
     m.meta_object = PropertyClassMetadata()
     m.meta_object.default_units["temperature"] = pyunits.K
