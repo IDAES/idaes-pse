@@ -100,7 +100,8 @@ def download_binaries(
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
         _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
         if platform == 'darwin':
-            raise Exception('Mac OSX currently unsupported')
+            # raise Exception('Mac OSX currently unsupported')
+            print("WARNING: macOS support is experimental.")
         fd.set_destination_filename(solvers_tar)
         fd.get_binary_file(solvers_from)
         fd.set_destination_filename(libs_tar)
