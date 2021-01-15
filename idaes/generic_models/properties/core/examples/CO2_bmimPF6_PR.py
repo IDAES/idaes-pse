@@ -133,6 +133,6 @@ configuration = {
     "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {"PR_kappa": {("bmimPF6", "bmimPF6"): 0.000,
-                                    ("bmimPF6", "carbon_dioxide"): -0.05718,
+                                    ("bmimPF6", "carbon_dioxide"): 0.0526,
                                     ("carbon_dioxide", "carbon_dioxide"): 0.000,
-                                    ("carbon_dioxide", "bmimPF6"): 0.0293}}}
+                                    ("carbon_dioxide", "bmimPF6"): 0.1833}}}

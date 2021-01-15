@@ -63,7 +63,7 @@ def test_Txy_dataclass():
     assert TD.x == [pytest.approx(0.9999, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(9.9999, abs=1e-4)]
 
 # Author: Alejandro Garciadiego
-@pytest.mark.unit
+@pytest.mark.component
 def test_Txy_data():
     configuration = {
         # Specifying components
@@ -132,7 +132,7 @@ def test_Txy_data():
     assert TD.x == [pytest.approx(0.99, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
 
 # Author: Alejandro Garciadiego
-@pytest.mark.unit
+@pytest.mark.component
 def test_Txy_data_no_dew():
     configuration = {
         # Specifying components
@@ -209,7 +209,7 @@ def test_Txy_data_no_dew():
     assert TD.x == [pytest.approx(0.99, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
 
 # Author: Alejandro Garciadiego
-@pytest.mark.unit
+@pytest.mark.component
 def test_Txy_data_no_liq():
     configuration = {
         # Specifying components

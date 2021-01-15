@@ -65,6 +65,7 @@ configuration = {
         "hydrogen": {"type": Component,
                     "elemental_composition": {'H': 2, 'C': 0},
                     "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "valid_phase_types": PT.vaporPhase,
                     "parameter_data": {
                         "mw": (2.016E-3, pyunits.kg/pyunits.mol),  # [1]
@@ -76,12 +77,15 @@ configuration = {
                             "B": (9.274e-3, pyunits.J/pyunits.mol/pyunits.K**2),
                             "C": (-1.981e-5, pyunits.J/pyunits.mol/pyunits.K**3),
                             "D": (7.645e-9, pyunits.J/pyunits.mol/pyunits.K**4)},
+                        "entr_mol_form_vap_comp_ref": (
+                            0, pyunits.J/pyunits.mol/pyunits.K),
                         "enth_mol_form_vap_comp_ref": (
                             0.0, pyunits.J/pyunits.mol)}},
 
         "methane": {"type": Component,
                     "elemental_composition": {'H': 4, 'C': 1},
                     "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "valid_phase_types": PT.vaporPhase,
                     "parameter_data": {
                         "mw": (16.043E-3, pyunits.kg/pyunits.mol),  # [1]
@@ -93,6 +97,8 @@ configuration = {
                             "B": (5.213e-2, pyunits.J/pyunits.mol/pyunits.K**2),
                             "C": (1.197e-5, pyunits.J/pyunits.mol/pyunits.K**3),
                             "D": (-1.132e-8, pyunits.J/pyunits.mol/pyunits.K**4)},
+                        "entr_mol_form_vap_comp_ref": (
+                            0, pyunits.J/pyunits.mol/pyunits.K),
                         "enth_mol_form_vap_comp_ref": (
                             -74600, pyunits.J/pyunits.mol)}},
 
@@ -101,6 +107,7 @@ configuration = {
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "pressure_sat_comp": RPP5,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -126,6 +133,8 @@ configuration = {
                             "5": (0, pyunits.J*pyunits.kmol**-1*pyunits.K**-5)},
                         "enth_mol_form_liq_comp_ref": (
                             0, pyunits.J/pyunits.mol),  # [3]
+                        "entr_mol_form_vap_comp_ref": (
+                            0, pyunits.J/pyunits.mol/pyunits.K),
                         "enth_mol_form_vap_comp_ref": (
                             -83800, pyunits.J/pyunits.mol),  # [3]
                         "pressure_sat_comp_coeff": {"A": (3.95405, None),  # [4]
@@ -137,6 +146,7 @@ configuration = {
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "pressure_sat_comp": RPP5,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -162,6 +172,8 @@ configuration = {
                             "5": (0, pyunits.J*pyunits.kmol**-1*pyunits.K**-5)},
                         "enth_mol_form_liq_comp_ref": (
                             0.0, pyunits.J/pyunits.mol),  # [3]
+                        "entr_mol_form_vap_comp_ref": (
+                            0, pyunits.J/pyunits.mol/pyunits.K),
                         "enth_mol_form_vap_comp_ref": (
                             -104700, pyunits.J/pyunits.mol),  # [3]
                         "pressure_sat_comp_coeff": {"A": (3.92828, None),  # [4]
@@ -172,6 +184,7 @@ configuration = {
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
                     "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "pressure_sat_comp": RPP5,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -197,6 +210,8 @@ configuration = {
                             "5": (0, pyunits.J*pyunits.kmol**-1*pyunits.K**-5)},
                         "enth_mol_form_liq_comp_ref": (
                             0, pyunits.J/pyunits.mol),  # [3]
+                        "entr_mol_form_vap_comp_ref": (
+                            0, pyunits.J/pyunits.mol/pyunits.K),
                         "enth_mol_form_vap_comp_ref": (
                             -125600, pyunits.J/pyunits.mol),  # [3]
                         "pressure_sat_comp_coeff": {"A": (3.93266, None),  # [4]

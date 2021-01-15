@@ -78,12 +78,13 @@ class enth_mol_ig_comp():
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
-        units = cobj.parent_block().get_metadata().derived_units
+        if cobj.parent_block().config.include_enthalpy_of_formation:
+            units = cobj.parent_block().get_metadata().derived_units
 
-        cobj.enth_mol_form_vap_comp_ref = Var(
-                doc="Vapor phase molar heat of formation @ Tref",
-                units=units["energy_mole"])
-        set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
+            cobj.enth_mol_form_vap_comp_ref = Var(
+                    doc="Vapor phase molar heat of formation @ Tref",
+                    units=units["energy_mole"])
+            set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
 
     @staticmethod
     def return_expression(b, cobj, T):
@@ -108,7 +109,7 @@ class entr_mol_ig_comp():
 
     @staticmethod
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff_a0"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
         units = cobj.parent_block().get_metadata().derived_units
