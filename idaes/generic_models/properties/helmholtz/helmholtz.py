@@ -588,7 +588,7 @@ The elements of the tuple should include units of pressure.
             domain=tuple,
             description="Tuple providing default enthalpy per mole bounds",
             doc="""This is an optional tuple providing default enthalpy per mole bounds.
-The elements of the tuple should include units of energy/mass.
+The elements of the tuple should include units of energy/amount.
 """
         ),
     )
@@ -600,7 +600,7 @@ The elements of the tuple should include units of energy/mass.
             domain=tuple,
             description="Tuple providing default enthalpy per mass bounds",
             doc="""This is an optional tuple providing default enthalpy per mole bounds.
-The elements of the tuple should include units of energy/ammount.
+The elements of the tuple should include units of energy/mass.
 """
         ),
     )
