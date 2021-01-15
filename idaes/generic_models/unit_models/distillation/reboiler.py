@@ -586,6 +586,13 @@ see property package for documentation.}"""))
         # Initialize outlet state block at same conditions of inlet except
         # the temperature. Set the temperature to a temperature guess based
         # on the desired boilup_ratio.
+
+        # Get index for bubble point temperature and and assume it
+        # will have only a single phase equilibrium pair. This is to
+        # support the generic property framework where the T_bubble
+        # is indexed by the phases_in_equilibrium. In distillation,
+        # the assumption is that there will only be a single pair
+        # i.e. vap-liq. 
         idx = next(iter(self.control_volume.properties_in[0].
                         temperature_bubble))
         temp_guess = 0.5 * (

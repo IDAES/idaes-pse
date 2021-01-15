@@ -210,6 +210,13 @@ see property package for documentation.}"""))
                 # Option 2: if this is false, then user has selected
                 # custom temperature spec and needs to fix an outlet
                 # temperature.
+
+                # Get index for bubble point temperature and and assume it
+                # will have only a single phase equilibrium pair. This is to
+                # support the generic property framework where the T_bubble
+                # is indexed by the phases_in_equilibrium. In distillation,
+                # the assumption is that there will only be a single pair
+                # i.e. vap-liq. 
                 idx = next(iter(self.control_volume.properties_out[
                     self.flowsheet().config.time.first()].temperature_bubble))
 
