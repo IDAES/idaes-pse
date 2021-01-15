@@ -81,6 +81,8 @@ def main(plot_switch=False):
     samples_to_simulate = [time_plant.first() + i*sample_time
                            for i in range(1, n_samples_to_simulate)]
 
+    # We must identify for the controller which variables are our
+    # inputs and measurements.
     inputs = [
             m_plant.fs.mixer.S_inlet.flow_vol[0],
             m_plant.fs.mixer.E_inlet.flow_vol[0],
@@ -91,8 +93,10 @@ def main(plot_switch=False):
             m_controller.fs.cstr.outlet.conc_mol[0, 'S'],
             m_controller.fs.cstr.outlet.conc_mol[0, 'P'],
             m_controller.fs.cstr.outlet.temperature[0],
+            m_controller.fs.cstr.volume[0],
             ]
     
+    # Construct the "NMPC simulator" object
     nmpc = NMPCSim(
             plant_model=m_plant,
             plant_time_set=m_plant.fs.time,
@@ -106,15 +110,23 @@ def main(plot_switch=False):
     plant = nmpc.plant
     controller = nmpc.controller
 
+    p_t0 = nmpc.plant.time.first()
+    c_t0 = nmpc.controller.time.first()
+    p_ts = nmpc.plant.sample_points[1]
+    c_ts = nmpc.controller.sample_points[1]
+
     solve_consistent_initial_conditions(plant, plant.time, solver)
     solve_consistent_initial_conditions(controller, controller.time, solver)
 
+    # We now perform the "RTO" calculation: Find the optimal steady state
+    # to achieve the following setpoint
     setpoint = [
             (controller.mod.fs.cstr.outlet.conc_mol[0, 'P'], 0.4),
             (controller.mod.fs.cstr.outlet.conc_mol[0, 'S'], 0.0),
             (controller.mod.fs.cstr.control_volume.energy_holdup[0, 'aq'], 300),
             (controller.mod.fs.mixer.E_inlet.flow_vol[0], 0.1),
             (controller.mod.fs.mixer.S_inlet.flow_vol[0], 2.0),
+            (controller.mod.fs.cstr.volume[0], 1.0),
             ]
     setpoint_weights = [
             (controller.mod.fs.cstr.outlet.conc_mol[0, 'P'], 1.),
@@ -122,11 +134,21 @@ def main(plot_switch=False):
             (controller.mod.fs.cstr.control_volume.energy_holdup[0, 'aq'], 1.),
             (controller.mod.fs.mixer.E_inlet.flow_vol[0], 1.),
             (controller.mod.fs.mixer.S_inlet.flow_vol[0], 1.),
+            (controller.mod.fs.cstr.volume[0], 1.),
             ]
+
+    # Some of the "differential variables" that have been fixed in the
+    # model file are different from the measurements listed above. We
+    # unfix them here so the RTO solve is not overconstrained.
+    # (The RTO solve will only automatically unfix inputs and measurements.)
+    nmpc.controller.mod.fs.cstr.control_volume.material_holdup[0,...].unfix()
+    nmpc.controller.mod.fs.cstr.control_volume.energy_holdup[0,...].unfix()
+    nmpc.controller.mod.fs.cstr.volume[0].unfix()
 
     nmpc.controller.add_setpoint_objective(setpoint, setpoint_weights)
     nmpc.controller.solve_setpoint(solver)
 
+    # Now we are ready to construct the tracking NMPC problem
     tracking_weights = [
             *((v, 1.) for v in nmpc.controller.vectors.differential[:,0]),
             *((v, 1.) for v in nmpc.controller.vectors.input[:,0]),
@@ -138,24 +160,27 @@ def main(plot_switch=False):
     
     nmpc.controller.initialize_to_initial_conditions()
     
+    # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
     solver.solve(nmpc.controller, tee=True)
 
-    cv = controller.mod.fs.cstr.control_volume
+    # For a proper NMPC simulation, we must have noise.
+    # We do this by treating inputs and measurements as Gaussian random
+    # variables with the following variances (and bounds).
+    cstr = nmpc.controller.mod.fs.cstr
     variance = [
-            (cv.material_holdup[0.0,'aq','S'], 0.2),
-            (cv.material_holdup[0.0,'aq','E'], 0.05),
-            (cv.material_holdup[0.0,'aq','C'], 0.1),
-            (cv.material_holdup[0.0,'aq','P'], 0.05),
-            (cv.energy_holdup[0.0,'aq'], 5.),
-            (cv.volume[0.0], 0.05),
+            (cstr.outlet.conc_mol[0.0, 'S'], 0.2),
+            (cstr.outlet.conc_mol[0.0, 'E'], 0.05),
+            (cstr.outlet.conc_mol[0.0, 'C'], 0.1),
+            (cstr.outlet.conc_mol[0.0, 'P'], 0.05),
+            (cstr.outlet.temperature[0.0], 5.),
+            (cstr.volume[0.0], 0.05),
             ]
     nmpc.controller.set_variance(variance)
     measurement_variance = [v.variance for v in controller.measurement_vars]
-    t0 = nmpc.controller.time.first()
     measurement_noise_bounds = [
-            (0.0, var[t0].ub) for var in controller.measurement_vars
+            (0.0, var[c_t0].ub) for var in controller.measurement_vars
             ]
 
     mx = plant.mod.fs.mixer
@@ -165,17 +190,19 @@ def main(plot_switch=False):
             ]
     nmpc.plant.set_variance(variance)
     input_variance = [v.variance for v in plant.input_vars]
-    t0 = nmpc.plant.time.first()
-    input_noise_bounds = [(0.0, var[t0].ub) for var in plant.input_vars]
+    input_noise_bounds = [(0.0, var[p_t0].ub) for var in plant.input_vars]
 
-    c_ts = nmpc.controller.sample_points[1]
-    p_ts = nmpc.plant.sample_points[1]
+    random.seed(246)
+
+    # Extract inputs from controller and inject them into plant
     inputs = controller.generate_inputs_at_time(c_ts)
     plant.inject_inputs(inputs)
 
+    # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
+    solver.solve(nmpc.plant)
 
-    for i in range(0,10):
+    for i in range(1,11):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
         measured = nmpc.plant.generate_measurements_at_time(p_ts)
         nmpc.plant.advance_one_sample()
