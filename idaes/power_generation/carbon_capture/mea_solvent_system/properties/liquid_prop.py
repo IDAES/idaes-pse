@@ -40,6 +40,8 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import degrees_of_freedom
+# from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column\
+#      import ProcessType
 
 import idaes.logger as idaeslog
 
@@ -60,11 +62,17 @@ class PhysicalParameterData(PhysicalParameterBlock):
     """
     CONFIG = PhysicalParameterBlock.CONFIG()
     CONFIG.declare("process_type", ConfigValue(
-        default='Absorber',
-        domain=In(['Absorber', 'Stripper', 'Regenerator']),
+        default='absorber',
+        # default=ProcessType.absorber,
+        # domain=In(ProcessType),
+        domain=In(['absorber', 'stripper']),
         description="Flag indicating the type of  process",
-        doc="""Flag indicating either absoprtion or stripping process.
-               Heat of absorption depends on the process type """))
+        doc="""Flag indicating either absorption or stripping process.
+            **default** - ProcessType.absorber.
+            **Valid values:** {
+            **ProcessType.absorber** - absorption process,
+            **ProcessType.stripper** - stripping process.}"""))
+
 
     def build(self):
         '''
@@ -82,14 +90,17 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.CO2 = Component()
         self.H2O = Component()
 
-        # create component list for true species
+        # component list for true species
         self.component_list_true = Set(
             initialize=['CO2', 'H2O', 'MEA', 'MEA+', 'MEACOO-', 'HCO3-'])
-        self.component_list_anion = Set(initialize=['MEACOO-', 'HCO3-'])
-        self.component_list_cation = Set(initialize=['MEA+'])
+        # component list for solvent species
         self.component_list_solvent = Set(initialize=['H2O', 'MEA'])
+        # list of all diffusing components aside the excess solvent
         self.component_list_diffus = Set(
             initialize=['CO2', 'MEA', 'MEA+', 'MEACOO-'])
+        # list of diffusing component into/from the vapor phase
+        self.component_list_d = Set(initialize=['CO2', 'H2O'])
+
         # Reaction index
         self.reaction_idx = Set(initialize=['R1', 'R2'])
 
@@ -510,7 +521,7 @@ class LiquidStateBlockMethods(StateBlock):
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
-            for j in blk[k]._params.component_list_solvent:
+            for j in blk[k].params.component_list_solvent:
                 if hasattr(blk[k], "cp_mass_comp_eqn"):
                     calculate_variable_from_constraint(blk[k].cp_mass_comp[j],
                                                        blk[k].cp_mass_comp_eqn[j])
@@ -613,7 +624,7 @@ class LiquidStateBlockData(StateBlockData):
         self._make_speciation_model()
 
     def _make_speciation_model(self):
-        self.conc_mol_comp_true = Var(self._params.component_list_true,
+        self.conc_mol_comp_true = Var(self.params.component_list_true,
                                       domain=NonNegativeReals,
                                       initialize=10,
                                       units=pyunits.mol / pyunits.m**3,
@@ -622,7 +633,7 @@ class LiquidStateBlockData(StateBlockData):
         def rule_logC(blk, i):
             return log(blk.conc_mol_comp_true[i])
 
-        self.logC = Expression(self._params.component_list_true,
+        self.logC = Expression(self.params.component_list_true,
                                rule=rule_logC,
                                doc='Logarithm of true species concentration')
 
@@ -663,11 +674,11 @@ class LiquidStateBlockData(StateBlockData):
                             domain=NonNegativeReals,
                             units=pyunits.mol / pyunits.s,
                             doc='Total molar flowrate')
-        self.mole_frac_comp = Var(self._params.component_list,
+        self.mole_frac_comp = Var(self.component_list,
                                   domain=NonNegativeReals,
                                   bounds=(0, 1),
                                   initialize=1 /
-                                  len(self._params.component_list),
+                                  len(self.component_list),
                                   units=None,
                                   doc='Component mole fractions')
         self.pressure = Var(initialize=101325,
@@ -685,11 +696,11 @@ class LiquidStateBlockData(StateBlockData):
             return b.flow_mol_comp[j] == b.mole_frac_comp[j] * b.flow_mol
 
         try:
-            self.flow_mol_comp = Var(self._params.component_list,
+            self.flow_mol_comp = Var(self.component_list,
                                      initialize=1.0,
                                      domain=NonNegativeReals,
                                      doc='Component molar flowrate [mol/s]')
-            self.flow_mol_comp_eq = Constraint(self._params.component_list,
+            self.flow_mol_comp_eq = Constraint(self.component_list,
                                                rule=rule_flow_mol_comp,
                                                doc="Component molar flow in"
                                                    "liquid phase [mol/s]")
@@ -702,7 +713,7 @@ class LiquidStateBlockData(StateBlockData):
     def _mw(self):
         def rule_mw(blk):
             return sum(blk.mole_frac_comp[j] * blk.mw_comp[j]
-                       for j in blk._params.component_list)
+                       for j in blk.component_list)
 
         try:
             self.mw = Expression(rule=rule_mw,
@@ -717,7 +728,7 @@ class LiquidStateBlockData(StateBlockData):
             return blk.mole_frac_comp[j] * blk.mw_comp[j] / blk.mw
 
         try:
-            self.mass_frac_comp = Expression(self._params.component_list,
+            self.mass_frac_comp = Expression(self.component_list,
                                              rule=rule_mass_frac_comp,
                                              doc="Mass fraction"
                                              "[-]")
@@ -732,10 +743,10 @@ class LiquidStateBlockData(StateBlockData):
         def rule_mass_frac_co2_free(blk, j):
             return blk.mole_frac_comp[j] * blk.mw_comp[j] /\
                 sum(blk.mole_frac_comp[i] * blk.mw_comp[i]
-                    for i in blk._params.component_list_solvent)
+                    for i in blk.params.component_list_solvent)
 
         try:
-            self.mass_frac_co2_free = Expression(self._params.component_list_solvent,
+            self.mass_frac_co2_free = Expression(self.params.component_list_solvent,
                                                  rule=rule_mass_frac_co2_free,
                                                  doc="Mass fraction on CO2 free basis"
                                                  "[-]")
@@ -752,7 +763,7 @@ class LiquidStateBlockData(StateBlockData):
             return mw[j] * 1e3 / (c[j, 1] * T**2 + c[j, 2] * T + c[j, 3])
 
         try:
-            self.vol_mol_comp = Expression(self._params.component_list_solvent,
+            self.vol_mol_comp = Expression(self.params.component_list_solvent,
                                            rule=rule_vol_mol_comp,
                                            doc="Pure solvent molar volume")
         except AttributeError:
@@ -801,7 +812,7 @@ class LiquidStateBlockData(StateBlockData):
             return blk.conc_mol * blk.mole_frac_comp[i]
 
         try:
-            self.conc_mol_comp = Expression(self._params.component_list,
+            self.conc_mol_comp = Expression(self.component_list,
                                             rule=rule_conc_mol_comp,
                                             doc="Concentration of liquid components")
         except AttributeError:
@@ -840,7 +851,7 @@ class LiquidStateBlockData(StateBlockData):
             raise
 
     def _cp_mass_comp(self):
-        self.cp_mass_comp = Var(self._params.component_list_solvent,
+        self.cp_mass_comp = Var(self.params.component_list_solvent,
                                 domain=Reals,
                                 initialize=1.0,
                                 units=pyunits.J / pyunits.K / pyunits.kg,
@@ -856,7 +867,7 @@ class LiquidStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mass_comp_eqn = Constraint(self._params.component_list_solvent,
+            self.cp_mass_comp_eqn = Constraint(self.params.component_list_solvent,
                                                rule=rule_cp_mass_comp)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -866,7 +877,7 @@ class LiquidStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component liquid heat capacities J/mol.K
-        self.cp_mol_comp = Var(self._params.component_list_solvent,
+        self.cp_mol_comp = Var(self.params.component_list_solvent,
                                domain=Reals,
                                initialize=1.0,
                                units=pyunits.J / pyunits.K / pyunits.mol,
@@ -877,7 +888,7 @@ class LiquidStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mol_comp_eqn = Constraint(self._params.component_list_solvent,
+            self.cp_mol_comp_eqn = Constraint(self.params.component_list_solvent,
                                               rule=rule_cp_mol_comp)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -893,7 +904,7 @@ class LiquidStateBlockData(StateBlockData):
 
         def rule_cp_mol(blk):
             return blk.cp_mol == sum(blk.cp_mol_comp[j] * blk.mole_frac_comp[j]
-                                     for j in blk._params.component_list_solvent)
+                                     for j in blk.params.component_list_solvent)
 
         try:
             # Try to build constraint
@@ -906,7 +917,7 @@ class LiquidStateBlockData(StateBlockData):
 
     def _cp_mass_comp_mean(self):
         # mean Pure component liquid heat capacities
-        self.cp_mass_comp_mean = Var(self._params.component_list_solvent,
+        self.cp_mass_comp_mean = Var(self.params.component_list_solvent,
                                      domain=Reals,
                                      initialize=1.0,
                                      units=pyunits.J / pyunits.K / pyunits.kg,
@@ -926,7 +937,7 @@ class LiquidStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.cp_mass_comp_mean_eqn =\
-                Constraint(self._params.component_list_solvent,
+                Constraint(self.params.component_list_solvent,
                            rule=rule_cp_mass_comp_mean)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -936,7 +947,7 @@ class LiquidStateBlockData(StateBlockData):
 
     def _cp_mol_comp_mean(self):
         # average Pure component liquid heat capacities btw T and T_ref
-        self.cp_mol_comp_mean = Var(self._params.component_list_solvent,
+        self.cp_mol_comp_mean = Var(self.params.component_list_solvent,
                                     domain=Reals,
                                     initialize=1.0,
                                     units=pyunits.J / pyunits.K / pyunits.mol,
@@ -949,7 +960,7 @@ class LiquidStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mol_comp_mean__eqn = Constraint(self._params.component_list_solvent,
+            self.cp_mol_comp_mean__eqn = Constraint(self.params.component_list_solvent,
                                                     rule=rule_cp_mol_comp_mean)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -967,7 +978,7 @@ class LiquidStateBlockData(StateBlockData):
         def rule_cp_mol_mean(blk):
             return blk.cp_mol_mean == sum(blk.cp_mol_comp_mean[j] *
                                           blk.mole_frac_comp[j]
-                                          for j in blk._params.component_list_solvent)
+                                          for j in blk.params.component_list_solvent)
 
         try:
             # Try to build constraint
@@ -1089,7 +1100,7 @@ class LiquidStateBlockData(StateBlockData):
             r = blk.mass_frac_co2_free['MEA']
             T = blk.temperature
             Tc = blk._params.temperature_crit
-            if j in blk._params.component_list_solvent:
+            if j in blk.params.component_list_solvent:
                 return blk._params.surf_tens_param[j, 1] * (1 - T / Tc[j]) **\
                     (blk._params.surf_tens_param[j, 2] +
                      blk._params.surf_tens_param[j, 3] * T / Tc[j] +
@@ -1103,7 +1114,7 @@ class LiquidStateBlockData(StateBlockData):
                          blk._params.surf_tens_param[j, 6])
 
         try:
-            self.surf_tens_comp = Expression(self._params.component_list,
+            self.surf_tens_comp = Expression(self.component_list,
                                              rule=rule_surf_tens_comp,
                                              doc="Surface tension of components")
         except AttributeError:
@@ -1150,7 +1161,7 @@ class LiquidStateBlockData(StateBlockData):
                         blk._params.pressure_sat_param[j, 4] * T * T))
 
         try:
-            self.pressure_sat = Expression(self._params.component_list_solvent,
+            self.pressure_sat = Expression(self.params.component_list_solvent,
                                            rule=rule_pressure_sat_comp,
                                            doc="Vapor pressure [Pa]")
         except AttributeError:
@@ -1180,7 +1191,7 @@ class LiquidStateBlockData(StateBlockData):
                            blk._params.diffus_param[i, 3] * log(blk.visc_d))
 
         try:
-            self.diffus = Expression(self._params.component_list_diffus,
+            self.diffus = Expression(self.params.component_list_diffus,
                                      rule=rule_diffus,
                                      doc='Diffusivity of component i in liquid')
         except AttributeError:
@@ -1211,10 +1222,9 @@ class LiquidStateBlockData(StateBlockData):
         Heat of absorption of CO2 J/mol
         '''
         def rule_habs(blk):
-            if blk.config.parameters.config.process_type == 'Regenerator' or \
-               blk.config.parameters.config.process_type == 'Stripper':
+            if blk.config.parameters.config.process_type == 'stripper':
                 return -97000
-            elif blk.config.parameters.config.process_type == 'Absorber':
+            elif blk.config.parameters.config.process_type == 'absorber':
                 return -84000
         try:
             self.habs = Expression(rule=rule_habs,
@@ -1267,25 +1277,25 @@ class LiquidStateBlockData(StateBlockData):
             raise
     # --------------------------------------------------------------------------
 
-    def get_material_flow_terms(b, p, j):
-        return b.flow_mol_comp[j]
+    def get_material_flow_terms(self, p, j):
+        return self.flow_mol_comp[j]
 
-    def get_enthalpy_flow_terms(b, p):
-        return b.enth_mol_mean
+    def get_enthalpy_flow_terms(self, p):
+        return self.enth_mol_mean
 
-    def get_material_density_terms(b, p, j):
-        return b.conc_mol_comp[j]
+    def get_material_density_terms(self, p, j):
+        return self.conc_mol_comp[j]
 
-    def get_energy_density_terms(b, p):
-        return b.enth_mol_liq_density
+    def get_energy_density_terms(self, p):
+        return self.enth_mol_liq_density
 
-    def define_state_vars(b):
-        return {"flow_mol": b.flow_mol,
-                "temperature": b.temperature,
-                "pressure": b.pressure,
-                "mole_frac_comp": b.mole_frac_comp}
+    def define_state_vars(self):
+        return {"flow_mol": self.flow_mol,
+                "temperature": self.temperature,
+                "pressure": self.pressure,
+                "mole_frac_comp": self.mole_frac_comp}
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
 
     def model_check(blk):

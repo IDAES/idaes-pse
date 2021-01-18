@@ -307,16 +307,20 @@ class PHEData(UnitModelBlockData):
     def _make_performance_method(self):
 
         # Add object references - Sets
-        add_object_reference(self, "component_list_ref",
-                             self.config.hot_side.property_package.component_list)
+        # add_object_reference(self, "component_list_ref",
+        #                      self.config.hot_side.property_package.component_list)
 
-        add_object_reference(
-            self,
-            "solvent_list",
-            self.config.hot_side.property_package.component_list_solvent)
+        component_list_ref = self.config.hot_side.property_package.component_list
+        solvent_list = self.config.hot_side.property_package.component_list_solvent
+        # add_object_reference(
+        #     self,
+        #     "solvent_list",
+        #     self.config.hot_side.property_package.component_list_solvent)
 
+        #cp_ref = self.config.hot_side.property_package.cp_param
         add_object_reference(self, "cp_ref",
                              self.config.hot_side.property_package.cp_param)
+
 
         def rule_trh(blk, t):
             return (blk.hot_side.properties_out[t].temperature /
@@ -345,7 +349,7 @@ class PHEData(UnitModelBlockData):
                 (blk.trh[t]**4 + blk.trh[t]**3 + blk.trh[t]**2 + blk.trh[t] + 1))
 
         self.cp_comp_hot = Expression(self.flowsheet().config.time,
-                                      self.solvent_list,
+                                      solvent_list,
                                       rule=rule_cp_comp_hot,
                                       doc='Component mean specific heat capacity'
                                       ' btw inlet and outlet'
@@ -354,7 +358,7 @@ class PHEData(UnitModelBlockData):
         def rule_cp_hot(blk, t):
             return sum(blk.cp_comp_hot[t, j] *
                        blk.hot_side.properties_in[t].mass_frac_co2_free[j]
-                       for j in blk.solvent_list)
+                       for j in solvent_list)
         self.cp_hot = Expression(self.flowsheet().config.time, rule=rule_cp_hot,
                                  doc='Hot-side mean specific heat capacity on'
                                      'free CO2 basis')
@@ -372,7 +376,7 @@ class PHEData(UnitModelBlockData):
                 (blk.trc[t]**4 + blk.trc[t]**3 + blk.trc[t]**2 + blk.trc[t] + 1))
 
         self.cp_comp_cold = Expression(self.flowsheet().config.time,
-                                       self.solvent_list,
+                                       solvent_list,
                                        rule=rule_cp_comp_cold,
                                        doc='Component mean specific heat capacity'
                                            'btw inlet and outlet'
@@ -381,7 +385,7 @@ class PHEData(UnitModelBlockData):
         def rule_cp_cold(blk, t):
             return sum(blk.cp_comp_cold[t, j] *
                        blk.cold_side.properties_in[t].mass_frac_co2_free[j]
-                       for j in blk.solvent_list)
+                       for j in solvent_list)
         self.cp_cold = Expression(self.flowsheet().config.time, rule=rule_cp_cold,
                                   doc='Cold-side mean specific heat capacity'
                                       'on free CO2 basis')
@@ -407,14 +411,14 @@ class PHEData(UnitModelBlockData):
         def rule_eq_hotside_sumx(bk, t):
             return bk.hot_side.properties_out[t].flow_mol == \
                 sum(bk.hot_side.properties_out[t].flow_mol_comp[j]
-                    for j in bk.component_list_ref)
+                    for j in component_list_ref)
         self.eq_hotside_sumx = Constraint(self.flowsheet().config.time,
                                           rule=rule_eq_hotside_sumx)
 
         def rule_eq_coldside_sumx(bk, t):
             return bk.cold_side.properties_out[t].flow_mol == \
                 sum(bk.cold_side.properties_out[t].flow_mol_comp[j]
-                    for j in bk.component_list_ref)
+                    for j in component_list_ref)
         self.eq_coldside_sumx = Constraint(self.flowsheet().config.time,
                                            rule=rule_eq_coldside_sumx)
 

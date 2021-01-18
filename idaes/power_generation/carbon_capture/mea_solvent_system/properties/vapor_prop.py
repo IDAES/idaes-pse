@@ -12,6 +12,7 @@
 ##############################################################################
 """
 GEN1 vapor property -package
+
 This property package provides the necessary constraints or expressions for the
 vapor phase properties of  amine-based(MEA) scrubbing of CO2 acid gas.
 The first generation (GEN1) MEA model uses the Enhancement factor calculation.
@@ -43,6 +44,9 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unfixed_variables)
+# from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column\
+#     import ProcessType
+
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula, John Eslick"
@@ -65,12 +69,16 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
     CONFIG = PhysicalParameterBlock.CONFIG()
     CONFIG.declare("process_type", ConfigValue(
-        default='Absorber',
-        domain=In(['Absorber', 'Stripper', 'Regenerator']),
+        default='absorber',
+        # default=ProcessType.absorber,
+        domain=In(['absorber', 'stripper']),
+        # domain=In(ProcessType),
         description="Flag indicating the type of  process",
-        doc="""Flag indicating either absoprtion or stripping process.
-               Hence, Absorber process has O2 and N2 in the vapor phase,while
-               the stripping process does not """))
+        doc="""Flag indicating either absorption or stripping process.
+            **default** - ProcessType.absorber.
+            **Valid values:** {
+            **ProcessType.absorber** - absorption process,
+            **ProcessType.stripper** - stripping process.}"""))
 
     def build(self):
         '''
@@ -84,15 +92,15 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         super(PhysicalParameterData, self).build()
 
-        if (self.config.process_type == 'Regenerator' or
-                self.config.process_type == 'Stripper'):
+        if (self.config.process_type == 'stripper'):
             self.CO2 = Component()
             self.H2O = Component()
-        elif self.config.process_type == 'Absorber':
+        elif (self.config.process_type == 'absorber'):
             self.CO2 = Component()
             self.H2O = Component()
             self.O2 = Component()
             self.N2 = Component()
+
 
         self._state_block_class = VaporStateBlock
 
@@ -325,7 +333,7 @@ class VaporStateBlockMethods(StateBlock):
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
-            for j in blk[k]._params.component_list:
+            for j in blk[k].component_list:
                 if hasattr(blk[k], "cp_mol_comp_eqn"):
                     calculate_variable_from_constraint(blk[k].cp_mol_comp[j],
                                                        blk[k].cp_mol_comp_eqn[j])
@@ -408,25 +416,23 @@ class VaporStateBlockData(StateBlockData):
         # Molecular weights
         self.mw_comp = Reference(self.params.mw_comp)
 
-        self._make_state_vars()
-
-    def _make_state_vars(self):
-        """List the necessary state variable objects."""
         self.flow_mol = Var(initialize=1.0,
                             domain=NonNegativeReals,
                             units=pyunits.mol / pyunits.s,
                             doc='Total molar flowrate')
 
-        self.mole_frac_comp = Var(self._params.component_list,
-                             domain=NonNegativeReals,
-                             bounds=(0, 1),
-                             units=None,
-                             initialize=1 / len(self._params.component_list),
-                             doc='Component mole fractions [-]')
+        self.mole_frac_comp = Var(self.component_list,
+                                  domain=NonNegativeReals,
+                                  bounds=(0, 1),
+                                  units=None,
+                                  initialize=1 / len(self.component_list),
+                                  doc='Component mole fractions [-]')
+
         self.pressure = Var(initialize=101325,
                             domain=NonNegativeReals,
                             units=pyunits.Pa,
                             doc='Pressure [Pa]')
+
         self.temperature = Var(initialize=298.15,
                                domain=NonNegativeReals,
                                units=pyunits.K,
@@ -438,12 +444,12 @@ class VaporStateBlockData(StateBlockData):
             return b.flow_mol_comp[j] == b.mole_frac_comp[j] * b.flow_mol
 
         try:
-            self.flow_mol_comp = Var(self._params.component_list,
+            self.flow_mol_comp = Var(self.component_list,
                                      initialize=1.0,
                                      domain=NonNegativeReals,
                                      units=pyunits.mol / pyunits.s,
                                      doc='Component molar flowrate')
-            self.flow_mol_comp_eq = Constraint(self._params.component_list,
+            self.flow_mol_comp_eq = Constraint(self.component_list,
                                                rule=rule_flow_mol_comp,
                                                doc="Component molar flow in vapor phase"
                                                    " [mol/s]")
@@ -455,12 +461,12 @@ class VaporStateBlockData(StateBlockData):
     def _mw(self):
         def rule_mw(b):
             return sum(b.mole_frac_comp[j] * b.mw_comp[j]
-                       for j in b._params.component_list)
+                       for j in b.component_list)
 
         try:
             self.mw = Expression(rule=rule_mw,
                                  doc="Average molecular weight of  vapor phase"
-                                 "components [kg/mol]")
+                                 "[kg/mol]")
         except AttributeError:
             self.del_component(self.mw)
             raise
@@ -481,7 +487,7 @@ class VaporStateBlockData(StateBlockData):
             return b.conc_mol * b.mole_frac_comp[i]
 
         try:
-            self.conc_mol_comp = Expression(self._params.component_list,
+            self.conc_mol_comp = Expression(self.component_list,
                                             rule=rule_conc_mol_comp,
                                             doc="concentration of "
                                                 "vapor components [mol/m3]")
@@ -502,7 +508,7 @@ class VaporStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component vapour heat capacities
-        self.cp_mol_comp = Var(self._params.component_list,
+        self.cp_mol_comp = Var(self.component_list,
                                domain=Reals,
                                initialize=1.0,
                                units=pyunits.J / pyunits.K / pyunits.mol,
@@ -516,7 +522,7 @@ class VaporStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mol_comp_eqn = Constraint(self._params.component_list,
+            self.cp_mol_comp_eqn = Constraint(self.component_list,
                                               rule=rule_cp_mol_comp)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -533,7 +539,7 @@ class VaporStateBlockData(StateBlockData):
 
         def rule_cp_mol(b):
             return b.cp_mol == sum(b.cp_mol_comp[j] * b.mole_frac_comp[j]
-                                   for j in b._params.component_list)
+                                   for j in b.component_list)
 
         try:
             # Try to build constraint
@@ -546,7 +552,7 @@ class VaporStateBlockData(StateBlockData):
 
     def _cp_mol_comp_mean(self):
         # average Pure component vapour heat capacities btw T and T_ref
-        self.cp_mol_comp_mean = Var(self._params.component_list,
+        self.cp_mol_comp_mean = Var(self.component_list,
                                     domain=Reals,
                                     initialize=1.0,
                                     units=pyunits.J / pyunits.K / pyunits.mol,
@@ -563,7 +569,7 @@ class VaporStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mol_comp_mean__eqn = Constraint(self._params.component_list,
+            self.cp_mol_comp_mean__eqn = Constraint(self.component_list,
                                                     rule=rule_cp_mol_comp_mean)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -580,7 +586,7 @@ class VaporStateBlockData(StateBlockData):
 
         def rule_cp_mol_mean(b):
             return b.cp_mol_mean == sum(b.cp_mol_comp_mean[j] * b.mole_frac_comp[j]
-                                        for j in b._params.component_list)
+                                        for j in b.component_list)
 
         try:
             # Try to build constraint
@@ -632,7 +638,7 @@ class VaporStateBlockData(StateBlockData):
                        (b.temperature / b._params.visc_d_param[j, 2])**1.5
 
         try:
-            self.visc_d_comp = Expression(self._params.component_list,
+            self.visc_d_comp = Expression(self.component_list,
                                           rule=rule_visc_d_comp,
                                           doc="dynamic viscosity of "
                                               "vapor components [Pa.s or kg/m.s]")
@@ -643,13 +649,13 @@ class VaporStateBlockData(StateBlockData):
     def _visc_d(self):
         # Vapor dynamic viscosity (Wilke,1950)
         bin_set = []
-        for i in self._params.component_list:
-            for j in self._params.component_list:
+        for i in self.component_list:
+            for j in self.component_list:
                 bin_set.append((i, j))
 
         self.thetha_ij = Expression(
             bin_set, doc='diffusivity interaction parameter')
-        comp = [i for i in self._params.component_list]
+        comp = [i for i in self.component_list]
         o = dict()
         for (i, j) in enumerate(comp, 1):
             o[i] = j
@@ -668,15 +674,15 @@ class VaporStateBlockData(StateBlockData):
                     self.mw_comp[o[i]] / self.mw_comp[o[j]] *\
                     self.thetha_ij[o[i], o[j]]
 
-        for i in self._params.component_list:
-            for j in self._params.component_list:
+        for i in self.component_list:
+            for j in self.component_list:
                 if i == j:
                     self.thetha_ij[i, j] = 1
 
         mu_vap = sum(self.mole_frac_comp[i] * self.visc_d_comp[i] /
                      sum(self.mole_frac_comp[j] * self.thetha_ij[i, j]
-                         for j in self._params.component_list)
-                     for i in self._params.component_list)
+                         for j in self.component_list)
+                     for i in self.component_list)
 
         try:
             self.visc_d = Expression(expr=mu_vap,
@@ -695,7 +701,7 @@ class VaporStateBlockData(StateBlockData):
                     (b._params.therm_cond_param[i, 4] / (b.temperature**2)))
 
         try:
-            self.therm_cond_comp = Expression(self._params.component_list,
+            self.therm_cond_comp = Expression(self.component_list,
                                               rule=rule_therm_cond_comp,
                                               doc='Vapor  component thermal'
                                                   'conductivity [J/(m.K.s)]')
@@ -709,13 +715,13 @@ class VaporStateBlockData(StateBlockData):
         Wassiljewa-Mason-Saxena mixing rule(low pressure)
         """
         xy = dict()  # used to label the components e.g 1->CO2,2->N2
-        for (i, j) in enumerate(self._params.component_list, 1):
+        for (i, j) in enumerate(self.component_list, 1):
             xy[i] = j
 
         k_vap = 0
-        for i in range(1, len(self._params.component_list) + 1):
+        for i in range(1, len(self.component_list) + 1):
             sumij = 0
-            for j in range(1, len(self._params.component_list) + 1):
+            for j in range(1, len(self.component_list) + 1):
                 Aij = (1 + (self.visc_d_comp[xy[i]] / self.visc_d_comp[xy[j]])**0.5 *
                       (self.mw_comp[xy[j]] / self.mw_comp[xy[i]])**0.25)**2 *\
                       (8 * (1 + self.mw_comp[xy[i]] / self.mw_comp[xy[j]]))**-0.5
@@ -735,8 +741,8 @@ class VaporStateBlockData(StateBlockData):
         Diffusivity of vapor phase using Fuller method
         """
         binary_set = []
-        for i in self._params.component_list:
-            for j in self._params.component_list:
+        for i in self.component_list:
+            for j in self.component_list:
                 if i != j and (j, i) not in binary_set:
                     binary_set.append((i, j))
 
@@ -758,12 +764,12 @@ class VaporStateBlockData(StateBlockData):
         def rule_diffus(blk, i):
             return (1 - self.mole_frac_comp[i]) / (
                 sum(self.mole_frac_comp[j] / self.diffus_binary[i, j]
-                    for j in self._params.component_list if (i, j) in binary_set) +
+                    for j in self.component_list if (i, j) in binary_set) +
                 sum(self.mole_frac_comp[j] / self.diffus_binary[j, i]
-                    for j in self._params.component_list if (j, i) in binary_set))
+                    for j in self.component_list if (j, i) in binary_set))
 
         try:
-            self.diffus = Expression(self._params.component_list,
+            self.diffus = Expression(self.component_list,
                                      rule=rule_diffus,
                                      doc='diffusivity of component i in vapor [m^2/s]')
         except AttributeError:
@@ -789,25 +795,25 @@ class VaporStateBlockData(StateBlockData):
 
     # ==========================================================================
 
-    def get_material_flow_terms(b, p, j):
-        return b.flow_mol_comp[j]
+    def get_material_flow_terms(self, p, j):
+        return self.flow_mol_comp[j]
 
-    def get_enthalpy_flow_terms(b, p):
-        return b.enth_mol_mean
+    def get_enthalpy_flow_terms(self, p):
+        return self.enth_mol_mean
 
-    def get_material_density_terms(b, p, j):
-        return b.conc_mol_comp[j]
+    def get_material_density_terms(self, p, j):
+        return self.conc_mol_comp[j]
 
-    def get_energy_density_terms(b, p):
-        return b.enth_mol_vap_density
+    def get_energy_density_terms(self, p):
+        return self.enth_mol_vap_density
 
-    def define_state_vars(b):
-        return {"flow_mol": b.flow_mol,
-                "temperature": b.temperature,
-                "pressure": b.pressure,
-                "mole_frac_comp": b.mole_frac_comp}
+    def define_state_vars(self):
+        return {"flow_mol": self.flow_mol,
+                "temperature": self.temperature,
+                "pressure": self.pressure,
+                "mole_frac_comp": self.mole_frac_comp}
 
-    def get_material_flow_basis(b):
+    def get_material_flow_basis(self):
         return MaterialFlowBasis.molar
 
     def model_check(blk):
