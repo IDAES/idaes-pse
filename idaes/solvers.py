@@ -42,7 +42,8 @@ def download_binaries(
     cacert=None,
     verbose=False,
     platform="auto",
-    nochecksum=False):
+    nochecksum=False,
+    library_only=False):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
@@ -100,11 +101,14 @@ def download_binaries(
         libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
         _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
-        fd.set_destination_filename(solvers_tar)
-        try:
-            fd.get_binary_file(solvers_from)
-        except urllib.error.HTTPError:
-             raise Exception(f"{platform} solver binaries are unavailable")
+        # Download solvers
+        if not library_only:
+            fd.set_destination_filename(solvers_tar)
+            try:
+                fd.get_binary_file(solvers_from)
+            except urllib.error.HTTPError:
+                 raise Exception(f"{platform} solver binaries are unavailable")
+        # Download Libraries
         fd.set_destination_filename(libs_tar)
         try:
             fd.get_binary_file(libs_from)
@@ -117,18 +121,24 @@ def download_binaries(
         # if you are downloading a release and not a specific URL verify checksum
         fn_s = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
         fn_l = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
-        hash_s = _hash(solvers_tar)
+        # Check solvers package hash
+        if not library_only:
+            hash_s = _hash(solvers_tar)
+            _log.debug("Solvers Hash {}".format(hash_s))
+            if checksum.get(fn_s, "") != hash_s:
+                raise Exception("Solver files hash does not match expected")
+        # Check libraries package hash
         hash_l = _hash(libs_tar)
-        _log.debug("Solvers Hash {}".format(hash_s))
         _log.debug("Libs Hash {}".format(hash_l))
-        if checksum.get(fn_s, "") != hash_s:
-            raise Exception("Solver files hash does not match expected")
         if checksum.get(fn_l, "") != hash_l:
             raise Exception("Library files hash does not match expected")
 
-    _log.debug("Extracting files in {}".format(idaes.bin_directory))
-    with tarfile.open(solvers_tar, 'r') as f:
-        f.extractall(idaes.bin_directory)
+    # Extract solvers
+    if not library_only:
+        _log.debug("Extracting files in {}".format(idaes.bin_directory))
+        with tarfile.open(solvers_tar, 'r') as f:
+            f.extractall(idaes.bin_directory)
+    # Extract libraries
     _log.debug("Extracting files in {}".format(idaes.bin_directory))
     with tarfile.open(libs_tar, 'r') as f:
         f.extractall(idaes.bin_directory)

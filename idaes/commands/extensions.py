@@ -23,17 +23,18 @@ from idaes.commands import cb
 _log = logging.getLogger("idaes.commands.extensions")
 
 
-def print_extensions_version():
+def print_extensions_version(library_only):
     click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions Build Versions")
     click.echo("===================================================")
-    v = os.path.join(idaes.bin_directory, "version_solvers.txt")
-    try:
-        with open(v, "r") as f:
-            v = f.readline().strip()
-    except FileNotFoundError:
-        v = "no version file found"
-    click.echo("Solvers:  v{}".format(v))
+    if not library_only:
+        v = os.path.join(idaes.bin_directory, "version_solvers.txt")
+        try:
+            with open(v, "r") as f:
+                v = f.readline().strip()
+        except FileNotFoundError:
+            v = "no version file found"
+        click.echo("Solvers:  v{}".format(v))
     v = os.path.join(idaes.bin_directory, "version_lib.txt")
     try:
         with open(v, "r") as f:
@@ -78,8 +79,12 @@ def get_extensions_platforms():
     "--nochecksum",
     is_flag=True,
     help="Don't verify the file checksum")
+@click.option(
+    "--library-only",
+    is_flag=True,
+    help="Don't verify the file checksum")
 @click.option("--verbose", help="Show details", is_flag=True)
-def get_extensions(release, url, insecure, cacert, verbose, platform, nochecksum):
+def get_extensions(release, url, insecure, cacert, verbose, platform, nochecksum, library_only):
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -88,9 +93,9 @@ def get_extensions(release, url, insecure, cacert, verbose, platform, nochecksum
     elif url is not None or release is not None:
         click.echo("Getting files...")
         idaes.solvers.download_binaries(
-            release, url, insecure, cacert, verbose, platform, nochecksum)
+            release, url, insecure, cacert, verbose, platform, nochecksum, library_only)
         click.echo("Done")
-        print_extensions_version()
+        print_extensions_version(library_only)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
 
