@@ -77,7 +77,7 @@ Built-in Valve Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Standard valve functions can be specified by providing a ``ValveFunctionType``
-enumerate type to the ``valve_function_callback`` argument.  Standard function
+enumerated type to the ``valve_function_callback`` argument.  Standard functions
 are given below.
 
 ``ValveFunctionType.linear``
@@ -98,7 +98,7 @@ are given below.
 
   f(x) = \alpha^{x - 1}
 
-For the equal-percentage valve function and additional variable ``alpha`` is defined
+For the equal-percentage valve function an additional variable ``alpha`` is defined
 which by default is fixed and set to 100.
 
 Custom Valve Functions
@@ -109,7 +109,7 @@ function should be a named expression attached to the valve model called
 ``valve_function`` which takes the valve opening and computes a value that goes
 from approximately zero when valve opening is 0 to 1 when the valve opening is one.
 The valve function can have parameters as needed, so custom valve functions are
-defined in a callback so any additional parameters can be added in the callback.
+defined using a callback function.
 
 The callback function should take an object of the ``Valve`` class as an argument
 and add the ``valve_function`` named expression.  Any additional parameters can also
@@ -153,7 +153,7 @@ Other pressure-flow equations can be specified via callback supplied to the unit
 configuration option ``pressure_flow_callback``. The callback allows both the form
 and flow basis of the pressure-flow equation to be specified.
 
-The callback can added parameters and variables as needed. It is recommended that
+The callback can add parameters and variables as needed. It is recommended that
 only the ``pressure_flow_equation`` be specified as additional constraints would
 not be scaled by the valve model's scaling routines.  The pressure flow relation
 generally should be written in the form below to facilitate scaling where :math:`F`
@@ -206,7 +206,7 @@ The example callback below is the model default pressure-flow equation.
 Initialization
 --------------
 
-This just calls the initialization routine from PressureChanger. Either and
+This just calls the initialization routine from PressureChanger. Either an
 outlet pressure value or deltaP can be specified to aid the initialization.
 
 Valve Class

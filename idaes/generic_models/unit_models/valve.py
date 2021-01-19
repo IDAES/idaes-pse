@@ -126,7 +126,7 @@ class ValveData(PressureChangerData):
 ValveFunctionType.linear, ValveFunctionType.quick_opening,
 ValveFunctionType.equal_percentage, ValveFunctionType.custom} or a callback
 function that takes a valve model object as an argument and adds a time-indexed
-valve_function expression to it. Any addtional required variables, expressions,
+valve_function expression to it. Any additional required variables, expressions,
 or constraints required can also be added by the callback.""",
         ),
     )
@@ -136,7 +136,7 @@ or constraints required can also be added by the callback.""",
             default=pressure_flow_default_callback,
             description="Callback function providing the valve_function expression",
             doc="""This callback function takes a valve model object as an argument
-an adds a time-indexed valve_function expression to it.  Any addtional required
+and adds a time-indexed valve_function expression to it.  Any additional required
 variables, expressions, or constraints required can also be added by the callback.""",
         ),
     )
@@ -235,17 +235,17 @@ variables, expressions, or constraints required can also be added by the callbac
 
     def calculate_scaling_factors(self):
         """
-        Calculte pressure flow constraint scaling from flow variable scale.
+        Calculate pressure flow constraint scaling from flow variable scale.
         """
-        # The valve of the valve opening and the output of the valve function
+        # The value of the valve opening and the output of the valve function
         # expression are between 0 and 1, so the only thing that needs to be
         # scaled here is the pressure-flow constraint, which can be scaled by
-        # using the flow varable scale.  The flow variable could be defined
-        # in differnt ways, so the flow variable is determined here from a
+        # using the flow variable scale.  The flow variable could be defined
+        # in different ways, so the flow variable is determined here from a
         # "flow_var[t]" reference set in the pressure-flow callback. The flow
-        # term could be in verious forms, so an optional
+        # term could be in various forms, so an optional
         # "pressure_flow_equation_scale" function can be defined in the callback
-        # as well.  The pressure flow function could be flow = f(Pin, Pout), but
+        # as well.  The pressure-flow function could be flow = f(Pin, Pout), but
         # it could also be flow**2 = f(Pin, Pout), ... The so
         # "pressure_flow_equation_scale" provides the form of the LHS side as
         # a function of the flow variable.
