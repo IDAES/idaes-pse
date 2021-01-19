@@ -18,6 +18,7 @@ import idaes
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
 import urllib
+import idaes.config
 
 _log = idaeslog.getLogger(__name__)
 
@@ -43,22 +44,34 @@ def download_binaries(
     verbose=False,
     platform="auto",
     nochecksum=False,
-    library_only=False):
+    library_only=False,
+    to_path=None):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
 
     Args:
         url (str): a url to download binary files to install files
-
+        to_path: for testing only, an alternate subdirectory of the idaes data
+                 directory for a test binary install.
     Returns:
         None
     """
     if verbose:
         _log.setLevel(idaeslog.DEBUG)
-    idaes._create_bin_dir()
-    solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")
-    libs_tar = os.path.join(idaes.bin_directory, "idaes-lib.tar.gz")
+    # set the locations to download files to, to_path is an alternate
+    # subdirectory of idaes.data_directory that can optionally be used to test
+    # this function without interfereing with anything else.  It's a subdirectory
+    # of the data directory because that should be a safe place to store some
+    # test files.
+    if to_path is None:
+        to_path = idaes.bin_directory
+    else:
+        to_path = os.path.join(idaes.data_directory, to_path)
+    idaes.config.create_dir(to_path)
+    solvers_tar = os.path.join(to_path, "idaes-solvers.tar.gz")
+    libs_tar = os.path.join(to_path, "idaes-lib.tar.gz")
+    # Get a pyomo file downloader object and check Arch
     fd = FileDownloader(insecure=insecure, cacert=cacert)
     arch = fd.get_sysinfo()
     if arch[1] != 64:
@@ -75,16 +88,19 @@ def download_binaries(
     if platform in idaes.config.binary_platform_map:
         platform = idaes.config.binary_platform_map[platform]
 
-    checksum = {}
+    checksum = {} # storage for hashes if install from release
+    # If a release is specified, use that to set the URL, also get hash info
     if release is not None:
-        # if a release is specified it takes precedence over a url
         url = "/".join([_release_base_url, release])
-        # if we're downloading an official release check checksum
-        check_to = os.path.join(idaes.bin_directory, f"sha256sum_{release}.txt")
+        # if we're downloading an official release get hashes
+        # check_to = place to store hash file
+        check_to = os.path.join(to_path, f"sha256sum_{release}.txt")
+        # check_from = release hashes url
         check_from = f"https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{release}.txt"
         _log.debug("Getting release {}\n  checksum file {}".format(release, check_from))
         fd.set_destination_filename(check_to)
         fd.get_binary_file(check_from)
+        # read the hashes file and store then in checksum dict
         with open(check_to, 'r') as f:
             for i in range(1000):
                 line = f.readline(1000)
@@ -92,11 +108,13 @@ def download_binaries(
                     break
                 line = line.split(sep="  ")
                 checksum[line[1].strip()] = line[0].strip()
+    # Either URL should have been specified or obtained from specified release
     if url is not None:
         if not url.endswith("/"):
             c = "/"
         else:
             c = ""
+        # Get specific package file URLs
         solvers_from = c.join([url, "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])])
         libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
@@ -116,9 +134,8 @@ def download_binaries(
              raise Exception(f"{platform} library binaries are unavailable")
     else:
         raise Exception("Must provide a location to download binaries")
-
+    # If release checksum is not empty, nochecksum opt allows hash to be ignored
     if checksum and not nochecksum:
-        # if you are downloading a release and not a specific URL verify checksum
         fn_s = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
         fn_l = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
         # Check solvers package hash
@@ -137,8 +154,8 @@ def download_binaries(
     if not library_only:
         _log.debug("Extracting files in {}".format(idaes.bin_directory))
         with tarfile.open(solvers_tar, 'r') as f:
-            f.extractall(idaes.bin_directory)
+            f.extractall(to_path)
     # Extract libraries
     _log.debug("Extracting files in {}".format(idaes.bin_directory))
     with tarfile.open(libs_tar, 'r') as f:
-        f.extractall(idaes.bin_directory)
+        f.extractall(to_path)

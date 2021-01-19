@@ -227,3 +227,7 @@ def setup_environment(bin_directory, use_idaes_solvers):
             os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
                 [os.environ.get('LD_LIBRARY_PATH', ''), bin_directory]
             )
+            # This is for OSX, but won't hurt other UNIX
+            os.environ['DYLD_LIBRARY_PATH'] = os.pathsep.join(
+                [os.environ.get('DYLD_LIBRARY_PATH', ''), bin_directory]
+            )
