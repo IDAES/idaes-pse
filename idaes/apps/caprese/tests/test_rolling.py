@@ -1,8 +1,7 @@
 import pytest
 import sys
 from collections import OrderedDict
-from pyomo.environ import *
-from idaes.apps.caprese.util import cuid_from_timeslice
+import pyomo.environ as pyo
 from idaes.apps.caprese.rolling import *
 
 class TestTimeList(object):
@@ -159,25 +158,25 @@ class TestTimeList(object):
 
 
 def make_model():
-    m = ConcreteModel()
-    m.time = Set(initialize=range(11))
-    m.space = Set(initialize=range(3))
-    m.comp = Set(initialize=['a','b'])
+    m = pyo.ConcreteModel()
+    m.time = pyo.Set(initialize=range(11))
+    m.space = pyo.Set(initialize=range(3))
+    m.comp = pyo.Set(initialize=['a','b'])
 
-    m.v1 = Var(m.time, m.space)
-    m.v2 = Var(m.time, m.space, m.comp)
+    m.v1 = pyo.Var(m.time, m.space)
+    m.v2 = pyo.Var(m.time, m.space, m.comp)
 
     @m.Block(m.time, m.space)
     def b(b, t, x):
-        b.v3 = Var()
-        b.v4 = Var(m.comp)
+        b.v3 = pyo.Var()
+        b.v4 = pyo.Var(m.comp)
     
-    m.v1_refs = [Reference(m.v1[:,x]) for x in m.space]
-    m.v2a_refs = [Reference(m.v2[:,x,'a']) for x in m.space]
-    m.v2b_refs = [Reference(m.v2[:,x,'b']) for x in m.space]
-    m.v3_refs = [Reference(m.b[:,x].v3) for x in m.space]
-    m.v4a_refs = [Reference(m.b[:,x].v4['a']) for x in m.space]
-    m.v4b_refs = [Reference(m.b[:,x].v4['a']) for x in m.space]
+    m.v1_refs = [pyo.Reference(m.v1[:,x]) for x in m.space]
+    m.v2a_refs = [pyo.Reference(m.v2[:,x,'a']) for x in m.space]
+    m.v2b_refs = [pyo.Reference(m.v2[:,x,'b']) for x in m.space]
+    m.v3_refs = [pyo.Reference(m.b[:,x].v3) for x in m.space]
+    m.v4a_refs = [pyo.Reference(m.b[:,x].v4['a']) for x in m.space]
+    m.v4b_refs = [pyo.Reference(m.b[:,x].v4['a']) for x in m.space]
 
     for t in m.time:
         for ref in m.v1_refs:
@@ -202,7 +201,7 @@ class TestVectorSeries(object):
         # To illustrate their indended use, tests use CUIDs as keys.
         m = make_model()
         data = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in m.time])
             for _slice in m.v1_refs])
 
@@ -219,7 +218,7 @@ class TestVectorSeries(object):
         assert history.time.tolerance == tol
 
         for _slice in m.v1_refs:
-            assert cuid_from_timeslice(_slice, m.time) in history
+            assert pyo.ComponentUID(_slice.referent) in history
 
         empty_series = VectorSeries()
         assert empty_series == OrderedDict()
@@ -230,7 +229,7 @@ class TestVectorSeries(object):
         # validate_dimension.
         m = make_model()
         data = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in m.time])
             for _slice in m.v2a_refs + m.v2b_refs])
         name = 'v2'
@@ -256,7 +255,7 @@ class TestVectorSeries(object):
     def test_len(self):
         m = make_model()
         data = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in m.time])
             for _slice in m.v3_refs])
         name = 'v3'
@@ -273,7 +272,7 @@ class TestVectorSeries(object):
     def test_consistent(self):
         m = make_model()
         data = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in m.time])
             for _slice in m.v3_refs])
         name = 'v3'
@@ -296,7 +295,7 @@ class TestVectorSeries(object):
         assert not VectorSeries().consistent([1])
 
         empty_data = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time), [])
+            (pyo.ComponentUID(_slice.referent), [])
                 for _slice in m.v1_refs])
         empty_series = VectorSeries(empty_data)
         vals = [1 for _ in m.space]
@@ -307,7 +306,7 @@ class TestVectorSeries(object):
     def test_append(self):
         m = make_model()
         data = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in m.time])
             for _slice in m.v3_refs])
         name = 'v3'
@@ -341,11 +340,11 @@ class TestVectorSeries(object):
         time_2 = tlist[midpoint:]
 
         data_1 = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in time_1])
             for _slice in m.v1_refs])
         data_2 = OrderedDict([
-            (cuid_from_timeslice(_slice, m.time),
+            (pyo.ComponentUID(_slice.referent),
                 [_slice[t].value for t in time_2])
             for _slice in m.v1_refs])
         tol = 0.1

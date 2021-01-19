@@ -33,6 +33,13 @@ class ElementInitializationInputOption(ConfigEnum):
     CURRENT_VALUES = 23
 
 
+class InputOption(ConfigEnum):
+    CURRENT = 20
+    INITIAL = 21
+    SETPOINT = 22
+    # TODO: PREVIOUS = 23
+
+
 class TimeResolutionOption(ConfigEnum):
     COLLOCATION_POINTS = 31
     FINITE_ELEMENTS = 32
@@ -53,6 +60,20 @@ class VariableCategory(ConfigEnum):
     INPUT = 54
     FIXED = 55
     SCALAR = 56
+    
+    MEASUREMENT = 57
+
+
+class NoiseBoundOption(ConfigEnum):
+    FAIL = 60
+    DISCARD = 61
+    PUSH = 62
+
+
+class PlantHorizonType(ConfigEnum):
+    FULL = 71
+    ROLLING = 72
+
 
 
 class NoiseBoundOption(ConfigEnum):

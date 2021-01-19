@@ -27,7 +27,6 @@ from pyomo.network import Arc
 from pyomo.core.base.var import Var
 from pyomo.core.base.expression import Expression
 
-
 class FileBaseNameExistsError(Exception):
     pass
 
@@ -47,6 +46,9 @@ class FlowsheetSerializer:
         self.labels = {}
         self.out_json = {"model": {}}
         self.name = ""
+        self.flowsheet = None
+        self._used_ports = set()
+        self._known_endpoints = set()
         self._used_unit_names = set()
         self._logger = idaes.logger.getLogger(__name__)
 
@@ -94,16 +96,20 @@ class FlowsheetSerializer:
             serializer.save(m.fs, "output_file")
         """
         self.name = name
-        self.serialize_flowsheet(flowsheet)
+        self.flowsheet = flowsheet
+        self.serialize_flowsheet()
         self._construct_output_json()
         return self.out_json
 
-    def serialize_flowsheet(self, flowsheet):
+    def serialize_flowsheet(self):
         """Stores information on the connectivity and components of the input flowsheet. """
-        for component in flowsheet.component_objects(Arc, descend_into=False):
+        
+        for component in self.flowsheet.component_objects(Arc, descend_into=False):
             self.arcs[component.getname()] = component
-            
-        for component in flowsheet.component_objects(Block, descend_into=True):
+            self._known_endpoints.add(component.source.parent_block())
+            self._known_endpoints.add(component.dest.parent_block())
+
+        for component in self.flowsheet.component_objects(Block, descend_into=True):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
                 self._add_unit_model_with_ports(component)
@@ -115,6 +121,7 @@ class FlowsheetSerializer:
                         if isinstance(item, UnitModelBlockData):
                             if any((item == arc.source.parent_block() or item == arc.dest.parent_block()) for arc in self.arcs.values()):
                                 self._add_unit_model_with_ports(item)
+                                print(f'sub-indexed: {item.getname()}')
   
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
@@ -139,7 +146,7 @@ class FlowsheetSerializer:
                 used_ports.add(arc.source)
                 used_ports.add(arc.dest)
             except KeyError as error:
-                print(f"Unable to find port. {name}, {arc.source}, {arc.dest}")  # TODO convert to logging
+                self._logger.error(f"Unable to find port. {name}, {arc.source}, {arc.dest}")
 
         # note we're only using the keys from self.ports, {port: parentcomponent}
         untouched_ports = set(self.ports) - used_ports
@@ -345,13 +352,35 @@ class FlowsheetSerializer:
 
     def _add_unit_model_with_ports(self, unit):
         unitname = unit.getname()
-        self.unit_models[unit] = {
-                "name": unitname,
-                "type": self._get_unit_model_type(unit)
+        if unit.parent_block() == self.flowsheet:
+            # The unit is top-level and therefore should be displayed.
+            self.unit_models[unit] = {
+                    "name": unitname,
+                    "type": self._get_unit_model_type(unit)
+                }
+            self._used_unit_names.add(unitname)
+            for port in unit.component_objects(Port, descend_into=False):
+                self.ports[port] = unit
+        elif unit in self._known_endpoints:
+            # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
+            # Find the top-level parent unit and assign the serialized link to the parent.
+            parent_unit = unit.parent_block()
+            while not parent_unit == self.flowsheet:
+                parent_unit = parent_unit.parent_block()
+
+            self.unit_models[parent_unit] = {
+                "name": parent_unit.getname(),
+                "type": self._get_unit_model_type(parent_unit)
             }
-        self._used_unit_names.add(unitname)
-        for subcomponent in unit.component_objects(Port, descend_into=True):
-            self.ports[subcomponent] = unit
+            for port in unit.component_objects(Port, descend_into=False):
+                self.ports[port] = parent_unit
+                # Add all of this subcomponent's ports to used_ports; realistically, this is only relevant
+                # in a situation where the subcomponent has ports that are not connected to an Arc that we
+                # intend to display. Otherwise, the port is marked as "used" when we traverse the Arcs.
+                self._used_ports.add(port)
+        else:
+            # The unit is neither top-level nor connected; do not display this unit, since it is a subcomponent.
+            pass
 
     def _get_unit_model_type(self, unit):
         return unit._orig_module.split(".")[-1]  # TODO look for/create equivalent getter, as getname() above

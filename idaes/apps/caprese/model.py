@@ -1,9 +1,29 @@
-from idaes.apps.caprese.base_class import DynamicBase
+import time as time_module
+from collections import OrderedDict
+
+from six import iteritems
+
+import idaes.logger as idaeslog
 from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
-        VariableCategory,
         ControlPenaltyType,
         ControlInitOption,
+        InputOption,
+        )
+from idaes.apps.caprese.common.config import VariableCategory as VC
+from idaes.apps.caprese.categorize import (
+        categorize_dae_variables,
+        CATEGORY_TYPE_MAP,
+        )
+from idaes.apps.caprese.nmpc_var import (
+        NmpcVar,
+        _NmpcVector,
+        DiffVar,
+        DerivVar,
+        AlgVar,
+        InputVar,
+        FixedVar,
+        MeasuredVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
 from pyomo.environ import (
@@ -14,58 +34,184 @@ from pyomo.environ import (
         Block,
         Reference,
         TransformationFactory,
+        Var,
+        Set,
+        ComponentUID,
         )
-from pyomo.kernel import ComponentMap
+from pyomo.core.base.util import Initializer, ConstantInitializer
+from pyomo.core.base.block import _BlockData, declare_custom_block
+from pyomo.core.base.suffix import Suffix
+from pyomo.core.base.indexed_component import UnindexedComponent_set
+from pyomo.common.collections import ComponentSet, ComponentMap
+from pyomo.common.modeling import unique_component_name
+from pyomo.common.timing import ConstructionTimer
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
+from pyomo.dae.flatten import flatten_dae_components
 
-ATTRIBUTES = (
-        'dae_vars',
-        'diff_vars',
-        'deriv_vars',
-        'input_vars',
-        'alg_vars',
-        'fixed_vars',
-        'scalar_vars',
-        'ic_vars',
-        'variables_categorized',
-        'ncp',
-        'category_dict',
-        'var_locator',
-        )
-
-class DynamicModelHelper(object):
-    # TODO: Any advantage to inheriting from ConcreteModel or Block?
-    #       Would not have to access the "model" attribute
-    #       As a Block, could "contain" the newly constructed components?
+class _DynamicBlockData(_BlockData):
     # TODO: This class should probably give the option to clone
     # the user's model.
 
-    def __init__(self, model, time, inputs_at_t0):
-        self.model = model
-        self.time = time
+    def _construct(self):
+        # Is it "bad practice" to have a construct method on a data object?
+        # ^ Yes, because this method needs to be called via DynamicBlock,
+        # not immediately when _DynamicBlockData.construct is invoked...
+        model = self.mod
+        time = self.time
+        inputs = self._inputs
+        try:
+            measurements = self._measurements
+        except AttributeError:
+            measurements = self._measurements = None
 
-        # TODO: These methods should be moved to this class
-        DynamicBase.add_namespace_to(model, time)
-        namespace = getattr(model, DynamicBase.namespace_name)
-        self.namespace = namespace
-        DynamicBase.categorize_variables(model, inputs_at_t0)
-        category_dict = {
-                VariableCategory.DIFFERENTIAL: namespace.diff_vars,
-                VariableCategory.DERIVATIVE: namespace.deriv_vars,
-                VariableCategory.ALGEBRAIC: namespace.alg_vars,
-                VariableCategory.SCALAR: namespace.scalar_vars,
-                VariableCategory.INPUT: namespace.input_vars,
-                VariableCategory.FIXED: namespace.fixed_vars,
-                }
-        namespace.category_dict = category_dict
-        DynamicBase.build_variable_locator(
-                model, 
-                category_dict, 
-                ic_vars=namespace.ic_vars)
-        for attr in ATTRIBUTES:
-            ns_obj = getattr(self.namespace, attr)
-            setattr(self, attr, ns_obj)
+        # TODO: Give the user the option to provide their own
+        # category_dict (they know the structure of their model
+        # better than I do...)
+        scalar_vars, dae_vars = flatten_dae_components(
+                model,
+                time,
+                ctype=Var,
+                )
+        self.scalar_vars = scalar_vars
+        self.dae_vars = dae_vars
+        category_dict = categorize_dae_variables(
+                dae_vars,
+                time,
+                inputs,
+                measurements=measurements,
+                )
+        self.category_dict = category_dict
+
+        self._add_category_blocks()
+        self._add_category_references()
+
+        self.differential_vars = category_dict[VC.DIFFERENTIAL]
+        self.algebraic_vars = category_dict[VC.ALGEBRAIC]
+        self.derivative_vars = category_dict[VC.DERIVATIVE]
+        self.input_vars = category_dict[VC.INPUT]
+        self.fixed_vars = category_dict[VC.FIXED]
+
+        self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+        # The categories in category_dict now form a partition of the
+        # time-indexed variables. This is necessary to have a well-defined
+        # vardata map, which maps each vardata to a unique component indexed
+        # only by time.
+
+        # Maps each vardata (of a time-indexed var) to the NmpcVar
+        # that contains it.
+        self.vardata_map = ComponentMap((var[t], var) 
+                for varlist in category_dict.values()
+                for var in varlist
+                for t in time
+                )
+        # NOTE: looking up var[t] instead of iterating over values() 
+        # appears to be ~ 5x faster
+
+        # These should be overridden by a call to `set_sample_time`
+        # The defaults assume that the entire model is one sample.
+        self.sample_points = [time.first(), time.last()]
+        self.sample_point_indices = [1, len(time)]
+
+    _var_name = 'var'
+    _block_suffix = '_BLOCK'
+    _set_suffix = '_SET'
+
+    @classmethod
+    def get_category_block_name(cls, categ):
+        categ_name = str(categ).split('.')[1]
+        return categ_name + cls._block_suffix
+
+    @classmethod
+    def get_category_set_name(cls, categ):
+        categ_name = str(categ).split('.')[1]
+        return categ_name + cls._set_suffix
+
+    def _add_category_blocks(self):
+        category_dict = self.category_dict
+        var_name = self._var_name
+        for categ, varlist in category_dict.items():
+            # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
+            # They serve as a way to access all the "differential variables"
+            block_name = self.get_category_block_name(categ)
+            set_name = self.get_category_set_name(categ)
+            set_range = range(len(varlist))
+
+            # Construct a set that indexes, eg, the "differential variables"
+            category_set = Set(initialize=set_range)
+            self.add_component(set_name, category_set)
+
+            # Construct an IndexedBlock, each data object of which
+            # will contain a single reference-to-timeslice of that
+            # category, and with the corresponding custom ctype
+            category_block = Block(category_set)
+            self.add_component(block_name, category_block)
+
+            # Don't want these blocks sent to any solver.
+            category_block.deactivate()
+
+            for i, var in enumerate(varlist):
+                # Add reference-to-timeslices to new blocks:
+                category_block[i].add_component(var_name, var)
+                # These vars were created by the categorizer
+                # and have custom ctypes.
+
+    _vectors_name = 'vectors'
+
+    def _add_category_references(self):
+        category_dict = self.category_dict
+
+        # Add a deactivated block to store all my `_NmpcVector`s
+        # These will vars, named by category, indexed by the index 
+        # into the list of that category and by time. E.g.
+        # self.vectors.differential
+        self.add_component(self._vectors_name, Block())
+        self.vectors.deactivate()
+
+        for categ in category_dict:
+            # TODO: use ctype as the key in category_dict
+            ctype = CATEGORY_TYPE_MAP[categ]
+            # Get the block that holds this category of var,
+            # and the name of the attribute that holds the
+            # custom-ctype var (this attribute is the same
+            # for all blocks).
+            block_name = self.get_category_block_name(categ)
+            var_name = self._var_name
+
+            # Get a slice of the block, e.g.
+            # self.DIFFERENTIAL_BLOCK[:]
+            _slice = getattr(self, block_name)[:]
+            #_slice = self.__getattribute__(block_name)[:]
+            # Why does this work when self.__getattr__(block_name) does not?
+            # __getattribute__ appears to work just fine...
+
+            # Get a slice of the block and var, e.g.
+            # self.DIFFERENTIAL_BLOCK[:].var[:]
+            _slice = getattr(_slice, var_name)[:]
+
+            # Add a reference to this slice to the `vectors` block.
+            # This will be, e.g. `self.vectors.differential` and
+            # can be accessed with its two indices, e.g.
+            # `self.vectors.differential[i,t0]`
+            # to get the "ith coordinate" of the vector of differential
+            # variables at time t0.
+            self.vectors.add_component(
+                    ctype._attr,
+                    # ^ I store the name I want this attribute to have,
+                    # e.g. 'differential', on the custom ctype.
+                    Reference(_slice, ctype=_NmpcVector),
+                    )
+
+    # Should be unnecessary here as time is added in DynamicBlock.construct
+    # But this is nice if the user wants to add time in a rule and doesn't
+    # want a long messy line of super().__setattr__.
+    def add_time(self):
+        # Do this because I can't add a reference to a set
+        super(_BlockData, self).__setattr__('time', self.time)
+
+    def set_sample_time(self, sample_time, tolerance=1e-8):
+        self.validate_sample_time(sample_time, tolerance)
+        self.sample_time = sample_time
 
     def validate_sample_time(self, sample_time, tolerance=1e-8):
         """Makes sure sample points, or integer multiple of sample time-offsets
@@ -79,9 +225,9 @@ class DynamicModelHelper(object):
             sample_time: Sample time to check
 
         """
-        namespace = self.namespace
-        time = namespace.get_time()
+        time = self.time
         horizon_length = time.last() - time.first()
+        n_t = len(time)
 
         # TODO: This should probably be a DAE utility
         min_spacing = horizon_length
@@ -106,14 +252,17 @@ class DynamicModelHelper(object):
                 'Sampling time must be an integer divider of '
                 'horizon length within tolerance %f' % tolerance)
         n_samples = round(horizon_length/sample_time)
-        namespace.samples_per_horizon = n_samples
+        self.samples_per_horizon = n_samples
 
         finite_elements = time.get_finite_elements()
+        fe_set = set(finite_elements)
+        finite_element_indices = [i for i in range(1,n_t+1) if time[i] in fe_set]
         sample_points = [time.first()]
+        sample_indices = [1] # Indices of sample points with in time set
         sample_no = 1
         fe_per = 0
         fe_per_sample_dict = {}
-        for t in finite_elements:
+        for i, t in zip(finite_element_indices, finite_elements):
             if t == time.first():
                 continue
             fe_per += 1
@@ -122,6 +271,7 @@ class DynamicModelHelper(object):
             diff = abs(sp-time_since)
             if diff < tolerance:
                 sample_points.append(t)
+                sample_indices.append(i)
                 sample_no += 1
                 fe_per_sample_dict[sample_no] = fe_per
                 fe_per = 0
@@ -130,318 +280,472 @@ class DynamicModelHelper(object):
                         'Could not find a time point for the %ith '
                         'sample point' % sample_no)
         assert len(sample_points) == n_samples + 1
-        namespace.fe_per_sample = fe_per_sample_dict
-        namespace.sample_points = sample_points
+        self.fe_per_sample = fe_per_sample_dict
+        self.sample_points = sample_points
+        self.sample_point_indices = sample_indices
 
-    def solve_setpoint(self, solver, require_steady=True):
-        controller = self.model
+    def initialize_sample_to_setpoint(self, 
+            sample_idx,
+            ctype=(DiffVar, AlgVar, InputVar, DerivVar),
+            ):
         time = self.time
-        t0 = time.first()
-        namespace = self.namespace
-        category_dict = namespace.category_dict
+        sample_point_indices = self.sample_point_indices
+        i_0 = sample_point_indices[sample_idx-1]
+        i_s = sample_point_indices[sample_idx]
+        for var in self.component_objects(ctype):
+            # `type(var)` is a subclass of `NmpcVar`, so I can
+            # access the `setpoint` attribute. Note that var is not
+            # an instance of `_NmpcVector`.
+            #
+            # Would like:
+            # var[t1:ts].set_value(var.setpoint)
+            for i in range(i_0+1, i_s+1):
+                # Want to exclude first time point of sample,
+                # but include last time point of sample.
+                t = time[i]
+                var[t].set_value(var.setpoint)
 
-        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
-                controller.component_data_objects((Constraint, Block))])
-        non_initial_time = list(time)[1:]
-        deactivated = deactivate_model_at(
-                controller,
-                time,
-                non_initial_time,
-                allow_skip=True,
-                suppress_warnings=True,
-                )
-        was_fixed = ComponentMap()
-
-        # Fix/unfix variables as appropriate
-        # Order matters here. If a derivative is used as an IC, we still want
-        # it to be fixed if steady state is required.
-        for var in namespace.ic_vars:
-            var[t0].unfix()
-        for var in category_dict[VariableCategory.INPUT]:
-            was_fixed[var[t0]] = var[t0].fixed
-            var[t0].unfix()
-        if require_steady == True:
-            for var in category_dict[VariableCategory.DERIVATIVE]:
-                var[t0].fix(0.0)
-
-        namespace.setpoint_objective.activate()
-
-        # Solve single-time point optimization problem
-        dof = degrees_of_freedom(controller)
-        if require_steady:
-            assert dof == namespace.n_input_vars
-        else:
-            assert dof == namespace.n_input_vars + namespace.n_diff_vars
-        results = solver.solve(controller, tee=True)
-        if results.solver.termination_condition == TerminationCondition.optimal:
-            pass
-        else:
-            msg = 'Failed to solve for full state setpoint values'
-            raise RuntimeError(msg)
-
-        namespace.setpoint_objective.deactivate()
-
-        # Revert changes. Again, order matters
-        if require_steady == True:
-            for var in category_dict[VariableCategory.DERIVATIVE]:
-                var[t0].unfix()
-        for var in namespace.ic_vars:
-            var[t0].fix()
-
-        # Reactivate components that were deactivated
-        for t, complist in deactivated.items():
-            for comp in complist:
-                if was_originally_active[comp]:
-                    comp.activate()
-
-        # Fix inputs that were originally fixed
-        for var in category_dict[VariableCategory.INPUT]:
-            if was_fixed[var[t0]]:
-                var[t0].fix()
-
-        setpoint_categories = [
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.INPUT,
-                VariableCategory.FIXED,
-                VariableCategory.DERIVATIVE,
-                ]
-        for categ in setpoint_categories:
-            group = category_dict[categ]
-            for i, var in enumerate(group):
-                group.set_setpoint(i, var[t0].value)
-                # use value attribute instead of function
-                # so this doesn't fail if value == None
-
-    def add_setpoint_objective(self, 
-            setpoint,
-            weights,
+    def initialize_sample_to_initial(self,
+            sample_idx,
+            ctype=(DiffVar, AlgVar, DerivVar),
             ):
-        """
-        """
-        namespace = self.namespace
-        category_dict = namespace.category_dict
-        for var, weight in weights:
-            locator = namespace.var_locator[var]
-            categ = locator.category
-            location = locator.location
-            category_dict[categ].weights[location] = weight
+        time = self.time
+        sample_point_indices = self.sample_point_indices
+        i_0 = sample_point_indices[sample_idx-1]
+        i_s = sample_point_indices[sample_idx]
+        t0 = time[i_0]
+        for var in self.component_objects(ctype):
+            # Would be nice if I could use a slice with
+            # start/stop indices to make this more concise.
+            for i in range(i_0+1, i_s+1):
+                t = time[i]
+                var[t].set_value(var[t0].value)
 
-        weight_vector = []
-        for var, sp in setpoint:
-            locator = namespace.var_locator[var]
-            categ = locator.category
-            location = locator.location
-            group = category_dict[categ]
-            _slice = group[location]
-            if group.weights[location] is None:
-                print('WARNING: weight not supplied for %s' % var.name)
-                group.weights[location] = 1.0
-            weight_vector.append(group.weights[location])
-
-        obj_expr = sum(
-            weight_vector[i]*(var - sp)**2 for
-            i, (var, sp) in enumerate(setpoint))
-        namespace.setpoint_objective = Objective(expr=obj_expr)
-        self.setpoint_objective = namespace.setpoint_objective
-
-    def add_tracking_objective(self, weights,
-            control_penalty_type=ControlPenaltyType.ERROR,
-            state_categories=[
-                VariableCategory.DIFFERENTIAL,
-                ],
-            state_weight=1.0, # These are liable to get confused with other weights
-            input_weight=1.0,
-            objective_weight=1.0,
+    def initialize_to_setpoint(self, 
+            ctype=(DiffVar, AlgVar, InputVar, DerivVar),
             ):
-        """
-        """
-        namespace = self.namespace
-        sample_points = namespace.sample_points
-        # Since t0 ~is~ a sample point, will have to iterate
-        # over sample_points[1:]
-        n_sample_points = len(sample_points)
+        # There should be negligible overhead to initializing
+        # in many small loops as opposed to one big loop here.
+        for i in range(len(self.sample_points)):
+            self.initialize_sample_to_setpoint(i, ctype=ctype)
 
-        # First set the weight of each variable specified
-        for var, weight in weights:
-            info = namespace.var_locator[var]
-            group = info.group
-            loc = info.location
-            group.weights[loc] = weight
+    def initialize_to_initial_conditions(self, 
+            ctype=(DiffVar, AlgVar, DerivVar),
+            ):
+        # There should be negligible overhead to initializing
+        # in many small loops as opposed to one big loop here.
+        for i in range(len(self.sample_points)):
+            self.initialize_sample_to_initial(i, ctype=ctype)
 
-        if not (control_penalty_type == ControlPenaltyType.ERROR or
-                control_penalty_type == ControlPenaltyType.ACTION or
-                control_penalty_type == ControlPenaltyType.NONE):
-            raise ValueError(
-                "control_penalty_type argument must be 'ACTION' or 'ERROR'")
-
-        category_dict = namespace.category_dict
-        
-
-        states = [var for c in state_categories 
-                for var in category_dict[c].varlist]
-        state_weights = [w for c in state_categories 
-                for w in category_dict[c].weights]
-        state_setpoint = [sp for c in state_categories 
-                for sp in category_dict[c].setpoint]
-        n_states = len(states)
-
-        inputs = namespace.input_vars.varlist
-        input_weights = namespace.input_vars.weights
-        input_setpoint = namespace.input_vars.setpoint
-        n_inputs = len(inputs)
-
-        state_term = sum(
-                state_weights[i]*(states[i][t] - state_setpoint[i])**2
-                for i in range(n_states) if (state_weights[i] is not None 
-                    and state_setpoint[i] is not None)
-                for t in sample_points[1:]
+    def initialize_by_solving_elements(self, solver, **kwargs):
+        outlvl = kwargs.pop('outlvl', idaeslog.INFO)
+        strip_var_bounds = kwargs.pop('strip_var_bounds', True)
+        input_option = kwargs.pop('input_option', InputOption.CURRENT)
+        square_solve_context = SquareSolveContext(
+                self,
+                strip_var_bounds=strip_var_bounds,
+                input_option=input_option,
                 )
-
-        if control_penalty_type == ControlPenaltyType.ERROR:
-            input_term = sum(
-                    input_weights[i]*(inputs[i][t] - input_setpoint[i])**2
-                    for i in range(n_inputs) if (input_weights[i] is not None
-                        and input_setpoint[i] is not None)
-                    for t in sample_points[1:]
+        model = self.mod
+        time = self.time
+        # There is a significant amount of overhead when calling
+        # initialize_by_element_in_range multiple times, so
+        # this method does not call `initialize_samples_by_element`
+        # in a loop.
+        with square_solve_context as sqs:
+            initialize_by_element_in_range(
+                    model,
+                    time,
+                    time.first(),
+                    time.last(),
+                    dae_vars=self.dae_vars,
+                    time_linking_vars=list(self.differential_vars[:]),
+                    outlvl=outlvl,
+                    solver=solver,
                     )
-            obj_expr = objective_weight*(
-                    state_weight*state_term + input_weight*input_term)
-        elif control_penalty_type == ControlPenaltyType.ACTION:
-            input_term = sum(
-                    input_weights[i]*(inputs[i][sample_points[k]] -
-                        inputs[i][sample_points[k-1]])**2
-                    for i in range(n_inputs) if input_weights[i] is not None
-                    for k in range(1, n_sample_points)
-                    )
-            obj_expr = objective_weight*(
-                    state_weight*state_term + input_weight*input_term)
-        elif control_penalty_type == ControlPenaltyType.NONE:
-            obj_expr = objective_weight*state_weight*state_term
 
-        namespace.tracking_objective = Objective(expr=obj_expr)
+    def initialize_samples_by_element(self, samples, solver, **kwargs):
+        # TODO: ConfigBlock for this class
+        outlvl = kwargs.pop('outlvl', idaeslog.INFO)
+        strip_var_bounds = kwargs.pop('strip_var_bounds', True)
+        input_option = kwargs.pop('input_option', InputOption.CURRENT)
 
-    def constrain_control_inputs_piecewise_constant(self):
-        namespace = self.namespace
-        time = self.time
-        input_indices = list(range(len(namespace.input_vars)))
-        def pwc_rule(ns, t, i):
-            time = ns.get_time()
-            sp_set = set(ns.sample_points)
-            if t in sp_set:
-                # No need to check for time.first() as it is a sample point
-                return Constraint.Skip
-            t_next = time.next(t)
-            inputs = ns.input_vars
-            _slice = inputs[i]
-            return _slice[t_next] == _slice[t]
+        if type(samples) not in {list, tuple}:
+            samples = (samples,)
 
-        namespace.pwc_constraint = Constraint(
-                time,
-                input_indices,
-                rule=pwc_rule,
+        # Create a context manager that will temporarily strip bounds
+        # and fix inputs, preparing the model for a "square solve."
+        square_solve_context = SquareSolveContext(
+                self,
+                samples=samples,
+                strip_var_bounds=strip_var_bounds,
+                input_option=input_option,
                 )
-        namespace.pwc_constraint_list = [
-                Reference(namespace.pwc_constraint[:, i])
-                for i in input_indices
-                ]
-
-    def initialize(self, option):
-        namespace = self.namespace
+        sample_points = self.sample_points
+        model = self.mod
         time = self.time
+        with square_solve_context as sqs:
+            for s in samples:
+                t0 = sample_points[s-1]
+                t1 = sample_points[s]
+                # Really I would like an `ElementInitializer` context manager
+                # class that deactivates the model once, then allows me to
+                # activate the elements I want to solve one at a time.
+                # This would allow me to not repeat so much work when
+                # initializing multiple samples.
+                initialize_by_element_in_range(
+                        model,
+                        time,
+                        t0,
+                        t1,
+                        dae_vars=self.dae_vars,
+                        time_linking_vars=list(self.differential_vars[:]),
+                        outlvl=outlvl,
+                        solver=solver,
+                        )
 
-        if option == ControlInitOption.FROM_PREVIOUS:
-            pass
-        elif option == ControlInitOption.BY_TIME_ELEMENT:
-            pass
-        elif option == ControlInitOption.FROM_INITIAL_CONDITIONS:
-            pass
-        elif option == ControlInitOption.SETPOINT:
-            pass
+    def set_variance(self, variance_list):
+        t0 = self.time.first()
+        variance_map = ComponentMap(variance_list)
+        for var, val in variance_list:
+            nmpc_var = self.vardata_map[var]
+            nmpc_var.variance = val
+        for var in self.measurement_vars:
+            if var[t0] in variance_map:
+                var.variance = variance_map[var[t0]]
 
-    def initialize_from_setpoint(self,
-            categories=[
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC,
-                VariableCategory.DERIVATIVE,
-                VariableCategory.INPUT,
-                ],
+    def generate_inputs_at_time(self, t):
+        for val in self.vectors.input[:,t].value:
+            yield val
+
+    def generate_measurements_at_time(self, t):
+        for var in self.measurement_vars:
+            yield var[t].value
+
+    def inject_inputs(self, inputs):
+        # To simulate computational delay, this function would 
+        # need an argument for the start time of inputs.
+        for var, val in zip(self.input_vars, inputs):
+            # Would like:
+            # self.input_vars[:,:].fix(inputs)
+            # This is an example of setting a matrix from a vector.
+            # Could even aspire towards:
+            # self.input_vars[:,t0:t1].fix(inputs[t1])
+            var[:].fix(val)
+
+    def load_measurements(self, measured):
+        t0 = self.time.first()
+        # Want: self.measured_vars[:,t0].fix(measured)
+        for var, val in zip(self.measurement_vars, measured):
+            var[t0].fix(val)
+
+    def advance_by_time(self,
+            t_shift,
+            ctype=(
+                DiffVar,
+                DerivVar,
+                AlgVar,
+                InputVar,
+                FixedVar,
+                # Fixed variables are included I expect disturbances
+                # should shift in time as well.
+                ),
+            tolerance=1e-8,
             ):
-        namespace = self.namespace
         time = self.time
-        t0 = time.first()
-        category_dict = namespace.category_dict
-        for categ in categories:
-            group = category_dict[categ]
-            for _slice, sp in zip(group, group.setpoint):
-                for t in time:
-                    if t == t0:
-                        continue
-                    _slice[t].set_value(sp)
+        # The outer loop is over time so we don't have to call
+        # `find_nearest_index` for every variable.
+        # I am assuming that `find_nearest_index` is slower than
+        # accessing `component_objects`
+        for t in time:
+            ts = t + t_shift
+            idx = time.find_nearest_index(ts, tolerance)
+            if idx is None:
+                # t + sample_time is outside the model's "horizon"
+                continue
+            ts = time[idx]
+            for var in self.component_objects(ctype):
+                var[t].set_value(var[ts].value)
 
-    def initialize_from_initial_conditions(self,
-            categories=[
-                VariableCategory.DERIVATIVE,
-                VariableCategory.DIFFERENTIAL,
-                VariableCategory.ALGEBRAIC
-                ],
+    def advance_one_sample(self,
+            ctype=(
+                DiffVar,
+                DerivVar,
+                AlgVar,
+                InputVar,
+                FixedVar,
+                ),
+            tolerance=1e-8,
             ):
-        """ 
-        Set values of differential, algebraic, and derivative variables to
-        their values at the initial conditions.
-        An implicit assumption here is that the initial conditions are
-        consistent.
+        sample_time = self.sample_time
+        self.advance_by_time(
+                sample_time,
+                ctype=ctype,
+                tolerance=tolerance,
+                )
 
-        Args:
-            model : Flowsheet model whose variables are initialized
-            categories : List of VariableCategory enum items to 
-                         initialize. Default contains DERIVATIVE, DIFFERENTIAL,
-                         and ALGEBRAIC.
+    def generate_time_in_sample(self,
+            ts,
+            t0=None,
+            include_t0=False,
+            tolerance=1e-8,
+            ):
+        # TODO: Need to address the question of whether I want users 
+        # passing around time points or the integer index of samples.
+        time = self.time
+        idx_s = time.find_nearest_index(ts, tolerance=tolerance)
+        ts = time[idx_s]
+        if t0 is None:
+            t0 = ts - self.sample_time
+        idx_0 = time.find_nearest_index(t0, tolerance=tolerance)
+        for i in range(idx_0+1, idx_s+1):
+            # Don't want to include first point in sample
+            yield time[i]
+
+    def get_data(self,
+            ts,
+            variables=(
+                VC.DIFFERENTIAL,
+                VC.INPUT,
+                ),
+            tolerance=1e-8,
+            include_t0=False,
+            ):
+        time = self.time
+        sample_time = self.sample_time
+        category_dict = self.category_dict
+        vardata_map = self.vardata_map
+
+        data = OrderedDict()
+        queue = list(variables)
+        for var in queue:
+            if var in VC:
+                category = var
+                varlist = category_dict[category]
+                queue.extend(var[ts] for var in varlist)
+                continue
+            _slice = vardata_map[var]
+            cuid = ComponentUID(_slice.referent)
+            if include_t0:
+                i0 = time.find_nearest_index(ts-sample_time, tolerance=tolerance)
+                t0 = time[i0]
+                data[cuid] = [_slice[t0].value]
+            else:
+                data[cuid] = []
+            data[cuid].extend(_slice[t].value for t in
+                    self.generate_time_in_sample(ts, tolerance=tolerance))
+
+        return data
+
+    def add_ipopt_suffixes(self):
+        self.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
+        self.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
+
+        self.ipopt_zL_in = Suffix(direction=Suffix.EXPORT)
+        self.ipopt_zU_in = Suffix(direction=Suffix.EXPORT)
+
+        self.dual = Suffix(direction=Suffix.IMPORT_EXPORT)
+
+    def update_ipopt_multipliers(self):
+        self.ipopt_zL_in.update(self.ipopt_zL_out)
+        self.ipopt_zU_in.update(self.ipopt_zU_out)
+
+    def advance_ipopt_multipliers(self,
+            t_shift,
+            ctype=(
+                DiffVar,
+                AlgVar,
+                InputVar,
+                ),
+            tolerance=1e-8,
+            ):
+        # We are interested in advancing the multipliers we
+        # sent to IPOPT.
+        zL = self.ipopt_zL_in
+        zU = self.ipopt_zU_in
+        time = self.time
+        # The outer loop is over time so we don't have to call
+        # `find_nearest_index` for every variable.
+        # I am assuming that `find_nearest_index` is slower than
+        # accessing `component_objects`
+        for t in time:
+            ts = t + t_shift
+            idx = time.find_nearest_index(ts, tolerance)
+            if idx is None:
+                # t + sample_time is outside the model's "horizon"
+                continue
+            ts = time[idx]
+            for var in self.component_objects(ctype):
+                if var[t] in zL and var[ts] in zL:
+                    zL[var[t]] = zL[var[ts]]
+                if var[t] in zU and var[ts] in zU:
+                    zU[var[t]] = zU[var[ts]]
+
+    def advance_ipopt_multipliers_one_sample(self,
+            ctype=(
+                DiffVar,
+                AlgVar,
+                InputVar,
+                ),
+            tolerance=1e-8,
+            ):
+        sample_time = self.sample_time
+        self.advance_ipopt_multipliers(
+                sample_time,
+                ctype=ctype,
+                tolerance=tolerance,
+                )
+
+class DynamicBlock(Block):
+    _ComponentDataClass = _DynamicBlockData
+
+    def __new__(cls, *args, **kwds):
+        # Decide what class to allocate
+        if cls != DynamicBlock:
+            target_cls = cls
+        elif not args or (args[0] is UnindexedComponent_set and len(args) == 1):
+            target_cls = SimpleDynamicBlock
+        else:
+            target_cls = IndexedDynamicBlock
+        return super(DynamicBlock, cls).__new__(target_cls)
+
+    def __init__(self, *args, **kwds):
+        # This will get called regardless of what class we are instantiating
+        self._init_model = Initializer(kwds.pop('model', None))
+        self._init_time = Initializer(kwds.pop('time', None),
+                treat_sequences_as_mappings=False)
+        self._init_inputs = Initializer(kwds.pop('inputs', None),
+                treat_sequences_as_mappings=False)
+        self._init_measurements = Initializer(kwds.pop('measurements', None),
+                treat_sequences_as_mappings=False)
+        Block.__init__(self, *args, **kwds)
+
+    def _getitem_when_not_present(self, idx):
+        block = super(DynamicBlock, self)._getitem_when_not_present(idx)
+        parent = self.parent_block()
+
+        if self._init_model is not None:
+            block.mod = self._init_model(parent, idx)
+
+        if self._init_time is not None:
+            super(_BlockData, block).__setattr__('time', 
+                    self._init_time(parent, idx))
+
+        if self._init_inputs is not None:
+            block._inputs = self._init_inputs(parent, idx)
+
+        if self._init_measurements is not None:
+            block._measurements = self._init_measurements(parent, idx)
+
+        block._construct()
+
+
+class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
+    def __init__(self, *args, **kwds):
+        _DynamicBlockData.__init__(self, component=self)
+        DynamicBlock.__init__(self, *args, **kwds)
+
+    # Pick up the display() from Block and not BlockData
+    display = DynamicBlock.display
+
+
+class IndexedDynamicBlock(DynamicBlock):
+
+    def __init__(self, *args, **kwargs):
+        DynamicBlock.__init__(self, *args, **kwargs)
+
+
+class SquareSolveContext(object):
+    """
+    Utility class to prepare DynamicBlock for a square solve.
+    """
+    def __init__(self,
+            dynamic_block,
+            samples=None,
+            strip_var_bounds=True,
+            input_option=InputOption.CURRENT,
+            ):
+        """
+        Parameters
+        ----------
+            dynamic_block: A _DynamicBlockData object
+            samples: A list of integers corresponding to the samples that
+                     will be solved
 
         """
-        namespace = self.namespace
-        time = namespace.get_time()
-        cat_dict = namespace.category_dict
-        for categ in categories:
-            varlist = cat_dict[categ].varlist
-            for v in varlist:
-                v[:].set_value(v[0].value)
+        self.block = dynamic_block
+        self.samples = samples
+        self.strip_var_bounds = strip_var_bounds
+        self.input_option = input_option
 
-    def initialize_by_solving_elements(self, solver):
-        namespace = self.namespace
-        time = self.time
-        model = self.model
-        strip_bounds = TransformationFactory('contrib.strip_var_bounds')
-        strip_bounds.apply_to(model, reversible=True)
+        # Get indices for the time points where we need to fix inputs.
+        if samples is None:
+            # Assume we need to fix inputs for all non-initial time
+            self.time_indices = range(2, len(dynamic_block.time)+1)
+        else:
+            # Get the indices of all time points in the samples specified
+            sample_points = dynamic_block.sample_points
+            time = dynamic_block.time
+            time_indices = []
+            already_visited = set()
+            for s in samples:
+                # s is an integer in range(1, len(sample_points)+1)
+                # the ith sample is the interval (ts_{i-1}, ts_i]
+                t0 = sample_points[s-1]
+                ts = sample_points[s]
+                idx_0 = time.find_nearest_index(t0)
+                idx_s = time.find_nearest_index(ts)
+                for i in range(idx_0+1, idx_s+1): # Pyomo sets are 1-indexed
+                    if i not in already_visited:
+                        # Want to make sure each index gets added at most
+                        # once in the case of repeated samples...
+                        time_indices.append(i)
+                        already_visited.add(i)
+            self.time_indices = time_indices
+            
 
-        input_vars = namespace.input_vars
-        for var, sp in zip(input_vars, input_vars.setpoint):
-            for t in time:
-                if t != time.first():
-                    var[t].fix(sp)
-                else:
+    def __enter__(self):
+        # Strip bounds:
+        if self.strip_var_bounds:
+            self.strip_bounds = TransformationFactory(
+                    'contrib.strip_var_bounds')
+            self.strip_bounds.apply_to(self.block.mod, reversible=True)
+
+        # Fix inputs:
+        time = self.block.time
+        t0 = time.first()
+        time_indices = self.time_indices
+        input_vars = self.block.input_vars
+        input_option = self.input_option
+        if input_option is InputOption.CURRENT:
+            input_vals = [None for _ in input_vars]
+        elif input_option is InputOption.INITIAL:
+            input_vals = [v[t0] for v in input_vars]
+        elif input_option is InputOption.SETPOINT:
+            input_vals = [v.setpoint for v in input_vars]
+        else:
+            raise NotImplementedError('Unrecognized input option')
+
+        for var, val in zip(input_vars, input_vals):
+            for i in time_indices:
+                t = time[i]
+                if val is None:
                     var[t].fix()
-        
-        namespace.tracking_objective.deactivate()
-        namespace.pwc_constraint.deactivate()
+                else:
+                    var[t].fix(val)
 
-        initialize_by_element_in_range(
-                model,
-                time,
-                time.first(),
-                time.last(),
-                dae_vars=namespace.dae_vars,
-                time_linking_variables=namespace.diff_vars,
-                )
+        # Model should now be square and bound-free
+        return self
 
-        namespace.tracking_objective.activate()
-        namespace.pwc_constraint.activate()
-
-        for var in namespace.input_vars:
-            for t in time:
-                if t == time.first():
-                    continue
+    def __exit__(self, ex_type, ex_val, ex_tb):
+        # Unfix inputs:
+        time = self.block.time
+        time_indices = self.time_indices
+        input_vars = self.block.input_vars
+        for var in input_vars:
+            for i in time_indices:
+                t = time[i]
                 var[t].unfix()
 
-        strip_bounds.revert(model)
-        # TODO: Can check for violated bounds if I'm really worried about it.
+        if self.strip_var_bounds:
+            self.strip_bounds.revert(self.block.mod)

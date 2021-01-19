@@ -537,7 +537,10 @@ class FlattenedScalingAssignment(object):
         condata = self.var2con[vardata]
         scaling_factor = self.scaling_factor
 
-        in_constraint = list(identify_variables(condata.expr, include_fixed=include_fixed))
+        in_constraint = list(identify_variables(
+            condata.expr,
+            include_fixed=include_fixed,
+            ))
         source_vars = [v for v in in_constraint if v is not vardata]
         nominal_source = [1/scaling_factor[var] for var in source_vars]
 
