@@ -63,7 +63,7 @@ class TestValve(object):
         # set inlet
         m.fs.valve.inlet.enth_mol[0].fix(hin)
         m.fs.valve.inlet.flow_mol[0].fix(fin)
-        m.fs.valve.inlet.flow_mol[0].unfix()    
+        m.fs.valve.inlet.flow_mol[0].unfix()
         m.fs.valve.inlet.pressure[0].fix(pin)
         m.fs.valve.outlet.pressure[0].fix(pout)
         m.fs.valve.Cv.fix(cv)
@@ -108,7 +108,7 @@ class TestValve(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, valve_model):
-        initialization_tester(valve_model, unit_name="valve")
+        initialization_tester(valve_model, unit=valve_model.fs.valve)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")

@@ -54,7 +54,7 @@ def get_default_solver():
     return solver
 
 
-def initialization_tester(m, dof=0, unit_name="unit", **init_kwargs):
+def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     """
     A method to test initialization methods on IDAES models. This method is
     designed to be used as part of the tests for most models.
@@ -80,7 +80,8 @@ def initialization_tester(m, dof=0, unit_name="unit", **init_kwargs):
     Raises:
         AssertionErrors is an issue is found
     """
-    unit = getattr(m.fs, unit_name)
+    if unit is None:
+        unit = m.fs.unit
     # Add some extra constraints and deactivate them to make sure
     # they remain deactivated
     # Test both indexed and unindexed constraints
