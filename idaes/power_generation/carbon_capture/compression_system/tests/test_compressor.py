@@ -89,7 +89,7 @@ def test_basic_build(build_unit):
 #                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_initialize_drum(build_unit):    
+def test_initialize(build_unit):    
     initialization_tester(build_unit, dof=0)
 
 
@@ -97,7 +97,7 @@ def test_initialize_drum(build_unit):
 #                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_run_drum(build_unit):
+def test_run(build_unit):
     m = build_unit  
 
     optarg = {"tol": 1e-7,
