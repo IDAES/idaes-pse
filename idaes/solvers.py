@@ -68,7 +68,7 @@ def download_binaries(
         to_path = idaes.bin_directory
     else:
         to_path = os.path.join(idaes.data_directory, to_path)
-    idaes.config.create_dir(to_path)
+    idaes._create_bin_dir(to_path)
     solvers_tar = os.path.join(to_path, "idaes-solvers.tar.gz")
     libs_tar = os.path.join(to_path, "idaes-lib.tar.gz")
     # Get a pyomo file downloader object and check Arch
