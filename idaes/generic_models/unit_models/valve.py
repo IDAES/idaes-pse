@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-This provides standard valve models for adaibatice control valves.  Beyond the
+This provides standard valve models for adiabatic control valves.  Beyond the
 most common valve models, and adiabatic valve model can be added by supplying
 custom callbacks for the pressure-flow relation or valve function.
 """
@@ -44,76 +44,80 @@ class ValveFunctionType(Enum):
     equal_percentage = 3
 
 
-def linear_cb(b):
+def linear_cb(valve):
     """
     Linear opening valve function callback.
     """
-    @b.Expression(b.flowsheet().config.time)
-    def valve_function(b2, t):
-        return b2.valve_opening[t]
+    @valve.Expression(valve.flowsheet().config.time)
+    def valve_function(b, t):
+        return b.valve_opening[t]
 
 
-def quick_cb(b, t):
+def quick_cb(valve):
     """
     Quick opening valve function callback.
     """
-    @b.Expression(b.flowsheet().config.time)
-    def valve_function(b2, t):
-        return sqrt(b2.valve_opening[t])
+    @valve.Expression(valve.flowsheet().config.time)
+    def valve_function(b, t):
+        return pyo.sqrt(b.valve_opening[t])
 
 
-def equal_percentage_cb(b):
+def equal_percentage_cb(valve):
     """
     Equal percentage valve function callback.
     """
-    b.alpha = pyo.Var(initialize=100, doc="Valve function parameter")
-    b.alpha.fix()
-    @b.Expression(b.flowsheet().config.time)
-    def valve_function(b2, t):
-        return b2.alpha ** (b2.valve_opening[t] - 1)
+    valve.alpha = pyo.Var(initialize=100, doc="Valve function parameter")
+    valve.alpha.fix()
+    @valve.Expression(valve.flowsheet().config.time)
+    def valve_function(b, t):
+        return b.alpha ** (b.valve_opening[t] - 1)
 
 
-def pressure_flow_default_callback(b):
+def pressure_flow_default_callback(valve):
     """
     Add the default pressure flow relation constraint.  This will be used in the
     valve model, a custom callback is provided.
     """
-    umeta = b.config.property_package.get_metadata().get_derived_units
+    umeta = valve.config.property_package.get_metadata().get_derived_units
 
-    b.Cv = pyo.Var(
+    valve.Cv = pyo.Var(
         initialize=0.1,
         doc="Valve flow coefficent",
         units=umeta("amount")/umeta("time")/umeta("pressure")**0.5
     )
-    b.Cv.fix()
+    valve.Cv.fix()
 
-    b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
-    b.pressure_flow_equation_scale = lambda x : x**2
+    valve.flow_var = pyo.Reference(valve.control_volume.properties_in[:].flow_mol)
+    valve.pressure_flow_equation_scale = lambda x : x**2
 
-    @b.Constraint(b.flowsheet().config.time)
-    def pressure_flow_equation(b2, t):
-        Po = b2.control_volume.properties_out[t].pressure
-        Pi = b2.control_volume.properties_in[t].pressure
-        F = b2.control_volume.properties_in[t].flow_mol
-        Cv = b2.Cv
-        fun = b2.valve_function[t]
+    @valve.Constraint(valve.flowsheet().config.time)
+    def pressure_flow_equation(b, t):
+        Po = b.control_volume.properties_out[t].pressure
+        Pi = b.control_volume.properties_in[t].pressure
+        F = b.control_volume.properties_in[t].flow_mol
+        Cv = b.Cv
+        fun = b.valve_function[t]
         return F ** 2 == Cv ** 2 * (Pi - Po) * fun ** 2
 
 
-def _define_config(config):
-    config.compressor = False
-    config.get("compressor")._default = False
-    config.get("compressor")._domain = In([False])
-    config.material_balance_type = MaterialBalanceType.componentTotal
-    config.get("material_balance_type")._default = \
+@declare_process_block_class("Valve", doc="Adiabatic valves")
+class ValveData(PressureChangerData):
+    # Same settings as the default pressure changer, but force to expander with
+    # isentropic efficiency
+    CONFIG = PressureChangerData.CONFIG()
+    CONFIG.compressor = False
+    CONFIG.get("compressor")._default = False
+    CONFIG.get("compressor")._domain = In([False])
+    CONFIG.material_balance_type = MaterialBalanceType.componentTotal
+    CONFIG.get("material_balance_type")._default = \
         MaterialBalanceType.componentTotal
-    config.thermodynamic_assumption = ThermodynamicAssumption.adiabatic
-    config.get("thermodynamic_assumption")._default = \
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.adiabatic
+    CONFIG.get("thermodynamic_assumption")._default = \
         ThermodynamicAssumption.adiabatic
-    config.get("thermodynamic_assumption")._domain = In(
+    CONFIG.get("thermodynamic_assumption")._domain = In(
         [ThermodynamicAssumption.adiabatic]
     )
-    config.declare(
+    CONFIG.declare(
         "valve_function_callback",
         ConfigValue(
             default=ValveFunctionType.linear,
@@ -126,7 +130,7 @@ valve_function expression to it. Any addtional required variables, expressions,
 or constraints required can also be added by the callback.""",
         ),
     )
-    config.declare(
+    CONFIG.declare(
         "pressure_flow_callback",
         ConfigValue(
             default=pressure_flow_default_callback,
@@ -136,14 +140,6 @@ an adds a time-indexed valve_function expression to it.  Any addtional required
 variables, expressions, or constraints required can also be added by the callback.""",
         ),
     )
-
-
-@declare_process_block_class("Valve", doc="Adiabatic valves")
-class ValveData(PressureChangerData):
-    # Same settings as the default pressure changer, but force to expander with
-    # isentropic efficiency
-    CONFIG = PressureChangerData.CONFIG()
-    _define_config(CONFIG)
 
     def build(self):
         super().build()

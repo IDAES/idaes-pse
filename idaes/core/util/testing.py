@@ -78,7 +78,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
         None
 
     Raises:
-        AssertionErrors is an issue is found
+        AssertionErrors if an issue is found
     """
     if unit is None:
         unit = m.fs.unit

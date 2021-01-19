@@ -46,20 +46,27 @@ import idaes.core.util.scaling as iscale
 solver = get_default_solver()
 solver.options["nlp_scaling_method"] = "user-scaling"
 
-class TestValve(object):
+class GenericValve(object):
     @pytest.fixture(scope="class")
     def valve_model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = iapws95.Iapws95ParameterBlock()
-        m.fs.valve = Valve(default={"property_package": m.fs.properties})
+        m.fs.valve = Valve(default={
+            "valve_function_callback":self.type,
+            "property_package": m.fs.properties})
         fin = 900 # mol/s
         pin = 200000 # Pa
         pout = 100000 # Pa
         tin = 300 # K
         hin = iapws95.htpx(T=tin*units.K, P=pin*units.Pa) # J/mol
         # Calculate the flow coefficient to give 1000 mol/s flow with given P
-        cv = 1000/math.sqrt(pin - pout)/0.5
+        if self.type == ValveFunctionType.linear:
+            cv = 1000/math.sqrt(pin - pout)/0.5
+        elif self.type == ValveFunctionType.quick_opening:
+            cv = 1000/math.sqrt(pin - pout)/math.sqrt(0.5)
+        elif self.type == ValveFunctionType.equal_percentage:
+            cv = 1000/math.sqrt(pin - pout)/100**(0.5-1)
         # set inlet
         m.fs.valve.inlet.enth_mol[0].fix(hin)
         m.fs.valve.inlet.flow_mol[0].fix(fin)
@@ -91,7 +98,12 @@ class TestValve(object):
         assert hasattr(valve_model.fs.valve, "valve_function")
         assert hasattr(valve_model.fs.valve, "flow_var")
 
-        assert number_variables(valve_model) == 11
+        if self.type == ValveFunctionType.equal_percentage:
+            # alpha valve function parameter is one more than others
+            assert number_variables(valve_model) == 12
+        else:
+            assert number_variables(valve_model) == 11
+
         assert number_total_constraints(valve_model) == 6
         assert number_unused_variables(valve_model) == 0
 
@@ -128,3 +140,12 @@ class TestValve(object):
         # calculated Cv to yeild this solution
         assert (pytest.approx(1000, abs=1e-2) ==
                 value(valve_model.fs.valve.outlet.flow_mol[0]))
+
+class TestLinearValve(GenericValve):
+    type = ValveFunctionType.linear
+
+class TestEPValve(GenericValve):
+    type = ValveFunctionType.equal_percentage
+
+class TestQuickValve(GenericValve):
+    type = ValveFunctionType.quick_opening
