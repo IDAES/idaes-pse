@@ -324,12 +324,6 @@ Wagner, W.,  A. Pruss (2002). "The IAPWS Formulation 1995 for the
 Thermodynamic Properties of Ordinary Water Substance for General and
 Scientific Use." J. Phys. Chem. Ref. Data, 31, 387-535.
 
-.. _wagner-2000:
-
-Wagner, W. et al. (2000). "The IAPWS Industrial Formulation 1997 for the
-Thermodynamic Properties of Water and Steam," ASME J. Eng. Gas Turbines
-and Power, 122, 150-182.
-
 .. _akasaka-2008:
 
 Akasaka, R. (2008). "A Reliable and Useful Method to Determine the Saturation
