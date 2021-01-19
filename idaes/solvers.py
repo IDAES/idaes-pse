@@ -17,7 +17,7 @@ import tarfile
 import idaes
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
-
+import urllib
 
 _log = idaeslog.getLogger(__name__)
 
@@ -41,7 +41,8 @@ def download_binaries(
     insecure=False,
     cacert=None,
     verbose=False,
-    platform="auto"):
+    platform="auto",
+    nochecksum=False):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
@@ -99,16 +100,22 @@ def download_binaries(
         libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
         _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
-        if platform == 'darwin':
-            raise Exception('Mac OSX currently unsupported')
+        #if platform == 'darwin':
+        #    raise Exception('Mac OSX currently unsupported')
         fd.set_destination_filename(solvers_tar)
-        fd.get_binary_file(solvers_from)
+        try:
+            fd.get_binary_file(solvers_from)
+        except urllib.error.HTTPError:
+             raise Exception(f"{platform} solver binaries are unavailable")
         fd.set_destination_filename(libs_tar)
-        fd.get_binary_file(libs_from)
+        try:
+            fd.get_binary_file(libs_from)
+        except urllib.error.HTTPError:
+             raise Exception(f"{platform} library binaries are unavailable")
     else:
         raise Exception("Must provide a location to download binaries")
 
-    if checksum:
+    if checksum and not nochecksum:
         # if you are downloading a release and not a specific URL verify checksum
         fn_s = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
         fn_l = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
