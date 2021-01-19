@@ -70,7 +70,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
         m: a Concrete mdoel which contains a flowsheet and a model named unit
             (i.e. m.fs.unit) which will be initialized
         dof: expected degrees of freedom during initialization, default=0
-        unit_name: name of unit to test, default='unit'
+        unit: unit object to test, if None assume m.fs.unit, default='None'
         init_kwargs: model specific arguments to pass to initialize method
                      (e.g. initial guesses for states)
 
