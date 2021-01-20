@@ -8,8 +8,8 @@ Feedwater Heater (0D)
   :noindex:
 
 The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.
-It is intended to be used primarily used with the
-:ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>` property package. 
+It is intended to be used primarily with the
+:ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>` property package.
 The feedwater heater is split into three sections the condensing section is required while
 the desuperheating and drain cooling sections are optional. There is also an optional mixer
 for adding a drain stream from another feedwater heater to the condensing section.  The figure
