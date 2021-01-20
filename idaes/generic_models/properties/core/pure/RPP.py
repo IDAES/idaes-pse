@@ -70,12 +70,13 @@ class enth_mol_ig_comp():
         if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
             cp_mol_ig_comp.build_parameters(cobj)
 
-        units = cobj.parent_block().get_metadata().derived_units
+        if cobj.parent_block().config.include_enthalpy_of_formation:
+            units = cobj.parent_block().get_metadata().derived_units
 
-        cobj.enth_mol_form_vap_comp_ref = Var(
-                doc="Vapor phase molar heat of formation @ Tref",
-                units=units["energy_mole"])
-        set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
+            cobj.enth_mol_form_vap_comp_ref = Var(
+                    doc="Vapor phase molar heat of formation @ Tref",
+                    units=units["energy_mole"])
+            set_param_from_config(cobj, param="enth_mol_form_vap_comp_ref")
 
     @staticmethod
     def return_expression(b, cobj, T):
@@ -85,12 +86,16 @@ class enth_mol_ig_comp():
 
         units = b.params.get_metadata().derived_units
 
+        h_form = (cobj.enth_mol_form_vap_comp_ref if
+                  b.params.config.include_enthalpy_of_formation
+                  else 0*units["energy_mole"])
+
         h = (pyunits.convert(
                 (cobj.cp_mol_ig_comp_coeff_D/4)*(T**4-Tr**4) +
                 (cobj.cp_mol_ig_comp_coeff_C/3)*(T**3-Tr**3) +
                 (cobj.cp_mol_ig_comp_coeff_B/2)*(T**2-Tr**2) +
                 cobj.cp_mol_ig_comp_coeff_A*(T-Tr), units["energy_mole"]) +
-             cobj.enth_mol_form_vap_comp_ref)
+             h_form)
 
         return h
 

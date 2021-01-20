@@ -6,7 +6,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
 <!-- BEGIN Status badges -->
 ## Build statuses
-![GitHub CI (main)](https://github.com/IDAES/idaes-pse/workflows/Pull%20request%20(main)%20CI%20tests/badge.svg)
+![GitHub CI (main)](https://github.com/IDAES/idaes-pse/workflows/Main/badge.svg)
 <!-- END Status badges -->
 
 ## System requirements
