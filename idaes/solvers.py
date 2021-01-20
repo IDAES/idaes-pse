@@ -24,6 +24,7 @@ _log = idaeslog.getLogger(__name__)
 
 _release_base_url = idaes.config.release_base_url
 
+
 def _hash(fname):
     with open(fname, 'rb') as f:
         fh = hashlib.sha256()
@@ -33,6 +34,75 @@ def _hash(fname):
                 break
             fh.update(fb)
     return str(fh.hexdigest())
+
+
+def _get_file_downloader(insecure, cacert):
+    fd = FileDownloader(insecure=insecure, cacert=cacert)
+    arch = fd.get_sysinfo()
+    if arch[1] != 64:
+        _log.error("IDAES Extensions only supports 64bit Python.")
+        raise RuntimeError("IDAES Extensions only supports 64bit Python.")
+    return fd, arch
+
+
+def _get_platform(platform, arch):
+    if platform == "auto":
+        platform = arch[0]
+        if platform == "linux":
+            linux_dist = fd.get_os_version().replace(".", "")
+            if linux_dist in idaes.config.known_binary_platform:
+                platform = linux_dist
+    if platform not in idaes.config.known_binary_platform:
+        raise Exception("Unknow platform {}".format(platform))
+    if platform in idaes.config.binary_platform_map:
+        platform = idaes.config.binary_platform_map[platform]
+    _log.debug(f"Downloading binaries for {platform}")
+    return platform
+
+
+def _get_checksums(fd, to_path, release):
+    checksum = {} # storage for hashes if install from release
+    check_to = os.path.join(to_path, f"sha256sum_{release}.txt")
+    check_from = idaes.config.release_checksum_url.format(release)
+    _log.debug(f"Getting checksum file {check_from}")
+    fd.set_destination_filename(check_to)
+    fd.get_binary_file(check_from)
+    # read the hashes file and store then in checksum dict
+    with open(check_to, 'r') as f:
+        for i in range(1000):
+            line = f.readline(1000)
+            if line == "":
+                break
+            line = line.split(sep="  ")
+            checksum[line[1].strip()] = line[0].strip()
+
+
+def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
+    checksum = False # default if not checking checksums
+    if release is not None:
+        url = "/".join([_release_base_url, release])
+        if not nochecksum:
+            checksum = _get_checksums(fd, to_path, release)
+        else:
+            _log.release("Skip release checksum verification at user request.")
+    else:
+        _log.debug("Release not specified.")
+    if url is None:
+        _log.debug("No release or URL was provided.")
+        raise Exception("Must provide a location to download binaries")
+    if url.endswith("/"):
+        url = url[0:-1] # if url ends with "/" remove it for proper join later
+    _log.debug(f"Downloading binaries from {url}")
+    return url, checksum
+
+def _download_package(fd, name, frm, to, platform):
+    _log.debug(f"Getting {name} from: {frm}")
+    _log.debug(f"Saving solvers to: {to}")
+    fd.set_destination_filename(to)
+    try:
+        fd.get_binary_file(frm)
+    except urllib.error.HTTPError:
+        raise Exception(f"{name} binaries are unavailable for {platform}")
 
 
 def download_binaries(
@@ -68,86 +138,35 @@ def download_binaries(
     else:
         to_path = os.path.join(idaes.data_directory, to_path)
     idaes._create_bin_dir(to_path)
+    fd, arch = _get_file_downloader(insecure, cacert)
+    platform = _get_platform(platform, arch)
+    url, checksum = _get_release_url_and_checksum(
+        fd, to_path, release, url, nochecksum)
+    # Set the binary file destinations
     solvers_tar = os.path.join(to_path, "idaes-solvers.tar.gz")
     libs_tar = os.path.join(to_path, "idaes-lib.tar.gz")
-    # Get a pyomo file downloader object and check Arch
-    fd = FileDownloader(insecure=insecure, cacert=cacert)
-    arch = fd.get_sysinfo()
-    if arch[1] != 64:
-        _log.error("IDAES Extensions currently only supports 64bit Python.")
-        raise RuntimeError("IDAES Extensions currently only supports 64bit Python.")
-    if platform == "auto":
-        platform = arch[0]
-        if platform == "linux":
-            linux_dist = fd.get_os_version().replace(".", "")
-            if linux_dist in idaes.config.known_binary_platform:
-                platform = linux_dist
-    if platform not in idaes.config.known_binary_platform:
-        raise Exception("Unknow platform {}".format(platform))
-    if platform in idaes.config.binary_platform_map:
-        platform = idaes.config.binary_platform_map[platform]
+    # Set the binary file download locations
+    solvers_from = "/".join([url, f"idaes-solvers-{platform}-{arch[1]}.tar.gz"])
+    libs_from = "/".join([url, f"idaes-lib-{platform}-{arch[1]}.tar.gz"])
+    if not library_only:
+        _download_package(
+            fd, "solvers", frm=solvers_from, to=solvers_tar, platform=platform)
+    _download_package(
+        fd, "libraries", frm=libs_from, to=libs_tar, platform=platform)
 
-    checksum = {} # storage for hashes if install from release
-    # If a release is specified, use that to set the URL, also get hash info
-    if release is not None:
-        url = "/".join([_release_base_url, release])
-        # if we're downloading an official release get hashes
-        # check_to = place to store hash file
-        check_to = os.path.join(to_path, f"sha256sum_{release}.txt")
-        # check_from = release hashes url
-        check_from = f"https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{release}.txt"
-        _log.debug("Getting release {}\n  checksum file {}".format(release, check_from))
-        fd.set_destination_filename(check_to)
-        fd.get_binary_file(check_from)
-        # read the hashes file and store then in checksum dict
-        with open(check_to, 'r') as f:
-            for i in range(1000):
-                line = f.readline(1000)
-                if line == "":
-                    break
-                line = line.split(sep="  ")
-                checksum[line[1].strip()] = line[0].strip()
-    # Either URL should have been specified or obtained from specified release
-    if url is not None:
-        if not url.endswith("/"):
-            c = "/"
-        else:
-            c = ""
-        # Get specific package file URLs
-        solvers_from = c.join([url, "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])])
-        libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
-        _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
-        _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
-        # Download solvers
-        if not library_only:
-            fd.set_destination_filename(solvers_tar)
-            try:
-                fd.get_binary_file(solvers_from)
-            except urllib.error.HTTPError:
-                 raise Exception(f"{platform} solver binaries are unavailable")
-        # Download Libraries
-        fd.set_destination_filename(libs_tar)
-        try:
-            fd.get_binary_file(libs_from)
-        except urllib.error.HTTPError:
-             raise Exception(f"{platform} library binaries are unavailable")
-    else:
-        raise Exception("Must provide a location to download binaries")
     # If release checksum is not empty, nochecksum opt allows hash to be ignored
-    if checksum and not nochecksum:
-        fn_s = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
-        fn_l = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
+    if checksum:
         # Check solvers package hash
         if not library_only:
             hash_s = _hash(solvers_tar)
             _log.debug("Solvers Hash {}".format(hash_s))
-            if checksum.get(fn_s, "") != hash_s:
-                raise Exception("Solver files hash does not match expected")
+            if checksum.get(solvers_from, "") != hash_s:
+                raise Exception("Solver package hash does not match expected")
         # Check libraries package hash
         hash_l = _hash(libs_tar)
         _log.debug("Libs Hash {}".format(hash_l))
-        if checksum.get(fn_l, "") != hash_l:
-            raise Exception("Library files hash does not match expected")
+        if checksum.get(libs_from, "") != hash_l:
+            raise Exception("Library package hash does not match expected")
 
     # Extract solvers
     if not library_only:
