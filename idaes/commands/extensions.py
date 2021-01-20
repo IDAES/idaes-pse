@@ -82,7 +82,7 @@ def get_extensions_platforms():
 @click.option(
     "--library-only",
     is_flag=True,
-    help="Don't verify the file checksum")
+    help="Only install shared physical property function libraries, not solvers")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(release, url, insecure, cacert, verbose, platform, nochecksum, library_only):
     if url is None and release is None:
