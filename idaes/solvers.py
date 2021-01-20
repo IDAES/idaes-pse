@@ -20,8 +20,6 @@ from pyomo.common.download import FileDownloader
 import urllib
 
 _log = idaeslog.getLogger(__name__)
-
-
 _release_base_url = idaes.config.release_base_url
 
 
@@ -94,6 +92,7 @@ def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
         url = url[0:-1] # if url ends with "/" remove it for proper join later
     _log.debug(f"Downloading binaries from {url}")
     return url, checksum
+
 
 def _download_package(fd, name, frm, to, platform):
     _log.debug(f"Getting {name} from: {frm}")
