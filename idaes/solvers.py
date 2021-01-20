@@ -18,7 +18,6 @@ import idaes
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
 import urllib
-import idaes.config
 
 _log = idaeslog.getLogger(__name__)
 

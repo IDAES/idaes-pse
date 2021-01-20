@@ -13,6 +13,7 @@ def _exists(path):
     path = os.path.join(idaes.data_directory, path)
     return os.path.exists(path)
 
+@pytest.mark.unit
 def test_dl_bin():
     _del_data_file("download_tests/version_lib.txt")
     _del_data_file("download_tests/version_solvers.txt")
