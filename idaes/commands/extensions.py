@@ -23,7 +23,7 @@ from idaes.commands import cb
 _log = logging.getLogger("idaes.commands.extensions")
 
 
-def print_extensions_version(library_only):
+def print_extensions_version(library_only=False):
     click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions Build Versions")
     click.echo("===================================================")
@@ -43,6 +43,7 @@ def print_extensions_version(library_only):
         v = "no version file found"
     click.echo("Library:  v{}".format(v))
     click.echo("===================================================")
+    return 0
 
 
 @cb.command(name="get-extensions-platforms", help="List binary extension platforms")
@@ -83,8 +84,21 @@ def get_extensions_platforms():
     "--library-only",
     is_flag=True,
     help="Only install shared physical property function libraries, not solvers")
+@click.option(
+    "--no-download",
+    is_flag=True,
+    help="Don't download anything, but report what would be done")
 @click.option("--verbose", help="Show details", is_flag=True)
-def get_extensions(release, url, insecure, cacert, verbose, platform, nochecksum, library_only):
+def get_extensions(
+    release,
+    url,
+    insecure,
+    cacert,
+    verbose,
+    platform,
+    nochecksum,
+    library_only,
+    no_download):
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -92,14 +106,26 @@ def get_extensions(release, url, insecure, cacert, verbose, platform, nochecksum
         click.echo("\n* You must provide either a release or url not both.")
     elif url is not None or release is not None:
         click.echo("Getting files...")
-        idaes.solvers.download_binaries(
-            release, url, insecure, cacert, verbose, platform, nochecksum, library_only)
+        d = idaes.solvers.download_binaries(
+            release,
+            url,
+            insecure,
+            cacert,
+            verbose,
+            platform,
+            nochecksum,
+            library_only,
+            no_download)
         click.echo("Done")
-        print_extensions_version(library_only)
+        if no_download:
+            for k, i in d.items():
+                click.echo(f"{k:14}: {i}")
+        else:
+            print_extensions_version(library_only)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
 
 
 @cb.command(name="ver-extensions", help="Get solver and library IDAES package version")
 def ver_extensions():
-    print_extensions_version()
+    return print_extensions_version()

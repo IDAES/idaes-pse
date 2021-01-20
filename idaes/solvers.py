@@ -82,7 +82,7 @@ def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
         if not nochecksum:
             checksum = _get_checksums(fd, to_path, release)
         else:
-            _log.release("Skip release checksum verification at user request.")
+            _log.debug("Skip release checksum verification at user request.")
     else:
         _log.debug("Release not specified.")
     if url is None:
@@ -113,6 +113,7 @@ def download_binaries(
     platform="auto",
     nochecksum=False,
     library_only=False,
+    no_download=False,
     to_path=None):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
@@ -127,6 +128,8 @@ def download_binaries(
     """
     if verbose:
         _log.setLevel(idaeslog.DEBUG)
+    if no_download:
+        nochecksum = True
     # set the locations to download files to, to_path is an alternate
     # subdirectory of idaes.data_directory that can optionally be used to test
     # this function without interfereing with anything else.  It's a subdirectory
@@ -147,6 +150,21 @@ def download_binaries(
     # Set the binary file download locations
     solvers_from = "/".join([url, f"idaes-solvers-{platform}-{arch[1]}.tar.gz"])
     libs_from = "/".join([url, f"idaes-lib-{platform}-{arch[1]}.tar.gz"])
+
+    if no_download:
+        d = {
+            "release": release,
+            "platform": platform,
+            "bits": arch[1],
+            "libs_only": library_only,
+            "libs_from": libs_from,
+            "libs_to": libs_tar,
+        }
+        if not library_only:
+            d["solvers_from"] = solvers_from
+            d["solvers_to"] = solvers_tar
+        return d
+
     if not library_only:
         _download_package(
             fd, "solvers", frm=solvers_from, to=solvers_tar, platform=platform)
