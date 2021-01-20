@@ -38,14 +38,14 @@ def test_NmpcVar():
             variance=3.,
             nominal=4.,
             )
-    assert m.v1.setpoint is 1.
-    assert m.v1.weight is 2.
-    assert m.v1.variance is 3.
-    assert m.v1.nominal is 4.
+    assert m.v1.setpoint == 1.
+    assert m.v1.weight == 2.
+    assert m.v1.variance == 3.
+    assert m.v1.nominal == 4.
 
     m.v2 = NmpcVar(m.s1, m.s2)
     for i, j in m.s1*m.s2:
-        assert (i,j in m.v2)
+        assert (i,j) in m.v2
 
 def test_custom_vars():
     m = pyo.ConcreteModel()
@@ -71,3 +71,55 @@ def test_custom_vars():
     assert m.meas.ctype == MeasuredVar
     assert m.meas._attr == 'measurement'
 
+def test_NmpcVector():
+    m = pyo.ConcreteModel()
+    m.coords = pyo.Set(initialize=[0, 1, 2, 3])
+    m.time = pyo.Set(initialize=[0.0, 0.5, 1.0, 1.5, 2.0])
+
+    @m.Block(m.coords)
+    def b(b, i):
+        b.var = NmpcVar(m.time)
+
+    m.vector = pyo.Reference(m.b[:].var[:], ctype=_NmpcVector)
+
+    assert type(m.vector) is _NmpcVector
+
+    # Test that `vector` is a proper reference
+    for i, t in m.coords * m.time:
+        assert m.vector[i, t] is m.b[i].var[t]
+
+    # Test that we can generate the underlying NmpcVars
+    for v, i in zip(m.vector._generate_referenced_vars(), m.coords):
+        assert v is m.b[i].var
+
+    # `set_setpoint`
+    m.vector.set_setpoint(3.14)
+    for i in m.coords:
+        assert m.b[i].var.setpoint == 3.14
+
+    setpoint = tuple(i/10. for i in m.coords)
+    m.vector.set_setpoint(setpoint)
+    for i, sp in zip(m.coords, setpoint):
+        assert m.b[i].var.setpoint == sp
+
+    # `get_setpoint`
+    sp_get = tuple(m.vector.get_setpoint())
+    assert setpoint == sp_get
+
+    # `set_values`
+    val = -1.
+    m.vector.values = -1.
+    for i, t in m.coords * m.time:
+        assert m.b[i].var[t].value == val
+
+    newvals = tuple(i*1.1 for i in m.coords)
+    m.vector.values = newvals
+    for i, val in zip(m.coords, newvals):
+        for t in m.time:
+            assert m.b[i].var[t].value == val
+
+    # `get_values`
+    val_lil = m.vector.values
+    for var_values, target_val in zip(val_lil, newvals):
+        for var_val in var_values:
+            assert var_val == target_val
