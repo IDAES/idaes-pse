@@ -23,7 +23,7 @@ import idaes.config
 _log = idaeslog.getLogger(__name__)
 
 
-_release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
+_release_base_url = idaes.config.release_base_url
 
 def _hash(fname):
     with open(fname, 'rb') as f:
