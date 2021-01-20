@@ -562,9 +562,11 @@ change.
         ConfigValue(
             default=None,
             domain=tuple,
-            description="Tuple providing default temperature bounds",
+            description="Tuple providing default temperature bounds in the form "
+                        "(lb, ub) the bounds should have units attached.",
             doc="""This is an optional tuple providing default temperature bounds.
-The elements of the tuple should include units of temperature.
+The elements of the tuple should include units of temperature, for example, if
+pyomo units is imported as pyunits, (270*pyunits.K, 1000*pyunits.K).
 """
         ),
     )
@@ -574,9 +576,11 @@ The elements of the tuple should include units of temperature.
         ConfigValue(
             default=None,
             domain=tuple,
-            description="Tuple providing default pressure bounds",
-            doc="""This is an optional tuple providing default pressure bounds
-The elements of the tuple should include units of pressure.
+            description="Tuple providing default pressure bounds in the form "
+                        "(lb, ub) the bounds should have units attached.",
+            doc="""This is an optional tuple providing default pressure bounds.
+The elements of the tuple should include units of pressure, for example, if
+pyomo units is imported as pyunits, (1*pyunits.kPa, 1e6*pyunits.kPa).
 """
         ),
     )
@@ -586,9 +590,12 @@ The elements of the tuple should include units of pressure.
         ConfigValue(
             default=None,
             domain=tuple,
-            description="Tuple providing default enthalpy per mole bounds",
-            doc="""This is an optional tuple providing default enthalpy per mole bounds.
-The elements of the tuple should include units of energy/amount.
+            description="Tuple providing default enthalpy per mole bounds in the"
+                        " form (lb, ub) the bounds should have units attached.",
+            doc="""This is an optional tuple providing default enthalpy per mole
+bounds. The elements of the tuple should include units of energy per mole, for
+example, if pyomo units is imported as pyunits,
+(1*pyunits.J/pyunits.mol, 1e5*pyunits.J/pyunits.mol).
 """
         ),
     )
@@ -598,9 +605,12 @@ The elements of the tuple should include units of energy/amount.
         ConfigValue(
             default=None,
             domain=tuple,
-            description="Tuple providing default enthalpy per mass bounds",
-            doc="""This is an optional tuple providing default enthalpy per mole bounds.
-The elements of the tuple should include units of energy/mass.
+            description="Tuple providing default enthalpy per mass bounds in the"
+                        " form (lb, ub) the bounds should have units attached.",
+            doc="""This is an optional tuple providing default enthalpy per mass
+bounds. The elements of the tuple should include units of energy per mass, for
+example, if pyomo units is imported as pyunits,
+(1*pyunits.J/pyunits.kg, 1e5*pyunits.J/pyunits.kg).
 """
         ),
     )
