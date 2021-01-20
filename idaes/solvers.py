@@ -73,6 +73,7 @@ def _get_checksums(fd, to_path, release):
                 break
             line = line.split(sep="  ")
             checksum[line[1].strip()] = line[0].strip()
+    return checksum
 
 
 def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
@@ -177,12 +178,13 @@ def download_binaries(
         if not library_only:
             hash_s = _hash(solvers_tar)
             _log.debug("Solvers Hash {}".format(hash_s))
-            if checksum.get(solvers_from, "") != hash_s:
+            if checksum.get(
+                f"idaes-solvers-{platform}-{arch[1]}.tar.gz", "") != hash_s:
                 raise Exception("Solver package hash does not match expected")
         # Check libraries package hash
         hash_l = _hash(libs_tar)
         _log.debug("Libs Hash {}".format(hash_l))
-        if checksum.get(libs_from, "") != hash_l:
+        if checksum.get(f"idaes-lib-{platform}-{arch[1]}.tar.gz", "") != hash_l:
             raise Exception("Library package hash does not match expected")
 
     # Extract solvers
