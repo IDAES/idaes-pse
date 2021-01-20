@@ -22,6 +22,7 @@ Created on Aug 27, 2020 by Boiler Team (J. Ma, M. Zamarripa)
 import pytest
 # Import Pyomo libraries
 import pyomo.environ as pyo
+from pyomo.util.check_units import assert_units_consistent
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
@@ -57,7 +58,7 @@ def build_downcomer():
 
 @pytest.mark.unit
 def test_basic_build(build_downcomer):
-    """Make a turbine model and make sure it doesn't throw exception"""
+    """Make a model and make sure it doesn't throw exception"""
     m = build_downcomer
     assert degrees_of_freedom(m) == 7
     # Check unit config arguments
@@ -68,11 +69,16 @@ def test_basic_build(build_downcomer):
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
+@pytest.mark.integration
+def test_units(build_downcomer):
+    assert_units_consistent(build_downcomer)
+
+
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_initialize_drum(build_downcomer):
+def test_initialize_unit(build_downcomer):
     m = build_downcomer
     m.fs.unit.diameter.fix(0.3)
     m.fs.unit.number_downcomers.fix(6)  # number of downcomers
@@ -94,7 +100,7 @@ def test_initialize_drum(build_downcomer):
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_wflash(build_downcomer):
+def test_solve_unit(build_downcomer):
     m = build_downcomer
 
     m.fs.unit.inlet.enth_mol.fix()

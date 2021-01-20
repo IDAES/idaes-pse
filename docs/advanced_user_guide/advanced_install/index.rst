@@ -1,7 +1,7 @@
 ﻿Advanced User Installation
 ==========================
 
-Advanced users who plan to develop their own models or tools are encouraged to install IDAES using Git and GitHub as described in this section, rather than using the instructions in the :ref:`getting started<getting_started:Getting Started>` section. These advanced users will greatly benefit from improved version control and code integration capabilities.
+Advanced users who plan to develop their own models or tools are encouraged to install IDAES using Git and GitHub as described in this section, rather than using the instructions in the :ref:`getting started<getting_started/index:Getting Started>` section. These advanced users will greatly benefit from improved version control and code integration capabilities.
 
 .. contents:: :local:
 
@@ -71,7 +71,7 @@ Create the Python Environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Once you have the repo cloned, you can change into that directory (by default, it will be called "idaes-pse" like the repo) and install the Python packages.
 
-But before you do that, you need to get the Python package manager fully up and running. We use a Python packaging system called Conda_ and we specifically use its minimal version Miniconda_. If you do not already have Conda, please follow the installation instructions for your operating system in :ref:`getting started<getting_started:Getting Started>`.
+But before you do that, you need to get the Python package manager fully up and running. We use a Python packaging system called Conda_ and we specifically use its minimal version Miniconda_. If you do not already have Conda, please follow the installation instructions for your operating system in :ref:`getting started<getting_started/index:Getting Started>`.
 
 .. _Conda: https://conda.io/
 .. _Miniconda: https://conda.io/en/latest/miniconda.html
@@ -127,7 +127,7 @@ The not integration tag skips some tests that are slow. If you like, you can run
 
 Update IDAES
 ^^^^^^^^^^^^^^^^^^^^^^^
-The master branch of idaes-pse is frequently updated and a new IDAES release occurs quarterly. It is recommended that you update your fork and local repositories and conda environment periodically. 
+The main branch of idaes-pse is frequently updated and a new IDAES release occurs quarterly. It is recommended that you update your fork and local repositories and conda environment periodically. 
 
 .. code-block:: sh
     

@@ -236,13 +236,12 @@ class TestIAPWS(object):
 
     @pytest.mark.integration
     def test_units(self, iapws):
-        # TODO: Add these checks once IAPWS package has units
-        # assert_units_equivalent(iapws.fs.unit.control_volume.heat,
-        #                         pyunits.J/pyunits.s)
-        # assert_units_equivalent(iapws.fs.unit.heat_duty[0],
-        #                         pyunits.J/pyunits.s)
-        # assert_units_equivalent(iapws.fs.unit.deltaP[0],
-        #                         pyunits.Pa)
+        assert_units_equivalent(iapws.fs.unit.control_volume.heat,
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(iapws.fs.unit.heat_duty[0],
+                                pyunits.J/pyunits.s)
+        assert_units_equivalent(iapws.fs.unit.deltaP[0],
+                                pyunits.Pa)
         assert_units_consistent(iapws)
 
     @pytest.mark.unit
@@ -301,7 +300,6 @@ class TestIAPWS(object):
     @pytest.mark.integration
     def test_verify(self, iapws):
         # Test the heater model against known test cases
-        # Test cases from Aspen Plus 10 with iapws-95
         cases = {
             "F": (1000, 1000, 1000, 1000),  # mol/s
             "Tin": (300, 300, 300, 800),  # K
@@ -317,7 +315,7 @@ class TestIAPWS(object):
             F = cases["F"][i]
             Tin = cases["Tin"][i]
             Pin = cases["Pin"][i]*1000
-            hin = iapws95.htpx(T=Tin, P=Pin)
+            hin = iapws95.htpx(T=Tin*pyunits.K, P=Pin*pyunits.Pa)
             Tout = cases["Tout"][i]
             Pout = cases["Pout"][i]*1000
             xout = cases["xout"][i]

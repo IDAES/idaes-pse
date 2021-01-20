@@ -1,0 +1,19 @@
+name: Run pylint
+description: Run static analysis using pylint
+# TODO add inputs (options) as needed
+runs:
+  using: "composite"
+  steps:
+    - name: Install pylint dependencies
+      shell: bash
+      run: |
+        PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
+        $PIP_INSTALL --upgrade pip setuptools wheel
+        # TODO the pylint version will have to be pinned
+        # TODO installing idaes is necessary in our case because we import some idaes code in pylint plugins
+        $PIP_INSTALL pylint -r requirements.txt
+        # don't think we need to install the extensions, though
+    - name: Run pylint (errors only)
+      shell: bash
+      run: |
+        pylint -E --ignore-patterns="test_.*" idaes || true

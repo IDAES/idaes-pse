@@ -19,9 +19,8 @@ __Author__ = "John Eslick"
 
 from enum import Enum
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
-from pyomo.environ import Var, Expression, SolverFactory, value, Constraint, sqrt, Param
-from pyomo.opt import TerminationCondition
+from pyomo.common.config import ConfigValue, In
+from pyomo.environ import Var, Expression, value, Constraint, sqrt, Param
 
 from idaes.core import declare_process_block_class
 from idaes.generic_models.unit_models.pressure_changer import (
@@ -48,9 +47,11 @@ def _define_config(config):
     config.get("compressor")._default = False
     config.get("compressor")._domain = In([False])
     config.material_balance_type = MaterialBalanceType.componentTotal
-    config.get("material_balance_type")._default = MaterialBalanceType.componentTotal
+    config.get("material_balance_type")._default = \
+        MaterialBalanceType.componentTotal
     config.thermodynamic_assumption = ThermodynamicAssumption.adiabatic
-    config.get("thermodynamic_assumption")._default = ThermodynamicAssumption.adiabatic
+    config.get("thermodynamic_assumption")._default = \
+        ThermodynamicAssumption.adiabatic
     config.get("thermodynamic_assumption")._domain = In(
         [ThermodynamicAssumption.adiabatic]
     )
@@ -60,8 +61,8 @@ def _define_config(config):
             default=ValveFunctionType.linear,
             domain=In(ValveFunctionType),
             description="Valve function type, if custom provide an expression rule",
-            doc="""The type of valve function, if custom provide an expression rule
-with the valve_function_rule argument.
+            doc="""The type of valve function, if custom provide an expression
+rule with the valve_function_rule argument.
 **default** - ValveFunctionType.linear
 **Valid values** - {
 ValveFunctionType.linear,
@@ -75,8 +76,8 @@ ValveFunctionType.custom}""",
         ConfigValue(
             default=None,
             description="This is a rule that returns a time indexed valve function expression.",
-            doc="""This is a rule that returns a time indexed valve function expression.
-This is required only if valve_function==ValveFunctionType.custom""",
+            doc="""This is a rule that returns a time indexed valve function
+expression. This is required only if valve_function==ValveFunctionType.custom""",
         ),
     )
     config.declare(
@@ -110,9 +111,9 @@ def _liquid_pressure_flow_rule(b, t):
     F = b.control_volume.properties_in[t].flow_mol
     Cv = b.Cv
     fun = b.valve_function[t]
-    return (1 / b.flow_scale ** 2) * F ** 2 == (1 / b.flow_scale ** 2) * Cv ** 2 * (
-        Pi - Po
-    ) * fun ** 2
+    return ((1 / b.flow_scale ** 2) * F ** 2 ==
+            (1 / b.flow_scale ** 2) * Cv ** 2 *
+            (Pi - Po) * fun ** 2)
 
 
 def _vapor_pressure_flow_rule(b, t):
@@ -124,9 +125,9 @@ def _vapor_pressure_flow_rule(b, t):
     F = b.control_volume.properties_in[t].flow_mol
     Cv = b.Cv
     fun = b.valve_function[t]
-    return (1 / b.flow_scale ** 2) * F ** 2 == (1 / b.flow_scale ** 2) * Cv ** 2 * (
-        Pi ** 2 - Po ** 2
-    ) * fun ** 2
+    return ((1 / b.flow_scale ** 2) * F ** 2 ==
+            (1 / b.flow_scale ** 2) * Cv ** 2 *
+            (Pi ** 2 - Po ** 2) * fun ** 2)
 
 
 @declare_process_block_class("SteamValve", doc="Basic steam valve models")
@@ -144,16 +145,23 @@ class SteamValveData(PressureChangerData):
             initialize=1,
             doc="Fraction open for valve from 0 to 1",
         )
+
+        umeta = self.config.property_package.get_metadata().get_derived_units
+        if self.config.phase == "Liq":
+            cv_units = umeta("amount")/umeta("time")/umeta("pressure")**0.5
+        else:
+            cv_units = umeta("amount")/umeta("time")/umeta("pressure")
+
         self.Cv = Var(
             initialize=0.1,
-            doc="Valve flow coefficent, for vapor "
-            "[mol/s/Pa] for liquid [mol/s/Pa^0.5]",
+            doc="Valve flow coefficent",
+            units=cv_units
         )
         self.flow_scale = Param(
             mutable=True,
             default=1e3,
-            doc="Scaling factor for pressure flow relation should be approximatly"
-            " the same order of magnitude as the expected flow.",
+            doc="Scaling factor for pressure flow relation should be "
+            "approximatly the same order of magnitude as the expected flow.",
         )
         self.Cv.fix()
         self.valve_opening.fix()
@@ -167,12 +175,14 @@ class SteamValveData(PressureChangerData):
         elif self.config.valve_function == ValveFunctionType.equal_percentage:
             self.alpha = Var(initialize=1, doc="Valve function parameter")
             self.alpha.fix()
-            rule = equal_percentage_rule
+            rule = _equal_percentage_rule
         else:
             rule = self.config.valve_function_rule
 
         self.valve_function = Expression(
-            self.flowsheet().config.time, rule=rule, doc="Valve function expression"
+            self.flowsheet().config.time,
+            rule=rule,
+            doc="Valve function expression"
         )
 
         if self.config.phase == "Liq":
@@ -193,8 +203,8 @@ class SteamValveData(PressureChangerData):
     ):
         """
         Initialize the turbine stage model.  This deactivates the
-        specialized constraints, then does the isentropic turbine initialization,
-        then reactivates the constraints and solves.
+        specialized constraints, then does the isentropic turbine
+        initialization, then reactivates the constraints and solves.
 
         Args:
             state_args (dict): Initial state for property initialization
@@ -204,8 +214,8 @@ class SteamValveData(PressureChangerData):
         """
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
-        #   values, this makes sure original problem spec is same but initializes
-        #   the values of free vars
+        #   values, this makes sure original problem spec is same but
+        #   initializes the values of free vars
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

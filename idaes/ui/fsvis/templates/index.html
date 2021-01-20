@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>{{ model.model.id }}</title>
+  <title>{flowsheet_id}</title>
   <link rel="icon" href="idaes-logo.ico" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Raleway&display=swap" rel="stylesheet">
   <script src="https://kit.fontawesome.com/b27a429048.js" crossorigin="anonymous"></script>
@@ -19,7 +19,7 @@
     <div class="idaes-titlebar">
     <div id="idaes_logo"><img src="https://idaes.org/wp-content/uploads/sites/10/2020/02/idaes-logo-300x138.png"
     alt="IDAES logo"/></div>
-    <div id="idaes-fs-name">Flowsheet name</div>
+    <div id="idaes-fs-name" data-flowsheet-id="{flowsheet_id}">{flowsheet_id}</div>
     <div id="idaes-titlebar-right"></div>
     </div>
 
@@ -31,12 +31,6 @@
   </div>
   <!-- end idaes-content -->
 
-  <!-- I (Makayla) couldn't figure out how to import the variables
-       from Flask's render_template directly into the seperate 
-       javascript file so I'm storing it in div tags that the
-       javascript accesses -->
-  <div id="model" data-model='{{ model | tojson | safe }}'></div>
-  <div id="model-server-url" data-modelurl="{{ modelurl }}"></div>
   </div>
 
   <!-- Rappid/JointJS dependencies: -->

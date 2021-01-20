@@ -19,7 +19,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           units)
+                           units,
+                           Var)
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
@@ -36,7 +37,6 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock,
                                      initialization_tester)
-
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -248,9 +248,8 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_units(self, iapws):
         assert_units_consistent(iapws)
-        # TODO :Add these checks in once the IAPWS package has units added
-        # assert_units_equivalent(iapws.fs.unit.heat_duty[0], units.W)
-        # assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
+        assert_units_equivalent(iapws.fs.unit.heat_duty[0], units.W)
+        assert_units_equivalent(iapws.fs.unit.deltaP[0], units.Pa)
 
     @pytest.mark.unit
     def test_dof(self, iapws):
@@ -318,3 +317,29 @@ class TestIAPWS(object):
     @pytest.mark.component
     def test_report(self, iapws):
         iapws.fs.unit.report()
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_costing(self, iapws):
+        iapws.fs.unit.get_costing()
+        assert isinstance(iapws.fs.unit.costing.purchase_cost, Var)
+        iapws.fs.unit.diameter.fix(2)
+        iapws.fs.unit.length.fix(4)
+        # initialize unit with costing block
+        iapws.fs.unit.initialize()
+        # check costing initialized correct
+        assert (pytest.approx(86957.195, abs=1e-3) ==
+                value(iapws.fs.unit.costing.purchase_cost))
+
+        results = solver.solve(iapws)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+        assert (pytest.approx(63787.06525, abs=1e3) ==
+                value(iapws.fs.unit.costing.base_cost))
+        assert (pytest.approx(97660.6169, abs=1e3) ==
+                value(iapws.fs.unit.costing.purchase_cost))
+
+        assert_units_consistent(iapws.fs.unit.costing)

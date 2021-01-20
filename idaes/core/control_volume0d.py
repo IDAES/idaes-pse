@@ -189,6 +189,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
+        component_list = self.properties_in.component_list
+        phase_list = self.properties_in.phase_list
+        pc_set = self.properties_in.phase_component_set
+
         # Check that reaction block exists if required
         if has_rate_reactions or has_equilibrium_reactions:
             try:
@@ -272,9 +276,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         "holdup and/or rate reaction terms. Please call the "
                         "add_geometry method before adding balance equations."
                         .format(self.name))
-
-        # Get phase component set and lists
-        pc_set = self.config.property_package.get_phase_component_set()
 
         # Material holdup and accumulation
         if has_holdup:
@@ -581,11 +582,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     return 0
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.component_list,
+                             component_list,
                              doc="Material balances")
             def material_balances(b, t, j):
                 cplist = []
-                for p in self.config.property_package.phase_list:
+                for p in phase_list:
                     if (p, j) in pc_set:
                         cplist.append(p)
                 return (
@@ -726,6 +727,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
+        component_list = self.properties_in.component_list
+        phase_list = self.properties_in.phase_list
+        phase_component_set = self.properties_in.phase_component_set
+
         # Check that property package supports element balances
         if not hasattr(self.config.property_package, "element_list"):
             raise PropertyNotSupportedError(
@@ -795,14 +800,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # For each component in the material, search for elements which are
         # unique to it
-        for i in self.config.property_package.component_list:
+        for i in component_list:
             unique_elements = []
             for e in self.config.property_package.element_list:
                 if self.properties_out[rtime].params.element_comp[i][e] != 0:
                     # Assume unique until shown otherwise
                     unique = True
 
-                    for j in self.config.property_package.component_list:
+                    for j in component_list:
                         if j == i:
                             continue
 
@@ -863,24 +868,24 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
 
         @self.Expression(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
+                         phase_list,
                          self.config.property_package.element_list,
                          doc="Inlet elemental flow terms")
         def elemental_flow_in(b, t, p, e):
             return sum(conv_factor(b, t, j) *
                        b.properties_in[t].get_material_flow_terms(p, j) *
                        b.properties_out[t].params.element_comp[j][e]
-                       for j in b.config.property_package.component_list)
+                       for j in component_list)
 
         @self.Expression(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
+                         phase_list,
                          self.config.property_package.element_list,
                          doc="Outlet elemental flow terms")
         def elemental_flow_out(b, t, p, e):
             return sum(conv_factor(b, t, j) *
                        b.properties_out[t].get_material_flow_terms(p, j) *
                        b.properties_out[t].params.element_comp[j][e]
-                       for j in b.config.property_package.component_list)
+                       for j in component_list)
 
         # Create material balance terms as needed
         if has_mass_transfer:
@@ -917,9 +922,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def element_balances(b, t, e):
             return accumulation_term(b, t, e) == (
                         sum(b.elemental_flow_in[t, p, e]
-                            for p in b.config.property_package.phase_list) -
+                            for p in phase_list) -
                         sum(b.elemental_flow_out[t, p, e]
-                            for p in b.config.property_package.phase_list) +
+                            for p in phase_list) +
                         transfer_term(b, t, e) +
                         user_term(t, e))
 
@@ -938,8 +943,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
                         .params.element_comp[j][e]
-                        for p in b.config.property_package.phase_list
-                        for j in b.config.property_package.component_list))
+                        for p, j in phase_component_set))
 
         return self.element_balances
 
@@ -981,6 +985,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
+        phase_list = self.properties_in.phase_list
+
         # Test for components that must exist prior to calling this method
         if has_holdup:
             if not hasattr(self, "volume"):
@@ -1019,7 +1025,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_holdup:
             self.energy_holdup = Var(
                         self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
+                        phase_list,
                         domain=Reals,
                         initialize=1.0,
                         doc="Energy holdup in control volume",
@@ -1112,11 +1118,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Energy balance equation
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_balances(b, t):
-            plist = b.config.property_package.phase_list
-
-            return sum(accumulation_term(b, t, p) for p in plist) == (
-                sum(b.properties_in[t].get_enthalpy_flow_terms(p) for p in plist)
-                - sum(self.properties_out[t].get_enthalpy_flow_terms(p) for p in plist)
+            return sum(accumulation_term(b, t, p) for p in phase_list) == (
+                sum(b.properties_in[t].get_enthalpy_flow_terms(p) for p in phase_list)
+                - sum(self.properties_out[t].get_enthalpy_flow_terms(p) for p in phase_list)
                 + heat_term(b, t)
                 + work_term(b, t)
                 + enthalpy_transfer_term(b, t)
@@ -1129,7 +1133,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self._add_phase_fractions()
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
+                             phase_list,
                              doc="Enthalpy holdup constraint")
             def energy_holdup_calculation(b, t, p):
                 return b.energy_holdup[t, p] == (
@@ -1372,23 +1376,22 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
-        if len(self.config.property_package.phase_list) > 1:
+        phase_list = self.properties_in.phase_list
+        if len(phase_list) > 1:
             self.phase_fraction = Var(
                             self.flowsheet().config.time,
-                            self.config.property_package.phase_list,
-                            initialize=1 / len(self.config.
-                                               property_package.phase_list),
+                            phase_list,
+                            initialize=1 / len(phase_list),
                             doc='Volume fraction of holdup by phase')
 
             @self.Constraint(self.flowsheet().config.time,
                              doc='Sum of phase fractions == 1')
             def sum_of_phase_fractions(self, t):
                 return 1 == sum(self.phase_fraction[t, p]
-                                for p in self.config.
-                                property_package.phase_list)
+                                for p in phase_list)
         else:
             @self.Expression(self.flowsheet().config.time,
-                             self.config.property_package.phase_list,
+                             phase_list,
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, p):
                 return 1
@@ -1409,6 +1412,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         expr_dict = {}
         param_dict = {}
 
+        phase_component_set = self.properties_in.phase_component_set
+        phase_list = self.properties_in.phase_list
+
         time_only_vars = {"volume": "Volume",
                           "heat": "Heat Transfer",
                           "work": "Work Transfer",
@@ -1428,7 +1434,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         for v, n in p_vars.items():
             try:
                 var_obj = getattr(self, v)
-                for p in self.config.property_package.phase_list:
+                for p in phase_list:
                     var_dict[f"{n} [{p}]"] = var_obj[time_point, p]
             except AttributeError:
                 pass
@@ -1444,10 +1450,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         for v, n in pc_vars.items():
             try:
                 var_obj = getattr(self, v)
-                for p in self.config.property_package.phase_list:
-                    for j in self.config.property_package.component_list:
-                        var_dict[f"{n} [{p}, {j}]"] = \
-                            var_obj[time_point, p, j]
+                for p, j in phase_component_set:
+                    var_dict[f"{n} [{p}, {j}]"] = var_obj[time_point, p, j]
             except AttributeError:
                 pass
 
@@ -1491,7 +1495,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         for o, n in e_exprs.items():
             try:
                 expr_obj = getattr(self, o)
-                for p in self.config.property_package.phase_list:
+                for p in phase_list:
                     for e in self.config.property_package.element_list:
                         expr_dict[f"{n} [{p}, {e}]"] = \
                             expr_obj[time_point, p, e]
@@ -1525,13 +1529,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
-
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         # If the paraent component of an indexed component has a scale factor, but
         # some of the data objects don't, propogate the indexed component scale
         # factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
+
+        phase_list = self.properties_in.phase_list
 
         # Default scale factors
         heat_sf_default = 1e-6
@@ -1624,7 +1629,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 for (t , j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties_in[t].get_material_flow_terms(p, j)
-                            for p in self.config.property_package.phase_list])
+                            for p in phase_list])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 # There are some other material balance types but they create
@@ -1636,7 +1641,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for t, c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
-                        for p in self.config.property_package.phase_list])
+                        for p in phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "energy_holdup_calculation"):
@@ -1666,7 +1671,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if hasattr(self, "element_balances"):
             for (t, e), c in self.element_balances.items():
                 sf = iscale.min_scaling_factor([self.elemental_flow_in[t, p, e]
-                    for p in self.config.property_package.phase_list])
+                    for p in phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "elemental_holdup_calculation"):
@@ -1675,11 +1680,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 if flow_basis == MaterialFlowBasis.molar:
                     sf = 10.0 # start with 10 for phase fraction
                 else:
-                    sf = 10.0/get_scaling_factor(
+                    sf = 10.0/iscale.get_scaling_factor(
                         self.properties_out[t].mw_comp[j],
                         default=1,
                         warning=True)
                 sf *= iscale.min_scaling_factor(
                     [self.properties_out[t].get_material_density_terms(p, j)
-                        for p in self.config.property_package.phase_list])
+                        for p in phase_list])
                 iscale.constraint_scaling_transform(c, sf)

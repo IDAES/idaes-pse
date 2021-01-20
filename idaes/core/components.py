@@ -24,8 +24,7 @@ from .process_base import (declare_process_block_class,
 from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
-from idaes.generic_models.properties.core.generic.utility import \
-    set_param_value
+from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
 
 
@@ -55,6 +54,11 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("cp_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component specific heats"))
+    CONFIG.declare("cp_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component specific heats"
+        ))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies"))
     CONFIG.declare("enth_mol_ig_comp", ConfigValue(
@@ -80,6 +84,10 @@ class ComponentData(ProcessBlockData):
             default=False,
             doc="Internal config argument indicating whether component_list "
             "needs to be populated."))
+    CONFIG.declare("_electrolyte", ConfigValue(
+            default=False,
+            doc="Internal config argument indicating whether electrolyte "
+            "component_lists needs to be populated."))
 
     def build(self):
         super(ComponentData, self).build()
@@ -89,7 +97,10 @@ class ComponentData(ProcessBlockData):
         # property packages where the component_list already exists but we
         # need to add new Component objects
         if not self.config._component_list_exists:
-            self.__add_to_component_list()
+            if not self.config._electrolyte:
+                self.__add_to_component_list()
+            else:
+                self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
         if isinstance(base_units["mass"], _PyomoUnit):
@@ -122,7 +133,7 @@ class ComponentData(ProcessBlockData):
         for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Var(units=u))
-                set_param_value(self, p, u)
+                set_param_from_config(self, p)
 
     def is_solute(self):
         raise TypeError(
@@ -149,6 +160,16 @@ class ComponentData(ProcessBlockData):
             parent.component_list = Set(initialize=[self.local_name],
                                         ordered=True)
 
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
+
+        New Component types should overload this method
+        """
+        parent = self.parent_block()
+        parent._non_aqueous_set.add(self.local_name)
+
     def _is_phase_valid(self, phase):
         # If no valid phases assigned, assume all are valid
         if self.config.valid_phase_types is None:
@@ -156,9 +177,18 @@ class ComponentData(ProcessBlockData):
 
         # Check for behaviour of phase, and see if that is a valid behaviour
         # for component.
-        if (phase.is_liquid_phase() and
-                PT.liquidPhase in self.config.valid_phase_types):
-            return True
+        elif phase.is_liquid_phase():
+            # Check if this is an aqueous phase
+            if phase.is_aqueous_phase():
+                if (self._is_aqueous_phase_valid() and
+                        PT.aqueousPhase in self.config.valid_phase_types):
+                    return True
+                else:
+                    return False
+            elif PT.liquidPhase in self.config.valid_phase_types:
+                return True
+            else:
+                return False
         elif (phase.is_vapor_phase() and
                 PT.vaporPhase in self.config.valid_phase_types):
             return True
@@ -168,6 +198,10 @@ class ComponentData(ProcessBlockData):
         else:
             return False
 
+    def _is_aqueous_phase_valid(self):
+        # Method to indicate if a component type is stable in the aqueous phase
+        # General components may not appear in aqueous phases
+        return False
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
@@ -183,6 +217,19 @@ class SoluteData(ComponentData):
 
     def is_solvent(self):
         return False
+
+    def _is_aqueous_phase_valid(self):
+        return True
+
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
+
+        New Component types should overload this method
+        """
+        parent = self.parent_block()
+        parent.solute_set.add(self.local_name)
 
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
@@ -200,16 +247,29 @@ class SolventData(ComponentData):
     def is_solvent(self):
         return True
 
+    def _is_aqueous_phase_valid(self):
+        return True
+
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
+
+        New Component types should overload this method
+        """
+        parent = self.parent_block()
+        parent.solvent_set.add(self.local_name)
+
 
 @declare_process_block_class("Ion")
 class IonData(SoluteData):
     """
-    Component type for ionic species. These can exist only in LiquidPhases,
+    Component type for ionic species. These can exist only in AqueousPhases,
     and are always solutes.
     """
     CONFIG = SoluteData.CONFIG()
 
-    # Remove valid_phase_types argument, as ions are liquid phase only
+    # Remove valid_phase_types argument, as ions are aqueous phase only
     CONFIG.__delitem__("valid_phase_types")
 
     CONFIG.declare("charge", ConfigValue(
@@ -217,13 +277,28 @@ class IonData(SoluteData):
             doc="Charge of ionic species."))
 
     def _is_phase_valid(self, phase):
-        return phase.is_liquid_phase()
+        return phase.is_aqueous_phase()
+
+    def _is_aqueous_phase_valid(self):
+        return True
+
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
+
+        New Component types should overload this method
+        """
+        raise NotImplementedError(
+            "{} The IonData component class is inteded as a base class for "
+            "the AnionData and CationData classes, and should not be used "
+            "directly".format(self.name))
 
 
 @declare_process_block_class("Anion")
 class AnionData(IonData):
     """
-    Component type for anionic species. These can exist only in LiquidPhases,
+    Component type for anionic species. These can exist only in AqueousPhases,
     and are always solutes.
     """
     CONFIG = IonData.CONFIG()
@@ -241,11 +316,21 @@ class AnionData(IonData):
                 "{} received invalid value for charge configuration argument."
                 " Anions must have a negative charge.".format(self.name))
 
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
+
+        New Component types should overload this method
+        """
+        parent = self.parent_block()
+        parent.anion_set.add(self.local_name)
+
 
 @declare_process_block_class("Cation")
 class CationData(IonData):
     """
-    Component type for cationic species. These can exist only in LiquidPhases,
+    Component type for cationic species. These can exist only in AqueousPhases,
     and are always solutes.
     """
     CONFIG = IonData.CONFIG()
@@ -263,5 +348,37 @@ class CationData(IonData):
                 "{} received invalid value for charge configuration argument."
                 " Cations must have a positive charge.".format(self.name))
 
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
 
-__all_components__ = [Component, Solute, Solvent, Ion, Anion, Cation]
+        New Component types should overload this method
+        """
+        parent = self.parent_block()
+        parent.cation_set.add(self.local_name)
+
+
+@declare_process_block_class("Apparent")
+class ApparentData(SoluteData):
+    """
+    Component type for apparent species. Apparent species are those compunds
+    that are not stable in aqueous phases and immediately dissociate, however
+    they may be stable in other phases (e.g. salts).
+    """
+
+    def _is_aqueous_phase_valid(self):
+        return True
+
+    def _add_to_electrolyte_component_list(self):
+        """
+        Special case method for adding references to new Component in
+        component_lists for electrolyte systems,
+
+        New Component types should overload this method
+        """
+        parent = self.parent_block()
+        parent._apparent_set.add(self.local_name)
+
+
+__all_components__ = [Component, Solute, Solvent, Ion, Anion, Cation, Apparent]

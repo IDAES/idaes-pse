@@ -187,7 +187,7 @@ within this flowsheet if not otherwise specified,
                                              orient=orient,
                                              true_state=true_state)
 
-    def visualize(self, model_name, browser=True, overwrite=False):
+    def visualize(self, model_name, **kwargs):
         """
         Starts up a flask server that serializes the model and pops up a 
         webpage with the visualization
@@ -195,20 +195,33 @@ within this flowsheet if not otherwise specified,
         Args:
             model_name : The name of the model that flask will use as an argument
                          for the webpage
-            browser : If True a browser window/tab will be opened with the 
-                      visualization. Defaults to True
-            overwrite : If True the visualization ignores any saved visualization 
-                        file
+        Keyword Args:
+            **kwargs: Additional keywords for :func:`idaes.ui.fsvis.visualize()`
 
         Returns:
             None
         """
-        visualize(self, model_name, browser, overwrite)
+        visualize(self, model_name, **kwargs)
 
-    def get_costing(self, module=costing, year=None):
+    def get_costing(self, module=costing, year=None, integer_n_units=False):
+        """
+        Creates a new block called 'costing' at the flowsheet level. This block
+        builds global parameters used in costing methods (power plant costing
+        and generic costing).
+
+        Args:
+            self - idaes flowsheet
+            year : used to build parameter CE_index (Chemical Engineering),
+            this parameter is the same for all costing blocks in the flowsheet
+            integer_n_units : flag to define variable domain (True: domain is
+            within Integer numbers, False: domain is NonNegativeReals).
+        Returns:
+            None
+        """
         self.costing = pe.Block()
 
-        module.global_costing_parameters(self.costing, year)
+        module.global_costing_parameters(self.costing, year=year,
+                                         integer_n_units=integer_n_units)
 
     def _get_stream_table_contents(self, time_point=0):
         """

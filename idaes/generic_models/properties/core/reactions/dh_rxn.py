@@ -16,13 +16,14 @@ Methods for calculating heat of reaction
 from pyomo.environ import Var
 
 from idaes.core import MaterialFlowBasis
-from idaes.generic_models.properties.core.generic.utility import \
-    set_param_value
+from idaes.core.util.misc import set_param_from_config
 
 
 # -----------------------------------------------------------------------------
 # Constant dh_rxn
 class constant_dh_rxn():
+
+    @staticmethod
     def build_parameters(rblock, config):
         units = rblock.parent_block().get_metadata().derived_units
 
@@ -37,10 +38,8 @@ class constant_dh_rxn():
 
                 units=units["energy_"+basis])
 
-        set_param_value(rblock,
-                        param="dh_rxn_ref",
-                        units=units["energy_"+basis],
-                        config=config)
+        set_param_from_config(rblock, param="dh_rxn_ref", config=config)
 
+    @staticmethod
     def return_expression(b, rblock, r_idx, T):
         return rblock.dh_rxn_ref
