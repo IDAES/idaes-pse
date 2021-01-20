@@ -43,7 +43,7 @@ def _get_file_downloader(insecure, cacert):
     return fd, arch
 
 
-def _get_platform(platform, arch):
+def _get_platform(fd, platform, arch):
     if platform == "auto":
         platform = arch[0]
         if platform == "linux":
@@ -138,7 +138,7 @@ def download_binaries(
         to_path = os.path.join(idaes.data_directory, to_path)
     idaes._create_bin_dir(to_path)
     fd, arch = _get_file_downloader(insecure, cacert)
-    platform = _get_platform(platform, arch)
+    platform = _get_platform(fd, platform, arch)
     url, checksum = _get_release_url_and_checksum(
         fd, to_path, release, url, nochecksum)
     # Set the binary file destinations
