@@ -828,8 +828,6 @@ see property package for documentation.}"""))
                                          component(state_dict[k].local_name)))
 
         # Initialize the mixed outlet state block
-        # if not self.config.is_feed_tray:
-        #     raise Exception(state_args_mixed)
         self.properties_out. \
             initialize(outlvl=outlvl,
                        solver=solver,
