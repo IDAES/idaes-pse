@@ -36,7 +36,7 @@ jobs:
       - name: Notify
         run: echo "The integration tests will run"
   pytest:
-    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
     needs: [check-skip]
     strategy:
