@@ -263,22 +263,37 @@ class TestStateBlock(object):
                          "Temperature",
                          "Pressure"]
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
-    def test_initialize(self, model):
+    @pytest.mark.unit
+    def test_dof(self, model):
 
+        # Fix state
+        model.fs.props[1].flow_mol.fix(1)
+        model.fs.props[1].temperature.fix(200.00)
+        model.fs.props[1].pressure.fix(101325)
+        model.fs.props[1].mole_frac_comp["carbon_dioxide"].fix(1/2)
+        model.fs.props[1].mole_frac_comp["bmimPF6"].fix(1/2)
+
+        assert degrees_of_freedom(model.fs.props[1]) == 0
+
+    @pytest.mark.unit
+    def test_dof(self, model):
         model.fs.unit = Flash(default={"property_package": model.fs.param,
                                "has_heat_transfer": False,
                                "has_pressure_change": False})
-
         # Fix state
         model.fs.unit.inlet.flow_mol.fix(1)
         model.fs.unit.inlet.temperature.fix(200.00)
         model.fs.unit.inlet.pressure.fix(101325)
         model.fs.unit.inlet.mole_frac_comp[0,"carbon_dioxide"].fix(1/2)
         model.fs.unit.inlet.mole_frac_comp[0,"bmimPF6"].fix(1/2)
+
+        assert degrees_of_freedom(model.fs.unit) == 0
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, model):
 
         initialization_tester(model, dof=5)
 
