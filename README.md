@@ -6,7 +6,9 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
 <!-- BEGIN Status badges -->
 ## Build statuses
-![GitHub CI (main)](https://github.com/IDAES/idaes-pse/workflows/Main/badge.svg)
+![Tests](https://github.com/IDAES/idaes-pse/workflows/Tests/badge.svg?branch=main)
+![Integration](https://github.com/IDAES/idaes-pse/workflows/Integration/badge.svg?branch=main)
+[![codecov](https://codecov.io/gh/IDAES/idaes-pse/branch/main/graph/badge.svg?token=1lNQNbSB29)](https://codecov.io/gh/IDAES/idaes-pse)
 <!-- END Status badges -->
 
 ## System requirements
@@ -27,7 +29,8 @@ for Python 3. The following sub-versions are supported:
 
 * Python 3.6
 * Python 3.7
-* Python 3.7+ (should work, not explicitly tested)
+* Python 3.8
+* Python 3.9+ (should work, not explicitly tested)
 
 Note that Python 3.5 is *not* supported.
 
