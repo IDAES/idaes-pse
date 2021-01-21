@@ -3,7 +3,7 @@ name: Integration
 on:
   push:
     branches:
-      - rel_*
+      - '*_rel'
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
     - cron: '0 5 * * *'
