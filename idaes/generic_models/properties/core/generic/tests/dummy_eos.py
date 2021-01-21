@@ -37,40 +37,40 @@ def build_parameters(b):
 
 
 def dens_mass_phase(b, p):
-    return b.dummy_var
+    return 42
 
 
 def dens_mol_phase(b, p):
-    return b.dummy_var
+    return 42
 
 
 def enth_mol_phase(b, p):
-    return b.dummy_var
+    return 42
 
 
 def enth_mol_phase_comp(b, p, j):
-    return b.dummy_var
+    return 42
 
 
 def entr_mol_phase(b, p):
-    return b.dummy_var
+    return 42
 
 
 def entr_mol_phase_comp(b, p, j):
-    return b.dummy_var
+    return 42
 
 
 def fug_phase_comp(b, p, j):
-    return b.dummy_var
+    return 42
 
 
 def fug_coeff_phase_comp(b, p, j):
-    return b.dummy_var
+    return 42
 
 
 def gibbs_mol_phase(b, p):
-    return b.dummy_var
+    return 42
 
 
 def gibbs_mol_phase_comp(b, p, j):
-    return b.dummy_var
+    return 42

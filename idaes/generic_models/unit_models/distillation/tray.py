@@ -29,7 +29,7 @@ import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Set
+from pyomo.environ import Reference, Expression, Var, Set, value
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -637,11 +637,12 @@ see property package for documentation.}"""))
                         "mixture enthalpy or enthalpy by phase are supported.")
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, optarg=None,
+                   state_args_vap=None, hold_state_liq=False,
+                   hold_state_vap=False, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         # TODO:
-        # 1. Check initialization for dynamic mode. Currently not supported.
+        # 1. Initialization for dynamic mode. Currently not supported.
         # 2. Handle unfixed side split fraction vars
         # 3. Better logic to handle and fix state vars.
 
@@ -685,16 +686,16 @@ see property package for documentation.}"""))
                         state_args_vap[k] = {}
                         for m in state_dict[k].keys():
                             state_args_feed[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
                             state_args_liq[k][m] = \
-                                0.1 * state_dict[k][m].value
+                                value(0.1 * state_dict[k][m])
                             state_args_vap[k][m] = \
-                                0.1 * state_dict[k][m].value
+                                value(0.1 * state_dict[k][m])
 
                     else:
-                        state_args_feed[k] = state_dict[k].value
-                        state_args_liq[k] = 0.1 * state_dict[k].value
-                        state_args_vap[k] = 0.1 * state_dict[k].value
+                        state_args_feed[k] = value(state_dict[k])
+                        state_args_liq[k] = 0.1 * value(state_dict[k])
+                        state_args_vap[k] = 0.1 * value(state_dict[k])
                 else:
                     if state_dict[k].is_indexed():
                         state_args_feed[k] = {}
@@ -702,16 +703,16 @@ see property package for documentation.}"""))
                         state_args_vap[k] = {}
                         for m in state_dict[k].keys():
                             state_args_feed[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
                             state_args_liq[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
                             state_args_vap[k][m] = \
-                                state_dict[k][m].value
+                                value(state_dict[k][m])
 
                     else:
-                        state_args_feed[k] = state_dict[k].value
-                        state_args_liq[k] = state_dict[k].value
-                        state_args_vap[k] = state_dict[k].value
+                        state_args_feed[k] = value(state_dict[k])
+                        state_args_liq[k] = value(state_dict[k])
+                        state_args_vap[k] = value(state_dict[k])
 
         # Create initial guess if not provided by using current values
         if not self.config.is_feed_tray and state_args_liq is None:
@@ -725,9 +726,10 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args_liq[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_liq[k][m] = state_dict[k][m].value
+                        state_args_liq[k][m] = \
+                            value(state_dict[k][m])
                 else:
-                    state_args_liq[k] = state_dict[k].value
+                    state_args_liq[k] = value(state_dict[k])
 
         # Create initial guess if not provided by using current values
         if not self.config.is_feed_tray and state_args_vap is None:
@@ -741,9 +743,10 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args_vap[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_vap[k][m] = state_dict[k][m].value
+                        state_args_vap[k][m] = \
+                            value(state_dict[k][m])
                 else:
-                    state_args_vap[k] = state_dict[k].value
+                    state_args_vap[k] = value(state_dict[k])
 
         if self.config.is_feed_tray:
             feed_flags = self.properties_in_feed.initialize(
@@ -789,23 +792,40 @@ see property package for documentation.}"""))
             for k in state_dict.keys():
                 if k == "pressure":
                     # Take the lowest pressure and this is the liq inlet
-                    state_args_mixed[k] = self.properties_in_liq[0].\
-                        component(state_dict[k].local_name).value
+                    state_args_mixed[k] = value(self.properties_in_liq[0].
+                                                component(state_dict[k].
+                                                          local_name))
                 elif state_dict[k].is_indexed():
                     state_args_mixed[k] = {}
                     for m in state_dict[k].keys():
-                        state_args_mixed[k][m] = \
-                            0.5 * (self.properties_in_liq[0].
-                                   component(state_dict[k].local_name)[m].
-                                   value + self.properties_in_vap[0].
-                                   component(state_dict[k].local_name)[m].
-                                   value)
+                        if "flow" in k:
+                            state_args_mixed[k][m] = \
+                                value(self.properties_in_liq[0].
+                                      component(state_dict[k].local_name)[m]) \
+                                + value(self.properties_in_vap[0].
+                                        component(state_dict[k].local_name)[m])
+
+                        else:
+                            state_args_mixed[k][m] = \
+                                0.5 * (value(self.properties_in_liq[0].
+                                             component(state_dict[k].
+                                                       local_name)[m]) +
+                                       value(self.properties_in_vap[0].
+                                       component(state_dict[k].local_name)[m]))
+
                 else:
-                    state_args_mixed[k] = \
-                        0.5 * (self.properties_in_liq[0].
-                               component(state_dict[k].local_name).value +
-                               self.properties_in_vap[0].
-                               component(state_dict[k].local_name).value)
+                    if "flow" in k:
+                        state_args_mixed[k] = \
+                            value(self.properties_in_liq[0].
+                                  component(state_dict[k].local_name)) +\
+                            value(self.properties_in_vap[0].
+                                  component(state_dict[k].local_name))
+                    else:
+                        state_args_mixed[k] = \
+                            0.5 * (value(self.properties_in_liq[0].
+                                         component(state_dict[k].local_name)) +
+                                   value(self.properties_in_vap[0].
+                                         component(state_dict[k].local_name)))
 
         # Initialize the mixed outlet state block
         self.properties_out. \
@@ -881,14 +901,26 @@ see property package for documentation.}"""))
                             "for tray block is not zero during "
                             "initialization.")
 
-        self.properties_in_liq.release_state(flags=liq_in_flags,
-                                             outlvl=outlvl)
-        self.properties_in_vap.release_state(flags=vap_in_flags,
-                                             outlvl=outlvl)
-
         init_log.info(
             "Initialization complete, status {}.".
             format(idaeslog.condition(res)))
 
-        if self.config.is_feed_tray:
+        if not self.config.is_feed_tray:
+            if not hold_state_vap:
+                self.properties_in_vap.release_state(flags=vap_in_flags,
+                                                     outlvl=outlvl)
+            if not hold_state_liq:
+                self.properties_in_liq.release_state(flags=liq_in_flags,
+                                                     outlvl=outlvl)
+            if hold_state_liq and hold_state_vap:
+                return liq_in_flags, vap_in_flags
+            elif hold_state_vap:
+                return vap_in_flags
+            elif hold_state_liq:
+                return liq_in_flags
+        else:
+            self.properties_in_liq.release_state(flags=liq_in_flags,
+                                                 outlvl=outlvl)
+            self.properties_in_vap.release_state(flags=vap_in_flags,
+                                                 outlvl=outlvl)
             return feed_flags
