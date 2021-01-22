@@ -1560,7 +1560,7 @@ def _new_solve(self, model, **kwargs):
     self.options["tol"] = 1e-6
     self.options['ma27_pivtol'] = 0.01
     self.options['ma27_pivtolmax'] = 0.6
-    if kwargs["tee"]:
+    if kwargs.get("tee", False):
         print("THIS IPOPT SOLVER HAS BEEN MONKEY PATCHED FOR SCALING")
     # iscale.constraint_autoscale_large_jac(model, min_scale=1e-6)
     res = self._old_solve(model, **kwargs)
