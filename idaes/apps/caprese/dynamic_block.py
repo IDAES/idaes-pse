@@ -1,13 +1,8 @@
-import time as time_module
 from collections import OrderedDict
-
-from six import iteritems
 
 import idaes.logger as idaeslog
 from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
-        ControlPenaltyType,
-        ControlInitOption,
         InputOption,
         )
 from idaes.apps.caprese.common.config import VariableCategory as VC
@@ -26,25 +21,20 @@ from idaes.apps.caprese.nmpc_var import (
         MeasuredVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
+
 from pyomo.environ import (
-        value,
-        Objective,
-        TerminationCondition,
-        Constraint,
         Block,
         Reference,
         TransformationFactory,
         Var,
         Set,
         ComponentUID,
+        Suffix,
         )
-from pyomo.core.base.util import Initializer, ConstantInitializer
-from pyomo.core.base.block import _BlockData, declare_custom_block
-from pyomo.core.base.suffix import Suffix
+from pyomo.core.base.util import Initializer
+from pyomo.core.base.block import _BlockData
 from pyomo.core.base.indexed_component import UnindexedComponent_set
-from pyomo.common.collections import ComponentSet, ComponentMap
-from pyomo.common.modeling import unique_component_name
-from pyomo.common.timing import ConstructionTimer
+from pyomo.common.collections import ComponentMap
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components

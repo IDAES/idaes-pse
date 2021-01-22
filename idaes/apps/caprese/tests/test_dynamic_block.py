@@ -33,7 +33,7 @@ from idaes.apps.caprese.tests.test_simple_model import (
         initialize_t0,
         copy_values_forward,
         )
-from idaes.apps.caprese.model import (
+from idaes.apps.caprese.dynamic_block import (
         DynamicBlock,
         SimpleDynamicBlock,
         IndexedDynamicBlock,
