@@ -54,7 +54,7 @@ def get_default_solver():
     return solver
 
 
-def initialization_tester(m, dof=0, **init_kwargs):
+def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     """
     A method to test initialization methods on IDAES models. This method is
     designed to be used as part of the tests for most models.
@@ -70,6 +70,7 @@ def initialization_tester(m, dof=0, **init_kwargs):
         m: a Concrete mdoel which contains a flowsheet and a model named unit
             (i.e. m.fs.unit) which will be initialized
         dof: expected degrees of freedom during initialization, default=0
+        unit: unit object to test, if None assume m.fs.unit, default='None'
         init_kwargs: model specific arguments to pass to initialize method
                      (e.g. initial guesses for states)
 
@@ -77,32 +78,34 @@ def initialization_tester(m, dof=0, **init_kwargs):
         None
 
     Raises:
-        AssertionErrors is an issue is found
+        AssertionErrors if an issue is found
     """
+    if unit is None:
+        unit = m.fs.unit
     # Add some extra constraints and deactivate them to make sure
     # they remain deactivated
     # Test both indexed and unindexed constraints
-    m.fs.unit.__dummy_var = Var()
-    m.fs.unit.__dummy_equality = Constraint(expr=m.fs.unit.__dummy_var == 5)
-    m.fs.unit.__dummy_inequality = Constraint(expr=m.fs.unit.__dummy_var <= 10)
+    unit.__dummy_var = Var()
+    unit.__dummy_equality = Constraint(expr=unit.__dummy_var == 5)
+    unit.__dummy_inequality = Constraint(expr=unit.__dummy_var <= 10)
 
     def deq_idx(b, i):
-        return m.fs.unit.__dummy_var == 5
-    m.fs.unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
+        return unit.__dummy_var == 5
+    unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
 
     def dieq_idx(b, i):
-        return m.fs.unit.__dummy_var <= 10
-    m.fs.unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
+        return unit.__dummy_var <= 10
+    unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
 
-    m.fs.unit.__dummy_equality.deactivate()
-    m.fs.unit.__dummy_inequality.deactivate()
-    m.fs.unit.__dummy_equality_idx[1].deactivate()
-    m.fs.unit.__dummy_inequality_idx[1].deactivate()
+    unit.__dummy_equality.deactivate()
+    unit.__dummy_inequality.deactivate()
+    unit.__dummy_equality_idx[1].deactivate()
+    unit.__dummy_inequality_idx[1].deactivate()
 
     orig_fixed_vars = fixed_variables_set(m)
     orig_act_consts = activated_constraints_set(m)
 
-    m.fs.unit.initialize(**init_kwargs)
+    unit.initialize(**init_kwargs)
 
     print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == dof
@@ -119,16 +122,16 @@ def initialization_tester(m, dof=0, **init_kwargs):
         assert v in orig_fixed_vars
 
     # Check dummy constraints and clean up
-    assert not m.fs.unit.__dummy_equality.active
-    assert not m.fs.unit.__dummy_inequality.active
-    assert not m.fs.unit.__dummy_equality_idx[1].active
-    assert not m.fs.unit.__dummy_inequality_idx[1].active
+    assert not unit.__dummy_equality.active
+    assert not unit.__dummy_inequality.active
+    assert not unit.__dummy_equality_idx[1].active
+    assert not unit.__dummy_inequality_idx[1].active
 
-    m.fs.unit.del_component(m.fs.unit.__dummy_inequality)
-    m.fs.unit.del_component(m.fs.unit.__dummy_equality)
-    m.fs.unit.del_component(m.fs.unit.__dummy_inequality_idx)
-    m.fs.unit.del_component(m.fs.unit.__dummy_equality_idx)
-    m.fs.unit.del_component(m.fs.unit.__dummy_var)
+    unit.del_component(unit.__dummy_inequality)
+    unit.del_component(unit.__dummy_equality)
+    unit.del_component(unit.__dummy_inequality_idx)
+    unit.del_component(unit.__dummy_equality_idx)
+    unit.del_component(unit.__dummy_var)
 
 # -----------------------------------------------------------------------------
 # Define some generic PhysicalBlock and ReactionBlock classes for testing
