@@ -210,9 +210,7 @@ see reaction package for documentation.}"""))
 
         return {"vars": var_dict}
 
-    def get_costing(self, alignment='vertical', Mat_factor='carbon_steel',
-                    weight_limit='option1', L_D_range='option1', PL=True,
-                    year=None, module=costing):
+    def get_costing(self, year=None, module=costing, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year, module=module)
 
@@ -225,8 +223,4 @@ see reaction package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             units=units_meta('length'),
                             doc='vessel diameter')
-        module.rstoic_costing(self.costing, alignment=alignment,
-                              Mat_factor=Mat_factor,
-                              weight_limit=weight_limit,
-                              L_D_range=L_D_range,
-                              PL=PL)
+        module.rstoic_costing(self.costing)

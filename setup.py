@@ -60,7 +60,7 @@ kwargs = dict(
         "pint",
         "psutil",
         "pyutilib>=6.0.0",
-        "pyomo>=5.7.1",
+        "pyomo>5.7.1,<6",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -83,9 +83,6 @@ kwargs = dict(
             # -alee 12/20/2019
             "coverage==4.5.4",
             "flake8",
-            "flask>=1.0",
-            "flask-bower",
-            "flask-restful",
             "jsonschema",
             "jupyter_contrib_nbextensions",
             "mock",
@@ -95,7 +92,7 @@ kwargs = dict(
             "snowballstemmer==1.2.1",
             # temporarily hold sphinx version to avoid bug with 3.x
             # -dang 4/22/2020
-            "sphinx<3.0.0",
+            "sphinx>=2.4.4,<3.0.0",
             # note: 4/22/2020, removed the version requirement here
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",

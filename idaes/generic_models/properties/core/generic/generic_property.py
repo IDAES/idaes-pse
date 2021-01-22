@@ -15,6 +15,7 @@ Framework for generic property packages
 """
 # Import Python libraries
 import types
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -54,7 +55,15 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
 _log = idaeslog.getLogger(__name__)
 
 
+class StateIndex(Enum):
+    true = 1
+    apparent = 2
+
+
 def set_param_value(b, param, units):
+    # We cannot use the standard method in core.util.misc as here the parameter
+    # data is directly attached to the config block, rather than in a parameter
+    # data entry.
     param_obj = getattr(b, param)
     config = getattr(b.config, param)
     if isinstance(config, tuple):
@@ -101,6 +110,13 @@ class GenericParameterData(PhysicalParameterBlock):
         domain=dict,
         description="Bounds for state variables",
         doc="""A dict containing bounds to use for state variables."""))
+    CONFIG.declare("state_components", ConfigValue(
+        default=StateIndex.apparent,
+        domain=In(StateIndex),
+        doc="Index state variables by true or apparent components",
+        description="Argument idicating whether the true or apparent species "
+        "set should be used for indexing state variables. Must be "
+        "StateIndex.true or StateIndex.apparent."))
 
     # Reference State
     CONFIG.declare("pressure_ref", ConfigValue(
@@ -145,6 +161,14 @@ class GenericParameterData(PhysicalParameterBlock):
         description="Base units for property package",
         doc="Dict containing definition of base units of measurement to use "
         "with property package."))
+
+    # Property package options
+    CONFIG.declare("include_enthalpy_of_formation", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Include enthalpy of formation in property calculations",
+        doc="Flag indiciating whether enthalpy of formation should be included"
+        " when calculating specific enthalpies."))
 
     def build(self):
         '''
@@ -318,7 +342,7 @@ class GenericParameterData(PhysicalParameterBlock):
                     # which are valid in current phase
                     for j in self.component_list:
                         if self.get_component(j)._is_phase_valid(pobj):
-                            # If compoennt says phase is valid, add to set
+                            # If component says phase is valid, add to set
                             pc_set.append((p, j))
                 else:
                     # Validate that component names are valid and add to pc_set
@@ -350,11 +374,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     # which are valid in current phase
                     for j in self.true_species_set:
                         if self.get_component(j)._is_phase_valid(pobj):
-                            # If compoennt says phase is valid, add to set
+                            # If component says phase is valid, add to set
                             pc_set_true.append((p, j))
                     for j in self.apparent_species_set:
                         if self.get_component(j)._is_phase_valid(pobj):
-                            # If compoennt says phase is valid, add to set
+                            # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
                 else:
                     # Validate that component names are valid and add to pc_set
@@ -382,6 +406,23 @@ class GenericParameterData(PhysicalParameterBlock):
                                                 ordered=True)
             self.apparent_phase_component_set = Set(initialize=pc_set_appr,
                                                     ordered=True)
+
+        # Check that each component appears phase-component set
+        for j in self.component_list:
+            count = 0
+            for p in self.phase_list:
+                if self._electrolyte:
+                    if ((p, j) in self.true_phase_component_set or
+                            (p, j) in self.apparent_phase_component_set):
+                        count += 1
+                elif (p, j) in self._phase_component_set:
+                    count += 1
+            if count == 0:
+                raise ConfigurationError(
+                    "{} Component {} does not appear to be valid in any "
+                    "phase. Please check the component lists defined for each "
+                    "phase, and be sure you do not have generic Components "
+                    "in single-phase aqueous systems.".format(self.name, j))
 
         # Validate and construct elemental composition objects as appropriate
         element_comp = {}
@@ -596,10 +637,8 @@ class GenericParameterData(PhysicalParameterBlock):
         class. The user class should inherit from this one and implement a
         configure() method which sets the values of the desired config
         arguments.
-
         Args:
             None
-
         Returns:
             None
         """
@@ -610,10 +649,8 @@ class GenericParameterData(PhysicalParameterBlock):
         Placeholder method to allow users to specify parameters via a
         class. The user class should inherit from this one and implement a
         parameters() method which creates the required components.
-
         Args:
             None
-
         Returns:
             None
         """
@@ -639,6 +676,9 @@ class GenericParameterData(PhysicalParameterBlock):
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
              'dens_mol_phase': {'method': '_dens_mol_phase'},
+             'cp_mol': {'method': '_cp_mol'},
+             'cp_mol_phase': {'method': '_cp_mol_phase'},
+             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'enth_mol': {'method': '_enth_mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
@@ -669,32 +709,36 @@ class _GenericStateBlock(StateBlock):
         # Overload the _return_component_list method to handle electrolyte
         # systems where we have two component lists to choose from
         params = self._get_parameter_block()
+
         if not params._electrolyte:
             return params.component_list
-        elif self._block_data_config_default["species_basis"] == "true":
+
+        if params.config["state_components"] == StateIndex.true:
             return params.true_species_set
-        elif self._block_data_config_default["species_basis"] == "apparent":
+        elif params.config["state_components"] == StateIndex.apparent:
             return params.apparent_species_set
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
-                "'species_basis'; this should never happen. Please contact "
+                "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
     def _return_phase_component_set(self):
         # Overload the _return_phase_component_set method to handle electrolyte
         # systems where we have two component lists to choose from
         params = self._get_parameter_block()
+
         if not params._electrolyte:
             return params._phase_component_set
-        elif self._block_data_config_default["species_basis"] == "true":
+
+        if params.config["state_components"] == StateIndex.true:
             return params.true_phase_component_set
-        elif self._block_data_config_default["species_basis"] == "apparent":
+        elif params.config["state_components"] == StateIndex.apparent:
             return params.apparent_phase_component_set
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
-                "'species_basis'; this should never happen. Please contact "
+                "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
     def initialize(blk, state_args={}, state_vars_fixed=False,
@@ -1122,13 +1166,6 @@ class _GenericStateBlock(StateBlock):
 class GenericStateBlockData(StateBlockData):
     CONFIG = StateBlockData.CONFIG()
 
-    CONFIG.declare("species_basis", ConfigValue(
-        default="true",
-        domain=In(["true", "apparent"]),
-        doc="True or apparent component basis",
-        description="Argument idicating whetehr the true or apparent species "
-        "set should be used for indexing components"))
-
     def build(self):
         super(GenericStateBlockData, self).build()
 
@@ -1180,10 +1217,8 @@ class GenericStateBlockData(StateBlockData):
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
-
         Args:
             phase - phase for which to yield components
-
         Yields:
             components present in phase.
         """
@@ -1362,6 +1397,40 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_dens_mol_phase)
         except AttributeError:
             self.del_component(self.dens_mol_phase)
+            raise
+
+    def _cp_mol(self):
+        try:
+            def rule_cp_mol(b):
+                return sum(b.cp_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.cp_mol = Expression(rule=rule_cp_mol,
+                                     doc="Mixture molar heat capacity")
+        except AttributeError:
+            self.del_component(self.cp_mol)
+            raise
+
+    def _cp_mol_phase(self):
+        try:
+            def rule_cp_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mol_phase(b, p)
+            self.cp_mol_phase = Expression(self.params.phase_list,
+                                           rule=rule_cp_mol_phase)
+        except AttributeError:
+            self.del_component(self.cp_mol_phase)
+            raise
+
+    def _cp_mol_phase_comp(self):
+        try:
+            def rule_cp_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mol_phase_comp(b, p, j)
+            self.cp_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_cp_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.cp_mol_phase_comp)
             raise
 
     def _enth_mol(self):

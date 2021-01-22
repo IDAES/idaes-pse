@@ -22,10 +22,12 @@ from pyomo.core.base.plugin import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
+from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
+
 
 # Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
@@ -211,6 +213,94 @@ def copy_port_values(destination, source):
         if isinstance(v, pyo.Var):
             for i in v:
                 v[i].value = pyo.value(source.vars[k][i])
+
+
+def set_param_from_config(b, param, config=None, index=None):
+    """
+    Utility method to set parameter value from a config block. This allows for
+    converting units if required. This method directly sets the value of the
+    parameter.
+
+    Args:
+        b - block on which parameter and config block are defined
+        param - name of parameter as str. Used to find param and config arg
+        units - units of param object (used if conversion required)
+        config - (optional) config block to get parameter data from. If
+                unset, assumes b.config.
+        index - (optional) used for pure component properties where a single
+                property may have multiple parameters associated with it.
+
+    Returns:
+        None
+    """
+    if config is None:
+        try:
+            config = b.config
+        except AttributeError:
+            raise AttributeError(
+                "{} - set_param_from_config method was not provided with a "
+                "config argument, but no default Config block exists. Please "
+                "specify the Config block to use via the config argument."
+                .format(b.name))
+
+    # Check that config is an instance of a Config Block
+    if not isinstance(config, ConfigBlock):
+        raise TypeError(
+            "{} - set_param_from_config - config argument provided is not an "
+            "instance of a Config Block.".format(b.name))
+
+    if index is None:
+        try:
+            param_obj = getattr(b, param)
+        except AttributeError:
+            raise AttributeError(
+                "{} - set_param_from_config method was provided with param "
+                "argument {}, but no attribute of that name exists."
+                .format(b.name, param))
+
+        try:
+            p_data = config.parameter_data[param]
+        except (KeyError, AttributeError):
+            raise KeyError(
+                "{} - set_param_from_config method was provided with param "
+                "argument {}, but the config block does not contain a "
+                "value for this parameter.".format(b.name, param))
+    else:
+        try:
+            param_obj = getattr(b, param+"_"+index)
+        except AttributeError:
+            raise AttributeError(
+                "{} - set_param_from_config method was provided with param and"
+                " index arguments {} {}, but no attribute with that "
+                "combination ({}_{}) exists."
+                .format(b.name, param, index, param, index))
+
+        try:
+            p_data = config.parameter_data[param][index]
+        except (KeyError, AttributeError):
+            raise KeyError(
+                "{} - set_param_from_config method was provided with param and"
+                " index arguments {} {}, but the config block does not contain"
+                " a value for this parameter and index."
+                .format(b.name, param, index))
+
+    units = param_obj.get_units()
+
+    if isinstance(p_data, tuple):
+        # 11 Dec 2020 - There is currently a bug in Pyomo where trying to
+        # convert the units of a unitless quantity results in a TypeError.
+        # To avoid this, we check here for cases where both the parameter and
+        # user provided value are unitless and bypass unit conversion.
+        if ((units is None or units is pyo.units.dimensionless) and
+                (p_data[1] is None or p_data[1] is pyo.units.dimensionless)):
+            param_obj.value = p_data[0]
+        else:
+            param_obj.value = pyo.units.convert_value(
+                p_data[0], from_units=p_data[1], to_units=units)
+    else:
+        _log.debug("{} no units provided for parameter {} - assuming default "
+                   "units".format(b.name, param))
+        param_obj.value = p_data
 
 
 # -----------------------------------------------------------------------------

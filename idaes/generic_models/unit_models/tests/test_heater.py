@@ -300,7 +300,6 @@ class TestIAPWS(object):
     @pytest.mark.integration
     def test_verify(self, iapws):
         # Test the heater model against known test cases
-        # Test cases from Aspen Plus 10 with iapws-95
         cases = {
             "F": (1000, 1000, 1000, 1000),  # mol/s
             "Tin": (300, 300, 300, 800),  # K
