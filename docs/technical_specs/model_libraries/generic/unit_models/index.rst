@@ -24,3 +24,4 @@ Unit Models
     stoichiometric_reactor
     translator
     turbine
+    valve
