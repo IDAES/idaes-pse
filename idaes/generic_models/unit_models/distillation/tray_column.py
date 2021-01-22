@@ -21,7 +21,9 @@ import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Arc, Port
-from pyomo.environ import value, Integers, RangeSet, TransformationFactory
+from pyomo.environ import value, Integers, RangeSet, TransformationFactory, \
+    Block, Reference
+from pyomo.util.infeasible import log_infeasible_constraints
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.distillation import Tray, Condenser, \
@@ -165,42 +167,64 @@ see property package for documentation.}"""))
         # Create set for constructing indexed trays
         if self.config.number_of_trays is not None:
             self.tray_index = RangeSet(1, self.config.number_of_trays)
+            self._rectification_index = RangeSet(
+                1, self.config.feed_tray_location - 1)
+            self._stripping_index = RangeSet(
+                self.config.feed_tray_location + 1,
+                self.config.number_of_trays)
+
         else:
             raise ConfigurationError("The config argument number_of_trays "
                                      "needs to specified and cannot be None.")
 
         # Add trays
-
         # TODO:
         # 1. Add support for multiple feed tray locations
         # 2. Add support for specifying which trays have side draws
-        self.tray = Tray(self.tray_index,
-                         default={"has_liquid_side_draw":
-                                  self.config.has_liquid_side_draw,
-                                  "has_vapor_side_draw":
-                                  self.config.has_vapor_side_draw,
-                                  "has_heat_transfer":
-                                  self.config.has_heat_transfer,
-                                  "has_pressure_change":
-                                  self.config.has_pressure_change,
-                                  "property_package":
-                                  self.config.property_package,
-                                  "property_package_args":
-                                  self.config.property_package_args},
-                         initialize={self.config.feed_tray_location:
-                                     {"is_feed_tray": True,
-                                      "has_liquid_side_draw":
-                                      self.config.has_liquid_side_draw,
-                                      "has_vapor_side_draw":
-                                      self.config.has_vapor_side_draw,
-                                      "has_heat_transfer":
-                                      self.config.has_heat_transfer,
-                                      "has_pressure_change":
-                                      self.config.has_pressure_change,
-                                      "property_package":
-                                      self.config.property_package,
-                                      "property_package_args":
-                                      self.config.property_package_args}})
+        self.rectification_section = Tray(
+            self._rectification_index,
+            default={"has_liquid_side_draw":
+                     self.config.has_liquid_side_draw,
+                     "has_vapor_side_draw":
+                     self.config.has_vapor_side_draw,
+                     "has_heat_transfer":
+                     self.config.has_heat_transfer,
+                     "has_pressure_change":
+                     self.config.has_pressure_change,
+                     "property_package":
+                     self.config.property_package,
+                     "property_package_args":
+                     self.config.property_package_args})
+
+        self.feed_tray = Tray(
+            default={"is_feed_tray": True,
+                     "has_liquid_side_draw":
+                     self.config.has_liquid_side_draw,
+                     "has_vapor_side_draw":
+                     self.config.has_vapor_side_draw,
+                     "has_heat_transfer":
+                     self.config.has_heat_transfer,
+                     "has_pressure_change":
+                     self.config.has_pressure_change,
+                     "property_package":
+                     self.config.property_package,
+                     "property_package_args":
+                     self.config.property_package_args})
+
+        self.stripping_section = Tray(
+            self._stripping_index,
+            default={"has_liquid_side_draw":
+                     self.config.has_liquid_side_draw,
+                     "has_vapor_side_draw":
+                     self.config.has_vapor_side_draw,
+                     "has_heat_transfer":
+                     self.config.has_heat_transfer,
+                     "has_pressure_change":
+                     self.config.has_pressure_change,
+                     "property_package":
+                     self.config.property_package,
+                     "property_package_args":
+                     self.config.property_package_args})
 
         # Add condenser
         self.condenser = Condenser(
@@ -220,42 +244,108 @@ see property package for documentation.}"""))
                      self.config.property_package_args})
 
         # Add extension to the feed port
-        self.feed = Port(extends=self.tray[self.config.feed_tray_location].
-                         feed)
+        self.feed = Port(extends=self.feed_tray.feed)
+
+        # Add extensions to rectification section
+
+        # Add extensions to stripping section
 
         # Construct arcs between trays, condenser, and reboiler
-        self._make_arcs()
+        self._make_rectification_arcs()
+        self._make_stripping_arcs()
+        self._make_feed_arcs()
+        self._make_condenser_arcs()
+        self._make_reboiler_arcs()
+
         TransformationFactory("network.expand_arcs").apply_to(self)
 
-    def _make_arcs(self):
-        # make arcs
-        self.liq_stream_index = RangeSet(0, self.config.number_of_trays)
-        self.vap_stream_index = RangeSet(1, self.config.number_of_trays + 1)
+    def _make_rectification_arcs(self):
+        self._rectification_stream_index = RangeSet(
+            1, self.config.feed_tray_location - 2)
 
         def rule_liq_stream(self, i):
-            if i == 0:
-                return {"source": self.condenser.reflux,
-                        "destination": self.tray[i + 1].liq_in}
-            elif i == self.config.number_of_trays:
-                return {"source": self.tray[i].liq_out,
-                        "destination": self.reboiler.inlet}
-            else:
-                return {"source": self.tray[i].liq_out,
-                        "destination": self.tray[i + 1].liq_in}
+            return {"source": self.rectification_section[i].liq_out,
+                    "destination": self.rectification_section[i + 1].liq_in}
 
         def rule_vap_stream(self, i):
-            if i == 1:
-                return {"source": self.tray[i].vap_out,
-                        "destination": self.condenser.inlet}
-            elif i == self.config.number_of_trays + 1:
-                return {"source": self.reboiler.vapor_reboil,
-                        "destination": self.tray[i - 1].vap_in}
-            else:
-                return {"source": self.tray[i].vap_out,
-                        "destination": self.tray[i - 1].vap_in}
+            return {"source": self.rectification_section[i + 1].vap_out,
+                    "destination": self.rectification_section[i].vap_in}
 
-        self.liq_stream = Arc(self.liq_stream_index, rule=rule_liq_stream)
-        self.vap_stream = Arc(self.vap_stream_index, rule=rule_vap_stream)
+        self.rectification_liq_stream = Arc(
+            self._rectification_stream_index, rule=rule_liq_stream)
+        self.rectification_vap_stream = Arc(
+            self._rectification_stream_index, rule=rule_vap_stream)
+
+    def _make_stripping_arcs(self):
+
+        self._stripping_stream_index = RangeSet(
+            self.config.feed_tray_location + 1,
+            self.config.number_of_trays - 1)
+
+        def rule_liq_stream(self, i):
+            return {"source": self.stripping_section[i].liq_out,
+                    "destination": self.stripping_section[i + 1].liq_in}
+
+        def rule_vap_stream(self, i):
+            return {"source": self.stripping_section[i + 1].vap_out,
+                    "destination": self.stripping_section[i].vap_in}
+
+        self.stripping_liq_stream = Arc(
+            self._stripping_stream_index, rule=rule_liq_stream)
+        self.stripping_vap_stream = Arc(
+            self._stripping_stream_index, rule=rule_vap_stream)
+
+    def _make_feed_arcs(self):
+
+        self.feed_liq_in = Arc(
+            source=self.rectification_section[
+                self.config.feed_tray_location - 1].liq_out,
+            destination=self.feed_tray.liq_in
+        )
+
+        self.feed_liq_out = Arc(
+            source=self.feed_tray.liq_out,
+            destination=self.stripping_section[
+                self.config.feed_tray_location + 1].liq_in
+        )
+
+        self.feed_vap_in = Arc(
+            source=self.stripping_section[
+                self.config.feed_tray_location + 1].vap_out,
+            destination=self.feed_tray.vap_in
+        )
+
+        self.feed_vap_out = Arc(
+            source=self.feed_tray.vap_out,
+            destination=self.rectification_section[
+                self.config.feed_tray_location - 1].vap_in
+        )
+
+    def _make_condenser_arcs(self):
+
+        self.condenser_vap_in = Arc(
+            source=self.rectification_section[1].vap_out,
+            destination=self.condenser.inlet
+        )
+
+        self.condenser_reflux_out = Arc(
+            source=self.condenser.reflux,
+            destination=self.rectification_section[1].liq_in
+        )
+
+    def _make_reboiler_arcs(self):
+
+        self.reboiler_liq_in = Arc(
+            source=self.stripping_section[
+                self.config.number_of_trays].liq_out,
+            destination=self.reboiler.inlet
+        )
+
+        self.reboiler_vap_out = Arc(
+            source=self.reboiler.vapor_reboil,
+            destination=self.stripping_section[
+                self.config.number_of_trays].vap_in
+        )
 
     def propagate_stream_state(self, source=None,
                                destination=None):
@@ -270,7 +360,8 @@ see property package for documentation.}"""))
         for v in source.vars:
             for i in destination.vars[v]:
                 if not destination.vars[v][i].fixed:
-                    destination.vars[v][i].value = value(source.vars[v][i])
+                    destination.vars[v][i].value = \
+                        value(source.vars[v][i])
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
@@ -285,35 +376,162 @@ see property package for documentation.}"""))
                              "being used for initialization.")
             solver = get_default_solver()
 
-        feed_flags = self.tray[self.config.feed_tray_location].initialize()
+        feed_flags = self.feed_tray.initialize()
 
         self.propagate_stream_state(
-            source=self.tray[self.config.feed_tray_location].vap_out,
+            source=self.feed_tray.vap_out,
             destination=self.condenser.inlet)
 
         self.condenser.initialize()
 
         self.propagate_stream_state(
-            source=self.tray[self.config.feed_tray_location].liq_out,
+            source=self.feed_tray.liq_out,
             destination=self.reboiler.inlet)
 
         self.reboiler.initialize()
 
-        for i in self.tray_index:
+        # initialize the rectification section
+        for i in self._rectification_index:
             self.propagate_stream_state(
                 source=self.condenser.reflux,
-                destination=self.tray[i].liq_in)
+                destination=self.rectification_section[i].liq_in)
+            self.propagate_stream_state(
+                source=self.feed_tray.vap_out,
+                destination=self.rectification_section[i].vap_in)
+            if i == 1:
+                rect_liq_flags = self.rectification_section[i]. \
+                    initialize(hold_state_liq=True, hold_state_vap=False)
+            elif i == len(self._rectification_index):
+                rect_vap_flags = \
+                    self.rectification_section[i]. \
+                    initialize(hold_state_liq=False, hold_state_vap=True)
+            else:
+                self.rectification_section[i].initialize()
+
+        # initialize the stripping section
+        for i in self._stripping_index:
+            self.propagate_stream_state(
+                source=self.feed_tray.liq_out,
+                destination=self.stripping_section[i].liq_in)
             self.propagate_stream_state(
                 source=self.reboiler.vapor_reboil,
-                destination=self.tray[i].vap_in)
-            self.tray[i].initialize()
+                destination=self.stripping_section[i].vap_in)
+            if i == self.config.feed_tray_location + 1:
+                strip_liq_flags = self.stripping_section[i]. \
+                    initialize(hold_state_liq=True, hold_state_vap=False)
+            elif i == self.config.number_of_trays:
+                strip_vap_flags = self.stripping_section[i]. \
+                    initialize(hold_state_liq=False, hold_state_vap=True)
+            else:
+                self.stripping_section[i].initialize()
+
+        # For initialization purposes and to enable solving individual sections
+        # creating a temp block. Note that this temp block is a reference to
+        # the rectification, stripping, and feed sections. Also, expanded arcs
+        # are added to the temp block as the initialization solve proceeds.
+        self._temp_block = Block()
+
+        self._temp_block.rectification = Block()
+
+        # adding reference to the rectification section and the expanded
+        # vapor and liquid arcs
+        self._temp_block.rectification.trays = Reference(
+            self.rectification_section)
+        self._temp_block.rectification.expanded_liq_stream = Reference(
+            self.rectification_liq_stream[:].expanded_block)
+        self._temp_block.rectification.expanded_vap_stream = Reference(
+            self.rectification_vap_stream[:].expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block.rectification, tee=slc.tee)
+        init_log.info(
+            "Rectification section initialization status {}.".
+            format(idaeslog.condition(res))
+        )
+
+        self._temp_block.stripping = Block()
+
+        # adding reference to the stripping section and the expanded
+        # vapor and liquid arcs
+        self._temp_block.stripping.trays = Reference(self.stripping_section)
+        self._temp_block.stripping.expanded_liq_stream = Reference(
+            self.stripping_liq_stream[:].expanded_block)
+        self._temp_block.stripping.expanded_vap_stream = Reference(
+            self.stripping_vap_stream[:].expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block.stripping, tee=slc.tee)
+        init_log.info(
+            "Stripping section initialization status {}."
+            .format(idaeslog.condition(res))
+        )
+
+        # releasing the fixed inlets for the vap in to the rectification
+        # to enable connection with the feed tray vap out
+        self.rectification_section[len(self._rectification_index)]. \
+            properties_in_vap. \
+            release_state(flags=rect_vap_flags, outlvl=outlvl)
+
+        # releasing the fixed inlets for the liq in to the stripping
+        # to enable connection with the feed tray liq out
+        self.stripping_section[self.config.feed_tray_location + 1]. \
+            properties_in_liq. \
+            release_state(flags=strip_liq_flags, outlvl=outlvl)
+
+        # Adding the feed tray to temp block solve
+        self._temp_block.feed_tray = Reference(self.feed_tray)
+        self._temp_block.expanded_feed_liq_stream_in = Reference(
+            self.feed_liq_in.expanded_block)
+        self._temp_block.expanded_feed_liq_stream_out = Reference(
+            self.feed_liq_out.expanded_block)
+        self._temp_block.expanded_feed_vap_stream_in = Reference(
+            self.feed_vap_in.expanded_block)
+        self._temp_block.expanded_feed_vap_stream_out = Reference(
+            self.feed_vap_out.expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block, tee=slc.tee)
+        init_log.info(
+            "Column section initialization status {}."
+            .format(idaeslog.condition(res))
+        )
+
+        self.rectification_section[1]. \
+            properties_in_liq. \
+            release_state(flags=rect_liq_flags, outlvl=outlvl)
+
+        # Adding the condenser to the temp block solve
+        self._temp_block.condenser = Reference(self.condenser)
+        self._temp_block.expanded_condenser_vap_in = Reference(
+            self.condenser_vap_in.expanded_block)
+        self._temp_block.expanded_condenser_reflux_out = Reference(
+            self.condenser_reflux_out.expanded_block)
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = solver.solve(self._temp_block, tee=slc.tee)
+        init_log.info(
+            "Column section + Condenser initialization status {}."
+            .format(idaeslog.condition(res))
+        )
+
+        self.stripping_section[self.config.number_of_trays]. \
+            properties_in_vap. \
+            release_state(flags=strip_vap_flags, outlvl=outlvl)
+
+        # Delete the _temp_block as next solve is solving the entire column.
+        # If we add the reboiler to the temp block, it will be similar to
+        # solving the original block. This ensures that if
+        # initialize is triggered twice, there is no implicit replacing
+        # component error.
+        self.del_component(self._temp_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = solver.solve(self, tee=slc.tee)
         init_log.info(
-            "Column initialization status {}.".format(idaeslog.condition(res))
+            "Column section + Condenser + Reboiler initialization status {}."
+            .format(idaeslog.condition(res))
         )
 
         # release feed tray state once initialization is complete
-        self.tray[self.config.feed_tray_location].properties_in_feed.\
+        self.feed_tray.properties_in_feed.\
             release_state(flags=feed_flags, outlvl=outlvl)

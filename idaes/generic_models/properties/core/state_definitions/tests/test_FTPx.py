@@ -19,9 +19,7 @@ Authors: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import (ConcreteModel, Constraint, Block,
-                           Var, units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.environ import ConcreteModel, Constraint, Var, units as pyunits
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
@@ -34,7 +32,6 @@ from idaes.core import (MaterialFlowBasis,
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -67,23 +64,18 @@ class TestInvalidBounds(object):
                                "temperature": pyunits.K},
                 "state_bounds": {"foo": (None, None, None)}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
-
         with pytest.raises(
                 ConfigurationError,
                 match="props\[1\] - found unexpected state_bounds key foo. "
                 "Please ensure bounds are provided only for expected state "
                 "variables and that you have typed the variable names "
                 "correctly."):
-            define_state(m.props[1])
+            m.props = m.params.build_state_block(
+                [1], default={"defined_state": True})
 
     def test_mole_frac(self, caplog):
         m = ConcreteModel()
-        
+
         caplog.set_level(
             idaeslog.WARNING,
             logger=("idaes.generic_models.properties.core."))
@@ -103,12 +95,8 @@ class TestInvalidBounds(object):
                 "state_bounds": {"mole_frac_comp": (None, None, None)}})
 
         # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
-
-        define_state(m.props[1])
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": True})
 
         assert ("props[1] - found state_bounds argument for mole_frac_comp."
                 " Mole fraction bounds are set automatically and "
@@ -134,11 +122,9 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        # Create state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -260,11 +246,9 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=True))
-        add_object_reference(m.props[1], "params", m.params)
+        # Create state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -388,11 +372,9 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        # Create state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -529,11 +511,9 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=True))
-        add_object_reference(m.props[1], "params", m.params)
+        # Create state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -672,11 +652,9 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        # Create state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": False})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -806,11 +784,9 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=True))
-        add_object_reference(m.props[1], "params", m.params)
+        # Create state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
@@ -942,11 +918,9 @@ class TestCommon(object):
                                "amount": pyunits.mol,
                                "temperature": pyunits.K}})
 
-        # Create a dummy state block
-        m.props = Block([1])
-        m.props[1].config = ConfigBlock()
-        m.props[1].config.declare("defined_state", ConfigValue(default=False))
-        add_object_reference(m.props[1], "params", m.params)
+        # Build state block
+        m.props = m.params.build_state_block(
+            [1], default={"defined_state": True})
 
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
