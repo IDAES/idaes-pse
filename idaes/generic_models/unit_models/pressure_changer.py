@@ -614,6 +614,7 @@ see property package for documentation.}""",
         # if costing block exists, activate
         try:
             blk.costing.activate()
+            costing.initialize(blk.costing)
         except AttributeError:
             pass
 
@@ -789,27 +790,14 @@ see property package for documentation.}""",
 
         return {"vars": var_dict}
 
-    def get_costing(self, module=costing, Mat_factor="stain_steel",
-                    mover_type="compressor",
-                    compressor_type="centrifugal",
-                    driver_mover_type="electrical_motor",
-                    pump_type="centrifugal",
-                    pump_type_factor='1.4',
-                    pump_motor_type_factor='open',
-                    year=None):
+    def get_costing(self, module=costing, year=None, **kwargs):
         if not hasattr(self.flowsheet(), "costing"):
             self.flowsheet().get_costing(year=year)
 
         self.costing = Block()
         module.pressure_changer_costing(
             self.costing,
-            Mat_factor=Mat_factor,
-            mover_type=mover_type,
-            compressor_type=compressor_type,
-            driver_mover_type=driver_mover_type,
-            pump_type=pump_type,
-            pump_type_factor=pump_type_factor,
-            pump_motor_type_factor=pump_motor_type_factor)
+            **kwargs)
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
@@ -903,6 +891,10 @@ see property package for documentation.}""",
                         self.control_volume.work[t],
                         default=1,
                         warning=True))
+
+        if hasattr(self, "costing"):
+            # import costing scaling factors
+            costing.calculate_scaling_factors(self.costing)
 
 
 @declare_process_block_class("Turbine", doc="Isentropic turbine model")
