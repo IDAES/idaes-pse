@@ -75,7 +75,10 @@ from pyomo.common.log import LoggingIntercept
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
 from idaes.dmf import resource
+import idaes.logger as idaeslog
 
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 class ConvergenceEvaluationSpecification(object):
     def __init__(self):
@@ -320,8 +323,6 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
                         'was not mutable. Please make sure all sampled inputs'
                         ' are either mutable params or fixed vars.')
             comp.set_value(v)
-            # print('Just set', comp,'to', float(v))
-
         elif ctype is Var:
             if not comp.is_fixed():
                 raise ValueError(
@@ -329,7 +330,6 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
                         'was not fixed. Please make sure all sampled inputs'
                         ' are either mutable params or fixed vars.')
             comp.set_value(float(v))
-            # print('Just set', comp,'to', float(v))
         else:
             raise ValueError('Failed to find a valid input component (must be'
                              ' a fixed Var or a mutable Param). Instead,'
@@ -402,8 +402,8 @@ def run_convergence_evaluation_from_sample_file(sample_file):
         with open(sample_file, 'r') as fd:
             jsondict = json.load(fd, object_pairs_hook=OrderedDict)
     except Exception as e:
-        print('Error reading json file: {}'.format(str(e)))
-        raise ValueError('Problem reading json file: {}'.format(sample_file))
+        _log.exception(f'Error reading json file {sample_file}')
+        raise ValueError(f'Problem reading json file: {sample_file}')
 
     # create the convergence evaluation object
     convergence_evaluation_class_str = jsondict[
@@ -413,14 +413,10 @@ def run_convergence_evaluation_from_sample_file(sample_file):
                                             convergence_evaluation_class_str)
         conv_eval = convergence_evaluation_class()
     except Exception as e:
-        print('Error creating the class: {}. Error returned: {}'.format(
-                    convergence_evaluation_class_str,
-                    str(e)))
+        _log.exception(f'Error creating class: {convergence_evaluation_class_str}')
         raise ValueError(
-                'Invalid value specified for convergence_evaluation_class_str:'
-                '{} in sample file: {}'.format(
-                        convergence_evaluation_class_str, sample_file))
-
+                f'Invalid value specified for convergence_evaluation_class_str:'
+                '{convergence_evaluation_class_str} in sample file: {sample_file}')
     return run_convergence_evaluation(jsondict, conv_eval)
 
 
@@ -485,7 +481,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
         #        _run_ipopt_with_stats(model, solver)
 
         if not solved:
-            print('Sample: {} failed to converge.'.format(sample_name))
+            _log.error(f'Sample: {sample_name} failed to converge.')
 
         results_dict = OrderedDict()
         results_dict['name'] = sample_name
