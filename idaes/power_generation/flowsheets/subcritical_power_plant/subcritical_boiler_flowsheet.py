@@ -984,29 +984,6 @@ def initialize(m):
     return m
 
 
-def _new_solve(self, model, **kwargs):
-    self.options["nlp_scaling_method"] = "user-scaling"
-    self.options["linear_solver"] = "ma27"
-    self.options["tol"] = 1e-6
-    self.options['ma27_pivtol'] = 0.01
-    self.options['ma27_pivtolmax'] = 0.6
-    if kwargs.get("tee", False):
-        print("THIS IPOPT SOLVER HAS BEEN MONKEY PATCHED FOR SCALING")
-    # iscale.constraint_autoscale_large_jac(model, min_scale=1e-6)
-    res = self._old_solve(model, **kwargs)
-    return res
-
-
-def monkey_patch_ipopt():
-    from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
-    IPOPT._old_solve = IPOPT.solve
-    IPOPT.solve = _new_solve
-
-
-def undo_patch_ipopt():
-    IPOPT.solve = IPOPT._old_solve
-
-
 def set_scaling_factors(m):
     """ Set scaling factors for variables and expressions. These are used for
     variable scaling and used by the framework to scale constraints.
@@ -1314,8 +1291,6 @@ def print_dynamic_results(m):
 
 
 if __name__ == "__main__":
-    monkey_patch_ipopt()
-
     # This method builds and runs a steady state subcritical coal fired boiler
     # flowsheet. The subcritical flowsheet consists mainly of:
     # water/steam route: Economizer, water pipe, drum, blowdown splitter,

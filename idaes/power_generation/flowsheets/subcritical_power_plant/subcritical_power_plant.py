@@ -34,32 +34,7 @@ from idaes.core.util.misc import svg_tag
 
 _log = idaeslog.getLogger(__name__)
 
-__author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
-
-
-def _new_solve(self, model, **kwargs):
-    self.options["nlp_scaling_method"] = "user-scaling"
-    self.options["linear_solver"] = "ma27"
-    self.options["tol"] = 1e-6
-    self.options['ma27_pivtol'] = 0.01
-    self.options['ma27_pivtolmax'] = 0.6
-    if kwargs.get("tee", False):
-        print("THIS IPOPT SOLVER HAS BEEN MONKEY PATCHED FOR SCALING")
-    res = self._old_solve(model, **kwargs)
-    return res
-
-
-def monkey_patch_ipopt():
-    from pyomo.solvers.plugins.solvers.IPOPT import IPOPT
-    IPOPT._old_solve = IPOPT.solve
-    IPOPT.solve = _new_solve
-
-
-def undo_patch_ipopt():
-    IPOPT.solve = IPOPT._old_solve
-
-
-monkey_patch_ipopt()
+__author__ = "J. Ma, M. Zamarripa, J. Eslick"
 
 
 def set_scaling_factors(m):
