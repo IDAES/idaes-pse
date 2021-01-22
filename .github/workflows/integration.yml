@@ -1,0 +1,69 @@
+name: Integration
+
+on:
+  push:
+    branches:
+      - rel_*
+  schedule:
+    # run daily at 5:00 am UTC (12 am ET/9 pm PT)
+    - cron: '0 5 * * *'
+  repository_dispatch:
+    # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_integration`
+    types: [ci_run_integration]
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git hash (optional)
+        required: false
+  pull_request:
+    types:
+      - labeled
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-skip:
+    name: Check if integration tests should run
+    # NOTE: the name of the special label is hardcoded here
+    # it would be better to extract it to a more global location, e.g. the workflow-level env context,
+    # but the env context is not available in job-level if expressions (only step-level ones)
+    if: (github.event.name != 'labeled') || (github.event.label.name == 'CI:run-integration')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify
+        run: echo "The integration tests will run"
+  pytest:
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: [check-skip]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+        os:
+          - ubuntu-18.04
+          - windows-latest
+    steps:
+      - name: Display debug info
+        run: |
+          echo '${{ toJSON(matrix) }}'
+          echo '${{ toJSON(github.event) }}'
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: '.'
+      - name: Run pytest (integration)
+        uses: ./.github/actions/pytest
+        with:
+          markexpr: integration
