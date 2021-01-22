@@ -36,7 +36,7 @@ _log = idaeslog.getLogger(__name__)
     "HelmTurbineOutletStage",
     doc="Outlet stage steam turbine model",
 )
-class TurbineOutletStageData(HelmIsentropicTurbineData):
+class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
     # Same settings as the default pressure changer, but force to expander with
     # isentropic efficiency
     CONFIG = HelmIsentropicTurbineData.CONFIG()

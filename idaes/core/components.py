@@ -24,8 +24,7 @@ from .process_base import (declare_process_block_class,
 from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError
-from idaes.generic_models.properties.core.generic.utility import \
-    set_param_value
+from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
 
 
@@ -55,6 +54,11 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("cp_mol_liq_comp", ConfigValue(
+        description="Method to calculate liquid component specific heats"))
+    CONFIG.declare("cp_mol_ig_comp", ConfigValue(
+        description="Method to calculate ideal gas component specific heats"
+        ))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies"))
     CONFIG.declare("enth_mol_ig_comp", ConfigValue(
@@ -129,7 +133,7 @@ class ComponentData(ProcessBlockData):
         for p, u in param_dict.items():
             if p in self.config.parameter_data:
                 self.add_component(p, Var(units=u))
-                set_param_value(self, p, u)
+                set_param_from_config(self, p)
 
     def is_solute(self):
         raise TypeError(
@@ -167,8 +171,18 @@ class ComponentData(ProcessBlockData):
         parent._non_aqueous_set.add(self.local_name)
 
     def _is_phase_valid(self, phase):
-        # If no valid phases assigned, assume all are valid
+        # If no valid phases assigned
         if self.config.valid_phase_types is None:
+            try:
+                if phase.is_aqueous_phase():
+                    # If this is an aqueous phase, check for validaity
+                    return self._is_aqueous_phase_valid()
+            except AttributeError:
+                raise TypeError(
+                    "{} Phase {} is not a valid phase object or is undeclared."
+                    " Please check your phase declarations."
+                    .format(self.name, phase))
+            # Otherwise assume all are valid
             return True
 
         # Check for behaviour of phase, and see if that is a valid behaviour
@@ -198,6 +212,7 @@ class ComponentData(ProcessBlockData):
         # Method to indicate if a component type is stable in the aqueous phase
         # General components may not appear in aqueous phases
         return False
+
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
@@ -362,6 +377,13 @@ class ApparentData(SoluteData):
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """
+    CONFIG = SoluteData.CONFIG()
+    CONFIG.declare("dissociation_species", ConfigValue(
+        domain=dict,
+        default=None,
+        description="Dict of dissociation species",
+        doc="Dict of true species that this species will dissociate into "
+        "upon dissolution along with stoichiometric coefficients."))
 
     def _is_aqueous_phase_valid(self):
         return True

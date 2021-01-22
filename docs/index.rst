@@ -14,6 +14,8 @@ of the full range of advanced fossil energy systems, including chemical looping
 and other transformational |CO2| capture technologies, as well as integration with
 other new technologies such as supercritical |CO2|.
 
+For a more detailed overview of the :term:`IDAES integrated platform <IDAES-IP>`, see :doc:`this page <user_guide/concepts>`.
+
 Collaborating institutions
 --------------------------
 The IDAES team is comprised of collaborators from the following institutions:
@@ -25,8 +27,8 @@ The IDAES team is comprised of collaborators from the following institutions:
 * West Virginia University (subcontract to LBNL)
 * University of Notre Dame (subcontract to LBNL)
 
-Contact, contributions and more information
--------------------------------------------
+Contact us
+-----------
 General, background and overview information is available at the `IDAES main
 website <https://www.idaes.org>`_.  Framework development happens at our `GitHub
 repo <https://github.com/IDAES/idaes-pse>`_ where you can `report issues/bugs

@@ -30,16 +30,41 @@ __author__ = "John Eslick"
 import pytest
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from idaes.power_generation.unit_models import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
-from idaes.generic_models.unit_models import Heater
+from idaes.generic_models.unit_models import Heater, Valve
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
 from idaes.generic_models.control import PIDBlock, PIDForm
+import idaes.core.util.scaling as iscale
 
 solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
+
+def _valve_pressure_flow_cb(b):
+    """
+    For vapor F = Cv*sqrt(Pi**2 - Po**2)*f(x)
+    """
+    umeta = b.config.property_package.get_metadata().get_derived_units
+
+    b.Cv = pyo.Var(
+        initialize=0.1,
+        doc="Valve flow coefficent",
+        units=umeta("amount")/umeta("time")/umeta("pressure")
+    )
+    b.Cv.fix()
+
+    b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
+    b.pressure_flow_equation_scale = lambda x : x**2
+
+    @b.Constraint(b.flowsheet().config.time)
+    def pressure_flow_equation(b2, t):
+        Po = b2.control_volume.properties_out[t].pressure
+        Pi = b2.control_volume.properties_in[t].pressure
+        F = b2.control_volume.properties_in[t].flow_mol
+        Cv = b2.Cv
+        fun = b2.valve_function[t]
+        return F **2 == Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
 
 
 def _add_inlet_pressure_step(m, time=1, value=6.0e5):
@@ -99,18 +124,20 @@ def create_model(
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
         default={"phase_presentation": iapws95.PhaseType.LG})
     # Create the valve and tank models
-    m.fs.valve_1 = SteamValve(default={
+    m.fs.valve_1 = Valve(default={
         "dynamic": False,
         "has_holdup": False,
+        "pressure_flow_callback": _valve_pressure_flow_cb,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
     m.fs.tank = Heater(default={
         "has_holdup": True,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
-    m.fs.valve_2 = SteamValve(default={
+    m.fs.valve_2 = Valve(default={
         "dynamic": False,
         "has_holdup": False,
+        "pressure_flow_callback": _valve_pressure_flow_cb,
         "material_balance_type": MaterialBalanceType.componentTotal,
         "property_package": m.fs.prop_water})
 
@@ -218,6 +245,7 @@ def tpid(form):
     # Add a step change right at the end of the interval, to make sure we can
     # get a continuous solution across the two models
     _add_inlet_pressure_step(m_dynamic, time=4.5, value=5.5e5)
+    iscale.calculate_scaling_factors(m_dynamic)
     solver.solve(m_dynamic, tee=True)
 
     # Now create a model for the 5 to 10 second interval and set the inital
@@ -248,6 +276,7 @@ def tpid(form):
     m_dynamic2.fs.ctrl.err_d0.fix(pyo.value(m_dynamic.fs.ctrl.err_d[5]))
     m_dynamic2.fs.ctrl.err_i0.fix(pyo.value(m_dynamic.fs.ctrl.err_i_end))
 
+    iscale.calculate_scaling_factors(m_dynamic2)
     # As a lazy form of initialization, solve the steady state problem before
     # turning on the controller.
     solver.solve(m_dynamic2, tee=True)
