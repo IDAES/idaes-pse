@@ -76,7 +76,8 @@ class TestComponent():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
@@ -237,7 +238,8 @@ class TestSolute():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
@@ -339,7 +341,8 @@ class TestSovent():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
@@ -639,7 +642,8 @@ class TestApparent():
 
     @pytest.mark.unit
     def test_is_phase_valid_no_assignment(self, m):
-        assert m.comp._is_phase_valid("foo")
+        with pytest.raises(TypeError):
+            m.comp._is_phase_valid("foo")
 
     @pytest.mark.unit
     def test_is_phase_valid_liquid(self, m):
