@@ -12,6 +12,7 @@
 ##############################################################################
 from pyomo.environ import SolverFactory
 import pytest
+import idaes.core.plugins
 
 
 @pytest.mark.unit
@@ -25,3 +26,24 @@ def test_ipopt_available():
             "version of IPOPT available, as it is the default solver assumed "
             "by many IDAES examples and tests. See the IDAES install "
             "documentation for instructions on how to get IPOPT.")
+
+@pytest.mark.unit
+def test_ipopt_idaes_available():
+    """
+    Tries to set-up the IPOPT and returns exception if not available
+    """
+    if not SolverFactory('ipopt-idaes').available():
+        raise Exception(
+            "Could not find IPOPT. Users are strongly encouraged to have a "
+            "version of IPOPT available, as it is the default solver assumed "
+            "by many IDAES examples and tests. See the IDAES install "
+            "documentation for instructions on how to get IPOPT.")
+
+@pytest.mark.unit
+def test_ipopt_idaes_config():
+    """
+    Test that the default solver options are set
+    """
+    solver = SolverFactory('ipopt-idaes')
+    for k, v in idaes.cfg["ipopt-idaes"]["options"].items():
+        solver.options[k] = v

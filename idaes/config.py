@@ -63,6 +63,11 @@ default_config = """
         "reactions",
         "ui"
     ],
+    "ipopt-idaes":{
+        "options":{
+            "nlp_scaling_method":"user-scaling"
+        }
+    },
     "logging":{
         "version":1,
         "disable_existing_loggers":false,
@@ -118,6 +123,24 @@ def new_idaes_config_block():
     )
 
     _config.declare(
+        "ipopt-idaes",
+        pyomo.common.config.ConfigBlock(
+            implicit=False,
+            description="Default config for 'ipopt-idaes' solver",
+            doc="Default config for 'ipopt-iades' solver"
+        ),
+    )
+
+    _config["ipopt-idaes"].declare(
+        "options",
+        pyomo.common.config.ConfigBlock(
+            implicit=True,
+            description="Default solver options for 'ipopt-idaes'",
+            doc="Default solver options for 'ipopt-idaes' solver"
+        ),
+    )
+
+    _config.declare(
         "use_idaes_solvers",
         pyomo.common.config.ConfigValue(
             default=True,
@@ -154,6 +177,7 @@ def new_idaes_config_block():
         ),
     )
 
+
     d = json.loads(default_config)
     _config.set_value(d)
     logging.config.dictConfig(_config["logging"])
@@ -161,7 +185,7 @@ def new_idaes_config_block():
 
 
 def read_config(read_config, write_config):
-    """Read either a TOML formatted config file or a configuration dictionary.
+    """Read either a json formatted config file or a configuration dictionary.
     Args:
         config: A config file path or dict
     Returns:
