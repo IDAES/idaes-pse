@@ -51,6 +51,7 @@ base_units = {"time": pyunits.s,
               "amount": pyunits.mol,
               "temperature": pyunits.K}
 
+
 @declare_process_block_class("DummyParameterBlock")
 class DummyParameterData(GenericParameterData):
     def configure(self):
@@ -115,7 +116,7 @@ class TestGenericParameterBlock(object):
     @pytest.mark.unit
     def test_invalid_unit(self):
         m = ConcreteModel()
-        
+
         with pytest.raises(
                 ConfigurationError,
                 match="params recieved unexpected units for quantity time: "
@@ -199,6 +200,24 @@ class TestGenericParameterBlock(object):
                                "component_list": ["a", "d"],
                                "equation_of_state": "foo"},
                         "p2": {"equation_of_state": "bar"}},
+                    "base_units": base_units})
+
+    @pytest.mark.unit
+    def test_invalid_orphaned_component_in_phase_component_list(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Component c does not appear to be "
+                           "valid in any phase. Please check the component "
+                           "lists defined for each phase, and be sure you do "
+                           "not have generic Components in single-phase "
+                           "aqueous systems."):
+            m.params = DummyParameterBlock(default={
+                    "components": {"a": {}, "b": {}, "c": {}},
+                    "phases": {
+                        "p1": {"type": LiquidPhase,
+                               "component_list": ["a", "b"],
+                               "equation_of_state": "foo"}},
                     "base_units": base_units})
 
     @pytest.mark.unit
