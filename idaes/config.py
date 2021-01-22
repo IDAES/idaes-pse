@@ -65,7 +65,7 @@ default_config = """
     ],
     "ipopt-idaes":{
         "options":{
-            "nlp_scaling_method":"user-scaling"
+            "nlp_scaling_method":"gradient-based"
         }
     },
     "logging":{
@@ -144,7 +144,7 @@ def new_idaes_config_block():
         "nlp_scaling_method",
         pyomo.common.config.ConfigValue(
             domain=str,
-            default="user-scaling",
+            default="gradient-based",
             description="Ipopt NLP scaling method",
             doc="Ipopt NLP scaling method"
         ),
