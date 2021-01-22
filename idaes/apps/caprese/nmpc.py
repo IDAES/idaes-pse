@@ -56,7 +56,7 @@ from idaes.apps.caprese.common.config import (
         TimeResolutionOption,
         ControlPenaltyType,
         VariableCategory)
-from idaes.apps.caprese.model import (
+from idaes.apps.caprese.dynamic_block import (
         DynamicBlock,
         )
 from idaes.apps.caprese.controller import (
@@ -141,8 +141,3 @@ class NMPCSim(object):
             self.controller.set_sample_time(sample_time)
             self.plant.set_sample_time(sample_time)
             self.sample_time = sample_time
-
-        t0 = controller_time_set.first()
-        self.noise_bounds = [(0.0, var[t0].ub) for var in 
-                self.controller.measurement_vars]
-        self.noise_function = random.gauss
