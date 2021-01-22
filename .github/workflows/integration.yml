@@ -30,7 +30,7 @@ jobs:
     # NOTE: the name of the special label is hardcoded here
     # it would be better to extract it to a more global location, e.g. the workflow-level env context,
     # but the env context is not available in job-level if expressions (only step-level ones)
-    if: (github.event.name != 'labeled') || (github.event.label.name == 'CI:run-integration')
+    if: (github.event.action != 'labeled') || (github.event.label.name == 'CI:run-integration')
     runs-on: ubuntu-latest
     steps:
       - name: Notify
