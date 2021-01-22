@@ -8,5 +8,4 @@ class IpoptIdaes(IPOPT):
     def __init__(self, **kwds):
         super().__init__(**kwds)
         for k, v in idaes.cfg["ipopt-idaes"]["options"].items():
-            if k not in self.options:
-                self.options[k] = v
+            self.options[k] = v

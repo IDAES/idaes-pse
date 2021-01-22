@@ -140,14 +140,28 @@ def new_idaes_config_block():
         ),
     )
 
+    _config["ipopt-idaes"]["options"].declare(
+        "nlp_scaling_method",
+        pyomo.common.config.ConfigBlock(
+            domain=str,
+            default="user-scaling",
+            description="Ipopt NLP scaling method",
+            doc="Ipopt NLP scaling method"
+        ),
+    )
+
     _config.declare(
         "use_idaes_solvers",
         pyomo.common.config.ConfigValue(
             default=True,
             domain=bool,
-            description="Add the IDAES bin directory to the path.",
-            doc="Add the IDAES bin directory to the path such that solvers provided "
-            "by IDAES will be used in preference to previously installed solvers.",
+            description="If True, search the IDAES bin directory for executables"
+                        " first; otherwise, use IDAES bin directory as last resort.",
+            doc="If True the IDAES bin directory will be searched for executables "
+                "first, which will result in the solvers installed by IDAES being "
+                "used in preference to solvers installed on the machine.  If False, "
+                "IDAES will only fall back on solvers installed in the IDAES bin "
+                "directory if they are not otherwise available.",
         ),
     )
 
@@ -244,10 +258,22 @@ def get_data_directory():
 
 
 def setup_environment(bin_directory, use_idaes_solvers):
+    """
+    Set environment variables for the IDAES session.
+
+    Args:
+        bin_directory: directory to find idaes libraries and executables
+        use_idaes_solvers: If true look first in the idaes bin directory for
+                           executables if false look last in the idaes bin
+                           directory for executables.
+
+    Returns:
+        None
+    """
     if use_idaes_solvers:
-        # Add IDAES stuff to the path unless you configure otherwise
         os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
-        if os.name != 'nt':  # Windows (this is to find MinGW libs)
-            os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
-                [os.environ.get('LD_LIBRARY_PATH', ''), bin_directory]
-            )
+    else:
+        os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], bin_directory])
+    if os.name != 'nt':  # If not Windwos set lib search path, Windows uses PATH
+        os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
+            [os.environ.get('LD_LIBRARY_PATH', ''), bin_directory])
