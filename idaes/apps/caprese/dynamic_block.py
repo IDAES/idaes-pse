@@ -40,13 +40,15 @@ from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
 
 class _DynamicBlockData(_BlockData):
+    """ This class adds methods and data structures that are useful
+    for working with dynamic models. These include methods for
+    initialization and references to time-indexed variables.
+    """
     # TODO: This class should probably give the option to clone
     # the user's model.
 
     def _construct(self):
-        # Is it "bad practice" to have a construct method on a data object?
-        # ^ Yes, because this method needs to be called via DynamicBlock,
-        # not immediately when _DynamicBlockData.construct is invoked...
+        """ Generates time-indexed references and categorizes them. """
         model = self.mod
         time = self.time
         inputs = self._inputs
@@ -109,15 +111,20 @@ class _DynamicBlockData(_BlockData):
 
     @classmethod
     def get_category_block_name(cls, categ):
+        """ Gets block name from name of enum entry """
         categ_name = str(categ).split('.')[1]
         return categ_name + cls._block_suffix
 
     @classmethod
     def get_category_set_name(cls, categ):
+        """ Gets set name from name of enum entry """
         categ_name = str(categ).split('.')[1]
         return categ_name + cls._set_suffix
 
     def _add_category_blocks(self):
+        """ Adds an indexed block for each category of variable and
+        attach a reference to each variable to one of the BlockDatas.
+        """
         category_dict = self.category_dict
         var_name = self._var_name
         for categ, varlist in category_dict.items():
@@ -149,6 +156,7 @@ class _DynamicBlockData(_BlockData):
     _vectors_name = 'vectors'
 
     def _add_category_references(self):
+        """ Create a "time-indexed vector" for each category of variables. """
         category_dict = self.category_dict
 
         # Add a deactivated block to store all my `_NmpcVector`s
@@ -159,7 +167,6 @@ class _DynamicBlockData(_BlockData):
         self.vectors.deactivate()
 
         for categ in category_dict:
-            # TODO: use ctype as the key in category_dict
             ctype = CATEGORY_TYPE_MAP[categ]
             # Get the block that holds this category of var,
             # and the name of the attribute that holds the
@@ -168,8 +175,7 @@ class _DynamicBlockData(_BlockData):
             block_name = self.get_category_block_name(categ)
             var_name = self._var_name
 
-            # Get a slice of the block, e.g.
-            # self.DIFFERENTIAL_BLOCK[:]
+            # Get a slice of the block, e.g. self.DIFFERENTIAL_BLOCK[:]
             _slice = getattr(self, block_name)[:]
             #_slice = self.__getattribute__(block_name)[:]
             # Why does this work when self.__getattr__(block_name) does not?
@@ -192,14 +198,14 @@ class _DynamicBlockData(_BlockData):
                     Reference(_slice, ctype=_NmpcVector),
                     )
 
-    # Should be unnecessary here as time is added in DynamicBlock.construct
-    # But this is nice if the user wants to add time in a rule and doesn't
-    # want a long messy line of super().__setattr__.
+    # Time is added in DynamicBlock.construct but this is nice if the user wants
+    # to add time in a rule without a long messy line of super().__setattr__.
     def add_time(self):
         # Do this because I can't add a reference to a set
         super(_BlockData, self).__setattr__('time', self.time)
 
     def set_sample_time(self, sample_time, tolerance=1e-8):
+        """ Validates and sets sample time """
         self.validate_sample_time(sample_time, tolerance)
         self.sample_time = sample_time
 
@@ -213,6 +219,8 @@ class _DynamicBlockData(_BlockData):
 
         Args:
             sample_time: Sample time to check
+            tolerance: Tolerance within which time points must be integer
+                       multiples of sample time
 
         """
         time = self.time
@@ -278,14 +286,16 @@ class _DynamicBlockData(_BlockData):
             sample_idx,
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
             ):
+        """ Set values to setpoint values for variables of the
+        specified variable ctypes in the specified sample.
+        """
         time = self.time
         sample_point_indices = self.sample_point_indices
         i_0 = sample_point_indices[sample_idx-1]
         i_s = sample_point_indices[sample_idx]
         for var in self.component_objects(ctype):
             # `type(var)` is a subclass of `NmpcVar`, so I can
-            # access the `setpoint` attribute. Note that var is not
-            # an instance of `_NmpcVector`.
+            # access the `setpoint` attribute.
             #
             # Would like:
             # var[t1:ts].set_value(var.setpoint)
@@ -299,6 +309,9 @@ class _DynamicBlockData(_BlockData):
             sample_idx,
             ctype=(DiffVar, AlgVar, DerivVar),
             ):
+        """ Set values to initial values for variables of the
+        specified variable ctypes in the specified sample.
+        """
         time = self.time
         sample_point_indices = self.sample_point_indices
         i_0 = sample_point_indices[sample_idx-1]
@@ -314,6 +327,9 @@ class _DynamicBlockData(_BlockData):
     def initialize_to_setpoint(self, 
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
             ):
+        """ Sets values to setpoint values for specified variable
+        ctypes for all time points.
+        """
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
@@ -322,12 +338,19 @@ class _DynamicBlockData(_BlockData):
     def initialize_to_initial_conditions(self, 
             ctype=(DiffVar, AlgVar, DerivVar),
             ):
+        """ Sets values to initial values for specified variable
+        ctypes for all time points.
+        """
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
             self.initialize_sample_to_initial(i, ctype=ctype)
 
     def initialize_by_solving_elements(self, solver, **kwargs):
+        """ Solve the square problem with fixed inputs in each
+        of the time finite elements individually. This can be
+        thought of as a time integration.
+        """
         outlvl = kwargs.pop('outlvl', idaeslog.INFO)
         strip_var_bounds = kwargs.pop('strip_var_bounds', True)
         input_option = kwargs.pop('input_option', InputOption.CURRENT)
@@ -355,6 +378,8 @@ class _DynamicBlockData(_BlockData):
                     )
 
     def initialize_samples_by_element(self, samples, solver, **kwargs):
+        """ Solve the square problem with fixed inputs for the specified sambles
+        """
         # TODO: ConfigBlock for this class
         outlvl = kwargs.pop('outlvl', idaeslog.INFO)
         strip_var_bounds = kwargs.pop('strip_var_bounds', True)
@@ -395,11 +420,20 @@ class _DynamicBlockData(_BlockData):
                         )
 
     def set_variance(self, variance_list):
+        """ Set variance for corresponding NmpcVars to the values provided
+
+        Arguments:
+            variance_list: List of vardata, value tuples. The vardatas
+                           correspond to time-indexed references, and values
+                           are the variances.
+        """
         t0 = self.time.first()
         variance_map = ComponentMap(variance_list)
         for var, val in variance_list:
             nmpc_var = self.vardata_map[var]
             nmpc_var.variance = val
+        # MeasurementVars will not have their variance set since they are
+        # not mapped to in vardata_map
         for var in self.measurement_vars:
             if var[t0] in variance_map:
                 var.variance = variance_map[var[t0]]
@@ -431,17 +465,14 @@ class _DynamicBlockData(_BlockData):
 
     def advance_by_time(self,
             t_shift,
-            ctype=(
-                DiffVar,
-                DerivVar,
-                AlgVar,
-                InputVar,
-                FixedVar,
-                # Fixed variables are included I expect disturbances
+            ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
+                # Fixed variables are included as I expect disturbances
                 # should shift in time as well.
-                ),
             tolerance=1e-8,
             ):
+        """ Set values for the variables of the specified ctypes
+        to their values `t_shift` in the future.
+        """
         time = self.time
         # The outer loop is over time so we don't have to call
         # `find_nearest_index` for every variable.
@@ -458,15 +489,12 @@ class _DynamicBlockData(_BlockData):
                 var[t].set_value(var[ts].value)
 
     def advance_one_sample(self,
-            ctype=(
-                DiffVar,
-                DerivVar,
-                AlgVar,
-                InputVar,
-                FixedVar,
-                ),
+            ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
             tolerance=1e-8,
             ):
+        """ Set values for the variables of the specified ctypes
+        to their values one sample time in the future.
+        """
         sample_time = self.sample_time
         self.advance_by_time(
                 sample_time,
@@ -480,6 +508,9 @@ class _DynamicBlockData(_BlockData):
             include_t0=False,
             tolerance=1e-8,
             ):
+        """ Generate time points between the provided time point
+        and one sample time in the past.
+        """
         # TODO: Need to address the question of whether I want users 
         # passing around time points or the integer index of samples.
         time = self.time
@@ -492,7 +523,7 @@ class _DynamicBlockData(_BlockData):
             # Don't want to include first point in sample
             yield time[i]
 
-    def get_data(self,
+    def get_data_from_sample(self,
             ts,
             variables=(
                 VC.DIFFERENTIAL,
@@ -501,6 +532,10 @@ class _DynamicBlockData(_BlockData):
             tolerance=1e-8,
             include_t0=False,
             ):
+        """ Creates an `OrderedDict` that maps the time-indexed reference
+        of each variable provided to a list of its values over the sample
+        preceding the specified time point.
+        """
         time = self.time
         sample_time = self.sample_time
         category_dict = self.category_dict
@@ -528,6 +563,9 @@ class _DynamicBlockData(_BlockData):
         return data
 
     def add_ipopt_suffixes(self):
+        """ Adds suffixes for communicating dual variables with IPOPT """
+        # Maybe there should be some helper class to do solver-specific
+        # stuff like this...
         self.ipopt_zL_out = Suffix(direction=Suffix.IMPORT)
         self.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
 
@@ -549,8 +587,9 @@ class _DynamicBlockData(_BlockData):
                 ),
             tolerance=1e-8,
             ):
-        # We are interested in advancing the multipliers we
-        # sent to IPOPT.
+        """ Set the values of bound multipliers to the corresponding
+        values a time `t_shift` in the future.
+        """
         zL = self.ipopt_zL_in
         zU = self.ipopt_zU_in
         time = self.time
@@ -579,6 +618,9 @@ class _DynamicBlockData(_BlockData):
                 ),
             tolerance=1e-8,
             ):
+        """ Set the values of bound multipliers to the corresponding
+        values one sample time in the future.
+        """
         sample_time = self.sample_time
         self.advance_ipopt_multipliers(
                 sample_time,
@@ -587,6 +629,8 @@ class _DynamicBlockData(_BlockData):
                 )
 
 class DynamicBlock(Block):
+    """ This is the DynamicBlock class that the user will instantiate. """
+
     _ComponentDataClass = _DynamicBlockData
 
     def __new__(cls, *args, **kwds):
@@ -640,7 +684,6 @@ class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
 
 
 class IndexedDynamicBlock(DynamicBlock):
-
     def __init__(self, *args, **kwargs):
         DynamicBlock.__init__(self, *args, **kwargs)
 
