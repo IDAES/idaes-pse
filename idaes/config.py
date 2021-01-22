@@ -142,7 +142,7 @@ def new_idaes_config_block():
 
     _config["ipopt-idaes"]["options"].declare(
         "nlp_scaling_method",
-        pyomo.common.config.ConfigBlock(
+        pyomo.common.config.ConfigValue(
             domain=str,
             default="user-scaling",
             description="Ipopt NLP scaling method",
