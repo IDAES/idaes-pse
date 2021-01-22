@@ -1,8 +1,24 @@
-name: PR approved
+name: Integration
 
 on:
+  push:
+    branches:
+      - '*_rel'
+  schedule:
+    # run daily at 5:00 am UTC (12 am ET/9 pm PT)
+    - cron: '0 5 * * *'
+  repository_dispatch:
+    # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_integration`
+    types: [ci_run_integration]
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git hash (optional)
+        required: false
   pull_request:
-    types: [labeled]
+    types:
+      - labeled
 
 defaults:
   run:
@@ -14,13 +30,13 @@ jobs:
     # NOTE: the name of the special label is hardcoded here
     # it would be better to extract it to a more global location, e.g. the workflow-level env context,
     # but the env context is not available in job-level if expressions (only step-level ones)
-    if: contains(github.event.label.name, 'approved')
+    if: (github.event.action != 'labeled') || (github.event.label.name == 'CI:run-integration')
     runs-on: ubuntu-latest
     steps:
       - name: Notify
         run: echo "The integration tests will run"
   pytest:
-    name: Integration tests (py${{ matrix.python-version }}/${{ matrix.os }})
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
     needs: [check-skip]
     strategy:
@@ -37,6 +53,7 @@ jobs:
       - name: Display debug info
         run: |
           echo '${{ toJSON(matrix) }}'
+          echo '${{ toJSON(github.event) }}'
       - uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -50,7 +67,3 @@ jobs:
         uses: ./.github/actions/pytest
         with:
           markexpr: integration
-          extra-args: --cov
-      - name: Upload coverage report to Codecov
-        run: |
-          bash <(curl -s https://codecov.io/bash)
