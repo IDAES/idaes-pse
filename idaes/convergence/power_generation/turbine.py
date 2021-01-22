@@ -1,16 +1,16 @@
-
 import pyomo.environ as pyo
 import idaes.core as idaes_core
-from idaes.power_generation.unit_models.helm import HelmIsentropicCompressor
+from idaes.power_generation.unit_models.helm import HelmIsentropicTurbine
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.generic_models.properties import iapws95
 from pyomo.environ import units as pyunits
+import idaes
 
-def create_isentropic_compressor(f=1000, T_in=500, p_in=1e6, ratioP=1.5):
+def create_isentropic_turbine(f=1000, T_in=500, p_in=1e6, ratioP=0.7):
     m = pyo.ConcreteModel()
     m.fs = idaes_core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
-    m.fs.unit = HelmIsentropicCompressor(default={"property_package": m.fs.properties})
+    m.fs.unit = HelmIsentropicTurbine(default={"property_package": m.fs.properties})
     hin = iapws95.htpx(T_in*pyunits.K, p_in*pyunits.Pa) # J/mol
     m.fs.unit.inlet.flow_mol[0].fix(f)
     m.fs.unit.inlet.enth_mol[0].fix(hin)
@@ -20,8 +20,8 @@ def create_isentropic_compressor(f=1000, T_in=500, p_in=1e6, ratioP=1.5):
     m.fs.unit.initialize()
     return m
 
-
-class HelmIsentropicCompressorConvergenceEvaluation(cb.ConvergenceEvaluation):
+@idaes.register_convergence_class("HelmIsentropicTurbine")
+class HelmIsentropicTurbineConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """
         Returns the convergence evaluation specification for the
@@ -41,17 +41,17 @@ class HelmIsentropicCompressorConvergenceEvaluation(cb.ConvergenceEvaluation):
         s.add_sampled_input(
                 name='Inlet_Enthalpy',
                 pyomo_path='fs.unit.control_volume.properties_in[0].enth_mol',
-                lower=5000, upper=60000, distribution="uniform")
+                lower=5000, upper=80000, distribution="uniform")
 
         s.add_sampled_input(
                 name='Inlet_Pressure',
                 pyomo_path='fs.unit.control_volume.properties_in[0].pressure',
-                lower=1e5, upper=5e6, distribution="uniform")
+                lower=1e5, upper=1e7, distribution="uniform")
 
         s.add_sampled_input(
                 name='Pressure_Ratio',
                 pyomo_path='fs.unit.ratioP[0]',
-                lower=1, upper=4, distribution="uniform")
+                lower=0.1, upper=1, distribution="uniform")
 
         s.add_sampled_input(
                 name='Efficiency',
@@ -69,7 +69,7 @@ class HelmIsentropicCompressorConvergenceEvaluation(cb.ConvergenceEvaluation):
         -------
            Pyomo model : returns a pyomo model of the PressureChanger unit
         """
-        return create_isentropic_compressor()
+        return create_isentropic_turbine()
 
     def get_solver(self):
         """

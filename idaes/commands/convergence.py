@@ -14,20 +14,20 @@
 
 __author__ = "John Eslick"
 
-import inspect
+import importlib
 import re
 import os
 import click
 import logging
 from pyomo.common.dependencies import attempt_import
 from idaes.commands import cb
+import idaes.convergence
 import idaes
+
 
 cnv = attempt_import('idaes.core.util.convergence.convergence_base')[0]
 dmf = attempt_import('idaes.dmf')[0]
 dmf_error = attempt_import('idaes.dmf.errors')[0]
-pkgutil = attempt_import('pkgutil')[0]
-
 
 _log = logging.getLogger("idaes.commands.convergence")
 
@@ -39,8 +39,14 @@ _log = logging.getLogger("idaes.commands.convergence")
 @click.option('-N', '--number-samples', default=None, type=int, required=True,
     help="Number of samples")
 @click.option('--seed', default=None, type=int)
+@click.option('-m', '--convergence_module', default=None, type=str, required=False,
+    help="Addtional module that registers ConvergenceEvaluation classes")
 def convergence_sample(
-    evaluation_class, sample_file, number_samples, seed):
+    evaluation_class, sample_file, number_samples, seed, convergence_module):
+    if convergence_module is not None:
+        mod = importlib.import_module(convergence_module)
+    if evaluation_class in idaes._convergence_classes:
+        evaluation_class = idaes._convergence_classes[evaluation_class]
     try:
         conv_eval_class = cnv._class_import(evaluation_class)
         conv_eval = conv_eval_class()
@@ -61,7 +67,11 @@ def convergence_sample(
 @cb.command(name="convergence-eval", help="Run convergence sample evaluation.")
 @click.option('-s', '--sample-file', default=None, type=str, required=True)
 @click.option('-D', '--dmf', default=None, type=str)
-def convergence_eval(sample_file, dmf):
+@click.option('-m', '--convergence_module', default=None, type=str, required=False,
+    help="Addtional module that registers ConvergenceEvaluation classes")
+def convergence_eval(sample_file, dmf, convergence_module):
+    if convergence_module is not None:
+        mod = importlib.import_module(convergence_module)
     if dmf is not None:
         try:
             dmf = dmf.DMF(dmf)
@@ -76,17 +86,19 @@ def convergence_eval(sample_file, dmf):
 
 
 @cb.command(name="convergence-search", help="Search for convergence test classes.")
-@click.option('-r', '--regex', default=".+ConvergenceEvaluation$", type=str)
-def convergence_search(regex):
-    pat = re.compile(regex)
-    for loader, module_name, is_pkg in pkgutil.walk_packages(idaes.__path__):
-        try:
-            m = loader.find_module(module_name).load_module(module_name)
-            c = inspect.getmembers(m, inspect.isclass)
-        except:
-            continue
-        if c:
-            for i in c:
-                cname = ".".join(["idaes", m.__name__, i[0]])
-                if pat.match(i[0]):
-                    click.echo(cname)
+@click.option('-r', '--regex', default=None, type=str)
+@click.option('-m', '--convergence_module', default=None, type=str, required=False,
+    help="Addtional module that registers ConvergenceEvaluation classes")
+def convergence_search(regex, convergence_module):
+    if convergence_module is not None:
+        mod = importlib.import_module(convergence_module)
+    if regex is not None:
+        pat = re.compile(regex)
+    else:
+        pat = None
+    l = []
+    for k, v in idaes._convergence_classes.items():
+        if pat is None or pat.match(k) or pat.match(v):
+            l.append(k)
+    for k in sorted(l):
+        click.echo(f"{k}:\n   {idaes._convergence_classes[k]}")

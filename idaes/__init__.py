@@ -12,6 +12,8 @@ from .ver import __version__  # noqa
 
 _log = logging.getLogger(__name__)
 
+_convergence_classes = {}
+
 # Standard locations for config file, binary libraries and executables, ...
 data_directory, bin_directory = config.get_data_directory()
 
@@ -43,3 +45,9 @@ def _create_bin_dir():
     config.create_dir(bin_directory)
 
 cfg = _config
+
+def register_convergence_class(name):
+    def _register_convergence_class(cls):
+        _convergence_classes[name] = ".".join([cls.__module__, cls.__name__])
+        return cls
+    return _register_convergence_class
