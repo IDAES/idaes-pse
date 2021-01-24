@@ -65,6 +65,10 @@ class _ControllerBlockData(_DynamicBlockData):
                 )
         was_fixed = ComponentMap()
 
+        # Cache "important" values to re-load after solve
+        init_input = list(self.vectors.input[:, t0].value)
+        init_meas = list(self.vectors.measurement[:, t0].value)
+
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
         # it to be fixed if steady state is required.
@@ -115,6 +119,10 @@ class _ControllerBlockData(_DynamicBlockData):
         setpoint_ctype = (DiffVar, AlgVar, InputVar, FixedVar, DerivVar)
         for var in self.component_objects(setpoint_ctype):
             var.setpoint = var[t0].value
+
+        # Restore cached values
+        self.vectors.input.values = init_input
+        self.vectors.measurement.values = init_meas
 
     def add_setpoint_objective(self, 
             setpoint,
