@@ -21,7 +21,7 @@ def create_isentropic_compressor(f=1000, T_in=500, p_in=1e6, ratioP=1.5):
     m.fs.unit.initialize()
     return m
 
-@idaes.register_convergence_class("HelmIsentropicCompressor")
+@cb.register_convergence_class("HelmIsentropicCompressor")
 class HelmIsentropicCompressorConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """

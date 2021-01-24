@@ -80,6 +80,17 @@ import idaes.logger as idaeslog
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
+
+convergence_classes = {}
+
+
+def register_convergence_class(name):
+    def _register_convergence_class(cls):
+        convergence_classes[name] = ".".join([cls.__module__, cls.__name__])
+        return cls
+    return _register_convergence_class
+
+
 class ConvergenceEvaluationSpecification(object):
     def __init__(self):
         self._inputs = OrderedDict()

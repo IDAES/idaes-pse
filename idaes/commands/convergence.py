@@ -22,7 +22,6 @@ import logging
 from pyomo.common.dependencies import attempt_import
 from idaes.commands import cb
 import idaes.convergence
-import idaes
 
 
 cnv = attempt_import('idaes.core.util.convergence.convergence_base')[0]
@@ -45,8 +44,8 @@ def convergence_sample(
     evaluation_class, sample_file, number_samples, seed, convergence_module):
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
-    if evaluation_class in idaes._convergence_classes:
-        evaluation_class = idaes._convergence_classes[evaluation_class]
+    if evaluation_class in cnv.convergence_classes:
+        evaluation_class = cnv.convergence_classes[evaluation_class]
     try:
         conv_eval_class = cnv._class_import(evaluation_class)
         conv_eval = conv_eval_class()
@@ -97,8 +96,8 @@ def convergence_search(regex, convergence_module):
     else:
         pat = None
     l = []
-    for k, v in idaes._convergence_classes.items():
+    for k, v in cnv.convergence_classes.items():
         if pat is None or pat.match(k) or pat.match(v):
             l.append(k)
     for k in sorted(l):
-        click.echo(f"{k}:\n   {idaes._convergence_classes[k]}")
+        click.echo(f"{k}:\n   {cnv.convergence_classes[k]}")
