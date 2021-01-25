@@ -1,22 +1,29 @@
-name: Main
+name: Tests
 
 on:
   push:
     branches:
-      # TODO this could also be run when pushing to main, but could end up clogging the CI when merging multiple PRs
-      - rel_*
+      - main
+      - '*_rel'
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
     - cron: '0 5 * * *'
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
-    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=run_tests`
-    types: [run_tests]
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
+    types: [ci_run_tests]
   workflow_dispatch:
     inputs:
       git-ref:
         description: Git hash (optional)
         required: false
+  pull_request:
+    types:
+      - opened
+      # ready_for_review occurs when a draft PR is turned to non-draft
+      - ready_for_review
+      # synchronize occurs whenever commits are pushed to the PR branch
+      - synchronize
 
 env:
   # default Python version to use for checks that do not require multiple versions
@@ -28,7 +35,7 @@ defaults:
 
 jobs:
   pytest:
-    name: All tests (py${{ matrix.python-version }}/${{ matrix.os }})
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -53,15 +60,13 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: '.'
-      - name: Run pytest (all)
+      - name: Run pytest (not integration) with coverage
         uses: ./.github/actions/pytest
         with:
-          # empty markexpr will cause all tests to be collected
-          markexpr: ''
+          markexpr: not integration
           extra-args: --cov
       - name: Upload coverage report to Codecov
-        run: |
-          bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@v1
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest

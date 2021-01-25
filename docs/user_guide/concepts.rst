@@ -1,13 +1,78 @@
 ﻿Concepts
 ========
 
-The IDAES Integrated Platform combines an extensible, equation-oriented process modeling
-framework with advanced solver and computer architectures to enable advanced process systems
-engineering capabilities. The platform is based on the Python-based algebraic modeling language
-Pyomo, and while not necessary, users may benefit from a basic familiarity with Pyomo
-(`link to documentation <https://pyomo.readthedocs.io/en/stable/index.html>`_).
+This page gives a conceptual overview of the IDAES platform and provides terminology for the different
+components of that platform.
 
-The IDAES Integrated Platform was designed to be modular, and is based on the
+.. rubric:: Contents
+
+.. contents::
+    :depth: 3
+    :local:
+
+IDAES-IP
+--------
+
+Description
+^^^^^^^^^^^
+The IDAES integrated platform (IDAES-IP) supports the full process modeling lifecycle from conceptual design to dynamic optimization and
+control within a single modeling environment. At the center of this platform is the Core Modeling Framework
+(:term:`IDAES-CMF`) which leverages the open source, U.S. Department of Energy-funded extensible algebraic modeling
+environment, :term:`Pyomo`.
+
+Below is a diagram showing the components of the IDAES Integrated Platform (IDAES-IP).
+
+.. image:: ../_images/IDAES-IP.png
+
+Terminology
+^^^^^^^^^^^
+The following terms are used in the diagram above, and throughout this documentation.
+
+.. glossary::
+
+    IDAES-IP
+        IDAES integrated platform, described on this page
+
+    IDAES-Core
+        The software package that includes the Core Modeling Framework (IDAES-CMF); process, unit, and property model libraries;
+        data management, artificial intelligence and uncertainty quantification tools; and graphical user interfaces.
+
+    IDAES-CMF
+        The IDAES-CMF is the center of the IDAES-Core. It extends :term:`Pyomo`'s block-based hierarchical modeling
+        constructs to create a library of models for common process unit operations and thermophysical properties,
+        along with a framework for the rapid development of process flowsheets.
+
+    IDAES-AI
+        Artificial intelligence and machine learning tools
+
+    IDAES-UQ
+        Tools supporting rigorous uncertainty quantification and optimization under uncertainty
+
+    Graphical User Interfaces
+        Tools for graphical interactive work, such as visualization of IDAES flowsheets
+
+    Python programming environments
+        Jupyter Notebook examples and extensions for interactive scripting in Python
+
+    Data Management (IDAES-DMF)
+        Data Management Framework (DMF) supporting provenance for IDAES workflows
+
+    Pyomo
+        Open source, U.S. Department of Energy-funded extensible algebraic modeling environment (AML).
+        For more information, see the `Pyomo website <https://pyomo.org>`_.
+
+    IDAES-Materials
+    IDAES-Design
+    IDAES-Enterprise
+    IDAES-Operations
+         Domain-specific tools for materials design, process design, enterprise-wide optimization, and control.
+
+IDAES-CMF
+---------
+
+Overview
+^^^^^^^^
+The core modeling framework of IDAES was designed to be modular, and is based on the
 block-hierarchical structure shown below:
 
 .. image:: ../_images/IDAES_structure.png
@@ -42,7 +107,7 @@ range of different problems, such as:
 * conceptual design (superstructure problems).
 
 Modeling Components
--------------------
+^^^^^^^^^^^^^^^^^^^
 The IDAES Integrated Platform represents each level within the hierarchy above using
 “modeling components”. Each of these components represents a part of the overall model structure
 and form the basic building blocks of any IDAES process model. An introduction to each of the
@@ -50,7 +115,7 @@ IDAES modeling components can be found
 :ref:`here<user_guide/components/index:Components>`.
 
 Model Libraries
----------------
+^^^^^^^^^^^^^^^
 To provide a starting point for modelers in using the process modeling tools, the IDAES Integrated
 Platform contains a library of models for common unit operations and thermophysical
 properties. Modelers can use these out-of-the-box models to represent their process applications or
@@ -60,7 +125,7 @@ their needs. Documentation of the available model libraries can be found
 :ref:`here<user_guide/model_libraries/index:IDAES Model Libraries>`.
 
 Modeling Extensions
---------------------
+^^^^^^^^^^^^^^^^^^^
 The IDAES Integrated Platform also provides users with access to a number of cutting edge tools not
 directly related to process modeling. These tools are collected under the heading of Modeling
 Extensions, and information on them can be found
