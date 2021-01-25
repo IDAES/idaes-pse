@@ -20,7 +20,7 @@ def create_isentropic_turbine(f=1000, T_in=500, p_in=1e6, ratioP=0.7):
     m.fs.unit.initialize()
     return m
 
-@idaes.register_convergence_class("HelmIsentropicTurbine")
+@cb.register_convergence_class("HelmIsentropicTurbine")
 class HelmIsentropicTurbineConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """

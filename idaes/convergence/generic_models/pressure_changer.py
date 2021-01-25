@@ -21,13 +21,12 @@ from idaes.generic_models.unit_models.pressure_changer import (
 
 # Import property package for testing
 from idaes.generic_models.properties import iapws95 as pp
-import idaes
 '''
 This module contains the code for convergence testing of the
 PressureChanger model
 '''
 
-@idaes.register_convergence_class("PressureChanger")
+@cb.register_convergence_class("PressureChanger")
 class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """
