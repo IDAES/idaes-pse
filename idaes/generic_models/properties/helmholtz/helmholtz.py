@@ -687,8 +687,8 @@ example, if pyomo units is imported as pyunits,
             lb = self.config.enthalpy_mass_bounds[0]*self.mw
             ub = self.config.enthalpy_mass_bounds[1]*self.mw
             self.default_enthalpy_bounds = (
-                pyunits.convert(lb, u),
-                pyunits.convert(ub, u)
+                value(pyunits.convert(lb, u)),
+                value(pyunits.convert(ub, u))
             )
 
         # Create Component objects
