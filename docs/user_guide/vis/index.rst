@@ -70,24 +70,12 @@ This means the initialization succeeded, and you can move on.
 
 .. note::
 
-    If you see instead something like the following, you probably didn't run the notebook within
+    If you see instead a "ModuleNotFoundError" message, you probably didn't run the notebook within
     a Python environment where IDAES is installed. To fix, first try other Python environments, or "kernels",
     from under the '*Kernel -> Change kernel*' menu. If that doesn't work, review
     the :ref:`installation instructions <IDAES Installation>`.
     To pick up changes in the installation, the best thing to do is close this notebook and exit the current running
-    Jupyter. Then, from inside the installed IDAES environment, try again to run the command ``jupyter notebook`` ::
-
-        ---------------------------------------------------------------------------
-        ModuleNotFoundError                       Traceback (most recent call last)
-        <ipython-input-2-ad88ea7f7460> in <module>
-        ----> 1 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
-              2 from idaes.core import FlowsheetBlock
-              3 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-              4     import BTXParameterBlock
-              5 from idaes.generic_models.unit_models import Flash
-
-        ModuleNotFoundError: No module named 'pyomo'
-
+    Jupyter. Then, from inside the installed IDAES environment, try again to run the command ``jupyter notebook``.
 
 Optionally, save the notebook ('File -> Save' or Ctrl-S) with an appropriate name, like "Flowsheet visualization quickstart".
 
