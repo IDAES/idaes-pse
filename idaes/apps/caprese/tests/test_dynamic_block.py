@@ -1063,3 +1063,21 @@ class TestDynamicBlock(object):
             var.set_value(val)
         meas = list(blk.generate_measurements_at_time(ts))
         assert meas == vals
+
+    def test_inject_inputs(self):
+        blk = self.make_block()
+        time = blk.time
+        vals = list(0.25*i for i in blk.INPUT_SET)
+        blk.inject_inputs(vals)
+        for b, val in zip(blk.INPUT_BLOCK.values(), vals):
+            for t in time:
+                assert b.var[t].value == val
+
+    def test_load_measurements(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+        vals = list(0.25*i for i in blk.MEASUREMENT_SET)
+        blk.load_measurements(vals)
+        for b, val in zip(blk.MEASUREMENT_BLOCK.values(), vals):
+            assert b.var[t0].value == val
