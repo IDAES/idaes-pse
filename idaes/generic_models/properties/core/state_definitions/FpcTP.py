@@ -21,6 +21,11 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
 
 
 def set_metadata(b):
@@ -33,6 +38,19 @@ def define_state(b):
     # calculations re not always needed
     b.always_flash = False
 
+    # Check that only necessary state_bounds are defined
+    expected_keys = ["flow_mol_phase_comp", "enth_mol",
+                     "temperature", "pressure"]
+    if (b.params.config.state_bounds is not None and
+            any(b.params.config.state_bounds.keys()) not in expected_keys):
+        for k in b.params.config.state_bounds.keys():
+            if k not in expected_keys:
+                raise ConfigurationError(
+                    "{} - found unexpected state_bounds key {}. Please ensure "
+                    "bounds are provided only for expected state variables "
+                    "and that you have typed the variable names correctly."
+                    .format(b.name, k))
+
     units = b.params.get_metadata().derived_units
     # Get bounds and initial values from config args
     f_bounds, f_init = get_bounds_from_config(
@@ -43,7 +61,7 @@ def define_state(b):
         b, "pressure", units["pressure"])
 
     # Add state variables
-    b.flow_mol_phase_comp = Var(b.params._phase_component_set,
+    b.flow_mol_phase_comp = Var(b.phase_component_set,
                                 initialize=f_init,
                                 domain=NonNegativeReals,
                                 bounds=f_bounds,
@@ -63,36 +81,36 @@ def define_state(b):
     # Add supporting variables
     b.flow_mol = Expression(
         expr=sum(b.flow_mol_phase_comp[i]
-                 for i in b.params._phase_component_set),
+                 for i in b.phase_component_set),
         doc="Total molar flowrate")
 
     def flow_mol_phase(b, p):
         return sum(b.flow_mol_phase_comp[p, j]
-                   for j in b.params.component_list
-                   if (p, j) in b.params._phase_component_set)
-    b.flow_mol_phase = Expression(b.params.phase_list,
+                   for j in b.component_list
+                   if (p, j) in b.phase_component_set)
+    b.flow_mol_phase = Expression(b.phase_list,
                                   rule=flow_mol_phase,
                                   doc='Phase molar flow rates')
 
     def rule_flow_mol_comp(b, j):
         return sum(b.flow_mol_phase_comp[p, j]
-                   for p in b.params.phase_list
-                   if (p, j) in b.params._phase_component_set)
-    b.flow_mol_comp = Expression(b.params.component_list,
+                   for p in b.phase_list
+                   if (p, j) in b.phase_component_set)
+    b.flow_mol_comp = Expression(b.component_list,
                                  rule=rule_flow_mol_comp,
                                  doc='Component molar flow rates')
 
     def mole_frac_comp(b, j):
         return (sum(b.flow_mol_phase_comp[p, j]
-                    for p in b.params.phase_list
-                    if (p, j) in b.params._phase_component_set) / b.flow_mol)
-    b.mole_frac_comp = Expression(b.params.component_list,
+                    for p in b.phase_list
+                    if (p, j) in b.phase_component_set) / b.flow_mol)
+    b.mole_frac_comp = Expression(b.component_list,
                                   rule=mole_frac_comp,
                                   doc='Mixture mole fractions')
 
     b.mole_frac_phase_comp = Var(
-            b.params._phase_component_set,
-            initialize=1/len(b.params.component_list),
+            b.phase_component_set,
+            initialize=1/len(b.component_list),
             doc='Phase mole fractions',
             units=None)
 
@@ -100,15 +118,15 @@ def define_state(b):
         return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
             b.flow_mol_phase_comp[p, j]
     b.mole_frac_phase_comp_eq = Constraint(
-        b.params._phase_component_set, rule=rule_mole_frac_phase_comp)
+        b.phase_component_set, rule=rule_mole_frac_phase_comp)
 
     def rule_phase_frac(b, p):
-        if len(b.params.phase_list) == 1:
+        if len(b.phase_list) == 1:
             return 1
         else:
             return b.flow_mol_phase[p] / b.flow_mol
     b.phase_frac = Expression(
-        b.params.phase_list,
+        b.phase_list,
         rule=rule_phase_frac,
         doc='Phase fractions')
 
@@ -126,7 +144,7 @@ def define_state(b):
 
     def get_material_density_terms_FpcTP(p, j):
         """Create material density terms."""
-        if j in b.params.component_list:
+        if j in b.component_list:
             return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
@@ -165,7 +183,7 @@ def define_state(b):
 
 
 def state_initialization(b):
-    for i in b.params._phase_component_set:
+    for i in b.phase_component_set:
         b.mole_frac_phase_comp[i].value = value(
             b.flow_mol_phase_comp[i] / b.flow_mol_phase[i[0]])
 

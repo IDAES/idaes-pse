@@ -26,13 +26,12 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.testing import get_default_solver
 import idaes.core.util.unit_costing as cs
-from idaes.generic_models.unit_models.flash import Flash, EnergySplittingType
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.generic_models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
 )
+import idaes.core.util.unit_costing as costing
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
@@ -44,7 +43,7 @@ solver = get_default_solver()
 def test_costing_FH_build():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.get_costing()
+    m.fs.get_costing(year='2014', integer_n_units=True)
     m.fs.costing.CE_index = 550  # for testing only
     m.fs.unit = pyo.Block()
     m.fs.unit.heat_duty = pyo.Var(initialize=1e6,
@@ -64,7 +63,7 @@ def test_costing_FH_build():
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
+    assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -92,8 +91,11 @@ def test_costing_FH_solve():
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
-
+    assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
+    # initialize costing block
+    costing.initialize(m.fs.unit.costing)
+    assert (pytest.approx(pyo.value(m.fs.unit.costing.purchase_cost),
+                          abs=1e-2) == 962795.521)
     results = solver.solve(m, tee=False)
     # Check for optimal solution
     assert results.solver.termination_condition == \
@@ -152,7 +154,7 @@ def test_costing_distillation_solve():
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
+    assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
 
     results = solver.solve(m, tee=False)
     # Check for optimal solution
@@ -203,16 +205,16 @@ def test_blower_build_and_solve():
 
     m.fs.unit.deltaP.fix(144790-99973.98)
     m.fs.unit.efficiency_isentropic.fix(0.9)
-    m.fs.unit.initialize()
-    m.fs.unit.get_costing(mover_type='fan')
 
-    calculate_variable_from_constraint(
-        m.fs.unit.costing.purchase_cost,
-        m.fs.unit.costing.cp_cost_eq)
+    m.fs.unit.get_costing(mover_type='fan')
+    m.fs.unit.initialize()
+    assert (pytest.approx(pyo.value(m.fs.unit.costing.purchase_cost),
+                          abs=1e-2) == 272595.280)
+
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
+    assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
     results = solver.solve(m, tee=True)
     assert results.solver.termination_condition == \
         pyo.TerminationCondition.optimal
@@ -257,16 +259,18 @@ def test_compressor_fan():
 
     m.fs.unit.deltaP.fix(101325-98658.6)
     m.fs.unit.efficiency_isentropic.fix(0.9)
-    m.fs.unit.initialize()
+
     m.fs.unit.get_costing(mover_type='fan')
 
-    calculate_variable_from_constraint(
-            m.fs.unit.costing.purchase_cost,
-            m.fs.unit.costing.cp_cost_eq)
+    m.fs.unit.initialize()
+    # make sure costing initialized correctly
+    assert (pytest.approx(pyo.value(m.fs.unit.costing.purchase_cost),
+                          abs=1e-2) == 22106.9807)
+
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
     assert isinstance(m.fs.unit.costing.purchase_cost, pyo.Var)
-    assert isinstance(m.fs.unit.costing.base_cost, pyo.Var)
+    assert isinstance(m.fs.unit.costing.base_cost_per_unit, pyo.Var)
     results = solver.solve(m, tee=True)
     assert results.solver.termination_condition == \
         pyo.TerminationCondition.optimal

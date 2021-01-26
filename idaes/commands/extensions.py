@@ -23,17 +23,18 @@ from idaes.commands import cb
 _log = logging.getLogger("idaes.commands.extensions")
 
 
-def print_extensions_version():
+def print_extensions_version(library_only=False):
     click.echo("---------------------------------------------------")
     click.echo("IDAES Extensions Build Versions")
     click.echo("===================================================")
-    v = os.path.join(idaes.bin_directory, "version_solvers.txt")
-    try:
-        with open(v, "r") as f:
-            v = f.readline().strip()
-    except FileNotFoundError:
-        v = "no version file found"
-    click.echo("Solvers:  v{}".format(v))
+    if not library_only:
+        v = os.path.join(idaes.bin_directory, "version_solvers.txt")
+        try:
+            with open(v, "r") as f:
+                v = f.readline().strip()
+        except FileNotFoundError:
+            v = "no version file found"
+        click.echo("Solvers:  v{}".format(v))
     v = os.path.join(idaes.bin_directory, "version_lib.txt")
     try:
         with open(v, "r") as f:
@@ -42,6 +43,7 @@ def print_extensions_version():
         v = "no version file found"
     click.echo("Library:  v{}".format(v))
     click.echo("===================================================")
+    return 0
 
 
 @cb.command(name="get-extensions-platforms", help="List binary extension platforms")
@@ -55,18 +57,48 @@ def get_extensions_platforms():
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--release",
-    help="Official binary release to download",
+    help="Optional, specify an official binary release to download",
     default=None)
 @click.option(
     "--url",
-    help="URL to download solvers/libraries from, release must not be specified",
+    help="Optional, URL to download solvers/libraries from",
     default=None)
 @click.option(
     "--platform",
-    help="Platform to download binaries for (default=auto)",
+    help="Platform to download binaries for. Use 'idaes get-extensions-platforms'"
+         " for a list of available platforms (default=auto)",
     default="auto")
+@click.option(
+    "--insecure",
+    is_flag=True,
+    help="Don't verify download location")
+@click.option(
+    "--cacert",
+    help="Specify certificate file to verify download location",
+    default=None)
+@click.option(
+    "--nochecksum",
+    is_flag=True,
+    help="Don't verify the file checksum")
+@click.option(
+    "--library-only",
+    is_flag=True,
+    help="Only install shared physical property function libraries, not solvers")
+@click.option(
+    "--no-download",
+    is_flag=True,
+    help="Don't download anything, but report what would be done")
 @click.option("--verbose", help="Show details", is_flag=True)
-def get_extensions(release, url, verbose, platform):
+def get_extensions(
+    release,
+    url,
+    insecure,
+    cacert,
+    verbose,
+    platform,
+    nochecksum,
+    library_only,
+    no_download):
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -74,14 +106,26 @@ def get_extensions(release, url, verbose, platform):
         click.echo("\n* You must provide either a release or url not both.")
     elif url is not None or release is not None:
         click.echo("Getting files...")
-        idaes.solvers.download_binaries(release, url, verbose, platform)
+        d = idaes.solvers.download_binaries(
+            release,
+            url,
+            insecure,
+            cacert,
+            verbose,
+            platform,
+            nochecksum,
+            library_only,
+            no_download)
         click.echo("Done")
-        print_extensions_version()
+        if no_download:
+            for k, i in d.items():
+                click.echo(f"{k:14}: {i}")
+        else:
+            print_extensions_version(library_only)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
 
 
-
 @cb.command(name="ver-extensions", help="Get solver and library IDAES package version")
 def ver_extensions():
-    print_extensions_version()
+    return print_extensions_version()
