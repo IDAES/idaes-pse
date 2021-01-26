@@ -9,7 +9,7 @@ Feedwater Heater Dynamic (0D)
 
 The FWH0DDynamic model is a 0D feedwater heater model suitable for dynamic modeling.  
 It is intended to be used primarily with the 
-:ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/water:Water/Steam - IAPWS95>` property package. 
+:ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>` property package. 
 The feedwater heater is split into three sections. The condensing section is required while 
 the desuperheating and drain cooling sections are optional. There is also an optional mixer 
 for adding a drain stream from another feedwater heater to the condensing section.  The figure 

@@ -43,7 +43,7 @@ Main Models used:
 
 Property packages used:
 
-* Helmholtz Equation of State (IAPWS95): Water and steam :ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/water:Water/Steam - IAPWS95>`
+* Helmholtz Equation of State (IAPWS95): Water and steam :ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>`
 * IDEAL GAS: Air and Flue Gas :ref:`FlueGas <technical_specs/model_libraries/power_generation/properties/flue_gas:Flue Gas Property Package>`
 
 Introduction
