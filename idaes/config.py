@@ -18,6 +18,9 @@ import importlib
 
 _log = logging.getLogger(__name__)
 default_binary_release = "2.2.2"
+release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
+release_checksum_url = \
+    "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
 binary_platform_map = {
     "rhel6": "centos6",
     "rhel7": "centos7",
@@ -226,4 +229,8 @@ def setup_environment(bin_directory, use_idaes_solvers):
         if os.name != 'nt':  # Windows (this is to find MinGW libs)
             os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
                 [os.environ.get('LD_LIBRARY_PATH', ''), bin_directory]
+            )
+            # This is for OSX, but won't hurt other UNIX
+            os.environ['DYLD_LIBRARY_PATH'] = os.pathsep.join(
+                [os.environ.get('DYLD_LIBRARY_PATH', ''), bin_directory]
             )

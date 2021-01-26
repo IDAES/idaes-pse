@@ -113,9 +113,29 @@ class TestMixPh(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = iapws95.Iapws95ParameterBlock()
-
+        model.params = iapws95.Iapws95ParameterBlock(default={
+                "temperature_bounds":(249*pyunits.K, 2501*pyunits.K),
+                "pressure_bounds":(0.11*pyunits.Pa, 1.1e9*pyunits.Pa),
+                "enthalpy_mol_bounds":(
+                    0.1*pyunits.J/pyunits.mol, 1.1e5*pyunits.J/pyunits.mol),
+            }
+        )
         return model
+
+    @pytest.mark.unit
+    def test_config_enth_mass(self, model):
+        model = ConcreteModel()
+        l = 0.1/0.018
+        u = 1.1e5/0.018
+        model.params = iapws95.Iapws95ParameterBlock(default={
+                "enthalpy_mass_bounds":(
+                    l*pyunits.J/pyunits.kg,
+                    u*pyunits.J/pyunits.kg)
+            }
+        )
+        assert pytest.approx(0.1, rel=1e-3) == model.params.default_enthalpy_bounds[0]
+        assert pytest.approx(1.1e5, rel=1e-3) == model.params.default_enthalpy_bounds[1]
+
 
     @pytest.mark.unit
     def test_config(self, model):
@@ -125,6 +145,13 @@ class TestMixPh(object):
         assert len(model.params.phase_list) == 1
         for i in model.params.phase_list:
             assert i in ["Mix"]
+
+        assert pytest.approx(249) == model.params.default_temperature_bounds[0]
+        assert pytest.approx(2501) == model.params.default_temperature_bounds[1]
+        assert pytest.approx(0.11) == model.params.default_pressure_bounds[0]
+        assert pytest.approx(1.1e9) == model.params.default_pressure_bounds[1]
+        assert pytest.approx(0.1) == model.params.default_enthalpy_bounds[0]
+        assert pytest.approx(1.1e5) == model.params.default_enthalpy_bounds[1]
 
     @pytest.mark.unit
     def test_build(self, model):
