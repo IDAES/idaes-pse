@@ -90,11 +90,13 @@ def htpx(T=None, P=None, x=None):
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
     User must provided values for two of T, P, or x.
+
     Args:
         T: Temperature with units (between 200 and 3000 K)
         P: Pressure with units (between 1 and 1e9 Pa), None if saturated vapor
         x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
         superheated or subcooled
+
     Returns:
         Total molar enthalpy [J/mol].
     """
