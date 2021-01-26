@@ -1700,101 +1700,105 @@ def main_dynamic():
             "linear_solver": "ma27",
             "max_iter": 20,
     }
-
+    outlvl = idaeslog.DEBUG
+    _log = idaeslog.getLogger(m_dyn.name, outlvl, tag="flowsheet")
     dof = degrees_of_freedom(m_dyn.fs_main)
-    print('dof of full model', dof)
+    _log.debug('dof full model={}'.format(dof))
     # solving dynamic model at steady-state
     print('solving dynamic model at steady-state...')
     solver.solve(m_dyn.fs_main, tee=True)
 
-    print('main steam enth=', pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.
-                                        inlet.enth_mol[0]))
-    print('main steam flow_mol=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                            inlet_split.inlet.flow_mol[0]))
-    print('main steam pressure=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                            inlet_split.inlet.pressure[0]))
-    print('throttle_valve Cv=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                          throttle_valve[1].Cv))
-    print('throttle_valve opening=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                               throttle_valve[1].
-                                               valve_opening[0]))
-    print('HP stage 1 inlet enth_mol=', pyo.value(m_dyn.fs_main.fs_stc.
-                                                  turb.hp_stages[1].inlet.
-                                                  enth_mol[0]))
-    print('HP stage 1 inlet flow_mol=', pyo.value(m_dyn.fs_main.fs_stc.
-                                                  turb.hp_stages[1].inlet.
-                                                  flow_mol[0]))
-    print('HP stage 1 inlet pressure=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                                  hp_stages[1].inlet.
-                                                  pressure[0]))
-    print('IP stage 1 inlet enth_mol=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                                  ip_stages[1].inlet.
-                                                  enth_mol[0]))
-    print('IP stage 1 inlet flow_mol=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                                  ip_stages[1].inlet.
-                                                  flow_mol[0]))
-    print('IP stage 1 inlet pressure=', pyo.value(m_dyn.fs_main.fs_stc.
-                                                  turb.ip_stages[1].inlet.
-                                                  pressure[0]))
-    print('Outlet stage enth_mol=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                              outlet_stage.outlet.enth_mol[0]))
-    print('Outlet stage flow_mol=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                              outlet_stage.outlet.flow_mol[0]))
-    print('Outlet stage pressure=', pyo.value(m_dyn.fs_main.fs_stc.turb.
-                                              outlet_stage.outlet.pressure[0]))
-    print('Power output of main turbine=', pyo.value(m_dyn.fs_main.fs_stc.
-                                                     power_output[0]))
-    print('Power output of bfp turbine=',
+    _log.debug('main steam enth={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[0])))
+    _log.debug('main steam flow_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0])))
+    _log.debug('main steam pressure={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[0])))
+    _log.debug('throttle_valve Cv={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.throttle_valve[1].Cv)))
+    _log.debug('throttle_valve opening={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.throttle_valve[1].
+                  valve_opening[0])))
+    _log.debug('HP stage 1 inlet enth_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.enth_mol[0])))
+    _log.debug('HP stage 1 inlet flow_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.flow_mol[0])))
+    _log.debug('HP stage 1 inlet pressure={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.hp_stages[1].inlet.pressure[0])))
+    _log.debug('IP stage 1 inlet enth_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.enth_mol[0])))
+    _log.debug('IP stage 1 inlet flow_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0])))
+    _log.debug('IP stage 1 inlet pressure={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0])))
+    _log.debug('Outlet stage enth_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.enth_mol[0])))
+    _log.debug('Outlet stage flow_mol={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.flow_mol[0])))
+    _log.debug('Outlet stage pressure={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.turb.outlet_stage.outlet.pressure[0])))
+    _log.debug('Power output of main turbine={}'.format(
+        pyo.value(m_dyn.fs_main.fs_stc.power_output[0])))
+    _log.debug('Power output of bfp turbine={}'.format(
           pyo.value(m_dyn.fs_main.fs_stc.bfp_turb.control_volume.work[0]
                     + m_dyn.fs_main.fs_stc.bfp_turb_os.control_volume.work[0])
-          * (-1e-6))
-    print('FWH6 outlet enth_mol=',
+          * (-1e-6)))
+    _log.debug('FWH6 outlet enth_mol={}'.format(
           pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.
-                    enth_mol[0]))
-    print('FWH6 outlet flow_mol=',
+                    enth_mol[0])))
+    _log.debug('FWH6 outlet flow_mol={}'.format(
           pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.
-                    flow_mol[0]))
-    print('FWH6 outlet pressure=',
+                    flow_mol[0])))
+    _log.debug('FWH6 outlet pressure={}'.format(
           pyo.value(m_dyn.fs_main.fs_stc.fwh6.desuperheat.outlet_2.
-                    pressure[0]))
-    print('water makeup flow=',
-          pyo.value(m_dyn.fs_main.fs_stc.condenser_hotwell.makeup.flow_mol[0]))
-    print('spray flow=',
-          pyo.value(m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0]))
-    print('Cv fwh2=', m_dyn.fs_main.fs_stc.fwh2_valve.Cv.value)
-    print('Cv fwh3=', m_dyn.fs_main.fs_stc.fwh3_valve.Cv.value)
-    print('Cv fwh5=', m_dyn.fs_main.fs_stc.fwh5_valve.Cv.value)
-    print('Cv fwh6=', m_dyn.fs_main.fs_stc.fwh6_valve.Cv.value)
-    print('Cv cond_valve=', m_dyn.fs_main.fs_stc.cond_valve.Cv.value)
-    print('Cv makeup_valve=', m_dyn.fs_main.fs_stc.makeup_valve.Cv.value)
-    print('Cv spray_valve=', m_dyn.fs_main.fs_stc.spray_valve.Cv.value)
-    print('valve opening fwh2=',
-          m_dyn.fs_main.fs_stc.fwh2_valve.valve_opening[0].value)
-    print('valve opening fwh3=',
-          m_dyn.fs_main.fs_stc.fwh3_valve.valve_opening[0].value)
-    print('valve opening fwh5=',
-          m_dyn.fs_main.fs_stc.fwh5_valve.valve_opening[0].value)
-    print('valve opening fwh6=',
-          m_dyn.fs_main.fs_stc.fwh6_valve.valve_opening[0].value)
-    print('valve opening cond_valve=',
-          m_dyn.fs_main.fs_stc.cond_valve.valve_opening[0].value)
-    print('valve opening makeup_valve=',
-          m_dyn.fs_main.fs_stc.makeup_valve.valve_opening[0].value)
-    print('valve opening spray=',
-          m_dyn.fs_main.fs_stc.spray_valve.valve_opening[0].value)
-    print('fwh2 level=', m_dyn.fs_main.fs_stc.fwh2.condense.level[0].value)
-    print('fwh3 level=', m_dyn.fs_main.fs_stc.fwh3.condense.level[0].value)
-    print('fwh5 level=', m_dyn.fs_main.fs_stc.fwh5.condense.level[0].value)
-    print('fwh6 level=', m_dyn.fs_main.fs_stc.fwh6.condense.level[0].value)
-    print('hotwell tank level=',
-          m_dyn.fs_main.fs_stc.hotwell_tank.tank_level[0].value)
-    print('da tank level=', m_dyn.fs_main.fs_stc.da_tank.tank_level[0].value)
-    print('makeup flow=',
-          m_dyn.fs_main.fs_stc.makeup_valve.outlet.flow_mol[0].value)
-    print('spray flow=',
-          m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0].value)
-    print('split_attemp fraction=',
-          m_dyn.fs_main.fs_stc.split_attemp.split_fraction[0, "Spray"].value)
+                    pressure[0])))
+    _log.debug('water makeup flow={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.condenser_hotwell.makeup.
+                    flow_mol[0])))
+    _log.debug('spray flow={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0])))
+    _log.debug('Cv fwh2={}'.format(m_dyn.fs_main.fs_stc.fwh2_valve.Cv.value))
+    _log.debug('Cv fwh3={}'.format(m_dyn.fs_main.fs_stc.fwh3_valve.Cv.value))
+    _log.debug('Cv fwh5={}'.format(m_dyn.fs_main.fs_stc.fwh5_valve.Cv.value))
+    _log.debug('Cv fwh6={}'.format(m_dyn.fs_main.fs_stc.fwh6_valve.Cv.value))
+    _log.debug('Cv cond_valve={}'.format(
+        m_dyn.fs_main.fs_stc.cond_valve.Cv.value))
+    _log.debug('Cv makeup_valve={}'.format(
+        m_dyn.fs_main.fs_stc.makeup_valve.Cv.value))
+    _log.debug('Cv spray_valve={}'.format(
+        m_dyn.fs_main.fs_stc.spray_valve.Cv.value))
+    _log.debug('valve opening fwh2={}'.format(
+          m_dyn.fs_main.fs_stc.fwh2_valve.valve_opening[0].value))
+    _log.debug('valve opening fwh3={}'.format(
+          m_dyn.fs_main.fs_stc.fwh3_valve.valve_opening[0].value))
+    _log.debug('valve opening fwh5={}'.format(
+          m_dyn.fs_main.fs_stc.fwh5_valve.valve_opening[0].value))
+    _log.debug('valve opening fwh6={}'.format(
+          m_dyn.fs_main.fs_stc.fwh6_valve.valve_opening[0].value))
+    _log.debug('valve opening cond_valve={}'.format(
+          m_dyn.fs_main.fs_stc.cond_valve.valve_opening[0].value))
+    _log.debug('valve opening makeup_valve={}'.format(
+          m_dyn.fs_main.fs_stc.makeup_valve.valve_opening[0].value))
+    _log.debug('valve opening spray={}'.format(
+          m_dyn.fs_main.fs_stc.spray_valve.valve_opening[0].value))
+    _log.debug('fwh2 level={}'.format(
+        m_dyn.fs_main.fs_stc.fwh2.condense.level[0].value))
+    _log.debug('fwh3 level={}'.format(
+        m_dyn.fs_main.fs_stc.fwh3.condense.level[0].value))
+    _log.debug('fwh5 level={}'.format(
+        m_dyn.fs_main.fs_stc.fwh5.condense.level[0].value))
+    _log.debug('fwh6 level={}'.format(
+        m_dyn.fs_main.fs_stc.fwh6.condense.level[0].value))
+    _log.debug('hotwell tank level={}'.format(
+          m_dyn.fs_main.fs_stc.hotwell_tank.tank_level[0].value))
+    _log.debug('da tank level={}'.format(
+        m_dyn.fs_main.fs_stc.da_tank.tank_level[0].value))
+    _log.debug('makeup flow={}'.format(
+          m_dyn.fs_main.fs_stc.makeup_valve.outlet.flow_mol[0].value))
+    _log.debug('spray flow={}'.format(
+          m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[0].value))
+    _log.debug('split_attemp fraction={}'.format(
+          m_dyn.fs_main.fs_stc.split_attemp.split_fraction[0, "Spray"].value))
 
     # impose step change for dynamic model
     for t in m_dyn.fs_main.config.time:
@@ -1806,24 +1810,24 @@ def main_dynamic():
             m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].fix(
                 m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[0].value)
     dof = degrees_of_freedom(m_dyn.fs_main)
-    print('dof of full model', dof)
+    _log.debug('dof of full model={}'.format(dof))
     # solving dynamic model
-    print('solving dynamic model...')
+    _log.debug('solving dynamic model...')
     solver.solve(m_dyn.fs_main, tee=True)
-    print('Power output of main turbine=',
-          pyo.value(m_dyn.fs_main.fs_stc.power_output[60]))
-    print('Power output of bfp turbine=',
+    _log.debug('Power output of main turbine={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.power_output[60])))
+    _log.debug('Power output of bfp turbine={}'.format(
           pyo.value(m_dyn.fs_main.fs_stc.bfp_turb.control_volume.work[60]
                     + m_dyn.fs_main.fs_stc.bfp_turb_os.control_volume.work[60])
-          * (-1e-6))
-    print('main steam enth=',
-          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[60]))
-    print('main steam flow_mol=',
-          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[60]))
-    print('main steam pressure=',
-          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[60]))
-    print('fw pressure=',
-          pyo.value(m_dyn.fs_main.fs_stc.bfp.outlet.pressure[60]))
+          * (-1e-6)))
+    _log.debug('main steam enth={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[60])))
+    _log.debug('main steam flow_mol={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[60])))
+    _log.debug('main steam pressure={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.turb.inlet_split.inlet.pressure[60])))
+    _log.debug('fw pressure={}'.format(
+          pyo.value(m_dyn.fs_main.fs_stc.bfp.outlet.pressure[60])))
 
     # prepare for plots
     time = []

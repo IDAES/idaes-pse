@@ -34,7 +34,7 @@ from idaes.core.util.misc import svg_tag
 
 _log = idaeslog.getLogger(__name__)
 
-__author__ = "J. Ma, M. Zamarripa, J. Eslick"
+__author__ = "J. Ma, M. Wang, M. Zamarripa, J. Eslick"
 
 
 def set_scaling_factors(m):

@@ -1089,45 +1089,51 @@ def set_scaling_factors(m):
 def main_steady_state():
     m_ss = get_model(dynamic=False)
     aBoiler = m_ss.fs_main.fs_blr.aBoiler
-    print('PA flow=',
-          pyo.value(aBoiler.primary_air[0].flow_mass))
-    print('SA flow=',
-          pyo.value(aBoiler.secondary_air[0].flow_mass))
-    print('O2 in flue gas', pyo.value(aBoiler.fluegas_o2_pct_dry[0]))
-    print('FEGT=', pyo.value(aBoiler.flue_gas[0].temperature))
-    print('heat_total=', pyo.value(aBoiler.heat_total[0]))
-    print('total heat_ww=', pyo.value(aBoiler.heat_total_ww[0]))
-    print('UBC=', pyo.value(aBoiler.ubc_in_flyash[0]))
-    print('NOx=', pyo.value(aBoiler.frac_mol_NOx_fluegas[0]))
-    print('main steam flow=', pyo.value(m_ss.fs_main.fs_blr.aPlaten.
-                                        outlet.flow_mol[0]))
-    print('main steam pressure=', pyo.value(m_ss.fs_main.fs_blr.aPlaten.
-                                            outlet.pressure[0]))
-    print('main steam temperature=',
+    outlvl = idaeslog.DEBUG
+    _log = idaeslog.getLogger(aBoiler.name, outlvl, tag="flowsheet")
+    _log.debug('PA flow={}'.format(
+          pyo.value(aBoiler.primary_air[0].flow_mass)))
+    _log.debug('SA flow={}'.format(
+          pyo.value(aBoiler.secondary_air[0].flow_mass)))
+    _log.debug('O2 in flue gas{}'.format(
+        pyo.value(aBoiler.fluegas_o2_pct_dry[0])))
+    _log.debug('FEGT={}'.format(
+        pyo.value(aBoiler.flue_gas[0].temperature)))
+    _log.debug('heat_total={}'.format(
+        pyo.value(aBoiler.heat_total[0])))
+    _log.debug('total heat_ww={}'.format(
+        pyo.value(aBoiler.heat_total_ww[0])))
+    _log.debug('UBC={}'.format(pyo.value(aBoiler.ubc_in_flyash[0])))
+    _log.debug('NOx={}'.format(pyo.value(aBoiler.frac_mol_NOx_fluegas[0])))
+    _log.debug('main steam flow={}'.format(
+        pyo.value(m_ss.fs_main.fs_blr.aPlaten.outlet.flow_mol[0])))
+    _log.debug('main steam pressure={}'.format(
+        pyo.value(m_ss.fs_main.fs_blr.aPlaten.outlet.pressure[0])))
+    _log.debug('main steam temperature={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aPlaten.control_volume.
-                    properties_out[0].temperature))
-    print('RH steam flow=',
-          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.flow_mol[0]))
-    print('RH steam pressure=',
-          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.pressure[0]))
-    print('RH steam temperature=',
+                    properties_out[0].temperature)))
+    _log.debug('RH steam flow={}'.format(
+          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.flow_mol[0])))
+    _log.debug('RH steam pressure={}'.format(
+          pyo.value(m_ss.fs_main.fs_blr.aRH2.tube_outlet.pressure[0])))
+    _log.debug('RH steam temperature={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aRH2.tube.properties[0, 0].
-                    temperature))
-    print('flue gas econ inlet temp=',
+                    temperature)))
+    _log.debug('flue gas econ inlet temp={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aECON.shell.properties[0, 0].
-                    temperature))
-    print('flue gas econ out temp=',
+                    temperature)))
+    _log.debug('flue gas econ out temp={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aECON.shell.properties[0, 1].
-                    temperature))
-    print('flue gas aph out temp=',
+                    temperature)))
+    _log.debug('flue gas aph out temp={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aAPH.side_1.properties_out[0].
-                    temperature))
-    print('econ out water temp=',
+                    temperature)))
+    _log.debug('econ out water temp={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aECON.tube.properties[0, 0].
-                    temperature))
-    print('econ out water sat temp=',
+                    temperature)))
+    _log.debug('econ out water sat temp={}'.format(
           pyo.value(m_ss.fs_main.fs_blr.aECON.tube.properties[0, 0].
-                    temperature_sat))
+                    temperature_sat)))
     return m_ss
 
 
@@ -1150,19 +1156,11 @@ def main_dynamic():
     }
 
     dof = degrees_of_freedom(m_dyn.fs_main)
-    print('dof of full model', dof)
     # solving dynamic model at steady-state
     print('solving dynamic model at steady-state...')
     solver.solve(m_dyn.fs_main, tee=True)
 
-    for i in m_dyn.fs_main.fs_blr.ww_zones:
-        print('heat fireside of zone [', i, ']=',
-              m_dyn.fs_main.fs_blr.Waterwalls[i].heat_fireside[0].value)
-    for i in m_dyn.fs_main.fs_blr.aBoiler.zones:
-        print('wall temp [', i, ']=',
-              m_dyn.fs_main.fs_blr.aBoiler.
-              wall_temperature_waterwall[0, i].value)
-    # run dynamic model with disturbance in coal flow rate
+    # run dynamic model
     run_dynamic(m_dyn)
     return m_dyn
 
@@ -1192,14 +1190,7 @@ def get_model(dynamic=True):
     m = set_inputs(m)
     set_scaling_factors(m)
     m = initialize(m)
-    print('RH1 inlet flow_mol=',
-          m.fs_main.fs_blr.aRH1.tube_inlet.flow_mol[0].value)
-    print('RH1 inlet enth_mol=',
-          m.fs_main.fs_blr.aRH1.tube_inlet.enth_mol[0].value)
-    print('RH1 inlet pressure=',
-          m.fs_main.fs_blr.aRH1.tube_inlet.pressure[0].value)
-    print('RH1 inlet fg temp=',
-          m.fs_main.fs_blr.aRH1.shell_inlet.temperature[0].value)
+
     return m
 
 
@@ -1216,24 +1207,18 @@ def run_dynamic(m):
             fs.aBoiler.flowrate_coal_raw[t].fix(
                 fs.aBoiler.flowrate_coal_raw[0].value)
     df = degrees_of_freedom(m)
-    print("***************degree of freedom = ", df, "********************")
+    assert df == 0
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
             "tol": 1e-7,
             "linear_solver": "ma27",
             "max_iter": 50,
     }
-    results = solver.solve(m, tee=True)
-    print(results)
-    print()
+    solver.solve(m, tee=True)
 
 
 def print_dynamic_results(m):
     fs = m.fs_main.fs_blr
-    # Print results
-
-    print("Results")
-    print()
 
     # ploting results
     time = []
