@@ -53,6 +53,7 @@ from idaes.power_generation.unit_models.helm import \
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.helm import HelmMixer as Mixer
+from idaes.core.util import copy_port_values as _set_port
 
 _log = idaeslog.getLogger(__name__)
 
@@ -114,20 +115,6 @@ see property package for documentation.}""",
     config.declare("condense", CondenserData.CONFIG())
     config.declare("desuperheat", HeatExchangerData.CONFIG())
     config.declare("cooling", HeatExchangerData.CONFIG())
-
-
-def _set_port(p1, p2):
-    """
-    Copy the values from port p2 to port p1.
-
-    Args:
-        p1: port to copy values to
-        p2: port to compy values from
-    """
-    for k, v in p1.vars.items():
-        if isinstance(v, Var):
-            for i in v:
-                v[i].value = value(p2.vars[k][i])
 
 
 def _set_prop_pack(hxcfg, fwhcfg):
