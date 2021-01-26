@@ -19,7 +19,7 @@ import pyomo.network as pyn
 from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.core.base.block import _BlockData
+from pyomo.core.base.block import _BlockData, SubclassOf
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
@@ -1019,3 +1019,25 @@ class TestDynamicBlock(object):
             cuid = pyo.ComponentUID(b.var.referent)
             values = list(b.var[t].value for t in data_time)
             assert values == data[cuid]
+
+    def test_set_variance(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+
+        variance_list = [(var[t0], 0.05)
+                for var in blk.component_objects(SubclassOf(NmpcVar))]
+        blk.set_variance(variance_list)
+
+        for var in blk.DIFFERENTIAL_BLOCK[:].var:
+            assert var.variance == 0.05
+        for var in blk.INPUT_BLOCK[:].var:
+            assert var.variance == 0.05
+        for var in blk.ALGEBRAIC_BLOCK[:].var:
+            assert var.variance == 0.05
+        for var in blk.MEASUREMENT_BLOCK[:].var:
+            assert var.variance == 0.05
+        for var in blk.FIXED_BLOCK[:].var:
+            assert var.variance == 0.05
+        for var in blk.DERIVATIVE_BLOCK[:].var:
+            assert var.variance == 0.05
