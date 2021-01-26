@@ -6,12 +6,11 @@ Proportional-Integral-Derivative (PID) Controller
 
 .. currentmodule:: idaes.power_generation.control.pid_controller
 
-The IDAES framework contains a basic PID control implementation, which is described
-in this section.
+The IDAES framework contains a basic PID control implementation, this section describes the dynamic power plant PID controller model.
 
 Introduction
 ------------
-The PID controller model represents a PID controller in a feedback control loop of a process plant.  Depending on the user specified configuration, this model can be configurated as a proportional only (P), proportional and integral (PI), proportional and derivative (PD), or proportional, integral and derivative (PID) controller.  When declaring a controller model, the user needs to specify the model type through the configuration variable “type”, the process variable to be controlled y(t) through the configuration variable “pv”, and the manipulated variable u(t) through the configuration variable “mv”.  The “pv” and “mv” variables can be any of the time-indexed variable on a dynamic flowsheet.
+The PID controller model represents a PID controller in a feedback control loop of a process plant.  Depending on the user specified configuration, this model can be configurated as a proportional only (P), proportional and integral (PI), proportional and derivative (PD), or proportional, integral and derivative (PID) controller.  When declaring a controller model, the user needs to specify the model type through the configuration option “type”, the process variable to be controlled y(t) through the configuration option “pv”, and the manipulated variable u(t) through the configuration option “mv”.  The “pv” and “mv” variables can be any of the time-indexed variable on a dynamic flowsheet.
 The setpoint of the process variable r(t) is a variable declared inside the model named as “setpoint”, which is usually fixed or specified as a function of other process variables.
 The variable or expression for the error e(t) is defined as the setpoint minus the process variable to be controlled.
 
@@ -56,7 +55,7 @@ The actual output for the manipulated variable u(t) is calculated as the sum of 
   u(t) = u'(t) + u_ref
   
 Note that the steady-state bias is reference value that is not time-indexed in the current model.
-To account for an actuator saturation condition, the calculated manipulated variable u(t) can optionally be clamped within a range between its lower and upper bounds.  For example, a control valve cannot close to less than 0% or open to more than 100%.  To declare this option, the configuration variable “bounded_output” is set to True.  With this option turned on, the user needs to set the value for two mutable parameters.  Parameter “mv_lb” is for the lower bound and parameter “mv_ub” is for the upper bound.  If they are not set by the user, the default values of 0.05 and 1 for the lower and upper bounds will be used as defaults, respectively.
+To account for an actuator saturation condition, the calculated manipulated variable u(t) can optionally be clamped within a range between its lower and upper bounds.  For example, a control valve cannot close to less than 0% or open to more than 100%.  To declare this option, the configuration option “bounded_output” is set to True.  With this option turned on, the user needs to set the value for two mutable parameters.  Parameter “mv_lb” is for the lower bound and parameter “mv_ub” is for the upper bound.  If they are not set by the user, the default values of 0.05 and 1 for the lower and upper bounds will be used as defaults, respectively.
 Different clamping function has been tried to make the output of the manipulated variable u(t) within the lower and upper bounds.  Since Pyomo model requires all functions to be smooth and differentiable, current PID controller model uses a sigmoid function as the clamping function.  If the lower and upper bounds of u are u_l and u_u, respectively, the sigmoid function is defined as
 
 .. math::
