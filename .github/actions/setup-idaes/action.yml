@@ -1,0 +1,36 @@
+name: Set up IDAES
+description: Install IDAES and extensions
+inputs:
+  install-target:
+    description: 'Command-line arguments and options to pass to the install command, e.g. pip install'
+    required: true
+  install-command:
+    description: 'Command to use to install `install-target`'
+    required: false
+    default: pip --no-cache-dir install --progress-bar off
+runs:
+  using: "composite"
+  steps:
+    - name: Update pip and other packaging tools
+      shell: bash
+      run: |
+        ${{ inputs.install-command }} pip setuptools wheel
+    - name: Install idaes and dependencies
+      shell: bash
+      run: |
+        ${{ inputs.install-command }} ${{ inputs.install-target}}
+        idaes --version
+    - name: Install extensions
+      shell: bash
+      run: |
+        idaes get-extensions --verbose
+        # add bin directory to $PATH (only valid for subsequent steps)
+        echo "$(idaes bin-directory)" >> $GITHUB_PATH
+    - name: Test access to executables
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+            ipopt.exe -v
+        else
+            ipopt -v
+        fi
