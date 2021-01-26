@@ -3,48 +3,10 @@ Subcritical Coal-Fired Power Plant Flowsheet (steady state and dynamic)
 
 .. currentmodule:: idaes.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant
 
-Overview
-++++++++
-This is an example subcritical pulverized coal (SCPC) power plant. This simulation model consist of a ~320 MW gross coal fired power plant. 
- The dimensions and operating conditions used for this simulation do not represent any specific coal-fired power plant.
 
-This model is for demonstration and tutorial purposes only. Before looking at the
-model, it may be useful to look at the process flow diagram (PFD in Figure 1).
+.. note:: 
+    This is an example of a subcritical pulverized coal-fired power plant. This simulation model consists of a ~320 MW gross coal fired power plant, the dimensions and operating conditions used for this simulation do not represent any specific power plant. This model is for demonstration and tutorial purposes only.
 
-Subcritical Power Plant Overview
-
-Inputs:
-
-* Throttle valve opening, 
-* Feed water pump pressure,
-* BFW - boiler feed water (from Feed water heaters),
-* Coal from pulverizers
-    
-
-Main Assumptions:
-
-Coal flowrate is a function of the plant load, the coal HHV is fixed and heat duty from fire side to water wall and platen superheater are fixed.
-
-Water/Steam and Flue Gas Routes: 
-
-* Water Flow: Fresh water -> FWH's -> Economizer -> Drum --> Downcomer --> Water Wall -> Drum --> roof SH --> Primary SH -> Platen SH -> HP Turbine -> Reheater -> IP Turbine
-* Flue Gas Flow: Fire Ball -> Platen SH -> Reheater  -> Primary SH -> Economizer -> Air Preheater
-* Steam Flow: Boiler -> HP Turbine -> Reheater -> IP Turbine -> Condenser + steam extractions (including HP, IP, and LP steam extractions to Feed Water Heaters)
-
-
-Main Models used:
-
-* Mixers: Attemperator, Flue gas mix
-* Heater: Platen SH, Fire/Water side (simplified model), Feed Water Heaters, Hot Tank, Condenser
-* BoilerHeatExchanger: Economizer, Primary SH, Finishing SH, Reheater
-* Shell and tube heat exchanger: Economizer, Primary SH, Finishing SH, Reheater (tube side: Water/Steam (side 1 holdup); shell side: flue gas (side 2 holdup))
-* Turbines
-* Pumps
-
-Property packages used:
-
-* Helmholtz Equation of State (IAPWS95): Water and steam :ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>`
-* IDEAL GAS: Air and Flue Gas :ref:`FlueGas <technical_specs/model_libraries/power_generation/properties/flue_gas:Flue Gas Property Package>`
 
 Introduction
 ++++++++++++
@@ -103,6 +65,12 @@ Figure 1: Process Flow Diagram
   :width: 800
   :align: center
 
+
+Property packages used:
+
+* Helmholtz Equation of State (IAPWS95): Water and steam :ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>`
+* IDEAL GAS: Air and Flue Gas :ref:`FlueGas <technical_specs/model_libraries/power_generation/properties/flue_gas:Flue Gas Property Package>`
+
 It can be seen from the Figure 1 that primary air is first split to two inlet streams, one goes through the primary air sector of the regenerative air preheater where it is heated, and the other, also known as tempering air, bypasses the air preheater and is used for primary air temperature control. The two streams are then mixed and connected with the fire side of the boiler.  The coal stream is also fed to the fire side of the boiler. While this boiler sub-flowsheet does not contain a specific coal mill model, the partial vaporization of the moisture in the raw coal is modeled in the fire-side boiler model.  The secondary air enters the secondary air sector of the air preheater.  After being heated in the air preheater, the hot secondary air stream enters boiler’s windbox, from which it enters the furnace either as the secondary air of the burners or as overfire air.  The pulverized coal from primary air stream is eventually burned in the boiler by both primary and secondary air to form flue gas that leaves the boiler with small amount of unburned fuel in fly ash.  The hot flue gas then goes through the boiler backpass consisting of multiple convective heat exchangers including first the hot reheater, then the cold reheater, the primary superheater, and the economizer.  Finally, the flue gas enters the air preheater to heat the cold primary air and secondary air before entering the downstream equipment which is not modeled.  The feed water from steam cycle system enters the economizer to absorb the heat transferred from the flue gas and leaves the economizer at a temperature considerably below its saturation temperature.  The subcooled water then goes to the boiler drum through water pipes where it mixes with the saturated water separated from the water/steam mixture from the boiler waterwall.  The mixed water stream splits to two streams. A small amount of water leaves the system as a blowdown water to prevent buildup of slag and the main portion of the water stream goes through eight downcomers to enter the bottom of waterwall tubes.  The vertical waterwall is modeled by multiple waterwall section models in series. The subcooled water from the downcomers is heated by the combustion products inside the boiler and part of the liquid are vaporized, forming a liquid-vapor 2-phase mixture and eventually enters the drum to complete a circuit for natural circulation of the feed water, in which the density difference between the liquid in the downcomers and the 2-phase mixture in the waterwall tubes drives the circulating flow.
 
 The saturated steam from drum goes to the roof superheater before entering the primary superheater.  Note that the enclosure wall tubes for the backpass as a part of the superheaters is not included in the flowsheet model.  The steam leaving the primary superheater is mixed with spray water from boiler main feed pump in an attemperator.  Finally, the steam from the attemperator enters the platen superheater where the steam is heated to main steam temperature before entering the main turbine.  The cold reheat steam from the HP outlet is first heated in the cold reheater and then heated in the hot reheater before entering the IP stages of the turbine. There is no attemperation for the reheat steam.
@@ -120,59 +88,59 @@ Table 4.  List of unit models on the boiler system sub-flowsheet
 =============== ========================== ================================================================================================================================================================================= ===========
 Unit Name       Description                Unit Library Name                                                                                                                                                                 Dynamic
 =============== ========================== ================================================================================================================================================================================= ===========
-aBoiler         Boiler fire-side surrogate BoilerFireside :ref:`BoilerFireside <technical_specs/model_libraries/power_generation/unit_models/boiler_fireside:Boiler Fire Side Model>`                                        False
-aDrum           1D boiler drum             Drum1D :ref:`Drum1D <technical_specs/model_libraries/power_generation/unit_models/drum1D:Drum 1D Model>`                                                                          True
+aBoiler         Boiler fire-side surrogate :ref:`BoilerFireside <technical_specs/model_libraries/power_generation/unit_models/boiler_fireside:Boiler Fire Side Model>`                                                       False
+aDrum           1D boiler drum             :ref:`Drum1D <technical_specs/model_libraries/power_generation/unit_models/drum1D:Drum 1D Model>`                                                                                 True
 blowdown_split  Splitter for blowdown      HelmSplitter                                                                                                                                                                      False
-aDowncomer      Downcomer                  Downcomer :ref:`Downcomer <technical_specs/model_libraries/power_generation/unit_models/downcomer:Downcomer Model>`                                                               True
-Waterwalls      12 waterwall zones         WaterwallSection :ref:`WaterWall <technical_specs/model_libraries/power_generation/unit_models/waterwall:WaterWall Model>`                                                        True
-aRoof           Roof superheater           SteamHeater :ref:`SteamHeater <technical_specs/model_libraries/power_generation/unit_models/steamheater:Steam Heater Model>`                                                      False
-aPlaten         Platen superheater         SteamHeater :ref:`SteamHeater <technical_specs/model_libraries/power_generation/unit_models/steamheater:Steam Heater Model>`                                                      False
+aDowncomer      Downcomer                  :ref:`Downcomer <technical_specs/model_libraries/power_generation/unit_models/downcomer:Downcomer Model>`                                                                         True
+Waterwalls      12 waterwall zones         :ref:`WaterwallSection <technical_specs/model_libraries/power_generation/unit_models/waterwall:WaterWall Model>`                                                                  True
+aRoof           Roof superheater           :ref:`SteamHeater <technical_specs/model_libraries/power_generation/unit_models/steamheater:Steam Heater Model>`                                                                  False
+aPlaten         Platen superheater         :ref:`SteamHeater <technical_specs/model_libraries/power_generation/unit_models/steamheater:Steam Heater Model>`                                                                  False
 aRH1            2D Cold reheater           HeatExchangerCrossFlow2D_Header :ref:`HX2D <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger2D:BoilerHeatExchanger2D>`                          True *
 aRH2            2D Hot reheater            HeatExchangerCrossFlow2D_Header :ref:`HX2D <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger2D:BoilerHeatExchanger2D>`                          True *
 aPSH            2D Primary superheater     HeatExchangerCrossFlow2D_Header :ref:`HX2D <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger2D:BoilerHeatExchanger2D>`                          True *
 aECON           2D Economizer              HeatExchangerCrossFlow2D_Header :ref:`HX2D <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger2D:BoilerHeatExchanger2D>`                          True *
-aPipe           Pipes from eco. to drum    WaterPipe :ref:`WaterPipe <technical_specs/model_libraries/power_generation/unit_models/waterpipe:Water Pipe Model>`                                                              False
+aPipe           Pipes from eco. to drum    :ref:`WaterPipe <technical_specs/model_libraries/power_generation/unit_models/waterpipe:Water Pipe Model>`                                                                        False
 Mixer_PA        Mixer of hot PA and TA     Mixer                                                                                                                                                                             False
 Attemp          Attemperator               HelmMixer                                                                                                                                                                         False
-aAPH            Air preheater              HeatExchangerWith3Streams :ref:`HX3Streams <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger_3streams:Heat Exchanger With Three Streams>`       False
+aAPH            Air preheater              :ref:`HeatExchangerWith3Streams <technical_specs/model_libraries/power_generation/unit_models/boiler_heat_exchanger_3streams:Heat Exchanger With Three Streams>`                  False
 =============== ========================== ================================================================================================================================================================================= ===========
 
 * The heat held by tube metal is modeled as dynamic while fluids are modeled as steady-state
 
 Table 5.  List of unit models on the steam cycle system sub-flowsheet
 
-================= ============================= ========================== ===========
-Unit Name         Description                   Unit Library Name          Dynamic
-================= ============================= ========================== ===========
-turb              Multistage turbine            HelmTurbineMultistage      False
-bfp_turb_valve    BFPT regulating valve         HelmValve                  False
-bfp_turb          Front stage of BFPT           HelmTurbineStage           False
-bfp_turb_os       Outlet stage of BFPT          HelmTurbineOutletStage     False
-condenser         Main condenser                HelmNtuCondenser           False
-aux_condenser     Auxiliary condenser           HelmNtuCondenser           False
-condenser_hotwell Mixer of 3 water streams      HelmMixer                  False
-makeup_valve      Makeup water valve            HelmValve                  False
-hotwell_tank      Hotwell tank                  WaterTank                  Dynamic
-cond_pump         Condensate pump               HelmIsentropicCompressor   False
-cond_valve        Condensate Valve              HelmValve                  False
-fwh1              Feed water heater 1           FWH0D                      True *
-fwh1_drain_pump   Drain pump after FWH 1        HelmIsentropicCompressor   False
-fwh1_drain_return Mixer of drain and condensate HelmMixer                  False
-fwh2              Feed water heater 2           FWH0D                      True *
-fwh2_valve        Drain valve for FWH 2         HelmValve                  False
-fwh3              Feed water heater 3           FWH0D                      True *
-Fwh3_valve        Drain valve for FWH 3         HelmValve                  False
-fwh4_deair        Mixer for deaerator           HelmMixer                  False
-da_tank           Deserator water tank          WaterTank                  True
-booster           Booster pump                  HelmIsentropicCompressor   False
-bfp               Main boiler feed pump         HelmIsentropicCompressor   False
-split_attemp      Splitter for spray water      HelmSplitter               False
-spray_valve       Control valve for water spray HelmValve                  False
-Fwh5              Feed water heater 5           FWH0D                      True *
-Fwh5_valve        Drain valve for FWH 5         HelmValve                  False
-Fwh6              Feed water heater 6           FWH0D                      True *
-Fwh6_valve        Drain valve for FWH 6         HelmValve                  False
-================= ============================= ========================== ===========
+================= ============================= ======================================================================================================================================= ===========
+Unit Name         Description                   Unit Library Name                                                                                                                       Dynamic
+================= ============================= ======================================================================================================================================= ===========
+turb              Multistage turbine            :ref:`HelmTurbineMultistage <technical_specs/model_libraries/power_generation/unit_models/turbine_multistage:Turbine (Multistage)>`     False
+bfp_turb_valve    BFPT regulating valve         :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+bfp_turb          Front stage of BFPT           :ref:`HelmTurbineStage <technical_specs/model_libraries/power_generation/unit_models/turbine_stage:Turbine (Stage)>`                    False
+bfp_turb_os       Outlet stage of BFPT          :ref:`HelmTurbineOutletStage <technical_specs/model_libraries/power_generation/unit_models/turbine_outlet:Turbine (Outlet Stage)>`      False
+condenser         Main condenser                HelmNtuCondenser                                                                                                                        False
+aux_condenser     Auxiliary condenser           HelmNtuCondenser                                                                                                                        False
+condenser_hotwell Mixer of 3 water streams      HelmMixer                                                                                                                               False
+makeup_valve      Makeup water valve            :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+hotwell_tank      Hotwell tank                  :ref:`WaterTank <technical_specs/model_libraries/power_generation/unit_models/watertank:Water Tank>`                                    Dynamic
+cond_pump         Condensate pump               HelmIsentropicCompressor                                                                                                                False
+cond_valve        Condensate Valve              HelmValve                                                                                                                               False
+fwh1              Feed water heater 1           :ref:`FWH0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic:Feedwater Heater Dynamic (0D)>`   Dynamic
+fwh1_drain_pump   Drain pump after FWH 1        HelmIsentropicCompressor                                                                                                                False
+fwh1_drain_return Mixer of drain and condensate HelmMixer                                                                                                                               False
+fwh2              Feed water heater 2           :ref:`FWH0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic:Feedwater Heater Dynamic (0D)>`   Dynamic
+fwh2_valve        Drain valve for FWH 2         :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+fwh3              Feed water heater 3           :ref:`FWH0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic:Feedwater Heater Dynamic (0D)>`   Dynamic
+Fwh3_valve        Drain valve for FWH 3         :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+fwh4_deair        Mixer for deaerator           HelmMixer                                                                                                                               False
+da_tank           Deserator water tank          :ref:`WaterTank <technical_specs/model_libraries/power_generation/unit_models/watertank:Water Tank>`                                    Dynamic
+booster           Booster pump                  HelmIsentropicCompressor                                                                                                                False
+bfp               Main boiler feed pump         HelmIsentropicCompressor                                                                                                                False
+split_attemp      Splitter for spray water      HelmSplitter                                                                                                                            False
+spray_valve       Control valve for water spray :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+Fwh5              Feed water heater 5           :ref:`FWH0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic:Feedwater Heater Dynamic (0D)>`   Dynamic
+Fwh5_valve        Drain valve for FWH 5         :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+Fwh6              Feed water heater 6           :ref:`FWH0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_0D_dynamic:Feedwater Heater Dynamic (0D)>`   Dynamic
+Fwh6_valve        Drain valve for FWH 6         :ref:`HelmValve <technical_specs/model_libraries/power_generation/unit_models/steam_valve:HelmValve>`                                   False
+================= ============================= ======================================================================================================================================= ===========
 
 * Dynamic flag is true for condensing section only
 
@@ -219,8 +187,52 @@ turbine_master_ctrl  Turbine master controller            PI    No      Main
 boiler_master_ctrl   Boiler master controller             PI    No      Main
 ==================== ==================================== ===== ======= ===========
 
-To solve the dynamic flowsheet, the user needs to provide the initial condition of the system.  Typically, a steady-state initial condition at certain load should be specified by the user.  The change of the power demand (load) as a function of time should also be specified as the perturbation of the dynamic system.  In the current dynamic flowsheet model, default steady-state problems for the boiler sub-flowsheet and the steam cycle sub-flowsheet are initialized and solved separately.  Then the default steady-state problem of the combined system for the full plant will be solved.  After the default steady-state load is solved, the user is allowed to change the load (power output demand) and set that specified load as the process perturbation or disturbance for the dynamic simulation.
-One or two separate dynamic flowsheet models are then created with “dynamic” flag turned on and the discretization in the time domain defined.  We recommend to have two dynamic models created, one for a time step size of 30 second and the other with a time step size of 60 second.  Both models contain only two time steps, representing 60 and 120 seconds of time periods to be simulated, respectively.  Using a dynamic model with limited number of time steps results in very limited number of variables to be solved.  The first dynamic model with 30-second step size can be used to model the process with dramatic load changing disturbance while the second dynamic model with 60-second step size can be used to model the process with slow load changing or near steady-state transient conditions.  To solve a transient problem with a long duration, we use a rolling time window approach as described below.  First, the results of the steady-state model are copied to one of the dynamic flowsheet models and the steady-state bias for the controllers are set to the steady-state values.  The setpoints for the PI and PID controllers can also be fixed as the steady-state results with zero error for the proportional part of the controllers. For a controller with bounds of the manipulated variable enabled, a non-zero error for the integral part is calculated.  The error for the derivative part is also set to zero since at the steady state, the derivative of the process variable is also zero.  Then the dynamic model with 2 time steps is solved based on the disturbance of load demand specified by the user.  If the time duration for the simulation is longer than the period of the 2 time steps, the results of the solved dynamic model at the end of the second time step will be copied as the initial condition for the simulation of the next 2 time steps.  The results to be copied include the errors for the integral and derivative parts of individual controllers.  In case the error term for the integral part of a controller is too large (windup error), the user has an option to reset the windup error.  If the time step size is changed, the user needs to choose a different dynamic model to copy to.  After that the time window is rolled to the second one and the simulation for the second time period can then be solved.  This process can be repeated for multiple time periods until the entire duration for the dynamic simulation is covered.  During each rolling time window simulation, the results at individual time step for the main performance variables and equipment health related expression values can be saved to a dictionary of lists in the Python code.  Those results can be plotted after the last simulation and written to a text file for review and further processing.  Figure 4 shows an example of dynamic model simulation result, the load demand and coal feed rate for as functions of time.
+Steady-state power plant example:
++++++++++++++++++++++++++++++++++
+
+A steady state version of the power plant flowsheet is constructed by calling the `m_ss = main_steady_state()` method line 1824 in the subcritical_power_plant.py file. This function will build a steady state version of the power plant in Figure 1. This power plant model consists of two subflowsheets, the boiler subsystem (m_ss.fs_main.fs_blr) and the steam cycle subsystem (m_ss.fs_main.fs_stc. These two subsystems are connected trough arcs at the flowsheet level. 
+A custom initialization procedure has been developed, in which we initialize each subflowsheet at the time at a given load. After initializing the subflowsheet the example solves the entire power plant model for a given load (degrees of freedom = 0).
+
+Main Fixed Variables:
+
+* power demand (m_ss.fs_main.power_output.fix(320))
+* main steam temperature (m.fs_main.fs_stc.temperature_main_steam.fix(810) in Kelvin)
+* water level (drum, deareator, condenser, feedwater heaters)
+* equipment geometry/dimension
+* fuel composition and HHV (on dry basis)
+
+Main unfixed variables calculated by the model:
+* Coal flowrate (m.fs_main.fs_blr.aBoiler.flowrate_coal_raw is unfixed and calculated to match the power demand)
+* water/steam flowrates
+* attemperator flowrate (m.fs_main.fs_stc.spray_valve.valve_opening.unfix()) free to keep main steam at 810 K
+* Boiler feedwater pump pressure (m.fs_main.fs_stc.bfp.outlet.pressure.unfix())
+* throttle valve opening (m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening.unfix())
+* primary air and secondary air flowrates (constrained by primary air to coal ratio and O2 mol fraction in the flue gas)
+
+Dynamic power plant example:
+++++++++++++++++++++++++++++
+
+The dynamic simulation version of the power plant examples is built when the user calls the `m_dyn = main_dynamic()` method in line 1820 in the subcritical_power_plant.py file. The user should note that this method takes a long time to solve (~20 min). 
+This method builds and runs a subcritical coal-fired power plant dynamic simulation. The demonstration example prepared for this simulation consists of 5%/min ramping down from full load to 50% load, holding for 30 minutes and then ramping up to 100% load and holding for 20 minutes. 
+
+This method first creates a steady state version of the power plant, initializes the steady state model, and then uses this steady state model for initializing the dynamic model. 
+Two dynamic flowsheets are constructed here, the main difference is that they have different time steps in the discretization domain. Dynamic flowsheet 1 uses a step size of 30 seconds and dynamic flowsheet 2 uses a time step of 60 seconds. 
+This is useful to speed up the overall simulation time and to reduce the final number of variables and constraints. 
+Note that the dynamic flowsheet 1 is used when the load is changing to capture the dynamic transient conditions of the plant change (i.e., while plant is ramping). While the dynamic flowsheet 2 is used when process is near steady state transient conditions. 
+To simulate the dynamic case, this example implements a ramp function for the power demand and fixes the set point to match the power demand (see code below).
+
+.. code:: python
+
+    for t in m.fs_main.config.time:
+        power_demand = input_profile(t0+t, x0)
+        m.fs_main.turbine_master_ctrl.setpoint[t].value = power_demand
+
+Solving the dynamic model:
+
+At this point we have a very large mathematical model, therefore, to exploit the temporal distribution of the model. The team implemented a rolling horizon approach (also known as receding horizon or moving time window), in which the full space model is divided into subproblems with 2 time periods each, then we solve the subproblem and use the solution of the previous subproblem to connect with the next time window (each time window consists of a dynamic model with 2 time periods). 
+Thus, the dynamic model with 2 time steps is solved based on the disturbance of load demand specified by the user (power demand function described above). If the time duration for the simulation is longer than the period of the 2 time steps, the results of the solved dynamic model at the end of the second time step will be copied as the initial condition for the simulation of the next 2 time steps. The results to be copied include the errors for the integral and derivative parts of individual controllers. In case the error term for the integral part of a controller is too large (windup error), the user has an option to reset the windup error. If the time step size is changed, the user needs to choose a different dynamic model to copy to (dynamic flowsheet 1 or dynamic flowsheet 2). After that the time window is rolled to the second one and the simulation for the second time period can then be solved. This process is repeated for multiple time periods until the entire duration for the dynamic simulation is solved. 
+
+Note that during each rolling time window simulation, the results at individual time step for the main performance variables and equipment health are saved. Those results are plotted after the last simulation and written to a text file for review and further processing. Figure 4 shows an example of dynamic model simulation result, the load demand (ramp function) and coal feed rate for as functions of time.
 
 Figure 4: Transient results for a load changing dynamic simulation
 

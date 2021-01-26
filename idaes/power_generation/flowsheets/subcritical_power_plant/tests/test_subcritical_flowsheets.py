@@ -7,9 +7,12 @@ from idaes.core.util.dyn_utils import (
     copy_values_at_time,
     copy_non_time_indexed_values)
 
-import idaes.power_generation.flowsheets.subcritical_power_plant.subcritical_power_plant as subcrit_plant
-import idaes.power_generation.flowsheets.subcritical_power_plant.steam_cycle_flowsheet as steam_cycle
-import idaes.power_generation.flowsheets.subcritical_power_plant.subcritical_boiler_flowsheet as blr
+import idaes.power_generation.flowsheets.subcritical_power_plant.\
+    subcritical_power_plant as subcrit_plant
+import idaes.power_generation.flowsheets.subcritical_power_plant.\
+    steam_cycle_flowsheet as steam_cycle
+import idaes.power_generation.flowsheets.subcritical_power_plant.\
+    subcritical_boiler_flowsheet as blr
 
 import pytest
 
@@ -80,10 +83,10 @@ def test_steam_cycle():
     assert (pytest.approx(266.8806, abs=1e-2) ==
             pyo.value(m.fs_main.fs_stc.power_output[0]))
     assert (pytest.approx(0, abs=1e-2) ==
-            pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0] # turbine inlet
-                      - m.fs_main.fs_stc.turb.hp_split[14].outlet_1.flow_mol[0] # out to reheat
-                      + m.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0] # in from reheat
-                      - m.fs_main.fs_stc.spray_valve.outlet.flow_mol[0] # out to attemperator
-                      - m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0] # out to economizer
-                      + m.fs_main.fs_stc.makeup_valve.inlet.flow_mol[0] # in from makeup
+            pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0]  # turbine inlet
+                      - m.fs_main.fs_stc.turb.hp_split[14].outlet_1.flow_mol[0]  # out to reheat
+                      + m.fs_main.fs_stc.turb.ip_stages[1].inlet.flow_mol[0]  # in from reheat
+                      - m.fs_main.fs_stc.spray_valve.outlet.flow_mol[0]  # out to attemperator
+                      - m.fs_main.fs_stc.fwh6.desuperheat.outlet_2.flow_mol[0]  # out to economizer
+                      + m.fs_main.fs_stc.makeup_valve.inlet.flow_mol[0]  # in from makeup
                       ))

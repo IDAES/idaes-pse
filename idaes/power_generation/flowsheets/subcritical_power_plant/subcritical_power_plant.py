@@ -1812,7 +1812,7 @@ if __name__ == "__main__":
     to run dynamic model, call main_dyn()
     """
     # This method builds and runs a subcritical coal-fired power plant
-    # dynamic simulation. The simulation consist of 5%/min ramping down from
+    # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up
     # to 100% load and holding for 20 minutes.
     # uncomment the code to run this simulation,
@@ -1820,6 +1820,6 @@ if __name__ == "__main__":
     # m_dyn = main_dynamic()
 
     # This method builds and runs a steady state subcritical coal-fired power
-    # plant, the simulation consist of a typical base load case.
+    # plant, the simulation consists of a typical base load case.
     m_ss = main_steady_state()
     print_pfd_results(m_ss)
