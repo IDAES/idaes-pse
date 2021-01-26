@@ -13,7 +13,7 @@
 """
 """
 
-import pyomo.environ as aml
+import pyomo.environ as pyo
 import pyomo.dae as dae
 import pyomo.network as pyn
 from pyomo.common.collections import ComponentSet
@@ -58,9 +58,9 @@ import pytest
 
 __author__ = "Robert Parker"
 
-solver_available = aml.SolverFactory('ipopt').available()
+solver_available = pyo.SolverFactory('ipopt').available()
 if solver_available:
-    solver = aml.SolverFactory('ipopt')
+    solver = pyo.SolverFactory('ipopt')
 else:
     solver = None
 
@@ -116,20 +116,20 @@ class TestDynamicBlock(object):
                 ]
 
         block_objects = ComponentSet(
-                block.component_objects(aml.Block, descend_into=False))
+                block.component_objects(pyo.Block, descend_into=False))
         # Assert that subblocks have been added
         assert len(subblocks) == len(block_objects)
         for b in subblocks:
             assert b in block_objects
 
         # Assert that we can add variables and constraints to the block
-        block.v = aml.Var(initialize=3)
-        block.c = aml.Constraint(expr=block.v==5)
+        block.v = pyo.Var(initialize=3)
+        block.c = pyo.Constraint(expr=block.v==5)
         assert block.v.value == 3
         assert block.v in ComponentSet(identify_variables(block.c.expr))
 
     def test_construct_indexed(self):
-        block_set = aml.Set(initialize=[0,1,2])
+        block_set = pyo.Set(initialize=[0,1,2])
         block_set.construct()
         horizon_map = {0: 1., 1: 3., 2: 5.}
         nfe_map = {0: 2, 1: 6, 2: 10}
@@ -191,18 +191,18 @@ class TestDynamicBlock(object):
                     ]
 
             block_objects = ComponentSet(
-                    b.component_objects(aml.Block, descend_into=False))
+                    b.component_objects(pyo.Block, descend_into=False))
             assert len(subblocks) == len(block_objects)
             for sb in subblocks:
                 assert sb in block_objects
 
-            b.v = aml.Var(initialize=3)
-            b.c = aml.Constraint(expr=b.v==5)
+            b.v = pyo.Var(initialize=3)
+            b.c = pyo.Constraint(expr=b.v==5)
             assert b.v.value == 3
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
     def test_construct_rule(self):
-        block_set = aml.Set(initialize=range(3))
+        block_set = pyo.Set(initialize=range(3))
         block_set.construct()
         # Create same maps as before
         horizon_map = {0: 1, 1: 3, 2: 5}
@@ -274,13 +274,13 @@ class TestDynamicBlock(object):
                     ]
 
             block_objects = ComponentSet(
-                    b.component_objects(aml.Block, descend_into=False))
+                    b.component_objects(pyo.Block, descend_into=False))
             assert len(subblocks) == len(block_objects)
             for sb in subblocks:
                 assert sb in block_objects
 
-            b.v = aml.Var(initialize=3)
-            b.c = aml.Constraint(expr=b.v==5)
+            b.v = pyo.Var(initialize=3)
+            b.c = pyo.Constraint(expr=b.v==5)
             assert b.v.value == 3
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
@@ -551,11 +551,11 @@ class TestDynamicBlock(object):
 #        blk2 = self.make_block()
 #
 #        src_comps = [
-#                aml.Reference(blk1.vectors.differential[0,:]),
+#                pyo.Reference(blk1.vectors.differential[0,:]),
 #                # Kinda clunky if this is how I have to get
 #                # the "first differential var."
 #                # _NmpcVector should have a method to make this easier...
-#                aml.Reference(blk1.vectors.algebraic[0,:]),
+#                pyo.Reference(blk1.vectors.algebraic[0,:]),
 #                ]
 #        src_names = [c[0].name for c in src_comps]
 #        tgt_names = [
@@ -952,3 +952,70 @@ class TestDynamicBlock(object):
         time_in_sample = list(blk.generate_time_in_sample(ts, t0=t0))
         pred_time_in_sample = list(t for t in time if t != t0)
         assert time_in_sample == pred_time_in_sample
+
+    def test_get_data_from_sample(self):
+        blk = self.make_block()
+        time = blk.time
+        ts = blk.sample_points[2]
+
+        n_diff = len(blk.DIFFERENTIAL_SET)
+        n_input = len(blk.INPUT_SET)
+        n_alg = len(blk.ALGEBRAIC_SET)
+
+        for (i, t), var in blk.vectors.differential.items():
+            var.set_value(i*t)
+        for (i, t), var in blk.vectors.input.items():
+            var.set_value((n_diff+i)*t)
+        for (i, t), var in blk.vectors.algebraic.items():
+            var.set_value((n_diff+n_input+i)*t)
+
+        # Test default variables with out including t0
+        data = blk.get_data_from_sample(ts)
+        # By default extract values from differential and input variables
+        data_time = list(blk.generate_time_in_sample(ts))
+
+        assert len(data) == n_diff + n_input
+        for var in blk.component_objects((DiffVar, InputVar)):
+            _slice = var.referent
+            cuid = pyo.ComponentUID(_slice)
+            assert cuid in data
+
+        for i, b in blk.DIFFERENTIAL_BLOCK.items():
+            cuid = pyo.ComponentUID(b.var.referent)
+            values = list(b.var[t].value for t in data_time)
+            assert values == data[cuid]
+        for i, b in blk.INPUT_BLOCK.items():
+            cuid = pyo.ComponentUID(b.var.referent)
+            values = list(b.var[t].value for t in data_time)
+            assert values == data[cuid]
+
+        # Test default variables, including the data point at t0
+        data = blk.get_data_from_sample(ts, include_t0=True)
+        data_time = list(blk.generate_time_in_sample(ts, include_t0=True))
+        assert len(data) == n_diff + n_input
+        for var in blk.component_objects((DiffVar, InputVar)):
+            _slice = var.referent
+            cuid = pyo.ComponentUID(_slice)
+            assert cuid in data
+        for i, b in blk.DIFFERENTIAL_BLOCK.items():
+            cuid = pyo.ComponentUID(b.var.referent)
+            values = list(b.var[t].value for t in data_time)
+            assert values == data[cuid]
+        for i, b in blk.INPUT_BLOCK.items():
+            cuid = pyo.ComponentUID(b.var.referent)
+            values = list(b.var[t].value for t in data_time)
+            assert values == data[cuid]
+
+        data = blk.get_data_from_sample(ts,
+                variables=(VariableCategory.ALGEBRAIC,))
+        data_time = list(blk.generate_time_in_sample(ts))
+
+        assert len(data) == n_alg
+        for var in blk.component_objects(AlgVar):
+            cuid = pyo.ComponentUID(var.referent)
+            assert cuid in data
+
+        for i, b in blk.ALGEBRAIC_BLOCK.items():
+            cuid = pyo.ComponentUID(b.var.referent)
+            values = list(b.var[t].value for t in data_time)
+            assert values == data[cuid]
