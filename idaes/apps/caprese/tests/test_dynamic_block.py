@@ -1046,11 +1046,20 @@ class TestDynamicBlock(object):
         blk = self.make_block()
         time = blk.time
         t0 = time.first()
-
         t1 = time[2]
         vals = list(0.1*i for i in blk.INPUT_SET)
         for var, val in zip(blk.vectors.input[:,t1], vals):
             var.set_value(val)
-
         inputs = list(blk.generate_inputs_at_time(t1))
         assert inputs == vals
+
+    def test_generate_measurements_at_time(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+        ts = blk.sample_points[1]
+        vals = list(0.1*i for i in blk.MEASUREMENT_SET)
+        for var, val in zip(blk.vectors.measurement[:, ts], vals):
+            var.set_value(val)
+        meas = list(blk.generate_measurements_at_time(ts))
+        assert meas == vals
