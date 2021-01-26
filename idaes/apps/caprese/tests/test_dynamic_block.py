@@ -1041,3 +1041,16 @@ class TestDynamicBlock(object):
             assert var.variance == 0.05
         for var in blk.DERIVATIVE_BLOCK[:].var:
             assert var.variance == 0.05
+
+    def test_generate_inputs_at_time(self):
+        blk = self.make_block()
+        time = blk.time
+        t0 = time.first()
+
+        t1 = time[2]
+        vals = list(0.1*i for i in blk.INPUT_SET)
+        for var, val in zip(blk.vectors.input[:,t1], vals):
+            var.set_value(val)
+
+        inputs = list(blk.generate_inputs_at_time(t1))
+        assert inputs == vals
