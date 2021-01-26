@@ -519,7 +519,8 @@ class _DynamicBlockData(_BlockData):
         if t0 is None:
             t0 = ts - self.sample_time
         idx_0 = time.find_nearest_index(t0, tolerance=tolerance)
-        for i in range(idx_0+1, idx_s+1):
+        idx_start = idx_0 if include_t0 else idx_0 + 1
+        for i in range(idx_start, idx_s+1):
             # Don't want to include first point in sample
             yield time[i]
 
