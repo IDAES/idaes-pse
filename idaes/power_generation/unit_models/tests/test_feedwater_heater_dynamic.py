@@ -97,6 +97,7 @@ def test_initialize_unit(build_unit):
     initialization_tester(build_unit, dof=0)
 
 
+# TODO
 # @pytest.mark.integration
 # def test_units(build_unit):
 #     # ToDo: dynamic models cannot assert units consistent
@@ -108,6 +109,8 @@ def test_initialize_unit(build_unit):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_fwh_model(build_unit):
     m = build_unit
+    # need to initialize because integration test do not run sequentially
+    m.fs.unit.initialize()
     solver.options = {
             "tol": 1e-7,
             "linear_solver": "ma27",
@@ -115,7 +118,9 @@ def test_fwh_model(build_unit):
     }
     # initial drain flow rate
     drain_flow0 = m.fs.unit.cooling.outlet_1.flow_mol[0].value
-    assert(abs(drain_flow0 - 67.2061) < 0.0001)
+    assert(pytest.approx(67.20607, abs=1e-2) ==
+           pyo.value(m.fs.unit.cooling.outlet_1.flow_mol[0]))
+
     # change drain flow rate to increase water level
     for t in m.fs.time:
         if t >= 30:
@@ -124,4 +129,5 @@ def test_fwh_model(build_unit):
     m.fs.unit.condense.level[0].fix()
     solver.solve(m, tee=True)
     assert(degrees_of_freedom(m) == 0)
-    assert(abs(m.fs.unit.condense.level[60].value - 0.2759) < 0.0001)
+    assert(pytest.approx(0.2759, abs=1e-2) ==
+           pyo.value(m.fs.unit.condense.level[60]))

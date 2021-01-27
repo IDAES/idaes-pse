@@ -2,13 +2,7 @@
 import pyomo.environ as pyo
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.properties import iapws95
-# import idaes.logger as idaeslog
-from idaes.core.util.dyn_utils import (
-    copy_values_at_time,
-    copy_non_time_indexed_values)
 
-import idaes.power_generation.flowsheets.subcritical_power_plant.\
-    subcritical_power_plant as subcrit_plant
 import idaes.power_generation.flowsheets.subcritical_power_plant.\
     steam_cycle_flowsheet as steam_cycle
 import idaes.power_generation.flowsheets.subcritical_power_plant.\
