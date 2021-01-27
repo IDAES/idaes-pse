@@ -48,8 +48,25 @@ def pwc_rule(ctrl, i, t):
 
 
 class _ControllerBlockData(_DynamicBlockData):
+    """ This class adds methods useful for working with dynamic
+    models to be used by a controller. These include methods for
+    calculating a setpoint and adding objective functions.
+    """
 
     def solve_setpoint(self, solver, require_steady=True):
+        """ This method performs a "real time optimization-type"
+        solve on the model, using only the variables and constraints
+        at the first point in time. The purpose is to calculate a
+        (possibly steady state) setpoint.
+
+        Parameters:
+            solver: A Pyomo solver object that will be used to solve
+                    the model with only variables and constraints at t0
+                    active.
+            require_steady: Whether derivatives should be fixed to zero
+                            for the solve. Default is `True`.
+
+        """
         model = self.mod
         time = self.time
         t0 = time.first()
@@ -130,7 +147,18 @@ class _ControllerBlockData(_DynamicBlockData):
             setpoint,
             weights,
             ):
-        """
+        """ This method uses user-provided setpoints and weights
+        to directly construct a least-squares objective for the
+        specified variables at the first time point. The purpose
+        is to then use the first time point to solve for a "proper
+        setpoint" that provides a value for every variable.
+
+        Parameters:
+            setpoint: List of vardata, value tuples describing the
+                      setpoint values of these specified variables.
+            weights: List of vardata, value tuples describing the
+                     weight for each variable's term in the objective.
+
         """
         vardata_map = self.vardata_map
         for vardata, weight in weights:
@@ -141,8 +169,7 @@ class _ControllerBlockData(_DynamicBlockData):
         for vardata, sp in setpoint:
             nmpc_var = vardata_map[vardata]
             if nmpc_var.weight is None:
-                # TODO: config with outlvl, use logger here.
-                print('WARNING: weight not supplied for %s' % var.name)
+                self.logger.warning('Weight not supplied for %s' % var.name)
                 nmpc_var.weight = 1.0
             weight_vector.append(nmpc_var.weight)
 
@@ -161,7 +188,24 @@ class _ControllerBlockData(_DynamicBlockData):
             input_weight=1.0,
             objective_weight=1.0,
             ):
-        """
+        """ This method constructs a tracking objective based on existing
+        `setpoint` attributes of this block's `NmpcVar`s and adds it to the
+        block. Only specific ctypes listed in `state_ctypes` are directly
+        penalized in the objective. These should be the differential variables
+        or the measurements, for traditional NMPC.
+
+        Parameters:
+            weights: A list of vardata-value tuples describing the weight to
+                     be given to the objective term containing each variable.
+            control_penalty_type: An entry of the `ControlPenaltyType` enum,
+                                  used to determine if control variable error
+                                  or action will be penalized.
+            state_ctypes: A ctype for the state variables that should be
+                          included in the objective function. This should be
+                          one of the types from `nmpc_var.py`.
+            state_weight: A scalar weight for the state terms in the objective.
+            input_weight: A scalar weight for the input terms in the objective.
+            objective_weight: A scalar weight for the entire objective.
         """
         samples = self.sample_points
         # Since t0 ~is~ a sample point, will have to iterate
@@ -216,12 +260,20 @@ class _ControllerBlockData(_DynamicBlockData):
         self.tracking_objective = Objective(expr=obj_expr)
 
     def constrain_control_inputs_piecewise_constant(self):
+        """ Adds an indexed constraint `pwc_constraint` that
+        sets each control variable equal to itself at the previous
+        time point. This constraint is skipped at sample points.
+        """
         time = self.time
         input_set = self.INPUT_SET
         self.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
 
 
 class ControllerBlock(DynamicBlock):
+    """ This is a user-facing class to be instantiated when one
+    wants to work with a block capable of the methods of
+    `_ControllerBlockData`.
+    """
     _ComponentDataClass = _ControllerBlockData
 
     def __new__(cls, *args, **kwds):
