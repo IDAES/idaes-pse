@@ -47,6 +47,8 @@ class _DynamicBlockData(_BlockData):
     # TODO: This class should probably give the option to clone
     # the user's model.
 
+    logger = idaeslog.getLogger('nmpc')
+
     def _construct(self):
         """ Generates time-indexed references and categorizes them. """
         model = self.mod
