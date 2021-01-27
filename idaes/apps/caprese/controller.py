@@ -14,6 +14,7 @@ from idaes.apps.caprese.nmpc_var import (
         InputVar,
         DerivVar,
         FixedVar,
+        MeasuredVar,
         )
 from idaes.apps.caprese.dynamic_block import (
         _DynamicBlockData,
@@ -116,7 +117,8 @@ class _ControllerBlockData(_DynamicBlockData):
             if was_fixed[var]:
                 var.fix()
 
-        setpoint_ctype = (DiffVar, AlgVar, InputVar, FixedVar, DerivVar)
+        setpoint_ctype = (DiffVar, AlgVar, InputVar,
+                          FixedVar, DerivVar, MeasuredVar)
         for var in self.component_objects(setpoint_ctype):
             var.setpoint = var[t0].value
 
