@@ -53,38 +53,6 @@ else:
     solver = None
 
 
-@pytest.mark.unit
-def test_find_comp_in_block():
-    m1 = ConcreteModel()
-
-    @m1.Block([1,2,3])
-    def b1(b):
-        b.v = Var([1,2,3])
-
-    m2 = ConcreteModel()
-
-    @m2.Block([1,2,3])
-    def b1(b):
-        b.v = Var([1,2,3,4])
-
-    @m2.Block([1,2,3])
-    def b2(b):
-        b.v = Var([1,2,3])
-
-    v1 = m1.b1[1].v[1]
-
-    assert find_comp_in_block(m2, m1, v1) is m2.b1[1].v[1]
-
-    v2 = m2.b2[1].v[1]
-    v3 = m2.b1[3].v[4]
-
-    # These should result in Attribute/KeyErrors
-    #find_comp_in_block(m1, m2, v2)
-    #find_comp_in_block(m1, m2, v3)
-    assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
-    assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
-
-
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
 def test_initialize_by_element_in_range():
