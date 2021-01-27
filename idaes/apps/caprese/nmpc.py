@@ -17,33 +17,11 @@ Class for performing NMPC simulations of IDAES flowsheets
 
 import random
 from pyomo.environ import (
-        Block, 
-        Constraint, 
-        Var, 
-        TerminationCondition,
-        SolverFactory, 
-        Objective, 
-        NonNegativeReals, 
-        Reals, 
-        TransformationFactory, 
-        Reference, 
-        value,
         ComponentUID,
-        )
-from pyomo.core.base.range import remainder
-from pyomo.common.collections import ComponentMap
-from pyomo.dae.initialization import (
-        solve_consistent_initial_conditions,
-        get_inconsistent_initial_conditions,
         )
 from pyomo.util.slices import slice_component_along_sets
 from pyutilib.misc.config import ConfigDict, ConfigValue
 
-from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import (
-        degrees_of_freedom, 
-        activated_equalities_generator,
-        )
 from idaes.apps.caprese.dynamic_block import (
         DynamicBlock,
         )
@@ -56,7 +34,13 @@ __author__ = "Robert Parker and David Thierry"
 
 class NMPCSim(object):
     """
-    Main class for NMPC simulations of Pyomo models.
+    This is a user-facing class to perform NMPC simulations with Pyomo
+    models for both plant and controller. The user must provide the
+    models to use for each, along with sets to treat as "time,"
+    inputs in the plant model, and measurements in the controller
+    model. Its functionality is primarily to ensure that these components
+    (as defined by the names relative to the corresponding provided models)
+    exist on both models.
     """
     # TODO: pyomo.common.config.add_docstring_list
 
