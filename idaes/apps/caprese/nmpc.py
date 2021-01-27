@@ -44,25 +44,12 @@ from idaes.core.util.model_statistics import (
         degrees_of_freedom, 
         activated_equalities_generator,
         )
-from idaes.core.util.dyn_utils import (
-        deactivate_model_at,
-        path_from_block, 
-        find_comp_in_block, 
-        find_comp_in_block_at_time,
-        )
-from idaes.apps.caprese.common.config import (
-        ControlInitOption,
-        ElementInitializationInputOption,
-        TimeResolutionOption,
-        ControlPenaltyType,
-        VariableCategory)
 from idaes.apps.caprese.dynamic_block import (
         DynamicBlock,
         )
 from idaes.apps.caprese.controller import (
         ControllerBlock,
         )
-import idaes.logger as idaeslog
 
 __author__ = "Robert Parker and David Thierry"
 
@@ -84,10 +71,8 @@ class NMPCSim(object):
         # modulo the index of some set:
         # i.   slice the component along the set
         # ii.  create a cuid from that slice
-        # iii. get a (any) component in the new model from the cuid
-        # iv.  slice the new component along the corresponding set
-        # v.   create a reference to that slice
-        # vi.  access the reference at the index you want (optional)
+        # iii. get a reference to the slice from the cuid on the new model
+        # iv.  access the reference at the index you want (optional)
         self.measurement_cuids = [
                 ComponentUID(
                 slice_component_along_sets(comp, (controller_time_set,)))
@@ -99,17 +84,11 @@ class NMPCSim(object):
                 for comp in inputs_at_t0
                 ]
 
-        init_plant_measurements = []
-        for cuid in self.measurement_cuids:
-            # Here I perform steps iii. and iv. of the above.
-            # With the CUID rewrite, I should be able to combine these steps
-            # and get the slice directly from the CUID.
-            for comp in cuid.list_components(plant_model):
-                break
-            _slice = slice_component_along_sets(comp, (plant_time_set,))
-            ref = Reference(_slice)
-            t0 = plant_time_set.first()
-            init_plant_measurements.append(ref[t0])
+        p_t0 = plant_time_set.first()
+        init_plant_measurements = [
+                cuid.find_component_on(plant_model)[p_t0]
+                for cuid in self.measurement_cuids
+                ]
 
         self.plant = DynamicBlock(
                 model=plant_model,
@@ -121,14 +100,11 @@ class NMPCSim(object):
 
         # Here we repeat essentially the same "find component"
         # procedure as above.
-        init_controller_inputs = []
-        for cuid in self.input_cuids:
-            for comp in cuid.list_components(controller_model):
-                break
-            _slice = slice_component_along_sets(comp, (controller_time_set,))
-            ref = Reference(_slice)
-            t0 = controller_time_set.first()
-            init_controller_inputs.append(ref[t0])
+        c_t0 = controller_time_set.first()
+        init_controller_inputs = [
+                cuid.find_component_on(controller_model)[c_t0]
+                for cuid in self.input_cuids
+                ]
         self.controller = ControllerBlock(
                 model=controller_model,
                 time=controller_time_set,
