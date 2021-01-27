@@ -69,46 +69,40 @@ else:
 
 
 class CachedVarsContext(object):
-    def __init__(self, varlist, nvars, tlist):
+    """ This is a simple class to cache the values of variables,
+    for instance while a solve is performed, so that they may be loaded
+    later.
+
+    For example, to set values of disturbances different than those
+    already loaded at t0 when solving for the steady state setpoint:
+
+    >>> ctrl = nmpc.controller
+    >>> disturbances = [ctrl.FIXED_BLOCK[0].var, ctrl.FIXED_BLOCK[1].var]
+    >>> with CachedVarsContext(disturbances, [t0]):
+    >>>     for d in disturbances:
+    >>>         d[t0].set_value(1.5)
+    >>>     ctrl.solve_setpoint(solver)
+
+    """
+    def __init__(self, varlist, tlist):
         if type(tlist) is not list:
             tlist = [tlist]
         self.n_t = len(tlist)
         self.vars = varlist
-        self.nvars = nvars
         self.tlist = tlist
         self.cache = [[None for j in range(self.n_t)] 
-                for i in range(self.nvars)]
+                for i in range(len(self.vars))]
 
     def __enter__(self):
-        for i in range(self.nvars):
+        for i in range(len(self.vars)):
             for j, t in enumerate(self.tlist):
                 self.cache[i][j] = self.vars[i][t].value
         return self
 
     def __exit__(self, a, b, c):
-        for i in range(self.nvars):
+        for i in range(len(self.vars)):
             for j, t in enumerate(self.tlist):
                 self.vars[i][t].set_value(self.cache[i][j])
-
-
-def get_violated_bounds_at_time(group, timepoints, tolerance=1e-8):
-    if type(timepoints) is not list:
-        timepoints = [timepoints]
-    violated = []
-    for i, var in enumerate(group):
-        ub = group.ub[i]
-        lb = group.lb[i]
-        if ub is not None:
-            for t in timepoints:
-                if var[t].value - ub > tolerance:
-                    violated.append(var[t])
-                    continue
-        if lb is not None:
-            for t in timepoints:
-                if lb - var[t].value > tolerance:
-                    violated.append(var[t])
-                    continue
-    return violated
 
 
 def initialize_by_element_in_range(model, time, t_start, t_end, 
