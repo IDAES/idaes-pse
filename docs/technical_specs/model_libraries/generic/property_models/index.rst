@@ -6,6 +6,5 @@ Property Models
 
     ceos
     activity_coefficient
-    water
+    helmholtz
     interrogator
-    

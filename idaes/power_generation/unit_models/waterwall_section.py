@@ -520,14 +520,12 @@ constructed,
         self.vapor_fraction = Var(
                 self.flowsheet().config.time,
                 initialize=0.0,
-                bounds=(0, 1),
                 doc='Vapor fractoin of vapor-liquid mixture')
 
         # Liquid fraction at inlet
         self.liquid_fraction = Var(
                 self.flowsheet().config.time,
                 initialize=1.0,
-                bounds=(0, 1),
                 doc='Liquid fractoin of vapor-liquid mixture')
 
         # Density ratio of liquid to vapor
@@ -540,7 +538,6 @@ constructed,
         self.void_fraction = Var(
                 self.flowsheet().config.time,
                 initialize=0.0,
-                bounds=(0, 1),
                 doc='void fraction at inlet')
 
         # Exponent n for gamma at inlet, typical range in (0.75,0.8294)
