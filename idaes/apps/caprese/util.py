@@ -15,57 +15,33 @@
 A module of helper functions for working with flattened DAE models.
 """
 
-from pyomo.environ import (Block, Constraint, Var, TerminationCondition,
-        SolverFactory, Objective, NonNegativeReals, Reals, 
-        TransformationFactory)
+from pyomo.environ import (
+        Constraint,
+        Var,
+        TerminationCondition,
+        TransformationFactory,
+        )
 from pyomo.common.collections import ComponentSet, ComponentMap
-from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.dae.set_utils import is_in_block_indexed_by
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.core.base.block import _BlockData
-from pyomo.core.base.var import _GeneralVarData
-from pyomo.core.base.component import ComponentUID
-from pyomo.core.base.set import SortedSimpleSet, OrderedSimpleSet
-from pyomo.opt.solver import SystemCallSolver
 
-from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import (get_activity_dict, 
-                                       deactivate_model_at,
-                                       path_from_block, 
-                                       find_comp_in_block_at_time, 
-                                       get_implicit_index_of_set,
-                                       get_fixed_dict, 
-                                       deactivate_constraints_unindexed_by, 
-                                       find_comp_in_block)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.apps.caprese.common.config import VariableCategory, NoiseBoundOption
+from idaes.core.util.dyn_utils import (
+        get_activity_dict, 
+        deactivate_model_at,
+        get_implicit_index_of_set,
+        get_fixed_dict, 
+        deactivate_constraints_unindexed_by, 
+        )
+from idaes.apps.caprese.common.config import NoiseBoundOption
 import idaes.logger as idaeslog
 
-from collections import OrderedDict, namedtuple
-import os
 import random
-import time as timemodule
-import enum
-import json
-import pdb
 
-__author__ = "Robert Parker and David Thierry"
-
-
-# TODO: clean up this file - add license, remove solver_available
-# See if ipopt is available and set up solver
-solver_available = SolverFactory('ipopt').available()
-if solver_available:
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8,
-                      'halt_on_ampl_error': 'yes'}
-else:
-    solver = None
+__author__ = "Robert Parker"
 
 
 class CachedVarsContext(object):
@@ -122,10 +98,6 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
         solver : Solver option used to solve portions of the square model
         outlvl : idaes.logger output level
     """
-    # TODO: How to handle config arguments here? Should this function
-    # be moved to be a method of NMPC? Have a module-level config?
-    # CONFIG, KWARGS: handle these kwargs through config
-
     solver = kwargs.pop('solver', SolverFactory('ipopt'))
     outlvl = kwargs.pop('outlvl', idaeslog.NOTSET)
     init_log = idaeslog.getInitLogger('nmpc', outlvl)
@@ -146,9 +118,6 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
     # Should I specify max_linking_range as an integer number of finite
     # elements, an integer number of time points, or a float in actual time
     # units? Go with latter for now.
-
-    # TODO: Should I fix scalar vars? Intuition is that they should already
-    # be fixed.
 
     assert t_start in time.get_finite_elements()
     assert t_end in time.get_finite_elements()
