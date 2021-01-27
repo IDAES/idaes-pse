@@ -19,7 +19,7 @@ from pyomo.environ import (
         Constraint,
         Var,
         TerminationCondition,
-        TransformationFactory,
+        SolverFactory,
         )
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.dae.flatten import flatten_dae_components
