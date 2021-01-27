@@ -312,7 +312,7 @@ see property package for documentation.}"""))
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
 
-    def initialize(blk, state_args={}, outlvl=idaeslog.NOTSET,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         Downcomer initialization routine.
