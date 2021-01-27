@@ -1165,7 +1165,7 @@ def main_dynamic():
     return m_dyn
 
 
-def get_model(dynamic=True):
+def get_model(dynamic=True, init=True):
     m = pyo.ConcreteModel()
     m.dynamic = dynamic
     m.init_dyn = False
@@ -1189,7 +1189,8 @@ def get_model(dynamic=True):
     m = set_arcs_and_constraints(m)
     m = set_inputs(m)
     set_scaling_factors(m)
-    m = initialize(m)
+    if init:
+        m = initialize(m)
 
     return m
 

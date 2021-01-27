@@ -20,10 +20,19 @@ solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
 
 
+@pytest.mark.component
+def test_subcritical_boiler_ss_build():
+    m = blr.get_model(dynamic=False, init=False)
+    assert degrees_of_freedom(m) == 12
+
+
+@pytest.mark.component
+def test_subcritical_boiler_dynamic_build():
+    m = blr.get_model(dynamic=True, init=False)
+    assert degrees_of_freedom(m) == 223
+
+
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_subcritical_boiler():
     m = blr.main_steady_state()
     assert degrees_of_freedom(m) == 0
@@ -46,9 +55,6 @@ def test_subcritical_boiler():
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_subcritical_boiler_dynamic():
     m = blr.main_dynamic()
     assert degrees_of_freedom(m) == 0
@@ -68,9 +74,6 @@ def test_subcritical_boiler_dynamic():
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_steam_cycle():
     m = steam_cycle.main_steady_state()
     assert degrees_of_freedom(m) == 0
@@ -91,9 +94,6 @@ def test_steam_cycle():
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_subc_power_plant():
     m = subcrit_plant.main_steady_state()
     assert degrees_of_freedom(m) == 0
@@ -113,33 +113,33 @@ def test_subc_power_plant():
                       ))
 
 
-@pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
-def test_dynamic_power_plant():
+@pytest.mark.component
+def test_dynamic_power_plant_build():
     # constructing and initializing dynamic power plant
     # not solving due to simulation time >20 min
-    m = subcrit_plant.get_model(dynamic=True)
-    assert m.dynamic == True
-    assert degrees_of_freedom(m) == 0
+    m = subcrit_plant.get_model(dynamic=True, init=False)
+    assert m.dynamic is True
+    assert degrees_of_freedom(m) == 168
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
+def test_steadystate_power_plant_build():
+    # constructing and initializing dynamic power plant
+    # not solving due to simulation time >20 min
+    m = subcrit_plant.get_model(dynamic=False, init=False)
+    assert m.dynamic is False
+    assert degrees_of_freedom(m) == -5
+
+
+@pytest.mark.component
 def test_dynamic_steam_cycle():
     # constructing and initializing dynamic steam cycle flowsheet
     m = steam_cycle.get_model(dynamic=True)
-    assert m.dynamic == True
+    assert m.dynamic is True
     assert degrees_of_freedom(m) == 7
 
 
 @pytest.mark.unit
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_subcritical_recyrculation_system():
     m = recyrc.main()
     assert degrees_of_freedom(m) == 0

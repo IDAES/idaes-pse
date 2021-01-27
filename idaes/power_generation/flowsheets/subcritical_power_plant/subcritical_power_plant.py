@@ -638,7 +638,7 @@ def main_dynamic():
     return m_dyn
 
 
-def get_model(dynamic=True, time_set=None, nstep=None):
+def get_model(dynamic=True, time_set=None, nstep=None, init=True):
     m = pyo.ConcreteModel()
     m.dynamic = dynamic
     if time_set is None:
@@ -802,9 +802,10 @@ def get_model(dynamic=True, time_set=None, nstep=None):
     set_scaling_factors(m)
     # Add overall performation expressions
     add_overall_performance_expressions(m)
-    # Initialize boiler and steam cycle sub-flowsheets
-    blr.initialize(m)
-    stc.initialize(m)
+    if init:
+        # Initialize boiler and steam cycle sub-flowsheets
+        blr.initialize(m)
+        stc.initialize(m)
 
     # Set arc connections between two sub-flowsheets,
     # deactivate some constraints of two sub-flowsheets
@@ -856,15 +857,14 @@ def get_model(dynamic=True, time_set=None, nstep=None):
         m.fs_main.fs_stc.turb.throttle_valve[1].valve_opening.unfix()
         _log.info("Solve connected models...")
         _log.info("Degrees of freedom = {}".format(degrees_of_freedom(m)))
-        assert degrees_of_freedom(m) == 0
 
         # Solver for solving combined full plant model
         optarg = {"tol": 5e-7, "linear_solver": "ma27", "max_iter": 50}
         solver = pyo.SolverFactory("ipopt")
         solver.options = optarg
-
-        res = solver.solve(m, tee=True)
-        _log.info("Solved: {}".format(idaeslog.condition(res)))
+        if init:
+            res = solver.solve(m, tee=True)
+            _log.info("Solved: {}".format(idaeslog.condition(res)))
         # Main performance data
         _log.info("Power output of main turbine={}".format(
             pyo.value(m.fs_main.fs_stc.power_output[0])))
@@ -983,7 +983,8 @@ def get_model(dynamic=True, time_set=None, nstep=None):
         m.fs_main.fs_stc.power_output.fix(320)
         m.fs_main.fs_stc.spray_valve.valve_opening.unfix()
         m.fs_main.fs_stc.temperature_main_steam.fix(810)
-        res = solver.solve(m, tee=True)
+        if init:
+            res = solver.solve(m, tee=True)
 
         # Main performance data
         _log.info("Power output of main turbine={}".format(
