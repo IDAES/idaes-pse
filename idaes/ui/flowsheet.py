@@ -399,7 +399,9 @@ class FlowsheetSerializer:
                                                 .str.replace("flow_mol_phase_comp", "")
                                                 .str.rstrip()
                                             )
+        # Change NaNs to None for JSON
         self._stream_table_df = self._stream_table_df.where((pd.notnull(self._stream_table_df)), None)
+
         # Puts df in this format for easier parsing in the javascript table:
         # {'index': ["('Liq', 'benzene')", "('Liq', 'toluene')", "('Liq', 'hydrogen')", "('Liq', 'methane')", "('Vap', 'benzene')", "('Vap', 'toluene')", "('Vap', 'hydrogen')", "('Vap', 'methane')", 'temperature', 'pressure'], 
         # 'columns': ['s03', 's04', 's05', 's06', 's08', 's09', 's10'], 

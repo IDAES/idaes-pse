@@ -12,9 +12,9 @@ export class App {
                 this.toolbar = new Toolbar(this, this.paper);
                 this.stream_table = new StreamTable(this, model);
             })
-	    .fail((xhr, status, error) => {
-                 console.log(status);
-                 console.log(error);
+            .fail((xhr, status, error) => { 
+                console.log(error);
+                console.log(status); 
             });
     }
 
