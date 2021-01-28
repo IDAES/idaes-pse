@@ -344,7 +344,7 @@ class ProcessBlockData(_BlockData):
         try:
             stream_table = self._get_stream_table_contents(time_point)
         except ConfigurationError as err:
-            logger.warning(f"Could not serialize stream table: {err}")
+            _log.warning(f"Could not serialize stream table: {err}")
             stream_table = DataFrame()
         return performance_contents, stream_table
 
