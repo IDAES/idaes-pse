@@ -126,10 +126,10 @@ class TestStateBlock(object):
 
         # Fix state
         model.fs.props[1].flow_mol.fix(1)
-        model.fs.props[1].temperature.fix(200.00)
-        model.fs.props[1].pressure.fix(101325)
-        model.fs.props[1].mole_frac_comp["carbon_dioxide"].fix(1/2)
-        model.fs.props[1].mole_frac_comp["bmimPF6"].fix(1/2)
+        model.fs.props[1].temperature.fix(298.15)
+        model.fs.props[1].pressure.fix(1214713.75)
+        model.fs.props[1].mole_frac_comp["carbon_dioxide"].fix(0.2)
+        model.fs.props[1].mole_frac_comp["bmimPF6"].fix(0.8)
 
         assert degrees_of_freedom(model.fs.props[1]) == 0
 
@@ -144,19 +144,20 @@ class TestStateBlock(object):
         assert model.fs.props[1].flow_mol.lb == 0
 
         assert isinstance(model.fs.props[1].pressure, Var)
-        assert value(model.fs.props[1].pressure) == 101325
+        assert value(model.fs.props[1].pressure) == 1214713.75
         assert model.fs.props[1].pressure.ub == 1e10
         assert model.fs.props[1].pressure.lb == 5e-4
 
         assert isinstance(model.fs.props[1].temperature, Var)
-        assert value(model.fs.props[1].temperature) == 200
+        assert value(model.fs.props[1].temperature) == 298.15
         assert model.fs.props[1].temperature.ub == 500
         assert model.fs.props[1].temperature.lb == 10
 
         assert isinstance(model.fs.props[1].mole_frac_comp, Var)
         assert len(model.fs.props[1].mole_frac_comp) == 2
-        for i in model.fs.props[1].mole_frac_comp:
-            assert value(model.fs.props[1].mole_frac_comp[i]) == 1/2
+        assert value(model.fs.props[1].mole_frac_comp["carbon_dioxide"]) == 0.2
+        assert value(model.fs.props[1].mole_frac_comp["bmimPF6"]) ==  0.8
+
 
         # Check supporting variables
         assert isinstance(model.fs.props[1].flow_mol_phase, Var)
@@ -312,12 +313,12 @@ class TestStateBlock(object):
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.fs.unit.liq_outlet.mole_frac_comp[0, "carbon_dioxide"].value == \
-            pytest.approx(0.0472, abs=1e-4)
+            pytest.approx(0.3119, abs=1e-4)
         assert model.fs.unit.vap_outlet.mole_frac_comp[0,"carbon_dioxide"].value == \
             pytest.approx(1.0000, abs=1e-4)
         assert (model.fs.unit.vap_outlet.flow_mol[0].value /
                 model.fs.unit.liq_outlet.flow_mol[0].value)  == \
-                pytest.approx(0.9055, abs=1e-4)
+                pytest.approx(0.37619, abs=1e-4)
 
     @pytest.mark.ui
     @pytest.mark.unit
