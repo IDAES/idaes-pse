@@ -384,8 +384,6 @@ class FlowsheetSerializer:
         from idaes.core.util.tables import create_stream_table_dataframe # deferred to avoid circular import
 
         # Get the stream table and add it to the model json
-        self._stream_table_df = create_stream_table_dataframe(self.arcs)
-        
         # Change the index of the pandas dataframe to not be the variables
         self._stream_table_df = (
             create_stream_table_dataframe(self.arcs)
@@ -395,7 +393,11 @@ class FlowsheetSerializer:
         )
 
         # Parse the names of the variables to get rid of flow_mol_phase_comp
-        self._stream_table_df['Variable'] = self._stream_table_df['Variable'].map(lambda x: x.replace("flow_mol_phase_comp ", "") if "flow_mol_phase_comp" in x else x)
+        self._stream_table_df['Variable'] = self._stream_table_df["Variable"] = (
+                                                self._stream_table_df["Variable"]
+                                                .str.replace("flow_mol_phase_comp", "")
+                                                .str.rstrip()
+                                            )
 
         # Puts df in this format for easier parsing in the javascript table:
         # {'index': ["('Liq', 'benzene')", "('Liq', 'toluene')", "('Liq', 'hydrogen')", "('Liq', 'methane')", "('Vap', 'benzene')", "('Vap', 'toluene')", "('Vap', 'hydrogen')", "('Vap', 'methane')", 'temperature', 'pressure'], 
