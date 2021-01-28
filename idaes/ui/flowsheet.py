@@ -21,7 +21,7 @@ import re
 from typing import Dict, List, Tuple
 
 # third-party
-from pandas import DataFrame
+import pandas as pd
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -281,11 +281,11 @@ class FlowsheetSerializer:
                 )
             self.serialized_contents[unit_name]["stream_contents"] = stream_df
 
-            performance_df = DataFrame()
+            performance_df = pd.DataFrame()
             if performance_contents:
                 # If performance contents is not empty or None then stick it into a dataframe and convert the
                 # GeneralVars to actual values
-                performance_df = DataFrame(
+                performance_df = pd.DataFrame(
                     performance_contents["vars"].items(), columns=["Variable", "Value"]
                 )
                 performance_df["Value"] = performance_df["Value"].map(
@@ -398,7 +398,7 @@ class FlowsheetSerializer:
                                                 .str.replace("flow_mol_phase_comp", "")
                                                 .str.rstrip()
                                             )
-
+        self._stream_table_df = self._stream_table_df.where((pd.notnull(self._stream_table_df)), None)
         # Puts df in this format for easier parsing in the javascript table:
         # {'index': ["('Liq', 'benzene')", "('Liq', 'toluene')", "('Liq', 'hydrogen')", "('Liq', 'methane')", "('Vap', 'benzene')", "('Vap', 'toluene')", "('Vap', 'hydrogen')", "('Vap', 'methane')", 'temperature', 'pressure'], 
         # 'columns': ['s03', 's04', 's05', 's06', 's08', 's09', 's10'], 
@@ -523,7 +523,7 @@ class FlowsheetSerializer:
         entry["angle"] = angle
         entry["id"] = name
         # This defines what layer the icon is on
-        z = (1,)
+        z = 1
         entry["z"] = z
         entry["ports"] = port_groups
         entry["attrs"] = {

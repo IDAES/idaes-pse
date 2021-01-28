@@ -104,9 +104,7 @@
          },
          "angle":0,
          "id":"flash",
-         "z":[
-            1
-         ],
+         "z": 1,
          "ports":{
             "groups":{
                "in":{
@@ -209,9 +207,7 @@
          },
          "angle":0,
          "id":"inlet_1",
-         "z":[
-            1
-         ],
+         "z": 1,
          "ports":{
             "groups":{
                "out":{
@@ -266,9 +262,7 @@
          },
          "angle":0,
          "id":"liq_outlet_1",
-         "z":[
-            1
-         ],
+         "z": 1,
          "ports":{
             "groups":{
                "in":{
@@ -323,9 +317,7 @@
          },
          "angle":0,
          "id":"vap_outlet_1",
-         "z":[
-            1
-         ],
+         "z": 1,
          "ports":{
             "groups":{
                "in":{
