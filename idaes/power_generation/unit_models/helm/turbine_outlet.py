@@ -184,7 +184,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.efficiency_correlation.activate()
         slvr = SolverFactory(solver)
         slvr.options = optarg
-        self.display()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
