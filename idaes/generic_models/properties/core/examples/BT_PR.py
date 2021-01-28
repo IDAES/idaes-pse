@@ -35,7 +35,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 
-import idaes.generic_models.properties.core.pure.RPP as RPP
+from idaes.generic_models.properties.core.pure.RPP import RPP
 
 # Set up logger
 _log = logging.getLogger(__name__)
