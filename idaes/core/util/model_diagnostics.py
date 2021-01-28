@@ -13,7 +13,7 @@ import numpy as np
 from scipy.sparse.linalg import svds
 from scipy.sparse import issparse, find
 
-from idaes.core.util.model_statistics import large_residuals_set
+from idaes.core.util.model_statistics import large_residuals_set, variables_near_bounds_set
 
 from pyomo.opt import SolverStatus, TerminationCondition
 
@@ -160,43 +160,37 @@ class DegeneracyHunter():
         return lrs
 
     # Migrate these improvements to model_statistics.variables_near_bounds_generator
-    def check_variable_bounds(self,tol=1e-5, skip_lb = False, skip_ub = False, LOUD=True):
+    def check_variable_bounds(self,tol=1e-5, relative=False, skip_lb = False, skip_ub = False, LOUD=True):
         """
-        Method to return a ComponentSet of all variables within a tolerance
-        of their bounds.
+        Return a ComponentSet of all variables within a tolerance of their bounds.
         Args:
             block : model to be studied
-            tol : residual threshold for inclusion in ComponentSet
+            tol : residual threshold for inclusion in ComponentSet (default = 1e-5)
+            relative : Boolean, use relative tolerance (default = False)
+            skip_lb: Boolean to skip lower bound (default = False)
+            skip_ub: Boolean to skip upper bound (default = False)
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
         """
-        variables_near_bounds_set = ComponentSet()
-        for c in self.block.component_data_objects(
-                ctype=Var):
+        vnbs = variables_near_bounds_set(self.block, tol, relative, skip_lb, skip_ub)
         
-            added = False
-        
-            if not c.lb is None and not skip_lb:
-                if c.value - c.lb < tol:
-                    variables_near_bounds_set.add(c)
-                    added = True
-                
-            if not c.ub is None and not skip_ub and not added:
-                if c.ub - c.value < tol:
-                    variables_near_bounds_set.add(c)
-    
         if LOUD:
             print(" ")
-            if len(variables_near_bounds_set) > 0:
-                print("Variables within",tol,"of their bounds:")
+            if relative:
+                s = "(relative)"
+            else:
+                s = "(absolute)"
+            if len(vnbs) > 0:
+
+                print("Variables within",tol,s,"of their bounds:")
                 print("variable\tlower\tvalue\tupper")
-                for v in variables_near_bounds_set:
+                for v in vnbs:
                     self.print_variable_bounds(v)
             else:
-                print("No variables within",tol,"of their bounds.")
+                print("No variables within",tol,s,"of their bounds.")
             
-        return variables_near_bounds_set
+        return vnbs
     
     def check_rank_equality_constraints(self):
         """

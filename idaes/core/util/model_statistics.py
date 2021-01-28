@@ -672,14 +672,17 @@ def number_unfixed_variables(block):
     return len(unfixed_variables_set(block))
 
 
-def variables_near_bounds_generator(block, tol=1e-4):
+def variables_near_bounds_generator(block, tol=1e-4, relative=True, skip_lb = False, skip_ub = False):
     """
     Generator which returns all Var components in a model which have a value
-    within tol (relative) of a bound.
+    within tol (default: relative) of a bound.
 
     Args:
         block : model to be studied
-        tol : relative tolerance for inclusion in generator (default = 1e-4)
+        tol : (relative) tolerance for inclusion in generator (default = 1e-4)
+        relative : Boolean, use relative tolerance (default = True)
+        skip_lb: Boolean to skip lower bound (default = False)
+        skip_ub: Boolean to skip upper bound (default = False)
 
     Returns:
         A generator which returns all Var components block that are close to a
@@ -690,27 +693,30 @@ def variables_near_bounds_generator(block, tol=1e-4):
         # To avoid errors, check that v has a value
         if v.value is None:
             continue
-
-        # First, determine absolute tolerance to apply to bounds
-        if v.ub is not None and v.lb is not None:
-            # Both upper and lower bounds, apply tol to (upper - lower)
-            atol = value((v.ub - v.lb)*tol)
-        elif v.ub is not None:
-            # Only upper bound, apply tol to bound value
-            atol = abs(value(v.ub*tol))
-        elif v.lb is not None:
-            # Only lower bound, apply tol to bound value
-            atol = abs(value(v.lb*tol))
+            
+        if relative:
+            # First, determine absolute tolerance to apply to bounds
+            if v.ub is not None and v.lb is not None:
+                # Both upper and lower bounds, apply tol to (upper - lower)
+                    atol = value((v.ub - v.lb)*tol)
+            elif v.ub is not None:
+                # Only upper bound, apply tol to bound value
+                atol = abs(value(v.ub*tol))
+            elif v.lb is not None:
+                # Only lower bound, apply tol to bound value
+                atol = abs(value(v.lb*tol))
+            else:
+                continue
         else:
-            continue
+            atol = tol
 
-        if v.ub is not None and value(v.ub - v.value) <= atol:
+        if v.ub is not None and not skip_lb and value(v.ub - v.value) <= atol:
             yield v
-        elif v.lb is not None and value(v.value - v.lb) <= atol:
+        elif v.lb is not None and not skip_ub and value(v.value - v.lb) <= atol:
             yield v
 
 
-def variables_near_bounds_set(block, tol=1e-4):
+def variables_near_bounds_set(block, tol=1e-4, relative=True, skip_lb = False, skip_ub = False):
     """
     Method to return a ComponentSet of all Var components in a model which have
     a value within tol (relative) of a bound.
@@ -718,13 +724,19 @@ def variables_near_bounds_set(block, tol=1e-4):
     Args:
         block : model to be studied
         tol : relative tolerance for inclusion in generator (default = 1e-4)
+        relative : Boolean, use relative tolerance (default = True)
+        skip_lb: Boolean to skip lower bound (default = False)
+        skip_ub: Boolean to skip upper bound (default = False)
 
     Returns:
         A ComponentSet including all Var components block that are close to a
         bound
     """
-    return ComponentSet(variables_near_bounds_generator(block, tol))
-
+    return ComponentSet(variables_near_bounds_generator(block, 
+                                                        tol, 
+                                                        relative, 
+                                                        skip_lb,
+                                                        skip_ub))
 
 def number_variables_near_bounds(block, tol=1e-4):
     """
