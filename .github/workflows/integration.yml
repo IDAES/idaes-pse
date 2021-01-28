@@ -3,7 +3,7 @@ name: Integration
 on:
   push:
     branches:
-      - rel_*
+      - '*_rel'
   schedule:
     # run daily at 5:00 am UTC (12 am ET/9 pm PT)
     - cron: '0 5 * * *'
@@ -30,13 +30,13 @@ jobs:
     # NOTE: the name of the special label is hardcoded here
     # it would be better to extract it to a more global location, e.g. the workflow-level env context,
     # but the env context is not available in job-level if expressions (only step-level ones)
-    if: (github.event.name != 'labeled') || (github.event.label.name == 'CI:run-integration')
+    if: (github.event.action != 'labeled') || (github.event.label.name == 'CI:run-integration')
     runs-on: ubuntu-latest
     steps:
       - name: Notify
         run: echo "The integration tests will run"
   pytest:
-    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
     needs: [check-skip]
     strategy:
@@ -50,11 +50,8 @@ jobs:
           - ubuntu-18.04
           - windows-latest
     steps:
-      - name: Display debug info
-        run: |
-          echo '${{ toJSON(matrix) }}'
-          echo '${{ toJSON(github.event) }}'
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
       - name: Set up Python
         uses: actions/setup-python@v2
         with:

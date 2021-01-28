@@ -79,12 +79,12 @@ class FlueGasParameterData(PhysicalParameterBlock):
 
         # Molecular weight
         self.mw_comp = Param(self.component_list,
-                             initialize={'O2': 0.031998,
+                             initialize={'O2': 0.0319988,
                                          'N2': 0.0280134,
-                                         'NO': 0.0300057,
-                                         'CO2': 0.04401,
-                                         'H2O': 0.01801528,
-                                         'SO2': 0.0640588},
+                                         'NO': 0.0300061,
+                                         'CO2': 0.0440095,
+                                         'H2O': 0.0180153,
+                                         'SO2': 0.064064},
                              doc='Molecular Weight [kg/mol]',
                              units=pyunits.kg/pyunits.mol)
 
