@@ -50,7 +50,7 @@ the control volume energy balance.
 
 .. math::
 
-  h_{out} = \h_{in} - \eta_{is}\left(\h_{in} - \h_{is}\right)
+  h_{out} = h_{in} - \eta_{is}\left(h_{in} - h_{is}\right)
 
 Initialization
 --------------
