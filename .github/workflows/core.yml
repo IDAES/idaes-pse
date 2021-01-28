@@ -48,10 +48,8 @@ jobs:
           - ubuntu-18.04
           - windows-latest
     steps:
-      - name: Display debug info
-        run: |
-          echo '${{ toJSON(matrix) }}'
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
