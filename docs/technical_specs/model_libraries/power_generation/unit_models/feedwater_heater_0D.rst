@@ -7,12 +7,12 @@ Feedwater Heater (0D)
 .. module:: idaes.power_generation.unit_models.feedwater_heater_0D
   :noindex:
 
-The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.  
-It is intended to be used primarily used with the 
-:ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/water:Water/Steam - IAPWS95>` property package. 
-The feedwater heater is split into three sections the condensing section is required while 
-the desuperheating and drain cooling sections are optional. There is also an optional mixer 
-for adding a drain stream from another feedwater heater to the condensing section.  The figure 
+The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.
+It is intended to be used primarily with the
+:ref:`IAWPS95 <technical_specs/model_libraries/generic/property_models/iapws95:International Association of the Properties of Water and Steam IAPWS-95>` property package.
+The feedwater heater is split into three sections the condensing section is required while
+the desuperheating and drain cooling sections are optional. There is also an optional mixer
+for adding a drain stream from another feedwater heater to the condensing section.  The figure
 below shows the layout of the feedwater heater.  All but the condensing section are optional.
 
 .. figure:: feedwater_heater_0D.svg
@@ -74,13 +74,13 @@ The example below shows how to setup a feedwater heater with all tree sections. 
 Model Structure
 ---------------
 
-The condensing section uses the 
-:ref:`FWHCondensing0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_condensing_0D:Feedwater Heater (Condensing Section 0D)>` 
-model to calculate a steam flow rate such that all steam is condensed in the condensing 
-section.  This allows turbine steam extraction rates to be calculated. The other sections 
-are regular 
-:ref:`HeatExchanger <technical_specs/model_libraries/generic/unit_models/heat_exchanger:HeatExchanger (0D)>` models.  
-The table below shows the unit models which make up the feedwater heater, and the option to 
+The condensing section uses the
+:ref:`FWHCondensing0D <technical_specs/model_libraries/power_generation/unit_models/feedwater_heater_condensing_0D:Feedwater Heater (Condensing Section 0D)>`
+model to calculate a steam flow rate such that all steam is condensed in the condensing
+section.  This allows turbine steam extraction rates to be calculated. The other sections
+are regular
+:ref:`HeatExchanger <technical_specs/model_libraries/generic/unit_models/heat_exchanger:HeatExchanger (0D)>` models.
+The table below shows the unit models which make up the feedwater heater, and the option to
 include or exclude them.
 
 =========================== ====================== ====================================================================================================================================================================
