@@ -283,6 +283,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         if self.config.calculate_PA_SA_flows is True:
             self.mole_frac_air = Param(self.config.property_package.
                                        component_list,
+                                       mutable=True,
                                        initialize={'O2': 0.20784,
                                                    'N2': 0.783994,
                                                    'NO': 0.0000001,
