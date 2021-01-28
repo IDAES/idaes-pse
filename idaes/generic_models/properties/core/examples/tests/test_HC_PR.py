@@ -194,13 +194,33 @@ class TestStateBlock(object):
                 [1],
                 default={"defined_state": True})
 
+        # Fix state
+        model.props[1].flow_mol.fix(1)
+        model.props[1].temperature.fix(295.00)
+        model.props[1].pressure.fix(1e5)
+        model.props[1].mole_frac_comp["hydrogen"].fix(0.077)
+        model.props[1].mole_frac_comp["methane"].fix(0.077)
+        model.props[1].mole_frac_comp["ethane"].fix(0.077)
+        model.props[1].mole_frac_comp["propane"].fix(0.077)
+        model.props[1].mole_frac_comp["nbutane"].fix(0.077)
+        model.props[1].mole_frac_comp["ibutane"].fix(0.077)
+        model.props[1].mole_frac_comp["ethylene"].fix(0.077)
+        model.props[1].mole_frac_comp["propene"].fix(0.077)
+        model.props[1].mole_frac_comp["butene"].fix(0.077)
+        model.props[1].mole_frac_comp["pentene"].fix(0.077)
+        model.props[1].mole_frac_comp["hexene"].fix(0.077)
+        model.props[1].mole_frac_comp["heptene"].fix(0.077)
+        model.props[1].mole_frac_comp["octene"].fix(0.076)
+
+        assert degrees_of_freedom(model.props[1]) == 0
+
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
         # Check state variable values and bounds
         assert isinstance(model.props[1].flow_mol, Var)
-        assert value(model.props[1].flow_mol) == 100
+        assert value(model.props[1].flow_mol) == 1
         assert model.props[1].flow_mol.ub == 1000
         assert model.props[1].flow_mol.lb == 0
 
@@ -210,14 +230,15 @@ class TestStateBlock(object):
         assert model.props[1].pressure.lb == 5e4
 
         assert isinstance(model.props[1].temperature, Var)
-        assert value(model.props[1].temperature) == 300
+        assert value(model.props[1].temperature) == 295
         assert model.props[1].temperature.ub == 1500
         assert model.props[1].temperature.lb == 273.15
 
         assert isinstance(model.props[1].mole_frac_comp, Var)
         assert len(model.props[1].mole_frac_comp) == 13
         for i in model.props[1].mole_frac_comp:
-            assert value(model.props[1].mole_frac_comp[i]) == 1/13
+            assert value(model.props[1].mole_frac_comp[i]) == \
+                pytest.approx(0.077, abs=1e-2)
 
         # Check supporting variables
         assert isinstance(model.props[1].flow_mol_phase, Var)

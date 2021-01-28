@@ -124,23 +124,32 @@ class TestStateBlock(object):
                 [1],
                 default={"defined_state": True})
 
+        # Fix state
+        model.fs.props[1].flow_mol.fix(1)
+        model.fs.props[1].temperature.fix(200.00)
+        model.fs.props[1].pressure.fix(101325)
+        model.fs.props[1].mole_frac_comp["carbon_dioxide"].fix(1/2)
+        model.fs.props[1].mole_frac_comp["bmimPF6"].fix(1/2)
+
+        assert degrees_of_freedom(model.fs.props[1]) == 0
+
         return model
 
     @pytest.mark.unit
     def test_build(self, model):
         # Check state variable values and bounds
         assert isinstance(model.fs.props[1].flow_mol, Var)
-        assert value(model.fs.props[1].flow_mol) == 100
+        assert value(model.fs.props[1].flow_mol) == 1
         assert model.fs.props[1].flow_mol.ub == 1000
         assert model.fs.props[1].flow_mol.lb == 0
 
         assert isinstance(model.fs.props[1].pressure, Var)
-        assert value(model.fs.props[1].pressure) == 1e5
+        assert value(model.fs.props[1].pressure) == 101325
         assert model.fs.props[1].pressure.ub == 1e10
         assert model.fs.props[1].pressure.lb == 5e-4
 
         assert isinstance(model.fs.props[1].temperature, Var)
-        assert value(model.fs.props[1].temperature) == 300
+        assert value(model.fs.props[1].temperature) == 200
         assert model.fs.props[1].temperature.ub == 500
         assert model.fs.props[1].temperature.lb == 10
 
@@ -264,19 +273,7 @@ class TestStateBlock(object):
                          "Pressure"]
 
     @pytest.mark.unit
-    def test_dof(self, model):
-
-        # Fix state
-        model.fs.props[1].flow_mol.fix(1)
-        model.fs.props[1].temperature.fix(200.00)
-        model.fs.props[1].pressure.fix(101325)
-        model.fs.props[1].mole_frac_comp["carbon_dioxide"].fix(1/2)
-        model.fs.props[1].mole_frac_comp["bmimPF6"].fix(1/2)
-
-        assert degrees_of_freedom(model.fs.props[1]) == 0
-
-    @pytest.mark.unit
-    def test_dof(self, model):
+    def test_unit_dof(self, model):
         model.fs.unit = Flash(default={"property_package": model.fs.param,
                                "has_heat_transfer": False,
                                "has_pressure_change": False})
@@ -295,7 +292,7 @@ class TestStateBlock(object):
     @pytest.mark.component
     def test_initialize(self, model):
 
-        initialization_tester(model, dof=5)
+        initialization_tester(model, dof=0)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -317,7 +314,7 @@ class TestStateBlock(object):
         assert model.fs.unit.liq_outlet.mole_frac_comp[0, "carbon_dioxide"].value == \
             pytest.approx(0.0472, abs=1e-4)
         assert model.fs.unit.vap_outlet.mole_frac_comp[0,"carbon_dioxide"].value == \
-            pytest.approx(0.9999, abs=1e-4)
+            pytest.approx(1.0000, abs=1e-4)
         assert (model.fs.unit.vap_outlet.flow_mol[0].value /
                 model.fs.unit.liq_outlet.flow_mol[0].value)  == \
                 pytest.approx(0.9055, abs=1e-4)
