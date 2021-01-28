@@ -44,14 +44,14 @@ Model Structure
 
 The turbine outlet stage model contains one :ref:`ControlVolume0DBlock block
 <technical_specs/core/control_volume_0d:0D Control Volume Class>` called control\_volume and
-inherits the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` using the isentropic option.
+inherits the `HelmIsentropicTurbine
+<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Isentropic)>`.
 
 Variables
 ---------
 The variables below are defined int the TurbineInletStage model. Additional variables
-are in inherited from the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` model.
+are in inherited from the :`HelmIsentropicTurbine
+<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Isentropic)>` model.
 
 =========================== ======================== =========== ======================================================================
 Variable                    Symbol                   Index Sets  Doc
@@ -121,9 +121,11 @@ Initialization
 The initialization method for this model will save the current state of the model
 before commencing initialization and reloads it afterwards.  The state of the model
 will be the same after initialization, only the initial guesses for
-unfixed variables will be changed.  To initialize this model, provide a starting
-value for the inlet port variables.  Then provide a guess for one of: discharge
-pressure, ``deltaP``, or ``ratioP``.
+unfixed variables will be changed expect for optional calculation of the flow coefficient.
+To initialize this model, provide a starting value for the inlet port variables.  Then
+provide a guess for one of: discharge pressure, ``deltaP``, or ``ratioP``.  Since a
+good flow coefficient can be difficult to determine, the ``calculate_cf`` option will
+calculate and set a flow coefficient based on the specified inlet flow and ``deltaP``.
 
 The model should initialize readily, but it is possible to provide a flow
 coefficient that is incompatible with the given flow rate resulting in an

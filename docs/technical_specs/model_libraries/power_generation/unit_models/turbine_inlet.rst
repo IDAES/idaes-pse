@@ -6,7 +6,10 @@ Turbine (Inlet Stage)
 
 .. module:: idaes.power_generation.unit_models.helm.turbine_inlet
 
-This is a steam power generation turbine model for the inlet stage.
+This is a steam power generation turbine model for the inlet stage. It inherits
+`HelmIsentropicTurbine
+<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Isentropic)>`.
+
 The turbine inlet model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for Use in a Process Simulation Software Environment." Journal of Engineering for Gas Turbines and Power. v136.
@@ -44,21 +47,20 @@ Degrees of Freedom
 
 Usually the inlet stream, or the inlet stream minus flow rate plus discharge
 pressure are fixed. There are also a few variables which are turbine parameters
-and are usually fixed.  See the variables section for more information.
+and are usually fixed, like flow coefficients.  See the variables section for
+more information.
 
 Model Structure
 ---------------
 
 The turbine inlet stage model contains one :ref:`ControlVolume0DBlock block
 <technical_specs/core/control_volume_0d:0D Control Volume Class>` called control\_volume and
-inherits the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` using the isentropic option.
+inherits `HelmIsentropicTurbine
+<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Isentropic)>`.
 
 Variables
 ---------
-The variables below are defined in the TurbineInletStage model. Additional variables
-are inherited from the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` model.
+The variables below are defined in the HelmIsentropicTurbine model.
 
 =========================== ======================== =========== ======================================================================
 Variable                    Symbol                   Index Sets  Doc
@@ -102,11 +104,12 @@ the stage, which is used in the efficiency calculation.
 Constraints
 -----------
 
-In addition to the constraints inherited from the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` with the isentropic options, this
-model contains two more constraints, one to estimate efficiency and one pressure-flow
-relation.  From the isentropic pressure changer model, these constraints eliminate the
-need to specify efficiency and either inlet flow or outlet pressure.
+In addition to the constraints inherited from the `HelmTurbineStage
+<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Stage)>`,
+this model contains two more constraints, one to estimate efficiency and
+one pressure-flow relation. From the isentropic pressure changer model, these
+constraints eliminate the need to specify efficiency and either inlet flow or
+outlet pressure.
 
 The isentropic efficiency is given by:
 
@@ -129,9 +132,12 @@ Initialization
 The initialization method for this model will save the current state of the model
 before commencing initialization and reloads it afterwards.  The state of the model
 will be the same after initialization, only the initial guesses for
-unfixed variables will be changed.  To initialize this model, provide a starting
-value for the inlet port variables.  Then provide a guess for one of: discharge
-pressure, ``deltaP``, or ``ratioP``.
+unfixed variables will be changed and optionally a flow coefficent value can be
+calculated.  To initialize this model, provide a starting value for the inlet port
+variables. Then provide a guess for one of: discharge pressure, ``deltaP``, or
+``ratioP``.  Since it can be hard to determine a proper flow coefficient, the
+``calculate_cf`` argument of the ``initialize()`` method can be set to True, and
+the deltaP guess will be used to calculate and set a corresponding flow coefficient.
 
 The model should initialize readily, but it is possible to provide a flow
 coefficient that is incompatible with the given flow rate resulting in an
