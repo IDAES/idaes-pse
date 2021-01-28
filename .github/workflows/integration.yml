@@ -50,8 +50,8 @@ jobs:
           - ubuntu-18.04
           - windows-latest
     steps:
-      - uses: ./.github/actions/display-debug-info
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
