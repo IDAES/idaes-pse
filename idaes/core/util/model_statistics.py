@@ -1270,7 +1270,7 @@ def degrees_of_freedom(block):
             number_activated_equalities(block))
 
 
-def large_residuals_set(block, tol=1e-5):
+def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     """
     Method to return a ComponentSet of all Constraint components with a
     residual greater than a given threshold which appear in a model.
@@ -1284,13 +1284,45 @@ def large_residuals_set(block, tol=1e-5):
         greater than tol which appear in block
     """
     large_residuals_set = ComponentSet()
+    if return_residual_values:
+        residual_values = dict()
     for c in block.component_data_objects(
             ctype=Constraint, active=True, descend_into=True):
-        if c.active and value(c.lower - c.body()) > tol:
+            
+        r = 0.0 # residual
+        
+        # check the lower bound
+        # skip if inequality constraint
+        if c.lower is None:
+            r_temp = 0
+        else:
+            r_temp = value(c.lower - c.body())
+        # update the residual
+        if c.active and r_temp > r:
+            r = r_temp
+    
+        # check the upper bound
+        # skip if inequality constraint
+        if c.upper is None:
+            r_temp = 0
+        else:
+            r_temp = value(c.body() - c.upper)
+
+        # update the residual
+        if c.active and r_temp > r:
+            r = r_temp
+        
+        # save residual if it is above threshold
+        if r > tol:
             large_residuals_set.add(c)
-        elif c.active and value(c.body() - c.upper) > tol:
-            large_residuals_set.add(c)
-    return large_residuals_set
+            
+            if return_residual_values:
+                residual_values[c] = r
+    
+    if return_residual_values:
+        return large_residuals_set, residual_values
+    else:
+        return large_residuals_set
 
 
 def number_large_residuals(block, tol=1e-5):

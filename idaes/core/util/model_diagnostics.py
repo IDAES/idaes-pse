@@ -13,6 +13,8 @@ import numpy as np
 from scipy.sparse.linalg import svds
 from scipy.sparse import issparse, find
 
+from idaes.core.util.model_statistics import large_residuals_set
+
 from pyomo.opt import SolverStatus, TerminationCondition
 
 import matplotlib.pyplot as plt
@@ -22,7 +24,8 @@ import matplotlib.pyplot as plt
 import operator
 
 '''
-This code is from Robby Parker.
+The following functions are now available in Pyomo:
+https://github.com/Pyomo/pyomo/pull/1791
 '''
 
 def get_con_eq_idx_map(interface, constraint_names):
@@ -120,53 +123,24 @@ class DegeneracyHunter():
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
         """
-        large_residuals = dict()
-        large_residuals_set = ComponentSet()
-        for c in self.block.component_data_objects(
-                ctype=Constraint, active=True, descend_into=True):
-            r = 0.0 # residual
         
-            # check the lower bound
-            # skip if inequality constraint
-            if c.lower is None:
-                r_temp = 0
-            else:
-                r_temp = value(c.lower - c.body())
-            # update the residual
-            if c.active and r_temp > r:
-                r = r_temp
-        
-            # check the upper bound
-            # skip if inequality constraint
-            if c.upper is None:
-                r_temp = 0
-            else:
-                r_temp = value(c.body() - c.upper)
-
-            # update the residual
-            if c.active and r_temp > r:
-                r = r_temp
-            
-            # save residual if it is above threshold
-            if r > tol:
-                large_residuals_set.add(c)
-            
-                # add to dictionary for sorting
-                # key: constraint, value: residual
-                if print_level > 0:
-                    large_residuals[c] = r
-    
         if print_level > 0:
+            lrs, residual_values = large_residuals_set(self.block, tol, True)
+        else:
+            return large_residuals_set(self.block, tol, False)
+        
+        if print_level > 0:
+                
             print(" ")
-            if len(large_residuals) > 0:
+            if len(residual_values) > 0:
                 print("All constraints with residuals larger than",tol,":")
                 if print_level == 1:
                     print("Count\tName\t|residual|")
                 
                 if sort:
-                    large_residuals = dict(sorted(large_residuals.items(), key=operator.itemgetter(1),reverse=True))
+                    residual_values = dict(sorted(residual_values.items(), key=operator.itemgetter(1),reverse=True))
         
-                for i, (c,r) in enumerate(large_residuals.items()):
+                for i, (c,r) in enumerate(residual_values.items()):
                     if print_level == 0:
                         # Basic print statement. count, constraint, residual
                         print(i,"\t",c,"\t",r)
@@ -183,7 +157,7 @@ class DegeneracyHunter():
             else:
                 print("No constraints with residuals larger than",tol,"!")
                 
-        return large_residuals_set
+        return lrs
 
     # Migrate these improvements to model_statistics.variables_near_bounds_generator
     def check_variable_bounds(self,tol=1e-5, skip_lb = False, skip_ub = False, LOUD=True):
