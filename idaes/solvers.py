@@ -17,12 +17,11 @@ import tarfile
 import idaes
 from shutil import copyfile
 from pyomo.common.download import FileDownloader
-
+import urllib
 
 _log = idaeslog.getLogger(__name__)
+_release_base_url = idaes.config.release_base_url
 
-
-_release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 
 def _hash(fname):
     with open(fname, 'rb') as f:
@@ -35,33 +34,16 @@ def _hash(fname):
     return str(fh.hexdigest())
 
 
-def download_binaries(
-    release=None,
-    url=None,
-    insecure=False,
-    cacert=None,
-    verbose=False,
-    platform="auto"):
-    """
-    Download IDAES solvers and libraries and put them in the right location. Need
-    to supply either local or url argument.
-
-    Args:
-        url (str): a url to download binary files to install files
-
-    Returns:
-        None
-    """
-    if verbose:
-        _log.setLevel(idaeslog.DEBUG)
-    idaes._create_bin_dir()
-    solvers_tar = os.path.join(idaes.bin_directory, "idaes-solvers.tar.gz")
-    libs_tar = os.path.join(idaes.bin_directory, "idaes-lib.tar.gz")
+def _get_file_downloader(insecure, cacert):
     fd = FileDownloader(insecure=insecure, cacert=cacert)
     arch = fd.get_sysinfo()
     if arch[1] != 64:
-        _log.error("IDAES Extensions currently only supports 64bit Python.")
-        raise RuntimeError("IDAES Extensions currently only supports 64bit Python.")
+        _log.error("IDAES Extensions only supports 64bit Python.")
+        raise RuntimeError("IDAES Extensions only supports 64bit Python.")
+    return fd, arch
+
+
+def _get_platform(fd, platform, arch):
     if platform == "auto":
         platform = arch[0]
         if platform == "linux":
@@ -72,58 +54,145 @@ def download_binaries(
         raise Exception("Unknow platform {}".format(platform))
     if platform in idaes.config.binary_platform_map:
         platform = idaes.config.binary_platform_map[platform]
+    _log.debug(f"Downloading binaries for {platform}")
+    return platform
 
-    checksum = {}
+
+def _get_checksums(fd, to_path, release):
+    checksum = {} # storage for hashes if install from release
+    check_to = os.path.join(to_path, f"sha256sum_{release}.txt")
+    check_from = idaes.config.release_checksum_url.format(release)
+    _log.debug(f"Getting checksum file {check_from}")
+    fd.set_destination_filename(check_to)
+    fd.get_binary_file(check_from)
+    # read the hashes file and store then in checksum dict
+    with open(check_to, 'r') as f:
+        for i in range(1000):
+            line = f.readline(1000)
+            if line == "":
+                break
+            line = line.split(sep="  ")
+            checksum[line[1].strip()] = line[0].strip()
+    return checksum
+
+
+def _get_release_url_and_checksum(fd, to_path, release, url, nochecksum):
+    checksum = False # default if not checking checksums
     if release is not None:
-        # if a release is specified it takes precedence over a url
         url = "/".join([_release_base_url, release])
-        # if we're downloading an official release check checksum
-        check_to = os.path.join(idaes.bin_directory, f"sha256sum_{release}.txt")
-        check_from = f"https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{release}.txt"
-        _log.debug("Getting release {}\n  checksum file {}".format(release, check_from))
-        fd.set_destination_filename(check_to)
-        fd.get_binary_file(check_from)
-        with open(check_to, 'r') as f:
-            for i in range(1000):
-                line = f.readline(1000)
-                if line == "":
-                    break
-                line = line.split(sep="  ")
-                checksum[line[1].strip()] = line[0].strip()
-    if url is not None:
-        if not url.endswith("/"):
-            c = "/"
+        if not nochecksum:
+            checksum = _get_checksums(fd, to_path, release)
         else:
-            c = ""
-        solvers_from = c.join([url, "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])])
-        libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])])
-        _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
-        _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
-        if platform == 'darwin':
-            raise Exception('Mac OSX currently unsupported')
-        fd.set_destination_filename(solvers_tar)
-        fd.get_binary_file(solvers_from)
-        fd.set_destination_filename(libs_tar)
-        fd.get_binary_file(libs_from)
+            _log.debug("Skip release checksum verification at user request.")
     else:
+        _log.debug("Release not specified.")
+    if url is None:
+        _log.debug("No release or URL was provided.")
         raise Exception("Must provide a location to download binaries")
+    if url.endswith("/"):
+        url = url[0:-1] # if url ends with "/" remove it for proper join later
+    _log.debug(f"Downloading binaries from {url}")
+    return url, checksum
 
+
+def _download_package(fd, name, frm, to, platform):
+    _log.debug(f"Getting {name} from: {frm}")
+    _log.debug(f"Saving solvers to: {to}")
+    fd.set_destination_filename(to)
+    try:
+        fd.get_binary_file(frm)
+    except urllib.error.HTTPError:
+        raise Exception(f"{name} binaries are unavailable for {platform}")
+
+
+def download_binaries(
+    release=None,
+    url=None,
+    insecure=False,
+    cacert=None,
+    verbose=False,
+    platform="auto",
+    nochecksum=False,
+    library_only=False,
+    no_download=False,
+    to_path=None):
+    """
+    Download IDAES solvers and libraries and put them in the right location. Need
+    to supply either local or url argument.
+
+    Args:
+        url (str): a url to download binary files to install files
+        to_path: for testing only, an alternate subdirectory of the idaes data
+                 directory for a test binary install.
+    Returns:
+        None
+    """
+    if verbose:
+        _log.setLevel(idaeslog.DEBUG)
+    if no_download:
+        nochecksum = True
+    # set the locations to download files to, to_path is an alternate
+    # subdirectory of idaes.data_directory that can optionally be used to test
+    # this function without interfereing with anything else.  It's a subdirectory
+    # of the data directory because that should be a safe place to store some
+    # test files.
+    if to_path is None:
+        to_path = idaes.bin_directory
+    else:
+        to_path = os.path.join(idaes.data_directory, to_path)
+    idaes._create_bin_dir(to_path)
+    fd, arch = _get_file_downloader(insecure, cacert)
+    platform = _get_platform(fd, platform, arch)
+    url, checksum = _get_release_url_and_checksum(
+        fd, to_path, release, url, nochecksum)
+    # Set the binary file destinations
+    solvers_tar = os.path.join(to_path, "idaes-solvers.tar.gz")
+    libs_tar = os.path.join(to_path, "idaes-lib.tar.gz")
+    # Set the binary file download locations
+    solvers_from = "/".join([url, f"idaes-solvers-{platform}-{arch[1]}.tar.gz"])
+    libs_from = "/".join([url, f"idaes-lib-{platform}-{arch[1]}.tar.gz"])
+
+    if no_download:
+        d = {
+            "release": release,
+            "platform": platform,
+            "bits": arch[1],
+            "libs_only": library_only,
+            "libs_from": libs_from,
+            "libs_to": libs_tar,
+        }
+        if not library_only:
+            d["solvers_from"] = solvers_from
+            d["solvers_to"] = solvers_tar
+        return d
+
+    if not library_only:
+        _download_package(
+            fd, "solvers", frm=solvers_from, to=solvers_tar, platform=platform)
+    _download_package(
+        fd, "libraries", frm=libs_from, to=libs_tar, platform=platform)
+
+    # If release checksum is not empty, nochecksum opt allows hash to be ignored
     if checksum:
-        # if you are downloading a release and not a specific URL verify checksum
-        fn_s = "idaes-solvers-{}-{}.tar.gz".format(platform, arch[1])
-        fn_l = "idaes-lib-{}-{}.tar.gz".format(platform, arch[1])
-        hash_s = _hash(solvers_tar)
+        # Check solvers package hash
+        if not library_only:
+            hash_s = _hash(solvers_tar)
+            _log.debug("Solvers Hash {}".format(hash_s))
+            if checksum.get(
+                f"idaes-solvers-{platform}-{arch[1]}.tar.gz", "") != hash_s:
+                raise Exception("Solver package hash does not match expected")
+        # Check libraries package hash
         hash_l = _hash(libs_tar)
-        _log.debug("Solvers Hash {}".format(hash_s))
         _log.debug("Libs Hash {}".format(hash_l))
-        if checksum.get(fn_s, "") != hash_s:
-            raise Exception("Solver files hash does not match expected")
-        if checksum.get(fn_l, "") != hash_l:
-            raise Exception("Library files hash does not match expected")
+        if checksum.get(f"idaes-lib-{platform}-{arch[1]}.tar.gz", "") != hash_l:
+            raise Exception("Library package hash does not match expected")
 
-    _log.debug("Extracting files in {}".format(idaes.bin_directory))
-    with tarfile.open(solvers_tar, 'r') as f:
-        f.extractall(idaes.bin_directory)
+    # Extract solvers
+    if not library_only:
+        _log.debug("Extracting files in {}".format(idaes.bin_directory))
+        with tarfile.open(solvers_tar, 'r') as f:
+            f.extractall(to_path)
+    # Extract libraries
     _log.debug("Extracting files in {}".format(idaes.bin_directory))
     with tarfile.open(libs_tar, 'r') as f:
-        f.extractall(idaes.bin_directory)
+        f.extractall(to_path)

@@ -194,13 +194,17 @@ Bubble velocity:
 
 .. math:: v_{b,t,x} = v_{g,t,x} - v_{mf,se} + v_{br,t,x}
 
-Emulsion region gas velocity:
+Average gas density:
 
-.. math:: v_{ge,t,x} = v_{mf,se}
+.. math:: C_{g,t,x} = \frac{F_{mol,b,t,x} C_{b,total,t,x} + F_{mol,ge,t,x} C_{ge,total,t,x}} {F_{mol,b,t,x} + F_{mol,ge,t,x}}
 
 Superficial gas velocity:
 
-.. math:: v_{g,t,x} = v_{b,t,x} \delta_{t,x} + v_{ge,t,x}\delta_{e,t,x}
+.. math:: v_{g,t,x} = \frac{F_{mol,b,t,x} + F_{mol,ge,t,x}} {A_{bed} C_{g,t,x}}
+                  
+Bubble volume fraction:
+
+.. math:: \delta_{t,x} v_{b,t,x} =  v_{ge,t,x}\delta_{e,t,x} - v_{g,t,x}
 
 Gas emulsion pressure drop:
 
@@ -320,9 +324,9 @@ Total gas balance at inlet:
 
 .. math:: F_{mol,b,t,0} + F_{mol,ge,t,0} = F_{mol,g,t,inlet}
 
-Superficial gas velocity at inlet:
+Gas emulsion velocity at inlet:
 
-.. math:: v_{g,t,0} = \frac{F_{mol,g,t,inlet}}{C_{ge,total,t,0} A_{bed}} 
+.. math:: v_{ge,t,0} = v_{mf,se} 
 
 Bubble mole fraction at inlet:
 
@@ -457,6 +461,7 @@ Variable                    Name                                                
 :math:`\rho_{mass,se,t,x}`  solid_emulsion_region.properties.dens_mass_particle   solid particle mass density         
 :math:`D_{vap,ge,t,x,j}`    gas_emulsion_region.properties.diffusion_comp         gas component diffusion in gas emulsion region       
 :math:`C_{b,total,t,x}`     bubble_region.properties.dens_mol_vap                 gas mole density in the bubble region 
+:math:`C_{g,t,x}`           average_gas_density                                   average gas density
 :math:`C_{ge,total,t,x}`    gas_emulsion_region.properties.dens_mol_vap           gas mole density in the emulsion region       
 :math:`M_{tr,b,t,x,p,j}`    bubble_region.mass_transfer_term              
 :math:`M_{tr,ge,t,x,p,j}`   gas_emulsion_region.mass_transfer_term             

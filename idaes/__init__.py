@@ -37,9 +37,15 @@ def _create_data_dir():
     """Create the IDAES directory to store data files in."""
     config.create_dir(data_directory)
 
-def _create_bin_dir():
-    """Create the IDAES directory to store executable files in."""
+def _create_bin_dir(bd=None):
+    """Create the IDAES directory to store executable files in.
+
+    Args:
+        bd: alternate binary directory, used for testing
+    """
     _create_data_dir()
-    config.create_dir(bin_directory)
+    if bd is None:
+        bd = bin_directory
+    config.create_dir(bd)
 
 cfg = _config
