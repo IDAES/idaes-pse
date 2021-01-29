@@ -168,10 +168,11 @@ class FlowsheetSerializer:
         self.labels = {}
         self._stream_table_df = None
         self._out_json = {"model": {}}
-        self.serialized_contents = defaultdict(dict)
+        self._serialized_contents = defaultdict(dict)
         self._used_ports = set()
         self._known_endpoints = set()
         self._unit_name_used_count = defaultdict(lambda: 0)
+        self._sig_figs = 5  # Defines the number of significant figures after the decimal place
         self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
@@ -234,9 +235,9 @@ class FlowsheetSerializer:
 
                 for k, v in var_value.items():
                     if k is None:
-                        label += f"{var} {round(value(v), 5)}\n"
+                        label += f"{var} {round(value(v), self._sig_figs)}\n"
                     else:
-                        label += f"{var} {k} {round(value(v), 5)}\n"
+                        label += f"{var} {k} {round(value(v), self._sig_figs)}\n"
             self.labels[stream_name] = label[:-2]
 
     def _map_edges(self):
@@ -279,7 +280,7 @@ class FlowsheetSerializer:
                 stream_df = stream_df.reset_index().rename(
                     columns={"index": "Variable"}
                 )
-            self.serialized_contents[unit_name]["stream_contents"] = stream_df
+            self._serialized_contents[unit_name]["stream_contents"] = stream_df
 
             performance_df = pd.DataFrame()
             if performance_contents:
@@ -291,7 +292,7 @@ class FlowsheetSerializer:
                 performance_df["Value"] = performance_df["Value"].map(
                     lambda v: value(v)
                 )
-            self.serialized_contents[unit_name]["performance_contents"] = performance_df
+            self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
         elif unit in self._known_endpoints:
             # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
@@ -390,7 +391,7 @@ class FlowsheetSerializer:
                 # Change the index of the pandas dataframe to not be the variables
             .reset_index().rename(columns={"index": "Variable"})
             .reset_index().rename(columns={"index": ""})
-            .round(5)
+            .round(self._sig_figs)
         )
 
         # Parse the names of the variables to get rid of flow_mol_phase_comp
@@ -421,10 +422,10 @@ class FlowsheetSerializer:
                 "type": unit_type,
                 "image": "/images/icons/" + unit_icon.icon,
             }
-            if unit_name in self.serialized_contents:
+            if unit_name in self._serialized_contents:
                 for pfx in "performance", "stream":
                     content_type = pfx + "_contents"
-                    c = self.serialized_contents[unit_name][content_type].round(5).to_dict("index")
+                    c = self._serialized_contents[unit_name][content_type].round(self._sig_figs).to_dict("index")
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 

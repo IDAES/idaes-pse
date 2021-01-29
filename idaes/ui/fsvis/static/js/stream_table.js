@@ -33,13 +33,14 @@ export class StreamTable {
         for (let col in columns) {
             // There is an empty column because of the way that the pandas dataframe was oriented so 
             // only add the columns that don't have an empty column header
-            if (columns[col] !== "") {
-                column_defs.push({headerName: columns[col], field: columns[col], filter: 'agTextColumnFilter', sortable: true});
+            let column_header = columns[col]
+            if (column_header !== "") {
+                column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true});
                 let list_item = document.createElement("li");
                 let checkbox_item = document.createElement("div");
                 checkbox_item.class = "checkbox";
-                // checkbox_item.id = columns[col] + "-checkbox"
-                checkbox_item.innerHTML = '<label><input type="checkbox" value="' + columns[col] + '" id="' + columns[col] + '" checked>' + columns[col] + '</label>';
+                // checkbox_item.id = column_header + "-checkbox"
+                checkbox_item.innerHTML = '<label><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked>' + column_header + '</label>';
                 list_item.appendChild(checkbox_item);
                 hide_fields_list.appendChild(list_item);
             };
