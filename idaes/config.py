@@ -128,6 +128,8 @@ default_config = """
 }
 """
 
+cfg = None # the idaes ConfigBlock once it's created by new_idaes_config_block()
+
 def new_idaes_config_block():
     """The idaes configuration is stored in a Pyomo ConfigBlock created by this.
     """
@@ -210,25 +212,26 @@ def new_idaes_config_block():
             description="Solver output captured by logger?",
         ),
     )
-
-
     d = json.loads(default_config)
     _config.set_value(d)
     logging.config.dictConfig(_config["logging"])
+    global cfg
+    cfg = _config # make the config block accesable from this module
     return _config
 
-
-def read_config(read_config, write_config):
+def read_config(read_config):
     """Read either a JSON formatted config file or a configuration dictionary.
     Args:
-        config: A config file path or dict
+        read_config: A config file path or dict
+        write_config:
     Returns:
         None
     """
+    write_config = cfg
     config_file = None
     if read_config is None:
         return
-    elif isinstance(read_config, dict):
+    elif isinstance(read_config, (dict, pyomo.common.config.ConfigBlock)):
         pass  # don't worry this catches ConfigBlock too it seems
     else:
         config_file = read_config
@@ -242,6 +245,11 @@ def read_config(read_config, write_config):
     logging.config.dictConfig(write_config["logging"])
     if config_file is not None:
         _log.debug("Read config {}".format(config_file))
+
+
+def reconfig():
+    read_config(cfg, cfg)
+    setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 
 def create_dir(d):
@@ -290,13 +298,14 @@ def setup_environment(bin_directory, use_idaes_solvers):
     Returns:
         None
     """
+    oe = orig_environ
     if use_idaes_solvers:
-        os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
+        os.environ['PATH'] = os.pathsep.join([bin_directory, oe.get('PATH', '')])
     else:
-        os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], bin_directory])
+        os.environ['PATH'] = os.pathsep.join([oe.get('PATH', ''), bin_directory])
     if os.name != 'nt':  # If not Windwos set lib search path, Windows uses PATH
         os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
-            [os.environ.get('LD_LIBRARY_PATH', ''), bin_directory])
+            [oe.get('LD_LIBRARY_PATH', ''), bin_directory])
         # This is for OSX, but won't hurt other UNIX
         os.environ['DYLD_LIBRARY_PATH'] = os.pathsep.join(
-            [os.environ.get('DYLD_LIBRARY_PATH', ''), bin_directory])
+            [oe.get('DYLD_LIBRARY_PATH', ''), bin_directory])
