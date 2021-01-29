@@ -271,6 +271,41 @@ def test_apply_bounded_noise_push_nonzero_eps():
         assert n_lb >= 1
         assert n_ub >= 1
 
+
+@pytest.mark.unit
+def test_apply_bounded_noise_fail():
+    NBO = NoiseBoundOption
+    random.seed(13456)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 1.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+    N = 10
+    results = [[], []]
+    with pytest.raises(RuntimeError):
+        # This is a very frail option
+        for _ in range(N):
+            newvals = apply_noise_with_bounds(vals, params, noise_function,
+                    bounds_list, bound_option=NBO.FAIL)
+            for r, n in zip(results, newvals):
+                r.append(n)
+
+    N = 2
+    results = [[], []]
+    for _ in range(N):
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.FAIL)
+        for r, n in zip(results, newvals):
+            r.append(n)
+
+    for val, res, p, (lb, ub) in zip(vals, results, params, bounds_list):
+        # Expect unique values that don't violate the bounds
+        assert len(set(res)) == N
+        for r in res:
+            assert lb < r < ub
+    
+
 @pytest.mark.component
 def _test_add_noise_at_time():
     mod = make_model(horizon=2, ntfe=20)
@@ -379,4 +414,5 @@ if __name__ == '__main__':
     test_apply_bounded_noise_push_zero_eps()
     test_apply_bounded_noise_push_nonzero_eps()
     test_apply_bounded_noise_discard()
+    test_apply_bounded_noise_fail()
     print('Tests passed!')
