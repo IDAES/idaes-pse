@@ -132,7 +132,7 @@ Initialization
 The initialization method for this model will save the current state of the model
 before commencing initialization and reloads it afterwards.  The state of the model
 will be the same after initialization, only the initial guesses for
-unfixed variables will be changed and optionally a flow coefficent value can be
+unfixed variables will be changed and optionally a flow coefficient value can be
 calculated.  To initialize this model, provide a starting value for the inlet port
 variables. Then provide a guess for one of: discharge pressure, ``deltaP``, or
 ``ratioP``.  Since it can be hard to determine a proper flow coefficient, the
