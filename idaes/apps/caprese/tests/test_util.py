@@ -13,26 +13,20 @@
 """
 Tests for Caprese helper utility functions.
 """
-
 import pytest
 from pytest import approx
-from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, Objective,
-                           TransformationFactory, TerminationCondition,
-                           Reference)
-from pyomo.network import Arc
+
+from pyomo.environ import SolverFactory, Var, value, Reference
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae.flatten import flatten_dae_components
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-        MomentumBalanceType)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator, unfixed_variables_generator)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom, 
+        activated_equalities_generator,
+        )
 from idaes.apps.caprese.util import *
+from idaes.apps.caprese.common.config import NoiseBoundOption
 from idaes.apps.caprese.examples.cstr_model import make_model
 import idaes.logger as idaeslog
 
@@ -104,6 +98,28 @@ def test_get_violated_bounds():
 
     val = 2.5
     assert get_violated_bounds(val, bounds) == (2., -1)
+
+
+@pytest.mark.unit
+def test_apply_noise():
+    random.seed(1234)
+    noise_function = random.gauss
+    val_list = [1., 2., 3.]
+    params_list = [0.05, 0.05, 0.05]
+    new_vals = apply_noise(val_list, params_list, noise_function)
+
+    for val, new_val, p in zip(val_list, new_vals, params_list):
+        assert abs(val - new_val) < 3*p
+
+    noise_function = lambda val, rad: random.uniform(val - rad, val + rad)
+    new_vals = apply_noise(val_list, params_list, noise_function)
+    for val, new_val, p in zip(val_list, new_vals, params_list):
+        assert abs(val - new_val) <= p
+
+
+@pytest.mark.unit
+def test_apply_noise_with_bounds():
+    NBO = NoiseBoundOption
 
 
 @pytest.mark.component
