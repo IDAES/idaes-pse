@@ -298,7 +298,7 @@ def apply_noise(val_list, noise_params, noise_function):
     for val, params in zip(val_list, noise_params):
         if type(params) is not tuple:
             # better be a scalar
-            params = (params)
+            params = (params,)
         result.append(noise_function(val, *params))
     return result
 
@@ -311,8 +311,13 @@ def apply_bounded_noise_discard(val, params, noise_function, bounds,
         violated_bound, direction = get_violated_bounds(newval, bounds)
         if violated_bound is None:
             return newval
+        else:
+            # Discard.
+            i += 1
 
-    # NOTE: This is not the most useful place to raise such an error
+    # This could be caught by the caller to raise a more useful
+    # error that includes the variable whose noise violates a
+    # bound.
     raise MaxDiscardError(
         'Max number of discards exceeded when applying noise.')
 
@@ -334,7 +339,7 @@ def apply_bounded_noise_fail(val, params, noise_function, bounds):
 
 def apply_noise_with_bounds(val_list, noise_params, noise_function, bound_list,
         bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
-        bound_push=1e-8):
+        bound_push=0.0):
     result = []
     for val, params, bounds in zip(val_list, noise_params, bound_list):
         if type(params) is not tuple:
@@ -355,55 +360,5 @@ def apply_noise_with_bounds(val_list, noise_params, noise_function, bound_list,
             raise RuntimeError(
                 'Bound violation option not recognized')
 
-        result.append(newval)
-    return result
-
-def apply_noise_to_slices(slice_list, t, noise_params, noise_function,
-        bound_option=NoiseBoundOption.DISCARD, max_number_discards=5,
-        bound_push=1e-8):
-    """
-    Acts as a wrapper around apply_noise, with additional logic to handle the
-    case where a variable's bound is violated.
-    """
-    val_list = [_slice[t].value for _slice in slice_list]
-    bound_list = [(_slice[t].lb, _slice[t].ub) for _slice in slice_list]
-
-    result = apply_noise_with_bounds(val_list, noise_params, noise_function,
-            bound_list,
-            bound_option=bound_option,
-            max_number_discards=max_number_discards,
-            bound_push=bound_push)
-    return result
-
-def apply_noise_at_time_points(var, points, params, noise_function,
-        bounds=(None, None), bound_option=NoiseBoundOption.DISCARD, 
-        max_number_discards=5, bound_push=1e-8):
-    """
-    TODO
-    """
-    params_type = type(params)
-    points_type = type(points)
-    sequence_types = {tuple, list}
-    if params_type not in sequence_types:
-        # better be a scalar
-        params = (params,)
-    if points_type not in sequence_types:
-        points = [points]
-
-    result = []
-    for t in points:
-        val = var[t].value
-        if bound_option == NoiseBoundOption.DISCARD:
-            newval = apply_bounded_noise_discard(val, params, noise_function,
-                    bounds, max_number_discards)
-        elif bound_option == NoiseBoundOption.PUSH:
-            newval = apply_bounded_noise_push(val, params, noise_function,
-                    bounds, bound_push)
-        elif bound_option == NoiseBoundOption.FAIL:
-            newval = apply_bounded_noise_fail(val, params, noise_function, 
-                    bounds)
-        else:
-            raise RuntimeError(
-                'Bound violation option not recognized')
         result.append(newval)
     return result
