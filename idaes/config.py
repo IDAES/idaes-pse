@@ -248,7 +248,7 @@ def read_config(read_config):
 
 
 def reconfig():
-    read_config(cfg, cfg)
+    read_config(cfg)
     setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 
