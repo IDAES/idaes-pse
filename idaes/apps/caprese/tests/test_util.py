@@ -93,6 +93,19 @@ def test_initialize_by_element_in_range():
     assert mod.fs.cstr.outlet.conc_mol[2, 'P'].value == approx(0.4372, abs=1e-4)
 
 
+@pytest.mark.unit
+def test_get_violated_bounds():
+    bounds = (1., 2.)
+    val = 1.5
+    assert get_violated_bounds(val, bounds) == (None, 0)
+
+    val = 0.8
+    assert get_violated_bounds(val, bounds) == (1., 1)
+
+    val = 2.5
+    assert get_violated_bounds(val, bounds) == (2., -1)
+
+
 @pytest.mark.component
 def _test_add_noise_at_time():
     mod = make_model(horizon=2, ntfe=20)

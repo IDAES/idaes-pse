@@ -266,6 +266,15 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
                 comp.activate()
 
 def get_violated_bounds(val, bounds):
+    """ This function tests a value against a lower and an upper bound,
+    returning which if either is violated, as well as a direction
+    that the value needs to move for feasibility.
+
+    Arguments:
+        val: Value to be tested
+        bounds: Tuple containing the lower, upper bounds
+
+    """
     lower = bounds[0]
     upper = bounds[1]
     if upper is not None:
