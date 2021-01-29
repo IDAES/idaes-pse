@@ -1,6 +1,9 @@
 Configuration
 =============
 
+.. module:: idaes.config
+  :noindex:
+
 Some behavior of IDAES, especially logging, is configurable through configuration
 files. IDAES's configuration is obtained by first setting everything to internal
 defaults; then loading a global config file, if it exists; then loading a config
@@ -10,6 +13,9 @@ Configuration file are in `JSON format <https://www.json.org/json-en.html>`_. Th
 default configuration is shown below and can be used as a template to create new
 configuration files. This is the configuration used by IDAES if nothing else is
 provided.
+
+.. autodata: default_config
+   :annotation:
 
 .. code-block:: json
 

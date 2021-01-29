@@ -17,16 +17,21 @@ import os
 import importlib
 
 _log = logging.getLogger(__name__)
+# Default release version if no options provided for get-extensions
 default_binary_release = "2.2.2"
+# Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
+# Where to get release checksums
 release_checksum_url = \
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
+# Map some platform names to others for get-extensions
 binary_platform_map = {
     "rhel6": "centos6",
     "rhel7": "centos7",
     "rhel8": "centos8",
     "linux": "centos7",
 }
+# Set of know platforms with available binaries and descriptions of them
 known_binary_platform = {
     "auto":"Auto-select windows, darwin or linux",
     "windows":"Microsoft Windows (built on verion 1909)",
@@ -43,6 +48,16 @@ known_binary_platform = {
     "ubuntu2004": "Ubuntu 20.04",
 }
 
+# Store the original environment variable values so we can revert changes
+orig_environ = {
+    "PATH": os.environ.get("PATH", None),
+    "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", None),
+    "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", None),
+}
+
+# Default configuration json string.  Store the default config like this because
+# it provides a nice example of how to write a config file and test to make sure
+# they get read properly.
 default_config = """
 {
     "use_idaes_solvers":true,
@@ -109,6 +124,8 @@ default_config = """
 """
 
 def new_idaes_config_block():
+    """The idaes configuration is stored in a Pyomo ConfigBlock created by this.
+    """
     _config = pyomo.common.config.ConfigBlock("idaes", implicit=False)
     _config.declare(
         "logging",
@@ -164,7 +181,7 @@ def new_idaes_config_block():
 
 
 def read_config(read_config, write_config):
-    """Read either a TOML formatted config file or a configuration dictionary.
+    """Read either a JSON formatted config file or a configuration dictionary.
     Args:
         config: A config file path or dict
     Returns:
