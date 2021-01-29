@@ -234,9 +234,9 @@ class FlowsheetSerializer:
 
                 for k, v in var_value.items():
                     if k is None:
-                        label += f"{var} {value(v)}\n"
+                        label += f"{var} {round(value(v), 5)}\n"
                     else:
-                        label += f"{var} {k} {value(v)}\n"
+                        label += f"{var} {k} {round(value(v), 5)}\n"
             self.labels[stream_name] = label[:-2]
 
     def _map_edges(self):

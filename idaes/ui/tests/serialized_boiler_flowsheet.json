@@ -1063,7 +1063,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1117,7 +1117,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1171,7 +1171,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1225,7 +1225,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1279,7 +1279,7 @@
                         "text": {
                             "display": "none",
                             "fill": "black",
-                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                             "text-anchor": "left"
                         }
                     },
@@ -1964,12 +1964,12 @@
         "arcs": {
             "FSHtoATMP1": {
                 "dest": "ATMP1",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "FSH"
             },
             "econ2ww": {
                 "dest": "Water_wall",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "ECON"
             },
             "fg_fsh2PrSH": {
@@ -2004,12 +2004,12 @@
             },
             "plsh2fsh": {
                 "dest": "FSH",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "PlSH"
             },
             "prsh2plsh": {
                 "dest": "PlSH",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "PrSH"
             },
             "s_outlet_1": {
@@ -2044,7 +2044,7 @@
             },
             "ww2prsh": {
                 "dest": "PrSH",
-                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01801528\nT (k) 286.34378631872465\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.5960502593216\nMolar enthalpy (j/mol) Liq 1000.000000000103",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
                 "source": "Water_wall"
             }
         },
