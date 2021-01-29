@@ -283,25 +283,7 @@ def test_boiler_demo(serialized_boiler_flowsheet_json):
     stored_dict = json.loads(serialized_boiler_flowsheet_json)
     _canonicalize(test_dict)
     _canonicalize(stored_dict)
-    print(test_dict)
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print()
-    print(stored_dict)
-    assert test_dict == stored_dict
+    assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
 
 
 @pytest.mark.unit

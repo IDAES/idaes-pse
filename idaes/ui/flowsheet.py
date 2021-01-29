@@ -270,10 +270,10 @@ class FlowsheetSerializer:
             self._unit_name_used_count[unit_name] += 1
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = unit
+            
 
             performance_contents, stream_df = unit.serialize_contents()
-
-            if not stream_df.empty:
+            if stream_df is not None and not stream_df.empty:
                 # If there is a stream dataframe then we need to reset the index so we can get the variable names
                 # and then rename the "index"
                 stream_df = stream_df.reset_index().rename(
@@ -390,10 +390,11 @@ class FlowsheetSerializer:
                 # Change the index of the pandas dataframe to not be the variables
             .reset_index().rename(columns={"index": "Variable"})
             .reset_index().rename(columns={"index": ""})
+            .round(5)
         )
 
         # Parse the names of the variables to get rid of flow_mol_phase_comp
-        self._stream_table_df['Variable'] = self._stream_table_df["Variable"] = (
+        self._stream_table_df['Variable'] = (
                                                 self._stream_table_df["Variable"]
                                                 .str.replace("flow_mol_phase_comp", "")
                                                 .str.rstrip()
@@ -421,7 +422,7 @@ class FlowsheetSerializer:
             if unit_name in self.serialized_contents:
                 for pfx in "performance", "stream":
                     content_type = pfx + "_contents"
-                    c = self.serialized_contents[unit_name][content_type].to_dict("index")
+                    c = self.serialized_contents[unit_name][content_type].round(5).to_dict("index")
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 
