@@ -118,9 +118,158 @@ def test_apply_noise():
 
 
 @pytest.mark.unit
-def test_apply_noise_with_bounds():
+def test_apply_bounded_noise_discard():
     NBO = NoiseBoundOption
+    random.seed(2345)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 2.]
+    bounds_list = [(4., 6.), (9., 11.)]
 
+    N = 100
+    results = [set(), set()]
+    for _ in range(N):
+        # Very low probability we ever need to discard more than 15 times
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.DISCARD, max_number_discards=15)
+        for r, n in zip(results, newvals):
+            r.add(n)
+
+    for val, res, (lb, ub) in zip(vals, results, bounds_list):
+        # Vanishingly small probability we get the same value twice.
+        assert len(res) == 100
+
+        inner_lb = val + (lb-val)/2
+        inner_ub = val + (ub-val)/2
+        n_inner = 0
+        n_outer = 0
+        for r in res:
+            # Vanishingly small probability we land exactly on a bound
+            assert lb < r and r < ub
+            if inner_lb < val and val < inner_ub:
+                n_inner += 1
+            else:
+                n_outer += 1
+
+        # Expect values to be clustered around the nominal.
+        assert n_inner > n_outer
+
+    with pytest.raises(MaxDiscardError):
+        for _ in range(N):
+            # Very likely that we will eventually need to discard a value
+            newvals = apply_noise_with_bounds(vals, params, noise_function,
+                    bounds_list, bound_option=NBO.DISCARD,
+                    max_number_discards=0)
+
+    with pytest.raises(MaxDiscardError):
+        for _ in range(N):
+            # In fact, very likely that we will need to discard more than
+            # 5 times consecutively over the course of generating 100 numbers
+            newvals = apply_noise_with_bounds(vals, params, noise_function,
+                    bounds_list, bound_option=NBO.DISCARD,
+                    max_number_discards=5)
+            # We could calculate the expected max number of discards to generate
+            # 100 values with the above mu, sigma, and bounds, but that seems
+            # unnecessary. For now I am satisfied that this number seems to be
+            # between 5 and 15 for gauss(10., 2.) \in (9., 11.)
+        
+
+@pytest.mark.unit
+def test_apply_bounded_noise_push_zero_eps():
+    NBO = NoiseBoundOption
+    random.seed(3456)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 2.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+
+@pytest.mark.unit
+def test_apply_bounded_noise_push_nonzero_eps():
+    NBO = NoiseBoundOption
+    random.seed(3456)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 2.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+    N = 100
+    results = [[], []]
+    for _ in range(N):
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.PUSH, bound_push=0.0)
+        for r, n in zip(results, newvals):
+            r.append(n)
+
+    # These flags will be used to make sure we cover both branches of an
+    # "if tree" below.
+    b1, b2 = False, False
+
+    for val, res, p, (lb, ub) in zip(vals, results, params, bounds_list):
+        # Very low probability we DON'T get the same value at least
+        # twice. (I.e. we never exceed the same bound more than once.)
+        assert len(set(res)) < 100
+
+        n_ub = 0
+        n_lb = 0
+        n_interior = 0
+        for r in res:
+            assert lb <= r <= ub
+            if r == lb:
+                n_lb += 1
+            elif r == ub:
+                n_ub += 1
+            else:
+                n_interior += 1
+
+        assert n_lb >= 1
+        assert n_ub >= 1
+        assert n_interior >= 1
+
+        # Very rough check that the distribution looks something like we
+        # expect.
+        if (val-lb) >= p and (ub-val) >= p:
+            # If our bounds are at least sigma from the mean, we expect more
+            # "interior" points than points at the bounds.
+            assert n_interior > n_lb + n_ub
+            b1 = True
+        elif (val-lb) <= p/2 and (ub-val) <= p/2:
+            # If our bounds are within sigma/2 of the mean, we expect more
+            # points at the bounds than in the interior.
+            assert n_lb + n_ub > n_interior
+            b2 = True
+        else:
+            raise RuntimeError()
+
+    # Sanity. Make sure we covered both branches.
+    assert b1 and b2
+
+    # Now test with a nonzero bound push
+    eps_b = 0.01
+    results = [[], []]
+    for _ in range(N):
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.PUSH, bound_push=eps_b)
+        for r, n in zip(results, newvals):
+            r.append(n)
+
+    for val, res, p, (lb, ub) in zip(vals, results, params, bounds_list):
+        # Very low probability we DON'T get the same value at least
+        # twice. (I.e. we never exceed the same bound more than once.)
+        assert len(set(res)) < 100
+
+        n_ub = 0
+        n_lb = 0
+        for r in res:
+            # Satisfy bounds strictly
+            assert lb < r < ub
+            if r == lb+eps_b:
+                n_lb += 1
+            elif r == ub-eps_b:
+                n_ub += 1
+
+        assert n_lb >= 1
+        assert n_ub >= 1
 
 @pytest.mark.component
 def _test_add_noise_at_time():
@@ -225,3 +374,9 @@ def _test_add_noise_at_time():
                                      discard_limit=0,
                                      weights=[1,1,1,1,1],
                                      sig_0=0.05)
+
+if __name__ == '__main__':
+    test_apply_bounded_noise_push_zero_eps()
+    test_apply_bounded_noise_push_nonzero_eps()
+    test_apply_bounded_noise_discard()
+    print('Tests passed!')
