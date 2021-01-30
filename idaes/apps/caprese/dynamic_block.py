@@ -547,7 +547,7 @@ class _DynamicBlockData(_BlockData):
         data = OrderedDict()
         queue = list(variables)
         for var in queue:
-            if var in VC:
+            if type(var) is VC:
                 category = var
                 varlist = category_dict[category]
                 queue.extend(var[ts] for var in varlist)
