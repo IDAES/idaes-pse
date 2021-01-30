@@ -48,9 +48,6 @@ export class Toolbar {
                 { type: 'zoomOut' },
                 { type: 'zoomToFit' },
                 { type: 'separator' },
-                { type: 'label', text: 'Canvas size:' },
-                { type: 'selectBox', name: 'sizeBox', options: [{content: 800, selected: true}, {content: 1600, selected: true}, {content: 3200}, {content: 6400}] },
-                { type: 'separator' },
                 { type: 'button', name: 'help', text: 'Help'},
             ],
         });
@@ -138,10 +135,6 @@ export class Toolbar {
             else {
                 this.setGrid(10, '#FFFFFF');
             }
-        });
-
-        toolbar.on('sizeBox:option:select', (value, event) => {
-            $('#idaes-canvas').css({ width: value["content"], height: value["content"] });
         });
 
         toolbar.on('help:pointerclick', (event) => {

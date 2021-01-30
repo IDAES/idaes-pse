@@ -363,7 +363,7 @@ see property package for documentation.}"""))
         @self.Expression(self.flowsheet().config.time,
                          doc="angle of water level")
         def alpha_drum(b, t):
-            return asin((b.drum_level[t]-b.drum_radius)/b.drum_radius)
+            return asin((b.drum_level[t]-b.drum_radius)/b.drum_radius)/pyo.units.rad
 
         # Constraint for volume liquid in drum
         @self.Constraint(self.flowsheet().config.time,
