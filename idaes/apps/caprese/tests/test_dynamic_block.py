@@ -66,6 +66,7 @@ else:
 
 class TestDynamicBlock(object):
 
+    @pytest.mark.unit
     def test_construct_simple(self):
         model = make_model(horizon=1, nfe=2)
         time = model.time
@@ -128,6 +129,7 @@ class TestDynamicBlock(object):
         assert block.v.value == 3
         assert block.v in ComponentSet(identify_variables(block.c.expr))
 
+    @pytest.mark.unit
     def test_construct_indexed(self):
         block_set = pyo.Set(initialize=[0,1,2])
         block_set.construct()
@@ -201,6 +203,7 @@ class TestDynamicBlock(object):
             assert b.v.value == 3
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
+    @pytest.mark.unit
     def test_construct_rule(self):
         block_set = pyo.Set(initialize=range(3))
         block_set.construct()
@@ -284,6 +287,7 @@ class TestDynamicBlock(object):
             assert b.v.value == 3
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
+    @pytest.mark.unit
     def test_init(self):
         # This really should be `test_construct`, and the above tests
         # should be `test_init_...`
@@ -357,6 +361,7 @@ class TestDynamicBlock(object):
         for var in deriv_vars:
             assert var[t0] in pred_deriv_vars
 
+    @pytest.mark.unit
     def test_category_blocks(self):
         m = make_small_model()
         time = m.time
@@ -419,6 +424,7 @@ class TestDynamicBlock(object):
             for v, vl in zip(var[:], vals):
                 assert v.value == vl
 
+    @pytest.mark.unit
     def test_add_references(self):
         m = make_small_model()
         time = m.time
@@ -461,7 +467,7 @@ class TestDynamicBlock(object):
             for var in vec._generate_referenced_vars():
                 assert var.ctype._attr == attr
 
-
+    @pytest.mark.unit
     def test_validate_sample_time(self):
         model = make_model(horizon=1, nfe=2)
         time = model.time
@@ -509,6 +515,7 @@ class TestDynamicBlock(object):
         assert len(sample_point_set) == 3
         assert len(sample_point_indices) == 3
 
+    @pytest.mark.unit
     def test_set_sample_time(self):
         model = make_model(horizon=1, nfe=2)
         time = model.time
@@ -529,6 +536,7 @@ class TestDynamicBlock(object):
         blk.set_sample_time(0.5)
         assert blk.sample_points == [0.0, 0.5, 1.0]
 
+    @pytest.mark.unit
     def make_block(self, sample_time=0.5, horizon=1, nfe=2):
         model = make_model(horizon=horizon, nfe=nfe)
         time = model.time
@@ -545,30 +553,7 @@ class TestDynamicBlock(object):
         dyn_block.set_sample_time(sample_time)
         return dyn_block
 
-#    def test_find_components(self):
-#        # Name of this function is pending
-#        blk1 = self.make_block()
-#        blk2 = self.make_block()
-#
-#        src_comps = [
-#                pyo.Reference(blk1.vectors.differential[0,:]),
-#                # Kinda clunky if this is how I have to get
-#                # the "first differential var."
-#                # _NmpcVector should have a method to make this easier...
-#                pyo.Reference(blk1.vectors.algebraic[0,:]),
-#                ]
-#        src_names = [c[0].name for c in src_comps]
-#        tgt_names = [
-#                blk2.mod.conc[0,'A'].name,
-#                blk2.mod.flow_out[0].name,
-#                ]
-#        assert src_names == tgt_names
-#        tgt_comps = blk2.find_components(blk1.mod, src_comps, blk1.time)
-#        # Note that right now, I attempt to find the component on the model,
-#        # not on the encompassing DynamicBlock. This may change...
-#        tgt_comp_names = [c[0].name for c in tgt_comps]
-#        assert tgt_names == tgt_comp_names
-#
+    @pytest.mark.unit
     def test_init_sample_to_setpoint(self):
         blk = self.make_block()
         time = blk.time
@@ -623,6 +608,7 @@ class TestDynamicBlock(object):
                 else:
                     assert vec[i, t].value == i
 
+    @pytest.mark.unit
     def test_init_to_setpoint(self):
         blk = self.make_block()
         time = blk.time
@@ -682,6 +668,7 @@ class TestDynamicBlock(object):
             else:
                 assert vec[i, t].value == new_sp
 
+    @pytest.mark.unit
     def test_init_sample_to_initial(self):
         blk = self.make_block()
         time = blk.time
@@ -734,6 +721,7 @@ class TestDynamicBlock(object):
                 assert vec[i, t].value == i
 
 
+    @pytest.mark.unit
     def test_init_to_initial_conditions(self):
         blk = self.make_block()
         time = blk.time
@@ -775,6 +763,7 @@ class TestDynamicBlock(object):
                     # value that was used to initialize, not the initial
                     # condition value...
 
+    @pytest.mark.component
     @pytest.mark.skipif(not solver_available, reason='IPOPT is not available')
     def test_init_by_solving_elements(self):
         blk = self.make_block()
@@ -806,6 +795,7 @@ class TestDynamicBlock(object):
         assert vectors.derivative[0,tl].value == pytest.approx(0.1851851851851849)
         assert vectors.derivative[1,tl].value == pytest.approx(0.47963475941315314)
 
+    @pytest.mark.component
     @pytest.mark.skipif(not solver_available, reason='IPOPT is not available')
     def test_init_samples_by_element(self):
         blk = self.make_block()
@@ -839,6 +829,7 @@ class TestDynamicBlock(object):
         assert vectors.derivative[0,tl].value == pytest.approx(0.1851851851851849)
         assert vectors.derivative[1,tl].value == pytest.approx(0.47963475941315314)
 
+    @pytest.mark.unit
     def test_advance_by(self):
         blk = self.make_block()
         time = blk.time
@@ -884,6 +875,7 @@ class TestDynamicBlock(object):
                 for v in blk.component_objects(ctypes_to_not_shift):
                     assert v[t].value == t
 
+    @pytest.mark.unit
     def test_advance_one_sample(self):
         blk = self.make_block()
         time = blk.time
@@ -931,6 +923,7 @@ class TestDynamicBlock(object):
                 for v in blk.component_objects(ctypes_to_not_shift):
                     assert v[t].value == t
 
+    @pytest.mark.unit
     def test_generate_time_in_sample(self):
         blk = self.make_block()
         time = blk.time
@@ -953,6 +946,7 @@ class TestDynamicBlock(object):
         pred_time_in_sample = list(t for t in time if t != t0)
         assert time_in_sample == pred_time_in_sample
 
+    @pytest.mark.unit
     def test_get_data_from_sample(self):
         blk = self.make_block()
         time = blk.time
@@ -1020,6 +1014,7 @@ class TestDynamicBlock(object):
             values = list(b.var[t].value for t in data_time)
             assert values == data[cuid]
 
+    @pytest.mark.unit
     def test_set_variance(self):
         blk = self.make_block()
         time = blk.time
@@ -1042,6 +1037,7 @@ class TestDynamicBlock(object):
         for var in blk.DERIVATIVE_BLOCK[:].var:
             assert var.variance == 0.05
 
+    @pytest.mark.unit
     def test_generate_inputs_at_time(self):
         blk = self.make_block()
         time = blk.time
@@ -1053,6 +1049,7 @@ class TestDynamicBlock(object):
         inputs = list(blk.generate_inputs_at_time(t1))
         assert inputs == vals
 
+    @pytest.mark.unit
     def test_generate_measurements_at_time(self):
         blk = self.make_block()
         time = blk.time
@@ -1064,6 +1061,7 @@ class TestDynamicBlock(object):
         meas = list(blk.generate_measurements_at_time(ts))
         assert meas == vals
 
+    @pytest.mark.unit
     def test_inject_inputs(self):
         blk = self.make_block()
         time = blk.time
@@ -1073,6 +1071,7 @@ class TestDynamicBlock(object):
             for t in time:
                 assert b.var[t].value == val
 
+    @pytest.mark.unit
     def test_load_measurements(self):
         blk = self.make_block()
         time = blk.time
