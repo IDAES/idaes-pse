@@ -50,9 +50,9 @@ known_binary_platform = {
 
 # Store the original environment variable values so we can revert changes
 orig_environ = {
-    "PATH": os.environ.get("PATH", None),
-    "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", None),
-    "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", None),
+    "PATH": os.environ.get("PATH", ""),
+    "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
+    "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
 
 # Default configuration json string.  Store the default config like this because
