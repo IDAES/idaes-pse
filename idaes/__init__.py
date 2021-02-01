@@ -14,6 +14,7 @@ _log = logging.getLogger(__name__)
 
 # Standard locations for config file, binary libraries and executables, ...
 data_directory, bin_directory = config.get_data_directory()
+testing_directory = os.path.join(data_directory, "testing")
 # To avoid a circular import the config module doesn't import idaes, but
 # some functions in the config module that are executed later use this
 # these directorys are static from here on.
@@ -25,7 +26,7 @@ _global_config_file = os.path.join(data_directory, "idaes.conf")
 _local_config_file = "idaes.conf"
 
 # Create the general IDAES configuration block, with default config
-_config = config.new_idaes_config_block()
+_config = config._new_idaes_config_block()
 # read global config and overwrite provided config options
 config.read_config(_global_config_file)
 # read local config and overwrite provided config options

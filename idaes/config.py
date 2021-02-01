@@ -13,6 +13,7 @@
 import pyomo.common.config
 import logging.config
 import json
+import yaml
 import os
 import importlib
 
@@ -130,8 +131,28 @@ default_config = """
 
 cfg = None # the idaes ConfigBlock once it's created by new_idaes_config_block()
 
-def new_idaes_config_block():
+
+class ConfigDictJSONEncoder(json.JSONEncoder):
+    """ This class can be used to encode the ConfigDict as json.  It is
+    sufficient for the IDAES config, but not ConfigDicts in general.
+    """
+    def default(self, obj):
+        print(super().default)
+        if isinstance(obj, pyomo.common.config.ConfigDict):
+            d = {}
+            for k, v in obj.items():
+                d[k] = self.default(v)
+            return d
+        elif isinstance(obj, set):
+            return list(obj)
+        return obj
+
+
+def _new_idaes_config_block():
     """The idaes configuration is stored in a Pyomo ConfigBlock created by this.
+    This function is called when importing IDAES.  This function should only be
+    called in ``__init__.py`` for ``idaes``.  Calling it anywhere else will cause
+    the idaes configuration system to function improperly.
     """
     _config = pyomo.common.config.ConfigBlock("idaes", implicit=False)
     _config.declare(
@@ -223,11 +244,10 @@ def read_config(read_config):
     """Read either a JSON formatted config file or a configuration dictionary.
     Args:
         read_config: A config file path or dict
-        write_config:
     Returns:
         None
     """
-    write_config = cfg
+    global cfg
     config_file = None
     if read_config is None:
         return
@@ -237,14 +257,24 @@ def read_config(read_config):
         config_file = read_config
         try:
             with open(config_file, "r") as f:
-                write_config = json.load(f)
+                read_config = json.load(f)
         except IOError:  # don't require config file
             _log.debug("Config file {} not found (this is okay)".format(read_config))
             return
-    write_config.set_value(read_config)
-    logging.config.dictConfig(write_config["logging"])
+    cfg.set_value(read_config)
+    logging.config.dictConfig(cfg["logging"])
     if config_file is not None:
         _log.debug("Read config {}".format(config_file))
+
+
+def write_config(path, default=False):
+    if default:
+        _cd = json.loads(default_config)
+        with open(path, 'w') as f:
+            json.dump(_cd, f, indent=4)
+    else:
+        with open(path, 'w') as f:
+            json.dump(cfg, f, cls=ConfigDictJSONEncoder, indent=2)
 
 
 def reconfig():
