@@ -46,12 +46,12 @@ class TestIdaesConfigure(object):
         # Keep original isn't True, if there is a config file or it was changed
         idaes.cfg.use_idaes_solvers = False
         idaes.reconfig()
-        assert not os.environ["PATH"].startswith("idaes.bin_directory")
+        pf = os.environ["PATH"]
         # Set back to default
         idaes.cfg.use_idaes_solvers = True
         idaes.reconfig()
-        assert not os.environ["PATH"].startswith("idaes.bin_directory")
-
+        pt = os.environ["PATH"]
+        assert pf != pt
 
     @pytest.mark.unit
     def test_revert(self):
