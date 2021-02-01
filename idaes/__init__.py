@@ -13,13 +13,13 @@ from .ver import __version__  # noqa
 _log = logging.getLogger(__name__)
 
 # Standard locations for config file, binary libraries and executables, ...
-data_directory, bin_directory = config.get_data_directory()
-testing_directory = os.path.join(data_directory, "testing")
+data_directory, bin_directory, testing_directory = config.get_data_directory()
 # To avoid a circular import the config module doesn't import idaes, but
 # some functions in the config module that are executed later use this
 # these directorys are static from here on.
 cfg.data_directory = data_directory
 cfg.bin_directory = bin_directory
+cfg.testing_directory = testing_directory
 
 # Set the path for the global and local config files
 _global_config_file = os.path.join(data_directory, "idaes.conf")
@@ -52,6 +52,12 @@ def _create_bin_dir(bd=None):
     if bd is None:
         bd = bin_directory
     config.create_dir(bd)
+
+def _create_testing_dir():
+    """Create an idaes testing directory
+    """
+    _create_data_dir()
+    config.create_dir(testing_directory)
 
 reconfig = cfg.reconfig
 read_config = cfg.read_config

@@ -311,8 +311,13 @@ def get_data_directory():
         bin_directory = os.path.join(data_directory, "bin")
     else:
         bin_directory = None
+    # Standard location for testing files
+    if data_directory is not None:
+        testing_directory = os.path.join(data_directory, "testing")
+    else:
+        testing_directory = None
 
-    return data_directory, bin_directory
+    return data_directory, bin_directory, testing_directory
 
 
 def setup_environment(bin_directory, use_idaes_solvers):

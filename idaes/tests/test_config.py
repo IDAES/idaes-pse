@@ -20,6 +20,7 @@ class TestIdaesConfigure(object):
 
     @pytest.mark.unit
     def test_write_config(self):
+        idaes._create_testing_dir()
         ic.write_config(
             os.path.join(idaes.testing_directory, "config_testing_orig.json"))
         ic.write_config(
