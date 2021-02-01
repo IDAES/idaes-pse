@@ -175,8 +175,7 @@ before using the solvers that may have been otherwise installed by the user.
 This can be used if a user would prefer to use solver versions they have
 installed apart from IDAES.
 
-If changes to the logger configuration dictionary are made after importing
-``idaes`` a call to ``idaes.reconfig()`` is required for it to take effect.
+Changes require ``idaes.reconfig()``.
 
 logger_capture_solver
 ~~~~~~~~~~~~~~~~~~~~~
