@@ -32,7 +32,7 @@ binary_platform_map = {
     "rhel8": "centos8",
     "linux": "centos7",
 }
-# Set of know platforms with available binaries and descriptions of them
+# Set of known platforms with available binaries and descriptions of them
 known_binary_platform = {
     "auto":"Auto-select windows, darwin or linux",
     "windows":"Microsoft Windows (built on verion 1909)",
@@ -237,7 +237,7 @@ def _new_idaes_config_block():
     _config.set_value(d)
     logging.config.dictConfig(_config["logging"])
     global cfg
-    cfg = _config # make the config block accesable from this module
+    cfg = _config # make the config block accessible from this module
     return _config
 
 def read_config(read_config):

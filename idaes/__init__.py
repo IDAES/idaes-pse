@@ -16,7 +16,7 @@ _log = logging.getLogger(__name__)
 data_directory, bin_directory, testing_directory = config.get_data_directory()
 # To avoid a circular import the config module doesn't import idaes, but
 # some functions in the config module that are executed later use this
-# these directorys are static from here on.
+# these directories are static from here on.
 cfg.data_directory = data_directory
 cfg.bin_directory = bin_directory
 cfg.testing_directory = testing_directory

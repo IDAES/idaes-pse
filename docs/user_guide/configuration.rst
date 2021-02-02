@@ -5,17 +5,17 @@ Configuration
   :noindex:
 
 Some behavior of IDAES is configurable through the IDAES global ConfigBlock.
-IDAES's configuration is obtained by first setting everything to internal defaults; then
-loading a global config file, if it exists; then loading a config file from the
-current working directory, if it exists.  After the ``idaes`` module is imported,
-the ``idaes`` ConfigBlock can be accessed at ``idaes.cfg``. Changing some options
-require a call to ``idaes.reconfig()`` if they are updated after importing
-``idaes``.
+IDAES's configuration is obtained by first setting everything to internal
+defaults; then loading a global config file, if it exists; then loading a config
+file from the current working directory, if it exists.  After the ``idaes``
+module is imported, the ``idaes`` ConfigBlock can be accessed at ``idaes.cfg``.
+Some configuration options can be changed after importing ``idaes`` by calling
+``idaes.reconfig()``.
 
-Configuration files are in `JSON format <https://www.json.org/json-en.html>`_. The
-default configuration is shown below and can be used as a template to create new
-configuration files. This is the configuration used by IDAES if nothing else is
-provided.
+Configuration files are in `JSON format <https://www.json.org/json-en.html>`_.
+The default configuration is shown below and can be used as a template to create
+new configuration files. This is the configuration used by IDAES if nothing else
+is provided.
 
 .. code-block:: json
 
@@ -123,8 +123,8 @@ importing ``idaes``.
 
 In addition to reading local configuration files when ``idaes`` is imported, you
 can read a configuration file anytime by calling ``idaes.read_config(path)``.
-Reading a configuration file will automatically apply and resulting configuration
-changes.
+Reading a configuration file will automatically apply any resulting
+configuration changes.
 
 Changing the Configuration in a Script or Interactive Session
 -------------------------------------------------------------
@@ -175,7 +175,7 @@ before using the solvers that may have been otherwise installed by the user.
 This can be used if a user would prefer to use solver versions they have
 installed apart from IDAES.
 
-Changes require ``idaes.reconfig()``.
+Changes require ``idaes.reconfig()``.  The default setting is ``True``.
 
 logger_capture_solver
 ~~~~~~~~~~~~~~~~~~~~~
@@ -185,7 +185,7 @@ send the solver output to the logger if ``True``, and not capture the solver out
 for the logger if ``False``.  If solver output is not captured it will be sent to
 the screen, and not be logged.
 
-Changes do not require ``idaes.reconfig()``.
+Changes do not require ``idaes.reconfig()``.  The default setting is ``True``.
 
 logger_tags
 ~~~~~~~~~~~
@@ -193,28 +193,30 @@ logger_tags
 Loggers created with the ``idaes.logging`` module can be assigned tags.  Output
 from these loggers is recorded if the loggers tag is in the ``logger_tags`` set.
 The default behavior can be configured in a configuration file. The tag set can
-also be modified at any time via functions in the ``idaes.logging`` module.
+also be modified at any time via functions in the ``idaes.logging`` module. This
+is a subset of ``valid_log_tags``.
 
-Changes do not require ``idaes.reconfig()``.
+Changes do not require ``idaes.reconfig()``.  The default setting is:
+``[ "framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions"]``.
 
 valid_log_tags
 ~~~~~~~~~~~~~~
 
 When setting logger tags for ``idaes.logging`` loggers they are compared against
-a list of valid tags.  This is done to guard against spelling errors. If the default
-set of defined tags is not sufficient tags can be added here, or later through
-functions in the ``idaes.logging`` module.
+a list of valid tags.  This is done to guard against spelling errors. If the
+default set of defined tags is not sufficient tags can be added.
 
-Changes do not require ``idaes.reconfig()``.
+Changes do not require ``idaes.reconfig()``.  The default setting is:
+``[ "framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions", "ui"]``.
 
 ipopt-idaes
 ~~~~~~~~~~~
-This is a config block that provides default configuration for the ``ipopt-idaes``
-which is just a wrapper for the Pyomo ``ipopt`` solver class that allows the
+This is a config block that provides default configuration for the ``ipopt-idaes``.
+``ipopt-idaes`` is a wrapper for the Pyomo ``ipopt`` solver class that allows the
 default solver options to be configured in the general idaes ConfigBlock.
 Currently only solver options can be configured in the ``options`` sub-ConfigBlock.
 
-For example to set the default NLP scaling method for ipopt to user idaes-provided
+For example to set the default NLP scaling method for ipopt to use idaes-provided
 scaling factors, use the command
 ``idaes.cfg["ipopt-idaes"]["options"]["nlp_scaling_method"] = "user-scaling"``
 
@@ -222,4 +224,5 @@ Any ipopt solver options that can be passed via command line argument to the ipo
 AMPL executable solver can be set under ``idaes.cfg["ipopt-idaes"]["options"]``
 or equivalently in a configuration file.
 
-Changes do not require ``idaes.reconfig()``.
+Changes do not require ``idaes.reconfig()``.  The default options are:
+``{"nlp_scaling_method": "gradient-based"}``.
