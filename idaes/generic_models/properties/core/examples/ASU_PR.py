@@ -42,13 +42,13 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
-import idaes.generic_models.properties.core.pure.RPP as RPP
-import idaes.generic_models.properties.core.pure.NIST as NIST
-import idaes.generic_models.properties.core.pure.RPP3 as RPP3
+from idaes.generic_models.properties.core.pure.RPP import RPP
+from idaes.generic_models.properties.core.pure.NIST import NIST
+from idaes.generic_models.properties.core.pure.RPP3 import RPP3
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {"PR_kappa": {("nitrogen", "nitrogen"): 0.000,
                                     ("nitrogen", "argon"): -0.26e-2,
@@ -290,7 +290,7 @@ configuration_Dowling_2015 = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {"PR_kappa": {("nitrogen", "nitrogen"): 0.000,
                                     ("nitrogen", "argon"): -0.26e-2,

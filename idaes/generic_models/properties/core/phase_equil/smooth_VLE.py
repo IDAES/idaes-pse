@@ -113,3 +113,11 @@ def calculate_teq(b, phase_pair):
                                        b.temperature_dew[phase_pair].value)
     else:
         b._teq[phase_pair].value = _t1.value
+
+
+# -----------------------------------------------------------------------------
+class SmoothVLE(object):
+    # Deprecation: Eventually replace static methods with class methods
+    phase_equil = phase_equil
+    phase_equil_initialization = phase_equil_initialization
+    calculate_teq = calculate_teq

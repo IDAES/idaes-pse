@@ -40,7 +40,7 @@ from idaes.core.util.testing import get_default_solver
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
@@ -157,7 +157,7 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew}
 
 
@@ -195,7 +195,7 @@ class TestParamBlock(object):
                 "pressure": (5e4, 1e5, 1e6)}
 
         assert model.params.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): smooth_VLE}
+            ("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2

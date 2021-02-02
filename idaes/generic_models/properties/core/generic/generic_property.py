@@ -545,6 +545,13 @@ class GenericParameterData(PhysicalParameterBlock):
                         "phase_equilibrium_state was not specified "
                         "for all phase pairs."
                         .format(self.name))
+
+                if isinstance(pie_config[pp], types.ModuleType):
+                    _log.info("DEPRECATED - definiton of generic property "
+                              "packages is moving to using static classes "
+                              "instead of modules. Please refer to the IDAES "
+                              "documentation.")
+
                 for j in self.component_list:
                     if ((pp[0], j) in self._phase_component_set
                             and (pp[1], j) in self._phase_component_set):
