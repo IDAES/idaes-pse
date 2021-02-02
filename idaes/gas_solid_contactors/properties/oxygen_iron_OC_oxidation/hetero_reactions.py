@@ -13,7 +13,7 @@
 """
 Reaction property package for the oxidation of an iron-based OC.
 Overall reactions:
-    (1) O2 + 4Fe3O4 => 6Fe2O3
+(1) O2 + 4Fe3O4 => 6Fe2O3
 
 Equations written in this model were primarily derived from:
 A. Abad, J. Adánez, F. García-Labiano, L.F. de Diego, P. Gayán, J. Celaya,
