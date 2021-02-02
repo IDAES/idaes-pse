@@ -51,10 +51,9 @@ class TestUncertaintyPropagation:
         assert obj == approx(4.331711213656886)
         assert theta[variable_name[0]] == approx(19.142575284617866)
         assert theta[variable_name[1]] == approx(0.53109137696521)
-        assert np.testing.assert_array_almost_equal(cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
-        
+        np.testing.assert_array_almost_equal(cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
         
     def test_quantify_propagate_uncertainty2(self):
         '''
@@ -79,10 +78,10 @@ class TestUncertaintyPropagation:
         assert obj == approx(4.331711213656886)
         assert theta[variable_name[0]] == approx(19.142575284617866)
         assert theta[variable_name[1]] == approx(0.53109137696521)
-        assert np.testing.assert_array_almost_equal(cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
-    
+        np.testing.assert_array_almost_equal(cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))   
+ 
     def test_propagate_uncertainty(self):
         '''
         It tests the function propagate_uncertainty with rooney & biegler's model.
