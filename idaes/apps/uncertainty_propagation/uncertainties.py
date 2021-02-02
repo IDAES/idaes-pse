@@ -25,15 +25,18 @@ logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
 def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
                  tee=False, diagnostic_mode=False, solver_options=None):
-    """This function calculates error propagation of the objective function and constraints.  
+    """This function calculates error propagation of the objective function and constraints. 
+    The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 
+    'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' 
+    calculates error propagation of objective function and constraints in the 'model_uncertain'.    
     
     Parameters
     ----------
     model_function: function
         Function that generates an instance of the Pyomo model using
         'data' as the input argument
-    model_uncertain: function
-        Function that generates an instance of the Pyomo model using
+    model_uncertain: function or Pyomo ConcreteModel
+        function: Function that generates an instance of the Pyomo model
     data: pandas DataFrame, list of dictionaries, or list of json file names
         Data that is used to build an instance of the Pyomo model and 
         build the objective function
@@ -116,7 +119,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     Parameters
     ----------
     model_uncertain: function or Pyomo ConcreteModel
-        function: Function that generates an instance of the Pyomo model using
+        function: Function that generates an instance of the Pyomo model
     theta: dict
         Estimated parameters 
     cov: numpy.ndarray
@@ -219,7 +222,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     return propagation_f, propagation_c
 
 def get_sensitivity(model, theta_names, tee=False, solver_options=None):
-    """This function calculates gradient vector of the objective function and constraints.
+    """This function calculates gradient vector of the objective function and constraints with respect to the variables in theta_names.
     
     Parameters
     ----------
@@ -310,6 +313,8 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
 
 def line_num(file_name, target):
     """This function returns the line number contains 'target' in the file_name
+    This function identities constraints that have variables in theta_names.     
+
     Parameters
     ----------
     file_name: string
@@ -367,5 +372,7 @@ def clean_variable_name(theta_names):
         var_dic[theta_tmp] = theta_names[i]
     if clean:
        logger.warning("All ' and spaces in theta_names are removed.")
+       logger.warning("    The original variable name:", theta_names)
+       logger.warning("    The cleaned variable name:", theta_names_out)
     return theta_names_out, var_dic
 

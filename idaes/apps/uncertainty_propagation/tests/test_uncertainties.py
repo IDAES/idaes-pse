@@ -34,6 +34,9 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_quantify_propagate_uncertainty1(self):
+        '''
+        It tests the function quantify_propagate_uncertainty with rooney & biegler's model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -54,6 +57,10 @@ class TestUncertaintyPropagation:
         
         
     def test_quantify_propagate_uncertainty2(self):
+        '''
+        This is the same test as test_quantify_propagate_uncertainty1,
+        but with the second argument of quantify_propagate_uncertainty as Pyomo Concrete Model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -77,6 +84,9 @@ class TestUncertaintyPropagation:
         assert propagation_c == {}
     
     def test_propagate_uncertainty(self):
+        '''
+        It tests the function propagate_uncertainty with rooney & biegler's model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -98,6 +108,9 @@ class TestUncertaintyPropagation:
         assert propagation_c == {}
         
     def test_get_sensitivity(self):
+        '''
+        It tests the function get_sensitivity with rooney & biegler's model.
+        '''        
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -129,6 +142,9 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_quantify_propagate_uncertainty_NRTL(self):
+        '''
+        It tests the function quantify_propagate_uncertainty with IDAES NRTL model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt
         variable_name = ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
         current_path = os.path.dirname(os.path.realpath(__file__))
@@ -157,6 +173,9 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_quantify_propagate_uncertainty_NRTL_exception(self):
+        '''
+        It tests an exception error when the ipopt fails for the function quantify_propagate_uncertainty with IDAES NRTL model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.NRTL_model_scripts import NRTL_model, NRTL_model_opt_infeasible
         variable_name = ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
         current_path = os.path.dirname(os.path.realpath(__file__))
@@ -175,6 +194,9 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception1(self):
+        '''
+        It tests an exception error when the tee is not bool for the function quantify_propagate_uncertainty with rooney & biegler's model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -193,6 +215,9 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception2(self):
+        '''
+        It tests an exception error when the diagnostic_mode is not bool for the function quantify_propagate_uncertainty with rooney & biegler's model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -212,6 +237,9 @@ class TestUncertaintyPropagation:
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception3(self):
+        '''
+        It tests an exception error when solver_options is not a dictionary for the function quantify_propagate_uncertainty with rooney & biegler's model.
+        '''
         from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model,rooney_biegler_model_opt
         variable_name = ['asymptote', 'rate_constant']
         data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
@@ -227,6 +255,9 @@ class TestUncertaintyPropagation:
             obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode,solver_options)
 
     def test_clean_variable_name1(self):
+        '''
+        It tests the function clean_variable_name when variable names contain ' and spaces.
+        '''
         theta_names = ["fs.properties.tau['benzene', 'toluene']", "fs.properties.tau['toluene', 'benzene' ]"] 
         theta_names_new, var_dic = clean_variable_name(theta_names)
         theta_names_expected = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
@@ -240,6 +271,9 @@ class TestUncertaintyPropagation:
         assert all([a == b for a, b in zip(sorted(theta_names), sorted(var_dic.values()))])
 
     def test_clean_variable_name2(self):
+        '''
+        It tests the function clean_variable_name when variable names do not contain any ' and spaces.
+        '''
         theta_names = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
         theta_names_new, var_dic = clean_variable_name(theta_names)
         assert len(theta_names) == len(theta_names_new)
