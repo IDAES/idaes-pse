@@ -363,16 +363,15 @@ def clean_variable_name(theta_names):
     theta_names_out = []
     clean = False
     for i in range(len(theta_names)):
-        if "'" in theta_names[i] or " " in theta_names[i] :
-            logger.warning(theta_names[i] + " includes ' or space.")
-            clean = True
         theta_tmp = theta_names[i].replace("'", '')
         theta_tmp = theta_tmp.replace(" ", '')
         theta_names_out.append(theta_tmp)
         var_dic[theta_tmp] = theta_names[i]
+        if "'" in theta_names[i] or " " in theta_names[i] :
+            logger.warning(theta_names[i]+ " includes ' or space.")
+            logger.warning("The cleaned name: " + theta_tmp)
+            clean = True
     if clean:
        logger.warning("All ' and spaces in theta_names are removed.")
-       logger.warning("    The original variable name:", theta_names)
-       logger.warning("    The cleaned variable name:", theta_names_out)
     return theta_names_out, var_dic
 
