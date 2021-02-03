@@ -672,13 +672,15 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature': {'method': None},
              'pressure': {'method': None},
              'compress_fact_phase': {'method': '_compress_fact_phase'},
+             'conc_mol_comp': {'method': '_conc_mol_comp'},
+             'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
+             'cp_mol': {'method': '_cp_mol'},
+             'cp_mol_phase': {'method': '_cp_mol_phase'},
+             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'dens_mass': {'method': '_dens_mass'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
              'dens_mol_phase': {'method': '_dens_mol_phase'},
-             'cp_mol': {'method': '_cp_mol'},
-             'cp_mol_phase': {'method': '_cp_mol_phase'},
-             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'enth_mol': {'method': '_enth_mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
@@ -1349,6 +1351,64 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.compress_fact_phass)
             raise
 
+    def _conc_mol_comp(self):
+        try:
+            def rule_conc_mol_comp(b, j):
+                return b.dens_mol*b.mole_frac_comp[j]
+            self.conc_mol_comp = Expression(
+                self.component_list,
+                rule=rule_conc_mol_comp,
+                doc="Molar concentration of component")
+        except AttributeError:
+            self.del_component(self.conc_mol_comp)
+            raise
+
+    def _conc_mol_phase_comp(self):
+        try:
+            def rule_conc_mol_phase_comp(b, p, j):
+                return b.dens_mol_phase[p]*b.mole_frac_phase_comp[p, j]
+            self.conc_mol_phase_comp = Expression(
+                self.phase_component_set,
+                rule=rule_conc_mol_phase_comp,
+                doc="Molar concentration of component by phase")
+        except AttributeError:
+            self.del_component(self.conc_mol_phase_comp)
+            raise
+
+    def _cp_mol(self):
+        try:
+            def rule_cp_mol(b):
+                return sum(b.cp_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.cp_mol = Expression(rule=rule_cp_mol,
+                                     doc="Mixture molar heat capacity")
+        except AttributeError:
+            self.del_component(self.cp_mol)
+            raise
+
+    def _cp_mol_phase(self):
+        try:
+            def rule_cp_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mol_phase(b, p)
+            self.cp_mol_phase = Expression(self.params.phase_list,
+                                           rule=rule_cp_mol_phase)
+        except AttributeError:
+            self.del_component(self.cp_mol_phase)
+            raise
+
+    def _cp_mol_phase_comp(self):
+        try:
+            def rule_cp_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cp_mol_phase_comp(b, p, j)
+            self.cp_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_cp_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.cp_mol_phase_comp)
+            raise
+
     def _dens_mass(self):
         try:
             def rule_dens_mass(b):
@@ -1397,40 +1457,6 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_dens_mol_phase)
         except AttributeError:
             self.del_component(self.dens_mol_phase)
-            raise
-
-    def _cp_mol(self):
-        try:
-            def rule_cp_mol(b):
-                return sum(b.cp_mol_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.cp_mol = Expression(rule=rule_cp_mol,
-                                     doc="Mixture molar heat capacity")
-        except AttributeError:
-            self.del_component(self.cp_mol)
-            raise
-
-    def _cp_mol_phase(self):
-        try:
-            def rule_cp_mol_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.cp_mol_phase(b, p)
-            self.cp_mol_phase = Expression(self.params.phase_list,
-                                           rule=rule_cp_mol_phase)
-        except AttributeError:
-            self.del_component(self.cp_mol_phase)
-            raise
-
-    def _cp_mol_phase_comp(self):
-        try:
-            def rule_cp_mol_phase_comp(b, p, j):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.cp_mol_phase_comp(b, p, j)
-            self.cp_mol_phase_comp = Expression(
-                self.params._phase_component_set,
-                rule=rule_cp_mol_phase_comp)
-        except AttributeError:
-            self.del_component(self.cp_mol_phase_comp)
             raise
 
     def _enth_mol(self):
