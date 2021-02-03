@@ -21,7 +21,7 @@ import re
 from typing import Dict, List, Tuple
 
 # third-party
-from pandas import DataFrame
+import pandas as pd
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -166,11 +166,13 @@ class FlowsheetSerializer:
         self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
         self.orphaned_ports = {}
         self.labels = {}
+        self._stream_table_df = None
         self._out_json = {"model": {}}
-        self.serialized_contents = defaultdict(dict)
+        self._serialized_contents = defaultdict(dict)
         self._used_ports = set()
         self._known_endpoints = set()
         self._unit_name_used_count = defaultdict(lambda: 0)
+        self._sig_figs = 5  # Defines the number of significant figures after the decimal place
         self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
@@ -233,9 +235,9 @@ class FlowsheetSerializer:
 
                 for k, v in var_value.items():
                     if k is None:
-                        label += f"{var} {value(v)}\n"
+                        label += f"{var} {round(value(v), self._sig_figs)}\n"
                     else:
-                        label += f"{var} {k} {value(v)}\n"
+                        label += f"{var} {k} {round(value(v), self._sig_figs)}\n"
             self.labels[stream_name] = label[:-2]
 
     def _map_edges(self):
@@ -269,28 +271,28 @@ class FlowsheetSerializer:
             self._unit_name_used_count[unit_name] += 1
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = unit
+            
 
             performance_contents, stream_df = unit.serialize_contents()
-
-            if not stream_df.empty:
+            if stream_df is not None and not stream_df.empty:
                 # If there is a stream dataframe then we need to reset the index so we can get the variable names
                 # and then rename the "index"
                 stream_df = stream_df.reset_index().rename(
                     columns={"index": "Variable"}
                 )
-            self.serialized_contents[unit_name]["stream_contents"] = stream_df
+            self._serialized_contents[unit_name]["stream_contents"] = stream_df
 
-            performance_df = DataFrame()
+            performance_df = pd.DataFrame()
             if performance_contents:
                 # If performance contents is not empty or None then stick it into a dataframe and convert the
                 # GeneralVars to actual values
-                performance_df = DataFrame(
+                performance_df = pd.DataFrame(
                     performance_contents["vars"].items(), columns=["Variable", "Value"]
                 )
                 performance_df["Value"] = performance_df["Value"].map(
                     lambda v: value(v)
                 )
-            self.serialized_contents[unit_name]["performance_contents"] = performance_df
+            self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
         elif unit in self._known_endpoints:
             # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
@@ -380,6 +382,33 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
+        from idaes.core.util.tables import create_stream_table_dataframe # deferred to avoid circular import
+
+        # Get the stream table and add it to the model json
+        # Change the index of the pandas dataframe to not be the variables
+        self._stream_table_df = (
+            create_stream_table_dataframe(self.arcs)
+                # Change the index of the pandas dataframe to not be the variables
+            .reset_index().rename(columns={"index": "Variable"})
+            .reset_index().rename(columns={"index": ""})
+            .round(self._sig_figs)
+        )
+
+        # Parse the names of the variables to get rid of flow_mol_phase_comp
+        self._stream_table_df['Variable'] = (
+                                                self._stream_table_df["Variable"]
+                                                .str.replace("flow_mol_phase_comp", "")
+                                                .str.rstrip()
+                                            )
+        # Change NaNs to None for JSON
+        self._stream_table_df = self._stream_table_df.where((pd.notnull(self._stream_table_df)), None)
+
+        # Puts df in this format for easier parsing in the javascript table:
+        # {'index': ["('Liq', 'benzene')", "('Liq', 'toluene')", "('Liq', 'hydrogen')", "('Liq', 'methane')", "('Vap', 'benzene')", "('Vap', 'toluene')", "('Vap', 'hydrogen')", "('Vap', 'methane')", 'temperature', 'pressure'], 
+        # 'columns': ['s03', 's04', 's05', 's06', 's08', 's09', 's10'], 
+        # 'data': [[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [298.15, 298.15, 298.15, 298.15, 298.15, 298.15, 298.15], [101325.0, 101325.0, 101325.0, 101325.0, 101325.0, 101325.0, 101325.0]]}
+        self._out_json["model"]["stream_table"] = self._stream_table_df.to_dict("split")
+
         self._out_json["model"]["id"] = self.name
         self._out_json["model"]["unit_models"] = {}
         self._out_json["model"]["arcs"] = {}
@@ -393,10 +422,10 @@ class FlowsheetSerializer:
                 "type": unit_type,
                 "image": "/images/icons/" + unit_icon.icon,
             }
-            if unit_name in self.serialized_contents:
+            if unit_name in self._serialized_contents:
                 for pfx in "performance", "stream":
                     content_type = pfx + "_contents"
-                    c = self.serialized_contents[unit_name][content_type].to_dict("index")
+                    c = self._serialized_contents[unit_name][content_type].round(self._sig_figs).to_dict("index")
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 
@@ -498,7 +527,7 @@ class FlowsheetSerializer:
         entry["angle"] = angle
         entry["id"] = name
         # This defines what layer the icon is on
-        z = (1,)
+        z = 1
         entry["z"] = z
         entry["ports"] = port_groups
         entry["attrs"] = {
