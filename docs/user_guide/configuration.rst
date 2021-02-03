@@ -87,6 +87,7 @@ is provided.
       }
   }
 
+
 Global Configuration Files
 --------------------------
 
@@ -197,7 +198,7 @@ also be modified at any time via functions in the ``idaes.logging`` module. This
 is a subset of ``valid_log_tags``.
 
 Changes do not require ``idaes.reconfig()``.  The default setting is:
-``[ "framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions"]``.
+``["framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions"]``.
 
 valid_log_tags
 ~~~~~~~~~~~~~~
@@ -207,7 +208,7 @@ a list of valid tags.  This is done to guard against spelling errors. If the
 default set of defined tags is not sufficient tags can be added.
 
 Changes do not require ``idaes.reconfig()``.  The default setting is:
-``[ "framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions", "ui"]``.
+``["framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions", "ui"]``.
 
 ipopt-idaes
 ~~~~~~~~~~~

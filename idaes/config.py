@@ -130,23 +130,16 @@ default_config = """
 """
 
 cfg = None # the idaes ConfigBlock once it's created by new_idaes_config_block()
+cfg_doc = ""
 
-
-class ConfigDictJSONEncoder(json.JSONEncoder):
-    """ This class can be used to encode the ConfigDict as json.  It is
-    sufficient for the IDAES config, but not ConfigDicts in general.
+class ConfigBlockJSONEncoder(json.JSONEncoder):
+    """ This class handles non-serializable objects that may appear in the IDAES
+    ConfigBlock.  For not this is only set objects.
     """
     def default(self, obj):
-        print(super().default)
-        if isinstance(obj, pyomo.common.config.ConfigDict):
-            d = {}
-            for k, v in obj.items():
-                d[k] = self.default(v)
-            return d
-        elif isinstance(obj, set):
+        if isinstance(obj, set):
             return list(obj)
         return obj
-
 
 def _new_idaes_config_block():
     """The idaes configuration is stored in a Pyomo ConfigBlock created by this.
@@ -154,8 +147,9 @@ def _new_idaes_config_block():
     called in ``__init__.py`` for ``idaes``.  Calling it anywhere else will cause
     the idaes configuration system to function improperly.
     """
-    _config = pyomo.common.config.ConfigBlock("idaes", implicit=False)
-    _config.declare(
+    global cfg
+    cfg = pyomo.common.config.ConfigBlock("idaes", implicit=False)
+    cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
             implicit=True,
@@ -165,7 +159,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config.declare(
+    cfg.declare(
         "ipopt-idaes",
         pyomo.common.config.ConfigBlock(
             implicit=False,
@@ -174,7 +168,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config["ipopt-idaes"].declare(
+    cfg["ipopt-idaes"].declare(
         "options",
         pyomo.common.config.ConfigBlock(
             implicit=True,
@@ -183,7 +177,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config["ipopt-idaes"]["options"].declare(
+    cfg["ipopt-idaes"]["options"].declare(
         "nlp_scaling_method",
         pyomo.common.config.ConfigValue(
             domain=str,
@@ -193,7 +187,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config.declare(
+    cfg.declare(
         "use_idaes_solvers",
         pyomo.common.config.ConfigValue(
             default=True,
@@ -208,7 +202,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config.declare(
+    cfg.declare(
         "valid_logger_tags",
         pyomo.common.config.ConfigValue(
             default=set(),
@@ -217,7 +211,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config.declare(
+    cfg.declare(
         "logger_tags",
         pyomo.common.config.ConfigValue(
             default=set(),
@@ -226,7 +220,7 @@ def _new_idaes_config_block():
         ),
     )
 
-    _config.declare(
+    cfg.declare(
         "logger_capture_solver",
         pyomo.common.config.ConfigValue(
             default=True,
@@ -234,11 +228,10 @@ def _new_idaes_config_block():
         ),
     )
     d = json.loads(default_config)
-    _config.set_value(d)
-    logging.config.dictConfig(_config["logging"])
-    global cfg
-    cfg = _config # make the config block accessible from this module
-    return _config
+    cfg.set_value(d)
+    logging.config.dictConfig(cfg["logging"])
+    return cfg
+
 
 def read_config(read_config):
     """Read either a JSON formatted config file or a configuration dictionary.
@@ -274,7 +267,7 @@ def write_config(path, default=False):
             json.dump(_cd, f, indent=4)
     else:
         with open(path, 'w') as f:
-            json.dump(cfg, f, cls=ConfigDictJSONEncoder, indent=2)
+            json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=2)
 
 
 def reconfig():
