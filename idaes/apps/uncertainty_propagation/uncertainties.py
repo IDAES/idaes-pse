@@ -56,10 +56,10 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     -------
     obj: float
         objective function value for the given obj_function 
-    theta: dictionary
+    theta_out: dictionary
         Estimated parameters
     cov: numpy.ndarray
-        Covariance of theta
+        Covariance of theta_out
     propagation_f: dict
         error propagation in the objective function with the dictionary key, 'objective' 
         if the objective function doesn't include any uncertain parameters, return an empty dictionary        
