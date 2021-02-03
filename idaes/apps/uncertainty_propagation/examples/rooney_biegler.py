@@ -51,13 +51,6 @@ def rooney_biegler_model(data):
 def rooney_biegler_model_opt():
     """This function generates an instance of the rooney & biegler Pyomo model 
     
-    Parameters
-    ----------
-    theta: dict
-        Estimated parameters 
-    theta_names: list of strings
-        List of estimated Var names
-    
     Returns
     -------
     m: an instance of the Pyomo model
