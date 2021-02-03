@@ -380,11 +380,15 @@ class GenericParameterData(PhysicalParameterBlock):
                         if self.get_component(j)._is_phase_valid(pobj):
                             # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
+                        if not isinstance(pobj, AqueousPhase):
+                            # Also need to add apparent species
+                            if (p, j) not in pc_set_true:
+                                pc_set_true.append((p, j))
                 else:
                     # Validate that component names are valid and add to pc_set
                     for j in pc_list:
                         if (j not in self.true_species_set and
-                                j not in self.true_species_set):
+                                j not in self.apparent_species_set):
                             # Unrecognised component
                             raise ConfigurationError(
                                 "{} phase-component list for phase {} "
@@ -398,9 +402,9 @@ class GenericParameterData(PhysicalParameterBlock):
                                 "contained component {}, however this "
                                 "component is not valid for the given "
                                 "PhaseType".format(self.name, p, j))
-                        if j not in self.true_species_set:
+                        if j in self.true_species_set:
                             pc_set_true.append((p, j))
-                        if j not in self.apparent_species_set:
+                        if j in self.apparent_species_set:
                             pc_set_appr.append((p, j))
             self.true_phase_component_set = Set(initialize=pc_set_true,
                                                 ordered=True)
