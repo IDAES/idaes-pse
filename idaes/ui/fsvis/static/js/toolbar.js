@@ -1,7 +1,8 @@
 export class Toolbar { 
-    constructor(app, paper) {
+    constructor(app, paper, stream_table) {
         this._app = app;
         this._paper = paper;
+        this._stream_table = stream_table;
         this.setupToolbar();
     }
 
@@ -21,7 +22,85 @@ export class Toolbar {
         self._paper.$el.css('background-image', 'url("' + canvas[0].toDataURL('image/png') + '")');
     };
 
+    setContainerView(container) {
+        // Set the viewablility of the container
+        if (container.style.display === "none") {
+                container.style.display = "block";
+        }
+        else {
+            container.style.display = "none";
+        };
+    };
+
     setupToolbar() {
+        // Grab the model information from the div tag so that we can use it in our ajax calls
+        const model_id = $("#idaes-fs-name").data("flowsheetId");
+        const url = `/fs?id=${ model_id }`;
+        const model_server_url = $("#model-server-url").data("modelurl");
+
+        // Save event listener
+        document.querySelector("#save-btn").addEventListener("click", () => {
+            console.log("save clicked")
+            this._app.saveModel(url, this._paper.graph)
+            
+        });
+
+        // Refresh event listener
+        document.querySelector("#refresh-btn").addEventListener("click", () => {
+            console.log("refresh clicked")
+            this._app.refreshModel(url, this._paper)
+        });
+
+        // Flowsheet to SVG export event listener
+        document.querySelector("#export-flowsheet-btn").addEventListener("click", () => {
+            console.log("export clicked")
+            let p = this._paper.paper;
+            // Make sure to hide all of the vertices and bars on the links 
+            // so they don't show up in the SVG
+            p.hideTools();
+            p.toSVG(function(svg) {
+                new joint.ui.Lightbox({
+                    image: 'data:image/svg+xml,' + encodeURIComponent(svg),
+                    downloadable: true,
+                    fileName: model_id.concat(".svg")
+                }).open();
+            }, {
+                preserveDimensions: true,
+                convertImagesToDataUris: true,
+                useComputedStyles: true,
+                stylesheet: '.scalable * { vector-effect: non-scaling-stroke }'
+            });
+        });
+
+        // Stream table to CSV export event listener
+        document.querySelector("#export-stream-table-btn").addEventListener("click", () => {
+            this._stream_table._gridOptions.api.exportDataAsCsv({suppressQuotes: true});
+        });
+
+        // Show/hide flowsheet event listener
+        document.querySelector("#view-flowsheet-btn").addEventListener("change", function() {
+            let container = document.querySelector("#idaes-canvas");
+            if (this.checked) {
+                container.style.display = "block";
+            }
+            else {
+                container.style.display = "none";
+            };
+        });
+
+        // Show/hide stream table event listener
+        document.querySelector("#view-stream-table-btn").addEventListener("change", function() {
+            let container = document.querySelector("#stream-table");
+            if (this.checked) {
+                container.style.display = "block";
+            }
+            else {
+                container.style.display = "none";
+            };
+        });
+    };
+
+    setupOldToolbar() {
         // Grab the model information from the div tag so that we can use it in our ajax calls
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = `/fs?id=${ model_id }`;

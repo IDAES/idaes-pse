@@ -14,7 +14,6 @@ export class StreamTable {
     clearTable() {
         // Clear the table
         $("#hide-fields-list").empty();
-        console.log(document.querySelector("#stream-table-data"))
         $("#stream-table-data").empty();
     }
 
@@ -40,7 +39,7 @@ export class StreamTable {
                 let checkbox_item = document.createElement("div");
                 checkbox_item.class = "checkbox";
                 // checkbox_item.id = column_header + "-checkbox"
-                checkbox_item.innerHTML = '<label><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked>' + column_header + '</label>';
+                checkbox_item.innerHTML = '<label class="fancy-checkbox"><input type="checkbox" value="' + column_header + '" id="' + column_header + '" checked><i class="fas fa-check checked"></i><i class="far fa-circle unchecked"></i>' + column_header + '</label>';
                 list_item.appendChild(checkbox_item);
                 hide_fields_list.appendChild(list_item);
             };
@@ -65,6 +64,13 @@ export class StreamTable {
             rowData: row_data,
         };
 
+        // Color the even rows grey
+        this._gridOptions.getRowStyle = function(params) {
+            if (params.node.rowIndex % 2 === 0) {
+                return { background: "#f3f3f3" };
+            }
+        }
+
         // lookup the container we want the Grid to use
         let eGridDiv = document.querySelector('#stream-table-data');
 
@@ -76,7 +82,8 @@ export class StreamTable {
         // This method sets up the event listeners for the table 
 
         // Set up the show/hide checkboxes for the Hide Field dropdown in the nav bar
-        let checkboxes = document.querySelectorAll("input[type=checkbox]");
+        let hide_fields_list = document.querySelector("#hide-fields-list")
+        let checkboxes = hide_fields_list.querySelectorAll("input[type=checkbox]");
         // We need to save this to another variable temporarily to avoid collisions with this
         let app = this
         checkboxes.forEach(function(checkbox) {
@@ -89,31 +96,5 @@ export class StreamTable {
                 };
             });
         });
-
-        // Set up an event listener to show and hide the table div 
-        document.querySelector("#hide-table-btn").addEventListener("click", function() {
-            let container = document.querySelector("#stream-table-container");
-            let hide_fields_dropdown = document.querySelector("#hide-fields-dropdown");
-            let export_csv_button = document.querySelector("#export-table-csv-btn");
-            if (container.style.display === "none") {
-                container.style.display = "block";
-                hide_fields_dropdown.style.display = "block";
-                export_csv_button.style.display = "block";
-            } 
-            else {
-                container.style.display = "none";
-                hide_fields_dropdown.style.display = "none";
-                export_csv_button.style.display = "none";
-            };
-        });
-
-        // Set up the table csv export
-        document.querySelector("#export-table-csv-btn").addEventListener("click", function() {
-            app._gridOptions.api.exportDataAsCsv({suppressQuotes: true});
-        });
     };
 };
-
-
-
-

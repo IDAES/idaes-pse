@@ -9,13 +9,16 @@ export class App {
         $.ajax({url: url, datatype: 'json'})
             .done((model) => {
                 this.renderModel(model);
-                this.toolbar = new Toolbar(this, this.paper);
                 this.stream_table = new StreamTable(this, model);
+                this.toolbar = new Toolbar(this, this.paper, this.stream_table);
             })
             .fail((xhr, status, error) => { 
                 console.log(error);
                 console.log(status); 
             });
+        $(document).on('click', '.dropdown-menu', function (e) {
+            e.stopPropagation();
+        });
     }
 
     renderModel(model) {
