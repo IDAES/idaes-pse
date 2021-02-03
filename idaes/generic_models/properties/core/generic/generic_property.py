@@ -1352,7 +1352,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Compressibility of each phase",
                     rule=rule_Z_phase)
         except AttributeError:
-            self.del_component(self.compress_fact_phass)
+            self.del_component(self.compress_fact_phase)
             raise
 
     def _conc_mol_comp(self):
@@ -1435,7 +1435,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Mass density of each phase",
                     rule=rule_dens_mass_phase)
         except AttributeError:
-            self.del_component(self.dens_mass_phass)
+            self.del_component(self.dens_mass_phase)
             raise
 
     def _dens_mol(self):

@@ -144,10 +144,7 @@ def define_state(b):
 
     def get_material_density_terms_FpcTP(p, j):
         """Create material density terms."""
-        if j in b.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
     b.get_material_density_terms = get_material_density_terms_FpcTP
 
     def get_energy_density_terms_FpcTP(p):
