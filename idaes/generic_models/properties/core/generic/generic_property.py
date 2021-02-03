@@ -482,6 +482,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     "state_definition configuration argument. Please fix "
                     "your property parameter definition to include this."
                     .format(self.name))
+        elif isinstance(self.config.state_definition, types.ModuleType):
+            _log.info("DEPRECATED - definiton of generic property "
+                      "packages is moving to using static classes "
+                      "instead of modules. Please refer to the IDAES "
+                      "documentation.")
 
         units = self.get_metadata().derived_units
 
