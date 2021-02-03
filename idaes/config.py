@@ -130,7 +130,6 @@ default_config = """
 """
 
 cfg = None # the idaes ConfigBlock once it's created by new_idaes_config_block()
-cfg_doc = ""
 
 class ConfigBlockJSONEncoder(json.JSONEncoder):
     """ This class handles non-serializable objects that may appear in the IDAES
