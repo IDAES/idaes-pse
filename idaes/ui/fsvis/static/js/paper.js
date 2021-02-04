@@ -66,31 +66,39 @@ export class Paper {
             // This is needed to keep the text labels for the unit models in the correct orientation
             // x and y were specifically picked to keep the label in the same place 
             // in relation to the unit model (bottom middle)
-            let x = 0
-            let y = 0
+            // TODO Make this figuring out the x and y positions a function so that we can compute it
             const angle = cellView.model.angle()
             switch (angle) {
-                case 0:
-                    x = 0;
-                    y = 5;
+                case 0: {
+                    const x = 0;
+                    const y = 5;
+                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
                     break;
-                case 90:
-                    x = 38;
-                    y = -35;
+                }
+                case 90: {
+                    const x = 38;
+                    const y = -35;
+                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
                     break;
-                case 180:
-                    x = 0;
-                    y = -72;
+                }
+                case 180: {
+                    const x = 0;
+                    const y = -72;
+                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
                     break;
-                case 270:
-                    x = -38;
-                    y = -34;
+                }
+                case 270: {
+                    const x = -38;
+                    const y = -34;
+                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
                     break;
-                default:
-                    x = 0;
-                    y = 0;
+                }
+                default: {
+                    const x = 0;
+                    const y = 0;
+                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
+                }
             }
-            cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
         });
 
         // Adds link tools (adding vertices, moving segments) to links when your 
