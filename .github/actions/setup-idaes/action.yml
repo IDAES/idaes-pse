@@ -18,7 +18,12 @@ runs:
     - name: Install idaes and dependencies
       shell: bash
       run: |
+        echo '::group::Output of "pip install" command'
         ${{ inputs.install-command }} ${{ inputs.install-target}}
+        echo '::endgroup::'
+        echo '::group::Output of "pip show pyomo idaes-pse"'
+        pip show pyomo idaes-pse
+        echo '::endgroup::'
         idaes --version
     - name: Install extensions
       shell: bash
