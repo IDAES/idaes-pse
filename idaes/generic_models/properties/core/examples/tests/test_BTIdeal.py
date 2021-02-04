@@ -16,6 +16,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
+                           Expression,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -247,6 +248,13 @@ class TestStateBlock(object):
                          "Pressure"]
 
     @pytest.mark.unit
+    def test_conc_mol(self, model):
+        assert isinstance(model.props[1].conc_mol_comp, Expression)
+        assert len(model.props[1].conc_mol_comp) == 2
+        assert isinstance(model.props[1].conc_mol_phase_comp, Expression)
+        assert len(model.props[1].conc_mol_phase_comp) == 4
+
+    @pytest.mark.unit
     def test_dof(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
@@ -303,6 +311,9 @@ class TestStateBlock(object):
             pytest.approx(0.6339, abs=1e-4)
         assert model.props[1].phase_frac["Vap"].value == \
             pytest.approx(0.3961, abs=1e-4)
+
+        assert value(model.props[1].conc_mol_phase_comp["Vap", "benzene"]) == \
+            pytest.approx(20.9946, abs=1e-4)
 
     @pytest.mark.ui
     @pytest.mark.unit
