@@ -324,6 +324,10 @@ Total gas balance at inlet:
 
 .. math:: F_{mol,b,t,0} + F_{mol,ge,t,0} = F_{mol,g,t,inlet}
 
+Solid particle porosity at inlet:
+
+.. math:: \phi_{se,t,0} = \phi_{t,inlet}
+
 Gas emulsion velocity at inlet:
 
 .. math:: v_{ge,t,0} = v_{mf,se} 
@@ -393,6 +397,10 @@ Solid outlet material balance:
     *if 'flow_type' is 'co_current' x = 1 else if 'flow_type' is 'counter_current' x = 0:*
 
     .. math:: F_{mass,s,t,outlet} = F_{mass,se,t,x}
+    
+Solid particle porosity at outlet:
+
+.. math:: \phi_{t,outlet} = \phi_{se,t,1}
 
 *if 'energy_balance_type' is not 'EnergyBalanceType.none':*
 
@@ -434,7 +442,8 @@ Variable                    Name                                                
 :math:`\delta_{t,x}`        delta                                                 Volume fraction occupied by bubble region
 :math:`\delta_{e,t,x}`      delta_e                                               Volume fraction occupied by emulsion region                           
 :math:`\varepsilon_{t,x}`   voidage_average                                       Cross-sectional average voidage
-:math:`\varepsilon_{e,t,x}` voidage_emulsion                                      Emulsion region voidage fraction
+:math:`\varepsilon_{e,t,x}` voidage_emulsion                                      Emulsion region voidage fraction 
+:math:`\phi_{se,t,x}`       solid_emulsion_region.particle_porosity               Particle porosity of solid   
 :math:`\gamma_{t,x}`        bubble_growth_coeff                                   Bubble growth coefficient
 :math:`d_{bm,t,x}`          bubble_diameter_max                                   Maximum theoretical bubble diameter 
 :math:`d_{b,t,x}`           bubble_diameter                                       Average bubble diameter
@@ -491,7 +500,8 @@ Variable                    Name                                                
 :math:`P_{g,t,inlet}`       gas_inlet.pressure                     
 :math:`T_{g,t,inlet}`       gas_inlet.temperature                   
 :math:`H_{g,t,inlet}`       gas_inlet.enthalpy                      
-:math:`F_{mass,s,t,inlet}`  solid_inlet.flow_mass                     
+:math:`F_{mass,s,t,inlet}`  solid_inlet.flow_mass
+:math:`\phi_{t,inlet}`      solid_inlet.particle_porosity                            
 :math:`x_{s,t,inlet}`       solid_inlet.mass_frac                    
 :math:`T_{s,t,inlet}`       solid_inlet.temperature                   
 :math:`H_{s,t,inlet}`       solid_inlet.enthalpy                      
@@ -504,7 +514,8 @@ Variable                    Name                                                
 :math:`P_{g,t,outlet}`      gas_outlet.pressure                      
 :math:`T_{g,t,outlet}`      gas_outlet.temperature                   
 :math:`H_{g,t,outlet}`      gas_outlet.enthalpy                      
-:math:`F_{mass,s,t,outlet}` solid_outlet.flow_mass                     
+:math:`F_{mass,s,t,outlet}` solid_outlet.flow_mass
+:math:`\phi_{t,outlet}`     solid_outlet.particle_porosity                            
 :math:`x_{s,t,outlet}`      solid_outlet.mass_frac                     
 :math:`T_{s,t,outlet}`      solid_outlet.temperature                   
 :math:`H_{s,t,outlet}`      solid_outlet.mass_enthalpy                      
