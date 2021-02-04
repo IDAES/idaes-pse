@@ -34,9 +34,9 @@ from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure import RPP4
 
-from idaes.generic_models.properties.core.pure.Perrys import Perrys
-from idaes.generic_models.properties.core.pure.RPP import RPP
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -59,8 +59,8 @@ configuration = {
                     "elemental_composition": {"C": 6, "H": 6},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                     "parameter_data": {
                         "mw": (78.1136E-3, pyunits.kg/pyunits.mol),  # [1]
@@ -94,8 +94,8 @@ configuration = {
                     "elemental_composition": {"C": 7, "H": 8},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                     "parameter_data": {
                         "mw": (92.1405E-3, pyunits.kg/pyunits.mol),  # [1]

@@ -1,7 +1,7 @@
-Properties of Gases and Liquids (``RPP``)
-=========================================
+Properties of Gases and Liquids 4th edition (``RPP4``)
+======================================================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 Source

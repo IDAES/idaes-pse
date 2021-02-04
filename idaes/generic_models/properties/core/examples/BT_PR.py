@@ -34,8 +34,8 @@ from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
+from idaes.generic_models.properties.core.pure import RPP4
 
-from idaes.generic_models.properties.core.pure.RPP import RPP
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -54,9 +54,9 @@ configuration = {
     # Specifying components
     "components": {
         'benzene': {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
                         "mw": (78.1136E-3, pyunits.kg/pyunits.mol),  # [1]
@@ -77,9 +77,9 @@ configuration = {
                                                     'C': (-2.62863, None),
                                                     'D': (-3.33399, None)}}},
         'toluene': {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
                         "mw": (92.1405E-3, pyunits.kg/pyunits.mol),  # [1]

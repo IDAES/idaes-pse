@@ -190,7 +190,7 @@ class pressure_sat_comp():
 
 
 # -----------------------------------------------------------------------------
-class RPP(object):
+class RPP4(object):
     cp_mol_ig_comp = cp_mol_ig_comp
     enth_mol_ig_comp = enth_mol_ig_comp
     entr_mol_ig_comp = entr_mol_ig_comp
