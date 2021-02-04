@@ -77,7 +77,7 @@ def get_concentration_term(blk, r_idx):
             "Please ensure that this argument is included in your "
             "configuration dict.".format(blk.name))
     elif conc_form == ConcentrationForm.molarity:
-        conc_term = getattr(blk.state_ref, "conc_mole_phase_comp")
+        conc_term = getattr(blk.state_ref, "conc_mol_phase_comp")
     elif conc_form == ConcentrationForm.activity:
         conc_term = getattr(blk.state_ref, "act_phase_comp")
     elif conc_form == ConcentrationForm.molality:

@@ -58,7 +58,6 @@ def test_ipopt_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     solver = SolverFactory('ipopt-idaes')
-
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=-0.1)
     m.y = pyo.Var(initialize=1)
