@@ -45,6 +45,20 @@ hr {
   margin-left: 3em;
 }
 
+#idaes-canvas {
+  position: relative;
+}
+
+#toolbar-flowsheet {
+  justify-content: flex-end;
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  width: 350px;
+  height: 40px;
+  z-index: 1;
+}
+
 #idaes-titlebar-right {
   width: 100px;
 }
@@ -152,6 +166,91 @@ hr {
 
 .checkbox-menu {
   margin-top: 17px;
+}
+
+.circle-icon {
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 4px 0px 5px 0px;
+    background-color: #0b79bd;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    vertical-align: middle;
+}
+
+.btn,
+.btn:hover {
+  color: white;
+  margin: 0;
+  padding: 0;
+}
+
+.btn-label {
+  margin-bottom: 2px;
+  display: inline-block;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 17px;
+  margin-top: 5px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 13px;
+  width: 13px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #0b79bd;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #0b79bd;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(13px);
+  -ms-transform: translateX(13px);
+  transform: translateX(13px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 17px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 /* JointJS Overrides */
