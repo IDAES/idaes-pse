@@ -1,7 +1,7 @@
 Properties of Gases and Liquids 5th edition (``RPP5``)
 ======================================================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 Source
@@ -75,7 +75,7 @@ The correlation for the ideal gas molar entropy is derived from the correlation 
    ":math:`s_{\text{form, Vap}}`", "entr_mol_form_vap_comp_ref", ":math:`\text{J/mol}\cdotp\text{K}`", "Standard molar entropy of formation at reference state"
 
 .. note::
-    This correlation uses the same parameters as the ideal gas heat capacity correlation .
+    This correlation uses the same parameters as the ideal gas heat capacity correlation.
 
 Saturation (Vapor) Pressure
 ---------------------------

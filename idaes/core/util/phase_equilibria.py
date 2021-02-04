@@ -15,6 +15,9 @@
 This module contains utility functions to generate phase equilibrium data and
 plots.
 """
+
+__author__ = "Alejandro Garciadiego"
+
 # Import objects from pyomo package
 from pyomo.environ import (ConcreteModel,
                            SolverFactory,
@@ -32,14 +35,13 @@ import idaes.logger as idaeslog
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Author: Alejandro Garciadiego
 def Txy_diagram(
     model, component_1, component_2, pressure, num_points = 20, temperature = 298.15,  figure_name = None,
     print_legend = True, include_pressure = False, print_level=idaeslog.NOTSET,
     solver_op={'tol': 1e-6}):
 
     """
-    Generates T-x-y plots. Given the components, pressure and property dictionary
+    This method generates T-x-y plots. Given the components, pressure and property dictionary
     this function calls Txy_data() to generate T-x-y data and once the data has
     been generated calls build_txy_diagrams() to create a plot.
 
@@ -70,7 +72,6 @@ def Txy_diagram(
     # Run diagrams function to convert t-x-y data into a plot
     build_txy_diagrams(Txy_data_to_plot, figure_name, print_legend, include_pressure)
 
-# Author: Alejandro Garciadiego
 def Txy_data(model, component_1, component_2, pressure, num_points = 20, temperature = 298.15,
             print_level=idaeslog.NOTSET, solver_op={'tol': 1e-6}):
     """
@@ -143,10 +144,8 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
     for i in range(len(x_d)):
         model.props[1].mole_frac_comp[component_1].fix(x_d[i])
         model.props[1].mole_frac_comp[component_2].fix(1 - x_d[i] - xs)
-        # model.display()
         # solve the model
         status = solver.solve(model, tee = False)
-        # model.display()
         # If solution is optimal store the concentration, and calculated temperatures in the created arrays
         if (status.solver.status == SolverStatus.ok) and (status.solver.termination_condition == TerminationCondition.optimal):
 

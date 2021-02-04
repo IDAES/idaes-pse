@@ -14,6 +14,8 @@
 This module contains phase equilibria utility functions for use in IDAES models.
 """
 
+__author__ = "Alejandro Garciadiego"
+
 import pytest
 
 import idaes.logger as idaeslog
@@ -44,14 +46,13 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 
 from idaes.core.util.phase_equilibria import (TXYDataClass,Txy_data)
 
-# Author: Alejandro Garciadiego
 @pytest.mark.unit
 def test_Txy_dataclass():
 
     TD = TXYDataClass('benzene', 'toluene', pyunits.kg / pyunits.m / pyunits.s ** 2, pyunits.K, 101325)
     TD.TBubb = [353.3205, 365.3478, 383.8817]
     TD.TDew = [353.3237, 372.0203, 383.8845]
-    TD.x = [0.9999, 0.5, 9.9999]
+    TD.x = [0.9999, 0.5, 0.01]
 
     assert TD.Component_1 == 'benzene'
     assert TD.Component_2 == 'toluene'
@@ -60,7 +61,7 @@ def test_Txy_dataclass():
     assert TD.P == 101325
     assert TD.TBubb == [pytest.approx(353.3205, abs=1e-4), pytest.approx(365.3478, abs=1e-4), pytest.approx(383.8817, abs=1e-4)]
     assert TD.TDew == [pytest.approx(353.3237, abs=1e-4), pytest.approx(372.0203, abs=1e-4), pytest.approx(383.8845, abs=1e-4)]
-    assert TD.x == [pytest.approx(0.9999, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(9.9999, abs=1e-4)]
+    assert TD.x == [pytest.approx(0.9999, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
