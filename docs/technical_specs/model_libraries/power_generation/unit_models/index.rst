@@ -23,3 +23,4 @@ Unit Models
     drum1D
     waterpipe
     boiler_heat_exchanger_3streams
+    feedwater_heater_0D_dynamic
