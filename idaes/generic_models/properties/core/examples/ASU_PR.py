@@ -46,7 +46,7 @@ from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
-import idaes.generic_models.properties.core.pure.RPP as RPP
+import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 import idaes.generic_models.properties.core.pure.NIST as NIST
 import idaes.generic_models.properties.core.pure.RPP3 as RPP3
 
@@ -72,8 +72,8 @@ configuration = {
     # Specifying components
     "components": {
         "nitrogen": {"type": Component,
-                     "enth_mol_ig_comp": RPP,
-                     "entr_mol_ig_comp": RPP,
+                     "enth_mol_ig_comp": RPP4,
+                     "entr_mol_ig_comp": RPP4,
                      "pressure_sat_comp": NIST,
                      "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                      "parameter_data": {
@@ -100,8 +100,8 @@ configuration = {
                              "C": (-6.788, pyunits.K)}}},
 
         "argon": {"type": Component,
-                  "enth_mol_ig_comp": RPP,
-                  "entr_mol_ig_comp": RPP,
+                  "enth_mol_ig_comp": RPP4,
+                  "entr_mol_ig_comp": RPP4,
                   "pressure_sat_comp": NIST,
                   "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                   "parameter_data": {
@@ -124,8 +124,8 @@ configuration = {
                                                   "C": (-22.233, pyunits.K)}}},
 
         "oxygen": {"type": Component,
-                   "enth_mol_ig_comp": RPP,
-                   "entr_mol_ig_comp": RPP,
+                   "enth_mol_ig_comp": RPP4,
+                   "entr_mol_ig_comp": RPP4,
                    "pressure_sat_comp": NIST,
                    "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                    "parameter_data": {
@@ -192,8 +192,8 @@ configuration_Dowling_2015 = {
     # Specifying components
     "components": {
         "nitrogen": {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "pressure_sat_comp": RPP3,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -216,8 +216,8 @@ configuration_Dowling_2015 = {
                             'C': (-6.60, pyunits.K)}}},
 
         "argon": {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "pressure_sat_comp": RPP3,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
@@ -240,8 +240,8 @@ configuration_Dowling_2015 = {
                             'C': (-5.84, pyunits.K)}}},
 
         "oxygen": {"type": Component,
-                    "enth_mol_ig_comp": RPP,
-                    "entr_mol_ig_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "entr_mol_ig_comp": RPP4,
                     "pressure_sat_comp": RPP3,
                     "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
                     "parameter_data": {
