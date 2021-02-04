@@ -6,6 +6,7 @@ Unit Models
 
     feedwater_heater_0D
     feedwater_heater_condensing_0D
+    turbine
     turbine_inlet
     turbine_outlet
     turbine_stage

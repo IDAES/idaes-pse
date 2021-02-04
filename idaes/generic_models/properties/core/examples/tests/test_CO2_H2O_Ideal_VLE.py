@@ -125,6 +125,12 @@ class TestStateBlock(object):
                 [1],
                 default={"defined_state": True})
 
+        model.props[1].flow_mol.fix(10)
+        model.props[1].temperature.fix(323.15)
+        model.props[1].pressure.fix(108900)
+        model.props[1].mole_frac_comp["H2O"].fix(0.5)
+        model.props[1].mole_frac_comp["CO2"].fix(0.5)
+
         return model
 
     @pytest.mark.unit
@@ -258,13 +264,6 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_dof(self, model):
-        # Fix state
-        model.props[1].flow_mol.fix(10)
-        model.props[1].temperature.fix(323.15)
-        model.props[1].pressure.fix(108900)
-        model.props[1].mole_frac_comp["H2O"].fix(0.5)
-        model.props[1].mole_frac_comp["CO2"].fix(0.5)
-
         assert degrees_of_freedom(model.props[1]) == 0
 
     @pytest.mark.initialize
