@@ -164,6 +164,12 @@ Valve coefficients should also be specified.  A reasonable guess for split fract
 for any extraction splitters present. The most likely cause of initialization failure is flow coefficients
 in inlet stage, outlet stage, or valves that do not pair well with the specified flow rates.
 
+The flow coefficients for the inlet and outlet stage can be difficult to determine, therefore the
+initialization arguments ``calculate_outlet_cf`` and ``calculate_outlet_cf`` are provided. If these are
+True, the first stage flow coefficient is calculated from the flow and pressure ratio guesses, and the
+outlet flow coefficient is calculated from the exhaust pressure and flow. 
+
+
 TurbineMultistage Class
 -----------------------
 

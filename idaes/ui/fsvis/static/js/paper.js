@@ -32,7 +32,10 @@ export class Paper {
 
         // The container of the paperscroller needs to be a fixed size or the paperScroller
         // will explode in the y direction when you drag an unit model off of the paper
-        $('#idaes-canvas').css({ width: 800, height: 800 });
+        // We want all of the elements to be the same width so set the width equal to the 
+        // stream table
+        let stream_table = document.getElementById("stream-table-container");
+        $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: 800 });
         $("#idaes-canvas")[0].append(self._paperScroller.render().el);
 
         self.setupEvents();
