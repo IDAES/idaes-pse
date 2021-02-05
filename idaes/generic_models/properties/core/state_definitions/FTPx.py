@@ -14,7 +14,7 @@
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var, value
+from pyomo.environ import Constraint, Expression, NonNegativeReals, Var, value
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -24,6 +24,11 @@ from idaes.generic_models.properties.core.generic.utility import \
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
+from idaes.generic_models.properties.core.generic.generic_property import StateIndex
+from idaes.core.util.exceptions import BurntToast
+from pyomo.environ import Reference
+from idaes.core.util.misc import add_object_reference
+
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
@@ -32,6 +37,25 @@ def set_metadata(b):
     # This is the default assumption for state vars, so we don't need to change
     # the metadata dict
     pass
+
+
+def define_electrolyte_state(b):
+    if b.params.config.state_components == StateIndex.true:
+        # Create references to base state vars
+        add_object_reference(b, "flow_mol_true", b.flow_mol)
+        b.flow_mol_phase_true = Reference(b.flow_mol_phase)
+        b.flow_mol_phase_comp_true = Reference(b.flow_mol_phase_comp)
+        b.mole_frac_phase_comp_true = Reference(b.mole_frac_phase_comp)
+    elif b.params.config.state_components == StateIndex.apparent:
+        # Create references to base state vars
+        add_object_reference(b, "flow_mol_apparent", b.flow_mol)
+        b.flow_mol_phase_apparent = Reference(b.flow_mol_phase)
+        b.flow_mol_phase_comp_apparent = Reference(b.flow_mol_phase_comp)
+        b.mole_frac_phase_comp_apparent = Reference(b.mole_frac_phase_comp)
+    else:
+        raise BurntToast("{} - unrecognized value for state_components "
+                         "argument - this should never happen. Please "
+                         "contact the IDAES developers".format(b.name))
 
 
 def define_state(b):
@@ -100,6 +124,12 @@ def define_state(b):
                            bounds=f_bounds,
                            doc='Phase molar flow rates',
                            units=units["flow_mole"])
+
+    def Fpc_expr(b, p, j):
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(
+        b.phase_component_set,
+        doc='Phase-component molar flowrates')
 
     b.mole_frac_phase_comp = Var(
         b.phase_component_set,
@@ -191,11 +221,14 @@ def define_state(b):
         b.phase_fraction_constraint = Constraint(b.phase_list,
                                                  rule=rule_phase_frac)
 
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
+
     # -------------------------------------------------------------------------
     # General Methods
     def get_material_flow_terms_FTPx(p, j):
         """Create material flow terms for control volume."""
-        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+        return b.flow_mol_phase_comp[p, j]
     b.get_material_flow_terms = get_material_flow_terms_FTPx
 
     def get_enthalpy_flow_terms_FTPx(p):
