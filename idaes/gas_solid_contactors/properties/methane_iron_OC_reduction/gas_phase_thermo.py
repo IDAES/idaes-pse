@@ -39,6 +39,8 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
                         Component,
                         VaporPhase)
 from idaes.core.util.initialization import (fix_state_vars,
@@ -775,3 +777,9 @@ class GasPhaseThermoStateBlockData(StateBlockData):
             _log.error('{} Pressure set below lower bound.'.format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
+
+    def default_material_balance_type(blk):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(blk):
+        return EnergyBalanceType.enthalpyTotal

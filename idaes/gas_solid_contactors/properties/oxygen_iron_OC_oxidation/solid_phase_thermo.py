@@ -36,6 +36,8 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
                         Component,
                         SolidPhase)
 from idaes.core.util.initialization import (fix_state_vars,
@@ -557,3 +559,9 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
         if value(blk.temperature) > blk.temperature.ub:
             _log.error('{} Temperature set above upper bound.'
                        .format(blk.name))
+
+    def default_material_balance_type(blk):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(blk):
+        return EnergyBalanceType.enthalpyTotal
