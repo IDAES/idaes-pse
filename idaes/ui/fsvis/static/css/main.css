@@ -258,6 +258,10 @@ input:checked + .slider:before {
   background-color: #FFFFFF;
 }
 
+.joint-lightbox {
+  display: flex;
+}
+
 .joint-paper-scroller.joint-theme-modern {
   background-color: white;
 }
