@@ -33,6 +33,16 @@ export class Toolbar {
         };
     };
 
+    addSpinner($this, loadingText) {
+        if ($this.html() !== loadingText) {
+            $this.data('original-text', $this.html());
+            $this.html(loadingText);
+        }
+        setTimeout(function() {
+            $this.html($this.data('original-text'));
+        }, 1000);
+    }
+
     setupPageToolbar() {
         // Grab the model information from the div tag so that we can use it in our ajax calls
         const model_id = $("#idaes-fs-name").data("flowsheetId");
@@ -42,7 +52,6 @@ export class Toolbar {
         // Save event listener
         document.querySelector("#save-btn").addEventListener("click", () => {
             this._app.saveModel(url, this._paper.graph)
-            
         });
 
         // Refresh event listener
@@ -96,6 +105,21 @@ export class Toolbar {
                 container.style.display = "none";
             };
         });
+
+        let app = this;
+        // Add spinner to refresh button on click
+        $('#refresh-btn').on('click', function() {
+            var $this = $(this);
+            var loadingText = '<i class="fa fa-circle-o-notch fa-spin"></i>Refresh';
+            app.addSpinner($this, loadingText)
+         });
+
+        // Add spinner to save button on click
+        $('#save-btn').on('click', function() {
+            var $this = $(this);
+            var loadingText = '<i class="fa fa-circle-o-notch fa-spin"></i>Save';
+            app.addSpinner($this, loadingText)
+         });
     };
 
     setupFlowsheetToolbar() {

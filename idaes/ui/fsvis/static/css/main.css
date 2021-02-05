@@ -10,9 +10,15 @@ hr {
   display:block;
   width: 100%;                
   background-color:#d0d0d0;
-  height: 3px;
+  height: 1px;
   margin: 5px 0px 0px 0px;
 }
+
+/*.idaes-header-container {
+  box-shadow: -6px 0 white,
+              6px 0 white,
+              0 7px 4px -3px rgba(0, 0, 0, 0.23);
+}*/
 
 #idaes-header {
   margin: 20px auto 10px auto;
@@ -81,7 +87,7 @@ hr {
   height: 50%;
   flex-grow: 1;
   background: white;
-  margin:10px auto 10px auto;
+  margin:15px auto 15px auto;
   padding: 12px 19px 16px 19px;
   border-radius: 5px;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.23);
@@ -137,9 +143,13 @@ hr {
   padding: 6px 0;
 }
 
+.nav-item a {
+  color: #000000 !important;
+}
+
 .nav-link {
   text-align:center; 
-  vertical-align:middle
+  vertical-align:middle;
 }
 
 .nav-link:hover {
@@ -251,6 +261,14 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+/* AG Grid Overrides*/
+.ag-header-cell-label, 
+.ag-row .ag-cell {
+  display: flex;
+  justify-content: center; /* align horizontal */
+  align-items: center;
 }
 
 /* JointJS Overrides */

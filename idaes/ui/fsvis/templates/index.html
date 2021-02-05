@@ -18,6 +18,7 @@
 <body>
   <div id="app">
     <div class="idaes-page">
+      <div class="idaes-header-container">
       <div id="idaes-header">
         <div class="idaes-titlebar">
           <div id="idaes_logo"><img src="https://idaes.org/wp-content/uploads/sites/10/2020/02/idaes-logo-300x138.png"
@@ -34,13 +35,13 @@
           <div class="collapse navbar-collapse" id="navbar-whole-page">
             <ul class="navbar-nav">
               <li class="nav-item">
-                <a class="nav-link" id="refresh-btn">Refresh</a>
+                <a class="nav-link idaes-nav-button idaes-spinner-btn" id="refresh-btn">Refresh</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" id="save-btn">Save</a>
+                <a class="nav-link idaes-nav-button idaes-spinner-btn" id="save-btn">Save</a>
               </li>
               <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" id="export-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a class="nav-link dropdown-toggle idaes-nav-button" id="export-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   Export
                 </a>
                 <ul id="export-list" class="dropdown-menu checkbox-menu allow-focus">
@@ -49,7 +50,7 @@
                 </ul>
               </li>
               <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" id="view-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a class="nav-link dropdown-toggle idaes-nav-button" id="view-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   View
                 </a>
                 <ul id="view-list" class="dropdown-menu checkbox-menu allow-focus">
@@ -77,6 +78,7 @@
             </ul>
           </div>
         </nav> 
+      </div>
       </div>
       
       <div id="idaes-page-contents">
@@ -121,14 +123,10 @@
         <div id="stream-table" class="idaes-container">
           <!-- Navbar for stream table -->
           <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand">Stream Table</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-stream-table" aria-controls="navbar-stream-table" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbar-stream-table">
+            <div class="collapse navbar-collapse p-0" id="navbar-stream-table">
               <ul class="nav navbar-nav">
                 <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" id="hide-fields-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-right: 100px;">
+                  <a class="nav-link dropdown-toggle idaes-nav-button" id="hide-fields-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding-right: 100px; padding-bottom: 0px">
                     Hide Fields
                   </a>
                   <ul id="hide-fields-list" class="dropdown-menu checkbox-menu">
