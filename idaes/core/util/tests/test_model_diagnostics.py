@@ -4,7 +4,8 @@
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# University Research Corporation, University of Notre Dame, et al. 
+# All rights reserved.
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
@@ -17,13 +18,7 @@ This module contains model diagnostic utility functions for use in IDAES (Pyomo)
 import pytest
 
 # Need to update
-from pyomo.environ import (Block,
-                           ConcreteModel,
-                           Constraint,
-                           Expression,
-                           Objective,
-                           Set,
-                           Var)
+import pyomo.environ as pyo
                            
 # TODO: Add pyomo.dae test case
 '''
@@ -79,8 +74,6 @@ def example2(with_degenerate_constraint=True):
         m2.con5 = pyo.Constraint(expr=m2.x[1] + m2.x[2] + m2.x[3] == 1)
 
     m2.obj = pyo.Objective(expr=sum(m2.x[i] for i in m2.I))
-
-    m2.pprint()
     
     return m2
 
@@ -125,13 +118,13 @@ def test_problem1():
     # Check there are 2 constraints with large residuals
     assert len(initial_point_constraints) == 2
     
-    initial_point_constraints_names = extract_constraint_names(initial_point_constraints)
+    initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
     
     # Check first constraint
-    assert initial_point_constraints[0] == 'con1'
+    assert initial_point_constraint_names[0] == 'con1'
     
     # Check second constraint
-    assert initial_point_constraints[0] == 'con3'
+    assert initial_point_constraint_names[1] == 'con3'
     
     # Specifying an iteration limit of 0 allows us to inspect the initial point
     opt.options['max_iter'] = 50
@@ -143,13 +136,13 @@ def test_problem1():
     solution_constraints = dh.check_residuals(tol=1E-6)
     
     # Check at the solution no constraints are violated
-    assert len(solution_constraint) == 0
+    assert len(solution_constraints) == 0
     
     # Check no constraints are near their bounds
     solution_bounds = dh.check_variable_bounds(tol=0.1)
     
     # Check at the solution no constraints are violated
-    assert len(solution_boundst) == 0
+    assert len(solution_bounds) == 0
     
 
 # Problem 2 without degenerate constraint
@@ -158,6 +151,9 @@ def test_problem2_without_degenerate_constraint():
 
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=False)
+    
+    # Specify Ipopt as the solver
+    opt = pyo.SolverFactory('ipopt')
     
     # Specifying an iteration limit of 0 allows us to inspect the initial point
     opt.options['max_iter'] = 0
@@ -172,17 +168,17 @@ def test_problem2_without_degenerate_constraint():
     # Check for violated constraints at the initial point
     initial_point_constraints = dh2.check_residuals(tol=0.1)
     
-    # Check there are 2 constraints with large residuals
+    # Check there are 1 constraints with large residuals
     assert len(initial_point_constraints) == 1
     
-    initial_point_constraints_names = extract_constraint_names(initial_point_constraints)
+    initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
     
     # Check first constraint
-    assert initial_point_constraints[0] == 'con5'
+    assert initial_point_constraint_names[0] == 'con2'
     
     # Resolve
     opt.options['max_iter'] = 500
-    opt.solve(m, tee=True)
+    opt.solve(m2, tee=True)
     
     # Check solution
     x_sln = []
@@ -190,9 +186,9 @@ def test_problem2_without_degenerate_constraint():
     for i in m2.I:
         x_sln.append(m2.x[i]())
     
-    assert pytest.approx(x_sln[0]) == 1.0
-    assert pytest.approx(x_sln[0]) == 0.0
-    assert pytest.approx(x_sln[0]) == 0.0
+    assert pytest.approx(x_sln[0], abs=1E-6) == 1.0
+    assert pytest.approx(x_sln[1], abs=1E-6) == 0.0
+    assert pytest.approx(x_sln[2], abs=1E-6) == 0.0
     
 
 
@@ -203,6 +199,9 @@ def test_problem2_with_degenerate_constraint():
 
     # Create test problem instance
     m2 = example2(with_degenerate_constraint=True)
+    
+    # Specify Ipopt as the solver
+    opt = pyo.SolverFactory('ipopt')
 
     # Specifying an iteration limit of 0 allows us to inspect the initial point
     opt.options['max_iter'] = 0
@@ -218,16 +217,19 @@ def test_problem2_with_degenerate_constraint():
     initial_point_constraints = dh2.check_residuals(tol=0.1)
     
     # Check there are 2 constraints with large residuals
-    assert len(initial_point_constraints) == 1
+    assert len(initial_point_constraints) == 2
     
-    initial_point_constraints_names = extract_constraint_names(initial_point_constraints)
+    initial_point_constraint_names = extract_constraint_names(initial_point_constraints)
     
     # Check first constraint
-    assert initial_point_constraints[0] == 'con5'
+    assert initial_point_constraint_names[0] == 'con2'
+    
+    # Check first constraint
+    assert initial_point_constraint_names[1] == 'con5'
     
     # Resolve
     opt.options['max_iter'] = 500
-    opt.solve(m, tee=True)
+    opt.solve(m2, tee=True)
     
     # Check solution
     x_sln = []
@@ -235,9 +237,9 @@ def test_problem2_with_degenerate_constraint():
     for i in m2.I:
         x_sln.append(m2.x[i]())
     
-    assert pytest.approx(x_sln[0]) == 1.0
-    assert pytest.approx(x_sln[0]) == 0.0
-    assert pytest.approx(x_sln[0]) == 0.0
+    assert pytest.approx(x_sln[0], abs=1E-6) == 1.0
+    assert pytest.approx(x_sln[1], abs=1E-6) == 0.0
+    assert pytest.approx(x_sln[2], abs=1E-6) == 0.0
     
     # Check the rank
     n_rank_deficient = dh2.check_rank_equality_constraints()
