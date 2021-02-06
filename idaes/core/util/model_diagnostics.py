@@ -6,8 +6,6 @@ Alex Dowling, University of Notre Dame
 '''
 
 from pyomo.environ import *
-#from pyomo.core.kernel.component_set import ComponentSet
-#from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
 from scipy.sparse.linalg import svds
@@ -22,31 +20,6 @@ import matplotlib.pyplot as plt
 
 # This library is already used in Pyomo
 import operator
-
-'''
-The following functions are now available in Pyomo:
-https://github.com/Pyomo/pyomo/pull/1791
-'''
-
-'''
-def get_con_eq_idx_map(interface, constraint_names):
-    # This is super janky. TODO: Add functionality
-    # to PyNumero.
-    # constraint_names is an argument because generating
-    # constraint_names list from PyNumero takes forever.
-    # TODO: Find way to make AslNLP::constraint_names()
-    # not ridiculously slow.
-    mask = interface._con_full_eq_mask
-    temp = np.array(constraint_names)
-    eq_names = list(temp[mask])
-    return {name: i for i, name in enumerate(eq_names)}
-
-def get_eq_con_list(interface, constraint_names):
-    mask = interface._con_full_eq_mask
-    temp = np.array(constraint_names)
-    eq_names = list(temp[mask])
-    return eq_names
-'''
 
 class DegeneracyHunter():
 
@@ -72,16 +45,7 @@ class DegeneracyHunter():
             # save the Jacobian
             self.jac_eq = jac_eq
         
-            # Create a list of equality constraint names
-            # Revise this
-            
-            '''
-            pyomo_constraints = self.nlp.get_pyomo_constraints()
-            constraint_names = [c.name for c in pyomo_constraints]
-            self.name2eq_idx = get_con_eq_idx_map(self.nlp, constraint_names)
-            self.eq_con_list = get_eq_con_list(self.nlp, constraint_names)
-            '''
-            
+            # Create a list of equality constraint names            
             self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
         
         else:
