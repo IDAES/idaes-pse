@@ -165,9 +165,13 @@ class DegeneracyHunter():
             
         return vnbs
     
-    def check_rank_equality_constraints(self):
+    def check_rank_equality_constraints(self,tol=1E-6):
         """
         Method to check the rank of the Jacobian of the equality constraints
+        
+        Returns:
+            Number of singular values less than tolerance
+        
         """
         
         print("\nChecking rank of Jacobian of equality constraints...")
@@ -176,10 +180,15 @@ class DegeneracyHunter():
             self.svd_analysis()
         
         n = len(self.s)
+        counter = 0
         
         print("Smallest singular value(s):")
         for i in range(n):
             print("%.3E" % self.s[i])
+            if self.s[i] < tol:
+                counter += 1
+            
+        return counter
 
     @staticmethod
     def _prepare_ids_milp(jac_eq, M=1E5):
