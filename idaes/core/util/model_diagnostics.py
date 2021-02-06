@@ -6,8 +6,8 @@ Alex Dowling, University of Notre Dame
 '''
 
 from pyomo.environ import *
-from pyomo.core.kernel.component_set import ComponentSet
-from pyomo.core.expr.visitor import identify_variables
+#from pyomo.core.kernel.component_set import ComponentSet
+#from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
 from scipy.sparse.linalg import svds
@@ -28,6 +28,7 @@ The following functions are now available in Pyomo:
 https://github.com/Pyomo/pyomo/pull/1791
 '''
 
+'''
 def get_con_eq_idx_map(interface, constraint_names):
     # This is super janky. TODO: Add functionality
     # to PyNumero.
@@ -45,6 +46,7 @@ def get_eq_con_list(interface, constraint_names):
     temp = np.array(constraint_names)
     eq_names = list(temp[mask])
     return eq_names
+'''
 
 class DegeneracyHunter():
 
@@ -71,10 +73,16 @@ class DegeneracyHunter():
             self.jac_eq = jac_eq
         
             # Create a list of equality constraint names
+            # Revise this
+            
+            '''
             pyomo_constraints = self.nlp.get_pyomo_constraints()
             constraint_names = [c.name for c in pyomo_constraints]
             self.name2eq_idx = get_con_eq_idx_map(self.nlp, constraint_names)
             self.eq_con_list = get_eq_con_list(self.nlp, constraint_names)
+            '''
+            
+            self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
         
         else:
             self.jac_eq = block_or_jac
