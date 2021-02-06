@@ -6,6 +6,7 @@ Alex Dowling, University of Notre Dame
 '''
 
 from pyomo.environ import *
+from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
 from scipy.sparse.linalg import svds
