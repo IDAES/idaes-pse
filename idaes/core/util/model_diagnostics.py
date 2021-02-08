@@ -35,30 +35,6 @@ import matplotlib.pyplot as plt
 # This library is already used in Pyomo
 import operator
 
-'''
-The following functions are now available in Pyomo:
-https://github.com/Pyomo/pyomo/pull/1791
-'''
-
-# TODO: replace with functions in PyomoNLP
-def get_con_eq_idx_map(interface, constraint_names):
-    # This is super janky. TODO: Add functionality
-    # to PyNumero.
-    # constraint_names is an argument because generating
-    # constraint_names list from PyNumero takes forever.
-    # TODO: Find way to make AslNLP::constraint_names()
-    # not ridiculously slow.
-    mask = interface._con_full_eq_mask
-    temp = np.array(constraint_names)
-    eq_names = list(temp[mask])
-    return {name: i for i, name in enumerate(eq_names)}
-
-def get_eq_con_list(interface, constraint_names):
-    mask = interface._con_full_eq_mask
-    temp = np.array(constraint_names)
-    eq_names = list(temp[mask])
-    return eq_names
-
 class DegeneracyHunter():
 
     def __init__(self,block_or_jac,solver=None):
@@ -83,11 +59,8 @@ class DegeneracyHunter():
             # save the Jacobian
             self.jac_eq = jac_eq
         
-            # Create a list of equality constraint names
-            pyomo_constraints = self.nlp.get_pyomo_constraints()
-            constraint_names = [c.name for c in pyomo_constraints]
-            self.name2eq_idx = get_con_eq_idx_map(self.nlp, constraint_names)
-            self.eq_con_list = get_eq_con_list(self.nlp, constraint_names)
+            # Create a list of equality constraint names            
+            self.eq_con_list = PyomoNLP.get_pyomo_equality_constraints(self.nlp)
         
             self.candidate_eqns = None
         
@@ -205,9 +178,13 @@ class DegeneracyHunter():
             
         return vnbs
     
-    def check_rank_equality_constraints(self):
+    def check_rank_equality_constraints(self,tol=1E-6):
         """
         Method to check the rank of the Jacobian of the equality constraints
+        
+        Returns:
+            Number of singular values less than tolerance (-1 means error)
+        
         """
         
         print("\nChecking rank of Jacobian of equality constraints...")
@@ -215,19 +192,23 @@ class DegeneracyHunter():
         print("Model contains",self.n_eq,"equality constraints and",
                     self.n_var,"variables.")
         
+        counter = 0
         if self.n_eq > 1:
-        
             if self.s is None:
                 self.svd_analysis()
-        
+
             n = len(self.s)
         
             print("Smallest singular value(s):")
             for i in range(n):
                 print("%.3E" % self.s[i])
-            
+                if self.s[i] < tol:
+                    counter += 1
         else:
             print("Model needs at least 2 equality constraints to check rank.")
+            counter = -1
+            
+        return counter
 
     @staticmethod
     def _prepare_ids_milp(jac_eq, M=1E5):
