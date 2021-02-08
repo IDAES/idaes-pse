@@ -1,12 +1,24 @@
-''' Degeneracy Hunter is a collection of utility functions to assist in mathematical
+# -*- coding: utf-8 -*-
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, University of Notre Dame, et al. 
+# All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+"""Degeneracy Hunter is a collection of utility functions to assist in mathematical
 modeling in Pyomo.
+"""
 
-Alex Dowling, University of Notre Dame
-
-'''
+__author__ = "Alexander Dowling"
 
 from pyomo.environ import *
-from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
@@ -28,6 +40,7 @@ The following functions are now available in Pyomo:
 https://github.com/Pyomo/pyomo/pull/1791
 '''
 
+# TODO: replace with functions in PyomoNLP
 def get_con_eq_idx_map(interface, constraint_names):
     # This is super janky. TODO: Add functionality
     # to PyNumero.
@@ -76,6 +89,8 @@ class DegeneracyHunter():
             self.name2eq_idx = get_con_eq_idx_map(self.nlp, constraint_names)
             self.eq_con_list = get_eq_con_list(self.nlp, constraint_names)
         
+            self.candidate_eqns = None
+        
         else:
             self.jac_eq = block_or_jac
             
@@ -105,7 +120,6 @@ class DegeneracyHunter():
         self.min_nonzero_nu = 1E-5
         
         
-    # TODO: migrate these improves to model_statistics.large_residuals_set
     def check_residuals(self,tol=1e-5, print_level=2, sort=True):
         """
         Method to return a ComponentSet of all Constraint components with a
@@ -159,7 +173,6 @@ class DegeneracyHunter():
                 
         return lrs
 
-    # Migrate these improvements to model_statistics.variables_near_bounds_generator
     def check_variable_bounds(self,tol=1e-5, relative=False, skip_lb = False, skip_ub = False, LOUD=True):
         """
         Return a ComponentSet of all variables within a tolerance of their bounds.
@@ -199,14 +212,22 @@ class DegeneracyHunter():
         
         print("\nChecking rank of Jacobian of equality constraints...")
         
-        if self.s is None:
-            self.svd_analysis()
+        print("Model contains",self.n_eq,"equality constraints and",
+                    self.n_var,"variables.")
         
-        n = len(self.s)
+        if self.n_eq > 1:
         
-        print("Smallest singular value(s):")
-        for i in range(n):
-            print("%.3E" % self.s[i])
+            if self.s is None:
+                self.svd_analysis()
+        
+            n = len(self.s)
+        
+            print("Smallest singular value(s):")
+            for i in range(n):
+                print("%.3E" % self.s[i])
+            
+        else:
+            print("Model needs at least 2 equality constraints to check rank.")
 
     @staticmethod
     def _prepare_ids_milp(jac_eq, M=1E5):
@@ -454,21 +475,28 @@ class DegeneracyHunter():
         Perform SVD analysis of the constraint Jacobian
         '''
         
-        # Determine the number of singular values to compute
-        n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
+        if self.n_eq > 1:
         
-        # Perform SVD
-        # Recall J is a n_eq x n_var matrix
-        # Thus U is a n_eq x n_eq matrix
-        # And V is a n_var x n_var
-        # (U or V may be smaller in economy mode)
-        # Thus we really only care about U
-        u, s, v = svds(self.jac_eq, k = n_sv, which='SM')
+            # Determine the number of singular values to compute
+            # The "-1" is needed to avoid an error with svds
+            n_sv = min(n_smallest_sv, min(self.n_eq, self.n_var) - 1)
+            print("Computing the",n_sv,"smallest singular value(s)")
         
-        # Save results
-        self.u = u
-        self.s = s
-        self.v = v
+            # Perform SVD
+            # Recall J is a n_eq x n_var matrix
+            # Thus U is a n_eq x n_eq matrix
+            # And V is a n_var x n_var
+            # (U or V may be smaller in economy mode)
+            # Thus we really only care about U
+            u, s, v = svds(self.jac_eq, k = n_sv, which='SM')
+        
+            # Save results
+            self.u = u
+            self.s = s
+            self.v = v
+            
+        else:
+            print("Warning: model must contain at least 2 equality constraints to perform svd_analysis")
     
     def find_candidate_equations(self,verbose=True,tee=False):
         '''
@@ -499,6 +527,10 @@ class DegeneracyHunter():
         """
         Compute irreducible degenerate sets
         """
+        
+        # If there are no candidate equations, find them!
+        if self.candidate_eqns is None or not self.candidate_eqns:
+            self.find_candidate_equations()
         
         irreducible_degenerate_sets = []
         
