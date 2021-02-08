@@ -34,7 +34,8 @@ from idaes.core import (MaterialBalanceType,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_default_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)

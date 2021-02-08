@@ -32,7 +32,7 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            value)
 
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO

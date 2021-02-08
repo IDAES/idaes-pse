@@ -1265,7 +1265,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              'model_check method to the associated '
                              'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
                    solver=None, hold_state=True):
         '''
         Initialization routine for 0D control volume (default solver ipopt)
@@ -1276,7 +1276,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output log level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
                      initialization (default = None)
             hold_state : flag indicating whether the initialization routine
