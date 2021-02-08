@@ -1266,7 +1266,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver='ipopt', hold_state=True):
+                   solver=None, hold_state=True):
         '''
         Initialization routine for 0D control volume (default solver ipopt)
 
@@ -1277,8 +1277,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          property package) (default = {}).
             outlvl : sets output log level of initialization routine
             optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            solver : str indicating which solver to use during
+                     initialization (default = None)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - True. **Valid values:**
@@ -1293,7 +1293,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             states were fixed during initialization.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
+        init_log = idaeslog.getInitLogger(
+            blk.name, outlvl, tag="control_volume")
         if state_args is None:
             state_args = {}
             state_dict = (
