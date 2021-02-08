@@ -49,10 +49,6 @@ solver = get_default_solver()
 
 # -----------------------------------------------------------------------------
 # Test robustness and some outputs
-@pytest.mark.solver
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.skipif(not prop_available,
-                    reason="Cubic root finder not available")
 class TestBTExample(object):
     @pytest.fixture()
     def m(self):

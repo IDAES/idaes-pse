@@ -19,7 +19,8 @@ Authors: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Constraint, Var, units as pyunits
+from pyomo.environ import (
+    ConcreteModel, Constraint, Expression, Var, units as pyunits)
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
@@ -951,6 +952,32 @@ class TestCommon(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
+        # Check supporting variables
+        assert isinstance(frame.props[1].flow_mol_phase, Var)
+        assert len(frame.props[1].flow_mol_phase) == 2
+
+        assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
+        assert len(frame.props[1].mole_frac_phase_comp) == 6
+
+        assert isinstance(frame.props[1].phase_frac, Var)
+        assert len(frame.props[1].phase_frac) == 2
+
+        assert isinstance(frame.props[1].total_flow_balance, Constraint)
+        assert len(frame.props[1].total_flow_balance) == 1
+
+        assert isinstance(frame.props[1].component_flow_balances, Constraint)
+        assert len(frame.props[1].component_flow_balances) == 3
+
+        assert isinstance(frame.props[1].sum_mole_frac, Constraint)
+        assert len(frame.props[1].sum_mole_frac) == 1
+
+        assert not hasattr(frame.props[1], "sum_mole_frac_out")
+
+        assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
+        assert len(frame.props[1].phase_fraction_constraint) == 2
+
+        assert_units_consistent(frame)
+
     # Test General Methods
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
@@ -1012,3 +1039,10 @@ class TestCommon(object):
              "Total Mole Fraction": frame.props[1].mole_frac_comp,
              "Temperature": frame.props[1].temperature,
              "Pressure": frame.props[1].pressure}
+
+    @pytest.mark.unit
+    def test_conc_mol(self, frame):
+        assert isinstance(frame.props[1].conc_mol_comp, Expression)
+        assert len(frame.props[1].conc_mol_comp) == 3
+        assert isinstance(frame.props[1].conc_mol_phase_comp, Expression)
+        assert len(frame.props[1].conc_mol_phase_comp) == 6
