@@ -229,76 +229,7 @@ class TestStateBlock(object):
         for i in model.props[1].mole_frac_comp:
             assert value(model.props[1].mole_frac_comp[i]) == 0.5
 
-        # Check supporting variables
-        assert isinstance(model.props[1].flow_mol_phase, Var)
-        assert len(model.props[1].flow_mol_phase) == 2
-
-        assert isinstance(model.props[1].mole_frac_phase_comp, Var)
-        assert len(model.props[1].mole_frac_phase_comp) == 4
-
-        assert isinstance(model.props[1].phase_frac, Var)
-        assert len(model.props[1].phase_frac) == 2
-
-        assert isinstance(model.props[1].total_flow_balance, Constraint)
-        assert len(model.props[1].total_flow_balance) == 1
-
-        assert isinstance(model.props[1].component_flow_balances, Constraint)
-        assert len(model.props[1].component_flow_balances) == 2
-
-        assert isinstance(model.props[1].sum_mole_frac, Constraint)
-        assert len(model.props[1].sum_mole_frac) == 1
-
-        assert not hasattr(model.props[1], "sum_mole_frac_out")
-
-        assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
-        assert len(model.props[1].phase_fraction_constraint) == 2
-
         assert_units_consistent(model)
-
-    @pytest.mark.unit
-    def test_get_material_flow_terms(self, model):
-        for p in model.params.phase_list:
-            for j in model.params.component_list:
-                assert model.props[1].get_material_flow_terms(p, j) == (
-                    model.props[1].flow_mol_phase[p] *
-                    model.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_enthalpy_flow_terms(self, model):
-        for p in model.params.phase_list:
-            assert model.props[1].get_enthalpy_flow_terms(p) == (
-                model.props[1].flow_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_get_material_density_terms(self, model):
-        for p in model.params.phase_list:
-            for j in model.params.component_list:
-                assert model.props[1].get_material_density_terms(p, j) == (
-                    model.props[1].dens_mol_phase[p] *
-                    model.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_energy_density_terms(self, model):
-        for p in model.params.phase_list:
-            assert model.props[1].get_energy_density_terms(p) == (
-                model.props[1].dens_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_default_material_balance_type(self, model):
-        assert model.props[1].default_material_balance_type() == \
-            MaterialBalanceType.componentTotal
-
-    @pytest.mark.unit
-    def test_default_energy_balance_type(self, model):
-        assert model.props[1].default_energy_balance_type() == \
-            EnergyBalanceType.enthalpyTotal
-
-    @pytest.mark.unit
-    def test_get_material_flow_basis(self, model):
-        assert model.props[1].get_material_flow_basis() == \
-            MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):

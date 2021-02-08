@@ -15,7 +15,6 @@ Author: Andrew Lee, Alejandro Garciadiego
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -24,18 +23,11 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        FlowsheetBlock,
-                        declare_process_block_class,
-                        UnitModelBlockData,
-                        Component)
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
+from idaes.core import Component, FlowsheetBlock
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_default_solver
+
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -51,6 +43,7 @@ from idaes.generic_models.properties.core.examples.CO2_bmimPF6_PR \
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -112,6 +105,7 @@ class TestParamBlock(object):
 
         assert_units_consistent(model)
 
+
 class TestStateBlock(object):
     @pytest.fixture(scope="class")
     def model(self):
@@ -157,89 +151,9 @@ class TestStateBlock(object):
         assert isinstance(model.fs.props[1].mole_frac_comp, Var)
         assert len(model.fs.props[1].mole_frac_comp) == 2
         assert value(model.fs.props[1].mole_frac_comp["carbon_dioxide"]) == 0.2
-        assert value(model.fs.props[1].mole_frac_comp["bmimPF6"]) ==  0.8
-
-
-        # Check supporting variables
-        assert isinstance(model.fs.props[1].flow_mol_phase, Var)
-        assert len(model.fs.props[1].flow_mol_phase) == 2
-
-        assert isinstance(model.fs.props[1].mole_frac_phase_comp, Var)
-        assert len(model.fs.props[1].mole_frac_phase_comp) == 3
-
-        assert isinstance(model.fs.props[1].phase_frac, Var)
-        assert len(model.fs.props[1].phase_frac) == 2
-
-        assert isinstance(model.fs.props[1].total_flow_balance, Constraint)
-        assert len(model.fs.props[1].total_flow_balance) == 1
-
-        assert isinstance(model.fs.props[1].component_flow_balances, Constraint)
-        assert len(model.fs.props[1].component_flow_balances) == 2
-
-        assert isinstance(model.fs.props[1].sum_mole_frac, Constraint)
-        assert len(model.fs.props[1].sum_mole_frac) == 1
-
-        assert not hasattr(model.fs.props[1], "sum_mole_frac_out")
-
-        assert isinstance(model.fs.props[1].phase_fraction_constraint, Constraint)
-        assert len(model.fs.props[1].phase_fraction_constraint) == 2
+        assert value(model.fs.props[1].mole_frac_comp["bmimPF6"]) == 0.8
 
         assert_units_consistent(model)
-
-    @pytest.mark.unit
-    def test_get_material_flow_terms(self, model):
-        for p in model.fs.param.phase_list:
-            for j in model.fs.param.component_list:
-                if j == "bmimPF6":
-                    assert model.fs.props[1].get_material_flow_terms("Liq", j) == (
-                        model.fs.props[1].flow_mol_phase["Liq"] *
-                        model.fs.props[1].mole_frac_phase_comp["Liq", j])
-                else:
-                    assert model.fs.props[1].get_material_flow_terms(p, j) == (
-                        model.fs.props[1].flow_mol_phase[p] *
-                        model.fs.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_enthalpy_flow_terms(self, model):
-        for p in model.fs.param.phase_list:
-            assert model.fs.props[1].get_enthalpy_flow_terms(p) == (
-                model.fs.props[1].flow_mol_phase[p] *
-                model.fs.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_get_material_density_terms(self, model):
-        for p in model.fs.param.phase_list:
-            for j in model.fs.param.component_list:
-                if j == "bmimPF6":
-                    assert model.fs.props[1].get_material_density_terms("Liq", j) == (
-                        model.fs.props[1].dens_mol_phase["Liq"] *
-                        model.fs.props[1].mole_frac_phase_comp["Liq", j])
-                else:
-                    assert model.fs.props[1].get_material_density_terms(p, j) == (
-                        model.fs.props[1].dens_mol_phase[p] *
-                        model.fs.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_energy_density_terms(self, model):
-        for p in model.fs.param.phase_list:
-            assert model.fs.props[1].get_energy_density_terms(p) == (
-                model.fs.props[1].dens_mol_phase[p] *
-                model.fs.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_default_material_balance_type(self, model):
-        assert model.fs.props[1].default_material_balance_type() == \
-            MaterialBalanceType.componentTotal
-
-    @pytest.mark.unit
-    def test_default_energy_balance_type(self, model):
-        assert model.fs.props[1].default_energy_balance_type() == \
-            EnergyBalanceType.enthalpyTotal
-
-    @pytest.mark.unit
-    def test_get_material_flow_basis(self, model):
-        assert model.fs.props[1].get_material_flow_basis() == \
-            MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
@@ -277,27 +191,22 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_unit_dof(self, model):
         model.fs.unit = Flash(default={"property_package": model.fs.param,
-                               "has_heat_transfer": False,
-                               "has_pressure_change": False})
+                                       "has_heat_transfer": False,
+                                       "has_pressure_change": False})
         # Fix state
         model.fs.unit.inlet.flow_mol.fix(1)
         model.fs.unit.inlet.temperature.fix(200.00)
         model.fs.unit.inlet.pressure.fix(101325)
-        model.fs.unit.inlet.mole_frac_comp[0,"carbon_dioxide"].fix(1/2)
-        model.fs.unit.inlet.mole_frac_comp[0,"bmimPF6"].fix(1/2)
+        model.fs.unit.inlet.mole_frac_comp[0, "carbon_dioxide"].fix(1/2)
+        model.fs.unit.inlet.mole_frac_comp[0, "bmimPF6"].fix(1/2)
 
         assert degrees_of_freedom(model.fs.unit) == 0
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
 
         initialization_tester(model, dof=0)
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
@@ -307,19 +216,18 @@ class TestStateBlock(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert model.fs.unit.liq_outlet.mole_frac_comp[0, "carbon_dioxide"].value == \
+        assert model.fs.unit.liq_outlet.mole_frac_comp[
+            0, "carbon_dioxide"].value == \
             pytest.approx(0.3119, abs=1e-4)
-        assert model.fs.unit.vap_outlet.mole_frac_comp[0,"carbon_dioxide"].value == \
+        assert model.fs.unit.vap_outlet.mole_frac_comp[
+            0, "carbon_dioxide"].value == \
             pytest.approx(1.0000, abs=1e-4)
         assert (model.fs.unit.vap_outlet.flow_mol[0].value /
-                model.fs.unit.liq_outlet.flow_mol[0].value)  == \
-                pytest.approx(0.37619, abs=1e-4)
+                model.fs.unit.liq_outlet.flow_mol[0].value) == \
+            pytest.approx(0.37619, abs=1e-4)
 
     @pytest.mark.ui
     @pytest.mark.unit
