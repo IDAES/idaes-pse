@@ -58,6 +58,12 @@ export class Paper {
         return self._paperScroller
     }
 
+    translate_for_angle(angle, width, height) {
+       // TODO: replace with geometry that considers width and height
+       const angle_translation = {0: [0, 5], 90: [38, -35], 180: [0, -72], 270: [-38, -34]};
+       return angle_translation[angle];
+    }
+
     setupEvents() {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = "/fs?id=".concat(model_id);
@@ -71,36 +77,12 @@ export class Paper {
             // in relation to the unit model (bottom middle)
             // TODO Make this figuring out the x and y positions a function so that we can compute it
             const angle = cellView.model.angle()
-            switch (angle) {
-                case 0: {
-                    const x = 0;
-                    const y = 5;
-                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
-                    break;
-                }
-                case 90: {
-                    const x = 38;
-                    const y = -35;
-                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
-                    break;
-                }
-                case 180: {
-                    const x = 0;
-                    const y = -72;
-                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
-                    break;
-                }
-                case 270: {
-                    const x = -38;
-                    const y = -34;
-                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
-                    break;
-                }
-                default: {
-                    const x = 0;
-                    const y = 0;
-                    cellView.model.attr("label/transform", `translate(${x}, ${y}) rotate(-${angle})`)
-                }
+            const angle_translation = self.translate_for_angle(angle, 0, 0);
+            if (angle_translation === undefined) {
+                console.error(`Angle of unit model must be either 0, 90, 180, or 270. Angle is ${angle}`);
+            }
+            else {
+                cellView.model.attr("label/transform", `translate(${angle_translation[0]}, ${angle_translation[1]}) rotate(-${angle})`);
             }
         });
 
