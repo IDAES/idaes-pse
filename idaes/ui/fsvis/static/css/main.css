@@ -266,9 +266,18 @@ input:checked + .slider:before {
 /* AG Grid Overrides*/
 .ag-header-cell-label, 
 .ag-row .ag-cell {
-  display: flex;
+  /*display: flex;*/
   justify-content: center; /* align horizontal */
   align-items: center;
+}
+.ag-header-cell,  .ag-header-group-cell, .ag-cell {
+  border: 1px solid #dadada;
+}
+
+.ag-cell {
+  padding-right: 10px;
+  padding-left: 10px;
+  padding-top: 7px;
 }
 
 /* JointJS Overrides */

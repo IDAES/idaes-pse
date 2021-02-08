@@ -34,7 +34,13 @@ export class StreamTable {
             // only add the columns that don't have an empty column header
             let column_header = columns[col]
             if (column_header !== "") {
-                column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true});
+                if (column_header === "Variable") {
+                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true});
+                }
+                // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
+                else {
+                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, cellStyle: {"text-align": "right"}});
+                }
                 let list_item = document.createElement("li");
                 let checkbox_item = document.createElement("div");
                 checkbox_item.class = "checkbox";
@@ -76,6 +82,7 @@ export class StreamTable {
 
         // create the grid passing in the div to use together with the columns & data we want to use
         new agGrid.Grid(eGridDiv, this._gridOptions);
+        this._gridOptions.columnApi.autoSizeAllColumns();
     };
 
     setupEvents() {
