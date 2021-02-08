@@ -33,10 +33,10 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     Parameters
     ----------
     model_function: function
-        Function that generates an instance of the Pyomo model using
+        A python Function that generates an instance of the Pyomo model using
         'data' as the input argument
     model_uncertain: function or Pyomo ConcreteModel
-        function: Function that generates an instance of the Pyomo model
+        function is a a python Function that generates an instance of the Pyomo model
     data: pandas DataFrame, list of dictionaries, or list of json file names
         Data that is used to build an instance of the Pyomo model and 
         build the objective function
@@ -119,7 +119,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     Parameters
     ----------
     model_uncertain: function or Pyomo ConcreteModel
-        function: Function that generates an instance of the Pyomo model
+        function is a a python Function that generates an instance of the Pyomo model
     theta: dict
         Estimated parameters 
     cov: numpy.ndarray
@@ -127,11 +127,8 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     theta_names: list of strings
         List of estimated Var names
     var_dic: dictionary
-        If any original variable contains "'", need an auxiliary dictionary 
-        with keys theta_namess without "'", values with "'".
-        e.g)
-        var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 
-                  'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
+        If any original variable contains "'", need an auxiliary dictionary  with keys theta_namess without "'", values with "'".
+        e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
     tee: bool, optional
         Indicates that ef solver output should be teed
     solver_options: dict, optional
@@ -227,6 +224,7 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     Parameters
     ----------
     model: Pyomo ConcreteModel
+        model should includes an objective function 
     theta_names: list of strings
         List of Var names
     tee: bool, optional
@@ -343,6 +341,7 @@ def clean_variable_name(theta_names):
     """This eunction removes all ' and spaces in theta_names.
        Note: The  current theta_est(calc_cov=True) of parmest in Pyomo
        doesn't allow ' and spaces in the variable names    
+       
     Parameters
     ----------
     theta_names: list of strings

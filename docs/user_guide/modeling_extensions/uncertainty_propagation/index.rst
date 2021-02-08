@@ -33,13 +33,18 @@ The gradients vector of the objective function and the gradients vectors constra
 
 , where the superscript :math:`T` means transpose.
 
-Available Methods
-------------------
+Available Functions
+-------------------
 
-.. automethod:: idaes.apps.uncertainty_propagation.uncertainties.quantify_propagate_uncertainty
-.. automethod:: idaes.apps.uncertainty_propagation.uncertainties.propagate_uncertainty
-.. automethod:: idaes.apps.uncertainty_propagation.uncertainties.get_sensitivity
-.. automethod:: idaes.apps.uncertainty_propagation.uncertainties.clean_variable_name
+.. currentmodule:: idaes.apps.uncertainty_propagation.uncertainties
+
+.. autofunction:: quantify_propagate_uncertainty
+
+.. autofunction:: propagate_uncertainty
+
+.. autofunction:: get_sensitivity
+
+.. autofunction:: clean_variable_name
 
 Examples
 --------
