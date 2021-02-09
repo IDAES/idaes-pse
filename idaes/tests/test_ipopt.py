@@ -13,6 +13,7 @@
 from idaes.core import SolverFactory
 import pyomo.environ as pyo
 import pytest
+import idaes
 
 
 @pytest.mark.unit
