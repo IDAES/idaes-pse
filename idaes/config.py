@@ -82,7 +82,7 @@ default_config = """
         "reactions",
         "ui"
     ],
-    "ipopt-idaes":{
+    "ipopt":{
         "options":{
             "nlp_scaling_method":"gradient-based"
         }
@@ -159,24 +159,24 @@ def _new_idaes_config_block():
     )
 
     cfg.declare(
-        "ipopt-idaes",
+        "ipopt",
         pyomo.common.config.ConfigBlock(
             implicit=False,
-            description="Default config for 'ipopt-idaes' solver",
+            description="Default config for 'ipopt' solver",
             doc="Default config for 'ipopt-iades' solver"
         ),
     )
 
-    cfg["ipopt-idaes"].declare(
+    cfg["ipopt"].declare(
         "options",
         pyomo.common.config.ConfigBlock(
             implicit=True,
-            description="Default solver options for 'ipopt-idaes'",
-            doc="Default solver options for 'ipopt-idaes' solver"
+            description="Default solver options for 'ipopt'",
+            doc="Default solver options for 'ipopt' solver"
         ),
     )
 
-    cfg["ipopt-idaes"]["options"].declare(
+    cfg["ipopt"]["options"].declare(
         "nlp_scaling_method",
         pyomo.common.config.ConfigValue(
             domain=str,
