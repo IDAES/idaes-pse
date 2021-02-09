@@ -35,14 +35,14 @@ from idaes.core import (ControlVolume1DBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection,
-                        UnitModelBlockData,
-                        useDefault)
+                        UnitModelBlockData)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_default_solver
 import idaes.logger as idaeslog
 
 __author__ = "Jinliang Ma, Q. M. Le, M. Zamarripa "
@@ -2155,7 +2155,7 @@ tube side flows from 1 to 0"""))
 
     def initialize(blk, shell_state_args=None, tube_state_args=None,
                    outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg={}):
         """
         HeatExchangerCrossFlow1D initialisation routine
 
@@ -2171,9 +2171,9 @@ tube side flows from 1 to 0"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -2181,8 +2181,12 @@ tube side flows from 1 to 0"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        if solver is None:
+            opt = get_default_solver()
+        else:
+            opt = SolverFactory(solver)
+            opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize shell block

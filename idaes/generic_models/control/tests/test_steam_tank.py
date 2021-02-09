@@ -37,6 +37,7 @@ from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
 from idaes.generic_models.control import PIDBlock, PIDForm
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_default_solver
 
 
 def _valve_pressure_flow_cb(b):
@@ -192,10 +193,8 @@ def create_model(
     m.fs.ctrl.setpoint.fix(3e5)
 
     # Initialize the model
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'tol': 1e-6,
-                      'linear_solver': "ma27",
-                      'max_iter': 100}
+    solver = get_default_solver()
+
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol = 100  # initial guess on flow
     # simple initialize
