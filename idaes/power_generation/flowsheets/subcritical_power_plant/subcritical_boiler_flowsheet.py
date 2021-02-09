@@ -20,7 +20,7 @@ from pyomo.network import Arc
 
 # Import IDAES core
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util import copy_port_values as _set_port, get_default_solver
 from idaes.core import FlowsheetBlock
 import idaes.logger as idaeslog
 
@@ -665,12 +665,7 @@ def initialize(m):
     outlvl = idaeslog.INFO_LOW
     _log = idaeslog.getLogger(fs.name, outlvl, tag="unit")
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 50,
-    }
+    solver = get_default_solver()
 
     # set initial condition to steady-state condition for dynamic flowsheet
     if m.dynamic is True:
@@ -1148,12 +1143,7 @@ def main_dynamic():
             m_dyn.fs_main, m_ss.fs_main, t, 0.0, copy_fixed=True,
             outlvl=idaeslog.ERROR)
 
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 50,
-    }
+    solver = get_default_solver()
 
     dof = degrees_of_freedom(m_dyn.fs_main)
     # solving dynamic model at steady-state
@@ -1209,12 +1199,8 @@ def run_dynamic(m):
                 fs.aBoiler.flowrate_coal_raw[0].value)
     df = degrees_of_freedom(m)
     assert df == 0
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 50,
-    }
+    solver = get_default_solver()
+
     solver.solve(m, tee=True)
 
 

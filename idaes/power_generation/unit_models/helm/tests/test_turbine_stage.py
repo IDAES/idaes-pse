@@ -25,14 +25,10 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         activated_equalities_generator)
-prop_available = iapws95.iapws95_available()
+from idaes.core.util import get_default_solver
 
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
+# Set up solver
+solver = get_default_solver()
 
 
 @pytest.fixture()
@@ -62,8 +58,6 @@ def test_basic_build(build_turbine):
 
 
 @pytest.mark.component
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
     m = build_turbine
@@ -82,7 +76,6 @@ def test_initialize(build_turbine):
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 def test_report(build_turbine):
     m = build_turbine
     m.fs.turb.report()

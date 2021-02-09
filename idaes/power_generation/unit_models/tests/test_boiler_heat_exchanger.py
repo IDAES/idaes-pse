@@ -21,7 +21,6 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           SolverFactory,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
@@ -144,7 +143,7 @@ def test_boiler_hx():
 
     m.fs.unit.initialize()
     # Create a solver
-    solver = SolverFactory('ipopt')
+    solver = get_default_solver()
     results = solver.solve(m)
     # Check for optimal solution
     assert results.solver.termination_condition == \

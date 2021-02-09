@@ -28,8 +28,6 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util import get_default_solver
 import idaes.core.util.scaling as iscale
 
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
 solver = get_default_solver()
 
 
@@ -57,8 +55,6 @@ def test_basic_build(model):
 #     assert_units_consistent(model)
 
 
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 @pytest.mark.component
 def test_init(model):
     # check that the model solved properly and has 0 degrees of freedom

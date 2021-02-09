@@ -16,9 +16,6 @@ import pytest
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
-
 
 @pytest.mark.component
 def test_subcritical_boiler_ss_build():

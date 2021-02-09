@@ -390,7 +390,7 @@ between flow and pressure driven simulations.}""",
 
     def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver=None):
         """
-        Initialization routine for mixer (default solver ipopt)
+        Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine

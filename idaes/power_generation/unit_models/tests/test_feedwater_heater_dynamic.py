@@ -22,7 +22,7 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_default_solver
 prop_available = iapws95.iapws95_available()
 
-# See if ipopt is available and set up solver
+# Set up solver
 solver = get_default_solver()
 
 

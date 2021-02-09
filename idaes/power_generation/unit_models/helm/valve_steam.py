@@ -269,7 +269,7 @@ ValveFunctionType.custom}""",
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-            
+
         from_json(self, sd=istate, wts=sp)
 
 
