@@ -14,4 +14,3 @@ from .control_volume1d import ControlVolume1DBlock
 from .phases import (
     Phase, LiquidPhase, SolidPhase, VaporPhase, PhaseType, AqueousPhase)
 from .components import Component, Solvent, Solute, Ion, Cation, Anion
-from .solvers import SolverFactory

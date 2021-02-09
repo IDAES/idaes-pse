@@ -62,6 +62,7 @@ orig_environ = {
 default_config = """
 {
     "use_idaes_solvers":true,
+    "default_solver":"ipopt",
     "logger_capture_solver":true,
     "logger_tags":[
         "framework",
@@ -84,7 +85,8 @@ default_config = """
     ],
     "ipopt":{
         "options":{
-            "nlp_scaling_method":"gradient-based"
+            "nlp_scaling_method":"gradient-based",
+            "tol":1e-6
         }
     },
     "logging":{
@@ -147,7 +149,7 @@ def _new_idaes_config_block():
     the idaes configuration system to function improperly.
     """
     global cfg
-    cfg = pyomo.common.config.ConfigBlock("idaes", implicit=False)
+    cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
     cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
@@ -183,6 +185,26 @@ def _new_idaes_config_block():
             default="gradient-based",
             description="Ipopt NLP scaling method",
             doc="Ipopt NLP scaling method"
+        ),
+    )
+
+    cfg["ipopt"]["options"].declare(
+        "tol",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=1e-6,
+            description="Ipopt tol option",
+            doc="Ipopt tol option"
+        ),
+    )
+
+    cfg.declare(
+        "default_solver",
+        pyomo.common.config.ConfigValue(
+            default="ipopt",
+            domain=str,
+            description="Default solver.  See Pyomo's SolverFactory for detauls.",
+            doc="Default solver.  See Pyomo's SolverFactory for detauls.",
         ),
     )
 

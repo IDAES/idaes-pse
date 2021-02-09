@@ -3,7 +3,9 @@ from pyomo.opt.base.solvers import SolverFactoryClass as _SolverFactoryClass
 import idaes
 
 class SolverFactoryClass(_SolverFactoryClass):
-    def __call__(self, _name, **kwargs):
+    def __call__(self, _name=None, **kwargs):
+        if _name is None:
+            _name = idaes.cfg["default_solver"]
         s = super().__call__(_name, **kwargs)
         if _name in idaes.cfg and "options" in idaes.cfg[_name]:
             for k, v in idaes.cfg[_name]["options"].items():
