@@ -51,6 +51,8 @@ def test_ipopt_idaes_config():
     solver = SolverFactory('ipopt')
     assert solver.options["nlp_scaling_method"] == "gradient-based"
     idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = orig
+    solver = SolverFactory('ipopt', options={"tol":1})
+    assert solver.options["tol"] == 1
 
 
 @pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
