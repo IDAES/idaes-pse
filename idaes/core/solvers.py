@@ -11,7 +11,7 @@ class SolverFactoryClass(_SolverFactoryClass):
             if hasattr(idaes.cfg[_name]["options"], "value"): #ConfigBlock
                 s.options.update(idaes.cfg[_name]["options"].value())
             else: # not ConfigBlock
-                s.options.update(idaes.cfg[_name][options])
+                s.options.update(idaes.cfg[_name]["options"])
         return s
 
 SolverFactory = SolverFactoryClass("idaes solver factory config wrapper")
