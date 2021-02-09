@@ -27,7 +27,7 @@ from idaes.core import (ControlVolume0DBlock,
                         EnergyBalanceType,
                         MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 import idaes.core.util.scaling as iscale
 
 

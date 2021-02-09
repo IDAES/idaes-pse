@@ -45,9 +45,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_default_solver
 
 
 # -----------------------------------------------------------------------------
