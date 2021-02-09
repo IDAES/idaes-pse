@@ -36,7 +36,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_default_solver, scaling as iscale
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -562,8 +562,8 @@ see property package for documentation.}""",
         state_args=None,
         routine=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg={},
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -578,9 +578,9 @@ see property package for documentation.}""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -620,7 +620,7 @@ see property package for documentation.}""",
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         """
-        Initialization routine for unit (default solver ipopt)
+        Initialization routine for unit.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -628,18 +628,22 @@ see property package for documentation.}""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None)
 
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        if solver is None:
+            opt = get_default_solver()
+        else:
+            opt = SolverFactory(solver)
+            opt.options = optarg
 
         cv = blk.control_volume
         t0 = blk.flowsheet().config.time.first()

@@ -364,7 +364,7 @@ see property package for documentation.}"""))
                         value(source.vars[v][i])
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, optarg = {},
+                   state_args_vap=None, solver=None, optarg={},
                    outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -378,19 +378,22 @@ see property package for documentation.}"""))
             solverobj = SolverFactory(solver)
             solverobj.options = optarg
 
-        feed_flags = self.feed_tray.initialize()
+        feed_flags = self.feed_tray.initialize(
+            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         self.propagate_stream_state(
             source=self.feed_tray.vap_out,
             destination=self.condenser.inlet)
 
-        self.condenser.initialize()
+        self.condenser.initialize(
+            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         self.propagate_stream_state(
             source=self.feed_tray.liq_out,
             destination=self.reboiler.inlet)
 
-        self.reboiler.initialize()
+        self.reboiler.initialize(
+            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         # initialize the rectification section
         for i in self._rectification_index:
@@ -402,13 +405,22 @@ see property package for documentation.}"""))
                 destination=self.rectification_section[i].vap_in)
             if i == 1:
                 rect_liq_flags = self.rectification_section[i]. \
-                    initialize(hold_state_liq=True, hold_state_vap=False)
+                    initialize(hold_state_liq=True,
+                               hold_state_vap=False,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             elif i == len(self._rectification_index):
                 rect_vap_flags = \
                     self.rectification_section[i]. \
-                    initialize(hold_state_liq=False, hold_state_vap=True)
+                    initialize(hold_state_liq=False,
+                               hold_state_vap=True,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             else:
-                self.rectification_section[i].initialize()
+                self.rectification_section[i].initialize(
+                    solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         # initialize the stripping section
         for i in self._stripping_index:
@@ -420,12 +432,21 @@ see property package for documentation.}"""))
                 destination=self.stripping_section[i].vap_in)
             if i == self.config.feed_tray_location + 1:
                 strip_liq_flags = self.stripping_section[i]. \
-                    initialize(hold_state_liq=True, hold_state_vap=False)
+                    initialize(hold_state_liq=True,
+                               hold_state_vap=False,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             elif i == self.config.number_of_trays:
                 strip_vap_flags = self.stripping_section[i]. \
-                    initialize(hold_state_liq=False, hold_state_vap=True)
+                    initialize(hold_state_liq=False,
+                               hold_state_vap=True,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             else:
-                self.stripping_section[i].initialize()
+                self.stripping_section[i].initialize(
+                    solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         # For initialization purposes and to enable solving individual sections
         # creating a temp block. Note that this temp block is a reference to

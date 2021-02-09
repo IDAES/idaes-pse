@@ -38,8 +38,6 @@ from idaes.core.util.plot import stitch_dynamic
 from idaes.generic_models.control import PIDBlock, PIDForm
 import idaes.core.util.scaling as iscale
 
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
 
 def _valve_pressure_flow_cb(b):
     """
@@ -315,18 +313,12 @@ def tpid(form):
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid_velocity():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.velocity)
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid_standard():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.standard)
