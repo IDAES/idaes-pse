@@ -16,6 +16,7 @@ export class App {
                 console.log(error);
                 console.log(status); 
             });
+        // Make the dropdowns not disappear on use. They will disappear when the user clicks off the dropdown
         $(document).on('click', '.dropdown-menu', function (e) {
             e.stopPropagation();
         });

@@ -14,12 +14,6 @@ hr {
   margin: 5px 0px 0px 0px;
 }
 
-/*.idaes-header-container {
-  box-shadow: -6px 0 white,
-              6px 0 white,
-              0 7px 4px -3px rgba(0, 0, 0, 0.23);
-}*/
-
 #idaes-header {
   margin: 20px auto 10px auto;
   width: 90%;
@@ -109,6 +103,7 @@ hr {
   margin: 5px 0;
 }
 
+/* Checkmark styling */
 .fancy-checkbox input[type="checkbox"],
 .fancy-checkbox .checked {
   display: none;
@@ -128,46 +123,6 @@ hr {
   padding-left: 5px;
 }
 
-.bg-light {
-  background-color: white !important;
-}
-
-.navbar {
-  padding: 0px;
-}
-
-.nav-item {
-  width: 100px;
-  height: 31px;
-  margin: 0px 10px 10px 10px;
-  padding: 6px 0;
-}
-
-.nav-item a {
-  color: #000000 !important;
-}
-
-.nav-link {
-  text-align:center; 
-  vertical-align:middle;
-}
-
-.nav-link:hover {
-  border-radius: 3px;
-  border: solid 1px #0b79bd;
-}
-
-.nav-link:active {
-  border-radius: 3px;
-  border: solid 1px #0b79bd;
-  background-color: #e2eff7;
-}
-
-.ag-header-cell-label {
-  background-color: #e2eff7;
-  color: #2f67ae;
-}
-
 .dropdown-toggle[aria-expanded="true"] {
   border-radius: 3px;
   border: solid 1px #0b79bd;
@@ -178,6 +133,7 @@ hr {
   margin-top: 17px;
 }
 
+/* Flowsheet toolbar styling */
 .circle-icon {
     width: 26px;
     height: 26px;
@@ -254,7 +210,6 @@ input:checked + .slider:before {
   transform: translateX(13px);
 }
 
-/* Rounded sliders */
 .slider.round {
   border-radius: 17px;
 }
@@ -264,9 +219,13 @@ input:checked + .slider:before {
 }
 
 /* AG Grid Overrides*/
+.ag-header-cell-label {
+  background-color: #e2eff7;
+  color: #2f67ae;
+}
+
 .ag-header-cell-label, 
 .ag-row .ag-cell {
-  /*display: flex;*/
   justify-content: center; /* align horizontal */
   align-items: center;
 }
@@ -280,7 +239,7 @@ input:checked + .slider:before {
   padding-top: 7px;
 }
 
-/* JointJS Overrides */
+/* JointJS styling and overrides */
 .joint-dialog.joint-lightbox .fg {
   background-color: #FFFFFF;
 }
@@ -294,8 +253,7 @@ input:checked + .slider:before {
 }
 
 .joint-type-standard-image image {
-  filter: invert(65%) sepia(47%) saturate(1882%) hue-rotate(182deg) brightness(98%) contrast(92%);
-  background: #c9e1f4;
+  filter: invert(65%) sepia(47%) saturate(1882%) hue-rotate(182deg) brightness(98%) contrast(92%); /* #acd0f6 */
 }
 
 .joint-type-standard-image tspan {
@@ -310,4 +268,40 @@ input:checked + .slider:before {
 
 .joint-type-standard-link tspan {
   fill: #8d8d8d;
+}
+
+/* Bootstrap toolbar styling and overrides */
+.navbar {
+  padding: 0px;
+}
+
+.nav-item {
+  width: 100px;
+  height: 31px;
+  margin: 0px 10px 10px 10px;
+  padding: 6px 0;
+}
+
+.nav-item a {
+  color: #000000 !important; /* Have to use important to overrides bootstrap's button color */
+}
+
+.nav-link {
+  text-align: center; 
+  vertical-align: middle;
+}
+
+.nav-link:hover {
+  border-radius: 3px;
+  border: solid 1px #0b79bd;
+}
+
+.nav-link:active {
+  border-radius: 3px;
+  border: solid 1px #0b79bd;
+  background-color: #e2eff7;
+}
+
+.bg-light {
+  background-color: white !important; /* Have to use important to override bootstrap's navbar background color */
 }
