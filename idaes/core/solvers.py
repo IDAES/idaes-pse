@@ -8,10 +8,9 @@ class SolverFactoryClass(_SolverFactoryClass):
             _name = idaes.cfg["default_solver"]
         s = super().__call__(_name, **kwargs)
         if _name in idaes.cfg and "options" in idaes.cfg[_name]:
-            if hasattr(idaes.cfg[_name]["options"], "value"): #ConfigBlock
-                s.options.update(idaes.cfg[_name]["options"].value())
-            else: # not ConfigBlock
-                s.options.update(idaes.cfg[_name]["options"])
+            for k, v in idaes.cfg[_name]["options"].items():
+                if k not in s.options:
+                    s.options[k] = v
         return s
 
 SolverFactory = SolverFactoryClass("idaes solver factory config wrapper")
