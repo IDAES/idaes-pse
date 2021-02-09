@@ -43,6 +43,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
+from idaes.core.util import get_default_solver
 import idaes.logger as idaeslog
 
 from idaes.generic_models.properties.core.generic.utility import (
@@ -745,14 +746,14 @@ class _GenericStateBlock(StateBlock):
 
     def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
             state_args : a dict of initial values for the state variables
                     defined by the property package.
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -763,7 +764,7 @@ class _GenericStateBlock(StateBlock):
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -816,14 +817,12 @@ class _GenericStateBlock(StateBlock):
                                     "freedom for state block is not zero "
                                     "during initialization.")
 
-        # Set solver options
-        if optarg is None:
-            sopt = {'tol': 1e-8}
+        # Create solver
+        if solver is None:
+            opt = get_default_solver()
         else:
-            sopt = optarg
-
-        opt = SolverFactory('ipopt')
-        opt.options = sopt
+            opt = SolverFactory(solver)
+            opt.options = optarg
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations

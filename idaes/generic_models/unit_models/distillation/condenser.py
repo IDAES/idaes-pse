@@ -26,7 +26,8 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Constraint, value, Set
+from pyomo.environ import \
+    Reference, Expression, Var, Constraint, value, Set, SolverFactory
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -692,7 +693,7 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args=None, solver=None, optarg=None,
+    def initialize(self, state_args=None, solver=None, optarg={},
                    outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
@@ -711,9 +712,10 @@ see property package for documentation.}"""))
                 )
 
         if solver is None:
-            init_log.warning("Solver not provided. Default solver(ipopt) "
-                             " being used for initialization.")
-            solver = get_default_solver()
+            solverobj = get_default_solver()
+        else:
+            solverobj = SolverFactory(solver)
+            solverobj.options = optarg
 
         if state_args is None:
             state_args = {}
@@ -745,7 +747,7 @@ see property package for documentation.}"""))
             self.eq_total_cond_spec.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
+            res = solverobj.solve(self, tee=slc.tee)
         init_log.info(
             "Initialization Complete, {}.".format(idaeslog.condition(res))
         )

@@ -311,7 +311,7 @@ class TestBTXIdeal():
                       pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-15899.596, rel=1e-4) ==
+        assert (pytest.approx(-15897.86, rel=1e-4) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
     @pytest.mark.initialize

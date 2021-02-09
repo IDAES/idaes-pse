@@ -26,7 +26,7 @@ from pandas import DataFrame
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    value, Set
+    value, Set, SolverFactory
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -560,16 +560,17 @@ see property package for documentation.}"""))
                         "while building ports for the reboiler. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args=None, solver=None, optarg=None,
+    def initialize(self, state_args=None, solver=None, optarg={},
                    outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         if solver is None:
-            init_log.warning("Solver not provided. Default solver(ipopt) "
-                             " being used for initialization.")
-            solver = get_default_solver()
+            solverobj = get_default_solver()
+        else:
+            solverobj = SolverFactory(solver)
+            solverobj.options = optarg
 
         # Initialize the inlet and outlet state blocks. Calling the state
         # blocks initialize methods directly so that custom set of state args
@@ -627,7 +628,7 @@ see property package for documentation.}"""))
 
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
+                res = solverobj.solve(self, tee=slc.tee)
             init_log.info(
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )
