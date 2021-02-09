@@ -49,7 +49,7 @@ hr {
   position: relative;
 }
 
-#toolbar-flowsheet {
+#idaes-toolbar-flowsheet {
   justify-content: flex-end;
   position: absolute;
   top: 20px;
