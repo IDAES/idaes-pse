@@ -10,10 +10,9 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from idaes.core.solvers import SolverFactory
+from idaes.core import SolverFactory
 import pyomo.environ as pyo
 import pytest
-import idaes.core.plugins
 
 
 @pytest.mark.unit
