@@ -26,9 +26,6 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
 from idaes.core.util.model_statistics import (degrees_of_freedom, 
         activated_equalities_generator)
-#from idaes.core.util.initialization import initialize_by_time_element
-#from idaes.core.util.exceptions import ConfigurationError
-#from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
 from idaes.apps.caprese.categorize import categorize_dae_variables
 from idaes.apps.caprese.common.config import VariableCategory as VC
 import idaes.logger as idaeslog
