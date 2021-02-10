@@ -32,7 +32,7 @@ from idaes.core import (MaterialBalanceType,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -240,94 +240,9 @@ class TestStateBlock(object):
             assert value(model.props[1].mole_frac_comp[i]) == \
                 pytest.approx(0.077, abs=1e-2)
 
-        # Check supporting variables
-        assert isinstance(model.props[1].flow_mol_phase, Var)
-        assert len(model.props[1].flow_mol_phase) == 2
-
-        assert isinstance(model.props[1].mole_frac_phase_comp, Var)
-        assert len(model.props[1].mole_frac_phase_comp) == 24
-
-        assert isinstance(model.props[1].phase_frac, Var)
-        assert len(model.props[1].phase_frac) == 2
-
-        assert isinstance(model.props[1].total_flow_balance, Constraint)
-        assert len(model.props[1].total_flow_balance) == 1
-
-        assert isinstance(model.props[1].component_flow_balances, Constraint)
-        assert len(model.props[1].component_flow_balances) == 13
-
-        assert isinstance(model.props[1].sum_mole_frac, Constraint)
-        assert len(model.props[1].sum_mole_frac) == 1
-
-        assert not hasattr(model.props[1], "sum_mole_frac_out")
-
-        assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
-        assert len(model.props[1].phase_fraction_constraint) == 2
-
+    @pytest.mark.integration
+    def test_unit_consistency(self, model):
         assert_units_consistent(model)
-
-    @pytest.mark.unit
-    def test_get_material_flow_terms(self, model):
-        for p in model.params.phase_list:
-            for j in model.params.component_list:
-                if j == "hydrogen":
-                    assert model.props[1].get_material_flow_terms("Vap", j) == (
-                        model.props[1].flow_mol_phase["Vap"] *
-                        model.props[1].mole_frac_phase_comp["Vap", j])
-                elif j == "methane":
-                    assert model.props[1].get_material_flow_terms("Vap", j) == (
-                        model.props[1].flow_mol_phase["Vap"] *
-                        model.props[1].mole_frac_phase_comp["Vap", j])
-                else:
-                    assert model.props[1].get_material_flow_terms(p, j) == (
-                        model.props[1].flow_mol_phase[p] *
-                        model.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_enthalpy_flow_terms(self, model):
-        for p in model.params.phase_list:
-            assert model.props[1].get_enthalpy_flow_terms(p) == (
-                model.props[1].flow_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_get_material_density_terms(self, model):
-        for p in model.params.phase_list:
-            for j in model.params.component_list:
-                if j == "hydrogen":
-                    assert model.props[1].get_material_density_terms("Vap", j) == (
-                        model.props[1].dens_mol_phase["Vap"] *
-                        model.props[1].mole_frac_phase_comp["Vap", j])
-                elif j == "methane":
-                    assert model.props[1].get_material_density_terms("Vap", j) == (
-                        model.props[1].dens_mol_phase["Vap"] *
-                        model.props[1].mole_frac_phase_comp["Vap", j])
-                else:
-                    assert model.props[1].get_material_density_terms(p, j) == (
-                        model.props[1].dens_mol_phase[p] *
-                        model.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_energy_density_terms(self, model):
-        for p in model.params.phase_list:
-            assert model.props[1].get_energy_density_terms(p) == (
-                model.props[1].dens_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_default_material_balance_type(self, model):
-        assert model.props[1].default_material_balance_type() == \
-            MaterialBalanceType.componentTotal
-
-    @pytest.mark.unit
-    def test_default_energy_balance_type(self, model):
-        assert model.props[1].default_energy_balance_type() == \
-            EnergyBalanceType.enthalpyTotal
-
-    @pytest.mark.unit
-    def test_get_material_flow_basis(self, model):
-        assert model.props[1].get_material_flow_basis() == \
-            MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):
@@ -362,10 +277,7 @@ class TestStateBlock(object):
                          "Temperature",
                          "Pressure"]
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_initialize(self, model):
         # Fix state
         model.props[1].flow_mol.fix(1)
@@ -405,9 +317,7 @@ class TestStateBlock(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solve(self, model):
         results = solver.solve(model)
 
@@ -416,10 +326,7 @@ class TestStateBlock(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Vap", "hydrogen"].value == \
@@ -431,7 +338,6 @@ class TestStateBlock(object):
         assert model.props[1].phase_frac["Vap"].value == \
             pytest.approx(0.77026, abs=1e-4)
 
-    @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, model):
         model.props[1].report()
