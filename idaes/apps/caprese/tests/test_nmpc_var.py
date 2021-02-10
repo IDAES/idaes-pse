@@ -10,7 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""
+""" Tests for subclasses of Var
 """
 
 import pyomo.environ as pyo
