@@ -32,6 +32,7 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
+from idaes.core.util import get_default_solver
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -610,7 +611,7 @@ Must be True if dynamic = True,
                     f"developer to develop a unit specific stream table.")
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg={}):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
@@ -626,9 +627,9 @@ Must be True if dynamic = True,
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default IDAES solver)
 
         Returns:
             None
@@ -637,8 +638,11 @@ Must be True if dynamic = True,
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        if solver is None:
+            opt = get_default_solver()
+        else:
+            opt = SolverFactory(solver)
+            opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
