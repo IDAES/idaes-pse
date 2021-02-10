@@ -12,8 +12,9 @@
 ##############################################################################
 import numpy as np
 from math import sqrt
-from idaes.apps.matopt.materials import Atom, Canvas, Design, PlanarTiling, CubicTiling
-from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube
+from idaes.apps.matopt.materials import Atom, Canvas, Design, LinearTiling, PlanarTiling, CubicTiling
+from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube, \
+    Cylinder, CylindricalSector
 from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice, DiamondLattice, \
     WurtziteLattice
 from idaes.apps.matopt.materials.transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
@@ -121,6 +122,30 @@ def test_construct_RectPrism():
 def test_construct_Cube():
     shape = Cube(1.0)
     return shape
+
+
+@pytest.mark.unit
+def test_construct_Cylinder():
+    shape = Cylinder(np.zeros(3, dtype=float), 1.0, 1.0)
+    return shape
+
+
+@pytest.mark.unit
+def test_construct_CylindricalSector():
+    shape = CylindricalSector(np.zeros(3, dtype=float), 1.0, 1.0,
+                              np.array([1, 0, 0], dtype=float),
+                              np.array([0, 1, 0], dtype=float),
+                              np.array([0, 0, 1], dtype=float))
+    return shape
+
+
+@pytest.mark.unit
+def test_construct_LinearTiling():
+    parallelepiped = test_construct_Parallelepiped()
+    cylinder = test_construct_Cylinder()
+    tiling = LinearTiling.fromParallelepiped(parallelepiped)
+    tiling = LinearTiling.fromCylindricalShape(cylinder)
+    return tiling
 
 
 @pytest.mark.unit
