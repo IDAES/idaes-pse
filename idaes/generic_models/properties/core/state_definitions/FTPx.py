@@ -23,11 +23,7 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config, get_method, GenericPropertyPackageError
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
-
-from idaes.generic_models.properties.core.generic.generic_property import StateIndex
-from idaes.core.util.exceptions import BurntToast
-from pyomo.environ import Reference
-from idaes.core.util.misc import add_object_reference
+from .electrolyte_states import define_electrolyte_state
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -37,25 +33,6 @@ def set_metadata(b):
     # This is the default assumption for state vars, so we don't need to change
     # the metadata dict
     pass
-
-
-def define_electrolyte_state(b):
-    if b.params.config.state_components == StateIndex.true:
-        # Create references to base state vars
-        add_object_reference(b, "flow_mol_true", b.flow_mol)
-        b.flow_mol_phase_true = Reference(b.flow_mol_phase)
-        b.flow_mol_phase_comp_true = Reference(b.flow_mol_phase_comp)
-        b.mole_frac_phase_comp_true = Reference(b.mole_frac_phase_comp)
-    elif b.params.config.state_components == StateIndex.apparent:
-        # Create references to base state vars
-        add_object_reference(b, "flow_mol_apparent", b.flow_mol)
-        b.flow_mol_phase_apparent = Reference(b.flow_mol_phase)
-        b.flow_mol_phase_comp_apparent = Reference(b.flow_mol_phase_comp)
-        b.mole_frac_phase_comp_apparent = Reference(b.mole_frac_phase_comp)
-    else:
-        raise BurntToast("{} - unrecognized value for state_components "
-                         "argument - this should never happen. Please "
-                         "contact the IDAES developers".format(b.name))
 
 
 def define_state(b):
@@ -125,18 +102,19 @@ def define_state(b):
                            doc='Phase molar flow rates',
                            units=units["flow_mole"])
 
-    def Fpc_expr(b, p, j):
-        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-    b.flow_mol_phase_comp = Expression(
-        b.phase_component_set,
-        doc='Phase-component molar flowrates')
-
     b.mole_frac_phase_comp = Var(
         b.phase_component_set,
         initialize=1/len(b.component_list),
         bounds=(0, None),
         doc='Phase mole fractions',
         units=None)
+
+    def Fpc_expr(b, p, j):
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(
+        b.phase_component_set,
+        rule=Fpc_expr,
+        doc='Phase-component molar flowrates')
 
     b.phase_frac = Var(
         b.phase_list,
