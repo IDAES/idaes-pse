@@ -67,7 +67,7 @@ else:
 class TestDynamicBlock(object):
 
     @pytest.mark.unit
-    def test_construct_simple(self):
+    def test_init_simple(self):
         model = make_model(horizon=1, nfe=2)
         time = model.time
         t0 = time.first()
@@ -130,7 +130,7 @@ class TestDynamicBlock(object):
         assert block.v in ComponentSet(identify_variables(block.c.expr))
 
     @pytest.mark.unit
-    def test_construct_indexed(self):
+    def test_init_indexed(self):
         block_set = pyo.Set(initialize=[0,1,2])
         block_set.construct()
         horizon_map = {0: 1., 1: 3., 2: 5.}
@@ -156,8 +156,6 @@ class TestDynamicBlock(object):
         assert isinstance(block, DynamicBlock)
 
         block.construct()
-        # Why is block._data empty here?
-        # Are blocks constructed sparse by default?
         assert all(b.parent_component() is block for b in block.values())
 
         # Check __contains__
@@ -204,7 +202,7 @@ class TestDynamicBlock(object):
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
     @pytest.mark.unit
-    def test_construct_rule(self):
+    def test_init_rule(self):
         block_set = pyo.Set(initialize=range(3))
         block_set.construct()
         # Create same maps as before
@@ -236,8 +234,6 @@ class TestDynamicBlock(object):
         assert isinstance(block, DynamicBlock)
 
         block.construct()
-        # Why is block._data empty here?
-        # Are blocks constructed sparse by default?
 
         # Make sure iterating over block.values works as expected
         assert all(b.parent_component() is block for b in block.values())
@@ -288,9 +284,7 @@ class TestDynamicBlock(object):
             assert b.v in ComponentSet(identify_variables(b.c.expr))
 
     @pytest.mark.unit
-    def test_init(self):
-        # This really should be `test_construct`, and the above tests
-        # should be `test_init_...`
+    def test_construct(self):
         m = make_small_model()
         time = m.time
         t0 = time.first()
