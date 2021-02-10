@@ -18,7 +18,7 @@ modeling in Pyomo.
 
 __author__ = "Alexander Dowling"
 
-from pyomo.environ import SolverFactory, Var, Param, Constraint, Objective
+from pyomo.environ import SolverFactory, Var, Param, Constraint, Objective, ConcreteModel, Set, Binary
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
@@ -68,10 +68,18 @@ class DegeneracyHunter():
         
             self.candidate_eqns = None
         
-        else:
+        elif type(block_or_jac) is np.array:
+        
+            raise NotImplementedError
+        
+            # TODO: Need to refactor, document, and test support for Jacobian
             self.jac_eq = block_or_jac
             
             self.eq_con_list = None
+        
+        else:
+            
+            raise TypeError
         
         # number of equality constraints, variables
         self.n_eq = self.jac_eq.shape[0]
