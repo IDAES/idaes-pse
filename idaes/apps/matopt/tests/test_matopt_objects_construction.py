@@ -11,15 +11,17 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import numpy as np
-
+from math import sqrt
 from idaes.apps.matopt.materials import Atom, Canvas, Design, PlanarTiling, CubicTiling
 from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube
-from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice
+from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice, DiamondLattice, \
+    WurtziteLattice
 from idaes.apps.matopt.materials.transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
 from idaes.apps.matopt.opt import Coef, LinearExpr, MatOptModel, SumNeighborSites, SumNeighborBonds, SumSites, SumBonds, \
     SumSiteTypes, SumBondTypes, SumSitesAndTypes, SumBondsAndTypes, SumConfs, SumSitesAndConfs, LessThan, EqualTo, \
     GreaterThan, FixedTo, Disallow, PiecewiseLinear, Implies, NegImplies, ImpliesSiteCombination, ImpliesNeighbors
 import pytest
+
 
 @pytest.mark.unit
 def test_construct_FCCLattice():
@@ -39,6 +41,20 @@ def test_construct_CubicLattice():
 def test_construct_PerovskiteLattice():
     A, B, C = 4, 4, 4
     lattice = PerovskiteLattice(A, B, C)
+    return lattice
+
+
+@pytest.mark.unit
+def test_construct_DiamondLattice():
+    IAD = sqrt(3) / 4
+    lattice = DiamondLattice(IAD)
+    return lattice
+
+
+@pytest.mark.unit
+def test_construct_WurtziteLattice():
+    IAD = sqrt(3 / 8)
+    lattice = WurtziteLattice(IAD)
     return lattice
 
 
@@ -277,7 +293,7 @@ def test_construct_Disallow():
 @pytest.mark.unit
 def test_construct_PiecewiseLinear():
     m = test_construct_MatOptModel()
-    rule = PiecewiseLinear([x**2 for x in range(3)],
+    rule = PiecewiseLinear([x ** 2 for x in range(3)],
                            [x for x in range(3)],
                            m.Ci)
     return rule
