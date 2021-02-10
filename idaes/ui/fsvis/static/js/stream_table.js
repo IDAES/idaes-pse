@@ -68,6 +68,7 @@ export class StreamTable {
         this._gridOptions = {
             columnDefs: column_defs,
             rowData: row_data,
+            suppressColumnVirtualisation: true,
         };
 
         // Color the even rows grey
