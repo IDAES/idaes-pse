@@ -40,7 +40,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError, ConfigurationError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 

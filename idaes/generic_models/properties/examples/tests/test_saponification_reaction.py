@@ -29,7 +29,7 @@ from idaes.generic_models.properties.examples.saponification_reactions import (
 from idaes.generic_models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock)
 
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 
 # -----------------------------------------------------------------------------
