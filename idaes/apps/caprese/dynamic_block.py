@@ -52,6 +52,7 @@ from pyomo.core.base.util import Initializer
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.common.collections import ComponentMap
+from pyomo.common.config import ConfigDict, ConfigValue
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
@@ -65,6 +66,14 @@ class _DynamicBlockData(_BlockData):
     # the user's model.
 
     logger = idaeslog.getLogger('nmpc')
+
+    CONFIG = ConfigDict()
+
+    CONFIG.declare('tee', ConfigValue(
+        default=True,
+        domain=bool,
+        doc="tee option for embedded solver calls",
+        ))
 
     def _construct(self):
         """ Generates time-indexed references and categorizes them. """

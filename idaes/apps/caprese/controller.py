@@ -69,7 +69,7 @@ class _ControllerBlockData(_DynamicBlockData):
     calculating a setpoint and adding objective functions.
     """
 
-    def solve_setpoint(self, solver, require_steady=True):
+    def solve_setpoint(self, solver, **kwargs):
         """ This method performs a "real time optimization-type"
         solve on the model, using only the variables and constraints
         at the first point in time. The purpose is to calculate a
@@ -83,6 +83,8 @@ class _ControllerBlockData(_DynamicBlockData):
                             for the solve. Default is `True`.
 
         """
+        require_steady = kwargs.pop('require_steady', True)
+        config = self.CONFIG(kwargs)
         model = self.mod
         time = self.time
         t0 = time.first()
@@ -125,7 +127,7 @@ class _ControllerBlockData(_DynamicBlockData):
         else:
             assert dof == (len(self.INPUT_SET) +
                     len(self.DIFFERENTIAL_SET))
-        results = solver.solve(self, tee=True)
+        results = solver.solve(self, tee=config.tee)
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
