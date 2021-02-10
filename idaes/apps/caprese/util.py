@@ -160,7 +160,7 @@ def initialize_by_element_in_range(model, time, t_start, t_end,
             pass
         else:
             raise ValueError(
-                'Failed to solve for consisten initial conditions.'
+                'Failed to solve for consistent initial conditions.'
                 )
 
         deactivated[time.first()] = deactivate_model_at(model, time, 

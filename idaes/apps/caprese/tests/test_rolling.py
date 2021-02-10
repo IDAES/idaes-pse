@@ -213,7 +213,7 @@ class TestVectorSeries(object):
         # VectorSeries is constructed from an OrderedDict with data
         # series (lists) as values. Keys are meant to be identifiers
         # of Pyomo model components, but could technically be anything.
-        # To illustrate their indended use, tests use CUIDs as keys.
+        # To illustrate their intended use, tests use CUIDs as keys.
         m = make_model()
         data = OrderedDict([
             (pyo.ComponentUID(_slice.referent),
