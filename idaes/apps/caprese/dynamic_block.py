@@ -75,6 +75,11 @@ class _DynamicBlockData(_BlockData):
         doc="tee option for embedded solver calls",
         ))
 
+    CONFIG.declare('outlvl', ConfigValue(
+        default=idaeslog.INFO,
+        doc="Output level for IDAES logger",
+        ))
+
     def _construct(self):
         """ Generates time-indexed references and categorizes them. """
         model = self.mod
@@ -188,7 +193,7 @@ class _DynamicBlockData(_BlockData):
         category_dict = self.category_dict
 
         # Add a deactivated block to store all my `_NmpcVector`s
-        # These will vars, named by category, indexed by the index 
+        # These be will vars, named by category, indexed by the index
         # into the list of that category and by time. E.g.
         # self.vectors.differential
         self.add_component(self._vectors_name, Block())
@@ -379,9 +384,9 @@ class _DynamicBlockData(_BlockData):
         of the time finite elements individually. This can be
         thought of as a time integration.
         """
-        outlvl = kwargs.pop('outlvl', idaeslog.INFO)
         strip_var_bounds = kwargs.pop('strip_var_bounds', True)
         input_option = kwargs.pop('input_option', InputOption.CURRENT)
+        config = self.CONFIG(kwargs)
         square_solve_context = SquareSolveContext(
                 self,
                 strip_var_bounds=strip_var_bounds,
@@ -401,17 +406,17 @@ class _DynamicBlockData(_BlockData):
                     time.last(),
                     dae_vars=self.dae_vars,
                     time_linking_vars=list(self.differential_vars[:]),
-                    outlvl=outlvl,
+                    outlvl=config.outlvl,
                     solver=solver,
                     )
 
     def initialize_samples_by_element(self, samples, solver, **kwargs):
-        """ Solve the square problem with fixed inputs for the specified sambles
+        """ Solve the square problem with fixed inputs for the specified samples
         """
         # TODO: ConfigBlock for this class
-        outlvl = kwargs.pop('outlvl', idaeslog.INFO)
         strip_var_bounds = kwargs.pop('strip_var_bounds', True)
         input_option = kwargs.pop('input_option', InputOption.CURRENT)
+        config = self.CONFIG(kwargs)
 
         if type(samples) not in {list, tuple}:
             samples = (samples,)
@@ -443,7 +448,7 @@ class _DynamicBlockData(_BlockData):
                         t1,
                         dae_vars=self.dae_vars,
                         time_linking_vars=list(self.differential_vars[:]),
-                        outlvl=outlvl,
+                        outlvl=config.outlvl,
                         solver=solver,
                         )
 
