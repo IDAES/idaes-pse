@@ -70,3 +70,10 @@ def test_ipopt_idaes_solve():
     m.c2 = pyo.Constraint(expr=1==m.y)
     solver.solve(m)
     assert pytest.approx(1) == pyo.value(m.x)
+
+@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.unit
+def test_default_solver():
+    """Test that default solver returns the correct solver type
+    """
+    assert type(SolverFactory()) == type(SolverFactory(idaes.cfg.default_solver))
