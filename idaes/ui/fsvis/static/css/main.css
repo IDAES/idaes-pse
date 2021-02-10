@@ -103,6 +103,16 @@ hr {
   margin: 5px 0;
 }
 
+.idaes-toolbar-shadow {
+  top: 60px;
+  right: 0;
+  left: 0;
+  z-index: 28;
+  height: 5px;
+  background: linear-gradient(rgb(219, 219, 219),rgb(243, 243, 243)) repeat-x 0 0;
+  border-top: 1px solid rgb(243, 243, 243);
+}
+
 /* Checkmark styling */
 .fancy-checkbox input[type="checkbox"],
 .fancy-checkbox .checked {
