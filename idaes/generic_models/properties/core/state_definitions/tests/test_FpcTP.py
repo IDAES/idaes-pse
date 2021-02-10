@@ -939,6 +939,19 @@ class TestCommon(object):
         assert check_units_equivalent(frame.props[1].temperature,
                                       pyunits.K)
 
+        # Check supporting variables
+        assert isinstance(frame.props[1].flow_mol_phase, Expression)
+        assert len(frame.props[1].flow_mol_phase) == 2
+
+        assert isinstance(frame.props[1].mole_frac_phase_comp, Var)
+        assert len(frame.props[1].mole_frac_phase_comp) == 6
+
+        assert isinstance(frame.props[1].phase_frac, Expression)
+        assert len(frame.props[1].phase_frac) == 2
+
+        assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
+        assert len(frame.props[1].mole_frac_phase_comp_eq) == 6
+
     # Test General Methods
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):

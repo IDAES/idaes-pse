@@ -29,7 +29,7 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 from idaes.core.util.homotopy import homotopy
 
