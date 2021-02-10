@@ -31,9 +31,8 @@ from pyomo.opt import SolverStatus, TerminationCondition
 
 import matplotlib.pyplot as plt
 
+from operator import itemgetter
 
-# This library is already used in Pyomo
-import operator
 
 class DegeneracyHunter():
 
@@ -140,7 +139,7 @@ class DegeneracyHunter():
                     print("Count\tName\t|residual|")
                 
                 if sort:
-                    residual_values = dict(sorted(residual_values.items(), key=operator.itemgetter(1),reverse=True))
+                    residual_values = dict(sorted(residual_values.items(), key=itemgetter(1),reverse=True))
         
                 for i, (c,r) in enumerate(residual_values.items()):
                     if print_level == 0:
