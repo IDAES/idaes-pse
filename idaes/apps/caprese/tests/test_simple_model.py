@@ -10,9 +10,6 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""
-Test for Cappresse's module for NMPC.
-"""
 
 from pytest import approx
 import pyomo.environ as aml
