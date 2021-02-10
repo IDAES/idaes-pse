@@ -209,11 +209,14 @@ class VectorSeries(OrderedDict):
         super().__init__(data)
 
     def dim(self):
+        """ This is the dimension of the vector that is indexed by time.
+        """
         return len(self.keys())
 
     def __len__(self):
-        # Behavior of len/dim could be confusing. This needs to be
-        # well-documented.
+        """ This is the length of the time series, each element of which
+        is a vector.
+        """
         return len(self.time)
 
     def consistent(self, target):
