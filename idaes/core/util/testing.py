@@ -37,21 +37,20 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
+from idaes.core.util import get_default_solver as default_solver
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 def get_default_solver():
     """
-    Tries to set-up the default solver for testing, and returns None if not
-    available
+    Move to idaes.core.util.misc - leaving redirection method here for
+    deprecation warning
     """
-    if SolverFactory('ipopt').available(exception_flag=False):
-        solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6,
-                          'linear_solver': 'ma27'}
-    else:
-        solver = None
-
-    return solver
+    _log.warn("Deprecated: get_default_solve has been moved and can now be "
+              "imported from idaes.core.util")
+    return default_solver()
 
 
 def initialization_tester(m, dof=0, unit=None, **init_kwargs):
