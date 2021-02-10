@@ -1,4 +1,5 @@
 import { Paper } from './paper.js';
+import { StreamTable } from './stream_table.js';
 import { Toolbar } from './toolbar.js';
 
 export class App {
@@ -9,8 +10,12 @@ export class App {
             .done((model) => {
                 this.renderModel(model);
                 this.toolbar = new Toolbar(this, this.paper);
+                this.stream_table = new StreamTable(this, model);
             })
-            .fail((error) => { console.log(error) });
+            .fail((xhr, status, error) => { 
+                console.log(error);
+                console.log(status); 
+            });
     }
 
     renderModel(model) {
@@ -76,7 +81,10 @@ export class App {
                 this.informUser(0, "Refresh: load new model values from Python program");
                 $.ajax({url: url, dataType: "json"})
                     // If we got the model, save it
-                    .done(data => {paper.graph = data}) // uses setter
+                    .done(data => {
+                        paper.graph = data;  // uses setter
+                        this.stream_table.initTable(data)
+                    }) 
                     // Otherwise fail
                     .fail((jqXHR, textStatus, errorThrown) => {
                         this.informUser(2, "Fatal error: Could not retrieve new model from Python program: " +

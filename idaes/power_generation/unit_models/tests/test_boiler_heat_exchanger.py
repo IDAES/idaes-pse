@@ -36,8 +36,8 @@ from idaes.power_generation.unit_models.boiler_heat_exchanger import (
         BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util import get_default_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
