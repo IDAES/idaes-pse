@@ -18,7 +18,7 @@ modeling in Pyomo.
 
 __author__ = "Alexander Dowling"
 
-from pyomo.environ import *
+from pyomo.environ import SolverFactory, Var, Param, Constraint, Objective
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
@@ -42,6 +42,10 @@ class DegeneracyHunter():
     
         Arguments:
             block_or_jac: Pyomo model or Jacobian
+            solver: Pyomo SolverFactory
+            
+        Notes:
+            Passing a Jacobian to Degeneracy Hunter is current untested.
         
         '''
         
@@ -79,10 +83,13 @@ class DegeneracyHunter():
                 
         # Initialize solver
         if solver is None:
+            # TODO: Test performance with open solvers such as cbc
             self.solver = SolverFactory('gurobi')
             self.solver.options = {'NumericFocus':3}
             
         else:
+            # TODO: Make this a custom exception following IDAES standards
+            assert type(solver) is SolverFactory, "Argument solver should be type SolverFactory" 
             self.solver = solver
             
         # Create spot to store singular values
@@ -155,6 +162,7 @@ class DegeneracyHunter():
             relative : Boolean, use relative tolerance (default = False)
             skip_lb: Boolean to skip lower bound (default = False)
             skip_ub: Boolean to skip upper bound (default = False)
+            LOUD: Boolean to toggle on printing to screen (default = True)
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
@@ -182,6 +190,9 @@ class DegeneracyHunter():
         """
         Method to check the rank of the Jacobian of the equality constraints
         
+        Args:
+            tol: Tolerance for smallest singular value (default=1E-6)
+        
         Returns:
             Number of singular values less than tolerance (-1 means error)
         
@@ -205,11 +216,13 @@ class DegeneracyHunter():
                 if self.s[i] < tol:
                     counter += 1
         else:
+            # TODO: Make this an exception
             print("Model needs at least 2 equality constraints to check rank.")
             counter = -1
             
         return counter
 
+    # TODO: Refactor, this should not be a staticmethod
     @staticmethod
     def _prepare_ids_milp(jac_eq, M=1E5):
         '''
@@ -268,6 +281,7 @@ class DegeneracyHunter():
         
         return m_dh
     
+    # TODO: Refactor, this should not be a staticmethod
     @staticmethod
     def _prepare_find_candidates_milp(jac_eq, M = 1E5, m_small = 1E-5):
         '''
@@ -367,7 +381,7 @@ class DegeneracyHunter():
         
         return m_dh
 
-    
+    # TODO: Refactor, this should not be a staticmethod
     @staticmethod
     def _check_candidate_ids(ids_milp,solver,c,eq_con_list=None,tee=False):
         ''' Solve MILP to check if equation 'c' is a main component in an irreducible
@@ -377,6 +391,8 @@ class DegeneracyHunter():
                 ids_milp: Pyomo model to calculate IDS
                 solver: Pyomo solver (must support MILP)
                 c: index for the constraint to consider [integer]
+                eq_con_list: names of equality constraints. If none, use elements of ids_milp (default=None)
+                tee: Boolean, print solver output (default = False)
 
             Returns:
                 ids: either None or dictionary containing the IDS
@@ -409,6 +425,7 @@ class DegeneracyHunter():
         else:
             return None
     
+    # TODO: Refactor, this should not be a staticmethod
     @staticmethod
     def _find_candidate_eqs(candidates_milp, solver, eq_con_list=None,tee=False):
         ''' Solve MILP to check if equation 'c' is a main component in an irreducible
@@ -418,6 +435,8 @@ class DegeneracyHunter():
                 candidates_milp: Pyomo model to calculate IDS
                 solver: Pyomo solver (must support MILP)
                 c: index for the constraint to consider [integer]
+                eq_con_list: names of equality constraints. If none, use elements of ids_milp (default=None)
+                tee: Boolean, print solver output (default = False)
 
             Returns:
                 candidate_eqns: either None or list of indicies
@@ -454,6 +473,16 @@ class DegeneracyHunter():
     def svd_analysis(self,n_smallest_sv = 10):
         '''
         Perform SVD analysis of the constraint Jacobian
+        
+        Args:
+            n_smallest_sv: number of smallest singular values to compute
+            
+        Returns:
+            Nothing
+            
+        Actions:
+            Stores SVD results in object
+        
         '''
         
         if self.n_eq > 1:
@@ -482,6 +511,14 @@ class DegeneracyHunter():
     def find_candidate_equations(self,verbose=True,tee=False):
         '''
         Solve MILP to find a degenerate set and candidate equations
+        
+        Args:
+            verbose: Print information to the screen (default=True)
+            tee: Print solver output to screen (default=True)
+        
+        Returns:
+            ds: either None or dictionary of candidate equations
+        
         '''
         
         if verbose:
@@ -507,6 +544,14 @@ class DegeneracyHunter():
     def find_irreducible_degenerate_sets(self,verbose=True,tee=False):
         """
         Compute irreducible degenerate sets
+        
+        Args:
+            verbose: Print information to the screen (default=True)
+            tee: Print solver output to screen (default=True)
+        
+        Returns:
+            irreducible_degenerate_sets: list of irreducible degenerate sets
+        
         """
         
         # If there are no candidate equations, find them!
@@ -547,6 +592,7 @@ class DegeneracyHunter():
 
     ### Helper Functions
     
+    # Note: This makes sense as a static method
     @staticmethod
     def print_variable_bounds(v):
         ''' Print variable, bounds, and value
