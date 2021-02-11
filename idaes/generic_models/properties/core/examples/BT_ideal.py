@@ -30,13 +30,13 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
+from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure import RPP4
 
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -149,5 +149,5 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew}
