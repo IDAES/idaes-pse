@@ -29,7 +29,7 @@ from pyomo.environ import (ConcreteModel,
 from idaes.generic_models.properties.core.generic.generic_property import \
     GenericParameterBlock
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -77,7 +77,7 @@ def frame():
                                     m.params.component_list,
                                     initialize=10)
 
-    smooth_VLE.phase_equil(m.props[1], ("Liq", "Vap"))
+    SmoothVLE.phase_equil(m.props[1], ("Liq", "Vap"))
 
     return m
 
@@ -149,4 +149,4 @@ def test_non_VLE_pair():
                        match="params Generic Property Package phase pair "
                        "Liq-Sol was set to use Smooth VLE formulation, "
                        "however this is not a vapor-liquid pair."):
-        smooth_VLE.phase_equil(m.props[1], ("Liq", "Sol"))
+        SmoothVLE.phase_equil(m.props[1], ("Liq", "Sol"))

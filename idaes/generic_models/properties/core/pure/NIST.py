@@ -188,3 +188,11 @@ class pressure_sat_comp():
         units = b.params.get_metadata().derived_units
         dp_units = units["pressure"]/units["temperature"]
         return pyunits.convert(p_sat_dT, to_units=dp_units)
+
+
+# -----------------------------------------------------------------------------
+class NIST(object):
+    cp_mol_ig_comp = cp_mol_ig_comp
+    enth_mol_ig_comp = enth_mol_ig_comp
+    entr_mol_ig_comp = entr_mol_ig_comp
+    pressure_sat_comp = pressure_sat_comp
