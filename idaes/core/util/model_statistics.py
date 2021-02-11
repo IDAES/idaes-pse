@@ -1294,8 +1294,8 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
 
     Returns:
         large_residual_set: A ComponentSet including all Constraint components with a residual
-        greater than tol which appear in block
-        residual_values: (only if return_residual_values is true) dictionary with constraint as key and residual (float) as value
+        greater than tol which appear in block (if return_residual_values is false)
+        residual_values: dictionary with constraint as key and residual (float) as value (if return_residual_values is true)
     """
     large_residuals_set = ComponentSet()
     if return_residual_values:
@@ -1332,7 +1332,7 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
                 residual_values[c] = r
     
     if return_residual_values:
-        return large_residuals_set, residual_values
+        return residual_values
     else:
         return large_residuals_set
 

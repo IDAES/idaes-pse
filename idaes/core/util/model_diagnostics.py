@@ -132,7 +132,7 @@ class DegeneracyHunter():
         """
         
         if print_level > 0:
-            lrs, residual_values = large_residuals_set(self.block, tol, True)
+            residual_values = large_residuals_set(self.block, tol, True)
         else:
             return large_residuals_set(self.block, tol, False)
         
@@ -163,7 +163,7 @@ class DegeneracyHunter():
             else:
                 print("No constraints with residuals larger than",tol,"!")
                 
-        return lrs
+        return residual_values.keys()
 
     def check_variable_bounds(self,tol=1e-5, relative=False, skip_lb = False, skip_ub = False, verbose=True):
         """
@@ -482,7 +482,7 @@ class DegeneracyHunter():
             return None, None
         
     
-    def svd_analysis(self, n_smallest_sv = 10):
+    def svd_analysis(self, n_smallest_sv=10):
         '''
         Perform SVD analysis of the constraint Jacobian
         
