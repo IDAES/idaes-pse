@@ -18,7 +18,13 @@ import logging
 import pytest
 
 # Import Pyomo units
-from pyomo.environ import ConcreteModel, Constraint, Var, units as pyunits
+from pyomo.environ import (ConcreteModel,
+                           Constraint,
+                           TerminationCondition,
+                           SolverStatus,
+                           value,
+                           Var,
+                           units as pyunits)
 
 # Import IDAES cores
 from idaes.core import AqueousPhase, VaporPhase
@@ -31,6 +37,9 @@ from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock, StateIndex)
+
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import get_default_solver
 
 
 # Set up logger
@@ -91,8 +100,8 @@ class TestApparentSpeciesBasis():
         # Defining phase equilibria
         }
 
-    @pytest.mark.unit
-    def test_vars_and_constraints(self):
+    @pytest.fixture(scope="class")
+    def frame(self):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={'dynamic': False})
@@ -103,6 +112,12 @@ class TestApparentSpeciesBasis():
         m.fs.state = m.fs.props.build_state_block(
                 [1],
                 default={"defined_state": True})
+
+        return m
+
+    @pytest.mark.unit
+    def test_vars_and_constraints(self, frame):
+        m = frame
 
         assert m.fs.state[1].component_list is m.fs.props.apparent_species_set
 
@@ -162,6 +177,59 @@ class TestApparentSpeciesBasis():
                 m.fs.state[1].mole_frac_phase_comp[i]
             assert i in m.fs.props.apparent_phase_component_set
 
+        # Check for true species components
+        assert isinstance(m.fs.state[1].flow_mol_phase_comp_true, Var)
+        assert len(m.fs.state[1].flow_mol_phase_comp_true) == 8
+        assert isinstance(m.fs.state[1].appr_to_true_species, Constraint)
+        assert len(m.fs.state[1].appr_to_true_species) == 8
+
+    @pytest.mark.component
+    def test_solve_for_true_species(self, frame):
+        m = frame
+
+        m.fs.state[1].flow_mol.fix(2)
+        m.fs.state[1].phase_frac["Liq"].fix(0.5)
+        m.fs.state[1].temperature.fix(300)
+        m.fs.state[1].pressure.fix(1e5)
+
+        m.fs.state[1].mole_frac_comp["H2O"].fix(0.25)
+        m.fs.state[1].mole_frac_comp["CO2"].fix(0.25)
+        m.fs.state[1].mole_frac_comp["KHCO3"].fix(0.25)
+        m.fs.state[1].mole_frac_comp["N2"].fix(0.25)
+
+        m.fs.state[1].mole_frac_phase_comp["Vap", "KHCO3"].fix(1/6)
+        m.fs.state[1].mole_frac_phase_comp["Vap", "CO2"].fix(1/6)
+
+        assert degrees_of_freedom(m.fs) == 0
+
+        solver = get_default_solver()
+        res = solver.solve(m.fs, tee=True)
+
+        # Check for optimal solution
+        assert res.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert res.solver.status == SolverStatus.ok
+
+        # Check true species flowrates
+        assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "H2O"]) ==
+                pytest.approx(1/6, rel=1e-5))
+        assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "CO2"]) ==
+                pytest.approx(1/6, rel=1e-5))
+        assert (value(
+            m.fs.state[1].flow_mol_phase_comp_true["Vap", "KHCO3"]) ==
+                pytest.approx(1/6, rel=1e-5))
+        assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "N2"]) ==
+                pytest.approx(0.5, rel=1e-5))
+        assert (value(m.fs.state[1].flow_mol_phase_comp_true["Liq", "H2O"]) ==
+                pytest.approx(1/3, rel=1e-5))
+        assert (value(m.fs.state[1].flow_mol_phase_comp_true["Liq", "CO2"]) ==
+                pytest.approx(1/3, rel=1e-5))
+        assert (value(m.fs.state[1].flow_mol_phase_comp_true["Liq", "K+"]) ==
+                pytest.approx(1/3, rel=1e-5))
+        assert (value(
+            m.fs.state[1].flow_mol_phase_comp_true["Liq", "HCO3-"]) ==
+                pytest.approx(1/3, rel=1e-5))
+
 
 # ---------------------------------------------------------------------
 class TestTrueSpeciesBasis():
@@ -217,8 +285,8 @@ class TestTrueSpeciesBasis():
         # Defining phase equilibria
         }
 
-    @pytest.mark.unit
-    def test_vars_and_constraints(self):
+    @pytest.fixture(scope="class")
+    def frame(self):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(default={'dynamic': False})
@@ -229,6 +297,12 @@ class TestTrueSpeciesBasis():
         m.fs.state = m.fs.props.build_state_block(
                 [1],
                 default={"defined_state": True})
+
+        return m
+
+    @pytest.mark.unit
+    def test_vars_and_constraints(self, frame):
+        m = frame
 
         assert m.fs.state[1].component_list is m.fs.props.true_species_set
 
