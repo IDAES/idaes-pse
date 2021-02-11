@@ -34,8 +34,8 @@ export class Paper {
         // will explode in the y direction when you drag an unit model off of the paper
         // We want all of the elements to be the same width so set the width equal to the 
         // stream table
-        let stream_table = document.getElementById("stream-table-container");
-        $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: 800 });
+        let stream_table = document.getElementById("stream-table");
+        $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
         $("#idaes-canvas")[0].append(self._paperScroller.render().el);
 
         self.setupEvents();
@@ -67,6 +67,12 @@ export class Paper {
     setupEvents() {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = "/fs?id=".concat(model_id);
+
+        // Setup paper resize on window resize
+        window.onresize = function() {
+            let stream_table = document.getElementById("stream-table");
+            $('#idaes-canvas').css({ width: stream_table.offsetWidth, height: stream_table.offsetHeight });
+        }
 
         // /images/icons rotate 90 degrees on right click. Replaces browser 
         // context menu
