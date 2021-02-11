@@ -29,6 +29,7 @@ from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 from idaes.core.property_meta import PropertyClassMetadata
 
+
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("ParameterBlock")
@@ -247,7 +248,7 @@ def test_validate_parameter_block_no_component_list():
 def test_validate_parameter_block_no_phase_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
-    
+
     m.meta_object = PropertyClassMetadata()
 
     def get_metadata(self):
@@ -307,6 +308,7 @@ def test_has_inherent_Reactions():
 
     assert m.p.has_inherent_reactions
 
+
 # -----------------------------------------------------------------------------
 # Test StateBlock
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
@@ -316,7 +318,7 @@ class _StateBlockData(StateBlockData):
 
 
 @declare_process_block_class("TestStateBlock2", block_class=StateBlock)
-class _StateBlockData(StateBlockData):
+class _StateBlockData2(StateBlockData):
     def build(self):
         super(StateBlockData, self).build()
 
@@ -405,6 +407,7 @@ def test_StateBlock_NotImplementedErrors():
         m.p.calculate_bubble_point_pressure()
     with pytest.raises(NotImplementedError):
         m.p.calculate_dew_point_pressure()
+
 
 # -----------------------------------------------------------------------------
 # Test parameter block reference attribute
@@ -506,7 +509,7 @@ def m():
 def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
-    assert m.p.is_property_constructed("a") == True
+    assert m.p.is_property_constructed("a")
 
 
 @pytest.mark.unit
@@ -520,9 +523,9 @@ def test_lock_attributes(m):
 
 @pytest.mark.unit
 def test_is_property_constructed(m):
-    assert m.p.is_property_constructed("a") == False
+    assert not m.p.is_property_constructed("a")
     assert m.p.a.value == 1
-    assert m.p.is_property_constructed("a") == True
+    assert m.p.is_property_constructed("a")
 
 
 @pytest.mark.unit
