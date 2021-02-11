@@ -113,10 +113,10 @@ def test_run(build_unit):
                       * m.fs.unit.outlet.enth_mol[0]
                       + m.fs.unit.work_mechanical[0]))
     # pressure change
-    assert (pytest.approx(177991.40740149803, abs=1e-3) ==
+    assert (pytest.approx(177991.4, abs=1e-1) ==
             pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
-    assert (pytest.approx(0, abs=1e-3) ==
+    assert (pytest.approx(0, abs=1e-1) ==
             pyo.value(m.fs.unit.inlet.flow_mol[0]
                       - m.fs.unit.outlet.flow_mol[0]
                       ))
