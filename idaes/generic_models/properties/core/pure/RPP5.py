@@ -19,11 +19,12 @@ Reid, Prausnitz and Polling, 2001, McGraw-Hill
 All parameter indicies based on conventions used by the source
 """
 
-from pyomo.environ import exp, value, log, Var, units as pyunits
+from pyomo.environ import log, Var, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
 
 from idaes.core.util.constants import Constants as const
+
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
@@ -96,10 +97,10 @@ class enth_mol_ig_comp():
 
         h = (pyunits.convert(
                 ((cobj.cp_mol_ig_comp_coeff_a4/5)*(T**5-Tr**5) +
-                (cobj.cp_mol_ig_comp_coeff_a3/4)*(T**4-Tr**4) +
-                (cobj.cp_mol_ig_comp_coeff_a2/3)*(T**3-Tr**3) +
-                (cobj.cp_mol_ig_comp_coeff_a1/2)*(T**2-Tr**2) +
-                cobj.cp_mol_ig_comp_coeff_a0*(T-Tr)) * const.gas_constant,
+                 (cobj.cp_mol_ig_comp_coeff_a3/4)*(T**4-Tr**4) +
+                 (cobj.cp_mol_ig_comp_coeff_a2/3)*(T**3-Tr**3) +
+                 (cobj.cp_mol_ig_comp_coeff_a1/2)*(T**2-Tr**2) +
+                 cobj.cp_mol_ig_comp_coeff_a0*(T-Tr)) * const.gas_constant,
                 units["energy_mole"]) + cobj.enth_mol_form_vap_comp_ref)
 
         return h
@@ -129,12 +130,12 @@ class entr_mol_ig_comp():
 
         s = (pyunits.convert(
                 ((cobj.cp_mol_ig_comp_coeff_a4/4)*(T**4-Tr**4) +
-                (cobj.cp_mol_ig_comp_coeff_a3/3)*(T**3-Tr**3) +
-                (cobj.cp_mol_ig_comp_coeff_a2/2)*(T**2-Tr**2) +
-                cobj.cp_mol_ig_comp_coeff_a1*(T-Tr) +
-                cobj.cp_mol_ig_comp_coeff_a0*log(T/Tr)) * const.gas_constant,
-                units["entropy_mole"])  +
-                cobj.entr_mol_form_vap_comp_ref)
+                 (cobj.cp_mol_ig_comp_coeff_a3/3)*(T**3-Tr**3) +
+                 (cobj.cp_mol_ig_comp_coeff_a2/2)*(T**2-Tr**2) +
+                 cobj.cp_mol_ig_comp_coeff_a1*(T-Tr) +
+                 cobj.cp_mol_ig_comp_coeff_a0*log(T/Tr)) * const.gas_constant,
+                units["entropy_mole"]) +
+             cobj.entr_mol_form_vap_comp_ref)
 
         return s
 
@@ -165,10 +166,10 @@ class pressure_sat_comp():
         if dT:
             return pressure_sat_comp.dT_expression(b, cobj, T)
 
-        psat =  (10**(cobj.pressure_sat_comp_coeff_A -
-                    (cobj.pressure_sat_comp_coeff_B /
-                    (T + cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.degK)))
-                    * pyunits.bar)
+        psat = (10**(cobj.pressure_sat_comp_coeff_A -
+                     (cobj.pressure_sat_comp_coeff_B /
+                      (T + cobj.pressure_sat_comp_coeff_C -
+                       273.15*pyunits.degK))) * pyunits.bar)
 
         base_units = b.params.get_metadata().default_units
         p_units = (base_units["mass"] *
@@ -179,9 +180,9 @@ class pressure_sat_comp():
     @staticmethod
     def dT_expression(b, cobj, T):
         p_sat_dT = (pressure_sat_comp.return_expression(b, cobj, T) *
-                    cobj.pressure_sat_comp_coeff_B *
-                    log(10)/(T +
-                             cobj.pressure_sat_comp_coeff_C - 273.15*pyunits.degK)**2)
+                    cobj.pressure_sat_comp_coeff_B * log(10) /
+                    (T + cobj.pressure_sat_comp_coeff_C -
+                     273.15*pyunits.degK)**2)
 
         base_units = b.params.get_metadata().default_units
         dp_units = (base_units["mass"] *
@@ -189,3 +190,11 @@ class pressure_sat_comp():
                     base_units["time"]**-2 *
                     base_units["temperature"]**-1)
         return pyunits.convert(p_sat_dT, to_units=dp_units)
+
+
+# -----------------------------------------------------------------------------
+class RPP5(object):
+    cp_mol_ig_comp = cp_mol_ig_comp
+    enth_mol_ig_comp = enth_mol_ig_comp
+    entr_mol_ig_comp = entr_mol_ig_comp
+    pressure_sat_comp = pressure_sat_comp
