@@ -58,6 +58,12 @@ export class Paper {
         return self._paperScroller
     }
 
+    translate_for_angle(angle, width, height) {
+       // TODO: replace with geometry that considers width and height
+       const angle_translation = {0: [0, 5], 90: [38, -35], 180: [0, -72], 270: [-38, -34]};
+       return angle_translation[angle];
+    }
+
     setupEvents() {
         let model_id = $("#idaes-fs-name").data("flowsheetId");
         let url = "/fs?id=".concat(model_id);
@@ -66,6 +72,18 @@ export class Paper {
         // context menu
         self._paper.on("element:contextmenu", function(cellView, evt) {
             cellView.model.rotate(90)
+            // This is needed to keep the text labels for the unit models in the correct orientation
+            // x and y were specifically picked to keep the label in the same place 
+            // in relation to the unit model (bottom middle)
+            // TODO Make this figuring out the x and y positions a function so that we can compute it
+            const angle = cellView.model.angle()
+            const angle_translation = self.translate_for_angle(angle, 0, 0);
+            if (angle_translation === undefined) {
+                console.error(`Angle of unit model must be either 0, 90, 180, or 270. Angle is ${angle}`);
+            }
+            else {
+                cellView.model.attr("label/transform", `translate(${angle_translation[0]}, ${angle_translation[1]}) rotate(-${angle})`);
+            }
         });
 
         // Adds link tools (adding vertices, moving segments) to links when your 
