@@ -53,7 +53,7 @@ from idaes.core.util import scaling as iscale
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
@@ -1314,7 +1314,7 @@ class TestBT_Generic_cocurrent(object):
             "temperature_ref": (298.15, pyunits.K),
             # Defining phase equilibria
             "phases_in_equilibrium": [("Vap", "Liq")],
-            "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+            "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
             "bubble_dew_method": LogBubbleDew,
             "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000,
                                             ("benzene", "toluene"): 0.000,

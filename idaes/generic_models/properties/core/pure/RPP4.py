@@ -187,3 +187,11 @@ class pressure_sat_comp():
                   cobj.pressure_sat_comp_coeff_B*x**1.5 +
                   cobj.pressure_sat_comp_coeff_C*x**3 +
                   cobj.pressure_sat_comp_coeff_D*x**6)))
+
+
+# -----------------------------------------------------------------------------
+class RPP4(object):
+    cp_mol_ig_comp = cp_mol_ig_comp
+    enth_mol_ig_comp = enth_mol_ig_comp
+    entr_mol_ig_comp = entr_mol_ig_comp
+    pressure_sat_comp = pressure_sat_comp
