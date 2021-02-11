@@ -18,7 +18,7 @@ modeling in Pyomo.
 
 __author__ = "Alexander Dowling"
 
-from pyomo.environ import SolverFactory, Var, Param, Constraint, Objective, ConcreteModel, Set, Binary
+import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 import numpy as np
@@ -36,7 +36,7 @@ from operator import itemgetter
 
 class DegeneracyHunter():
 
-    def __init__(self,block_or_jac,solver=None):
+    def __init__(self, block_or_jac, solver=None):
         ''' Initialize Degeneracy Hunter Object
     
         Arguments:
@@ -48,7 +48,13 @@ class DegeneracyHunter():
         
         '''
         
-        if type(block_or_jac) is ConcreteModel:
+        block_like = False
+        try:
+            block_like = issubclass(block_or_jac.ctype, pyo.Block)
+        except AttributeError:
+            pass
+        
+        if block_like:
         
             # Add Pyomo model to the object
             self.block = block_or_jac
@@ -91,12 +97,12 @@ class DegeneracyHunter():
         # Initialize solver
         if solver is None:
             # TODO: Test performance with open solvers such as cbc
-            self.solver = SolverFactory('gurobi')
+            self.solver = pyo.SolverFactory('gurobi')
             self.solver.options = {'NumericFocus':3}
             
         else:
             # TODO: Make this a custom exception following IDAES standards
-            assert type(solver) is SolverFactory, "Argument solver should be type SolverFactory" 
+            # assert type(solver) is SolverFactory, "Argument solver should be type SolverFactory" 
             self.solver = solver
             
         # Create spot to store singular values
@@ -107,7 +113,7 @@ class DegeneracyHunter():
         self.min_nonzero_nu = 1E-5
         
         
-    def check_residuals(self,tol=1e-5, print_level=2, sort=True):
+    def check_residuals(self, tol=1e-5, print_level=2, sort=True):
         """
         Method to return a ComponentSet of all Constraint components with a
         residual greater than a given threshold which appear in a model.
@@ -130,37 +136,36 @@ class DegeneracyHunter():
         else:
             return large_residuals_set(self.block, tol, False)
         
-        if print_level > 0:
-                
-            print(" ")
-            if len(residual_values) > 0:
-                print("All constraints with residuals larger than",tol,":")
-                if print_level == 1:
-                    print("Count\tName\t|residual|")
-                
-                if sort:
-                    residual_values = dict(sorted(residual_values.items(), key=itemgetter(1),reverse=True))
+
+        print(" ")
+        if len(residual_values) > 0:
+            print("All constraints with residuals larger than",tol,":")
+            if print_level == 1:
+                print("Count\tName\t|residual|")
         
-                for i, (c,r) in enumerate(residual_values.items()):
-                    if print_level == 0:
-                        # Basic print statement. count, constraint, residual
-                        print(i,"\t",c,"\t",r)
-                    else:
-                        # Pretty print constraint
-                        print("\ncount =",i,"\t|residual| =",r)
-                        c.pprint()
-                
-                    if print_level == 2:
-                        # print values and bounds for each variable in the constraint
-                        print("variable\tlower\tvalue\tupper")
-                        for v in identify_variables(c.body):
-                            self.print_variable_bounds(v)
+            if sort:
+                residual_values = dict(sorted(residual_values.items(), key=itemgetter(1),reverse=True))
+
+            for i, (c,r) in enumerate(residual_values.items()):
+                if print_level == 1:
+                    # Basic print statement. count, constraint, residual
+                    print(i,"\t",c,"\t",r)
+                else:
+                    # Pretty print constraint
+                    print("\ncount =",i,"\t|residual| =",r)
+                    c.pprint()
+        
+                if print_level == 2:
+                    # print values and bounds for each variable in the constraint
+                    print("variable\tlower\tvalue\tupper")
+                    for v in identify_variables(c.body):
+                        self.print_variable_bounds(v)
             else:
                 print("No constraints with residuals larger than",tol,"!")
                 
         return lrs
 
-    def check_variable_bounds(self,tol=1e-5, relative=False, skip_lb = False, skip_ub = False, LOUD=True):
+    def check_variable_bounds(self,tol=1e-5, relative=False, skip_lb = False, skip_ub = False, verbose=True):
         """
         Return a ComponentSet of all variables within a tolerance of their bounds.
         Args:
@@ -169,14 +174,14 @@ class DegeneracyHunter():
             relative : Boolean, use relative tolerance (default = False)
             skip_lb: Boolean to skip lower bound (default = False)
             skip_ub: Boolean to skip upper bound (default = False)
-            LOUD: Boolean to toggle on printing to screen (default = True)
+            verbose: Boolean to toggle on printing to screen (default = True)
         Returns:
             A ComponentSet including all Constraint components with a residual
             greater than tol which appear in block
         """
         vnbs = variables_near_bounds_set(self.block, tol, relative, skip_lb, skip_ub)
         
-        if LOUD:
+        if verbose:
             print(" ")
             if relative:
                 s = "(relative)"
@@ -193,7 +198,7 @@ class DegeneracyHunter():
             
         return vnbs
     
-    def check_rank_equality_constraints(self,tol=1E-6):
+    def check_rank_equality_constraints(self, tol=1E-6):
         """
         Method to check the rank of the Jacobian of the equality constraints
         
@@ -247,16 +252,16 @@ class DegeneracyHunter():
         n_var = jac_eq.shape[1]
     
         # Create Pyomo model for irreducible degenerate set
-        m_dh = ConcreteModel()
+        m_dh = pyo.ConcreteModel()
 
         # Create index for constraints
-        m_dh.C = Set(initialize=[i for i in range(n_eq)])
+        m_dh.C = pyo.Set(initialize=range(n_eq))
 
-        m_dh.V = Set(initialize=[i for i in range(n_var)])
+        m_dh.V = pyo.Set(initialize=range(n_var))
 
         # Add variables
-        m_dh.nu = Var(m_dh.C, bounds=(-M,M),initialize=1.0)
-        m_dh.y = Var(m_dh.C, domain=Binary)
+        m_dh.nu = pyo.Var(m_dh.C, bounds=(-M,M), initialize=1.0)
+        m_dh.y = pyo.Var(m_dh.C, domain=pyo.Binary)
 
         # Constraint to enforce set is degenerate
         if issparse(jac_eq):
@@ -274,17 +279,17 @@ class DegeneracyHunter():
             def eq_degenerate(m_dh, v):
                 return sum(m_dh.J[c,v] * m_dh.nu[c] for c in m_dh.C) == 0
             
-        m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
+        m_dh.degenerate = pyo.Constraint(m_dh.V, rule=eq_degenerate)
 
         def eq_lower(m_dh, c):
             return -M * m_dh.y[c] <= m_dh.nu[c]
-        m_dh.lower = Constraint(m_dh.C, rule=eq_lower)
+        m_dh.lower = pyo.Constraint(m_dh.C, rule=eq_lower)
 
         def eq_upper(m_dh, c):
             return  m_dh.nu[c] <= M * m_dh.y[c]
-        m_dh.upper= Constraint(m_dh.C, rule=eq_upper)
+        m_dh.upper= pyo.Constraint(m_dh.C, rule=eq_upper)
 
-        m_dh.obj = Objective(expr=sum(m_dh.y[c] for c in m_dh.C))
+        m_dh.obj = pyo.Objective(expr=sum(m_dh.y[c] for c in m_dh.C))
         
         return m_dh
     
@@ -307,27 +312,27 @@ class DegeneracyHunter():
         n_var = jac_eq.shape[1]
     
         # Create Pyomo model for irreducible degenerate set
-        m_dh = ConcreteModel()
+        m_dh = pyo.ConcreteModel()
 
         # Create index for constraints
-        m_dh.C = Set(initialize=[i for i in range(n_eq)])
+        m_dh.C = pyo.Set(initialize=range(n_eq))
 
-        m_dh.V = Set(initialize=[i for i in range(n_var)])
+        m_dh.V = pyo.Set(initialize=range(n_var))
 
         # Specify minimum size for nu to be considered non-zero
         m_dh.m_small = m_small
 
         # Add variables
-        m_dh.nu = Var(m_dh.C, bounds=(-M-m_small,M+m_small),initialize=1.0)
-        m_dh.y_pos = Var(m_dh.C, domain=Binary)
-        m_dh.y_neg = Var(m_dh.C, domain=Binary)
-        m_dh.abs_nu = Var(m_dh.C, bounds=(0, M + m_small))
+        m_dh.nu = pyo.Var(m_dh.C, bounds=(-M-m_small,M+m_small),initialize=1.0)
+        m_dh.y_pos = pyo.Var(m_dh.C, domain=pyo.Binary)
+        m_dh.y_neg = pyo.Var(m_dh.C, domain=pyo.Binary)
+        m_dh.abs_nu = pyo.Var(m_dh.C, bounds=(0, M + m_small))
         
         # Positive exclusive or negative
         def eq_pos_xor_negative(m, c):
             return m.y_pos[c] + m.y_neg[c] <= 1
         
-        m_dh.pos_xor_neg = Constraint(m_dh.C)
+        m_dh.pos_xor_neg = pyo.Constraint(m_dh.C)
 
         # Constraint to enforce set is degenerate
         if issparse(jac_eq):
@@ -345,52 +350,52 @@ class DegeneracyHunter():
             def eq_degenerate(m_dh, v):
                 return sum(m_dh.J[c,v] * m_dh.nu[c] for c in m_dh.C) == 0
             
-        m_dh.degenerate = Constraint(m_dh.V, rule=eq_degenerate)
+        m_dh.degenerate = pyo.Constraint(m_dh.V, rule=eq_degenerate)
 
         # When y_pos = 1, nu >= m_small
         # When y_pos = 0, nu >= - m_small
         def eq_pos_lower(m_dh, c):
             return m_dh.nu[c] >= -m_small + 2*m_small * m_dh.y_pos[c]
-        m_dh.pos_lower = Constraint(m_dh.C, rule=eq_pos_lower)
+        m_dh.pos_lower = pyo.Constraint(m_dh.C, rule=eq_pos_lower)
 
         # When y_pos = 1, nu <= M + m_small
         # When y_pos = 0, nu <= m_small
         def eq_pos_upper(m_dh, c):
             return m_dh.nu[c] <= M * m_dh.y_pos[c] + m_small
-        m_dh.pos_upper = Constraint(m_dh.C, rule=eq_pos_upper)
+        m_dh.pos_upper = pyo.Constraint(m_dh.C, rule=eq_pos_upper)
         
         # When y_neg = 1, nu <= -m_small
         # When y_neg = 0, nu <= m_small
         def eq_neg_upper(m_dh, c):
             return m_dh.nu[c] <= m_small - 2*m_small * m_dh.y_neg[c]
-        m_dh.neg_upper = Constraint(m_dh.C, rule=eq_neg_upper)
+        m_dh.neg_upper = pyo.Constraint(m_dh.C, rule=eq_neg_upper)
 
         # When y_neg = 1, nu >= -M - m_small
         # When y_neg = 0, nu >= - m_small
         def eq_neg_lower(m_dh, c):
             return m_dh.nu[c] >= -M * m_dh.y_neg[c] - m_small
-        m_dh.neg_lower = Constraint(m_dh.C, rule=eq_neg_lower)
+        m_dh.neg_lower = pyo.Constraint(m_dh.C, rule=eq_neg_lower)
         
         # Absolute value
         def eq_abs_lower(m_dh,c):
             return -m_dh.abs_nu[c] <= m_dh.nu[c]
-        m_dh.abs_lower = Constraint(m_dh.C, rule=eq_abs_lower)
+        m_dh.abs_lower = pyo.Constraint(m_dh.C, rule=eq_abs_lower)
         
         def eq_abs_upper(m_dh,c):
             return m_dh.nu[c] <= m_dh.abs_nu[c]
-        m_dh.abs_upper = Constraint(m_dh.C, rule=eq_abs_upper)
+        m_dh.abs_upper = pyo.Constraint(m_dh.C, rule=eq_abs_upper)
         
         # At least one constraint must be in the degenerate set
-        m_dh.degenerate_set_nonempty = Constraint(expr=sum(m_dh.y_pos[c] + m_dh.y_neg[c] for c in m_dh.C) >= 1)
+        m_dh.degenerate_set_nonempty = pyo.Constraint(expr=sum(m_dh.y_pos[c] + m_dh.y_neg[c] for c in m_dh.C) >= 1)
 
         # Minimize the L1-norm of nu
-        m_dh.obj = Objective(expr=sum(m_dh.abs_nu[c] for c in m_dh.C))
+        m_dh.obj = pyo.Objective(expr=sum(m_dh.abs_nu[c] for c in m_dh.C))
         
         return m_dh
 
     # TODO: Refactor, this should not be a staticmethod
     @staticmethod
-    def _check_candidate_ids(ids_milp,solver,c,eq_con_list=None,tee=False):
+    def _check_candidate_ids(ids_milp, solver, c, eq_con_list=None, tee=False):
         ''' Solve MILP to check if equation 'c' is a main component in an irreducible
             degenerate set
             
@@ -413,7 +418,7 @@ class DegeneracyHunter():
 
         ids_milp.nu[c].unfix()
 
-        if results.solver.Status == SolverStatus.ok and results.solver.termination_condition == TerminationCondition.optimal:
+        if pyo.check_optimal_termination(results):
             # We found an irreducible degenerate set
             
             # Create empty dictionary
@@ -434,7 +439,7 @@ class DegeneracyHunter():
     
     # TODO: Refactor, this should not be a staticmethod
     @staticmethod
-    def _find_candidate_eqs(candidates_milp, solver, eq_con_list=None,tee=False):
+    def _find_candidate_eqs(candidates_milp, solver, eq_con_list=None, tee=False):
         ''' Solve MILP to check if equation 'c' is a main component in an irreducible
             degenerate set
             
@@ -452,7 +457,7 @@ class DegeneracyHunter():
         
         results = solver.solve(candidates_milp, tee=tee)
         
-        if results.solver.Status == SolverStatus.ok and results.solver.termination_condition == TerminationCondition.optimal:
+        if pyo.check_optimal_termination(results):
             # We found a degenerate set
             
             # Create empty dictionary
@@ -477,7 +482,7 @@ class DegeneracyHunter():
             return None, None
         
     
-    def svd_analysis(self,n_smallest_sv = 10):
+    def svd_analysis(self, n_smallest_sv = 10):
         '''
         Perform SVD analysis of the constraint Jacobian
         
@@ -515,7 +520,7 @@ class DegeneracyHunter():
         else:
             print("Warning: model must contain at least 2 equality constraints to perform svd_analysis")
     
-    def find_candidate_equations(self,verbose=True,tee=False):
+    def find_candidate_equations(self, verbose=True, tee=False):
         '''
         Solve MILP to find a degenerate set and candidate equations
         
@@ -548,7 +553,7 @@ class DegeneracyHunter():
         return ds
         
     
-    def find_irreducible_degenerate_sets(self,verbose=True,tee=False):
+    def find_irreducible_degenerate_sets(self, verbose=True, tee=False):
         """
         Compute irreducible degenerate sets
         
@@ -562,7 +567,7 @@ class DegeneracyHunter():
         """
         
         # If there are no candidate equations, find them!
-        if self.candidate_eqns is None or not self.candidate_eqns:
+        if not self.candidate_eqns:
             self.find_candidate_equations()
         
         irreducible_degenerate_sets = []

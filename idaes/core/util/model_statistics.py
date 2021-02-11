@@ -1290,10 +1290,12 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     Args:
         block : model to be studied
         tol : residual threshold for inclusion in ComponentSet
+        return_residual_values: boolean, if true return dictionary with residual values
 
     Returns:
-        A ComponentSet including all Constraint components with a residual
+        large_residual_set: A ComponentSet including all Constraint components with a residual
         greater than tol which appear in block
+        residual_values: (only if return_residual_values is true) dictionary with constraint as key and residual (float) as value
     """
     large_residuals_set = ComponentSet()
     if return_residual_values:
@@ -1303,25 +1305,23 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
             
         r = 0.0 # residual
         
-        # check the lower bound
-        # skip if inequality constraint
+        # skip if no lower bound set
         if c.lower is None:
             r_temp = 0
         else:
             r_temp = value(c.lower - c.body())
         # update the residual
-        if c.active and r_temp > r:
+        if r_temp > r:
             r = r_temp
     
-        # check the upper bound
-        # skip if inequality constraint
+        # skip if no upper bound set
         if c.upper is None:
             r_temp = 0
         else:
             r_temp = value(c.body() - c.upper)
 
         # update the residual
-        if c.active and r_temp > r:
+        if r_temp > r:
             r = r_temp
         
         # save residual if it is above threshold

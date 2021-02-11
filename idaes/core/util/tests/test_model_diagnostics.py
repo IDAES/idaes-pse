@@ -29,7 +29,6 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 # Need to update
 from idaes.core.util.model_diagnostics import *
 
-
 # Author: Alex Dowling
 
 # This was from 
@@ -94,6 +93,7 @@ def extract_constraint_names(cs):
     return constraint_names
 
 # Problem 1
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem1():
     # Create test problem
@@ -126,7 +126,6 @@ def test_problem1():
     # Check second constraint
     assert initial_point_constraint_names[1] == 'con3'
     
-    # Specifying an iteration limit of 0 allows us to inspect the initial point
     opt.options['max_iter'] = 50
     
     # Solve
@@ -146,6 +145,7 @@ def test_problem1():
     
 
 # Problem 2 without degenerate constraint
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem2_without_degenerate_constraint():
 
@@ -194,6 +194,7 @@ def test_problem2_without_degenerate_constraint():
 
 
 # Problem 2 with degenerate constraint
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_problem2_with_degenerate_constraint():
 

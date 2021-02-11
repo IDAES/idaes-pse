@@ -68,6 +68,7 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "rbfopt",
+        "scipy",
     ],
     entry_points={
         "console_scripts": [
