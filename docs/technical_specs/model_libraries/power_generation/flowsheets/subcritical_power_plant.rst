@@ -212,7 +212,7 @@ Main unfixed variables calculated by the model:
 Dynamic power plant example:
 ++++++++++++++++++++++++++++
 
-The dynamic simulation version of the power plant examples is built when the user calls the `m_dyn = main_dynamic()` method in line 1820 in the subcritical_power_plant.py file. The user should note that this method takes a long time to solve (~20 min). 
+The dynamic simulation version of the power plant examples is built when the user calls the `m_dyn = main_dynamic()` method in line 1820 in the subcritical_power_plant.py file. The user should note that this method takes a long time to solve (~60 min). 
 This method builds and runs a subcritical coal-fired power plant dynamic simulation. The demonstration example prepared for this simulation consists of 5%/min ramping down from full load to 50% load, holding for 30 minutes and then ramping up to 100% load and holding for 20 minutes. 
 
 This method first creates a steady state version of the power plant, initializes the steady state model, and then uses this steady state model for initializing the dynamic model. 
