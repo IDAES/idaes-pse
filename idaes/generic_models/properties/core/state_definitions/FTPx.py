@@ -408,7 +408,7 @@ def state_initialization(b):
 do_not_initialize = ["sum_mole_frac_out"]
 
 
-class FTPx():
+class FTPx(object):
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization

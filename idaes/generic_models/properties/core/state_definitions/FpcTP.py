@@ -191,7 +191,7 @@ def state_initialization(b):
 do_not_initialize = []
 
 
-class FpcTP():
+class FpcTP(object):
     set_metadata = set_metadata
     define_state = define_state
     state_initialization = state_initialization
