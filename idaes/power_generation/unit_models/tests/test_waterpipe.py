@@ -26,7 +26,8 @@ from idaes.power_generation.unit_models.waterpipe import WaterPipe
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
 
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_default_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
