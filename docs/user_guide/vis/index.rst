@@ -6,199 +6,83 @@ IDAES Flowsheet Visualizer
 .. contents::
     :depth: 2
 
-Concepts
---------
-The IDAES Flowsheet Visualizer, or IFV for short, is a graphical user interface for viewing an IDAES flowsheet.
-It uses the visual language of traditional process engineering diagrams to display
-the components of a given flowsheet,
-their connections, and values associated with unit models and streams. While the changes made from the UI do
-not affect the underlying model, changes in the flowsheet -- e.g., from Python code or from solvers updating the
-stream values -- are immediately available to be displayed in the IFV. The IFV does not require running a
-separate program, as its functionality is embedded in the invoking Python code (see the `Client/server architecture <ifv-architecture>`_ for details).
+Introduction
+------------
+The IDAES Flowsheet Visualizer, or IFV for short, is a web-based user interface (UI) that lets you:
+
+* View any IDAES flowsheet as a process engineering diagram
+* Export flowsheet diagrams as images
+* View the "stream table" for the flowsheet
+* Rearrange the flowsheet diagram to your taste and save the arrangement for next time
+* Dynamically refresh the displayed values to reflect changes in the underlying IDAES model
+
+The IFV can be invoked from a Jupyter Notebook or a Python script. It does not require that you run any
+other "server" application. Currently the IFV is only for viewing the flowsheet on your own computer (but,
+since it is a web application, a shared service for viewing flowsheets stored remotely is definitely possible).
+
 Starting and stopping the IFV is fast and does not consume many resources, a fact which we hope encourages
 its frequent use.
 
-Quickstart
-----------
-This section will walk you through constructing a basic flowsheet and visualizing it with the IFV.
-
-Before starting to use the IFV, you must have installed IDAES. For detailed instructions on how to do this,
-see :ref:`IDAES Installation`.
-
-In this quickstart we will use a Jupyter Notebook to compose our flowsheet and view it with the IFV. So, first
-you need to open a new, blank, Jupyter Notebook. You can start the Jupyter Notebook (server) from the terminal command-line with
-the command ``jupyter notebook``. See the `official Jupyter Notebook documentation <https://jupyter-notebook.readthedocs.io/>`_
-for detailed instructions. The Jupyter Notebook is a web application, so you should get a web page (often as a tab
-on an open browser window) that shows the contents of the directory from where you issued the command. Navigate to
-a directory where you want to save your work, then click on the "New" button in the upper-right corner to create
-a new notebook. You may have multiple options under the "Python" sub-menu; make sure you select a Python installation
-that has IDAES already installed.
-
-We need to create, in this Jupyter Notebook, an IDAES flowsheet to visualize. Paste the following code (taken from the Flash unit tutorial; for more information on what this code is actually doing, see the full tutorial in the :doc:`tutorials section <../../tutorials_examples>`)
-into the first cell in the notebook::
-
-    from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
-    from idaes.core import FlowsheetBlock
-    from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-        import BTXParameterBlock
-    from idaes.generic_models.unit_models import Flash
-    # Model and flowsheet
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    # Flash properties
-    m.fs.properties = BTXParameterBlock(default={"valid_phase": ('Liq', 'Vap'),
-                                                "activity_coeff_model": "Ideal",
-                                                "state_vars": "FTPz"})
-    # Flash unit
-    m.fs.flash = Flash(default={"property_package": m.fs.properties})
-    m.fs.flash.inlet.flow_mol.fix(1)
-    m.fs.flash.inlet.temperature.fix(368)
-    m.fs.flash.inlet.pressure.fix(101325)
-    m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-    m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-    m.fs.flash.heat_duty.fix(0)
-    m.fs.flash.deltaP.fix(0)
-    # Initialize
-    m.fs.flash.initialize()
-
-
-Run that cell (hit shift-enter), and you should see some output from the last call to ``initialize()``, ending with something like ::
-
-    2020-11-24 08:41:53 [INFO] idaes.init.fs.flash: Initialization Complete: optimal - Optimal Solution Found
-
-This means the initialization succeeded, and you can move on.
-
-.. note::
-
-    If you see instead a "ModuleNotFoundError" message, you probably didn't run the notebook within
-    a Python environment where IDAES is installed. To fix, first try other Python environments, or "kernels",
-    from under the '*Kernel -> Change kernel*' menu. If that doesn't work, review
-    the :ref:`installation instructions <IDAES Installation>`.
-    To pick up changes in the installation, the best thing to do is close this notebook and exit the current running
-    Jupyter. Then, from inside the installed IDAES environment, try again to run the command ``jupyter notebook``.
-
-Optionally, save the notebook ('File -> Save' or Ctrl-S) with an appropriate name, like "Flowsheet visualization quickstart".
-
-When you ran the cell above, it created a new blank cell for you to continue editing. We will use this cell to visualize
-our initialized (but not solved) model. In the new cell, type in and run (shift-enter) the following code::
-
-    m.fs.visualize("Hello World", save_as="hello_world.json")
-
-This will create a new browser tab or window with the IFV displaying the flowsheet:
-
-.. figure:: ../../_images/ifv_helloworld_screenshot.png
-    :width: 800
-
-    Screenshot of the IDAES flowsheet visualizer web interface, showing Flash flowsheet
-
-For the initial layout, you can see that the unit models and other components
-have just been placed in a diagonal. You can rearrange icons and lines on the diagram with the mouse.
-For more details on this and other functions, see the next section. If you hit ``Save``, the IFV will save
-your changes in the layout to the destination that you passed to "save_as" (in this case the file
-"hello_world.json") in the current directory.
-
-.. TODO Tell user how to see values on the unit model and streams
-
-When you are done using the IFV, you can simply close the browser tab. If you quit the Python program that
-invoked it, which is in this case the Jupyter Notebook, then the IFV will be cut off from the source flowsheet and
-will lose its ability to save, export, or refresh. Generally, you will want to quit both the IFV and the Python
-program at the same time.
-
-That's the end of our quick tour of the IFV. Please see below for descriptions of the full functionality.
-Happy visualizing!
-
-User Guide
-----------
-
-This section describes each of the sections of the IFV interface.
+Guide
+-----
+This guide describes how to invoke and use the IFV.
 
 Invocation
 ^^^^^^^^^^
-To start the IDAES Flowsheet Visualizer (IFV), you run the `visualize()` method (see below for
-full signature) for an existing
-flowsheet. This can be done from a script or a Jupyter notebook. Either way, the default action
-is to start a web server in a separate thread, and open a browser window to show the flowsheet.
+Once you have created your flowsheet, simply call the `visualize` method on that object,
+passing some parameters to give it a name and optional file for saving changes::
 
-.. py:currentmodule:: idaes.ui.fsvis.fsvis
+    # First, create your IDAES model, "m", which has an attribute ".fs" for the flowsheet
+    # Then, invoke the `visualize` method
+    m.fs.visualize("My Flowsheet", save_as="my_flowsheet.json")
 
-.. autofunction:: visualize
+The invocation of the `visualize` method will pop up a browser tab or window with the UI, displaying the
+flowsheet and, if the information is available, the stream table. In the notebook or script, you can continue
+to run more code and the UI will continue to work in the background. You can close the UI at any time. If you
+exit the script or notebook while the UI is running, it will continue to function but will not be able to save
+or refresh, since these require communication with the Python process that no longer exists.
 
-GUI
-^^^
-The rest of this section describes the main components of the graphical web user interface.
+See the :ref:`visualize-function <visualize function documentation>` for details on parameters to this function.
 
-.. figure:: ../../_images/ifv_annotated_screenshot.png
+Web UI
+^^^^^^
+This section describes how to use the graphical web user interface. We start with a screenshot of the UI, with
+the main areas highlighted. Then we zoom in on each area and describe how to use it.
+
+.. figure:: ../../_images/ifv_screenshot_window.png
     :width: 800
 
-    Screenshot of the IFV user interface, with annotations for the different components.
+    Screenshot of the main window of the IFV UI
 
-Layout
-    Refer to the diagram above.
-    At the top of the window is the IDAES project logo and the name of the flowsheet, in what we call the
-    title bar. Below this is the menu of actions, and below that is the graph of the flowsheet.
+.. figure:: ../../_images/ifv_screenshot_topbar.png
+    :width: 800
 
-Title bar
-+++++++++
-The title bar contains the IDAES logo and the name of the flowsheet being visualized.
+    Screenshot of the top bar of the IFV UI
 
-Menu
-++++
-The menu provides access to the IFV "actions", such as saving the flowsheet or toggling labels.
-In the current interface, all the actions described below are on a "button bar".
-The structure of this documentation reflects the planned next-generation interface, which
-will have a traditional application menu, below which is a set of buttons(1)
-for rapid access.
+The top bar has a title bar, which contains the IDAES logo and the name of the flowsheet being visualized,
+and a menu. The menu items are:
 
-.. _ifv-action-file:
-
-File actions
-    * |ifv-refresh| Refresh - Refresh with view with any changes made to the flowsheet in Python.
+* Refresh: Refresh with view with any changes made to the flowsheet from the Python side.
       This also has the effect of saving the current layout. Changes in the units or their connections will of
       course alter the layout.
-    * |ifv-save| Save - Save the current layout to the data store that was specified with the visualization
+* Save: Save the current layout to the data store that was specified with the visualization
       was launched. This does *not* update with any changes made to the flowsheet in Python. Neither does it
       have any effect on the Python flowsheet values (the IFV can never modify the flowsheet).
-    * |ifv-export| Export - Save the flowsheet as a Scalable Vector Graphics (SVG) file, a common format for
+* Export:
+    * Flowsheet: Save the flowsheet as a Scalable Vector Graphics (SVG) file, a common format for
       images that consist of "vector" elements like boxes, lines, and text. SVG files can be viewed like images
       by most programs that allow image viewing, and even edited with a program like `Inkscape <https://inkscape.org/>`_.
-    * Quit - Close the UI window.
+    * Stream table:
+* View: Toggle the view of the flowsheet (diagram) area and the stream table area.
+* Help: Load this documentation page
 
-.. |ifv-refresh| image:: ../../_images/icons/refresh-24px.svg
-.. |ifv-save| image:: ../../_images/icons/save-24px.svg
-.. |ifv-export| image:: ../../_images/icons/export.svg
+.. figure:: ../../_images/ifv_screenshot_diagram.png
+    :width: 800
 
-.. _ifv-action-view:
+    Screenshot of the main diagram (or flowsheet) area of the IFV UI
 
-View actions
-    * Labels - Toggle view of the annotations, or labels
-    * Grid - Toggle a background "grid"
-    * Zoom - Zoom the view of the flowsheet within the canvas. This is a label for a set of related options.
-    * |ifv-zoom-in| Zoom in - Zoom in by 25%
-    * |ifv-zoom-out| Zoom out - Zoom out by 25%
-    * |ifv-zoom-reset| Reset - Reset zoom to 100%
-    * Canvas size - Change the size of the "canvas" on which the flowsheet is drawn. This lets you adapt
-      the IFV for different display (screen) sizes.
-
-.. |ifv-zoom-in| image:: ../../_images/icons/zoom_in-24px.svg
-.. |ifv-zoom-out| image:: ../../_images/icons/zoom_out-24px.svg
-.. |ifv-zoom-reset| image:: ../../_images/icons/zoom_out_map-24px.svg
-
-.. _ifv-action-help:
-
-|ifv-help| Help actions
-   * About - General information about the IFV
-
-.. TBD  * Documentation - Links to the online documentation
-
-.. |ifv-help| image:: ../../_images/icons/help_outline-24px.svg
-
-(1) Unmodified from
-`Google Material Design system icons <https://material.io/design/iconography/system-icons.html#design-principles>`_
-
-Graph
-+++++
-
-The graph area is where you can rearrange the flowsheet as you need and zoom in on particular sections.
+The diagram or flowsheet area lets you rearrange the flowsheet as you need and zoom in on particular sections.
+For the purposes of this documentation
 The main visual components are called Units, Lines, and Annotations.
 
 Units
@@ -216,6 +100,44 @@ Lines
 Annotations
     Both the units and the arcs have associated values that can be shown. See the
     :ref:`View:Labels <ifv-action-view>` action.
+
+.. figure:: ../../_images/ifv_screenshot_diagramcontrols.png
+    :width: 800
+
+    Screenshot of the diagram controls area of the IFV UI
+
+View actions
+    * Labels - Toggle view of the annotations, or labels
+    * Grid - Toggle a background "grid"
+    * Zoom - Zoom the view of the flowsheet within the canvas. This is a label for a set of related options.
+    *  Zoom in - Zoom in by 25%
+    *  Zoom out - Zoom out by 25%
+    *  Reset - Reset zoom to 100%
+    * Canvas size - Change the size of the "canvas" on which the flowsheet is drawn. This lets you adapt
+      the IFV for different display (screen) sizes.
+
+.. figure:: ../../_images/ifv_screenshot_streamtable.png
+    :width: 800
+
+    Screenshot of the stream table area of the IFV UI
+
+Reference
+----------
+
+There are two ways to invoke the `visualize` functionality, which in the end do the same thing and
+have the same arguments.
+
+1. Use the `visualize` method of a flowsheet
+2. Call the `visualize` function from the package `idaes.ui.fsvis`
+3. Call the same `visualize` function from the module `idaes.ui.fsvis.fsvis`
+
+In all cases, the arguments and behavior are the same, as described below.
+
+.. _visualize-function:
+
+.. autofunction:: ~idaes.ui.fsvis.fsvis.visualize
+
+
 
 Advanced
 --------
