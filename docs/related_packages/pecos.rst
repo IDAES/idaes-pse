@@ -1,7 +1,7 @@
 .. _pecos:
 
 Pecos: Data Quality Control and Fault Detection
-=================================================
+===============================================
 
 Before using plant data in process models, quality control and fault detection analysis is recommended to identify 
 potential data issues (e.g., missing or corrupt data) and data points that are not suitable for the intended analysis 
@@ -38,8 +38,8 @@ The test results summary and accompanying graphics can be included in HTML or LA
 Pecos supports both static and streaming analysis along with custom quality control functions:
  
 * Static analysis operates on the entire data set to determine if all data points are normal or anomalous. 
-  While this can include operations like moving window statistics, the quality control tests operates on the entire data set at once. 
-* Streaming analysis loops through each data point using a quality control tests that relies on information from "clean data" in a moving window. 
+  While this can include operations like moving window statistics, the quality control tests operate on the entire data set at once. 
+* Streaming analysis loops through each data point using a quality control test that relies on information from "clean data" in a moving window. 
   If a data point is determined to be anomalous, it is not included in the window for subsequent analysis. 
 * The user can define custom quality control functions used to determine if data is anomalous and return custom metadata from the analysis.
 
@@ -52,7 +52,7 @@ The raw data, results from the quality control analysis, and the analysis files 
 Data Management Framework (DMF) to ensure reproducible results.
 
 Installation
----------------
+------------
 
 To install Pecos using pip::
 
@@ -65,6 +65,6 @@ To install Pecos using git::
 	python setup.py install
 	
 Examples
-----------
+--------
 IDAES examples that use Pecos are listed on the |examples-site|. 
 Pecos also includes several general examples, located at https://github.com/sandialabs/pecos/tree/master/examples.
