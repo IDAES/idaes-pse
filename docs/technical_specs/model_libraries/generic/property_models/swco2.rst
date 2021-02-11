@@ -20,11 +20,11 @@ provides a simple example for using water properties.
 .. testcode::
 
   from idaes.generic_models.properties import swco2
-  import pyomo.environ as pe # Pyomo environment
+  from pyomo.environ import ConcreteModel, units as pyunits # Pyomo environment
   from idaes.generic_models.unit_models import Compressor
   from idaes.core import FlowsheetBlock
 
-  m = pe.ConcreteModel()
+  m = ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = swco2.SWCO2ParameterBlock()
   m.fs.unit = Compressor(default={"property_package": m.fs.properties})
