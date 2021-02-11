@@ -477,6 +477,25 @@ argument)."""))
                     "reactions per unit length",
                 units=flow_l_units)
 
+        # Inherent reaction generation
+        if self.properties.has_inherent_reactions:
+            if not hasattr(self.config.property_package,
+                           "inherent_reaction_idx"):
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of "
+                    "inherent reactions (inherent_reaction_idx), but "
+                    "has_inherent_reactions is True."
+                    .format(self.name))
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Amount of component generated in control volume "
+                    "by inherent reactions",
+                units=flow_l_units)
+
         # Phase equilibrium generation
         if has_phase_equilibrium and \
                 balance_type == MaterialBalanceType.componentPhase:
@@ -521,6 +540,10 @@ argument)."""))
         def equilibrium_term(b, t, x, p, j):
             return (b.equilibrium_reaction_generation[t, x, p, j]
                     if has_equilibrium_reactions else 0)
+
+        def inherent_term(b, t, x, p, j):
+            return (b.inherent_reaction_generation[t, x, p, j]
+                    if b.properties.has_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, x, p, j):
             if has_phase_equilibrium and \
@@ -619,6 +642,32 @@ argument)."""))
                 else:
                     return Constraint.Skip
 
+        if self.properties.has_inherent_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.inherent_reaction_extent = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.inherent_reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc="Extent of inherent reactions at point x",
+                units=flow_l_units)
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.length_domain,
+                             pc_set,
+                             doc="Inherent reaction stoichiometry")
+            def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, x, p, j] == (
+                        sum(self.properties[t, x].config.parameters.
+                            inherent_reaction_stoichiometry[r, p, j] *
+                            b.inherent_reaction_extent[t, x, r]
+                            for r in b.config.property_package.
+                            inherent_reaction_idx))
+                else:
+                    return Constraint.Skip
+
         # Add custom terms and material balances
         if balance_type == MaterialBalanceType.componentPhase:
             def user_term_mol(b, t, x, p, j):
@@ -689,6 +738,7 @@ argument)."""))
                             b.length*kinetic_term(b, t, x, p, j) *
                             b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                             b.length*equilibrium_term(b, t, x, p, j) +
+                            b.length*inherent_term(b, t, x, p, j) +
                             b.length*phase_equilibrium_term(b, t, x, p, j) +
                             b.length*transfer_term(b, t, x, p, j) +
                             #b.area*diffusion_term(b, t, x, p, j)/b.length +
