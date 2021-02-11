@@ -1374,7 +1374,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Compressibility of each phase",
                     rule=rule_Z_phase)
         except AttributeError:
-            self.del_component(self.compress_fact_phass)
+            self.del_component(self.compress_fact_phase)
             raise
 
     def _conc_mol_comp(self):
@@ -1457,7 +1457,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Mass density of each phase",
                     rule=rule_dens_mass_phase)
         except AttributeError:
-            self.del_component(self.dens_mass_phass)
+            self.del_component(self.dens_mass_phase)
             raise
 
     def _dens_mol(self):
@@ -1616,7 +1616,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Average molecular weight",
                     expr=sum(self.phase_frac[p] *
                              sum(self.mole_frac_phase_comp[p, j] *
-                                 self.params.get_component(j).mw_comp
+                                 self.params.get_component(j).mw
                                  for j in self.params.component_list)
                              for p in self.params.phase_list))
         except AttributeError:
@@ -1627,7 +1627,7 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_mw_phase(b, p):
                 return sum(b.mole_frac_phase_comp[p, j] *
-                           b.params.get_component(j).mw_comp
+                           b.params.get_component(j).mw
                            for j in b.params.component_list)
             self.mw_phase = Expression(
                     self.params.phase_list,

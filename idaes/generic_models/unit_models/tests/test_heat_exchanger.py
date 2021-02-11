@@ -53,9 +53,9 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_default_solver
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
