@@ -24,7 +24,7 @@ provides a simple example for using water properties.
   from idaes.generic_models.unit_models import Compressor
   from idaes.core import FlowsheetBlock
 
-  m = ConcreteModel()
+  m = pe.ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
   m.fs.properties = swco2.SWCO2ParameterBlock()
   m.fs.unit = Compressor(default={"property_package": m.fs.properties})
