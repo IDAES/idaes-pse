@@ -15,9 +15,11 @@ The first function (get_PP_costing) can be called to include cost correlations f
 
 1. Supercritical pulverized coal plants (SCPC),
 2. Subcritical pulverized coal plants,
-3. Two-stage IGCC, Single-stage IGCC,
-4. Single-stage dry-feed IGCC, natural gas air-fired plant (NGCC),
-5. Advanced ultra-supercritical PC (AUSC).
+3. Two-stage IGCC,
+4. Single-stage IGCC,
+5. Single-stage dry-feed IGCC,
+6. natural gas air-fired plant (NGCC),
+7. Advanced ultra-supercritical PC (AUSC).
 
 Similarly, `get_sCO2_unit_cost` can be called to include cost correlations for equipment in supercritical CO2 power cycle plants.
 
