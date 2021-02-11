@@ -24,10 +24,10 @@ provides a simple example for using water properties.
   from idaes.generic_models.unit_models import Compressor
   from idaes.core import FlowsheetBlock
 
-  m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
-  m.fs.properties = swco2.SWCO2ParameterBlock()
-  m.fs.unit = Compressor(default={"property_package": m.fs.properties})
+  model = ConcreteModel()
+  model.fs = FlowsheetBlock(default={"dynamic": False})
+  model.fs.properties = swco2.SWCO2ParameterBlock()
+  model.fs.unit = Compressor(default={"property_package": model.fs.properties})
   F = 1000
   Tin = 500
   Pin = 10000
