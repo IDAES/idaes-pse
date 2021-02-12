@@ -22,7 +22,7 @@ def cubic_function(z, b, c, d):
 
 def derivs(z, b, c, d):
     # Use the tested derivative formulas to make sure the external function
-    # keeps returning the right answers. These forulas were confirmed and
+    # keeps returning the right answers. These formulas were confirmed and
     # documented in a jupyter notebook.
     g = [None]*3
     h = [None]*6
