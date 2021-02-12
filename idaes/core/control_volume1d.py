@@ -660,7 +660,7 @@ argument)."""))
             def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if (p, j) in pc_set:
                     return b.inherent_reaction_generation[t, x, p, j] == (
-                        sum(self.properties[t, x].config.parameters.
+                        sum(b.properties[t, x].config.parameters.
                             inherent_reaction_stoichiometry[r, p, j] *
                             b.inherent_reaction_extent[t, x, r]
                             for r in b.config.property_package.
