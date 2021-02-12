@@ -28,9 +28,10 @@ runs:
   using: composite
   steps:
     - name: Fetch examples
+      working-directory: ${{ inputs.working-dir }}
       shell: bash
       run: |
-        git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} ${{ inputs.working-dir }}
+        git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} .
     - name: Create config file
       shell: bash
       working-directory: ${{ inputs.working-dir }}
