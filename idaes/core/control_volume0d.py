@@ -16,7 +16,7 @@ Base class for control volumes.
 __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, units as pyunits, Var
+from pyomo.environ import Constraint, Reals, units as pyunits, Var
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
@@ -60,6 +60,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
     def build(self):
         """
         Build method for ControlVolume0DBlock blocks.
@@ -947,8 +948,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, e):
-            return pyunits.convert(b.element_accumulation[t, e],
-                                   to_units=units('flow_mole'))if dynamic else 0
+            return pyunits.convert(
+                b.element_accumulation[t, e],
+                to_units=units('flow_mole'))if dynamic else 0
 
         # Mass transfer term
         def transfer_term(b, t, e):
@@ -1166,13 +1168,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_balances(b, t):
             return sum(accumulation_term(b, t, p) for p in phase_list) == (
-                sum(b.properties_in[t].get_enthalpy_flow_terms(p) for p in phase_list)
-                - sum(self.properties_out[t].get_enthalpy_flow_terms(p) for p in phase_list)
-                + heat_term(b, t)
-                + work_term(b, t)
-                + enthalpy_transfer_term(b, t)
-                + rxn_heat_term(b, t)
-                + user_term(t))
+                sum(b.properties_in[t].get_enthalpy_flow_terms(p)
+                    for p in phase_list) -
+                sum(self.properties_out[t].get_enthalpy_flow_terms(p)
+                    for p in phase_list) +
+                heat_term(b, t) +
+                work_term(b, t) +
+                enthalpy_transfer_term(b, t) +
+                rxn_heat_term(b, t) +
+                user_term(t))
 
         # Energy Holdup
         if has_holdup:
@@ -1208,7 +1212,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 .format(self.name))
 
     def add_total_pressure_balances(
-        self, has_pressure_change=False, custom_term=None):
+            self, has_pressure_change=False, custom_term=None):
         """
         This method constructs a set of 0D pressure balances indexed by time.
 

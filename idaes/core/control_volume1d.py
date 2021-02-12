@@ -20,7 +20,6 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
-                           Param,
                            Reals,
                            TransformationFactory,
                            units as pyunits,
@@ -1469,7 +1468,7 @@ argument)."""))
             pressure_l_units = None
 
         # Create dP/dx terms
-        self.pressure = Reference(self.properties[:,:].pressure)
+        self.pressure = Reference(self.properties[:, :].pressure)
 
         self.pressure_dx = DerivativeVar(
                                   self.pressure,
@@ -1511,7 +1510,7 @@ argument)."""))
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
-                return 0 == (b._flow_direction_term*b.pressure_dx[t, x]  +
+                return 0 == (b._flow_direction_term*b.pressure_dx[t, x] +
                              b.length*deltaP_term(b, t, x) +
                              b.length*user_term(t, x))
 
