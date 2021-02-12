@@ -8,7 +8,7 @@ inputs:
   working-dir:
     description: Working directory where the examples will be run
     required: false
-    default: ${{ runner.temp }}
+    default: ${{ runner.temp }}-examples-pse
   config-file-path:
     description: Path to the build script config file
     required: false
