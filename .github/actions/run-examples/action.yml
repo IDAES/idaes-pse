@@ -77,5 +77,5 @@ runs:
         python build.py -v --test --config ${{ inputs.config-file-path }}
         echo "::endgroup"
         echo "::group::Contents of ${{ inputs.notebook-errors-file-path }}"
-        file_path="${{ inputs.notebook-errors-file-path }}; [ -f "$file_path" ] && cat "$file_path"
+        file_path="${{ inputs.notebook-errors-file-path }}"; [ -f "$file_path" ] && cat "$file_path"
         echo "::endgroup"
