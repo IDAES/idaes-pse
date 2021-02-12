@@ -143,3 +143,31 @@ jobs:
         uses: ./.github/actions/pytest
         with:
           markexpr: integration
+  examples:
+    name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+        os:
+          - ubuntu-18.04
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Fetch and run examples
+        uses: ./.github/actions/run-examples
+        with:
+          git-ref: main
