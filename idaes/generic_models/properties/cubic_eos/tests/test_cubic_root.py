@@ -68,8 +68,8 @@ def test_general_cubic_root_finder():
             assert fl < fm
             assert fm < fh
         else:
-            assert pytest.approx(fl, abs=1e5) == fm
-            assert pytest.approx(fm, abs=1e5) == fh
+            assert pytest.approx(fl, abs=1e-5) == fm
+            assert pytest.approx(fm, abs=1e-5) == fh
         assert pytest.approx(0, abs=1e-6) == cubic_function(fl, b, c, d)
         assert pytest.approx(0, abs=1e-6) == cubic_function(fm, b, c, d)
         assert pytest.approx(0, abs=1e-6) == cubic_function(fh, b, c, d)
