@@ -11,21 +11,21 @@ Introduction
 The IDAES Flowsheet Visualizer, or IFV for short, is a web-based user interface (UI) that lets you:
 
 * View any IDAES flowsheet as a process engineering diagram
-* Export flowsheet diagrams as images
+* Export flowsheet diagrams as images (`SVG <https://www.w3.org/Graphics/SVG/>`_ format)
 * View the "stream table" for the flowsheet
 * Rearrange the flowsheet diagram to your taste and save the arrangement for next time
 * Dynamically refresh the displayed values to reflect changes in the underlying IDAES model
 
 The IFV can be invoked from a Jupyter Notebook or a Python script. It does not require that you run any
-other "server" application. Currently the IFV is only for viewing the flowsheet on your own computer (but,
-since it is a web application, a shared service for viewing flowsheets stored remotely is definitely possible).
+other application. Currently the IFV is only for viewing the flowsheet on your own computer. :sup:`1`
 
-Starting and stopping the IFV is fast and does not consume many resources, a fact which we hope encourages
-its frequent use.
+Starting and stopping the IFV is fast and does not consume many resources.
+
+:sup:`1` *But, since it is a web application, a shared service for viewing flowsheets stored remotely is definitely possible.*
 
 Guide
 -----
-This guide describes how to invoke and use the IFV.
+This guide describes how to invoke (i.e., start) and use the IFV.
 
 Invocation
 ^^^^^^^^^^
@@ -42,111 +42,181 @@ to run more code and the UI will continue to work in the background. You can clo
 exit the script or notebook while the UI is running, it will continue to function but will not be able to save
 or refresh, since these require communication with the Python process that no longer exists.
 
-See the :ref:`visualize-function <visualize function documentation>` for details on parameters to this function.
+There are three ways to invoke the `visualize` functionality, which in the end do the same thing and
+have the same arguments.
 
-Web UI
-^^^^^^
+1. Use the `visualize` method of a flowsheet (as above)
+2. Call the `visualize` function from the package `idaes.ui.fsvis`, passing it a flowsheet object
+3. Call the same `visualize` function from the module `idaes.ui.fsvis.fsvis`, passing it a flowsheet object
+
+In all cases, the arguments and behavior are the same.
+See the :ref:`visualize function documentation <visualize-function>` for details on parameters to this function.
+
+User Interface
+^^^^^^^^^^^^^^
+
 This section describes how to use the graphical web user interface. We start with a screenshot of the UI, with
 the main areas highlighted. Then we zoom in on each area and describe how to use it.
 
-.. figure:: ../../_images/ifv_screenshot_window.png
-    :width: 800
+.. _ifv-screenshot:
 
-    Screenshot of the main window of the IFV UI
+.. only:: html
+
+    **In the screenshot of the IFV UI below, you can click on one of the indicated areas to jump to the associated
+    description.**
+
+    .. raw:: html
+
+        <img src="../../_images/ifv_screenshot_window.png" usemap="#image-map" width="800px">
+        <map name="image-map">
+            <area target="_self" alt="Top bar" title="Top bar" href="#top-bar" coords="20,10,800,100" shape="rect"></area>
+            <area target="_self" alt="Diagram Controls" title="Diagram Controls" href="#diagram-controls" coords="484,110,800,165" shape="rect"></area>
+            <area target="_self" alt="Diagram/Flowsheet" title="Diagram/Flowsheet" href="#diagram" coords="25,175,800,570" shape="rect"></area>
+            <area target="_self" alt="Stream Table" title="Stream Table" href="#stream-table" coords="25,570,800,890" shape="rect"></area>
+        </map>
+
+.. only:: latex
+
+    .. figure:: ../../_images/ifv_screenshot_window.png
+        :width: 800
+
+        Screenshot of the main window of the IFV UI
+
+Top bar
++++++++
 
 .. figure:: ../../_images/ifv_screenshot_topbar.png
-    :width: 800
+    :width: 600
 
     Screenshot of the top bar of the IFV UI
 
-The top bar has a title bar, which contains the IDAES logo and the name of the flowsheet being visualized,
+The *top bar* has a title bar, which contains the IDAES logo and the name of the flowsheet being visualized,
 and a menu. The menu items are:
 
-* Refresh: Refresh with view with any changes made to the flowsheet from the Python side.
-      This also has the effect of saving the current layout. Changes in the units or their connections will of
-      course alter the layout.
-* Save: Save the current layout to the data store that was specified with the visualization
-      was launched. This does *not* update with any changes made to the flowsheet in Python. Neither does it
-      have any effect on the Python flowsheet values (the IFV can never modify the flowsheet).
-* Export:
-    * Flowsheet: Save the flowsheet as a Scalable Vector Graphics (SVG) file, a common format for
-      images that consist of "vector" elements like boxes, lines, and text. SVG files can be viewed like images
-      by most programs that allow image viewing, and even edited with a program like `Inkscape <https://inkscape.org/>`_.
-    * Stream table:
-* View: Toggle the view of the flowsheet (diagram) area and the stream table area.
-* Help: Load this documentation page
+.. _export-menu:
+
+* **Refresh**: Update the view with any changes made to the flowsheet from the Python side.
+  This also has the effect of saving the current layout.
+* **Save**: Save the current layout to the data store that was specified with the visualization
+  was launched. ote his does *not* update with any changes made to the flowsheet in Python (use *Refresh* for that).
+  Neither does it have any effect on the Python flowsheet values, as the IFV cannot modify the underlying flowsheet.
+* **Export**: Save the flowsheet or stream table as a file.
+
+  * **Flowsheet**: Save the flowsheet as a Scalable Vector Graphics (SVG) file, a common format for
+    images that consist of "vector" elements like boxes, lines, and text. SVG files can be viewed like images
+    by most programs that allow image viewing, and even edited with a program like `Inkscape <https://inkscape.org/>`_.
+    You will get a preview of the image and a "Download" button that will save in a file named for the
+    flowsheet, with a ".svg" extension.
+  * **Stream table**: Save the flowsheet as comma-separated values. The result will be a text file, called "export.csv",
+    that contains the data.
+
+* **View**: Toggle the view of the flowsheet (diagram) area and the stream table area.
+* **Help**: Load this documentation page.
+
+:ref:`Back to main window screenshot <ifv-screenshot>`
+
+Diagram
+++++++++
 
 .. figure:: ../../_images/ifv_screenshot_diagram.png
     :width: 800
 
-    Screenshot of the main diagram (or flowsheet) area of the IFV UI
+    Screenshot of the main *diagram* (or flowsheet) area of the IFV UI
 
-The diagram or flowsheet area lets you rearrange the flowsheet as you need and zoom in on particular sections.
-For the purposes of this documentation
-The main visual components are called Units, Lines, and Annotations.
+The *diagram* (or *flowsheet*) area lets you rearrange the flowsheet as you need and zoom in on particular sections.
+You can interact with the components on the diagram:
 
-Units
-    *Units* is the term used for any geometric shape in the flowsheet that is connected by lines.
-    In addition to different shapes for the different IDAES unit models, there are also designated
-    shapes for inlets and outlets. All units can be moved by clicking and dragging them.
-    If you right-click on a unit, it will rotate 90 degrees.
+Shapes
+    Geometric shapes on the flowsheet represent unit models, inlets and outlets, and other IDAES components.
+    They are connected by lines, and each has a name. All shapes can be moved by clicking and dragging them.
+    If you right-click on a shape, it will rotate 90 degrees. You cannot add or remove lines, as these
+    are determined by the underlying flowsheet.
 
 Lines
     The lines connecting units can be manipulated by clicking and dragging.
-    If you double-click on a line, you will create a new segment that can be used for routing the line
+    You can click on a line to create a new segment that can be used for routing the line
     around objects. You can eliminate a segment by clicking on the dot that appears as you hover over
-    the line.
+    the line. There are also pill-shaped handles that appear on the lines for moving them.
+    The endpoints of the lines are determined by the flowsheet and cannot be changed.
 
-Annotations
-    Both the units and the arcs have associated values that can be shown. See the
-    :ref:`View:Labels <ifv-action-view>` action.
+Labels
+    Both the units and the arcs have associated values that can be shown, which pop up over the
+    lines if you toggle the "Show labels" control. See the :ref:`diagram-controls` section for details.
+
+:ref:`Back to main window screenshot <ifv-screenshot>`
+
+.. _diagram-controls:
+
+Diagram Controls
+++++++++++++++++
 
 .. figure:: ../../_images/ifv_screenshot_diagramcontrols.png
-    :width: 800
+    :width: 400
 
-    Screenshot of the diagram controls area of the IFV UI
+    Screenshot of the *diagram controls* area of the IFV UI
+
+The *diagram controls* allow you to affect some global properties of the diagram/flowsheet area.
+
+.. |zoomin| image:: ../../_images/ifv_icon_zoomin.png
+.. |zoomout| image:: ../../_images/ifv_icon_zoomout.png
+.. |zoomfit| image:: ../../_images/ifv_icon_fit.png
 
 View actions
-    * Labels - Toggle view of the annotations, or labels
-    * Grid - Toggle a background "grid"
-    * Zoom - Zoom the view of the flowsheet within the canvas. This is a label for a set of related options.
-    *  Zoom in - Zoom in by 25%
-    *  Zoom out - Zoom out by 25%
-    *  Reset - Reset zoom to 100%
-    * Canvas size - Change the size of the "canvas" on which the flowsheet is drawn. This lets you adapt
-      the IFV for different display (screen) sizes.
+  * Labels: Toggle view of the information (*labels*) shown for each stream. This is the same information
+    that appears in the :ref:`ifv_stream-table`.
+  * Grid: Toggle a background "grid"
+  * |zoomin|: Zoom in by 25%
+  * |zoomout|: Zoom out by 25%
+  * |zoomfit|: Fit the diagram into the current area
+
+:ref:`Back to main window screenshot <ifv-screenshot>`
+
+.. _ifv_streamtable:
+
+Stream Table
+++++++++++++
+
+The IFV will show a stream table with variables defined for each stream in the flowsheet, if these
+values exist and the flowsheet adheres to the IDAES conventions for naming the inlet and outlet
+streams. An example of a stream table is shown below.
 
 .. figure:: ../../_images/ifv_screenshot_streamtable.png
     :width: 800
 
-    Screenshot of the stream table area of the IFV UI
+    Screenshot of an example stream table
+
+There are a number of ways of manipulating this table:
+
+  * The "Hide Fields" pull-down menu provides a list of stream names.
+    Select a name to hide/show that column in the table.
+  * Click on the column header and drag it left or right to change its order in the table.
+  * Resize a column by hovering over a column border until you see the mouse pointer change, then drag it to resize.
+
+You can also export the entire table as a file of comma-separated values. See the :ref:`Export <export-menu>`
+documentation for details.
+
+:ref:`Back to main window screenshot <ifv-screenshot>`
+
 
 Reference
-----------
+---------
 
-There are two ways to invoke the `visualize` functionality, which in the end do the same thing and
-have the same arguments.
-
-1. Use the `visualize` method of a flowsheet
-2. Call the `visualize` function from the package `idaes.ui.fsvis`
-3. Call the same `visualize` function from the module `idaes.ui.fsvis.fsvis`
-
-In all cases, the arguments and behavior are the same, as described below.
+.. currentmodule:: idaes.ui.fsvis.fsvis
 
 .. _visualize-function:
 
-.. autofunction:: ~idaes.ui.fsvis.fsvis.visualize
+.. autofunction:: visualize
 
 
-
-Advanced
---------
-This section provides some additional details for developers or more advanced users.
+Software notes
+^^^^^^^^^^^^^^
+This section provides some additional details for developers or users more interested in the
+programming details.
 
 .. _ifv-architecture:
 
 Client/server architecture
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++++++
 The ``visualize()`` command works by starting an HTTP server in a separate thread, and serving
 requests from the UI (or any other requester). The server only responds to requests from your computer,
 not the internet. When you exit the script or Jupyter Notebook that called `visualize` then you will also
@@ -178,8 +248,7 @@ The architecture diagram is shown below.
                             +---------------------+
 
 Persistence architecture
-^^^^^^^^^^^^^^^^^^^^^^^^
-
+++++++++++++++++++++++++
 .. py:currentmodule:: idaes.ui.fsvis.persist
 
 The saving of the model uses the the module :mod:`idaes.ui.fsvis.persist`.
