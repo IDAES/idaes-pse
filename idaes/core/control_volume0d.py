@@ -1583,9 +1583,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        # If the paraent component of an indexed component has a scale factor, but
-        # some of the data objects don't, propogate the indexed component scale
-        # factor to the missing scaling factors.
+        # If the paraent component of an indexed component has a scale factor,
+        # but some of the data objects don't, propogate the indexed component
+        # scale factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
 
         phase_list = self.properties_in.phase_list
@@ -1593,7 +1593,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Default scale factors
         heat_sf_default = 1e-6
         work_sf_default = 1e-6
-        volume_sf_default = 1e-3
         phase_frac_sf_default = 10
 
         # Function to set defaults so I don't need to reproduce the same code
@@ -1665,7 +1664,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for t, c in self.pressure_balance.items():
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(
-                        self.properties_in[t].pressure, default=1, warning=True))
+                        self.properties_in[t].pressure,
+                        default=1,
+                        warning=True))
 
         # Material Balance Constraints
         if hasattr(self, "material_balances"):
@@ -1678,7 +1679,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         warning=True)
                     iscale.constraint_scaling_transform(c, sf)
             elif mb_type == MaterialBalanceType.componentTotal:
-                for (t , j), c in self.material_balances.items():
+                for (t, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties_in[t].get_material_flow_terms(p, j)
                             for p in phase_list])
@@ -1712,25 +1713,37 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for i, c in self.rate_reaction_stoichiometry_constraint.items():
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(
-                        self.rate_reaction_generation[i], default=1, warning=True))
+                        self.rate_reaction_generation[i],
+                        default=1,
+                        warning=True))
 
         if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
             for i, c in self.equilibrium_reaction_stoichiometry_constraint.items():
                 iscale.constraint_scaling_transform(
                     c, iscale.get_scaling_factor(
-                        self.equilibrium_reaction_generation[i], default=1, warning=True))
+                        self.equilibrium_reaction_generation[i],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "inherent_reaction_stoichiometry_constraint"):
+            for i, c in self.inherent_reaction_stoichiometry_constraint.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.inherent_reaction_generation[i],
+                        default=1,
+                        warning=True))
 
         if hasattr(self, "element_balances"):
             for (t, e), c in self.element_balances.items():
                 sf = iscale.min_scaling_factor([self.elemental_flow_in[t, p, e]
-                    for p in phase_list])
+                                                for p in phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "elemental_holdup_calculation"):
             for (t, e), c in self.elemental_holdup_calculation.items():
                 flow_basis = self.properties_out[t].get_material_flow_basis()
                 if flow_basis == MaterialFlowBasis.molar:
-                    sf = 10.0 # start with 10 for phase fraction
+                    sf = 10.0  # start with 10 for phase fraction
                 else:
                     sf = 10.0/iscale.get_scaling_factor(
                         self.properties_out[t].mw_comp[j],
