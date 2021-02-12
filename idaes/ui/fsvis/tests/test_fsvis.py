@@ -84,7 +84,15 @@ def test_visualize(flash_model):
     resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
     data = resp.json()
     # Validate the modified model
-    expected = {"model": {"id": "Flash", "unit_models": {}, "arcs": {}}, "cells": []}
+    expected = {
+        "model": {
+            "id": "Flash",
+            "stream_table": {"columns": ["", "Variable"], "data": [], "index": []},
+            "unit_models": {},
+            "arcs": {},
+        },
+        "cells": [],
+    }
     assert data == expected
 
 
@@ -115,6 +123,7 @@ def _canonicalize(d):
 def test_invoke(flash_model):
     # from inspect import signature -- TODO: use for checking params
     from idaes.ui import fsvis as fsvis_pkg
+
     functions = {
         "method": getattr(flash_model.fs, "visualize"),
         "package": getattr(fsvis_pkg, "visualize"),

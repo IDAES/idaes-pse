@@ -482,6 +482,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     "state_definition configuration argument. Please fix "
                     "your property parameter definition to include this."
                     .format(self.name))
+        elif isinstance(self.config.state_definition, types.ModuleType):
+            _log.info("DEPRECATED - definiton of generic property "
+                      "packages is moving to using static classes "
+                      "instead of modules. Please refer to the IDAES "
+                      "documentation.")
 
         units = self.get_metadata().derived_units
 
@@ -545,6 +550,13 @@ class GenericParameterData(PhysicalParameterBlock):
                         "phase_equilibrium_state was not specified "
                         "for all phase pairs."
                         .format(self.name))
+
+                if isinstance(pie_config[pp], types.ModuleType):
+                    _log.info("DEPRECATED - definiton of generic property "
+                              "packages is moving to using static classes "
+                              "instead of modules. Please refer to the IDAES "
+                              "documentation.")
+
                 for j in self.component_list:
                     if ((pp[0], j) in self._phase_component_set
                             and (pp[1], j) in self._phase_component_set):
@@ -582,12 +594,26 @@ class GenericParameterData(PhysicalParameterBlock):
             cobj = self.get_component(c)
             for a, v in cobj.config.items():
                 if isinstance(v, types.ModuleType):
-                    c_arg = getattr(v, a)
+                    _log.info("DEPRECATED - definiton of generic property "
+                              "packages is moving to using static classes "
+                              "instead of modules. Please refer to the IDAES "
+                              "documentation.")
+
+                # Check to see if v has an attribute build_parameters
+                if hasattr(v, "build_parameters"):
+                    build_parameters = v.build_parameters
                 else:
-                    c_arg = v
-                if hasattr(c_arg, "build_parameters"):
+                    # If not, guess v is a class holding property subclasses
                     try:
-                        c_arg.build_parameters(cobj)
+                        build_parameters = getattr(v, a).build_parameters
+                    except AttributeError:
+                        # If all else fails, assume no build_parameters method
+                        build_parameters = None
+
+                # Call build_parameters if it exists
+                if build_parameters is not None:
+                    try:
+                        build_parameters(cobj)
                     except KeyError:
                         raise ConfigurationError(
                             "{} values were not defined for parameter {} in "
@@ -672,13 +698,15 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature': {'method': None},
              'pressure': {'method': None},
              'compress_fact_phase': {'method': '_compress_fact_phase'},
+             'conc_mol_comp': {'method': '_conc_mol_comp'},
+             'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
+             'cp_mol': {'method': '_cp_mol'},
+             'cp_mol_phase': {'method': '_cp_mol_phase'},
+             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'dens_mass': {'method': '_dens_mass'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
              'dens_mol_phase': {'method': '_dens_mol_phase'},
-             'cp_mol': {'method': '_cp_mol'},
-             'cp_mol_phase': {'method': '_cp_mol_phase'},
-             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'enth_mol': {'method': '_enth_mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
@@ -1346,57 +1374,31 @@ class GenericStateBlockData(StateBlockData):
                     doc="Compressibility of each phase",
                     rule=rule_Z_phase)
         except AttributeError:
-            self.del_component(self.compress_fact_phass)
+            self.del_component(self.compress_fact_phase)
             raise
 
-    def _dens_mass(self):
+    def _conc_mol_comp(self):
         try:
-            def rule_dens_mass(b):
-                return sum(b.dens_mass_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.dens_mass = Expression(
-                    doc="Mixture mass density",
-                    rule=rule_dens_mass)
+            def rule_conc_mol_comp(b, j):
+                return b.dens_mol*b.mole_frac_comp[j]
+            self.conc_mol_comp = Expression(
+                self.component_list,
+                rule=rule_conc_mol_comp,
+                doc="Molar concentration of component")
         except AttributeError:
-            self.del_component(self.dens_mass)
+            self.del_component(self.conc_mol_comp)
             raise
 
-    def _dens_mass_phase(self):
+    def _conc_mol_phase_comp(self):
         try:
-            def rule_dens_mass_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.dens_mass_phase(b, p)
-            self.dens_mass_phase = Expression(
-                    self.params.phase_list,
-                    doc="Mass density of each phase",
-                    rule=rule_dens_mass_phase)
+            def rule_conc_mol_phase_comp(b, p, j):
+                return b.dens_mol_phase[p]*b.mole_frac_phase_comp[p, j]
+            self.conc_mol_phase_comp = Expression(
+                self.phase_component_set,
+                rule=rule_conc_mol_phase_comp,
+                doc="Molar concentration of component by phase")
         except AttributeError:
-            self.del_component(self.dens_mass_phass)
-            raise
-
-    def _dens_mol(self):
-        try:
-            def rule_dens_mol(b):
-                return sum(b.dens_mol_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.dens_mol = Expression(
-                    doc="Mixture molar density",
-                    rule=rule_dens_mol)
-        except AttributeError:
-            self.del_component(self.dens_mol)
-            raise
-
-    def _dens_mol_phase(self):
-        try:
-            def rule_dens_mol_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.dens_mol_phase(b, p)
-            self.dens_mol_phase = Expression(
-                    self.params.phase_list,
-                    doc="Molar density of each phase",
-                    rule=rule_dens_mol_phase)
-        except AttributeError:
-            self.del_component(self.dens_mol_phase)
+            self.del_component(self.conc_mol_phase_comp)
             raise
 
     def _cp_mol(self):
@@ -1431,6 +1433,56 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_cp_mol_phase_comp)
         except AttributeError:
             self.del_component(self.cp_mol_phase_comp)
+            raise
+
+    def _dens_mass(self):
+        try:
+            def rule_dens_mass(b):
+                return sum(b.dens_mass_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.dens_mass = Expression(
+                    doc="Mixture mass density",
+                    rule=rule_dens_mass)
+        except AttributeError:
+            self.del_component(self.dens_mass)
+            raise
+
+    def _dens_mass_phase(self):
+        try:
+            def rule_dens_mass_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.dens_mass_phase(b, p)
+            self.dens_mass_phase = Expression(
+                    self.params.phase_list,
+                    doc="Mass density of each phase",
+                    rule=rule_dens_mass_phase)
+        except AttributeError:
+            self.del_component(self.dens_mass_phase)
+            raise
+
+    def _dens_mol(self):
+        try:
+            def rule_dens_mol(b):
+                return sum(b.dens_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.dens_mol = Expression(
+                    doc="Mixture molar density",
+                    rule=rule_dens_mol)
+        except AttributeError:
+            self.del_component(self.dens_mol)
+            raise
+
+    def _dens_mol_phase(self):
+        try:
+            def rule_dens_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.dens_mol_phase(b, p)
+            self.dens_mol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Molar density of each phase",
+                    rule=rule_dens_mol_phase)
+        except AttributeError:
+            self.del_component(self.dens_mol_phase)
             raise
 
     def _enth_mol(self):
@@ -1564,7 +1616,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Average molecular weight",
                     expr=sum(self.phase_frac[p] *
                              sum(self.mole_frac_phase_comp[p, j] *
-                                 self.params.get_component(j).mw_comp
+                                 self.params.get_component(j).mw
                                  for j in self.params.component_list)
                              for p in self.params.phase_list))
         except AttributeError:
@@ -1575,7 +1627,7 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_mw_phase(b, p):
                 return sum(b.mole_frac_phase_comp[p, j] *
-                           b.params.get_component(j).mw_comp
+                           b.params.get_component(j).mw
                            for j in b.params.component_list)
             self.mw_phase = Expression(
                     self.params.phase_list,

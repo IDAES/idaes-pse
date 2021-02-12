@@ -11,8 +11,16 @@ Introduction
 
 A capital cost methodology is developed in this module, both bare and erected cost and total plant cost are calculated based on costing correlations. 
 The Power Plant Costing Library contains two main costing functions `get_PP_costing` and `get_SCO2_unit_cost`.
-The first function (get_PP_costing) can be called to include cost correlations for equipment typically used in simulation of 7 technologies: supercritical pulverized coal plants (SCPC),
-subcritical pulverized coal plants, Two-stage IGCC, Single-stage IGCC, Single-stage dry-feed IGCC, natural gas air-fired plant (NGCC), and advanced ultra-supercritical PC (AUSC).
+The first function (get_PP_costing) can be called to include cost correlations for equipment typically used in simulation of 7 technologies: 
+
+1. Supercritical pulverized coal plants (SCPC),
+2. Subcritical pulverized coal plants,
+3. Two-stage IGCC,
+4. Single-stage IGCC,
+5. Single-stage dry-feed IGCC,
+6. natural gas air-fired plant (NGCC),
+7. Advanced ultra-supercritical PC (AUSC).
+
 Similarly, `get_sCO2_unit_cost` can be called to include cost correlations for equipment in supercritical CO2 power cycle plants.
 
 Details are given for each method later in this documentation, 
@@ -109,7 +117,16 @@ The Power Plant costing method has five arguments, self, cost_accounts, scaled_p
 * self : an existing unit model or Pyomo Block
 * cost_accounts : A list of accounts or a string containing the name of a pre-named account. If the input is a list all accounts must share the same process parameter. Pre-named accounts are listed below.
 * scaled_param : The Pyomo Variable representing the accounts' scaled parameter
-* tech : The technology to cost, different technologies have different accounts. 1 - Supercritical PC, 2 - Subcritical PC, 3 - two-stage, slurry-feed IGCC 4 - single-stage, slurry-feed IGCC 5 - single-stage, dry-feed IGCC, 6 - NGCC, 7 - Advanced Ultrasupercritical PC
+* tech : The technology to cost, different technologies have different accounts.
+
+ 1. Supercritical PC,
+ 2. Subcritical PC, 
+ 3. Two-stage, slurry-feed IGCC 
+ 4. Single-stage, slurry-feed IGCC
+ 5. Single-stage, dry-feed IGCC,
+ 6. Natural Gas Combined Cycle (NGCC), 
+ 7. Advanced Ultrasupercritical PC
+
 * units : The user must pass a string with the units the scaled_param is in. It serves as a check to make sure the costing method is being used correctly.
 
 Many accounts scale using the same process parameter. For convenience the user is allowed to enter accounts as a list instead
@@ -131,7 +148,7 @@ Coal Feed                   2.1, 2.2, 2.9a               Coal Feed Rate         
 Sorbent Feed                2.5, 2.6, 2.9b               Limestone Feed Rate          lb/hr
 Feedwater System            3.1, 3.3                     HP BFW Flow Rate             lb/hr 
 PC Boiler                   4.9                          HP BFW Flow Rate             lb/hr
-Steam Turbine               8.1                          Steam Turbine Power          MW
+Steam Turbine               8.1                          Steam Turbine Power          kW
 Condenser                   8.3                          Condenser Duty               MMBtu/hr
 Cooling Tower               9.1                          Cooling Tower Duty           MMBtu/hr
 Circulating Water System    9.2, 9.3, 9.4, 9.6, 9.7      Circulating Water Flow Rate  gpm
@@ -168,7 +185,7 @@ Pre-named Account           Accounts Included            Process Parameter      
 Feedwater System            3.1, 3.3                     HP BFW Flow Rate             lb/hr 
 Combustion Turbine          6.1, 6.3                     Fuel Gas Flow                lb/hr  
 HRSG                        7.1, 7.2                     HRSG Duty                    MMBtu/hr     
-Steam Turbine               8.1                          Steam Turbine Power          MW
+Steam Turbine               8.1                          Steam Turbine Power          kW
 Condenser                   8.3                          Condenser Duty               MMBtu/hr
 Cooling Tower               9.1                          Cooling Tower Duty           MMBtu/hr
 Circulating Water System    9.2, 9.3, 9.4, 9.6, 9.7      Circulating Water Flow Rate  gpm
@@ -184,7 +201,7 @@ Table 5. Pre-named Accounts for AUSC technologies
 Pre-named Account           Accounts Included            Process Parameter            Units      
 =========================== ============================ ============================ ==========
 PC Boiler                   4.9                          HP BFW Flow Rate             lb/hr 
-Steam Turbine               8.1                          Steam Turbine Power          MW
+Steam Turbine               8.1                          Steam Turbine Power          kW
 Steam Piping                8.4                          HP BFW Flow Rate             lb/hr
 =========================== ============================ ============================ ==========
 
