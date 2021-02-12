@@ -1,0 +1,81 @@
+name: Run IDAES examples
+description: Run IDAES examples
+inputs:
+  git-ref:
+    description: git ref to fetch for the examples
+    required: false
+    default: main
+  working-dir:
+    description: Working directory where the examples will be run
+    required: false
+    # TODO check if /tmp causes problems on Windows
+    default: /tmp/examples-pse
+  config-file-path:
+    description: Path to the build script config file
+    required: false
+    default: ./adhoc.yml
+  notebook-errors-file-path:
+    description: Path to the file where notebook error logs will be saved
+    required: false
+    default: notebook-errors.txt
+# TODO as a first step we display the error logs since they have terminal-friendly output
+# we can activate this action output if we'll need to upload the artifacts
+# outputs:
+#   build-artifacts:
+#     description: Stores artifacts produced during the build process, in a format suitable for being used with actions/upload-artifact
+#     value: ${{ steps.build.paths }}
+
+runs:
+  using: composite
+  steps:
+    - name: Fetch examples
+      shell: bash
+      run: |
+        git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} ${{ inputs.working-dir }}
+    - name: Create config file
+      shell: bash
+      working-directory: ${{ inputs.working-dir }}
+      run: |
+        cat >${{ inputs.config-file-path }} <<EOL
+        paths:
+          source: src
+          output: docs_test
+          html: _build/html
+        notebook:
+            num_workers: 1
+            continue_on_error: true
+            test_mode: true
+            timeout: 300
+            error_file: ${{ inputs.notebook-errors-file-path }}
+            template: docs/jupyter_notebook_sphinx.tpl
+            directories:
+              - source: Examples/Advanced/CustomUnitModels
+              - source: Examples/Advanced/DataRecon
+              - source: Examples/MatOpt
+              - source: Examples/SurrMod/ALAMO
+              - source: Examples/SurrMod/Helmet
+              - source: Examples/SurrMod/PySMO
+              - source: Examples/Tools
+              - source: Examples/UnitModels
+              - source: Tutorials/Advanced/ParamEst
+              - source: Tutorials/Basics
+        notebook_index:
+          input_file: notebook_index.yml
+          output_file: src/notebook_index.ipynb
+        sphinx:
+            args: "-b html -T docs_test docs_test/_build/html"
+            error_file: sphinx-errors.txt
+        EOL
+        echo "::group::Examples build config file"
+        cat ${{ inputs.config-file-path }}
+        echo "::endgroup"
+    - name: Run build.py script
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash
+      run: |
+        echo "::group::Output of build.py"
+        python build.py -v --test --config ${{ inputs.config-file-path }}
+        echo "::endgroup"
+        echo "::group::Contents of ${{ inputs.notebook-errors-file-path }}"
+        file_path="${{ inputs.notebook-errors-file-path }}; [ -f "$file_path" ] && cat "$file_path"
+        echo "::endgroup"
