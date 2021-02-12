@@ -393,13 +393,7 @@ class FlowsheetSerializer:
             .reset_index().rename(columns={"index": ""})
             .round(self._sig_figs)
         )
-
-        # Parse the names of the variables to get rid of flow_mol_phase_comp
-        self._stream_table_df['Variable'] = (
-                                                self._stream_table_df["Variable"]
-                                                .str.replace("flow_mol_phase_comp", "")
-                                                .str.rstrip()
-                                            )
+        
         # Change NaNs to None for JSON
         self._stream_table_df = self._stream_table_df.where((pd.notnull(self._stream_table_df)), None)
 
