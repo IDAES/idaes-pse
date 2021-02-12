@@ -8,8 +8,7 @@ inputs:
   working-dir:
     description: Working directory where the examples will be run
     required: false
-    # TODO check if /tmp causes problems on Windows
-    default: /tmp/examples-pse
+    default: ${{ env.RUNNER_TEMP }}/examples-pse
   config-file-path:
     description: Path to the build script config file
     required: false
