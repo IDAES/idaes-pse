@@ -590,10 +590,10 @@ class DegeneracyHunter():
             self.dh_milp = self._prepare_ids_milp(self.jac_eq, self.max_nu)
                 
             # Loop over candidate equations
-            for c in self.candidate_eqns:
+            for i, c in enumerate(self.candidate_eqns):
         
                 if verbose:
-                    print("Solving MILP",c+1,"of",len(self.candidate_eqns),"...")
+                    print("Solving MILP",i+1,"of",len(self.candidate_eqns),"...")
         
                 # Check if equation 'c' is a major element of an IDS
                 ids_ = self._check_candidate_ids(self.dh_milp,
