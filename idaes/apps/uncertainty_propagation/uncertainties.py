@@ -112,7 +112,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_out = theta 
     propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
     
-    Output = collections.namedtuple('Output',['obj', 'theta_out', 'cov', 'propagation_f', 'propagation_c'])
+    Output = namedtuple('Output',['obj', 'theta_out', 'cov', 'propagation_f', 'propagation_c'])
     results= Output(obj, theta_out, cov, propagation_f, propagation_c)
     
     return results
