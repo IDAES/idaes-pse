@@ -75,7 +75,7 @@ class DegeneracyHunter():
         
         elif type(block_or_jac) is np.array:
         
-            raise NotImplementedError
+            raise NotImplementedError("Degeneracy Hunter only currently supports analyzing a Pyomo model")
         
             # TODO: Need to refactor, document, and test support for Jacobian
             self.jac_eq = block_or_jac
@@ -84,7 +84,7 @@ class DegeneracyHunter():
         
         else:
             
-            raise TypeError
+            raise TypeError("Check the type for 'block_or_jac'")
         
         # number of equality constraints, variables
         self.n_eq = self.jac_eq.shape[0]
@@ -339,17 +339,28 @@ class DegeneracyHunter():
             m_dh.J = jac_eq.tocsc()
             
             def eq_degenerate(m_dh, v):
-            
-                # Find the columns with non-zero entries
-                C_ = find(m_dh.J[:,v])[0]
-                return sum(m_dh.J[c,v] * m_dh.nu[c] for c in C_) == 0
+                if np.sum(np.abs(m_dh.J[:,v])) > 1E-6:
+                    # Find the columns with non-zero entries
+                    C_ = find(m_dh.J[:,v])[0]
+                    return sum(m_dh.J[c,v] * m_dh.nu[c] for c in C_) == 0
+                else:
+                    # This variable does not appear in any constraint
+                    return pyo.Constraint.Skip
+                
+                
             
         else:
             m_dh.J = jac_eq
         
             def eq_degenerate(m_dh, v):
-                return sum(m_dh.J[c,v] * m_dh.nu[c] for c in m_dh.C) == 0
-            
+                if np.sum(np.abs(m_dh.J[:,v])) > 1E-6:
+                    return sum(m_dh.J[c,v] * m_dh.nu[c] for c in m_dh.C) == 0
+                else:
+                    # This variable does not appear in any constraint
+                    return pyo.Constraint.Skip
+        
+        m_dh.pprint()
+        
         m_dh.degenerate = pyo.Constraint(m_dh.V, rule=eq_degenerate)
 
         # When y_pos = 1, nu >= m_small
@@ -396,7 +407,7 @@ class DegeneracyHunter():
     # TODO: Refactor, this should not be a staticmethod
     @staticmethod
     def _check_candidate_ids(ids_milp, solver, c, eq_con_list=None, tee=False):
-        ''' Solve MILP to check if equation 'c' is a main component in an irreducible
+        ''' Solve MILP to check if equation 'c' is a significant component in an irreducible
             degenerate set
             
             Arguments:
@@ -440,13 +451,11 @@ class DegeneracyHunter():
     # TODO: Refactor, this should not be a staticmethod
     @staticmethod
     def _find_candidate_eqs(candidates_milp, solver, eq_con_list=None, tee=False):
-        ''' Solve MILP to check if equation 'c' is a main component in an irreducible
-            degenerate set
+        ''' Solve MILP to generate set of candidate equations
             
             Arguments:
                 candidates_milp: Pyomo model to calculate IDS
                 solver: Pyomo solver (must support MILP)
-                c: index for the constraint to consider [integer]
                 eq_con_list: names of equality constraints. If none, use elements of ids_milp (default=None)
                 tee: Boolean, print solver output (default = False)
 
@@ -572,33 +581,39 @@ class DegeneracyHunter():
         
         irreducible_degenerate_sets = []
         
-        if verbose:
-            print("*** Searching for Irreducible Degenerate Sets ***")
-            print("Building MILP model...")
-        self.dh_milp = self._prepare_ids_milp(self.jac_eq, self.max_nu)
-                
-        # Loop over candidate equations
-        for c in self.candidate_eqns:
+        # Check if it is empty or None
+        if self.candidate_eqns:
         
             if verbose:
-                print("Solving MILP",c+1,"of",len(self.candidate_eqns),"...")
+                print("*** Searching for Irreducible Degenerate Sets ***")
+                print("Building MILP model...")
+            self.dh_milp = self._prepare_ids_milp(self.jac_eq, self.max_nu)
+                
+            # Loop over candidate equations
+            for c in self.candidate_eqns:
         
-            # Check if equation 'c' is a major element of an IDS
-            ids_ = self._check_candidate_ids(self.dh_milp,
-                                                self.solver,
-                                                c,
-                                                self.eq_con_list,
-                                                tee)
+                if verbose:
+                    print("Solving MILP",c+1,"of",len(self.candidate_eqns),"...")
+        
+                # Check if equation 'c' is a major element of an IDS
+                ids_ = self._check_candidate_ids(self.dh_milp,
+                                                    self.solver,
+                                                    c,
+                                                    self.eq_con_list,
+                                                    tee)
             
-            if ids_ is not None:
-                irreducible_degenerate_sets.append(ids_)
+                if ids_ is not None:
+                    irreducible_degenerate_sets.append(ids_)
 
-        if verbose:
-            for i,s in enumerate(irreducible_degenerate_sets):
-                print("\nIrreducible Degenerate Set",i)
-                print("nu\tConstraint Name")
-                for k,v in s.items():
-                    print(v,"\t",k)
+            if verbose:
+                for i,s in enumerate(irreducible_degenerate_sets):
+                    print("\nIrreducible Degenerate Set",i)
+                    print("nu\tConstraint Name")
+                    for k,v in s.items():
+                        print(v,"\t",k)
+        else:
+            print("No candidate equations. The Jacobian is likely full rank.")
+        
         
         return irreducible_degenerate_sets
 
