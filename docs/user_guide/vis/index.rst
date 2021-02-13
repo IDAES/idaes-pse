@@ -12,7 +12,7 @@ The IDAES Flowsheet Visualizer, or IFV for short, is a web-based user interface 
 
 * View any IDAES flowsheet as a process engineering diagram
 * Export flowsheet diagrams as images (`SVG <https://www.w3.org/Graphics/SVG/>`_ format)
-* View the "stream table" for the flowsheet
+* View and export the "stream table" for the flowsheet
 * Rearrange the flowsheet diagram to your taste and save the arrangement for next time
 * Dynamically refresh the displayed values to reflect changes in the underlying IDAES model
 
@@ -39,7 +39,8 @@ passing some parameters to give it a name and optional file for saving changes::
 The invocation of the `visualize` method will pop up a browser tab or window with the UI, displaying the
 flowsheet and, if the information is available, the stream table. In the notebook or script, you can continue
 to run more code and the UI will continue to work in the background. You can close the UI at any time. If you
-exit the script or notebook while the UI is running, it will continue to function but will not be able to save
+exit the script or notebook while the UI is running, you can still manipulate the diagram and stream table,
+but you will not be able to save
 or refresh, since these require communication with the Python process that no longer exists.
 
 There are three ways to invoke the `visualize` functionality, which in the end do the same thing and
@@ -51,6 +52,9 @@ have the same arguments.
 
 In all cases, the arguments and behavior are the same.
 See the :ref:`visualize function documentation <visualize-function>` for details on parameters to this function.
+
+.. note:: You can continue to modify and use your model and flowsheet after calling `visualize()`. This
+  may update the visualization, but nothing you do in the IFV will affect the Python model; it is *read-only*.
 
 User Interface
 ^^^^^^^^^^^^^^
@@ -98,7 +102,7 @@ and a menu. The menu items are:
 * **Refresh**: Update the view with any changes made to the flowsheet from the Python side.
   This also has the effect of saving the current layout.
 * **Save**: Save the current layout to the data store that was specified with the visualization
-  was launched. ote his does *not* update with any changes made to the flowsheet in Python (use *Refresh* for that).
+  was launched. Note that this does *not* update with any changes made to the flowsheet in Python (use *Refresh* for that).
   Neither does it have any effect on the Python flowsheet values, as the IFV cannot modify the underlying flowsheet.
 * **Export**: Save the flowsheet or stream table as a file.
 
@@ -163,7 +167,7 @@ The *diagram controls* allow you to affect some global properties of the diagram
 
 View actions
   * Labels: Toggle view of the information (*labels*) shown for each stream. This is the same information
-    that appears in the :ref:`ifv_stream-table`.
+    that appears in the :ref:`ifv_streamtable`.
   * Grid: Toggle a background "grid"
   * |zoomin|: Zoom in by 25%
   * |zoomout|: Zoom out by 25%
