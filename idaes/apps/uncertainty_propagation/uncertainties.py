@@ -20,6 +20,7 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import shutil
 import logging
+from collections import namedtuple
 
 logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
@@ -54,38 +55,39 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     
     Returns
     -------
-    obj: float
-        objective function value for the given obj_function 
-    theta_out: dictionary
-        Estimated parameters
-    cov: numpy.ndarray
-        Covariance of theta_out
-    propagation_f: dict
-        error propagation in the objective function with the dictionary key, 'objective' 
-        if the objective function doesn't include any uncertain parameters, return an empty dictionary        
-    propagation_c: dict
-        error propagation in the constraints with the dictionary keys, 'constraints l'
-        where l is the line number. 
-        if no constraint includes uncertain parameters, return an empty dictionary      
+    results : namedtuple
+        results.obj: float
+            objective function value for the given obj_function 
+        results.theta_out: dictionary
+            Estimated parameters
+        results.cov: numpy.ndarray
+            Covariance of theta_out
+        results.propagation_f: dict
+            error propagation in the objective function with the dictionary key, 'objective' 
+            if the objective function doesn't include any uncertain parameters, return an empty dictionary        
+        results.propagation_c: dict
+            error propagation in the constraints with the dictionary keys, 'constraints l'
+            where l is the line number. 
+            if no constraint includes uncertain parameters, return an empty dictionary      
         
     Raises
     ------
-    Exception
+    ValueError
         When tee entry is not Boolean
-    Exception
+    ValueError
         When diagnostic_mode entry is not Boolean
-    Exception
+    ValueError
         When solver_options entry is not None and a Dictionary
     Warnings
         When an element of theta_names includes a space
     """
     if not isinstance(tee, bool):
-        raise Exception('tee  must be boolean.')
+        raise ValueError('tee  must be boolean.')
     if not isinstance(diagnostic_mode, bool):
-        raise Exception('diagnostic_mode  must be boolean.')    
+        raise ValueError('diagnostic_mode  must be boolean.')    
     if not solver_options==None:
         if not isinstance(solver_options, dict):
-            raise Exception('solver_options must be dictionary.')
+            raise ValueError('solver_options must be dictionary.')
 
     
     # Remove all "'" and " " in theta_names
@@ -109,7 +111,11 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     else:
         theta_out = theta 
     propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
-    return obj, theta_out, cov, propagation_f, propagation_c
+    
+    Output = collections.namedtuple('Output',['obj', 'theta_out', 'cov', 'propagation_f', 'propagation_c'])
+    results= Output(obj, theta_out, cov, propagation_f, propagation_c)
+    
+    return results
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector, expectation, and variance of the objective function and constraints

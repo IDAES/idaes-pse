@@ -27,4 +27,4 @@ def SSE(model, data):
              model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
     return expr*1E4
 
-obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
+results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)

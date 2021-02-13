@@ -32,4 +32,4 @@ def SSE(model, data):
     return expr
 
 
-obj, theta, cov, propagation_f, propagation_c =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
+results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
