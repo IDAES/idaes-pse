@@ -1,4 +1,13 @@
 ##############################################################################
+# The development of this flowsheet/code is funded by the ARPA-E DIFFERENTIATE
+# project: “Machine Learning for Natural Gas to Electric Power System Design”
+# Project number: DE-FOA-0002107-1625.
+# This project is a collaborative effort between the Pacific Northwest National
+# Laboratory, the National Energy Technology Laboratory, and the University of
+# Washington to design NGFC systems with high efficiencies and low CO2
+# emissions.
+##############################################################################
+##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
 # software owners: The Regents of the University of California, through
