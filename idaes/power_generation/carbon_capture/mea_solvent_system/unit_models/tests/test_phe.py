@@ -26,6 +26,7 @@ from pyomo.environ import ConcreteModel, value, TerminationCondition, SolverFact
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import initialization_tester
 # Access mea_column_files dir from the current dir (tests dir)
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
@@ -73,7 +74,7 @@ class TestPlateHeatExchanger:
                              'mole_fraction':
                              {'CO2': 0.0284,
                               'MEA': 0.1148,
-                              'H2O': 0.8569}},
+                              'H2O': 0.8568}},
                          'coldside':
                             {'flowrate': 104.99350,
                              'temperature': 332.26,
@@ -81,7 +82,7 @@ class TestPlateHeatExchanger:
                              'mole_fraction':
                              {'CO2': 0.0438,
                               'MEA': 0.1137,
-                              'H2O': 0.8426}}},
+                              'H2O': 0.8425}}},
                     'output':
                         {'hotside':
                             {'temperature': 336.70},
@@ -90,7 +91,7 @@ class TestPlateHeatExchanger:
 
       return nccc_data
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def phe_model(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -99,8 +100,9 @@ class TestPlateHeatExchanger:
         m.fs.coldside_properties = LiquidParameterBlock()
 
         # create instance of plate heat exchanger  on flowsheet
-        m.fs.hx = PHE(default={'passes': 4,
+        m.fs.unit = PHE(default={'passes': 4,
                                'channel_list': [12, 12, 12, 12],
+                               'divider_plate_number':2,
                                "hot_side": {
                                    "property_package": m.fs.hotside_properties
                                },
@@ -110,7 +112,7 @@ class TestPlateHeatExchanger:
                                }})
         return m
 
-    @pytest.fixture(scope="module", params=['dataset1', 'dataset2'])
+    @pytest.fixture(scope="class", params=['dataset1', 'dataset2'])
     def set_input_output(self, phe_model, measurement, request):
         for t in phe_model.fs.time:
             # hot fluid
@@ -122,12 +124,12 @@ class TestPlateHeatExchanger:
             xh_MEA = measurement[request.param]['input']['hotside']['mole_fraction']['MEA']
             xh_H2O = measurement[request.param]['input']['hotside']['mole_fraction']['H2O']
 
-            phe_model.fs.hx.hot_inlet.flow_mol[t].fix(Fh)
-            phe_model.fs.hx.hot_inlet.temperature[t].fix(Th)
-            phe_model.fs.hx.hot_inlet.pressure[t].fix(Ph)
-            phe_model.fs.hx.hot_inlet.mole_frac_comp[t, "CO2"].fix(xh_CO2)
-            phe_model.fs.hx.hot_inlet.mole_frac_comp[t, "H2O"].fix(xh_H2O)
-            phe_model.fs.hx.hot_inlet.mole_frac_comp[t, "MEA"].fix(xh_MEA)
+            phe_model.fs.unit.hot_inlet.flow_mol[t].fix(Fh)
+            phe_model.fs.unit.hot_inlet.temperature[t].fix(Th)
+            phe_model.fs.unit.hot_inlet.pressure[t].fix(Ph)
+            phe_model.fs.unit.hot_inlet.mole_frac_comp[t, "CO2"].fix(xh_CO2)
+            phe_model.fs.unit.hot_inlet.mole_frac_comp[t, "H2O"].fix(xh_H2O)
+            phe_model.fs.unit.hot_inlet.mole_frac_comp[t, "MEA"].fix(xh_MEA)
 
             # cold fluid
             Tc_out = measurement[request.param]['output']['coldside']['temperature']
@@ -137,12 +139,12 @@ class TestPlateHeatExchanger:
             xc_CO2 = measurement[request.param]['input']['coldside']['mole_fraction']['CO2']
             xc_MEA = measurement[request.param]['input']['coldside']['mole_fraction']['MEA']
             xc_H2O = measurement[request.param]['input']['coldside']['mole_fraction']['H2O']
-            phe_model.fs.hx.cold_inlet.flow_mol[t].fix(Fc)
-            phe_model.fs.hx.cold_inlet.temperature[t].fix(Tc)
-            phe_model.fs.hx.cold_inlet.pressure[t].fix(Pc)
-            phe_model.fs.hx.cold_inlet.mole_frac_comp[t, "CO2"].fix(xc_CO2)
-            phe_model.fs.hx.cold_inlet.mole_frac_comp[t, "H2O"].fix(xc_H2O)
-            phe_model.fs.hx.cold_inlet.mole_frac_comp[t, "MEA"].fix(xc_MEA)
+            phe_model.fs.unit.cold_inlet.flow_mol[t].fix(Fc)
+            phe_model.fs.unit.cold_inlet.temperature[t].fix(Tc)
+            phe_model.fs.unit.cold_inlet.pressure[t].fix(Pc)
+            phe_model.fs.unit.cold_inlet.mole_frac_comp[t, "CO2"].fix(xc_CO2)
+            phe_model.fs.unit.cold_inlet.mole_frac_comp[t, "H2O"].fix(xc_H2O)
+            phe_model.fs.unit.cold_inlet.mole_frac_comp[t, "MEA"].fix(xc_MEA)
 
             output = {'hotside_temperature_expectation': Th_out,
                       'coldside_temperature_expectation': Tc_out}
@@ -150,24 +152,55 @@ class TestPlateHeatExchanger:
 
     @pytest.mark.unit
     def test_phe_build(self, phe_model):
-        assert phe_model.fs.hx.config.dynamic is False
+        assert phe_model.fs.unit.config.dynamic is False
         assert degrees_of_freedom(phe_model) == 12
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize(self, phe_model):
+        for t in phe_model.fs.time:
+            # hot fluid
+            phe_model.fs.unit.hot_inlet.flow_mol[t].fix(60.54879)
+            phe_model.fs.unit.hot_inlet.temperature[t].fix(392.23)
+            phe_model.fs.unit.hot_inlet.pressure[t].fix(202650)
+            phe_model.fs.unit.hot_inlet.mole_frac_comp[t, "CO2"].fix(0.0158)
+            phe_model.fs.unit.hot_inlet.mole_frac_comp[t, "H2O"].fix(0.8747)
+            phe_model.fs.unit.hot_inlet.mole_frac_comp[t, "MEA"].fix(0.1095)
+
+            # cold fluid
+            phe_model.fs.unit.cold_inlet.flow_mol[t].fix(63.01910)
+            phe_model.fs.unit.cold_inlet.temperature[t].fix(326.36)
+            phe_model.fs.unit.cold_inlet.pressure[t].fix(202650)
+            phe_model.fs.unit.cold_inlet.mole_frac_comp[t, "CO2"].fix(0.0414)
+            phe_model.fs.unit.cold_inlet.mole_frac_comp[t, "H2O"].fix(0.1077)
+            phe_model.fs.unit.cold_inlet.mole_frac_comp[t, "MEA"].fix(0.8509)
+        initialization_tester(phe_model)
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_phe_validation(self, phe_model, set_input_output):
 
-        phe_model.fs.hx.initialize()
+        phe_model.fs.unit.initialize()
         res = solver.solve(phe_model)
 
         assert res.solver.termination_condition == TerminationCondition.optimal
 
-        assert value(phe_model.fs.hx.QH[0]) == value(phe_model.fs.hx.QC[0])
+        # Mass conservation test
+        assert abs(value(phe_model.fs.unit.hot_inlet.flow_mol[0] -
+                         phe_model.fs.unit.hot_outlet.flow_mol[0])) <= 1e-6
 
-        assert value(phe_model.fs.hx.hot_outlet.temperature[0]) == \
+        assert abs(value(phe_model.fs.unit.cold_inlet.flow_mol[0] -
+                         phe_model.fs.unit.cold_outlet.flow_mol[0])) <= 1e-6
+
+        # Energy conservation test
+        assert value(phe_model.fs.unit.QH[0]) == value(phe_model.fs.unit.QC[0])
+
+        # Exit tempreture prediction test
+        assert value(phe_model.fs.unit.hot_outlet.temperature[0]) == \
             pytest.approx(
             set_input_output['hotside_temperature_expectation'], abs=1.5)
 
-        assert value(phe_model.fs.hx.cold_outlet.temperature[0]) == \
+        assert value(phe_model.fs.unit.cold_outlet.temperature[0]) == \
             pytest.approx(
             set_input_output['coldside_temperature_expectation'], abs=1.5)

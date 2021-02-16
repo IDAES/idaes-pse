@@ -30,9 +30,11 @@ if P is even: PHE is in counter-current mode
 if P is odd : PHE  is in co-current mode
 Np : number of channels in a pass(should be even for balanced PHE)
 Hot and cold fluids flow alternatively in the channels.
+Divider plates may be used to partition the passes in separate sections.
 
-Note: Total Heat transfer area of the PHE can be increased by adding more plates,
-which is equilvalent to increasing the number of channels in a pass(Np)
+Note:
+The heat transfer area  of a single plate depends on the total heat transfer area
+as specified by the manufacturer and the total number of active plates.
 
 Detailed model equations can be found in the paper :
 Akula, P., Eslick, J., Bhattacharyya, D. and Miller, D.C., 2019.
@@ -50,7 +52,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         MaterialBalanceType,
-                        EnergyBalanceType,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
@@ -65,23 +66,6 @@ __author__ = "Paul Akula"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-
-class plate_param(object):
-    """
-    Basic charateristics of a typical plate (smooth).
-    For Chevron plates, surface enlargement factor may be incorporated into
-    the plate area
-    """
-    L = 1.657               # plate length
-    w = 0.833               # plate width
-    b = 0.0038              # gap between two plates forming a channel
-    kp = 16.2               # plate thermal conductivity
-    bp = 0.0006             # plate thickness
-    Dp = 0.3                # plate port diameter
-    Ap = L * w              # plate area
-    De = 2 * b              # channel equivalent diameter
-
-
 @declare_process_block_class("PHE")
 class PHEData(UnitModelBlockData):
     """Plate Heat Exchanger(PHE) Unit Model."""
@@ -95,65 +79,80 @@ class PHEData(UnitModelBlockData):
         default=4,
         domain=int,
         description="Number of passes",
-        doc="""Number of passes for both the hot and cold fluid"""))
+        doc="""Number of passes of the fluids through the heat exchanger"""))
 
     CONFIG.declare("channel_list", ConfigValue(
         default=[12, 12, 12, 12],
         domain=list,
         description="Number of channels for each pass",
-        doc="""Number of channels to be used in each pass"""))
+        doc="""Number of channels to be used in each pass where a channel
+               is the space between two plates with a flowing fluid"""))
 
-    CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentTotal,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
-            **default** - MaterialBalanceType.useDefault.
-            **Valid values:** {
-        **MaterialBalanceType.useDefault -default from property package
-        **MaterialBalanceType.none** - exclude material balances,
-        **MaterialBalanceType.componentPhase** - use phase component balances,
-        **MaterialBalanceType.componentTotal** - use total component balances,
-        **MaterialBalanceType.elementTotal** - use total element balances,
-        **MaterialBalanceType.total** - use total material balance.}"""))
+    CONFIG.declare("divider_plate_number", ConfigValue(
+        default=0,
+        domain=int,
+        description="Number of divider plates in heat exchanger",
+        doc="""Divider plates are used to create separate partitions in the unit.
+               Each pass can be separated by a divider plate"""))
 
-    CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-        **default** - EnergyBalanceType.enthalpyTotal
-        **Valid values:** {
-        **EnergyBalanceType.useDefault - default from property package
-        **EnergyBalanceType.none** - exclude energy balances,
-        **EnergyBalanceType.enthalpyTotal**-single enthalpy balance for material,
-        **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-        **EnergyBalanceType.energyTotal** - single energy balance for material,
-        **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
+    CONFIG.declare("port_diameter", ConfigValue(
+        default=0.2045,
+        domain=float,
+        description="Diameter of the ports on the plate",
+        doc="""Diameter of the ports on the plate for fluid entry/exit
+               into a channel"""))
 
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-        **default** - MomentumBalanceType.pressureTotal.
-        **Valid values:** {
-        **MomentumBalanceType.none** - exclude momentum balances,
-        **MomentumBalanceType.pressureTotal**-single pressure balance for material,
-        **MomentumBalanceType.pressurePhase**-pressure balances for each phase,
-        **MomentumBalanceType.momentumTotal**-single momentum balance for material,
-        **MomentumBalanceType.momentumPhase**-momentum balances for each phase.}"""))
+    CONFIG.declare("plate_thermal_cond", ConfigValue(
+        default=16.2,
+        domain=float,
+        description="Thermal conductivity",
+        doc="""Thermal conductivity of the plate material [W/m.K]"""))
 
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=True,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-            constructed,
-        **default** - False.
-        **Valid values:** {
-        **True** - include pressure change terms,
-        **False** - exclude pressure change terms.}"""))
+    CONFIG.declare("total_area", ConfigValue(
+        default=114.3,
+        domain=float,
+        description="Total heat transfer area",
+        doc="""Total heat transfer area as specifed by the manufacturer"""))
+
+    CONFIG.declare("plate_thickness", ConfigValue(
+        default=0.0006,
+        domain=float,
+        description="Plate thickness",
+        doc="""Plate thickness"""))
+
+    CONFIG.declare("plate_vertical_dist", ConfigValue(
+        default=1.897,
+        domain=float,
+        description="Vertical distance between centers of ports.",
+        doc="""Vertical distance between centers of ports.(Top and bottom ports)
+            (approximately the plate length)"""))
+
+    CONFIG.declare("plate_horizontal_dist", ConfigValue(
+        default=0.409,
+        domain=float,
+        description="Horizontal distance between centers of ports.",
+        doc="""Horizontal distance between centers of ports(Left and right ports)"""))
+
+    CONFIG.declare("plate_pact_length", ConfigValue(
+        default=0.381,
+        domain=float,
+        description="Compressed plate pact length.",
+        doc="""Compressed plate pact length.
+               Length between the Head and the Follower"""))
+
+    CONFIG.declare("surface_enlargement_factor", ConfigValue(
+        default=None,
+        domain=(float or In([None])),
+        description="Surface enlargement factor",
+        doc="""Surface enlargement factor is the ratio of single plate area
+               (obtained from the total area) to the projected plate area"""))
+
+    CONFIG.declare("plate_gap", ConfigValue(
+        default=None,
+        domain=(float or In([None])),
+        description="Mean channel spacing or gap bewteen two plates",
+        doc="""The plate gap is the distance between two adjacent plates that
+               forms a flow channel """))
 
     _SideCONFIG.declare("property_package", ConfigValue(
         default=useDefault,
@@ -208,14 +207,18 @@ class PHEData(UnitModelBlockData):
         self.hot_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.hot_side.add_material_balances(
-            balance_type=self.config.material_balance_type,
+            balance_type=MaterialBalanceType.componentTotal,
             has_mass_transfer=False,
             has_phase_equilibrium=False,
             has_rate_reactions=False)
 
         self.hot_side.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+            balance_type=MomentumBalanceType.pressureTotal,
+            has_pressure_change=True)
+
+        # Energy balance is based on the effectiveness Number of Transfer units
+        # (E-NTU method) and inluded as performance equations. Hence the control
+        #  volume energy balances are not added.
 
         # ======================================================================
         # Build cold-side  Control Volume(Rich solvent)
@@ -228,14 +231,14 @@ class PHEData(UnitModelBlockData):
         self.cold_side.add_state_blocks(has_phase_equilibrium=False)
 
         self.cold_side.add_material_balances(
-            balance_type=self.config.material_balance_type,
+            balance_type=MaterialBalanceType.componentTotal,
             has_mass_transfer=False,
             has_phase_equilibrium=False,
             has_rate_reactions=False)
 
         self.cold_side.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+            balance_type=MomentumBalanceType.pressureTotal,
+            has_pressure_change=True)
 
         # ======================================================================
         # Add Ports to control volumes
@@ -263,33 +266,74 @@ class PHEData(UnitModelBlockData):
                            doc="Set of hot fluid passes")
         self.PC = RangeSet(self.P,
                            doc="Set of cold fluid passes(equal to PH)")
-        self.plate_thermal_cond = Param(initialize=plate_param.kp,
+
+        self.plate_thermal_cond = Param(mutable=True,
                                         units=pyunits.W / pyunits.m / pyunits.K,
                                         doc="Plate thermal conductivity")
-        self.plate_thick = Param(initialize=plate_param.bp,
+        self.plate_thick = Param(mutable=True,
                                  units=pyunits.m,
                                  doc="Plate thickness")
-        self.plate_gap = Param(initialize=plate_param.b,
+        self.plate_gap = Param(mutable=True,
                                units=pyunits.m,
                                doc="Plate gap")
-        self.plate_length = Param(initialize=plate_param.L,
+        self.plate_length = Param(mutable=True,
                                   units=pyunits.m,
                                   doc="Plate length ")
-        self.plate_width = Param(initialize=plate_param.w,
+        self.plate_width = Param(mutable=True,
                                  units=pyunits.m,
                                  doc="Plate width ")
-        self.plate_area = Param(initialize=plate_param.Ap,
+        self.plate_area = Param(mutable=True,
                                 units=pyunits.m**2,
-                                doc="Area ")
-        self.channel_dia = Param(initialize=plate_param.De,
+                                doc="Heat transfer area of single plate")
+        self.channel_dia = Param(mutable=True,
                                  units=pyunits.m,
                                  doc=" Channel equivalent diameter")
-        self.port_dia = Param(initialize=plate_param.Dp,
+        self.port_dia = Param(mutable=True,
                               units=pyunits.m,
                               doc=" Port diameter of plate ")
         self.Np = Param(self.PH,
                         units=None,
                         doc="Number of channels in each pass", mutable=True)
+
+        # Assign plate specifications
+        self.plate_thermal_cond = self.config.plate_thermal_cond
+        self.plate_thick = self.config.plate_thickness
+        self.port_dia = self.config.port_diameter
+
+        # Plate length & width
+        _effective_plate_length = self.config.plate_vertical_dist - \
+            self.config.port_diameter
+        _effective_plate_width = self.config.plate_horizontal_dist + \
+            self.config.port_diameter
+        self.plate_length = _effective_plate_length
+        self.plate_width = _effective_plate_width
+
+        # Area of single plate
+        _total_active_plate_number = 2 * sum(self.config.channel_list) - 1 -\
+            self.config.divider_plate_number
+        self.plate_area = self.config.total_area / _total_active_plate_number
+
+        # Plate gap
+        if self.config.plate_gap is None:
+            _total_plate_number = 2 * sum(self.config.channel_list) + 1 +\
+                self.config.divider_plate_number
+            _plate_pitch = self.config.plate_pact_length / _total_plate_number
+
+            self.plate_gap = _plate_pitch - self.config.plate_thickness
+        else:
+            self.plate_gap = self.config.plate_gap
+
+        # Surface enlargement factor
+        if self.config.surface_enlargement_factor is None:
+            _projected_plate_area = _effective_plate_length * _effective_plate_width
+            _surface_enlargement_factor = self.plate_area.value / _projected_plate_area
+        else:
+            _surface_enlargement_factor = self.config.surface_enlargement_factor
+
+        # Channel equivalent diameter
+        self.channel_dia = 2 * self.plate_gap.value / _surface_enlargement_factor
+
+        # Number of channels in each pass
         for i in self.PH:
             self.Np[i] = self.config.channel_list[i - 1]
 
@@ -306,21 +350,12 @@ class PHEData(UnitModelBlockData):
 
     def _make_performance_method(self):
 
-        # Add object references - Sets
-        # add_object_reference(self, "component_list_ref",
-        #                      self.config.hot_side.property_package.component_list)
-
-        component_list_ref = self.config.hot_side.property_package.component_list
+        #component_list_ref = self.config.hot_side.property_package.component_list
         solvent_list = self.config.hot_side.property_package.component_list_solvent
-        # add_object_reference(
-        #     self,
-        #     "solvent_list",
-        #     self.config.hot_side.property_package.component_list_solvent)
 
         #cp_ref = self.config.hot_side.property_package.cp_param
         add_object_reference(self, "cp_ref",
                              self.config.hot_side.property_package.cp_param)
-
 
         def rule_trh(blk, t):
             return (blk.hot_side.properties_out[t].temperature /
@@ -408,19 +443,19 @@ class PHEData(UnitModelBlockData):
         # PERFORMANCE EQUATIONS
 
         # ---------------MASS BALANCE CONSTRAINTS------------------------------
-        def rule_eq_hotside_sumx(bk, t):
-            return bk.hot_side.properties_out[t].flow_mol == \
-                sum(bk.hot_side.properties_out[t].flow_mol_comp[j]
-                    for j in component_list_ref)
-        self.eq_hotside_sumx = Constraint(self.flowsheet().config.time,
-                                          rule=rule_eq_hotside_sumx)
+        # def rule_eq_hotside_sumx(bk, t):
+        #     return bk.hot_side.properties_out[t].flow_mol == \
+        #         sum(bk.hot_side.properties_out[t].flow_mol_comp[j]
+        #             for j in component_list_ref)
+        # self.eq_hotside_sumx = Constraint(self.flowsheet().config.time,
+        #                                   rule=rule_eq_hotside_sumx)
 
-        def rule_eq_coldside_sumx(bk, t):
-            return bk.cold_side.properties_out[t].flow_mol == \
-                sum(bk.cold_side.properties_out[t].flow_mol_comp[j]
-                    for j in component_list_ref)
-        self.eq_coldside_sumx = Constraint(self.flowsheet().config.time,
-                                           rule=rule_eq_coldside_sumx)
+        # def rule_eq_coldside_sumx(bk, t):
+        #     return bk.cold_side.properties_out[t].flow_mol == \
+        #         sum(bk.cold_side.properties_out[t].flow_mol_comp[j]
+        #             for j in component_list_ref)
+        # self.eq_coldside_sumx = Constraint(self.flowsheet().config.time,
+        #                                    rule=rule_eq_coldside_sumx)
 
         # ----------------------------------------------------------------------
         # mass flow rate in kg/s
@@ -708,8 +743,8 @@ class PHEData(UnitModelBlockData):
         self.QC = Expression(self.flowsheet().config.time, rule=rule_QH,
                              doc='Heat gain by cold fluid')
 
-    def initialize(blk, hotside_state_args={}, coldside_state_args={},
-                   outlvl=5, solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, hotside_state_args=None, coldside_state_args=None,
+                   outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6}):
         '''
         Initialisation routine for PHE unit (default solver ipopt)
 

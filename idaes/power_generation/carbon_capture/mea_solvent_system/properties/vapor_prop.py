@@ -317,6 +317,12 @@ class VaporStateBlockMethods(StateBlock):
 
         init_log.info('Starting Vapor phase properties initialization')
 
+        # Deactivate the constraints specific for non-inlet blocks i.e.
+        # when defined state is False
+        for k in blk.keys():
+            if blk[k].config.defined_state is False:
+                blk[k].sum_component_eqn.deactivate()
+
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flags = fix_state_vars(blk, state_args)
@@ -395,6 +401,11 @@ class VaporStateBlockMethods(StateBlock):
         # Unfix state variables
         revert_state_vars(blk, flags)
 
+        # Activate state variable related constraints
+        for k in blk.keys():
+            if blk[k].config.defined_state is False:
+                blk[k].sum_component_eqn.activate()
+
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
         init_log.info_high('States released.')
 
@@ -437,6 +448,13 @@ class VaporStateBlockData(StateBlockData):
                                domain=NonNegativeReals,
                                units=pyunits.K,
                                doc='Temperature [K]')
+
+        # Sum mole fractions if not inlet block
+        if self.config.defined_state is False:
+            def sum_component_eqn(b):
+                return  b.flow_mol == sum(b.flow_mol_comp[j]
+                                        for j in b._params.component_list)
+            self.sum_component_eqn = Constraint(rule=sum_component_eqn)
 
     def _flow_mol_comp(self):
 

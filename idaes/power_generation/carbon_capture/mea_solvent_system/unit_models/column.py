@@ -677,28 +677,28 @@ class PackedColumnData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # sum  of mole fraction to unity contraints:use component flows
         # Sum of component  flows  in vapor phase
-        @self.Constraint(self.t,
-                         self.vapor_phase.length_domain,
-                         doc="Sum of vapor component flows")
-        def eq_sumy(blk, t, x):
-            if x == self.vapor_phase.length_domain.first():
-                return Constraint.Skip
-            else:
-                return blk.vapor_phase.properties[t, x].flow_mol == \
-                    sum(blk.vapor_phase.properties[t, x].flow_mol_comp[j]
-                        for j in vap_comp)
+        # @self.Constraint(self.t,
+        #                  self.vapor_phase.length_domain,
+        #                  doc="Sum of vapor component flows")
+        # def eq_sumy(blk, t, x):
+        #     if x == self.vapor_phase.length_domain.first():
+        #         return Constraint.Skip
+        #     else:
+        #         return blk.vapor_phase.properties[t, x].flow_mol == \
+        #             sum(blk.vapor_phase.properties[t, x].flow_mol_comp[j]
+        #                 for j in vap_comp)
 
-        # Sum of component  flows  in liquid phase
-        @self.Constraint(self.t,
-                         self.liquid_phase.length_domain,
-                         doc="Sum of liquid component flows")
-        def eq_sumx(blk, t, x):
-            if x == self.liquid_phase.length_domain.last():
-                return Constraint.Skip
-            else:
-                return blk.liquid_phase.properties[t, x].flow_mol == \
-                    sum(blk.liquid_phase.properties[t, x].flow_mol_comp[j]
-                        for j in liq_comp)
+        # # # Sum of component  flows  in liquid phase
+        # @self.Constraint(self.t,
+        #                  self.liquid_phase.length_domain,
+        #                  doc="Sum of liquid component flows")
+        # def eq_sumx(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return Constraint.Skip
+        #     else:
+        #         return blk.liquid_phase.properties[t, x].flow_mol == \
+        #             sum(blk.liquid_phase.properties[t, x].flow_mol_comp[j]
+        #                 for j in liq_comp)
 
         # ---------------------------------------------------------------------
         # Mass transfer coefficients, Billet and Schultes (1999) correlation,
@@ -1094,7 +1094,7 @@ class PackedColumnData(UnitModelBlockData):
 
     # ==========================================================================
     # Model initialization routine
-    def initialize(blk, method='load_json', *args, **kwargs):
+    def initialize(blk, method='default', *args, **kwargs):
         """
         Column initialization.
 
@@ -1150,7 +1150,7 @@ class PackedColumnData(UnitModelBlockData):
             liquid_phase_state_args=None,
             state_vars_fixed=False,
             homotopy_steps_m=[0, 0.05,0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1],
-            homotopy_steps_h=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+            homotopy_steps_h=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
             outlvl=idaeslog.NOTSET,
             solver='ipopt',
             optarg={'tol': 1e-6}):
@@ -1193,8 +1193,8 @@ class PackedColumnData(UnitModelBlockData):
             "liquid_side_area",
             "eq_velocity_vap",
             "eq_velocity_liq",
-            "eq_sumy",
-            "eq_sumx",
+            # "eq_sumy",
+            # "eq_sumx",
             "E1_eqn",
             "E2_eqn",
             "pressure_at_interface",
@@ -1353,8 +1353,8 @@ class PackedColumnData(UnitModelBlockData):
         # activate mass balance related equations
         # unit model
         for c in [
-                "eq_sumy",
-                "eq_sumx",
+                # "eq_sumy",
+                # "eq_sumx",
                 "liq_BC_mole_frac",
                 "vap_BC_mole_frac",
                 "vap_BC_flow_mol",
