@@ -46,6 +46,7 @@ jobs:
           - '3.6'
           - '3.7'
           - '3.8'
+          - '3.9'
         os:
           - ubuntu-18.04
           - windows-latest
@@ -59,7 +60,7 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: '.'
+          install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
         uses: ./.github/actions/pytest
         with:
