@@ -195,6 +195,7 @@ There are a number of ways of manipulating this table:
     Select a name to hide/show that column in the table.
   * Click on the column header and drag it left or right to change its order in the table.
   * Resize a column by hovering over a column border until you see the mouse pointer change, then drag it to resize.
+  * Auto-resize a column by double-clicking on it.
 
 You can also export the entire table as a file of comma-separated values. See the :ref:`Export <export-menu>`
 documentation for details.
