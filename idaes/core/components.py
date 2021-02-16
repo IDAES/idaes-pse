@@ -171,8 +171,18 @@ class ComponentData(ProcessBlockData):
         parent._non_aqueous_set.add(self.local_name)
 
     def _is_phase_valid(self, phase):
-        # If no valid phases assigned, assume all are valid
+        # If no valid phases assigned
         if self.config.valid_phase_types is None:
+            try:
+                if phase.is_aqueous_phase():
+                    # If this is an aqueous phase, check for validaity
+                    return self._is_aqueous_phase_valid()
+            except AttributeError:
+                raise TypeError(
+                    "{} Phase {} is not a valid phase object or is undeclared."
+                    " Please check your phase declarations."
+                    .format(self.name, phase))
+            # Otherwise assume all are valid
             return True
 
         # Check for behaviour of phase, and see if that is a valid behaviour
@@ -202,6 +212,7 @@ class ComponentData(ProcessBlockData):
         # Method to indicate if a component type is stable in the aqueous phase
         # General components may not appear in aqueous phases
         return False
+
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
@@ -366,6 +377,13 @@ class ApparentData(SoluteData):
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """
+    CONFIG = SoluteData.CONFIG()
+    CONFIG.declare("dissociation_species", ConfigValue(
+        domain=dict,
+        default=None,
+        description="Dict of dissociation species",
+        doc="Dict of true species that this species will dissociate into "
+        "upon dissolution along with stoichiometric coefficients."))
 
     def _is_aqueous_phase_valid(self):
         return True

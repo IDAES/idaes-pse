@@ -31,7 +31,7 @@ from idaes.core import (MaterialBalanceType,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 from idaes.core import LiquidPhase, VaporPhase
 
@@ -40,13 +40,13 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 
 from idaes.generic_models.properties.core.state_definitions import FPhx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
         IdealBubbleDew)
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP as RPP
+import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
 
 # -----------------------------------------------------------------------------
@@ -59,8 +59,8 @@ config_dict = {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
-            "enth_mol_ig_comp": RPP,
-            "pressure_sat_comp": RPP,
+            "enth_mol_ig_comp": RPP4,
+            "pressure_sat_comp": RPP4,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
                 "mw": 78.1136E-3,  # [1]
@@ -89,8 +89,8 @@ config_dict = {
             "type": Component,
             "dens_mol_liq_comp": Perrys,
             "enth_mol_liq_comp": Perrys,
-            "enth_mol_ig_comp": RPP,
-            "pressure_sat_comp": RPP,
+            "enth_mol_ig_comp": RPP4,
+            "pressure_sat_comp": RPP4,
             "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
             "parameter_data": {
                 "mw": 92.1405E-3,  # [1]
@@ -132,7 +132,7 @@ config_dict = {
     "pressure_ref": 1e5,
     "temperature_ref": 300,
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew}
 
 
@@ -171,7 +171,7 @@ class TestParamBlock(object):
             "pressure": (5e4, 1e5, 1e6, pyunits.Pa)}
 
         assert model.params.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): smooth_VLE}
+            ("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2
@@ -229,76 +229,7 @@ class TestStateBlock(object):
         for i in model.props[1].mole_frac_comp:
             assert value(model.props[1].mole_frac_comp[i]) == 0.5
 
-        # Check supporting variables
-        assert isinstance(model.props[1].flow_mol_phase, Var)
-        assert len(model.props[1].flow_mol_phase) == 2
-
-        assert isinstance(model.props[1].mole_frac_phase_comp, Var)
-        assert len(model.props[1].mole_frac_phase_comp) == 4
-
-        assert isinstance(model.props[1].phase_frac, Var)
-        assert len(model.props[1].phase_frac) == 2
-
-        assert isinstance(model.props[1].total_flow_balance, Constraint)
-        assert len(model.props[1].total_flow_balance) == 1
-
-        assert isinstance(model.props[1].component_flow_balances, Constraint)
-        assert len(model.props[1].component_flow_balances) == 2
-
-        assert isinstance(model.props[1].sum_mole_frac, Constraint)
-        assert len(model.props[1].sum_mole_frac) == 1
-
-        assert not hasattr(model.props[1], "sum_mole_frac_out")
-
-        assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
-        assert len(model.props[1].phase_fraction_constraint) == 2
-
         assert_units_consistent(model)
-
-    @pytest.mark.unit
-    def test_get_material_flow_terms(self, model):
-        for p in model.params.phase_list:
-            for j in model.params.component_list:
-                assert model.props[1].get_material_flow_terms(p, j) == (
-                    model.props[1].flow_mol_phase[p] *
-                    model.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_enthalpy_flow_terms(self, model):
-        for p in model.params.phase_list:
-            assert model.props[1].get_enthalpy_flow_terms(p) == (
-                model.props[1].flow_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_get_material_density_terms(self, model):
-        for p in model.params.phase_list:
-            for j in model.params.component_list:
-                assert model.props[1].get_material_density_terms(p, j) == (
-                    model.props[1].dens_mol_phase[p] *
-                    model.props[1].mole_frac_phase_comp[p, j])
-
-    @pytest.mark.unit
-    def test_get_energy_density_terms(self, model):
-        for p in model.params.phase_list:
-            assert model.props[1].get_energy_density_terms(p) == (
-                model.props[1].dens_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
-
-    @pytest.mark.unit
-    def test_default_material_balance_type(self, model):
-        assert model.props[1].default_material_balance_type() == \
-            MaterialBalanceType.componentTotal
-
-    @pytest.mark.unit
-    def test_default_energy_balance_type(self, model):
-        assert model.props[1].default_energy_balance_type() == \
-            EnergyBalanceType.enthalpyTotal
-
-    @pytest.mark.unit
-    def test_get_material_flow_basis(self, model):
-        assert model.props[1].get_material_flow_basis() == \
-            MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_define_state_vars(self, model):

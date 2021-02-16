@@ -17,7 +17,7 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value, Var, Param, Expression, Constraint
+from pyomo.environ import Set, value, Var, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -577,15 +577,15 @@ should be constructed in this state block,
 
     @property
     def component_list(self):
-        return self.parent_component().component_list
+        return self.parent_component()._return_component_list()
 
     @property
     def phase_list(self):
-        return self.parent_component().phase_list
+        return self.parent_component()._return_phase_list()
 
     @property
     def phase_component_set(self):
-        return self.parent_component().phase_component_set
+        return self.parent_component()._return_phase_component_set()
 
     def build(self):
         """

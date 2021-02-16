@@ -1,5 +1,5 @@
-Supercritical Coal-Fired Power Plant Flowsheet
-==============================================
+Supercritical Coal-Fired Power Plant Flowsheet (steady state)
+=============================================================
 
 .. currentmodule:: idaes.power_generation.flowsheets.supercritical_power_plant.SCPC_power_plant
 
