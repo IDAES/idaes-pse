@@ -34,5 +34,6 @@ class SolverWrapper(object):
                             kwargs["options"][opk] = opv
         return solver(*args, **kwargs)
 
-SolverWrapper('ipopt')
+for c in SolverFactory._cls:
+    SolverWrapper(c)
 SolverWrapper('default')
