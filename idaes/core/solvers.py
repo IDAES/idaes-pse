@@ -27,7 +27,7 @@ class SolverWrapper(object):
                     kwargs[k] = v
                 elif k == "options":
                     # options is in ConfigBlock and in kwargs, treat "options"
-                    # special so individual options can have defaults not jut
+                    # special so individual options can have defaults not just
                     # the whole options block
                     for opk, opv in v.items():
                         if opk not in kwargs["options"]:
