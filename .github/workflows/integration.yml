@@ -106,43 +106,7 @@ jobs:
           msg = f'{workflow_trigger=}    event/action={event_name}/{event_action or "N/A"}    is_pr_approved={is_pr_approved or "N/A"}'
           _display_on_run_dashboard(msg)
           _set_output('workflow-trigger', workflow_trigger)
-  # TODO to be removed later once we see that everything works properly
-  debug_precheck:
-    name: (util) Debug precheck job
-    runs-on: ubuntu-latest
-    needs: precheck
-    steps:
-      - name: Show precheck output
-        run: |
-          jq . <<EOF
-          ${{ toJSON(needs.precheck.outputs) }}
-          EOF
-          echo "precheck.outputs.is-pr-approved=${{ needs.precheck.outputs.is-pr-approved }}"
-          echo "precheck.outputs.workflow-trigger=${{ needs.precheck.outputs.workflow-trigger }}"
-      - name: Test if condition
-        if: >-
-          (
-            needs.precheck.outputs.workflow-trigger == 'user_dispatch'
-            || needs.precheck.outputs.workflow-trigger == 'not_pr'
-            || needs.precheck.outputs.workflow-trigger == 'approved_pr'
-          )
-        run: echo "If I'm running, the main job should be running as well"
-  # TODO to be removed later once we see that everything works properly
-  debug_label:
-    name: (util) Debug label triggers
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/display-debug-info
-      - name: Test label condition
-        if: >-
-          (
-            github.event.action == 'labeled'
-            && contains(github.event.label.description, 'triggers_workflow')
-            && contains(github.event.label.description, github.workflow)
-          )
-        run: echo "${{ github.event.label.description }}"
-#
+
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
@@ -157,10 +121,10 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.6'
+          # - '3.6'
           - '3.7'
-          - '3.8'
-          - '3.9'
+          # - '3.8'
+          # - '3.9'
         os:
           - ubuntu-18.04
           - windows-latest
