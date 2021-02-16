@@ -16,20 +16,6 @@ import pytest
 import idaes
 
 @pytest.mark.unit
-def test_ipopt_available():
-    """
-    Tries to set-up the IPOPT and returns exception if not available
-    """
-    idaes.core.solvers._use_pyomo_solver_factory()
-    if not pyo.SolverFactory('ipopt').available():
-        raise Exception(
-            "Could not find IPOPT. Users are strongly encouraged to have a "
-            "version of IPOPT available, as it is the default solver assumed "
-            "by many IDAES examples and tests. See the IDAES install "
-            "documentation for instructions on how to get IPOPT.")
-    idaes.core.solvers._use_idaes_solver_factory()
-
-@pytest.mark.unit
 def test_ipopt_idaes_available():
     """
     Tries to set-up the IPOPT with the IDAES SolverFactory wrapper
@@ -58,20 +44,6 @@ def test_ipopt_idaes_config():
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
-def test_ipopt_pyomo_config():
-    """
-    Make sure setting to Pyomo solver factory doesn't read IDAES config
-    """
-    idaes.core.solvers._use_pyomo_solver_factory()
-    orig = idaes.cfg["ipopt"]["options"]["nlp_scaling_method"]
-    idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = "gradient-based"
-    solver = pyo.SolverFactory('ipopt')
-    assert solver.options["nlp_scaling_method"] is None
-    idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = orig
-    idaes.core.solvers._use_idaes_solver_factory()
-
-@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
-@pytest.mark.unit
 def test_ipopt_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
@@ -91,4 +63,5 @@ def test_ipopt_idaes_solve():
 def test_default_solver():
     """Test that default solver returns the correct solver type
     """
-    assert type(pyo.SolverFactory()) == type(pyo.SolverFactory(idaes.cfg.default_solver))
+    assert type(pyo.SolverFactory("default")) \
+        == type(pyo.SolverFactory(idaes.cfg.default_solver))
