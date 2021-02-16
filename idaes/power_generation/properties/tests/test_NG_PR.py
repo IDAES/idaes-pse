@@ -60,10 +60,9 @@ class TestNaturalGasProps(object):
         assert_units_consistent(m)
 
         m.fs.obj = Objective(expr=(m.fs.state[1].temperature - 510)**2)
+        solver = SolverFactory('ipopt')
 
         for logP in range(8, 13, 1):
-            m.fs.obj.deactivate()
-
             m.fs.state[1].flow_mol.fix(100)
             m.fs.state[1].mole_frac_comp["H2"].fix(0.1)
             m.fs.state[1].mole_frac_comp["CO"].fix(0.1)
@@ -82,17 +81,21 @@ class TestNaturalGasProps(object):
             m.fs.state.initialize(outlvl=0)
 
             m.fs.state[1].temperature.unfix()
-            m.fs.obj.activate()
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m, tee=True)
 
             assert results.solver.termination_condition == \
                 TerminationCondition.optimal
+            assert -93000 == pytest.approx(value(
+                m.fs.state[1].enth_mol_phase['Vap']), 1)
+            assert 250 == pytest.approx(value(
+                m.fs.state[1].entr_mol_phase['Vap']), 1)
 
     @pytest.mark.integration
     def test_P_sweep(self, m):
-        for T in range(370, 1000, 25):
+        solver = SolverFactory('ipopt')
+
+        for T in range(300, 1000, 200):
             m.fs.state[1].flow_mol.fix(100)
             m.fs.state[1].mole_frac_comp["H2"].fix(0.1)
             m.fs.state[1].mole_frac_comp["CO"].fix(0.1)
@@ -110,7 +113,6 @@ class TestNaturalGasProps(object):
 
             m.fs.state.initialize(outlvl=0)
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m)
 
             assert results.solver.termination_condition == \
@@ -118,11 +120,16 @@ class TestNaturalGasProps(object):
 
             while m.fs.state[1].pressure.value <= 1e6:
                 m.fs.state[1].pressure.value = (
-                    m.fs.state[1].pressure.value + 1e5)
-                solver = SolverFactory('ipopt')
+                    m.fs.state[1].pressure.value + 2e5)
                 results = solver.solve(m)
+
                 assert results.solver.termination_condition == \
                     TerminationCondition.optimal
+
+                assert -70000 >= value(m.fs.state[1].enth_mol_phase['Vap'])
+                assert -105000 <= value(m.fs.state[1].enth_mol_phase['Vap'])
+                assert 175 <= value(m.fs.state[1].entr_mol_phase['Vap'])
+                assert 250 >= value(m.fs.state[1].entr_mol_phase['Vap'])
 
     @pytest.mark.component
     def test_gibbs(self, m):
