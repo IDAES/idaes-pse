@@ -10,16 +10,29 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from idaes.core.solvers import SolverFactory
+import idaes.core.solvers
 import pyomo.environ as pyo
 import pytest
 import idaes
-
 
 @pytest.mark.unit
 def test_ipopt_available():
     """
     Tries to set-up the IPOPT and returns exception if not available
+    """
+    idaes.core.solvers._use_pyomo_solver_factory()
+    if not pyo.SolverFactory('ipopt').available():
+        raise Exception(
+            "Could not find IPOPT. Users are strongly encouraged to have a "
+            "version of IPOPT available, as it is the default solver assumed "
+            "by many IDAES examples and tests. See the IDAES install "
+            "documentation for instructions on how to get IPOPT.")
+    idaes.core.solvers._use_idaes_solver_factory()
+
+@pytest.mark.unit
+def test_ipopt_idaes_available():
+    """
+    Tries to set-up the IPOPT with the IDAES SolverFactory wrapper
     """
     if not pyo.SolverFactory('ipopt').available():
         raise Exception(
@@ -28,19 +41,7 @@ def test_ipopt_available():
             "by many IDAES examples and tests. See the IDAES install "
             "documentation for instructions on how to get IPOPT.")
 
-@pytest.mark.unit
-def test_ipopt_idaes_available():
-    """
-    Tries to set-up the IPOPT with the IDAES SolverFactory wrapper
-    """
-    if not SolverFactory('ipopt').available():
-        raise Exception(
-            "Could not find IPOPT. Users are strongly encouraged to have a "
-            "version of IPOPT available, as it is the default solver assumed "
-            "by many IDAES examples and tests. See the IDAES install "
-            "documentation for instructions on how to get IPOPT.")
-
-@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_ipopt_idaes_config():
     """
@@ -48,21 +49,35 @@ def test_ipopt_idaes_config():
     """
     orig = idaes.cfg["ipopt"]["options"]["nlp_scaling_method"]
     idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = "gradient-based"
-    solver = SolverFactory('ipopt')
+    solver = pyo.SolverFactory('ipopt')
     assert solver.options["nlp_scaling_method"] == "gradient-based"
     idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = orig
-    solver = SolverFactory('ipopt', options={"tol":1})
+    solver = pyo.SolverFactory('ipopt', options={"tol":1})
     assert solver.options["tol"] == 1
 
 
-@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.unit
+def test_ipopt_pyomo_config():
+    """
+    Make sure setting to Pyomo solver factory doesn't read IDAES config
+    """
+    idaes.core.solvers._use_pyomo_solver_factory()
+    orig = idaes.cfg["ipopt"]["options"]["nlp_scaling_method"]
+    idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = "gradient-based"
+    solver = pyo.SolverFactory('ipopt')
+    assert solver.options["nlp_scaling_method"] is None
+    idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = orig
+    idaes.core.solvers._use_idaes_solver_factory()
+
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_ipopt_idaes_solve():
     """
     Make sure there is no issue with the solver class or default settings that
     break the solver object.  Passing a bad solver option will result in failure
     """
-    solver = SolverFactory('ipopt')
+    solver = pyo.SolverFactory('ipopt')
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=-0.1)
     m.y = pyo.Var(initialize=1)
@@ -71,9 +86,9 @@ def test_ipopt_idaes_solve():
     solver.solve(m)
     assert pytest.approx(1) == pyo.value(m.x)
 
-@pytest.mark.skipif(not SolverFactory('ipopt').available(False), reason="no Ipopt")
+@pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_default_solver():
     """Test that default solver returns the correct solver type
     """
-    assert type(SolverFactory()) == type(SolverFactory(idaes.cfg.default_solver))
+    assert type(pyo.SolverFactory()) == type(pyo.SolverFactory(idaes.cfg.default_solver))
