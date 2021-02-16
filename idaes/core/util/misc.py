@@ -37,7 +37,7 @@ def get_default_solver():
     available
     """
     # if the solver is not available this will raise an unknown solver exception
-    return SolverFactory()
+    return SolverFactory("default")
 
 
 # Author: Andrew Lee
