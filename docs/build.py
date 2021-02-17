@@ -117,7 +117,6 @@ def run_html(clean=True, vb=0, timeout=0, dry_run=False, **kwargs):
     )
     if dry_run:
         return
-    postprocess_html(Path("."), Path(build_dir) / "html")
     # check output file
     print_status("Check output file")
     num_lines = num_warnings = num_errors = 0
@@ -135,23 +134,6 @@ def run_html(clean=True, vb=0, timeout=0, dry_run=False, **kwargs):
             f"These will cause tests to fail\n"
             f"See file '{output_file}' for details",
         )
-
-
-def postprocess_html(src_dir, tgt_dir):
-    """Perform some custom post-processing actions on the Sphinx generated HTML.
-    """
-    _log.info(f"Postprocess HTML.begin src={src_dir} target={tgt_dir}")
-    _log.info("Copy additional static files.begin")
-    image_src_dir, image_tgt_dir = src_dir / "_images", tgt_dir / "_images"
-    for ext in "png", "jpg", "jpeg", "svg", "pdf", "gif":
-        for image_src in image_src_dir.glob(f"*.{ext}"):
-            image = image_src.name
-            image_tgt = image_tgt_dir / image
-            if not image_tgt.exists():
-                _log.debug(f"Copy image file '{image}' from {image_src_dir} -> {image_tgt_dir}")
-                shutil.copy(image_src, image_tgt)
-    _log.info("Copy additional static files.end")
-    _log.info(f"Postprocess HTML.end")
 
 
 def _run(what, args, timeout, not_really):

@@ -74,7 +74,7 @@ the main areas highlighted. Then we zoom in on each area and describe how to use
 
     .. raw:: html
 
-        <img src="../../_images/ifv_screenshot_window.png" usemap="#image-map" width="800px">
+        <img src="../../_static/extra/ifv_screenshot_window.png" usemap="#image-map" width="800px">
         <map name="image-map">
             <area target="_self" alt="Top bar" title="Top bar" href="#top-bar" coords="20,10,800,70" shape="rect"></area>
             <area target="_self" alt="Diagram Controls" title="Diagram Controls" href="#diagram-controls" coords="510,80,800,125" shape="rect"></area>
@@ -84,7 +84,7 @@ the main areas highlighted. Then we zoom in on each area and describe how to use
 
 .. only:: latex
 
-    .. figure:: ../../_images/ifv_screenshot_window.png
+    .. figure:: ../../_static/extra/ifv_screenshot_window.png
         :width: 800
 
         Screenshot of the main window of the IFV UI
@@ -201,7 +201,6 @@ There are a number of ways of manipulating this table:
     Select a name to hide/show that column in the table.
   * Click on the column header and drag it left or right to change its order in the table.
   * Resize a column by hovering over a column border until you see the mouse pointer change, then drag it to resize.
-  * Auto-resize a column by double-clicking on it.
 
 You can also export the entire table as a file of comma-separated values. See the :ref:`Export <export-menu>`
 documentation for details.
