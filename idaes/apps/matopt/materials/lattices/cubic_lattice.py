@@ -34,7 +34,7 @@ class CubicLattice(UnitCellLattice):
         RefFracPositions = [np.array([0.0, 0.0, 0.0])]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
-        self._IAD = IAD
+        self._IAD = CubicLattice.RefIAD
         self.applyTransF(ScaleFunc(IAD / CubicLattice.RefIAD))
         self._NthNeighbors = [[np.array([1.0, 0.0, 0.0]),
                                np.array([0.0, 1.0, 0.0]),
@@ -46,7 +46,10 @@ class CubicLattice(UnitCellLattice):
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
         if isinstance(TransF, ScaleFunc):
-            self._IAD *= TransF.Scale
+            if TransF.isIsometric:
+                self._IAD *= TransF.Scale[0]
+            else:
+                raise ValueError('CubicLattice applyTransF: Can only scale isometrically')
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS
