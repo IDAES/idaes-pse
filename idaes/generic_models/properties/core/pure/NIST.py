@@ -109,11 +109,11 @@ class enth_mol_ig_comp():
         H = (cobj.cp_mol_ig_comp_coeff_H if not h_form
              else 0*pyunits.kJ*pyunits.mol**-1)
 
-        h = (cobj.cp_mol_ig_comp_coeff_A*(t-tr) +
-             (cobj.cp_mol_ig_comp_coeff_B/2)*(t**2-tr**2) +
-             (cobj.cp_mol_ig_comp_coeff_C/3)*(t**3-tr**3) +
-             (cobj.cp_mol_ig_comp_coeff_D/4)*(t**4-tr**4) -
-             cobj.cp_mol_ig_comp_coeff_E*(1/t-1/tr) +
+        h = (cobj.cp_mol_ig_comp_coeff_A*t +
+             (cobj.cp_mol_ig_comp_coeff_B/2)*t**2 +
+             (cobj.cp_mol_ig_comp_coeff_C/3)*t**3 +
+             (cobj.cp_mol_ig_comp_coeff_D/4)*t**4 -
+             cobj.cp_mol_ig_comp_coeff_E/t +
              cobj.cp_mol_ig_comp_coeff_F -
              H)
 
