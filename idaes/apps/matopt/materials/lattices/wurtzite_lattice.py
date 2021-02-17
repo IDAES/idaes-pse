@@ -19,6 +19,7 @@ from .unit_cell_lattice import UnitCell, UnitCellLattice
 from ..geometry import Parallelepiped
 from ..tiling import CubicTiling
 from ..transform_func import ScaleFunc, RotateFunc
+from ...opt import DBL_TOL
 from ...util.util import ListHasPoint
 
 
@@ -99,7 +100,7 @@ class WurtziteLattice(UnitCellLattice):
     # def isOnLattice(self,P):
 
     def areNeighbors(self, P1, P2):
-        return np.linalg.norm(P2 - P1) <= self.IAD
+        return np.linalg.norm(P2 - P1) <= self.IAD + DBL_TOL
 
     def getNeighbors(self, P, layer=1):
         RefP = self._getConvertToReference(P)
