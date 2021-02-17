@@ -16,6 +16,7 @@ The IDAES Flowsheet Visualizer, or IFV for short, is a web-based user interface 
 * Rearrange the flowsheet diagram to your taste and save the arrangement for next time
 * Dynamically refresh the displayed values to reflect changes in the underlying IDAES model
 
+To use the IFV, first :ref:`install IDAES <IDAES Installation>`.
 The IFV can be invoked from a Jupyter Notebook or a Python script. It does not require that you run any
 other application. Currently the IFV is only for viewing the flowsheet on your own computer. :sup:`1`
 
@@ -29,6 +30,8 @@ This guide describes how to invoke (i.e., start) and use the IFV.
 
 Invocation
 ^^^^^^^^^^
+The IFV visualizes *flowsheets*. To get started with creating a flowsheet with IDAES, see the
+:ref:`Flowsheet models<user_guide/components/flowsheet/index:Flowsheet>` documentation page.
 Once you have created your flowsheet, simply call the `visualize` method on that object,
 passing some parameters to give it a name and optional file for saving changes::
 
@@ -73,9 +76,9 @@ the main areas highlighted. Then we zoom in on each area and describe how to use
 
         <img src="../../_images/ifv_screenshot_window.png" usemap="#image-map" width="800px">
         <map name="image-map">
-            <area target="_self" alt="Top bar" title="Top bar" href="#top-bar" coords="20,10,800,100" shape="rect"></area>
-            <area target="_self" alt="Diagram Controls" title="Diagram Controls" href="#diagram-controls" coords="484,110,800,165" shape="rect"></area>
-            <area target="_self" alt="Diagram/Flowsheet" title="Diagram/Flowsheet" href="#diagram" coords="25,175,800,570" shape="rect"></area>
+            <area target="_self" alt="Top bar" title="Top bar" href="#top-bar" coords="20,10,800,70" shape="rect"></area>
+            <area target="_self" alt="Diagram Controls" title="Diagram Controls" href="#diagram-controls" coords="510,80,800,125" shape="rect"></area>
+            <area target="_self" alt="Diagram/Flowsheet" title="Diagram/Flowsheet" href="#diagram" coords="25,130,800,570" shape="rect"></area>
             <area target="_self" alt="Stream Table" title="Stream Table" href="#stream-table" coords="25,570,800,890" shape="rect"></area>
         </map>
 
@@ -114,7 +117,7 @@ and a menu. The menu items are:
   * **Stream table**: Save the flowsheet as comma-separated values. The result will be a text file, called "export.csv",
     that contains the data.
 
-* **View**: Toggle the view of the flowsheet (diagram) area and the stream table area.
+* **View**: Toggle the visibility of the flowsheet (diagram) area and the stream table area.
 * **Help**: Load this documentation page.
 
 :ref:`Back to main window screenshot <ifv-screenshot>`
@@ -133,19 +136,22 @@ You can interact with the components on the diagram:
 Shapes
     Geometric shapes on the flowsheet represent unit models, inlets and outlets, and other IDAES components.
     They are connected by lines, and each has a name. All shapes can be moved by clicking and dragging them.
-    If you right-click on a shape, it will rotate 90 degrees. You cannot add or remove lines, as these
-    are determined by the underlying flowsheet.
+    If you right-click on a shape, it will rotate 90 degrees.
 
 Lines
     The lines connecting units can be manipulated by clicking and dragging.
     You can click on a line to create a new segment that can be used for routing the line
     around objects. You can eliminate a segment by clicking on the dot that appears as you hover over
     the line. There are also pill-shaped handles that appear on the lines for moving them.
-    The endpoints of the lines are determined by the flowsheet and cannot be changed.
+    The endpoints of the lines are determined by the flowsheet and cannot be changed. For the same reason, you
+    also cannot add or remove lines.
 
 Labels
-    Both the units and the arcs have associated values that can be shown, which pop up over the
+    Both the shapes and lines have associated values that can be shown, which pop up over the
     lines if you toggle the "Show labels" control. See the :ref:`diagram-controls` section for details.
+
+More details on mouse and keyboard actions for the diagram are available in the `documentation of the
+underlying Rappid toolkit <https://google.com/>`_.
 
 :ref:`Back to main window screenshot <ifv-screenshot>`
 
@@ -166,7 +172,7 @@ The *diagram controls* allow you to affect some global properties of the diagram
 .. |zoomfit| image:: ../../_images/ifv_icon_fit.png
 
 View actions
-  * Labels: Toggle view of the information (*labels*) shown for each stream. This is the same information
+  * Labels: Toggle visibility of the information (*labels*) shown for each stream. This is the same information
     that appears in the :ref:`ifv_streamtable`.
   * Grid: Toggle a background "grid"
   * |zoomin|: Zoom in by 25%
