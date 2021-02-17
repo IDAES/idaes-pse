@@ -11,7 +11,7 @@ class SolverWrapper(object):
             self.solver = SolverFactory.get_class(name)
             doc = SolverFactory.doc(name)
         SolverFactory.unregister(name)
-        # We should really make a public method to register a class without using a decorator
+        # Re-register the solver (register is a decorator)
         SolverFactory.register(name, doc)(self)
 
     def __call__(self, *args, **kwargs):
