@@ -20,14 +20,14 @@ provides a simple example for using water properties.
 .. testcode::
 
   from idaes.generic_models.properties import swco2
-  import pyomo.environ as pe # Pyomo environment
+  from pyomo.environ import ConcreteModel, units as pyunits, SolverFactory # Pyomo environment
   from idaes.generic_models.unit_models import Compressor
   from idaes.core import FlowsheetBlock
 
-  m = ConcreteModel()
-  m.fs = FlowsheetBlock(default={"dynamic": False})
-  m.fs.properties = swco2.SWCO2ParameterBlock()
-  m.fs.unit = Compressor(default={"property_package": m.fs.properties})
+  model = ConcreteModel()
+  model.fs = FlowsheetBlock(default={"dynamic": False})
+  model.fs.properties = swco2.SWCO2ParameterBlock()
+  model.fs.unit = Compressor(default={"property_package": model.fs.properties})
   F = 1000
   Tin = 500
   Pin = 10000
@@ -40,6 +40,8 @@ provides a simple example for using water properties.
   model.fs.unit.deltaP.fix(Pout - Pin)
   model.fs.unit.efficiency_isentropic.fix(0.9)
   model.fs.unit.initialize(optarg={'tol': 1e-6})
+
+  solver = SolverFactory("ipopt")
   solver.solve(model)
 
 
