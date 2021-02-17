@@ -26,21 +26,23 @@ import pytest
 
 @pytest.mark.unit
 def test_construct_FCCLattice():
-    IAD = 2.77
+    IAD = sqrt(2) / 2
+    lattice = FCCLattice.alignedWith100(IAD)
+    lattice = FCCLattice.alignedWith111(IAD)
     lattice = FCCLattice(IAD)
     return lattice
 
 
 @pytest.mark.unit
 def test_construct_CubicLattice():
-    IAD = 2.77
+    IAD = 1.0
     lattice = CubicLattice(IAD)
     return lattice
 
 
 @pytest.mark.unit
 def test_construct_PerovskiteLattice():
-    A, B, C = 4, 4, 4
+    A, B, C = 1.0, 1.0, 1.0
     lattice = PerovskiteLattice(A, B, C)
     return lattice
 
@@ -48,6 +50,9 @@ def test_construct_PerovskiteLattice():
 @pytest.mark.unit
 def test_construct_DiamondLattice():
     IAD = sqrt(3) / 4
+    lattice = DiamondLattice.alignedWith(IAD, '100')
+    lattice = DiamondLattice.alignedWith(IAD, '110')
+    lattice = DiamondLattice.alignedWith(IAD, '111')
     lattice = DiamondLattice(IAD)
     return lattice
 
@@ -55,6 +60,7 @@ def test_construct_DiamondLattice():
 @pytest.mark.unit
 def test_construct_WurtziteLattice():
     IAD = sqrt(3 / 8)
+    lattice = WurtziteLattice.alignedWith(IAD, '0001')
     lattice = WurtziteLattice(IAD)
     return lattice
 
