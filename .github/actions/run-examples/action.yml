@@ -30,13 +30,14 @@ runs:
       shell: bash
       # issue the cp command from the (source) dir where the config file is stored
       # to avoid issues with path separators on Windows
-      working-directory: ${{ env.GITHUB_ACTION_PATH }}
+      working-directory: ${{ inputs.working-dir }}
       env:
         config_file_name: ${{ inputs.config-file-name }}
-        config_file_dest_dir: ${{ inputs.working-dir }}
       run: |
-        echo "$PWD"
-        ls -la .
+        config_file_dst_dir="$PWD"
+        config_file_src_dir="$GITHUB_ACTION_PATH"
+        cd "$config_file_src_dir"
+        ls -la "PWD"
         cp "$config_file_name" "$config_file_dest_dir"
         echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
     - name: Run build.py script
