@@ -64,6 +64,9 @@ runs:
       # shell: bash --noprofile --norc {0}
       shell: bash
       run: |
+        echo "::group::Contents of config file $_config_file_path"
+        cat "$_config_file_path"
+        echo "::endgroup"
         echo "::group::Output of build.py"
         python build.py -v --config "$_config_file_path"
         echo "::endgroup"
