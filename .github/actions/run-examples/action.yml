@@ -45,6 +45,7 @@ runs:
             fspath
         )
         from pathlib import Path
+        import shutil
 
         def _add_to_runner_env(key, val):
             env_file_path = Path(env["GITHUB_ENV"])
