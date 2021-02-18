@@ -10,10 +10,10 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 import numpy as np
 
-from .geometry import Parallelepiped
+from .geometry import Parallelepiped, Cylinder, CylindricalSector
 from .design import Design
 
 
@@ -59,6 +59,49 @@ class Tiling(object):
 
         """
         raise NotImplementedError
+
+
+class LinearTiling(Tiling, ABC):
+    """ Class to manage linear periodicity. """
+    DBL_TOL = 1e-5
+
+    # === STANDARD CONSTRUCTOR
+    def __init__(self, TilingDirections_, argShape=None):
+        super().__init__()
+        self._TileShape = argShape
+        self._TilingDirections = TilingDirections_
+
+    # === CONSTRUCTOR - From Parallelepiped
+    @classmethod
+    def fromParallelepiped(cls, argShape):
+        assert (type(argShape) == Parallelepiped), 'The input shape is not an instance of Parallelepiped.'
+        TilingDirections_ = [argShape.Vz, -argShape.Vz]
+        return cls(TilingDirections_, argShape)
+
+    # === CONSTRUCTOR - From Cylinder or CylindricalSector
+    @classmethod
+    def fromCylindricalShape(cls, argShape):
+        assert (type(argShape) == Cylinder or CylindricalSector), 'The input shape is not an instance of Cylinder or CylindricalSector.'
+        TilingDirections_ = [argShape.Vh, -argShape.Vh]
+        return cls(TilingDirections_, argShape)
+
+    # === CONSTRUCTOR - From POSCAR files
+    @classmethod
+    def fromPOSCAR(cls, filename):
+        return cls.fromParallelepiped(Parallelepiped.fromPOSCAR(filename))
+
+    # === BASIC QUERY METHODS
+    @property
+    def TileShape(self):
+        return self._TileShape
+
+    @property
+    def TilingDirections(self):
+        return self._TilingDirections
+
+    @property
+    def V(self):
+        return self._TilingDirections[0]
 
 
 class PlanarTiling(Tiling):

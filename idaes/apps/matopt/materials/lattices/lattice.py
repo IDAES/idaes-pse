@@ -79,7 +79,7 @@ class Lattice(object):
         raise NotImplementedError
 
     @abstractmethod
-    def getNeighbors(self, P):
+    def getNeighbors(self, P, layer):
         raise NotImplementedError
 
     def _convertFromReference(self, P):

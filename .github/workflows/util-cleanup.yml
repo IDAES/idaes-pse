@@ -1,0 +1,19 @@
+name: (util) Cleanup
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+jobs:
+  clean-labels:
+    name: (util) Remove workflow trigger labels
+    runs-on: ubuntu-latest
+    if: contains(github.event.label.description, 'triggers_workflow')
+    env:
+      GITHUB_TOKEN: ${{ secrets.IDAES_BUILD_TOKEN }}
+      pull_number: ${{ github.event.pull_request.number }}
+      label_name: ${{ github.event.label.name }}
+    steps:
+      - name: Issue API call to remove label
+        run:
+          gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$pull_number/labels/$label_name"
