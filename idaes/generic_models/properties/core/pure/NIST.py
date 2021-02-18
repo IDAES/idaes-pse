@@ -103,7 +103,6 @@ class enth_mol_ig_comp():
     def return_expression(b, cobj, T):
         # Specific enthalpy via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
-        tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.kiloK)
 
         h_form = b.params.config.include_enthalpy_of_formation
         H = (cobj.cp_mol_ig_comp_coeff_H if not h_form
