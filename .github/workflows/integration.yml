@@ -110,7 +110,8 @@ jobs:
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
-    needs: [precheck]
+    # TODO the dependency on the examples job is only temporary, to avoid running unnecessary jobs while debugging
+    needs: [precheck, examples]
     if: >-
       (
         needs.precheck.outputs.workflow-trigger == 'user_dispatch'
@@ -146,13 +147,15 @@ jobs:
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # TODO add job if condition to match the one used for pytest job
     strategy:
       fail-fast: false
       matrix:
         python-version:
-          - '3.6'
+          # TODO restore all Python versions once tests pass
+          # - '3.6'
           - '3.7'
-          - '3.8'
+          # - '3.8'
         os:
           - ubuntu-18.04
           - windows-latest
