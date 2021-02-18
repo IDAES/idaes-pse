@@ -65,8 +65,7 @@ runs:
       working-directory: ${{ inputs.working-dir }}
       # by using a custom shell specification, we override the default "fails fast" behavior
       # to allow displaying the content of the error logs in case the build process fails
-      # shell: bash --noprofile --norc {0}
-      shell: bash
+      shell: bash --noprofile --norc {0}
       run: |
         echo "::group::Contents of config file $_config_file_path"
         cat "$_config_file_path"
