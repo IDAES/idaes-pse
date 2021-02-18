@@ -35,6 +35,8 @@ runs:
         config_file_name: ${{ inputs.config-file-name }}
         config_file_dest_dir: ${{ inputs.working-dir }}
       run: |
+        echo "$PWD"
+        ls -la .
         cp "$config_file_name" "$config_file_dest_dir"
         echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
     - name: Run build.py script
