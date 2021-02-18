@@ -10,19 +10,11 @@ inputs:
     required: false
     default: ${{ runner.temp }}
   config-file-name:
-    description: Name of the build script config file
+    description: >-
+      Name of the build script config file which will be copied to the working dir.
+      The source directory is assumed to be this action's directory.
     required: false
     default: build-config-for-idaes-ci.yml 
-  build-logs-path:
-    description: Path or glob to the file(s) where build error logs are saved
-    required: false
-    default: '*errors.txt'
-# TODO as a first step we display the error logs since they have terminal-friendly output
-# we can activate this action output if we'll need to upload the artifacts
-# outputs:
-#   build-artifacts:
-#     description: Stores artifacts produced during the build process, in a format suitable for being used with actions/upload-artifact
-#     value: ${{ steps.build.paths }}
 
 runs:
   using: composite
@@ -35,44 +27,21 @@ runs:
         git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} .
         git log -n 1
     - name: Set up config file
-      shell: python3 {0}
-      working-directory: ${{ inputs.working-dir }}
+      shell: bash
+      # issue the cp command from the (source) dir where the config file is stored
+      # to avoid issues with path separators on Windows
+      working-directory: ${{ env.GITHUB_ACTION_PATH }}
       env:
-        _config_file_name: ${{ inputs.config-file-name }}
+        config_file_name: ${{ inputs.config-file-name }}
+        config_file_dest_dir: ${{ inputs.working-dir }}
       run: |
-        from os import (
-            environ as env,
-            fspath
-        )
-        from pathlib import Path
-        import shutil
-
-        def _add_to_runner_env(key, val):
-            env_file_path = Path(env["GITHUB_ENV"])
-            with env_file_path.open('a') as f:
-                f.write(f'{key}={val}')
-
-        action_dir = Path(env["GITHUB_ACTION_PATH"])
-        config_file_name = env["_config_file_name"]
-        config_file_src_path = action_dir / config_file_name
-        config_file_dst_path = Path('.').absolute() / config_file_name
-        assert config_file_src_path.exists(), f"ERROR: Source config file path {config_file_path} does not exist"
-        shutil.copy(config_file_src_path, config_file_dst_path)
-        assert config_file_dst_path.exists(), f"ERROR: Dest file path {config_file_path} does not exist"
-        _add_to_runner_env("_config_file_path", fspath(config_file_dst_path))
-
+        cp "$config_file_name" "$config_file_dest_dir"
+        echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
     - name: Run build.py script
       working-directory: ${{ inputs.working-dir }}
-      # by using a custom shell specification, we override the default "fails fast" behavior
-      # to allow displaying the content of the error logs in case the build process fails
-      shell: bash --noprofile --norc {0}
+      shell: bash
       run: |
-        echo "::group::Contents of config file $_config_file_path"
-        cat "$_config_file_path"
+        echo "::group::Contents of config file $config_file_name"
+        cat "$config_file_name"
         echo "::endgroup"
-        echo "::group::Output of build.py"
-        python build.py -v --config "$_config_file_path" --test
-        echo "::endgroup"
-        echo "::group::Contents of output file(s) ${{ inputs.build-logs-path }}"
-        cat ${{ inputs.build-logs-path }} || echo "No matching files found"
-        echo "::endgroup"
+        python build.py -v --config "$config_file_name" --test

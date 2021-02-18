@@ -159,6 +159,8 @@ jobs:
         os:
           - ubuntu-18.04
           - windows-latest
+    env:
+      examples_working_dir: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
@@ -174,3 +176,9 @@ jobs:
         uses: ./.github/actions/run-examples
         with:
           git-ref: main
+          working-dir: ${{ env.examples_working_dir }}
+      - name: Display error logs
+        if: failure()
+        working-directory: ${{ env.examples_working_dir }}
+        run: |
+          cat *errors.txt || echo "No error logs found"
