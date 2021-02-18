@@ -27,8 +27,10 @@ the NGFC flowsheet. The code for generating SOFC ROMS can be found on PNNL's
 Github page: https://github.com/NGFC-Lib/NGFC-Lib.
 """
 
+import os
 from pyomo.environ import Constraint, Param, Var, exp, value, units
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.fileutils import this_file_dir
 
 
 # creates a dictionary from a list of indices and values
@@ -50,11 +52,12 @@ def build_matrix(index1, index2, values):
     return d
 
 
-def make_SOFC_ROM(self):
+def make_SOFC_ROM(b):
     # load kriging coefficients
-    ROM_filename = 'ROM/kriging_coefficients.dat'
+    fname = 'kriging_coefficients.dat'
+    path = os.path.join(this_file_dir(), fname)
 
-    with open(ROM_filename) as file:
+    with open(path) as file:
         text = file.readlines()
 
     kriging = [float(line) for line in text]
@@ -73,195 +76,199 @@ def make_SOFC_ROM(self):
     start_count = 0
     end_count = n_inputs
     values = kriging[start_count:end_count]
-    self.mean_input = Param(input_index,
-                            initialize=build_dict(input_index, values),
-                            mutable=False)
+    b.mean_input = Param(input_index,
+                         initialize=build_dict(input_index, values),
+                         mutable=False)
 
     start_count += n_inputs
     end_count += n_inputs
     values = kriging[start_count:end_count]
-    self.sigma_input = Param(input_index,
-                             initialize=build_dict(input_index, values),
-                             mutable=False)
+    b.sigma_input = Param(input_index,
+                          initialize=build_dict(input_index, values),
+                          mutable=False)
 
     start_count += n_inputs
     end_count += n_outputs
     values = kriging[start_count:end_count]
-    self.mean_output = Param(output_index,
-                             initialize=build_dict(output_index, values),
-                             mutable=False)
+    b.mean_output = Param(output_index,
+                          initialize=build_dict(output_index, values),
+                          mutable=False)
 
     start_count += n_outputs
     end_count += n_outputs
     values = kriging[start_count:end_count]
-    self.sigma_output = Param(output_index,
-                              initialize=build_dict(output_index, values),
-                              mutable=False)
+    b.sigma_output = Param(output_index,
+                           initialize=build_dict(output_index, values),
+                           mutable=False)
 
     start_count += n_outputs
     end_count += n_inputs*n_samples
     values = kriging[start_count:end_count]
-    self.ds_input = Param(samples_index, input_index,
-                          initialize=build_matrix(
-                              samples_index, input_index, values),
-                          mutable=False)
+    b.ds_input = Param(samples_index, input_index,
+                       initialize=build_matrix(
+                           samples_index, input_index, values),
+                       mutable=False)
 
     start_count += n_inputs*n_samples
     end_count += n_inputs
     values = kriging[start_count:end_count]
-    self.theta = Param(input_index,
-                       initialize=build_dict(input_index, values),
-                       mutable=False)
+    b.theta = Param(input_index,
+                    initialize=build_dict(input_index, values),
+                    mutable=False)
 
     start_count += n_inputs
     end_count += (n_inputs+1)*n_outputs
     values = kriging[start_count:end_count]
-    self.beta = Param(input_plus_index, output_index,
-                      initialize=build_matrix(
-                          input_plus_index, output_index, values),
-                      mutable=False)
+    b.beta = Param(input_plus_index, output_index,
+                   initialize=build_matrix(
+                       input_plus_index, output_index, values),
+                   mutable=False)
 
     start_count += (n_inputs+1)*n_outputs
     end_count += n_samples*n_outputs
     values = kriging[start_count:end_count]
-    self.gamma = Param(samples_index, output_index,
-                       initialize=build_matrix(
-                           samples_index, output_index, values),
-                       mutable=False)
+    b.gamma = Param(samples_index, output_index,
+                    initialize=build_matrix(
+                        samples_index, output_index, values),
+                    mutable=False)
 
     # create input vars for the user to interface with
-    self.current_density = Var(initialize=4000,
-                               units=units.A/units.m**2,
-                               bounds=(2000, 6000))
+    b.current_density = Var(initialize=4000,
+                            units=units.A/units.m**2,
+                            bounds=(2000, 6000))
 
-    self.fuel_temperature = Var(initialize=500,
-                                units=units.C,
-                                bounds=(15, 600))
+    b.fuel_temperature = Var(initialize=500,
+                             units=units.C,
+                             bounds=(15, 600))
 
-    self.internal_reforming = Var(initialize=0.4,
-                                  units=None,
-                                  bounds=(0, 1))
+    b.internal_reforming = Var(initialize=0.4,
+                               units=None,
+                               bounds=(0, 1))
 
-    self.air_temperature = Var(initialize=700,
-                               units=units.C,
-                               bounds=(550, 800))
+    b.air_temperature = Var(initialize=700,
+                            units=units.C,
+                            bounds=(550, 800))
 
-    self.air_recirculation = Var(initialize=0.5,
-                                 units=None,
-                                 bounds=(0, 0.8))
+    b.air_recirculation = Var(initialize=0.5,
+                              units=None,
+                              bounds=(0, 0.8))
 
-    self.OTC = Var(initialize=2.1,
-                   units=None,
-                   bounds=(1.5, 3))
+    b.OTC = Var(initialize=2.1,
+                units=None,
+                bounds=(1.5, 3))
 
-    self.fuel_util = Var(initialize=0.85,
-                         units=None,
-                         bounds=(0.4, 0.95))
+    b.fuel_util = Var(initialize=0.85,
+                      units=None,
+                      bounds=(0.4, 0.95))
 
-    self.air_util = Var(initialize=0.5,
-                        units=None,
-                        bounds=(0.125, 0.833))
+    b.air_util = Var(initialize=0.5,
+                     units=None,
+                     bounds=(0.125, 0.833))
 
-    self.pressure = Var(initialize=1,
-                        units=units.atm,
-                        bounds=(1, 2.5))
+    b.pressure = Var(initialize=1,
+                     units=units.atm,
+                     bounds=(1, 2.5))
 
     # create vars for intermediate calculations
     ROM_initialize_values = [4000, 500, 0.4, 700, 0.5, 2.1, .85, 0.5, 1]
-    self.ROM_input = Var(input_index,
-                         initialize=build_dict(input_index,
-                                               ROM_initialize_values))
+    b.ROM_input = Var(input_index,
+                      initialize=build_dict(input_index,
+                                            ROM_initialize_values))
 
-    self.norm_input = Var(input_index, initialize=0)
+    b.norm_input = Var(input_index, initialize=0)
 
-    self.F = Var(input_plus_index, initialize=0)
-    self.F[0].fix(1)
+    b.F = Var(input_plus_index, initialize=0)
+    b.F[0].fix(1)
 
-    self.R = Var(samples_index, initialize=0)
+    b.R = Var(samples_index, initialize=0)
 
-    self.norm_output = Var(output_index, initialize=0)
+    b.norm_output = Var(output_index, initialize=0)
 
-    self.ROM_output = Var(output_index)
+    b.ROM_output = Var(output_index)
 
     # create kriging regression constraints
 
     # this dict maps the index values to the input vars
-    input_map = {0: self.current_density,
-                 1: self.fuel_temperature,
-                 2: self.internal_reforming,
-                 3: self.air_temperature,
-                 4: self.air_recirculation,
-                 5: self.OTC,
-                 6: self.fuel_util,
-                 7: self.air_util,
-                 8: self.pressure}
+    input_map = {0: b.current_density,
+                 1: b.fuel_temperature,
+                 2: b.internal_reforming,
+                 3: b.air_temperature,
+                 4: b.air_recirculation,
+                 5: b.OTC,
+                 6: b.fuel_util,
+                 7: b.air_util,
+                 8: b.pressure}
 
     def input_rule(b, i):
-        return b.ROM_input[i] == input_map[i]
+        if units.get_units(input_map[i]) is None:
+            return b.ROM_input[i] == input_map[i]
+        else:
+            unit_conversion = units.get_units(input_map[i])
+            return b.ROM_input[i] == input_map[i]/unit_conversion
 
-    self.input_mapping_eqs = Constraint(input_index, rule=input_rule)
+    b.input_mapping_eqs = Constraint(input_index, rule=input_rule)
 
     def norm_input_rule(b, i):
         return (b.norm_input[i] ==
                 (b.ROM_input[i] - b.mean_input[i])/b.sigma_input[i])
 
-    self.norm_input_eqs = Constraint(input_index, rule=norm_input_rule)
+    b.norm_input_eqs = Constraint(input_index, rule=norm_input_rule)
 
     def F_rule(b, i):
         return b.F[i+1] == b.norm_input[i]
 
-    self.F_eqs = Constraint(input_index, rule=F_rule)
+    b.F_eqs = Constraint(input_index, rule=F_rule)
 
     def R_rule(b, i):
         return (b.R[i] == exp(-1*sum(b.theta[j] *
                                      (b.ds_input[i, j] - b.norm_input[j])**2
                                      for j in input_index)))
 
-    self.R_eqs = Constraint(samples_index, rule=R_rule)
+    b.R_eqs = Constraint(samples_index, rule=R_rule)
 
     def norm_output_rule(b, i):
         return (b.norm_output[i] ==
                 sum(b.F[j]*b.beta[j, i] for j in input_plus_index)
                 + sum(b.R[k]*b.gamma[k, i] for k in samples_index))
 
-    self.norm_output_eqs = Constraint(output_index, rule=norm_output_rule)
+    b.norm_output_eqs = Constraint(output_index, rule=norm_output_rule)
 
     def ROM_output_rule(b, i):
         return (b.ROM_output[i] ==
                 b.mean_output[i] + b.norm_output[i]*b.sigma_output[i])
 
-    self.ROM_output_eqs = Constraint(output_index, rule=ROM_output_rule)
+    b.ROM_output_eqs = Constraint(output_index, rule=ROM_output_rule)
 
     # create output variables and constraints
-    self.anode_outlet_temperature = Var(initialize=600, units=units.C)
-    self.cathode_outlet_temperature = Var(initialize=600, units=units.C)
-    self.stack_voltage = Var(initialize=1, units=units.V)
-    self.max_cell_temperature = Var(initialize=750, units=units.C)
-    self.deltaT_cell = Var(initialize=100, units=units.C)
+    b.anode_outlet_temperature = Var(initialize=600, units=units.C)
+    b.cathode_outlet_temperature = Var(initialize=600, units=units.C)
+    b.stack_voltage = Var(initialize=1, units=units.V)
+    b.max_cell_temperature = Var(initialize=750, units=units.C)
+    b.deltaT_cell = Var(initialize=100, units=units.C)
 
     def anode_outlet_rule(b):
         return b.anode_outlet_temperature == b.ROM_output[11]*units.C
-    self.anode_outlet_eq = Constraint(rule=anode_outlet_rule)
+    b.anode_outlet_eq = Constraint(rule=anode_outlet_rule)
 
     def cathode_outlet_rule(b):
         return b.cathode_outlet_temperature == b.ROM_output[13]*units.C
-    self.cathode_outlet_eq = Constraint(rule=cathode_outlet_rule)
+    b.cathode_outlet_eq = Constraint(rule=cathode_outlet_rule)
 
     def stack_voltage_rule(b):
-        return b.stack_voltage == self.ROM_output[1]*units.V
-    self.stack_voltage_eq = Constraint(rule=stack_voltage_rule)
+        return b.stack_voltage == b.ROM_output[1]*units.V
+    b.stack_voltage_eq = Constraint(rule=stack_voltage_rule)
 
     def max_cell_temp_rule(b):
-        return b.max_cell_temperature == self.ROM_output[8]*units.C
-    self.max_cell_temp_eq = Constraint(rule=max_cell_temp_rule)
+        return b.max_cell_temperature == b.ROM_output[8]*units.C
+    b.max_cell_temp_eq = Constraint(rule=max_cell_temp_rule)
 
     def deltaT_cell_rule(b):
-        return b.deltaT_cell == self.ROM_output[10]*units.C
-    self.deltaT_cell_eq = Constraint(rule=deltaT_cell_rule)
+        return b.deltaT_cell == b.ROM_output[10]*units.C
+    b.deltaT_cell_eq = Constraint(rule=deltaT_cell_rule)
 
 
 # initialization procedure for the ROM
-def initialize_SOFC_ROM(self):
+def initialize_SOFC_ROM(b):
 
     def cvfc_indexed(variable, constraint):
         for i in constraint.keys():
@@ -270,22 +277,22 @@ def initialize_SOFC_ROM(self):
 
     # F needs to be done manually
     def calculate_F():
-        for i in self.norm_input.keys():
-            self.F[i+1].fix(value(self.norm_input[i]))
-            self.F[i+1].unfix()
+        for i in b.norm_input.keys():
+            b.F[i+1].fix(value(b.norm_input[i]))
+            b.F[i+1].unfix()
 
     print('Starting ROM initialization')
 
-    cvfc_indexed(self.ROM_input, self.input_mapping_eqs)
-    cvfc_indexed(self.norm_input, self.norm_input_eqs)
+    cvfc_indexed(b.ROM_input, b.input_mapping_eqs)
+    cvfc_indexed(b.norm_input, b.norm_input_eqs)
     calculate_F()
-    cvfc_indexed(self.R, self.R_eqs)
-    cvfc_indexed(self.norm_output, self.norm_output_eqs)
-    cvfc_indexed(self.ROM_output, self.ROM_output_eqs)
-    cvfc_indexed(self.anode_outlet_temperature, self.anode_outlet_eq)
-    cvfc_indexed(self.cathode_outlet_temperature, self.cathode_outlet_eq)
-    cvfc_indexed(self.stack_voltage, self.stack_voltage_eq)
-    cvfc_indexed(self.max_cell_temperature, self.max_cell_temp_eq)
-    cvfc_indexed(self.deltaT_cell, self.deltaT_cell_eq)
+    cvfc_indexed(b.R, b.R_eqs)
+    cvfc_indexed(b.norm_output, b.norm_output_eqs)
+    cvfc_indexed(b.ROM_output, b.ROM_output_eqs)
+    cvfc_indexed(b.anode_outlet_temperature, b.anode_outlet_eq)
+    cvfc_indexed(b.cathode_outlet_temperature, b.cathode_outlet_eq)
+    cvfc_indexed(b.stack_voltage, b.stack_voltage_eq)
+    cvfc_indexed(b.max_cell_temperature, b.max_cell_temp_eq)
+    cvfc_indexed(b.deltaT_cell, b.deltaT_cell_eq)
 
     print('ROM initialization completed')
