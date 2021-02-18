@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, TransformationFactory
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
