@@ -61,7 +61,8 @@ runs:
       working-directory: ${{ inputs.working-dir }}
       # by using a custom shell specification, we override the default "fails fast" behavior
       # to allow displaying the content of the error logs in case the build process fails
-      shell: bash --noprofile --norc {0}
+      # shell: bash --noprofile --norc {0}
+      shell: bash
       run: |
         echo "::group::Output of build.py"
         python build.py -v --config "$_config_file_path"
