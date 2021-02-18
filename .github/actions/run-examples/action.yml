@@ -68,7 +68,7 @@ runs:
         cat "$_config_file_path"
         echo "::endgroup"
         echo "::group::Output of build.py"
-        python build.py -v --config "$_config_file_path"
+        python build.py -v --config "$_config_file_path" --test
         echo "::endgroup"
         echo "::group::Contents of output file(s) ${{ inputs.build-logs-path }}"
         cat ${{ inputs.build-logs-path }} || echo "No matching files found"
