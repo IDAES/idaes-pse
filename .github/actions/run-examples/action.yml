@@ -38,7 +38,7 @@ runs:
         config_file_src_dir="$GITHUB_ACTION_PATH"
         cd "$config_file_src_dir"
         ls -la "$PWD"
-        cp "$config_file_name" "$config_file_dest_dir"
+        cp "$config_file_name" "$config_file_dst_dir"
         echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
     - name: Run build.py script
       working-directory: ${{ inputs.working-dir }}
