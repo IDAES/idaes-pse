@@ -9,14 +9,14 @@ inputs:
     description: Working directory where the examples will be run
     required: false
     default: ${{ runner.temp }}
-  config-file-path:
-    description: Path to the build script config file
+  config-file-name:
+    description: Name of the build script config file
     required: false
-    default: ./adhoc.yml
-  notebook-errors-file-path:
-    description: Path to the file where notebook error logs will be saved
+    default: build-config-for-idaes-ci.yml 
+  build-logs-path:
+    description: Path or glob to the file(s) where build error logs are saved
     required: false
-    default: notebook-errors.txt
+    default: '*errors.txt'
 # TODO as a first step we display the error logs since they have terminal-friendly output
 # we can activate this action output if we'll need to upload the artifacts
 # outputs:
@@ -33,50 +33,39 @@ runs:
       run: |
         rm -rf *
         git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} .
-    - name: Create config file
-      shell: bash
+        git log -n 1
+    - name: Set up config file
+      shell: python3 {0}
       working-directory: ${{ inputs.working-dir }}
+      env:
+        _config_file_name: ${{ inputs.config-file-name }}
       run: |
-        cat >${{ inputs.config-file-path }} <<EOL
-        paths:
-          source: src
-          output: docs_test
-          html: _build/html
-        notebook:
-            num_workers: 1
-            continue_on_error: true
-            test_mode: true
-            timeout: 300
-            error_file: ${{ inputs.notebook-errors-file-path }}
-            template: docs/jupyter_notebook_sphinx.tpl
-            directories:
-              - source: Examples/Advanced/CustomUnitModels
-              - source: Examples/Advanced/DataRecon
-              - source: Examples/MatOpt
-              - source: Examples/SurrMod/ALAMO
-              - source: Examples/SurrMod/Helmet
-              - source: Examples/SurrMod/PySMO
-              - source: Examples/Tools
-              - source: Examples/UnitModels
-              - source: Tutorials/Advanced/ParamEst
-              - source: Tutorials/Basics
-        notebook_index:
-          input_file: notebook_index.yml
-          output_file: src/notebook_index.ipynb
-        sphinx:
-            args: "-b html -T docs_test docs_test/_build/html"
-            error_file: sphinx-errors.txt
-        EOL
-        echo "::group::Examples build config file"
-        cat ${{ inputs.config-file-path }}
-        echo "::endgroup"
+        from os import (
+            environ as env,
+            fspath
+        )
+        from pathlib import Path
+
+        def _add_to_runner_env(key, val):
+            env_file_path = Path(env["GITHUB_ENV"])
+            with env_file_path.open('a') as f:
+                f.write(f'{key}={val}')
+
+        action_dir = Path(env["GITHUB_ACTION_PATH"])
+        config_file_name = env["_config_file_name"]
+        config_file_path = action_dir / config_file_name
+        assert config_file_path.exists(), f"ERROR: Config file path {config_file_path} does not exist"
+        _add_to_runner_env("_config_file_path", fspath(config_file_path))
+
     - name: Run build.py script
       working-directory: ${{ inputs.working-dir }}
-      shell: bash
+      # by using a custom shell specification, we override the default "fails fast" behavior
+      # to allow displaying the content of the error logs in case the build process fails
+      shell: bash --noprofile --norc {0}
       run: |
         echo "::group::Output of build.py"
-        python build.py -v --test --config ${{ inputs.config-file-path }}
+        python build.py -v --config "$_config_file_path"
         echo "::endgroup"
-        echo "::group::Contents of ${{ inputs.notebook-errors-file-path }}"
-        file_path="${{ inputs.notebook-errors-file-path }}"; [ -f "$file_path" ] && cat "$file_path"
+        echo "::group::Contents of output file(s) ${{ inputs.build-logs-path }}"
+        cat ${{ inputs.build-logs-path }} || echo "No matching files found"
         echo "::endgroup"
