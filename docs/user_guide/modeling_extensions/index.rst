@@ -14,6 +14,7 @@ provided below.
     
     matopt/index
     caprese/index
+    diagnostics/index
 
 .. rubric:: ALAMOPY: ALAMO Python
 
@@ -70,4 +71,7 @@ Estimation (MHE).
     :width: 500px
     :align: center
 
+.. rubric:: Degeneracy Hunter
 
+:ref:`Degeneracy Hunter<user_guide/modeling_extensions/diagnostics/index:Degeneracy Hunter>`
+is coming soon!
