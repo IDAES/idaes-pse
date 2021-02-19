@@ -60,11 +60,12 @@ kwargs = dict(
         "pint",
         "psutil",
         "pyutilib>=6.0.0",
-        "pyomo>5.7.1,<6",
+        "pyomo>=5.7.3",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
         "python-slugify", # for ui/fsvis
+        "scipy",
         "sympy",
         "tinydb",
         "rbfopt",
