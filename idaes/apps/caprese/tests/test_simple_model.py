@@ -10,15 +10,15 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""
-Test for Cappresse's module for NMPC.
-"""
 
+from pytest import approx
 import pyomo.environ as aml
 import pyomo.dae as dae
+import pyomo.network as pyn
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 from idaes.core.util.model_statistics import degrees_of_freedom
+import random
 import pytest
 
 __author__ = "Robert Parker"
@@ -27,14 +27,14 @@ __author__ = "Robert Parker"
 def make_model(horizon=5, nfe=10, ncp=2):
     """ The simplest DAE I can think of. An isothermal CSTR with one
     reaction. No nlp solver should have trouble with this one.
-    Other than the flow_out*conc_out term in the material_balances,
+    Other than the flow_out*conc_out term in the material_balances, 
     this model is entirely linear.
 
     """
     m = aml.ConcreteModel()
     m.time = dae.ContinuousSet(bounds=(0, horizon))
-    m.components = aml.Set(initialize=['A', 'B'])
-
+    m.components = aml.Set(initialize=['A','B'])
+    
     m.volume = aml.Param(initialize=1.0)
     m.max_height = aml.Var(initialize=1.0)
     m.max_height.fix()
@@ -61,10 +61,10 @@ def make_model(horizon=5, nfe=10, ncp=2):
     # Equations
     def mb_rule(m, t, j):
         return (
-                m.volume*m.dcdt[t, j] ==
-                m.flow_in[t]*m.conc_in[t, j] -
-                m.flow_out[t]*m.conc[t, j] +
-                m.volume*m.rate[t, j]
+                m.volume*m.dcdt[t,j] ==
+                m.flow_in[t]*m.conc_in[t,j] -
+                m.flow_out[t]*m.conc[t,j] +
+                m.volume*m.rate[t,j]
                 )
     m.material_balance = aml.Constraint(m.time, m.components, rule=mb_rule)
 
@@ -73,27 +73,25 @@ def make_model(horizon=5, nfe=10, ncp=2):
     m.flow_eqn = aml.Constraint(m.time, rule=flow_rule)
 
     def rate_rule(m, t, j):
-        return m.rate[t, j] == m.stoich[j]*m.k_rxn*m.conc[t, 'A']**m.rxn_order
+        return m.rate[t,j] == m.stoich[j]*m.k_rxn*m.conc[t,'A']**m.rxn_order
     m.rate_eqn = aml.Constraint(m.time, m.components, rule=rate_rule)
 
     disc = aml.TransformationFactory('dae.collocation')
     disc.apply_to(m, wrt=m.time, nfe=nfe, ncp=2, scheme='LAGRANGE-RADAU')
 
     # Degrees of freedom:
-    m.conc_in[:, 'A'].fix(5.0)
-    m.conc_in[:, 'B'].fix(0.0)
+    m.conc_in[:,'A'].fix(5.0)
+    m.conc_in[:,'B'].fix(0.0)
 
-    m.conc[0, 'A'].fix(0.0)
-    m.conc[0, 'B'].fix(0.0)
+    m.conc[0,'A'].fix(0.0)
+    m.conc[0,'B'].fix(0.0)
 
     m.flow_in.fix(1.0)
 
     return m
 
-
 def make_small_model():
     return make_model(horizon=1, nfe=2)
-
 
 def initialize_t0(model):
     time = model.time
@@ -104,27 +102,24 @@ def initialize_t0(model):
             )
     for j in model.components:
         calculate_variable_from_constraint(
-                model.rate[t0, j],
-                model.rate_eqn[t0, j],
+                model.rate[t0,j],
+                model.rate_eqn[t0,j],
                 )
         calculate_variable_from_constraint(
-                model.dcdt[t0, j],
-                model.material_balance[t0, j],
+                model.dcdt[t0,j],
+                model.material_balance[t0,j],
                 )
-
 
 def copy_values_forward(model):
     time = model.time
     t0 = time.first()
     for t in time:
         for j in model.components:
-            model.conc[t, j].set_value(model.conc[t0,j].value)
-            model.rate[t, j].set_value(model.rate[t0,j].value)
-            model.dcdt[t, j].set_value(model.dcdt[t0,j].value)
+            model.conc[t,j].set_value(model.conc[t0,j].value)
+            model.rate[t,j].set_value(model.rate[t0,j].value)
+            model.dcdt[t,j].set_value(model.dcdt[t0,j].value)
         model.flow_out[t].set_value(model.flow_out[t0].value)
 
-
-@pytest.mark.unit
 def test_model():
     m = make_model()
     assert degrees_of_freedom(m) == 0

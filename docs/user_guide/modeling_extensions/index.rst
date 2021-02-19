@@ -15,6 +15,7 @@ provided below.
     matopt/index
     caprese/index
     uncertainty_propagation/index
+    diagnostics/index
 
 .. rubric:: ALAMOPY: ALAMO Python
 
@@ -73,6 +74,11 @@ Estimation (MHE).
 
 .. rubric:: uncertainty_propagation
 
-:ref:`uncertainty_propagation<user_guide/modeling_extensions/uncertainty_propagation/index:uncertainty_propagation>`
+:ref:`uncertainty_propagation<user_guide/modeling_extensions/uncertainty_propagation/index:Uncertainty Propagation Toolbox>`
 is a module for calculating error propagation of the objective function and constraints that include uncertain parameters to be estimated for a given model. 
 For a given model with a dataset, it first estimates parameters. The estimated parameters are passed to the optimization model. Finally, the variance of objective function and constraints with respect to the estimated parameters at the optimal solution are calculated.
+
+.. rubric:: Degeneracy Hunter
+
+:ref:`Degeneracy Hunter<user_guide/modeling_extensions/diagnostics/index:Degeneracy Hunter>`
+is coming soon!
