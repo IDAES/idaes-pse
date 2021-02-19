@@ -91,9 +91,8 @@ kwargs = dict(
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
-            # temporarily hold sphinx version to avoid bug with 3.x
-            # -dang 4/22/2020
-            "sphinx>=2.4.4,<3.0.0",
+            # Newer sphinx needed for proper type hint support in docstrings
+            "sphinx>=3.0.0",
             # note: 4/22/2020, removed the version requirement here
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
