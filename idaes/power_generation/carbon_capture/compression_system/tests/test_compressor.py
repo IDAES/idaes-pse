@@ -27,7 +27,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
-     import CompressionStage
+      import CompressionStage
 
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
@@ -114,7 +114,7 @@ def test_run(build_unit):
                       * m.fs.unit.outlet.enth_mol[0]
                       + m.fs.unit.work_mechanical[0]))
     # pressure change
-    assert (pytest.approx(177991.4247463311, abs=1e-1) ==
+    assert (pytest.approx(177991.4247463311, abs=0.1) ==
             pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
     assert (pytest.approx(0, abs=1e-3) ==
