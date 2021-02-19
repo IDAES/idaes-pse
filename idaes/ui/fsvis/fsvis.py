@@ -12,6 +12,7 @@
 ##############################################################################
 # stdlib
 import webbrowser
+
 # package
 from idaes import logger
 from .model_server import FlowsheetServer
@@ -22,13 +23,37 @@ web_server = None
 
 
 def visualize(
-    flowsheet, name: str = "flowsheet", save_as=None, browser: bool = True, port: int = None,
-        log_level: int =logger.WARNING, quiet = False
+    flowsheet,
+    name: str = "flowsheet",
+    save_as=None,
+    browser: bool = True,
+    port: int = None,
+    log_level: int = logger.WARNING,
+    quiet: bool = False,
 ) -> int:
-    """Visualizes the flowsheet in a web application.
-    
-    Opens a browser window to display the visualization app, as well as
-    directly showing the URL in case the browser fails to open.
+    """Visualize the flowsheet in a web application.
+
+    The web application is started in a separate thread and this function returns immediately.
+
+    Also open a browser window to display the visualization app.
+    The URL is also printed (unless ``quiet`` is True).
+
+    **Note**: The visualization server runs in its own thread. If the program that it is running in stops,
+    the visualization UI will not be able to save or refresh its view. This is not an issue in a
+    `REPL <https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop>`_
+    like the Python console, IPython, or Jupyter Notebook,
+    since these all run until the user explicitly closes them. But if you are running from a script, you need to do
+    something to avoid having the program exit after the `visualize()` method returns (which happens very quickly).
+    For example, loop forever in a try/catch clause that will handle KeyboardInterrupt exceptions::
+
+        # Example code for a script, to keep program running after starting visualize() thread
+        my_model.fs.visualize()  # this returns immediately
+        try:
+            print("Type ^C to stop the program")
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("Program stopped")
 
     Args:
         flowsheet: IDAES flowsheet to visualize
@@ -36,14 +61,15 @@ def visualize(
         save_as: If a string or path then save to a file.
         browser: If true, open a browser
         port: Start listening on this port. If not given, find an open port.
-        log_level: An IDAES logging level, see :mod:`idaes.logger`, to set for all the visualiztion
+        log_level: An IDAES logging level, which is a superset of the built-in :mod:`logging` module levels.
+                  See :mod:`idaes.logger` for details
         quiet: If True, suppress printing any messages to standard output (console)
 
     Returns:
         Port number where server is listening
 
     Raises:
-        ValueError if the data storage at 'save_as' can't be opened
+        ValueError: if the data storage at 'save_as' can't be opened
     """
     global web_server
 
