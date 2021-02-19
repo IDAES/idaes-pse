@@ -46,5 +46,5 @@ runs:
       run: |
         echo "::group::Contents of config file $config_file_name"
         cat "$config_file_name"
-        echo "::endgroup"
+        echo "::endgroup::"
         python build.py -v --config "$config_file_name" --test
