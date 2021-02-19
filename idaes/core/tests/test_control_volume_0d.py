@@ -736,7 +736,7 @@ def test_add_phase_component_balances_in_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
-    
+
     # Set property package to contain inherent reactions
     m.fs.pp._has_inherent_reactions = True
 
