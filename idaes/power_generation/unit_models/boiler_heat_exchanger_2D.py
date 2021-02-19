@@ -377,7 +377,7 @@ tube side flows from 1 to 0"""))
 
         # DAE discretization scaling (tube_radius_scaling)
         self.ri_scaling = Param(initialize=0.01, mutable=True,
-                                doc='Inner Radius of Tube for Scaling')
+                                doc='Discretization scaling Tube inner radius')
 
         # Inner diameter of tubes
         self.tube_di = Param(initialize=self.config.tube_inner_diameter,
@@ -400,7 +400,8 @@ tube side flows from 1 to 0"""))
                                         doc='Header wall thickness')
 
             self.head_ri_scaling = Param(initialize=0.1, mutable=True,
-                                         doc='header inner radius scaling')
+                                         doc='Discretization scaling'
+                                         'of the header inner radius')
 
         # Pitch of tubes between two neighboring columns (in y direction).
         # Always greater than tube outer diameter
