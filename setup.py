@@ -79,7 +79,6 @@ kwargs = dict(
     # Only installed if [<key>] is added to package name
     extras_require={
         "dev": [  # Developer extra packages
-            "aafigure==0.6",  # ascii-art ->to-> figures in Sphinx docs
             "alabaster>=0.7.7",
             # temporarily hold coverage version due to avoid bug in coveralls
             # -alee 12/20/2019
@@ -97,7 +96,6 @@ kwargs = dict(
             # note: 4/22/2020, removed the version requirement here
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
-            "sphinxcontrib-aafig",
             "sphinx-argparse"
         ]
     },

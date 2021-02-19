@@ -237,7 +237,7 @@ The architecture diagram is shown below.
 .. be edited in any way. For HTML and PDF these are rendered as nice little diagrams by the
 .. Sphinx plugin "sphinxcontrib.aafig" using the Python "aafigure" https://pypi.org/project/aafigure/ package
 
-.. aafig::
+.. code-block:: text
 
     +-------------------+                        +--------------------+
     |                   |                        |    Web browser     |
