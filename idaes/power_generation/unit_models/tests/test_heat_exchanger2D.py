@@ -103,6 +103,8 @@ def build_unit():
     m.fs.unit.fcorrection_htc_shell.fix(1.0)
     m.fs.unit.fcorrection_dp_tube.fix(1.0)
     m.fs.unit.fcorrection_dp_shell.fix(1.0)
+    m.fs.unit.temperature_ambient.fix(350.0)
+    m.fs.unit.head_insulation_thickness.fix(0.025)
     return m
 
 
