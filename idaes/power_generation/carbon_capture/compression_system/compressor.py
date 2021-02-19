@@ -18,7 +18,7 @@ Modekurti et al., (2017). "Design, Dynamic Modeling, and
 Control of a Multistage CO2 Compresor System." International Journal
 of Greenhouse Gas Control. v62., page 31-45
 Created: April 2020
-__Author__ = "Quang Minh Le"
+__Author__ = "Quang Minh Le, John Eslick"
 """
 
 from __future__ import division
@@ -33,7 +33,6 @@ from idaes.generic_models.unit_models.pressure_changer import (
     PressureChangerData, ThermodynamicAssumption)
 
 import idaes.logger as idaeslog
-from idaes.core.util import (from_json, to_json, StoreSpec, constants)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 from enum import Enum
@@ -194,7 +193,7 @@ VaneDiffuserType.custom}""",
         super().build()
 
         #####################################################
-        # first stage input
+        # First stage input
         if self.config.first_stage is None:
             raise ConfigurationError('User must provide a value for IGV'
                                      'if first stage, or values of A, B, C'
@@ -473,7 +472,7 @@ VaneDiffuserType.custom}""",
             Pratio = b.ratioP[t]
             Tin = properties_in[t].temperature
             mw = properties_in[t].mw
-            gas_const = constants.Constants.gas_constant
+            gas_const = const.gas_constant
             return b.z_s * (gas_const / mw) * Tin * (1 / a) * (Pratio**a - 1)
 
         @self.Constraint(self.flowsheet().config.time,
@@ -481,13 +480,12 @@ VaneDiffuserType.custom}""",
         def psi_s_eqn(b, t):
             return b.psi_s[t] == 2 * b.ys_model[t] / (b.U2[t]**2)
 
-        # first stage
+        # Ang is used to estimate coeffcients a, b, c for first stage
         if self.config.first_stage is True:
             self.Ang = Var(self.flowsheet().config.time,
                            initialize=0,
                            doc="Inlet Guide Vanes Angle",
                            bounds=(-15, 90), units=pyunits.dimensionless)
-            # step to define the first or the other stages
 
             @self.Expression(self.flowsheet().config.time)
             def coeff_a(b, t):
@@ -544,21 +542,11 @@ VaneDiffuserType.custom}""",
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        # print('dof for step 1 =', degrees_of_freedom(self))
-        # init_log.info_high("Initialization Step 1 Complete.")
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high(
                 "Initialization Step 1 {}.".format(idaeslog.condition(res))
             )
-
-        # sp is what to save to make sure state after init is same as the start
-        # saves value, fixed, and active state, doesn't load originally free
-        # values, this makes sure original problem spec is same but initializes
-        # the values of free vars
-
-        sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
-        istate = to_json(self, return_dict=True, wts=sp)
 
         for t in self.flowsheet().config.time:
             for k, v in self.inlet.vars.items():
@@ -605,24 +593,64 @@ VaneDiffuserType.custom}""",
         # Deactivate special constraints
         self.eff_isen_eqn.deactivate()
         self.Pratio_con.deactivate()
+        self.kappaT_con.deactivate()
+        self.c0_con.deactivate()
+        self.Ma_con.deactivate()
+        self.rspeed_con.deactivate()
+        self.eff_p_v_cons.deactivate()
+        self.polytropic_correlation.deactivate()
+        self.delta_enth_polytropic_con.deactivate()
+        self.mass_flow_coeff_eqn.deactivate()
+        self.psi_3_eqn.deactivate()
+        self.psi_s_eqn.deactivate()
+        self.psi_s_stage_eqn.deactivate()
 
-        # print('dof for step 2 =', degrees_of_freedom(self))
+        # Fix variables
+        self.kappaT.fix()
+        self.c0.fix()
+        self.Ma.fix()
+        self.rspeed.fix()
+        self.impeller_work_coeff.fix()
+        self.delta_enth_polytropic.fix()
+        self.mass_flow_coeff.fix()
+        self.psi_3.fix()
+        self.psi_s.fix()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        # reload original spec
-        from_json(self, sd=istate, wts=sp)
+
         init_log.info_high(
                 "Initialization Step 2 {}.".format(idaeslog.condition(res))
             )
 
-        # free eff_isen and activate special constraints
+        # Activate special constraints
         self.eff_isen_eqn.activate()
         self.Pratio_con.activate()
+        self.kappaT_con.activate()
+        self.c0_con.activate()
+        self.Ma_con.activate()
+        self.rspeed_con.activate()
+        self.eff_p_v_cons.activate()
+        self.polytropic_correlation.activate()
+        self.delta_enth_polytropic_con.activate()
+        self.mass_flow_coeff_eqn.activate()
+        self.psi_3_eqn.activate()
+        self.psi_s_eqn.activate()
+        self.psi_s_stage_eqn.activate()
 
+        # Unfix variables
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.unfix()
+        self.kappaT.unfix()
+        self.c0.unfix()
+        self.Ma.unfix()
+        self.rspeed.unfix()
+        self.impeller_work_coeff.unfix()
+        self.delta_enth_polytropic.unfix()
+        self.mass_flow_coeff.unfix()
+        self.psi_3.unfix()
+        self.psi_s.unfix()
 
-        # print('dof for step 3 =', degrees_of_freedom(self))
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
         init_log.info_high(
