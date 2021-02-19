@@ -316,7 +316,7 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     return gradient_f, gradient_c, line_dic
 
 def line_num(file_name, target):
-    """This function returns the line number contains 'target' in the file_name
+    """This function returns the line number contains 'target' in the file_name.
     This function identities constraints that have variables in theta_names.     
 
     Parameters
@@ -345,8 +345,7 @@ def line_num(file_name, target):
 
 def clean_variable_name(theta_names):
     """This eunction removes all ' and spaces in theta_names.
-       Note: The  current theta_est(calc_cov=True) of parmest in Pyomo
-       doesn't allow ' and spaces in the variable names    
+    Note: The  current theta_est(calc_cov=True) of parmest in Pyomo doesn't allow ' and spaces in the variable names.
        
     Parameters
     ----------
