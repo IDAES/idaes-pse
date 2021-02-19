@@ -84,7 +84,7 @@ the main areas highlighted. Then we zoom in on each area and describe how to use
 
 .. only:: latex
 
-    .. figure:: ../../_static/extra/ifv_screenshot_window.png
+    .. figure:: ../../static/extra/ifv_screenshot_window.png
         :width: 800
 
         Screenshot of the main window of the IFV UI
@@ -92,7 +92,7 @@ the main areas highlighted. Then we zoom in on each area and describe how to use
 Top bar
 +++++++
 
-.. figure:: ../../_images/ifv_screenshot_topbar.png
+.. figure:: /images/ifv_screenshot_topbar.png
     :width: 600
 
     Screenshot of the top bar of the IFV UI
@@ -125,7 +125,7 @@ and a menu. The menu items are:
 Diagram
 ++++++++
 
-.. figure:: ../../_images/ifv_screenshot_diagram.png
+.. figure:: /images/ifv_screenshot_diagram.png
     :width: 800
 
     Screenshot of the main *diagram* (or flowsheet) area of the IFV UI
@@ -160,16 +160,16 @@ underlying Rappid toolkit <https://google.com/>`_.
 Diagram Controls
 ++++++++++++++++
 
-.. figure:: ../../_images/ifv_screenshot_diagramcontrols.png
+.. figure:: /images/ifv_screenshot_diagramcontrols.png
     :width: 400
 
     Screenshot of the *diagram controls* area of the IFV UI
 
 The *diagram controls* allow you to affect some global properties of the diagram/flowsheet area.
 
-.. |zoomin| image:: ../../_images/ifv_icon_zoomin.png
-.. |zoomout| image:: ../../_images/ifv_icon_zoomout.png
-.. |zoomfit| image:: ../../_images/ifv_icon_fit.png
+.. |zoomin| image:: /images/ifv_icon_zoomin.png
+.. |zoomout| image:: /images/ifv_icon_zoomout.png
+.. |zoomfit| image:: /images/ifv_icon_fit.png
 
 View actions
   * Labels: Toggle visibility of the information (*labels*) shown for each stream. This is the same information
@@ -190,7 +190,7 @@ The IFV will show a stream table with variables defined for each stream in the f
 values exist and the flowsheet adheres to the IDAES conventions for naming the inlet and outlet
 streams. An example of a stream table is shown below.
 
-.. figure:: ../../_images/ifv_screenshot_streamtable.png
+.. figure:: /images/ifv_screenshot_streamtable.png
     :width: 800
 
     Screenshot of an example stream table
