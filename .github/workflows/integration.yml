@@ -110,8 +110,7 @@ jobs:
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
-    # TODO the dependency on the examples job is only temporary, to avoid running unnecessary jobs while debugging
-    needs: [precheck, examples]
+    needs: [precheck]
     if: >-
       (
         needs.precheck.outputs.workflow-trigger == 'user_dispatch'
@@ -147,15 +146,23 @@ jobs:
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    # TODO add job if condition to match the one used for pytest job
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
     strategy:
       fail-fast: false
       matrix:
         python-version:
           # TODO restore all Python versions once tests pass
-          # - '3.6'
+          - '3.6'
           - '3.7'
-          # - '3.8'
+          - '3.8'
+          # WHY anedoctally, we're aware of Python 3.9 having issues with the jupyter stack on Windows
+          # for this reason, we're leaving Python 3.9 commented out for the examples tests until we test properly
+          # - '3.9'
         os:
           - ubuntu-18.04
           - windows-latest

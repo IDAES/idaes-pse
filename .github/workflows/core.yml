@@ -23,8 +23,7 @@ on:
       # ready_for_review occurs when a draft PR is turned to non-draft
       - ready_for_review
       # synchronize occurs whenever commits are pushed to the PR branch
-      # TODO uncomment after finishing debugging other workflows
-      # - synchronize
+      - synchronize
 
 env:
   # default Python version to use for checks that do not require multiple versions
