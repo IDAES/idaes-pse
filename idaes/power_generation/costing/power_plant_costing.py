@@ -267,13 +267,13 @@ def get_PP_costing(self, cost_accounts,
     # define variables
     self.costing.bare_erected_cost = Var(cost_accounts,
                                          initialize=reference_costs,
-                                         bounds=(0, 1e12),
-                                         doc='scaled bare erected cost')
+                                         bounds=(0, 1e4),
+                                         doc='scaled bare erected cost in $MM')
 
     self.costing.total_plant_cost = Var(cost_accounts,
                                         initialize=reference_costs,
-                                        bounds=(0, 1e12),
-                                        doc='total plant cost')
+                                        bounds=(0, 1e4),
+                                        doc='total plant cost in $MM')
 
     # rule for scaling BEC
     # reference cost is in 2018 dollars, 671.1 is CE index for 2018
@@ -412,16 +412,18 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
                                    doc='temperature correction factor')
 
     self.costing.equipment_cost = Var(initialize=self.costing.ref_cost,
-                                      bounds=(0, 1e12),
-                                      doc='equipment cost of sCO2 unit')
+                                      bounds=(0, 1e4),
+                                      doc='equipment cost of sCO2 unit in $MM')
 
     self.costing.bare_erected_cost = Var(initialize=self.costing.ref_cost,
-                                         bounds=(0, 1e12),
-                                         doc='bare erected cost of sCO2 unit')
+                                         bounds=(0, 1e4),
+                                         doc='bare erected cost of sCO2 unit'
+                                         'in $MM')
 
     self.costing.total_plant_cost = Var(initialize=self.costing.ref_cost,
-                                        bounds=(0, 1e12),
-                                        doc='total plant cost of sCO2 unit')
+                                        bounds=(0, 1e4),
+                                        doc='total plant cost of sCO2 unit'
+                                        'in $MM')
 
     # divides the scaled parameter by the number of pieces of equipment
     def scaled_param_rule(costing):
@@ -555,12 +557,12 @@ def get_ASU_cost(self, scaled_param):
 
     # define variables
     self.costing.bare_erected_cost = Var(initialize=params['Reference Cost'],
-                                         bounds=(0, 1e12),
-                                         doc='scaled bare erected cost')
+                                         bounds=(0, 1e4),
+                                         doc='scaled bare erected cost in $MM')
 
     self.costing.total_plant_cost = Var(initialize=params['Reference Cost'],
-                                        bounds=(0, 1e12),
-                                        doc='total plant cost')
+                                        bounds=(0, 1e4),
+                                        doc='total plant cost in $MM')
 
     # rule for scaling BEC
     # reference cost is in 2008 dollars, 566.2 is CE index for Nov 2008
