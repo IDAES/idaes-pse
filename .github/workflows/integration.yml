@@ -146,6 +146,7 @@ jobs:
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    needs: [precheck]
     if: >-
       (
         needs.precheck.outputs.workflow-trigger == 'user_dispatch'
