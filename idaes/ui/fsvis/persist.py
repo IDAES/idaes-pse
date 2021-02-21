@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, Union
 # package
 from idaes import logger
+from . import errors
 
 _log = logger.getLogger(__name__)
 
@@ -98,14 +99,19 @@ class FileDataStore(DataStore):
             None
         """
         _log.debug(f"Save to file: {self._p}")
-        with self._p.open("w") as fp:
-            if isinstance(data, dict):
-                try:
-                    json.dump(data, fp)
-                except TypeError as err:
-                    raise ValueError(f"Writing JSON failed: {err}")
-            else:
-                fp.write(str(data))
+        try:
+            with self._p.open("w") as fp:
+                if isinstance(data, dict):
+                    try:
+                        json.dump(data, fp)
+                    except TypeError as err:
+                        raise ValueError(f"Writing JSON failed: {err}")
+                else:
+                    fp.write(str(data))
+        except ValueError as err:
+            raise errors.DatastoreError(str(err))
+        except IOError as err:
+            raise errors.DatastoreSaveError(f"IO error with datastore: {err}")
 
     def load(self):
         _log.debug(f"Load from file: {self._p}")
@@ -121,7 +127,7 @@ class FileDataStore(DataStore):
         return data
 
     def __str__(self):
-        return f"file storage at '{self._p}'"
+        return f"file '{self._p}'"
 
 
 class MemoryDataStore(DataStore):
@@ -158,7 +164,7 @@ class MemoryDataStore(DataStore):
         return self._data
 
     def __str__(self):
-        return "memory storage"
+        return "memory"
 
 
 class DataStoreManager:

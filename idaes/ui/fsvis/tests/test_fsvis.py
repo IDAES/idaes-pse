@@ -27,7 +27,7 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
     BTXParameterBlock,
 )
 from idaes.generic_models.unit_models import Flash
-from idaes.ui.fsvis import fsvis
+from idaes.ui.fsvis import fsvis, errors
 from idaes.ui.flowsheet import validate_flowsheet
 
 
@@ -63,7 +63,7 @@ def test_visualize(flash_model):
 
     flowsheet = flash_model.fs
     # Start the visualization server
-    port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=None)
+    save_location, port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=None)
     # Get the model
     resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
     data = resp.json()
@@ -103,7 +103,7 @@ def test_save_visualization(flash_model, tmp_path):
     flowsheet = flash_model.fs
     # Start the visualization server, using temporary save location
     save_location = tmp_path / "flash-vis.json"
-    port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=save_location)
+    save_location, port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=save_location)
     # Check the contents of the saved file are the same as what is returned by the server
     with open(save_location) as fp:
         file_data = json.load(fp)
@@ -130,3 +130,14 @@ def test_invoke(flash_model):
         "module": getattr(fsvis, "visualize"),
     }
     # TODO: check params
+
+
+@pytest.mark.unit
+def test_visualize_fn(flash_model):
+    flowsheet = flash_model.fs
+    filename, _ = fsvis.visualize(flowsheet, browser=False)
+    assert len(filename) > 4  # <something>.<ext>
+    #
+    for bad_save_as in (1, "/no/such/file/exists.I.hope"):
+        with pytest.raises(errors.VisualizerError):
+            fsvis.visualize(flowsheet, save_as=bad_save_as, browser=False)

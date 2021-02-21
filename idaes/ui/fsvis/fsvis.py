@@ -12,12 +12,13 @@
 ##############################################################################
 # stdlib
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 import webbrowser
 
 # package
 from idaes import logger
 from .model_server import FlowsheetServer
+from . import persist, errors
 
 _log = logger.getLogger(__name__)
 
@@ -27,12 +28,12 @@ web_server = None
 def visualize(
     flowsheet,
     name: str = "flowsheet",
-    save_as=Optional[Union[Path, str]],
+    save_as: Optional[Union[Path, str]] = None,
     browser: bool = True,
-    port: int = None,
+    port: Optional[int] = None,
     log_level: int = logger.WARNING,
     quiet: bool = False,
-) -> int:
+) -> Tuple[str, int]:
     """Visualize the flowsheet in a web application.
 
     The web application is started in a separate thread and this function returns immediately.
@@ -73,12 +74,14 @@ def visualize(
         Tuple (Save location, Port number where server is listening)
 
     Raises:
-        ValueError: if the data storage at 'save_as' can't be opened
+        VisualizerSaveError: if the data storage at 'save_as' can't be opened
+        VisualizerError: Any other errors
     """
     global web_server
 
     _init_logging(log_level)
 
+    # Start the web server
     if web_server is None:
         web_server = FlowsheetServer(port=port)
         web_server.start()
@@ -87,7 +90,29 @@ def visualize(
     else:
         _log.info(f"Using HTTP server on localhost, port {web_server.port}")
 
-    new_name = web_server.add_flowsheet(name, flowsheet, save_as)
+    # Set up save location
+    use_default = False
+    if save_as is None:
+        save_as = name + ".json"
+        use_default = True
+    try:
+        datastore = persist.DataStore.create(save_as)
+    except (ValueError, errors.ProcessingError) as err:
+        raise errors.VisualizerSaveError(save_as, err)
+    if use_default:
+        if not quiet:
+            cwd = str(Path(save_as).absolute())
+            print("Saving flowsheet to default file '{save_as}' in current directory ({cwd})")
+    else:
+        if not quiet:
+            print("Saving flowsheet to {str(datastore)}")
+
+    # Add our flowsheet to it
+    try:
+        new_name = web_server.add_flowsheet(name, flowsheet, datastore)
+    except (errors.ProcessingError, errors.DatastoreError) as err:
+        raise errors.VisualizerError("Cannot add flowsheet: {err}")
+
     if new_name != name:
         _log.warning(f"Flowsheet name changed: old='{name}' new='{new_name}'")
         if not quiet:
@@ -108,7 +133,7 @@ def visualize(
     if not quiet:
         print(f"Flowsheet visualization at: {url}")
 
-    return web_server.port
+    return str(save_as), web_server.port
 
 
 def _init_logging(lvl):
