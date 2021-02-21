@@ -11,6 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 # stdlib
+from pathlib import Path
+from typing import Optional, Union
 import webbrowser
 
 # package
@@ -25,7 +27,7 @@ web_server = None
 def visualize(
     flowsheet,
     name: str = "flowsheet",
-    save_as=None,
+    save_as=Optional[Union[Path, str]],
     browser: bool = True,
     port: int = None,
     log_level: int = logger.WARNING,
@@ -58,7 +60,9 @@ def visualize(
     Args:
         flowsheet: IDAES flowsheet to visualize
         name: Name of flowsheet to display as the title of the visualization
-        save_as: If a string or path then save to a file.
+        save_as: Location to save the current flowsheet layout and values. If this argument is not specified,
+                 a default name will be picked in the current working directory. If a string or Path is
+                given, that will be taken as the file in which to save.
         browser: If true, open a browser
         port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, which is a superset of the built-in :mod:`logging` module levels.
@@ -66,7 +70,7 @@ def visualize(
         quiet: If True, suppress printing any messages to standard output (console)
 
     Returns:
-        Port number where server is listening
+        Tuple (Save location, Port number where server is listening)
 
     Raises:
         ValueError: if the data storage at 'save_as' can't be opened
