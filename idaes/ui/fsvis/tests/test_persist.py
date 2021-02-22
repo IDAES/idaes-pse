@@ -13,11 +13,12 @@
 """
 Tests for the `idaes.ui.fsvis.persist` module
 """
+# stdlib
 import json
-
+# ext
 import pytest
-
-from idaes.ui.fsvis import persist
+# pkg
+from idaes.ui.fsvis import persist, errors
 
 # === Data ===
 
@@ -26,6 +27,7 @@ data = {"foo": [{"bar": 123}]}
 data_str = json.dumps(data)
 
 # === Tests ===
+
 
 @pytest.mark.unit
 def test_file_data_store(tmp_path):
@@ -77,15 +79,18 @@ def test_datastoremanager_save_load(tmp_path):
 
 # === Functions ===
 
+
 def _save_and_load_data(store):
-    pytest.raises(ValueError, store.save, bad_data)
+    with pytest.raises(errors.DatastoreError):
+        store.save(bad_data)
     store.save(data)
     result = store.load()
     assert data == result
 
 
 def _save_and_load_data_dsm(id_, dsm):
-    pytest.raises(ValueError, dsm.save, id_, bad_data)
+    with pytest.raises(errors.DatastoreError):
+        dsm.save(id_, bad_data)
     dsm.save(id_, data)
     result = dsm.load(id_)
     assert data == result

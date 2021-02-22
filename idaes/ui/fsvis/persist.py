@@ -97,6 +97,9 @@ class FileDataStore(DataStore):
 
         Returns:
             None
+
+        Raises:
+            DataStoreError, if serialization or I/O fails
         """
         _log.debug(f"Save to file: {self._p}")
         try:
@@ -105,7 +108,7 @@ class FileDataStore(DataStore):
                     try:
                         json.dump(data, fp)
                     except TypeError as err:
-                        raise ValueError(f"Writing JSON failed: {err}")
+                        raise errors.DatastoreSerializeError(data, err, stream=fp)
                 else:
                     fp.write(str(data))
         except ValueError as err:
@@ -145,18 +148,22 @@ class MemoryDataStore(DataStore):
 
         Returns:
             None
+
+        Raises:
+            DataStoreError, if serialization fails
         """
         if isinstance(data, dict):
             try:
                 json.dumps(data)
             except TypeError as err:
-                raise ValueError(f"Input is not serializable as JSON: {err}")
+                raise errors.DatastoreSerializeError(data, err)
             self._data = data
         else:
             try:
                 self._data = json.loads(str(data))
             except json.JSONDecodeError as err:
-                raise ValueError("Parsing JSON failed: {err}")
+                err2 = f"could not decode string of JSON: {err}"
+                raise errors.DatastoreSerializeError(str(data)[:256], err2)
 
     def load(self) -> Dict:
         if self._data is None:

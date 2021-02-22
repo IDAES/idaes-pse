@@ -40,5 +40,12 @@ class DatastoreError(Exception):
     pass
 
 
+class DatastoreSerializeError(DatastoreError):
+    def __init__(self, obj, err, stream=None):
+        to_stream = "" if stream is None else f" to '{stream}'"
+        message = f"Serializing object {obj}{to_stream} as JSON failed: {err}"
+        super().__init__(message)
+
+
 class DatastoreSaveError(DatastoreError):
     pass
