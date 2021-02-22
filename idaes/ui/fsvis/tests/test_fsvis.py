@@ -138,6 +138,6 @@ def test_visualize_fn(flash_model):
     filename, _ = fsvis.visualize(flowsheet, browser=False)
     assert len(filename) > 4  # <something>.<ext>
     #
-    for bad_save_as in (1, "/no/such/file/exists.I.hope"):
+    for bad_save_as in (1, "/no/such/file/exists.I.hope", flowsheet):
         with pytest.raises(errors.VisualizerError):
             fsvis.visualize(flowsheet, save_as=bad_save_as, browser=False)
