@@ -57,7 +57,6 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula"
@@ -98,59 +97,59 @@ class PHEData(UnitModelBlockData):
     CONFIG.declare("port_diameter", ConfigValue(
         default=0.2045,
         domain=float,
-        description="Diameter of the ports on the plate",
+        description="Diameter of the ports on the plate [m]",
         doc="""Diameter of the ports on the plate for fluid entry/exit
                into a channel"""))
 
     CONFIG.declare("plate_thermal_cond", ConfigValue(
         default=16.2,
         domain=float,
-        description="Thermal conductivity",
+        description="Thermal conductivity [W/m.K]",
         doc="""Thermal conductivity of the plate material [W/m.K]"""))
 
     CONFIG.declare("total_area", ConfigValue(
         default=114.3,
         domain=float,
-        description="Total heat transfer area",
+        description="Total heat transfer area [m2]",
         doc="""Total heat transfer area as specifed by the manufacturer"""))
 
     CONFIG.declare("plate_thickness", ConfigValue(
         default=0.0006,
         domain=float,
-        description="Plate thickness",
+        description="Plate thickness [m]",
         doc="""Plate thickness"""))
 
     CONFIG.declare("plate_vertical_dist", ConfigValue(
         default=1.897,
         domain=float,
-        description="Vertical distance between centers of ports.",
+        description="Vertical distance between centers of ports [m].",
         doc="""Vertical distance between centers of ports.(Top and bottom ports)
-            (approximately the plate length)"""))
+            (approximately equals to the plate length)"""))
 
     CONFIG.declare("plate_horizontal_dist", ConfigValue(
         default=0.409,
         domain=float,
-        description="Horizontal distance between centers of ports.",
+        description="Horizontal distance between centers of ports [m].",
         doc="""Horizontal distance between centers of ports(Left and right ports)"""))
 
     CONFIG.declare("plate_pact_length", ConfigValue(
         default=0.381,
         domain=float,
-        description="Compressed plate pact length.",
+        description="Compressed plate pact length [m].",
         doc="""Compressed plate pact length.
                Length between the Head and the Follower"""))
 
     CONFIG.declare("surface_enlargement_factor", ConfigValue(
         default=None,
-        domain=(float or In([None])),
+        domain=float,
         description="Surface enlargement factor",
         doc="""Surface enlargement factor is the ratio of single plate area
                (obtained from the total area) to the projected plate area"""))
 
     CONFIG.declare("plate_gap", ConfigValue(
         default=None,
-        domain=(float or In([None])),
-        description="Mean channel spacing or gap bewteen two plates",
+        domain=float,
+        description="Mean channel spacing or gap bewteen two plates [m]",
         doc="""The plate gap is the distance between two adjacent plates that
                forms a flow channel """))
 
@@ -268,50 +267,44 @@ class PHEData(UnitModelBlockData):
                            doc="Set of cold fluid passes(equal to PH)")
 
         self.plate_thermal_cond = Param(mutable=True,
+                                        initialize=self.config.plate_thermal_cond,
                                         units=pyunits.W / pyunits.m / pyunits.K,
                                         doc="Plate thermal conductivity")
         self.plate_thick = Param(mutable=True,
+                                 initialize=self.config.plate_thickness,
                                  units=pyunits.m,
                                  doc="Plate thickness")
-        self.plate_gap = Param(mutable=True,
-                               units=pyunits.m,
-                               doc="Plate gap")
-        self.plate_length = Param(mutable=True,
-                                  units=pyunits.m,
-                                  doc="Plate length ")
-        self.plate_width = Param(mutable=True,
-                                 units=pyunits.m,
-                                 doc="Plate width ")
-        self.plate_area = Param(mutable=True,
-                                units=pyunits.m**2,
-                                doc="Heat transfer area of single plate")
-        self.channel_dia = Param(mutable=True,
-                                 units=pyunits.m,
-                                 doc=" Channel equivalent diameter")
+
         self.port_dia = Param(mutable=True,
+                              initialize=self.config.port_diameter,
                               units=pyunits.m,
                               doc=" Port diameter of plate ")
         self.Np = Param(self.PH,
                         units=None,
                         doc="Number of channels in each pass", mutable=True)
+        # Number of channels in each pass
+        for i in self.PH:
+            self.Np[i].value = self.config.channel_list[i - 1]
 
+        # ---------------------------------------------------------------------
         # Assign plate specifications
-        self.plate_thermal_cond = self.config.plate_thermal_cond
-        self.plate_thick = self.config.plate_thickness
-        self.port_dia = self.config.port_diameter
 
-        # Plate length & width
+        # effective plate length & width
         _effective_plate_length = self.config.plate_vertical_dist - \
             self.config.port_diameter
         _effective_plate_width = self.config.plate_horizontal_dist + \
             self.config.port_diameter
-        self.plate_length = _effective_plate_length
-        self.plate_width = _effective_plate_width
+
+        self.plate_length = Expression(expr=_effective_plate_length)
+        self.plate_width = Expression(expr=_effective_plate_width)
 
         # Area of single plate
         _total_active_plate_number = 2 * sum(self.config.channel_list) - 1 -\
             self.config.divider_plate_number
-        self.plate_area = self.config.total_area / _total_active_plate_number
+
+        self.plate_area = Expression(expr=self.config.total_area /
+                                     _total_active_plate_number,
+                                     doc="Heat transfer area of single plate")
 
         # Plate gap
         if self.config.plate_gap is None:
@@ -319,23 +312,25 @@ class PHEData(UnitModelBlockData):
                 self.config.divider_plate_number
             _plate_pitch = self.config.plate_pact_length / _total_plate_number
 
-            self.plate_gap = _plate_pitch - self.config.plate_thickness
+            _plate_gap = _plate_pitch - self.config.plate_thickness
         else:
-            self.plate_gap = self.config.plate_gap
+            _plate_gap = self.config.plate_gap
+
+        self.plate_gap = Expression(expr=_plate_gap)
 
         # Surface enlargement factor
         if self.config.surface_enlargement_factor is None:
             _projected_plate_area = _effective_plate_length * _effective_plate_width
-            _surface_enlargement_factor = self.plate_area.value / _projected_plate_area
+            _surface_enlargement_factor = self.plate_area / _projected_plate_area
         else:
             _surface_enlargement_factor = self.config.surface_enlargement_factor
 
-        # Channel equivalent diameter
-        self.channel_dia = 2 * self.plate_gap.value / _surface_enlargement_factor
+        self.surface_enlargement_factor = Expression(expr=_surface_enlargement_factor)
 
-        # Number of channels in each pass
-        for i in self.PH:
-            self.Np[i] = self.config.channel_list[i - 1]
+        # Channel equivalent diameter
+        self.channel_dia = Expression(expr=2 * self.plate_gap /
+                                      _surface_enlargement_factor ,
+                                      doc=" Channel equivalent diameter")
 
         # heat transfer parameters
         self.param_a = Var(initialize=0.3, bounds=(0.2, 0.4), units=None,
@@ -350,12 +345,7 @@ class PHEData(UnitModelBlockData):
 
     def _make_performance_method(self):
 
-        #component_list_ref = self.config.hot_side.property_package.component_list
         solvent_list = self.config.hot_side.property_package.component_list_solvent
-
-        #cp_ref = self.config.hot_side.property_package.cp_param
-        add_object_reference(self, "cp_ref",
-                             self.config.hot_side.property_package.cp_param)
 
         def rule_trh(blk, t):
             return (blk.hot_side.properties_out[t].temperature /
@@ -373,14 +363,18 @@ class PHEData(UnitModelBlockData):
 
         def rule_cp_comp_hot(blk, t, j):
             return 1e3 * (
-                blk.cp_ref[j, 1] +
-                blk.cp_ref[j, 2] / 2 * blk.hot_side.properties_in[t].temperature *
+                blk.hot_side.properties_in[t]._params.cp_param[j, 1] +
+                blk.hot_side.properties_in[t]._params.cp_param[j, 2] / 2 *
+                blk.hot_side.properties_in[t].temperature *
                 (blk.trh[t] + 1) +
-                blk.cp_ref[j, 3] / 3 * (blk.hot_side.properties_in[t].temperature**2) *
+                blk.hot_side.properties_in[t]._params.cp_param[j, 3] / 3 *
+                (blk.hot_side.properties_in[t].temperature**2) *
                 (blk.trh[t]**2 + blk.trh[t] + 1) +
-                blk.cp_ref[j, 4] / 4 * (blk.hot_side.properties_in[t].temperature**3) *
+                blk.hot_side.properties_in[t]._params.cp_param[j, 4] / 4 *
+                (blk.hot_side.properties_in[t].temperature**3) *
                 (blk.trh[t] + 1) * (blk.trh[t]**2 + 1) +
-                blk.cp_ref[j, 5] / 5 * (blk.hot_side.properties_in[t].temperature**4) *
+                blk.hot_side.properties_in[t]._params.cp_param[j, 5] / 5 *
+                (blk.hot_side.properties_in[t].temperature**4) *
                 (blk.trh[t]**4 + blk.trh[t]**3 + blk.trh[t]**2 + blk.trh[t] + 1))
 
         self.cp_comp_hot = Expression(self.flowsheet().config.time,
@@ -400,14 +394,18 @@ class PHEData(UnitModelBlockData):
 
         def rule_cp_comp_cold(blk, t, j):
             return 1e3 * (
-                blk.cp_ref[j, 1] +
-                blk.cp_ref[j, 2] / 2 * blk.cold_side.properties_in[t].temperature *
+                blk.cold_side.properties_in[t]._params.cp_param[j, 1] +
+                blk.cold_side.properties_in[t]._params.cp_param[j, 2] / 2 *
+                blk.cold_side.properties_in[t].temperature *
                 (blk.trc[t] + 1) +
-                blk.cp_ref[j, 3] / 3 * (blk.cold_side.properties_in[t].temperature**2) *
+                blk.cold_side.properties_in[t]._params.cp_param[j, 3] / 3 *
+                (blk.cold_side.properties_in[t].temperature**2) *
                 (blk.trc[t]**2 + blk.trc[t] + 1) +
-                blk.cp_ref[j, 4] / 4 * (blk.cold_side.properties_in[t].temperature**3) *
+                blk.cold_side.properties_in[t]._params.cp_param[j, 4] / 4 *
+                (blk.cold_side.properties_in[t].temperature**3) *
                 (blk.trc[t] + 1) * (blk.trc[t]**2 + 1) +
-                blk.cp_ref[j, 5] / 5 * (blk.cold_side.properties_in[t].temperature**4) *
+                blk.cold_side.properties_in[t]._params.cp_param[j, 5] / 5 *
+                (blk.cold_side.properties_in[t].temperature**4) *
                 (blk.trc[t]**4 + blk.trc[t]**3 + blk.trc[t]**2 + blk.trc[t] + 1))
 
         self.cp_comp_cold = Expression(self.flowsheet().config.time,
@@ -441,23 +439,6 @@ class PHEData(UnitModelBlockData):
 
         # ======================================================================
         # PERFORMANCE EQUATIONS
-
-        # ---------------MASS BALANCE CONSTRAINTS------------------------------
-        # def rule_eq_hotside_sumx(bk, t):
-        #     return bk.hot_side.properties_out[t].flow_mol == \
-        #         sum(bk.hot_side.properties_out[t].flow_mol_comp[j]
-        #             for j in component_list_ref)
-        # self.eq_hotside_sumx = Constraint(self.flowsheet().config.time,
-        #                                   rule=rule_eq_hotside_sumx)
-
-        # def rule_eq_coldside_sumx(bk, t):
-        #     return bk.cold_side.properties_out[t].flow_mol == \
-        #         sum(bk.cold_side.properties_out[t].flow_mol_comp[j]
-        #             for j in component_list_ref)
-        # self.eq_coldside_sumx = Constraint(self.flowsheet().config.time,
-        #                                    rule=rule_eq_coldside_sumx)
-
-        # ----------------------------------------------------------------------
         # mass flow rate in kg/s
         def rule_mh_in(blk, t):
             return blk.hot_side.properties_in[t].flow_mol *\
@@ -754,17 +735,9 @@ class PHEData(UnitModelBlockData):
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
-
         Returns:
             None
         '''
@@ -796,9 +769,8 @@ class PHEData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # Initialize the INLET properties
-        print('==============================================================')
-        print('STEP 1: PROPERTY INITIALIZATION')
-        print("======================INLET Properties========================")
+        init_log.info('STEP 1: PROPERTY INITIALIZATION')
+        init_log.info_high("INLET Properties initialization")
         blk.hot_side.properties_in.initialize(
             state_args=hotside_state_args,
             outlvl=outlvl,
@@ -811,8 +783,9 @@ class PHEData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             hold_state=True)
+
         # Initialize the OUTLET properties
-        print("======================OUTLET Properties=======================")
+        init_log.info_high("OUTLET Properties initialization")
         blk.hot_side.properties_out.initialize(
             state_args=hotside_state_args,
             outlvl=outlvl,
@@ -827,10 +800,8 @@ class PHEData(UnitModelBlockData):
             solver=solver,
             hold_state=False)
         # ----------------------------------------------------------------------
-        print('==========================STEP 2==============================')
-        print('STEP 2: solve PHE model')
-        # solve step 2
+        init_log.info('STEP 2: PHE INITIALIZATION')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info("STEP 2 Complete: {}.".format(idaeslog.condition(res)))
-        print('==========================END=================================')
+        init_log.info_high("STEP 2 Complete: {}.".format(idaeslog.condition(res)))
+        init_log.info('INITIALIZATION COMPLETED')

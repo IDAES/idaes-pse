@@ -49,7 +49,6 @@ Industrial & Engineering Chemistry Research,2020. (submitted)
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Expression, Param, Reals, NonNegativeReals,
@@ -67,13 +66,11 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
-     HeatExchangerFlowPattern as FlowPattern
+    HeatExchangerFlowPattern as FlowPattern
 from idaes.core.util.misc import add_object_reference
 from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
 from idaes.core.util import to_json, from_json, StoreSpec
-
-# from idaes.core.util.homotopy import homotopy
 
 __author__ = "Paul Akula, John Eslick"
 
@@ -81,10 +78,6 @@ __author__ = "Paul Akula, John Eslick"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
 
-# Enumerate options for process type
-class ProcessType(enum.Enum):
-    absorber = 1
-    stripper = 2
 
 @declare_process_block_class("PackedColumn")
 class PackedColumnData(UnitModelBlockData):
@@ -148,15 +141,25 @@ class PackedColumnData(UnitModelBlockData):
         **FlowPattern.countercurrent** - countercurrent flow,
         **FlowPattern.cocurrent** - cocurrent flow}"""))
     CONFIG.declare("process_type", ConfigValue(
-        default=ProcessType.absorber,
-        domain=In(ProcessType),
+        default='absorber',
+        domain=In(['absorber', 'stripper']),
         description="Flag indicating the type of  process",
         doc="""Flag indicating either absorption or stripping process.
             **default** - ProcessType.absorber.
             **Valid values:** {
             **ProcessType.absorber** - absorption process,
             **ProcessType.stripper** - stripping process.}"""))
-
+    CONFIG.declare("packing_specific_area", ConfigValue(
+        default=250,
+        domain=float,
+        description="Specific surface area of packing (m^2/m^3)",
+        doc="""Surface area of packing per unit volume of column
+            (default= 250 m2/m3)"""))
+    CONFIG.declare("packing_void_fraction", ConfigValue(
+        default=0.97,
+        domain=float,
+        description="Void fraction of the packing",
+        doc="""packing porosity or void fraction (default= 0.97 )"""))
     # Populate the phase side template to default values
     _PhaseCONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
@@ -170,7 +173,7 @@ class PackedColumnData(UnitModelBlockData):
             **False** - exclude pressure change terms.}"""))
     _PhaseCONFIG.declare("pressure_drop_type", ConfigValue(
         default=None,
-        domain=In([None, "Billet_Schultes_correlation",
+        domain=In(["Billet_Schultes_correlation",
                    "Stichlmair_Fair_Bravo_correlation",
                    "GPDC-Kister"]),
         description="Construction flag for type of pressure drop",
@@ -357,41 +360,28 @@ class PackedColumnData(UnitModelBlockData):
                              "t",
                              self.flowsheet().config.time)
 
-        # Transport  parameters
-        # reference:  Billet and Schultes, 1999
-        packing_dict = {
-            'mellapak_250Y': {
-                'a': 250,      # specific surface Area of packing (m2/m3)
-                'S': 0.017,    # Channel Angle (m)
-                'eps': 0.97,   # Porosity (m3/m3)
-                'LpA': 237,   # ratio of packing length to cross sectional area
-                'Cv': 0.357,  # vapor packing specific Constant
-                'Cl': 0.5,    # liquid packing specific Constant
-                'C1': 5,  # Stichmair-Bravo-Fair pressure drop parameter
-                'C2': 3,  # Stichmair-Bravo-Fair pressure drop parameter
-                'C3': 0.45}}  # Stichmair-Bravo-Fair pressure drop paramete
-
-        self.eps_ref = Param(initialize=packing_dict['mellapak_250Y']['eps'],
+        # Packing  parameters
+        self.eps_ref = Param(initialize=self.config.packing_void_fraction,
                              units=None,
                              doc="Packing void space m3/m3")
-        self.LpA = Param(initialize=packing_dict['mellapak_250Y']['LpA'],
-                         units=1 / pyunits.m,
-                         doc="Packing specific wetted perimeter m/m2")
-        self.S = Param(initialize=packing_dict['mellapak_250Y']['S'],
-                       units=pyunits.m,
-                       doc="Parameter related to packing geometry ")
-        self.a_ref = Param(initialize=packing_dict['mellapak_250Y']['a'],
+
+        self.a_ref = Param(initialize=self.config.packing_specific_area,
                            units=pyunits.m**2 / pyunits.m**3,
                            doc="Packing specific surface area m2/m3")
-        self.dh_ref = Param(initialize=4 * packing_dict['mellapak_250Y']['eps'] /
-                            packing_dict['mellapak_250Y']['a'],
-                            units=pyunits.m,
-                            doc="Hydraulic diameter [m]")
+
+        self.dh_ref = Expression(expr= 4 * self.eps_ref /self.a_ref,
+                                 doc="Hydraulic diameter")
 
         # specific constants for volumetric mass transfer coefficients
         # reference:  Billet and Schultes, 1999
-        self.Cv_ref = Var(initialize=packing_dict['mellapak_250Y']['Cv'])
-        self.Cl_ref = Var(initialize=packing_dict['mellapak_250Y']['Cl'])
+        self.Cv_ref = Var(initialize=0.357,
+                          doc='''Vapor packing specific constant in
+                                Billet and Schultes' (1999) volumetric
+                                mass transfer coefficient correlation''')
+        self.Cl_ref = Var(initialize=0.5,
+                          doc='''Liquid packing specific constant in
+                                Billet and Schultes' (1999) volumetric
+                                mass transfer coefficient correlation''')
         self.Cv_ref.fix()
         self.Cl_ref.fix()
 
@@ -452,44 +442,7 @@ class PackedColumnData(UnitModelBlockData):
                                  units=pyunits.m,
                                  doc='Column length')
 
-        # Vapor Inlet Conditions
-        self.vap_in_flow = Var(self.t,
-                               domain=Reals,
-                               units=pyunits.m / pyunits.s,
-                               doc='Inlet vapor molar flow rate')
-        self.vap_in_temperature = Var(self.t,
-                                      domain=Reals,
-                                      units=pyunits.K,
-                                      doc='Temperature  at vapor inlet')
-        self.vap_in_mole_frac = Var(self.t,
-                                    vap_comp,
-                                    domain=Reals,
-                                    units=None,
-                                    doc='Mole fractions of  '
-                                    'species at vapor inlet')
-
-        # Liquid Inlet Conditions
-        self.liq_in_flow = Var(self.t,
-                               domain=Reals,
-                               units=pyunits.mol / pyunits.s,
-                               doc='Inlet liquid molar flow rate')
-        self.liq_in_temperature = Var(self.t,
-                                      domain=Reals,
-                                      units=pyunits.K,
-                                      doc='Temperature  at liquid inlet')
-        self.liq_in_mole_frac = Var(self.t,
-                                    liq_comp,
-                                    domain=Reals,
-                                    units=None,
-                                    doc='Mole fraction of '
-                                    'species at solvent inlet')
-
         # Hydrodynamics
-        self.pressure_bottom = Var(self.t,
-                                   domain=Reals,
-                                   initialize=101325,
-                                   units=pyunits.Pa,
-                                   doc='Column Bottom pressure')
         self.velocity_vap = Var(self.t,
                                 self.vapor_phase.length_domain,
                                 domain=NonNegativeReals,
@@ -657,6 +610,8 @@ class PackedColumnData(UnitModelBlockData):
                 blk.liquid_phase.properties[t, x].flow_mol
 
         # pressure drop calculation
+        # TO DO
+        # Correlations for pressure drop and flooding required for design cases
         if (self.config.vapor_side.has_pressure_change and
             self.config.vapor_side.pressure_drop_type ==
                 "Stichlmair_Fair_Bravo_correlation"):
@@ -673,32 +628,6 @@ class PackedColumnData(UnitModelBlockData):
                 "pressure drop. Please contact the "
                 "developer of the property_package you are using."
                 .format(self.name))
-
-        # ---------------------------------------------------------------------
-        # sum  of mole fraction to unity contraints:use component flows
-        # Sum of component  flows  in vapor phase
-        # @self.Constraint(self.t,
-        #                  self.vapor_phase.length_domain,
-        #                  doc="Sum of vapor component flows")
-        # def eq_sumy(blk, t, x):
-        #     if x == self.vapor_phase.length_domain.first():
-        #         return Constraint.Skip
-        #     else:
-        #         return blk.vapor_phase.properties[t, x].flow_mol == \
-        #             sum(blk.vapor_phase.properties[t, x].flow_mol_comp[j]
-        #                 for j in vap_comp)
-
-        # # # Sum of component  flows  in liquid phase
-        # @self.Constraint(self.t,
-        #                  self.liquid_phase.length_domain,
-        #                  doc="Sum of liquid component flows")
-        # def eq_sumx(blk, t, x):
-        #     if x == self.liquid_phase.length_domain.last():
-        #         return Constraint.Skip
-        #     else:
-        #         return blk.liquid_phase.properties[t, x].flow_mol == \
-        #             sum(blk.liquid_phase.properties[t, x].flow_mol_comp[j]
-        #                 for j in liq_comp)
 
         # ---------------------------------------------------------------------
         # Mass transfer coefficients, Billet and Schultes (1999) correlation,
@@ -1043,143 +972,35 @@ class PackedColumnData(UnitModelBlockData):
             else:
                 return 1 - blk.enhancement_factor[t, x] <= 0.0
 
-        # ---------------------------------------------------------------------
-        # Boundary Conditions
-        # Enthalpy balance
-
-        @self.Constraint(self.t,
-                         doc='Boundary condition for vapor temperature @ inlet ')
-        def vap_BC_temperature(blk, t):
-            return blk.vap_in_temperature[t] ==\
-                blk.vapor_phase.properties[t, 0].temperature
-
-        @self.Constraint(self.t,
-                         doc='Boundary condition for liquid temperature @ inlet ')
-        def liq_BC_temperature(blk, t):
-            return blk.liq_in_temperature[t] ==\
-                blk.liquid_phase.properties[t, 1].temperature
-
-        # Mass balance-mole_frac
-        @self.Constraint(self.t, liq_comp,
-                         doc='Boundary condition for liquid mole fraction @ inlet ')
-        def liq_BC_mole_frac(blk, t, j):
-            return blk.liq_in_mole_frac[t, j] ==\
-                blk.liquid_phase.properties[t, 1].mole_frac_comp[j]
-
-        @self.Constraint(self.t, vap_comp,
-                         doc='Boundary condition for vapor mole fraction @ inlet ')
-        def vap_BC_mole_frac(blk, t, j):
-            return blk.vap_in_mole_frac[t, j] ==\
-                blk.vapor_phase.properties[t, 0].mole_frac_comp[j]
-
-        # Mass balance-flow-mol
-        @self.Constraint(self.t,
-                         doc='Boundary condition for vapor flow @ inlet ')
-        def vap_BC_flow_mol(blk, t):
-            return blk.vap_in_flow[t] ==\
-                blk.vapor_phase.properties[t, 0].flow_mol
-
-        @self.Constraint(self.t,
-                         doc='Boundary condition for liquid flow @ inlet ')
-        def liq_BC_flow_mol(blk, t):
-            return blk.liq_in_flow[t] ==\
-                blk.liquid_phase.properties[t, 1].flow_mol
-
-        # Pressure balance
-        @self.Constraint(self.t,
-                         doc='Boundary condition for  pressure @ inlet ')
-        def vap_BC_pressure(blk, t):
-            return blk.pressure_bottom[t] ==\
-                blk.vapor_phase.properties[t, 0].pressure
-
     # ==========================================================================
     # Model initialization routine
-    def initialize(blk, method='default', *args, **kwargs):
+    def initialize(blk,
+                   vapor_phase_state_args={},
+                   liquid_phase_state_args={},
+                   state_vars_fixed=False,
+                   homotopy_steps_m=[0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1],
+                   homotopy_steps_h=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                   outlvl=idaeslog.NOTSET,
+                   solver='ipopt',
+                   optarg={'tol': 1e-6}):
         """
         Column initialization.
 
         Arguments
-            method: Method of initialization to use.
-                **Valid values:** {
-                **"default"** - bootstrap initilization: Initializes and saves
-                                the current state of the model as a json file
-                **"load_json"**  - loads a saved model state from a json file,
-                              if no saved json file is found,the default method
-                              is implemented}
-            *args: Positional args fed to the selected initialization function,
-            **kwargs: keyword arguments fed to selected initialization function}
-        """
-
-        # create dir/files to save results
-        cwd = os.getcwd()
-        initialization_folder = os.path.join(cwd, r"initialized_files")
-        if not os.path.exists(initialization_folder):
-            os.makedirs(initialization_folder)
-
-        # json file names
-        s1 = 'dyn' if blk.config.dynamic else 'ss'
-
-        if blk.config.process_type == ProcessType.absorber:
-            s2 = 'abs'
-        else:
-            s2 = 'reg'
-
-        if method == 'default':
-            blk._default_init(*args, **kwargs)
-            fname =\
-                os.path.join(initialization_folder, "{}_{}.json".format(s1, s2))
-            if os.path.exists(fname):
-                os.remove(fname)
-            to_json(blk, fname=fname)
-        elif method == 'load_json':
-            fname_init =\
-                os.path.join(initialization_folder, "{}_{}.json".format(s1, s2))
-            if os.path.exists(fname_init):
-                from_json(blk, fname=fname_init, wts=StoreSpec(ignore_missing=True))
-            else:
-                blk._default_init(*args, **kwargs)
-                fname =\
-                    os.path.join(initialization_folder, "{}_{}.json".format(s1, s2))
-                to_json(blk, fname=fname)
-        else:
-            raise(Exception("Unknown initialization method {}".format(method)))
-
-    def _default_init(
-            blk,
-            vapor_phase_state_args=None,
-            liquid_phase_state_args=None,
-            state_vars_fixed=False,
-            homotopy_steps_m=[0, 0.05,0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1],
-            homotopy_steps_h=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
-            outlvl=idaeslog.NOTSET,
-            solver='ipopt',
-            optarg={'tol': 1e-6}):
-        """
-        Initialisation routine for MEA PackedColumn unit (default solver ipopt).
-
-        Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            homotopy_steps_m : List of continuations steps [0 -1]
-                               No mass transfer --->mass transfer
-            homotopy_steps_h : List of continuations steps [0 -1]
-                               No heat transfer ---> heat transfer
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
+            homotopy_steps_m : List of continuations steps between 0 and 1
+                               for turning mass transfer constrainst gradually
+            homotopy_steps_h : List of continuations steps between 0 and 1
+                               for turning heat transfer constraints gradually
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
-
-        Returns:
-            None
         """
+
         # Set up logger for initialization and solve
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -1193,8 +1014,6 @@ class PackedColumnData(UnitModelBlockData):
             "liquid_side_area",
             "eq_velocity_vap",
             "eq_velocity_liq",
-            # "eq_sumy",
-            # "eq_sumx",
             "E1_eqn",
             "E2_eqn",
             "pressure_at_interface",
@@ -1206,13 +1025,6 @@ class PackedColumnData(UnitModelBlockData):
             "vapor_phase_heat_transfer_handle",
             "liquid_phase_heat_transfer_handle",
             "yeq_CO2_eqn",
-            "vap_BC_temperature",
-            "liq_BC_temperature",
-            "liq_BC_mole_frac",
-            "vap_BC_mole_frac",
-            "vap_BC_flow_mol",
-            "liq_BC_flow_mol",
-            "vap_BC_pressure",
             "material_balances",
             "material_flow_linking_constraints",
             "material_holdup_calculation",
@@ -1284,40 +1096,38 @@ class PackedColumnData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # get values for state variables for initialization
-        if blk.config.process_type == ProcessType.absorber:
+        if blk.config.process_type == 'absorber':
             vapor_phase_state_args = {
-                'flow_mol': blk.vap_in_flow[0].value,
-                'temperature': blk.vap_in_temperature[0].value,
-                'pressure': blk.pressure_bottom[0].value,
+                'flow_mol': blk.vapor_inlet.flow_mol[0].value,
+                'temperature': blk.vapor_inlet.temperature[0].value,
+                'pressure': blk.vapor_inlet.pressure[0].value,
                 'mole_frac_comp':
-                {'H2O': blk.vap_in_mole_frac[0, 'H2O'].value,
-                 'CO2': blk.vap_in_mole_frac[0, 'CO2'].value,
-                 'N2': blk.vap_in_mole_frac[0, 'N2'].value,
-                 'O2': blk.vap_in_mole_frac[0, 'O2'].value}}
-        elif blk.config.process_type == ProcessType.stripper:
+                {'H2O': blk.vapor_inlet.mole_frac_comp[0, 'H2O'].value,
+                 'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value,
+                 'N2': blk.vapor_inlet.mole_frac_comp[0, 'N2'].value,
+                 'O2': blk.vapor_inlet.mole_frac_comp[0, 'O2'].value}}
+        elif blk.config.process_type == 'stripper':
             vapor_phase_state_args = {
-                'flow_mol': blk.vap_in_flow[0].value,
-                'temperature': blk.vap_in_temperature [0].value,
-                'pressure': blk.pressure_bottom[0].value,
+                'flow_mol': blk.vapor_inlet.flow_mol[0].value,
+                'temperature': blk.vapor_inlet.temperature[0].value,
+                'pressure': blk.vapor_inlet.pressure[0].value,
                 'mole_frac_comp':
-                {'H2O': blk.vap_in_mole_frac[0, 'H2O'].value,
-                 'CO2': blk.vap_in_mole_frac[0, 'CO2'].value}}
+                {'H2O': blk.vapor_inlet.mole_frac_comp[0, 'H2O'].value,
+                 'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value}}
 
         liquid_phase_state_args = {
-            'flow_mol': blk.liq_in_flow[0].value,
-            'temperature': blk.liq_in_temperature[0].value,
-            'pressure': blk.pressure_bottom[0].value,
+            'flow_mol': blk.liquid_inlet.flow_mol[0].value,
+            'temperature': blk.liquid_inlet.temperature[0].value,
+            'pressure': blk.vapor_inlet.pressure[0].value,
             'mole_frac_comp':
-            {'H2O': blk.liq_in_mole_frac[0, 'H2O'].value,
-             'CO2': blk.liq_in_mole_frac[0, 'CO2'].value,
-             'MEA': blk.liq_in_mole_frac[0, 'MEA'].value}}
+            {'H2O': blk.liquid_inlet.mole_frac_comp[0, 'H2O'].value,
+             'CO2': blk.liquid_inlet.mole_frac_comp[0, 'CO2'].value,
+             'MEA': blk.liquid_inlet.mole_frac_comp[0, 'MEA'].value}}
 
-        print('==============================================================')
-        print("STEP 1: Property Package initialization")
-        print('==============================================================')
+        init_log.info("STEP 1: Property Package initialization")
 
         # Initialize vapor_phase block
-        blk.vapor_phase.properties.initialize(
+        vflag = blk.vapor_phase.properties.initialize(
             state_args=vapor_phase_state_args,
             state_vars_fixed=False,
             outlvl=outlvl,
@@ -1325,7 +1135,7 @@ class PackedColumnData(UnitModelBlockData):
             solver=solver,
             hold_state=True)
         # Initialize liquid_phase properties block
-        blk.liquid_phase.properties.initialize(
+        lflag = blk.liquid_phase.properties.initialize(
             state_args=liquid_phase_state_args,
             state_vars_fixed=False,
             outlvl=outlvl,
@@ -1333,33 +1143,27 @@ class PackedColumnData(UnitModelBlockData):
             solver=solver,
             hold_state=True)
 
-        print('==============================================================')
-        print("STEP 2: Steady-State ISOTHERMAL MASS BALANCE")
-        print('        -->no mass transfer ')
-        print('        -->no heat transfer')
+        init_log.info("STEP 2: Steady-State ISOTHERMAL MASS BALANCE")
+        init_log.info_high('No mass transfer ')
+        init_log.info_high('No heat transfer')
 
         # unfix flow variable terms
         # vapor side
-        blk.vapor_phase.properties[:, :].flow_mol.unfix()
-        blk.vapor_phase.properties[:, :].mole_frac_comp[:].unfix()
+        blk.vapor_phase.properties.release_state(flags=vflag)
+        blk.vapor_phase.properties[:, :].temperature.fix()
+        blk.vapor_phase.properties[:, :].pressure.fix()
+
         blk.vapor_phase._flow_terms[:, :, :, :].unfix()
         blk.vapor_phase.material_flow_dx[:, :, :, :].unfix()
         # liquid-side
-        blk.liquid_phase.properties[:, :].flow_mol.unfix()
-        blk.liquid_phase.properties[:, :].mole_frac_comp[:].unfix()
+        blk.liquid_phase.properties.release_state(flags=lflag)
+        blk.liquid_phase.properties[:, :].temperature.fix()
+        blk.liquid_phase.properties[:, :].pressure.fix()
+
         blk.liquid_phase._flow_terms[:, :, :, :].unfix()
         blk.liquid_phase.material_flow_dx[:, :, :, :].unfix()
 
         # activate mass balance related equations
-        # unit model
-        for c in [
-                # "eq_sumy",
-                # "eq_sumx",
-                "liq_BC_mole_frac",
-                "vap_BC_mole_frac",
-                "vap_BC_flow_mol",
-                "liq_BC_flow_mol"]:
-            getattr(blk, c).activate()
         # liquid control volume
         for c in [
                 "material_balances",
@@ -1374,20 +1178,18 @@ class PackedColumnData(UnitModelBlockData):
             getattr(blk.vapor_phase, c).activate()
 
         # solve for a small length if stripper
-        if (blk.config.process_type == ProcessType.stripper):
+        if (blk.config.process_type == 'stripper'):
             _specified_length = value(blk.length_column)
             blk.length_column.fix(0.6)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info(
-            "Step 2: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        print('==============================================================')
-        print('STEP 3: Add Mass tranfer terms')
-        print('        -->(3a) velocities & Interface pressure')
-        print('        -->(3b) Enhancement factor')
+        init_log.info('STEP 3: Add Mass tranfer terms')
+        init_log.info_high('(3a) Velocities & Interface pressure')
+        init_log.info_high('(3b) Enhancement factor')
 
         # Initialize :
         #   --> Velocities
@@ -1416,8 +1218,7 @@ class PackedColumnData(UnitModelBlockData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info(
-            "Step 3a: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 3a: {}.".format(idaeslog.condition(res)))
         # ----------------------------------------------------------------------
         # Enhancement factor model
         blk.enhancement_factor.unfix()
@@ -1432,13 +1233,12 @@ class PackedColumnData(UnitModelBlockData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
-        init_log.info("Step 3 complete: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 3 complete: {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
 
-        print('============================================================')
-        print('STEP 4: Isothermal chemical absoption')
-        print("Homotopy steps: ")
-        print("No mass transfer (0.0) --> (1.0) mass transfer")
+        init_log.info('STEP 4: Isothermal chemical absoption')
+        init_log.info_high("Homotopy steps: ")
+        init_log.info_high("No mass transfer (0.0) --> (1.0) mass transfer")
 
         # ISOTHERMAL CHEMICAL ABSORPTION
         blk.N_v.unfix()
@@ -1449,23 +1249,32 @@ class PackedColumnData(UnitModelBlockData):
         blk.liquid_phase_mass_transfer_handle.activate()
 
         for i in homotopy_steps_m:
-            print('homotopy step -->{0:5.2f}'.format(i))
+            init_log.info('homotopy step -->{0:5.2f}'.format(i))
             blk._homotopy_par_m = i
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
                 if res.solver.status != SolverStatus.warning:
                     print('')
 
-        init_log.info("Step 4 complete: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 4 complete: {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
-        print('==============================================================')
-        print('STEP 5: Adiabatic chemical absoption')
-        print("Homotopy steps:")
-        print("Isothermal (0.0) --> (1.0) Adiabatic ")
+        init_log.info('STEP 5: Adiabatic chemical absoption')
+        init_log.info_high("Homotopy steps:")
+        init_log.info_high("Isothermal (0.0) --> (1.0) Adiabatic ")
 
         # Unfix temperature
-        blk.liquid_phase.properties[:, :].temperature.unfix()
-        blk.vapor_phase.properties[:, :].temperature.unfix()
+        for t in blk.t:
+            for x in blk.vapor_phase.length_domain:
+                # Unfix all vapor temperature variables except at the inlet
+                if (blk.vapor_phase.properties[t, x].config.defined_state
+                        is False):
+                    blk.vapor_phase.properties[t, x].temperature.unfix()
+            for x in blk.liquid_phase.length_domain:
+                # Unfix all liquid temperature variables except at the inlet
+                if (blk.liquid_phase.properties[t, x].config.defined_state
+                        is False):
+                    blk.liquid_phase.properties[t, x].temperature.unfix()
+
         # unfix heat transfer terms
         blk.heat_vap.unfix()
         blk.heat_liq.unfix()
@@ -1483,9 +1292,7 @@ class PackedColumnData(UnitModelBlockData):
                 "vapor_phase_heat_transfer",
                 "liquid_phase_heat_transfer",
                 "vapor_phase_heat_transfer_handle",
-                "liquid_phase_heat_transfer_handle",
-                "vap_BC_temperature",
-                "liq_BC_temperature"]:
+                "liquid_phase_heat_transfer_handle"]:
             getattr(blk, c).activate()
         # liquid control volume
         for c in [
@@ -1501,34 +1308,31 @@ class PackedColumnData(UnitModelBlockData):
             getattr(blk.vapor_phase, c).activate()
 
         for i in homotopy_steps_h:
-            print('homotopy step -->{0:5.2f}'.format(i))
+            init_log.info('homotopy step -->{0:5.2f}'.format(i))
             blk._homotopy_par_h = i
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
 
-        init_log.info("Step 5 complete: {}.".format(idaeslog.condition(res)))
+        init_log.info_high("Step 5 complete: {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # scale up at this if stripper
-        if (blk.config.process_type == ProcessType.stripper):
-            # homotopy(blk, [blk.length_column], [_specified_length])
+        if (blk.config.process_type == 'stripper'):
             packing_height = np.linspace(0.6, _specified_length, num=10)
-            print('SCALEUP Stripper height')
+            init_log.info_high('SCALEUP Stripper height')
             for L in packing_height:
                 blk.length_column.fix(L)
                 print('Packing height = {:6.2f}'.format(L))
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = opt.solve(blk, tee=slc.tee)
-                init_log.info("Scaleup: {}.".format(idaeslog.condition(res)))
-
+                init_log.info_high("Scaleup: {}.".format(idaeslog.condition(res)))
 
         if not blk.config.dynamic:
-            print('=============STEADY-STATE INITIALIZATION COMPLETE=========')
+            init_log.info('STEADY-STATE INITIALIZATION COMPLETE')
 
         if blk.config.dynamic:
-            print('==========================================================')
-            print('STEP 6: unfix Accumulation and Holdup terms')
-            print("        --->6a Holdup calculations")
-            print("        --->6b Include Accumulation terms")
+            init_log.info('STEP 6: unfix Accumulation and Holdup terms')
+            init_log.info_high("6a Holdup calculations")
+            init_log.info_high("6b Include Accumulation terms")
             # activate holdup constraints
             # unit model
             for c in [
@@ -1558,7 +1362,7 @@ class PackedColumnData(UnitModelBlockData):
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
-            init_log.info("Step 6a complete: {}.".format(
+            init_log.info_high("Step 6a complete: {}.".format(
                 idaeslog.condition(res)))
 
             # Step 6b:
@@ -1584,9 +1388,9 @@ class PackedColumnData(UnitModelBlockData):
 
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(blk, tee=slc.tee)
-            init_log.info("Step 6 complete: {}.".format(
+            init_log.info_high("Step 6 complete: {}.".format(
                 idaeslog.condition(res)))
-            print('===================INITIALIZATION COMPLETE=================')
+            init_log.info('INITIALIZATION COMPLETE')
 
     def fix_initial_condition(blk):
         """
@@ -1680,7 +1484,7 @@ class PackedColumnData(UnitModelBlockData):
 
         normalised_column_height = [x for x in blk.vapor_phase.length_domain]
         simulation_time = [t for t in blk.t]
-        fluegas_flow = [value(blk.vap_in_flow[t]) for t in blk.t]
+        fluegas_flow = [value(blk.vapor_inlet.flow_mol[t]) for t in blk.t]
         # final time
         tf = simulation_time[-1]
         nf = len(simulation_time)

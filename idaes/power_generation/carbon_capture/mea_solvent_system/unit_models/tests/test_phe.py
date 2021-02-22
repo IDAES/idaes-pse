@@ -21,75 +21,81 @@ import sys
 import os
 
 # Import Pyomo libraries
-from pyomo.environ import ConcreteModel, value, TerminationCondition, SolverFactory
+from pyomo.environ import ConcreteModel, value, TerminationCondition
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester
+from idaes.core.util.testing import initialization_tester, get_default_solver
 # Access mea_column_files dir from the current dir (tests dir)
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from unit_models.phe import PHE
 from properties.liquid_prop import LiquidParameterBlock
 
-solver = SolverFactory('ipopt')
+solver = get_default_solver()
+
 
 class TestPlateHeatExchanger:
     '''
     Tests for the plate heat exchange (PHE) model
+
+    Inputs for states variables  are in SI units
+    -Flowrate: mol/s
+    -Temperature: K
+    -Pressure: Pa
     '''
 
     @pytest.fixture(scope="module")
     def measurement(self):
-      nccc_data = {'dataset1':
-                   {'input':
-                    {'hotside':
-                     {'flowrate': 60.54879,
-                      'temperature': 392.23,
-                      'pressure': 202650,
-                      'mole_fraction':
-                      {'CO2': 0.0158,
-                       'MEA': 0.1095,
-                       'H2O': 0.8747}},
-                     'coldside':
-                     {'flowrate': 63.01910,
-                      'temperature': 326.36,
-                      'pressure': 202650,
-                      'mole_fraction':
-                      {'CO2': 0.0414,
-                       'MEA': 0.1077,
-                       'H2O': 0.8509}}},
-                    'output':
-                        {'hotside':
-                            {'temperature': 330.42},
-                         'coldside':
-                            {'temperature': 384.91}}},
-                   'dataset2':
-                   {"input":
-                        {'hotside':
-                            {'flowrate': 102.07830,
-                             'temperature': 389.57,
-                             'pressure': 202650,
-                             'mole_fraction':
-                             {'CO2': 0.0284,
-                              'MEA': 0.1148,
-                              'H2O': 0.8568}},
-                         'coldside':
-                            {'flowrate': 104.99350,
-                             'temperature': 332.26,
-                             'pressure': 202650,
-                             'mole_fraction':
-                             {'CO2': 0.0438,
-                              'MEA': 0.1137,
-                              'H2O': 0.8425}}},
-                    'output':
-                        {'hotside':
-                            {'temperature': 336.70},
-                         'coldside':
-                            {'temperature': 383.21}}}}
+        nccc_data = {'dataset1':
+                     {'input':
+                      {'hotside':
+                       {'flowrate': 60.54879,
+                        'temperature': 392.23,
+                        'pressure': 202650,
+                        'mole_fraction':
+                        {'CO2': 0.0158,
+                         'MEA': 0.1095,
+                         'H2O': 0.8747}},
+                       'coldside':
+                       {'flowrate': 63.01910,
+                        'temperature': 326.36,
+                        'pressure': 202650,
+                        'mole_fraction':
+                        {'CO2': 0.0414,
+                         'MEA': 0.1077,
+                         'H2O': 0.8509}}},
+                      'output':
+                      {'hotside':
+                       {'temperature': 330.42},
+                       'coldside':
+                       {'temperature': 384.91}}},
+                     'dataset2':
+                     {"input":
+                      {'hotside':
+                       {'flowrate': 102.07830,
+                        'temperature': 389.57,
+                        'pressure': 202650,
+                        'mole_fraction':
+                        {'CO2': 0.0284,
+                         'MEA': 0.1148,
+                         'H2O': 0.8568}},
+                       'coldside':
+                       {'flowrate': 104.99350,
+                        'temperature': 332.26,
+                        'pressure': 202650,
+                        'mole_fraction':
+                        {'CO2': 0.0438,
+                         'MEA': 0.1137,
+                         'H2O': 0.8425}}},
+                      'output':
+                      {'hotside':
+                       {'temperature': 336.70},
+                       'coldside':
+                       {'temperature': 383.21}}}}
 
-      return nccc_data
+        return nccc_data
 
     @pytest.fixture(scope="class")
     def phe_model(self):
@@ -101,15 +107,14 @@ class TestPlateHeatExchanger:
 
         # create instance of plate heat exchanger  on flowsheet
         m.fs.unit = PHE(default={'passes': 4,
-                               'channel_list': [12, 12, 12, 12],
-                               'divider_plate_number':2,
-                               "hot_side": {
-                                   "property_package": m.fs.hotside_properties
-                               },
-                               "cold_side":
-                               {
-                                   "property_package": m.fs.coldside_properties
-                               }})
+                                 'channel_list': [12, 12, 12, 12],
+                                 'divider_plate_number': 2,
+                                 "hot_side": {
+                                     "property_package": m.fs.hotside_properties
+                                 },
+                                 "cold_side": {
+                                     "property_package": m.fs.coldside_properties
+                                 }})
         return m
 
     @pytest.fixture(scope="class", params=['dataset1', 'dataset2'])

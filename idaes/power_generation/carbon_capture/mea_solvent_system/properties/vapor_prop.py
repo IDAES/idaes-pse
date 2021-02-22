@@ -44,8 +44,6 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unfixed_variables)
-# from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column\
-#     import ProcessType
 
 import idaes.logger as idaeslog
 
@@ -70,9 +68,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
     CONFIG.declare("process_type", ConfigValue(
         default='absorber',
-        # default=ProcessType.absorber,
         domain=In(['absorber', 'stripper']),
-        # domain=In(ProcessType),
         description="Flag indicating the type of  process",
         doc="""Flag indicating either absorption or stripping process.
             **default** - ProcessType.absorber.
@@ -260,8 +256,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
             'cp_mol_mean': {'method': '_cp_mol_mean', 'units': 'J/mol.K'},
             'cp_mol_comp': {'method': '_cp_mol_comp', 'units': 'J/mol.K'},
             'cp_mol_comp_mean': {'method': '_cp_mol_comp_mean', 'units': 'J/mol.K'},
-            'enth_mol_mean': {'method': '_enth_mol_mean', 'units': 'J/s'},
-            'enth_mol_vap_density': {'method': '_enth_mol_vap_density', 'units': 'J/m^3'},
+            'enth_mean': {'method': '_enth_mean', 'units': 'J/s'},
+            'enth_vap_density': {'method': '_enth_vap_density', 'units': 'J/m^3'},
             'diffus': {'method': '_diffus', 'units': 'm^2/s'},
             'visc_d': {'method': '_visc_d', 'units': 'kg/m.s'},
             'visc_d_comp': {'method': '_visc_d_comp', 'units': 'kg/m.s'},
@@ -280,7 +276,7 @@ class VaporStateBlockMethods(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, state_args={},
+    def initialize(blk, state_args=None,
                    state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-8}):
@@ -360,9 +356,9 @@ class VaporStateBlockMethods(StateBlock):
                 calculate_variable_from_constraint(blk[k].cp_mol_mean,
                                                    blk[k].cp_mol_mean_eqn)
 
-            if hasattr(blk[k], "enth_mol_mean_eqn"):
-                calculate_variable_from_constraint(blk[k].enth_mol_mean,
-                                                   blk[k].enth_mol_mean_eqn)
+            if hasattr(blk[k], "enth_mean_eqn"):
+                calculate_variable_from_constraint(blk[k].enth_mean,
+                                                   blk[k].enth_mean_eqn)
 
         # Solve property block if non-empty
         free_vars = 0
@@ -615,24 +611,24 @@ class VaporStateBlockData(StateBlockData):
             self.del_component(self.cp_mol_mean_eqn)
             raise
 
-    def _enth_mol_mean(self):
+    def _enth_mean(self):
         # Average vapour Enthalpy btw T and T_ref
-        self.enth_mol_mean = Var(domain=Reals,
+        self.enth_mean = Var(domain=Reals,
                                  initialize=1.0,
                                  units=pyunits.J / pyunits.s,
                                  doc="Mean Vapor Enthalpy flow btw T and Tref "
                                  "[J/s]")
 
-        def rule_enth_mol_mean(b):
-            return b.enth_mol_mean == b.cp_mol_mean * b.flow_mol * b.temperature
+        def rule_enth_mean(b):
+            return b.enth_mean == b.cp_mol_mean * b.flow_mol * b.temperature
 
         try:
             # Try to build constraint
-            self.enth_mol_mean_eqn = Constraint(rule=rule_enth_mol_mean)
+            self.enth_mean_eqn = Constraint(rule=rule_enth_mean)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.enth_mol_mean)
-            self.del_component(self.enth_mol_mean_eqn)
+            self.del_component(self.enth_mean)
+            self.del_component(self.enth_mean_eqn)
             raise
 
     def _visc_d_comp(self):
@@ -794,21 +790,21 @@ class VaporStateBlockData(StateBlockData):
             self.del_component(self.diffus)
             raise
 
-    def _enth_mol_vap_density(self):
+    def _enth_vap_density(self):
         #  molar enthalpy holdup per unit volume
-        self.enth_mol_vap_density = Var(
+        self.enth_vap_density = Var(
             domain=Reals,
             initialize=1.0,
             doc=' enthalpy holdup [J/m3]')
         try:
             # Try to build constraint
-            self.eq_enth_mol_vap_density =\
-                Constraint(expr=self.enth_mol_vap_density ==
-                           self.enth_mol_mean * self.conc_mol)
+            self.eq_enth_vap_density =\
+                Constraint(expr=self.enth_vap_density ==
+                           self.enth_mean * self.conc_mol)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.enth_mol_vap_density)
-            self.del_component(self.eq_enth_mol_vap_density)
+            self.del_component(self.enth_vap_density)
+            self.del_component(self.eq_enth_vap_density)
             raise
 
     # ==========================================================================
@@ -817,13 +813,13 @@ class VaporStateBlockData(StateBlockData):
         return self.flow_mol_comp[j]
 
     def get_enthalpy_flow_terms(self, p):
-        return self.enth_mol_mean
+        return self.enth_mean
 
     def get_material_density_terms(self, p, j):
         return self.conc_mol_comp[j]
 
     def get_energy_density_terms(self, p):
-        return self.enth_mol_vap_density
+        return self.enth_vap_density
 
     def define_state_vars(self):
         return {"flow_mol": self.flow_mol,
