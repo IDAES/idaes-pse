@@ -141,3 +141,28 @@ def test_visualize_fn(flash_model):
     for bad_save_as in (1, "/no/such/file/exists.I.hope", flowsheet):
         with pytest.raises(errors.VisualizerError):
             fsvis.visualize(flowsheet, save_as=bad_save_as, browser=False)
+
+
+@pytest.mark.unit
+def test_flowsheet_name(flash_model):
+    raw_name = "Hello World"
+    filename, _ = fsvis.visualize(flash_model.fs, name=raw_name, browser=False)
+    assert(len(filename) > len(raw_name))
+
+
+@pytest.mark.unit
+def test_mock_webbrowser(flash_model):
+    from idaes.ui.fsvis import fsvis
+    wb = fsvis.webbrowser
+    for wb_mock in (MockWB(True), MockWB(False)):
+        fsvis.webbrowser = wb_mock
+        filename, _ = fsvis.visualize(flash_model.fs)
+    fsvis.webbrowser = wb
+
+
+class MockWB:
+    def __init__(self, ok):
+        self.ok = ok
+
+    def open(self, *args):
+        return self.ok
