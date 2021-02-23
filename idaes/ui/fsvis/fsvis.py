@@ -74,8 +74,8 @@ def visualize(
         Tuple (Save location, Port number where server is listening)
 
     Raises:
-        VisualizerSaveError: if the data storage at 'save_as' can't be opened
-        VisualizerError: Any other errors
+        :mod:`idaes.ui.fsvis.errors.VisualizerSaveError`: if the data storage at 'save_as' can't be opened
+        :mod:`idaes.ui.fsvis.errors.VisualizerError`: Any other errors
     """
     global web_server
 
