@@ -128,7 +128,9 @@ class FlowsheetServer(http.server.HTTPServer):
         try:
             self._dsm.save(id_, flowsheet)
         except ValueError as err:
-            raise errors.ProcessingError(str(err))
+            raise errors.ProcessingError(f"While saving flowsheet: {err}")
+        except KeyError as err:
+            raise errors.ProcessingError(f"While saving flowsheet: {err}")
 
     def update_flowsheet(self, id_: str) -> Dict:
         """Update flowsheet.
