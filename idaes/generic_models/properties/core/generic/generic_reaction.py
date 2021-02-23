@@ -258,7 +258,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
 
         # Construct equilibrium reaction attributes if required
         if len(self.config.equilibrium_reactions) > 0:
-            # Construct rate reaction index
+            # Construct equilibrium reaction index
             self.equilibrium_reaction_idx = Set(
                 initialize=self.config.equilibrium_reactions.keys())
 

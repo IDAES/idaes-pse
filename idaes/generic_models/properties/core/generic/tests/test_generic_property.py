@@ -27,7 +27,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.generic_models.properties.core.generic.tests import dummy_eos
 
 from idaes.core import (declare_process_block_class, Component,
-                        Phase, LiquidPhase, VaporPhase)
+                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import (ConfigurationError)
 import idaes.logger as idaeslog
@@ -112,6 +112,9 @@ class TestGenericParameterBlock(object):
         assert m.params.temperature_ref.value == 300
 
         assert m.params.state_block_class is GenericStateBlock
+
+        assert len(m.params.config.inherent_reactions) == 0
+        assert m.params.config.reaction_basis == MaterialFlowBasis.molar
 
     @pytest.mark.unit
     def test_invalid_unit(self):
@@ -750,6 +753,138 @@ class TestGenericParameterBlock(object):
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
                     "base_units": base_units})
+
+    @pytest.mark.unit
+    def test_inherent_reactions(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p1", "a"): -3,
+                                             ("p1", "b"): 4},
+                           "heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+        assert isinstance(m.params.inherent_reaction_idx, Set)
+        assert len(m.params.inherent_reaction_idx) == 1
+        assert m.params.inherent_reaction_idx == ["e1"]
+
+        assert hasattr(m.params, "inherent_reaction_stoichiometry")
+        assert len(m.params.inherent_reaction_stoichiometry) == 5
+        assert m.params.inherent_reaction_stoichiometry == {
+            ("e1", "p1", "a"): -3, ("e1", "p1", "b"): 4,
+            ("e1", "p2", "a"): 0, ("e1", "p2", "b"): 0, ("e1", "p2", "c"): 0}
+
+        assert isinstance(m.params.reaction_e1, Block)
+        assert isinstance(m.params.reaction_e1.reaction_order, Var)
+        assert len(m.params.reaction_e1.reaction_order) == 5
+        for i in m.params.reaction_e1.reaction_order:
+            order = {("p1", "a"): -3, ("p1", "b"): 4,
+                     ("p2", "a"): 0, ("p2", "b"): 0, ("p2", "c"): 0}
+            assert m.params.reaction_e1.reaction_order[i] == order[i]
+
+    @pytest.mark.unit
+    def test_inherent_reactions_no_stoichiometry(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params inherent reaction e1 was not "
+                           "provided with a stoichiometry configuration "
+                           "argument."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+    @pytest.mark.unit
+    def test_inherent_reactions_invalid_phase_stoichiometry(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params stoichiometry for inherent "
+                           "reaction e1 included unrecognised phase p7."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p7", "a"): -3,
+                                             ("p1", "b"): 4},
+                           "heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+    @pytest.mark.unit
+    def test_inherent_reactions_invalid_component_stoichiometry(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params stoichiometry for inherent "
+                           "reaction e1 included unrecognised component c7."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p1", "c7"): -3,
+                                             ("p1", "b"): 4},
+                           "heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+    @pytest.mark.unit
+    def test_inherent_reactions_no_form(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params inherent reaction e1 was not "
+                           "provided with a equilibrium_form configuration "
+                           "argument."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p1", "a"): -3,
+                                             ("p1", "b"): 4}}}})
 
 
 # -----------------------------------------------------------------------------
