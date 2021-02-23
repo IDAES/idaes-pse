@@ -212,7 +212,7 @@ class DataStoreManager:
 
         Raises:
             KeyError if the flowsheet is not found
-            ValueError on JSON errors
+            DatastoreSerializeError on JSON errors
         """
         self._find(id_).save(data)
         _log.debug(f"Flowsheet '{id_}' saved")

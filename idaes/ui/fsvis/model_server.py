@@ -127,7 +127,7 @@ class FlowsheetServer(http.server.HTTPServer):
         """
         try:
             self._dsm.save(id_, flowsheet)
-        except ValueError as err:
+        except errors.DatastoreError as err:
             raise errors.ProcessingError(f"While saving flowsheet: {err}")
         except KeyError as err:
             raise errors.ProcessingError(f"While saving flowsheet: {err}")
@@ -281,11 +281,12 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         """Process a request to store data.
         """
         u, id_ = self._parse_flowsheet_url(self.path)
-        _log.debug(f"do_PUT: route={u} id={id_}")
+        _log.info(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
             self.send_error(
                 400, message=f"Query parameter 'id' is required for '{u.path}'"
             )
+            return
         if u.path == "/fs":
             self._put_fs(id_)
 
@@ -298,6 +299,9 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
             self.server.save_flowsheet(id_, data)
         except errors.ProcessingError as err:
             self.send_error(400, message="Invalid flowsheet", explain=str(err))
+            return
+        except Exception as err:
+            self.send_error(500, message="Unknown error", explain=str(err))
             return
         self.send_response(200, message="success")
 

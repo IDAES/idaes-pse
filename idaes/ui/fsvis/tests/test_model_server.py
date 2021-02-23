@@ -28,7 +28,27 @@ def test_save_flowsheet(flash_model):
     fs = flash_model.fs
     srv.add_flowsheet("oscar", fs, persist.MemoryDataStore())
     with pytest.raises(errors.ProcessingError):
-        srv.save_flowsheet("oscar", -1)
+        srv.save_flowsheet("oscar", {"invalid": pytest})
+
+
+@pytest.mark.unit
+def test_update_flowsheet(flash_model):
+    srv = model_server.FlowsheetServer()
+    with pytest.raises(errors.FlowsheetUnknown):
+        srv.update_flowsheet("oscar")
+    # add a flowsheet,
+    fs = flash_model.fs
+    srv.add_flowsheet("oscar", fs, persist.MemoryDataStore())
+    # Put in a bad value, DEPENDS ON PROTECTED ATTR
+    srv._flowsheets["oscar"] = None
+    with pytest.raises(errors.ProcessingError):
+        srv.update_flowsheet("oscar")
+    # Delete it, DEPENDS ON PROTECTED ATTR
+    del srv._flowsheets["oscar"]
+    # Update should fail not-found
+    with pytest.raises(errors.FlowsheetNotFoundInMemory):
+        srv.update_flowsheet("oscar")
+
 
 
 @pytest.fixture(scope="module")
@@ -55,3 +75,29 @@ def flash_model():
     m.fs.flash.heat_duty.fix(0)
     m.fs.flash.deltaP.fix(0)
     return m
+
+
+@pytest.mark.component
+def test_flowsheet_server_run(flash_model):
+    import requests
+
+    srv = model_server.FlowsheetServer()
+    srv.start()
+    srv.path = "/app"
+    resp = requests.get(f"http://localhost:{srv.port}/app")
+    assert not resp.ok
+    # ok to get /app with bogus id (id is just added to response page)
+    resp = requests.get(f"http://localhost:{srv.port}/app?id=1234")
+    assert resp.ok
+    # not ok to get /fs with bogus id
+    resp = requests.get(f"http://localhost:{srv.port}/fs?id=1234")
+    assert not resp.ok
+    # add the flowsheet
+    fs = flash_model.fs
+    srv.add_flowsheet("oscar", fs, persist.MemoryDataStore())
+    # now /fs should work
+    resp = requests.get(f"http://localhost:{srv.port}/fs?id=oscar")
+    assert resp.ok
+    print("Bogus PUT")
+    resp = requests.put(f"http://localhost:{srv.port}/fs")
+    assert not resp.ok
