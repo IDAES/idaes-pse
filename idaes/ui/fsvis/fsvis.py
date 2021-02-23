@@ -62,12 +62,12 @@ def visualize(
         flowsheet: IDAES flowsheet to visualize
         name: Name of flowsheet to display as the title of the visualization
         save_as: Location to save the current flowsheet layout and values. If this argument is not specified,
-                 a default name will be picked in the current working directory. If a string or Path is
-                given, that will be taken as the file in which to save.
+          a default name will be picked in the current working directory. If a string or Path is
+          given, that will be taken as the file in which to save.
         browser: If true, open a browser
         port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, which is a superset of the built-in :mod:`logging` module levels.
-                  See :mod:`idaes.logger` for details
+          See the :mod:`idaes.logger` module for details
         quiet: If True, suppress printing any messages to standard output (console)
 
     Returns:
