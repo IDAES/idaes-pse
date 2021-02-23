@@ -24,12 +24,20 @@ class ControlInitOption(ConfigEnum):
     FROM_PREVIOUS = 11
     BY_TIME_ELEMENT = 12
     FROM_INITIAL_CONDITIONS = 13
+    SETPOINT = 14
 
 
 class ElementInitializationInputOption(ConfigEnum):
-    SET_POINT = 21
+    SETPOINT = 21
     INITIAL = 22
     CURRENT_VALUES = 23
+
+
+class InputOption(ConfigEnum):
+    CURRENT = 20
+    INITIAL = 21
+    SETPOINT = 22
+    # TODO: PREVIOUS = 23
 
 
 class TimeResolutionOption(ConfigEnum):
@@ -52,6 +60,20 @@ class VariableCategory(ConfigEnum):
     INPUT = 54
     FIXED = 55
     SCALAR = 56
+    
+    MEASUREMENT = 57
+
+
+class NoiseBoundOption(ConfigEnum):
+    FAIL = 60
+    DISCARD = 61
+    PUSH = 62
+
+
+class PlantHorizonType(ConfigEnum):
+    FULL = 71
+    ROLLING = 72
+
 
 # This function is used as the domain for the user-provided
 # list of inputs at time.first().

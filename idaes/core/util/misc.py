@@ -30,6 +30,22 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
+def get_default_solver():
+    """
+    Tries to set-up the default solver for testing, and returns None if not
+    available
+    """
+    if pyo.SolverFactory('ipopt').available(exception_flag=False):
+        solver = pyo.SolverFactory('ipopt')
+        solver.options = {'tol': 1e-6,
+                          'linear_solver': 'ma27'}
+    else:
+        raise RuntimeError("Default solver unavailable.")
+
+    return solver
+
+
+# Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
     """
     Method to create a reference in the local model to a remote Pyomo object.

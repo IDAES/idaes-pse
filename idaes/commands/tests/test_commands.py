@@ -28,7 +28,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples
+from idaes.commands import examples, extensions
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 
@@ -522,3 +522,26 @@ def test_strip_test_cells(remove_cells_notebooks):
                     if examples.REMOVE_CELL_TAG in tags:
                         n += 1
                 assert n > 0  # tag still there
+
+
+##################
+# get-extensions #
+##################
+
+
+@pytest.mark.unit
+def test_get_extensions(runner):
+    result = runner.invoke(extensions.get_extensions, ["--no-download"])
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_print_extensions_version(runner):
+    result = runner.invoke(extensions.ver_extensions, [])
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_print_extensions_version(runner):
+    result = runner.invoke(extensions.get_extensions_platforms, [])
+    assert result.exit_code == 0
