@@ -773,6 +773,20 @@ class _GenericStateBlock(StateBlock):
                 "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
+    def _has_inherent_reactions(self):
+        params = self._get_parameter_block()
+
+        if params.config["state_components"] == StateIndex.true:
+            return params.has_inherent_reactions
+        elif params.config["state_components"] == StateIndex.apparent:
+            # If using apparent species basis, ignore inherent reactions
+            return False
+        else:
+            raise BurntToast(
+                "{} unrecognized value for configuration argument "
+                "'state_components'; this should never happen. Please contact "
+                "the IDAES developers with this bug.".format(self.name))
+
     def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-8}):

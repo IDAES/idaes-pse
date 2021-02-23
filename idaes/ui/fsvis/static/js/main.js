@@ -9,13 +9,17 @@ export class App {
         $.ajax({url: url, datatype: 'json'})
             .done((model) => {
                 this.renderModel(model);
-                this.toolbar = new Toolbar(this, this.paper);
                 this.stream_table = new StreamTable(this, model);
+                this.toolbar = new Toolbar(this, this.paper, this.stream_table);
             })
             .fail((xhr, status, error) => { 
                 console.log(error);
                 console.log(status); 
             });
+        // Make the dropdowns not disappear on use. They will disappear when the user clicks off the dropdown
+        $(document).on('click', '.dropdown-menu', function (e) {
+            e.stopPropagation();
+        });
     }
 
     renderModel(model) {

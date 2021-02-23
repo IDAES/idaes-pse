@@ -20,7 +20,6 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
-                           Param,
                            Reals,
                            TransformationFactory,
                            units as pyunits,
@@ -477,6 +476,25 @@ argument)."""))
                     "reactions per unit length",
                 units=flow_l_units)
 
+        # Inherent reaction generation
+        if self.properties.has_inherent_reactions:
+            if not hasattr(self.config.property_package,
+                           "inherent_reaction_idx"):
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of "
+                    "inherent reactions (inherent_reaction_idx), but "
+                    "has_inherent_reactions is True."
+                    .format(self.name))
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Amount of component generated in control volume "
+                    "by inherent reactions",
+                units=flow_l_units)
+
         # Phase equilibrium generation
         if has_phase_equilibrium and \
                 balance_type == MaterialBalanceType.componentPhase:
@@ -521,6 +539,10 @@ argument)."""))
         def equilibrium_term(b, t, x, p, j):
             return (b.equilibrium_reaction_generation[t, x, p, j]
                     if has_equilibrium_reactions else 0)
+
+        def inherent_term(b, t, x, p, j):
+            return (b.inherent_reaction_generation[t, x, p, j]
+                    if b.properties.has_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, x, p, j):
             if has_phase_equilibrium and \
@@ -619,6 +641,32 @@ argument)."""))
                 else:
                     return Constraint.Skip
 
+        if self.properties.has_inherent_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.inherent_reaction_extent = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.inherent_reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc="Extent of inherent reactions at point x",
+                units=flow_l_units)
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.length_domain,
+                             pc_set,
+                             doc="Inherent reaction stoichiometry")
+            def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, x, p, j] == (
+                        sum(b.properties[t, x].config.parameters.
+                            inherent_reaction_stoichiometry[r, p, j] *
+                            b.inherent_reaction_extent[t, x, r]
+                            for r in b.config.property_package.
+                            inherent_reaction_idx))
+                else:
+                    return Constraint.Skip
+
         # Add custom terms and material balances
         if balance_type == MaterialBalanceType.componentPhase:
             def user_term_mol(b, t, x, p, j):
@@ -689,6 +737,7 @@ argument)."""))
                             b.length*kinetic_term(b, t, x, p, j) *
                             b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                             b.length*equilibrium_term(b, t, x, p, j) +
+                            b.length*inherent_term(b, t, x, p, j) +
                             b.length*phase_equilibrium_term(b, t, x, p, j) +
                             b.length*transfer_term(b, t, x, p, j) +
                             #b.area*diffusion_term(b, t, x, p, j)/b.length +
@@ -1419,7 +1468,7 @@ argument)."""))
             pressure_l_units = None
 
         # Create dP/dx terms
-        self.pressure = Reference(self.properties[:,:].pressure)
+        self.pressure = Reference(self.properties[:, :].pressure)
 
         self.pressure_dx = DerivativeVar(
                                   self.pressure,
@@ -1461,7 +1510,7 @@ argument)."""))
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
-                return 0 == (b._flow_direction_term*b.pressure_dx[t, x]  +
+                return 0 == (b._flow_direction_term*b.pressure_dx[t, x] +
                              b.length*deltaP_term(b, t, x) +
                              b.length*user_term(t, x))
 
@@ -1779,12 +1828,11 @@ argument)."""))
         super().calculate_scaling_factors()
 
         phase_list = self.properties.phase_list
-        pc_set = self.properties.phase_component_set
 
         # Default scale factors
-        # If the paraent component of an indexed component has a scale factor, but
-        # some of the data objects don't, propogate the indexed component scale
-        # factor to the missing scaling factors.
+        # If the paraent component of an indexed component has a scale factor,
+        # but some of the data objects don't, propogate the indexed component
+        # scale factor to the missing scaling factors.
         iscale.propagate_indexed_component_scaling_factors(self)
 
         heat_sf_default = 1e-6*10
@@ -1812,7 +1860,7 @@ argument)."""))
         if hasattr(self, "energy_holdup"):
             for (t, x, p), v in self.energy_holdup.items():
                 sf = iscale.get_scaling_factor(
-                    self._area_func(t,x), default=1, warning=True)
+                    self._area_func(t, x), default=1, warning=True)
                 sf *= iscale.get_scaling_factor(
                     self.properties[t, x].get_energy_density_terms(p),
                     default=1,
@@ -1822,7 +1870,7 @@ argument)."""))
         if hasattr(self, "material_holdup"):
             for (t, x, p, i), v in self.material_holdup.items():
                 sf = iscale.get_scaling_factor(
-                    self._area_func(t,x), default=1, warning=True)
+                    self._area_func(t, x), default=1, warning=True)
                 sf *= iscale.get_scaling_factor(
                     self.properties[t, x].get_material_density_terms(p, i),
                     default=1,
@@ -1845,37 +1893,43 @@ argument)."""))
             for (t, x), v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:
                     s = iscale.get_scaling_factor(
-                        self.properties[t, x].pressure, default=1, warning=True)
+                        self.properties[t, x].pressure,
+                        default=1,
+                        warning=True)
                     iscale.set_scaling_factor(v, 10*s)
 
         if hasattr(self, "pressure_dx"):
             for (t, x), v in self.pressure_dx.items():
                 if iscale.get_scaling_factor(v) is None:
                     s = iscale.get_scaling_factor(
-                        self.properties[t, x].pressure, default=1, warning=True)
+                        self.properties[t, x].pressure,
+                        default=1,
+                        warning=True)
                     iscale.set_scaling_factor(v, 10*s)
 
         # Enthalpy flow variable and constraint
         if hasattr(self, "_enthalpy_flow"):
-            for (t,x,p), v in self._enthalpy_flow.items():
+            for (t, x, p), v in self._enthalpy_flow.items():
                 sf = iscale.get_scaling_factor(
                     self.properties[t, x].get_enthalpy_flow_terms(p),
                     default=1,
                     warning=True)
                 iscale.set_scaling_factor(v, sf)
-                iscale.set_scaling_factor(self.enthalpy_flow_dx[t,x,p], sf*100)
-                c = self.enthalpy_flow_linking_constraint[t,x,p]
+                iscale.set_scaling_factor(
+                    self.enthalpy_flow_dx[t, x, p], sf*100)
+                c = self.enthalpy_flow_linking_constraint[t, x, p]
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "_flow_terms"):
-            for (t,x,p,j), v in self._flow_terms.items():
+            for (t, x, p, j), v in self._flow_terms.items():
                 sf = iscale.get_scaling_factor(
                     self.properties[t, x].get_material_flow_terms(p, j),
                     default=1,
                     warning=True)
                 iscale.set_scaling_factor(v, sf)
-                iscale.set_scaling_factor(self.material_flow_dx[t,x,p,j], sf*100)
-                c = self.material_flow_linking_constraints[t,x,p,j]
+                iscale.set_scaling_factor(
+                    self.material_flow_dx[t, x, p, j], sf*100)
+                c = self.material_flow_linking_constraints[t, x, p, j]
                 iscale.constraint_scaling_transform(c, sf)
 
         # Material Holdup Constraints
@@ -1896,14 +1950,14 @@ argument)."""))
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, x, p, j), c in self.material_balances.items():
                     sf = iscale.get_scaling_factor(
-                        self.properties[t,x].get_material_flow_terms(p, j),
+                        self.properties[t, x].get_material_flow_terms(p, j),
                         default=1,
                         warning=True)
                     iscale.constraint_scaling_transform(c, sf)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
-                        [self.properties[t,x].get_material_flow_terms(p, j)
+                        [self.properties[t, x].get_material_flow_terms(p, j)
                             for p in phase_list])
                     iscale.constraint_scaling_transform(c, sf)
             else:
@@ -1949,12 +2003,24 @@ argument)."""))
 
         if hasattr(self, "rate_reaction_stoichiometry_constraint"):
             for i, c in self.rate_reaction_stoichiometry_constraint.items():
-                iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                    self.rate_reaction_generation[i], default=1, warning=True))
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.rate_reaction_generation[i],
+                        default=1,
+                        warning=True))
 
         if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
             for i, c in self.equilibrium_reaction_stoichiometry_constraint.items():
-                iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                    self.equilibrium_reaction_generation[i],
-                    default=1,
-                    warning=True))
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.equilibrium_reaction_generation[i],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "inherent_reaction_stoichiometry_constraint"):
+            for i, c in self.inherent_reaction_stoichiometry_constraint.items():
+                iscale.constraint_scaling_transform(
+                    c, iscale.get_scaling_factor(
+                        self.inherent_reaction_generation[i],
+                        default=1,
+                        warning=True))

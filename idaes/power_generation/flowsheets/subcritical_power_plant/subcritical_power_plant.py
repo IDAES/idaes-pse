@@ -1816,8 +1816,8 @@ if __name__ == "__main__":
     # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up
     # to 100% load and holding for 20 minutes.
-    # uncomment the code to run this simulation,
-    # note that this simulation takes around ~20 min to complete
+    # uncomment the code (line 1821) to run this simulation,
+    # note that this simulation takes around ~60 minutes to complete
     # m_dyn = main_dynamic()
 
     # This method builds and runs a steady state subcritical coal-fired power
