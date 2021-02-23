@@ -47,7 +47,7 @@ _log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
-class TestApparentSpeciesBasis():
+class TestApparentSpeciesBasisNoInherent():
     config = {
         # Specifying components
         "components": {
@@ -232,7 +232,7 @@ class TestApparentSpeciesBasis():
 
 
 # ---------------------------------------------------------------------
-class TestTrueSpeciesBasis():
+class TestTrueSpeciesBasisNoInherent():
     config = {
         # Specifying components
         "components": {

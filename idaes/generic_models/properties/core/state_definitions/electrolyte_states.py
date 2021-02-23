@@ -60,6 +60,10 @@ def _apparent_species_state(b):
         doc="Phase-component molar flowrates of true species",
         units=units["flow_mole"])
 
+    # Check for inherent reactions and add apparent extent terms if required
+    if b.has_inherent_reactions:
+        assert False
+
     def appr_to_true_species(b, p, j):
         pobj = b.params.get_phase(p)
         cobj = b.params.get_component(j)
@@ -71,10 +75,12 @@ def _apparent_species_state(b):
                     if j in aobj.config.dissociation_species:
                         e += (aobj.config.dissociation_species[j] *
                               b.flow_mol_phase_comp_apparent[p, a])
-                return b.flow_mol_phase_comp_true[p, j] == e
             else:
-                return b.flow_mol_phase_comp_apparent[p, j] == \
-                    b.flow_mol_phase_comp_true[p, j]
+                e = b.flow_mol_phase_comp_apparent[p, j]
+
+            # Next, check for inherent reactions
+
+            return b.flow_mol_phase_comp_true[p, j] == e
         else:
             return b.flow_mol_phase_comp_apparent[p, j] == \
                 b.flow_mol_phase_comp_true[p, j]
