@@ -1,6 +1,8 @@
 Getting Started
 ===============
 
+.. _IDAES Installation:
+
 Installation
 ------------
 To install the IDAES PSE framework, follow the set of instructions below that are
