@@ -24,7 +24,8 @@ from pyomo.environ import (
 
 # Import IDAES cores
 from idaes.core import (
-    FlowsheetBlock, VaporPhase, Component, MaterialBalanceType)
+    FlowsheetBlock, VaporPhase, Component, MaterialBalanceType,
+    ControlVolume1DBlock)
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock, StateIndex)
@@ -254,4 +255,134 @@ class TestInherentReactions(object):
         assert (value(frame.fs.H101.outlet.temperature[0]) ==
                 pytest.approx(350, rel=1e-5))
         assert (value(frame.fs.H101.outlet.pressure[0]) ==
+                pytest.approx(101325, rel=1e-5))
+
+    @pytest.mark.component
+    def test_CV1D_w_inherent_rxns_comp_phase(self, frame):
+        frame.fs.cv = ControlVolume1DBlock(default={
+            "property_package": frame.fs.params,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 2})
+
+        frame.fs.cv.add_geometry()
+
+        frame.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+        frame.fs.cv.add_material_balances(
+            balance_type=MaterialBalanceType.componentPhase)
+
+        frame.fs.cv.add_energy_balances()
+        frame.fs.cv.add_momentum_balances()
+        frame.fs.cv.apply_transformation()
+
+        frame.fs.cv.properties[0, 0].flow_mol.fix(100)
+        frame.fs.cv.properties[0, 0].mole_frac_comp.fix(0.25)
+        frame.fs.cv.properties[0, 0].temperature.fix(350)
+        frame.fs.cv.properties[0, 0].pressure.fix(101325)
+
+        frame.fs.cv.area.fix(1)
+        frame.fs.cv.length.fix(1)
+
+        assert(degrees_of_freedom(frame)) == 1  # I have no idea what the DoF is, but it works
+
+        frame.fs.cv.initialize()
+
+        solver = get_default_solver()
+
+        results = solver.solve(frame, tee=True)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert value(
+            frame.fs.cv.properties[0, 1].k_eq["e1"]) == 2
+
+        assert (
+            value(frame.fs.cv.properties[0, 1].k_eq["e1"]) ==
+            pytest.approx(value(
+                frame.fs.cv.properties[0, 1].mole_frac_comp["b"] /
+                frame.fs.cv.properties[0, 1].mole_frac_comp["a"]),
+                          rel=1e-5))
+
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["a"]) ==
+                pytest.approx(1/6, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["b"]) ==
+                pytest.approx(1/3, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["c"]) ==
+                pytest.approx(1/4, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["d"]) ==
+                pytest.approx(1/4, rel=1e-5))
+
+        assert (value(frame.fs.cv.properties[0, 1].flow_mol) ==
+                pytest.approx(100, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].temperature) ==
+                pytest.approx(350, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].pressure) ==
+                pytest.approx(101325, rel=1e-5))
+
+    @pytest.mark.component
+    def test_CV1D_w_inherent_rxns_comp_total(self, frame):
+        frame.fs.cv = ControlVolume1DBlock(default={
+            "property_package": frame.fs.params,
+            "transformation_method": "dae.finite_difference",
+            "transformation_scheme": "BACKWARD",
+            "finite_elements": 2})
+
+        frame.fs.cv.add_geometry()
+
+        frame.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+        frame.fs.cv.add_material_balances(
+            balance_type=MaterialBalanceType.componentTotal)
+
+        frame.fs.cv.add_energy_balances()
+        frame.fs.cv.add_momentum_balances()
+        frame.fs.cv.apply_transformation()
+
+        frame.fs.cv.properties[0, 0].flow_mol.fix(100)
+        frame.fs.cv.properties[0, 0].mole_frac_comp.fix(0.25)
+        frame.fs.cv.properties[0, 0].temperature.fix(350)
+        frame.fs.cv.properties[0, 0].pressure.fix(101325)
+
+        frame.fs.cv.area.fix(1)
+        frame.fs.cv.length.fix(1)
+
+        assert(degrees_of_freedom(frame)) == 1  # I have no idea what the DoF is, but it works
+
+        frame.fs.cv.initialize()
+
+        solver = get_default_solver()
+
+        results = solver.solve(frame)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert value(
+            frame.fs.cv.properties[0, 1].k_eq["e1"]) == 2
+
+        assert (
+            value(frame.fs.cv.properties[0, 1].k_eq["e1"]) ==
+            pytest.approx(value(
+                frame.fs.cv.properties[0, 1].mole_frac_comp["b"] /
+                frame.fs.cv.properties[0, 1].mole_frac_comp["a"]),
+                          rel=1e-5))
+
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["a"]) ==
+                pytest.approx(1/6, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["b"]) ==
+                pytest.approx(1/3, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["c"]) ==
+                pytest.approx(1/4, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].mole_frac_comp["d"]) ==
+                pytest.approx(1/4, rel=1e-5))
+
+        assert (value(frame.fs.cv.properties[0, 1].flow_mol) ==
+                pytest.approx(100, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].temperature) ==
+                pytest.approx(350, rel=1e-5))
+        assert (value(frame.fs.cv.properties[0, 1].pressure) ==
                 pytest.approx(101325, rel=1e-5))
