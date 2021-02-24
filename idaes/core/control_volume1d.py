@@ -824,6 +824,8 @@ argument)."""))
                         b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                         b.length*sum(equilibrium_term(b, t, x, p, j)
                                      for p in cplist) +
+                        b.length*sum(inherent_term(b, t, x, p, j)
+                                     for p in cplist) +
                         b.length*sum(transfer_term(b, t, x, p, j)
                                      for p in cplist) +
                         b.length*user_term_mol(b, t, x, j) +

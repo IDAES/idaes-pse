@@ -23,6 +23,7 @@ from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.config import (is_physical_parameter_block,
@@ -203,6 +204,7 @@ class ReactionBlockBase(ProcessBlock):
         PropertyData objects, and contains methods that can be applied to
         multiple ReactionBlockData objects simultaneously.
     """
+
     def initialize(self, *args):
         """
         This is a default initialization routine for ReactionBlocks to ensure
@@ -257,6 +259,18 @@ should be constructed in this reaction block,
     def __init__(self, *args, **kwargs):
         self._lock_attribute_creation = False
         super().__init__(*args, **kwargs)
+
+    @property
+    def component_list(self):
+        return self.state_ref.component_list
+
+    @property
+    def phase_list(self):
+        return self.state_ref.phase_list
+
+    @property
+    def phase_component_set(self):
+        return self.state_ref.phase_component_set
 
     def lock_attribute_creation_context(self):
         """Returns a context manager that does not allow attributes to be created

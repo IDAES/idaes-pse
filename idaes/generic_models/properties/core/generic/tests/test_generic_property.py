@@ -116,6 +116,8 @@ class TestGenericParameterBlock(object):
         assert len(m.params.config.inherent_reactions) == 0
         assert m.params.config.reaction_basis == MaterialFlowBasis.molar
 
+        assert not m.params.has_inherent_reactions
+
     @pytest.mark.unit
     def test_invalid_unit(self):
         m = ConcreteModel()
@@ -773,6 +775,8 @@ class TestGenericParameterBlock(object):
                                              ("p1", "b"): 4},
                            "heat_of_reaction": "foo",
                            "equilibrium_form": "foo"}}})
+
+        assert m.params.has_inherent_reactions
 
         assert isinstance(m.params.inherent_reaction_idx, Set)
         assert len(m.params.inherent_reaction_idx) == 1

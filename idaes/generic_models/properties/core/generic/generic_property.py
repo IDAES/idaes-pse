@@ -659,6 +659,9 @@ class GenericParameterData(PhysicalParameterBlock):
 
         # Next, add inherent reactions if they exist
         if len(self.config.inherent_reactions) > 0:
+            # Set has_inherent_reactions flag
+            self._has_inherent_reactions = True
+
             # Construct inherent reaction index
             self.inherent_reaction_idx = Set(
                 initialize=self.config.inherent_reactions.keys())
@@ -825,7 +828,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_dew': {'method': '_pressure_dew'},
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
-             'temperature_dew': {'method': '_temperature_dew'}})
+             'temperature_dew': {'method': '_temperature_dew'},
+             'dh_rxn': {'method': '_dh_rxn'}})
 
 
 class _GenericStateBlock(StateBlock):
@@ -932,6 +936,9 @@ class _GenericStateBlock(StateBlock):
                     blk[k].sum_mole_frac_out.deactivate()
                 except AttributeError:
                     pass
+
+                if hasattr(blk[k], "inherent_equilibrium_constraint"):
+                    blk[k].inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -1357,6 +1364,35 @@ class GenericStateBlockData(StateBlockData):
                 self.params.component_list,
                 rule=rule_equilibrium)
 
+        # Add inherent reaction constraints if necessary
+        if (self.params.has_inherent_reactions
+                and not self.config.defined_state):
+            def equil_rule(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+
+                return carg["equilibrium_form"].return_expression(
+                    b, rblock, r, b.temperature)
+
+            def keq_rule(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+
+                return carg["equilibrium_constant"].return_expression(
+                    b, rblock, r, b.temperature)
+
+            self.k_eq = Expression(
+                self.params.inherent_reaction_idx,
+                doc="Equilibrium constant for inherent reactions",
+                rule=keq_rule)
+
+            self.inherent_equilibrium_constraint = Constraint(
+                self.params.inherent_reaction_idx,
+                doc="Inherent reaction equilibrium constraint",
+                rule=equil_rule)
+
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
@@ -1764,6 +1800,20 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
             raise
+
+    def _dh_rxn(self):
+        def dh_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.inherent_reactions[r]
+
+            return carg["heat_of_reaction"].return_expression(
+                b, rblock, r, b.temperature)
+
+        self.dh_rxn = Expression(
+            self.params.inherent_reaction_idx,
+            doc="Specific heat of reaction for inherent reactions",
+            rule=dh_rule)
 
 
 def _valid_VL_component_list(blk, pp):
