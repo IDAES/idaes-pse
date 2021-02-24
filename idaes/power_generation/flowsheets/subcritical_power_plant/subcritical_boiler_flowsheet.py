@@ -618,6 +618,8 @@ def set_inputs(m):
     fs.aPSH.fcorrection_htc_shell.fix(1.0)
     fs.aPSH.fcorrection_dp_tube.fix(5.0)
     fs.aPSH.fcorrection_dp_shell.fix(1.25)
+    fs.aPSH.temperature_ambient.fix(350)
+    fs.aPSH.head_insulation_thickness.fix(0.025)
 
     # economizer
     fs.aECON.pitch_x.fix(3.8*0.0254)

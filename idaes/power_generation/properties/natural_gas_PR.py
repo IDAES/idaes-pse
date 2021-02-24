@@ -63,36 +63,13 @@ _log = logging.getLogger(__name__)
 # Heat capacity coefficients for ethane, propane, and butane.
 
 
-class enth_mol_ig_comp():
-
-    @staticmethod
-    def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
-            NIST.cp_mol_ig_comp.build_parameters(cobj)
-
-    @staticmethod
-    def return_expression(b, cobj, T):
-        # Specific enthalpy via the Shomate equation
-        t = pyunits.convert(T, to_units=pyunits.kiloK)
-
-        h = (cobj.cp_mol_ig_comp_coeff_A*(t) +
-             (cobj.cp_mol_ig_comp_coeff_B/2)*(t**2) +
-             (cobj.cp_mol_ig_comp_coeff_C/3)*(t**3) +
-             (cobj.cp_mol_ig_comp_coeff_D/4)*(t**4) -
-             cobj.cp_mol_ig_comp_coeff_E*(1/t) +
-             cobj.cp_mol_ig_comp_coeff_F)
-
-        units = b.params.get_metadata().derived_units
-        return pyunits.convert(h, units["energy_mole"])
-
-
 # returns a configuration dictionary for the list of specified components
 def get_NG_properties(components='all'):
     configuration = {
         'components': {
             'H2': {'type': Component,
                    "elemental_composition": {"H": 2},
-                   'enth_mol_ig_comp': enth_mol_ig_comp,
+                   'enth_mol_ig_comp': NIST,
                    'entr_mol_ig_comp': NIST,
                    'parameter_data': {
                        'mw': (0.0020159, pyunits.kg/pyunits.mol),
@@ -114,7 +91,7 @@ def get_NG_properties(components='all'):
 
             'CO': {'type': Component,
                    "elemental_composition": {"C": 1, "O": 1},
-                   'enth_mol_ig_comp': enth_mol_ig_comp,
+                   'enth_mol_ig_comp': NIST,
                    'entr_mol_ig_comp': NIST,
                    'parameter_data': {
                        'mw': (0.0280101, pyunits.kg/pyunits.mol),
@@ -136,7 +113,7 @@ def get_NG_properties(components='all'):
 
             'H2O': {'type': Component,
                     "elemental_composition": {"H": 2, "O": 1},
-                    'enth_mol_ig_comp': enth_mol_ig_comp,
+                    'enth_mol_ig_comp': NIST,
                     'entr_mol_ig_comp': NIST,
                     'parameter_data': {
                         'mw': (0.01801528, pyunits.kg/pyunits.mol),
@@ -158,7 +135,7 @@ def get_NG_properties(components='all'):
 
             'CO2': {'type': Component,
                     "elemental_composition": {"C": 1, "O": 2},
-                    'enth_mol_ig_comp': enth_mol_ig_comp,
+                    'enth_mol_ig_comp': NIST,
                     'entr_mol_ig_comp': NIST,
                     'parameter_data': {
                         'mw': (0.04401, pyunits.kg/pyunits.mol),
@@ -180,7 +157,7 @@ def get_NG_properties(components='all'):
 
             'O2': {'type': Component,
                    "elemental_composition": {"O": 2},
-                   'enth_mol_ig_comp': enth_mol_ig_comp,
+                   'enth_mol_ig_comp': NIST,
                    'entr_mol_ig_comp': NIST,
                    'parameter_data': {
                        'mw': (0.031998, pyunits.kg/pyunits.mol),
@@ -202,7 +179,7 @@ def get_NG_properties(components='all'):
 
             'N2': {'type': Component,
                    "elemental_composition": {"N": 2},
-                   'enth_mol_ig_comp': enth_mol_ig_comp,
+                   'enth_mol_ig_comp': NIST,
                    'entr_mol_ig_comp': NIST,
                    'parameter_data': {
                        'mw': (0.0280134, pyunits.kg/pyunits.mol),
@@ -224,7 +201,7 @@ def get_NG_properties(components='all'):
 
             'Ar': {'type': Component,
                    "elemental_composition": {"Ar": 1},
-                   'enth_mol_ig_comp': enth_mol_ig_comp,
+                   'enth_mol_ig_comp': NIST,
                    'entr_mol_ig_comp': NIST,
                    'parameter_data': {
                        'mw': (0.039948, pyunits.kg/pyunits.mol),
@@ -246,7 +223,7 @@ def get_NG_properties(components='all'):
 
             'CH4': {'type': Component,
                     "elemental_composition": {"C": 1, "H": 4},
-                    'enth_mol_ig_comp': enth_mol_ig_comp,
+                    'enth_mol_ig_comp': NIST,
                     'entr_mol_ig_comp': NIST,
                     'parameter_data': {
                         'mw': (0.0160425, pyunits.kg/pyunits.mol),
