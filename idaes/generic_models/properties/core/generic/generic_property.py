@@ -878,7 +878,7 @@ class _GenericStateBlock(StateBlock):
                 "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
-    def _has_inherent_reactions(self):
+    def _include_inherent_reactions(self):
         params = self._get_parameter_block()
 
         if params.config["state_components"] == StateIndex.true:

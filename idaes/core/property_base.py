@@ -616,8 +616,8 @@ should be constructed in this state block,
         return self.parent_component()._has_inherent_reactions()
 
     @property
-    def inlcude_inherent_reactions(self):
-        return self.parent_component()._inlcude_inherent_reactions()
+    def include_inherent_reactions(self):
+        return self.parent_component()._include_inherent_reactions()
 
     def build(self):
         """
