@@ -31,19 +31,27 @@ from collections import OrderedDict
 
 # Import Pyomo libraries
 import pyomo.environ as pyo
+from pyomo.environ import units as pyunits
 from pyomo.network import Arc
 from pyomo.common.fileutils import this_file_dir
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.util.infeasible import log_infeasible_constraints
 
 # IDAES Imports
+from idaes.core import FlowsheetBlock
 from idaes.core.util import copy_port_values
-import idaes.core.util.scaling as iscale
+from idaes.core.util import model_serializer as ms
 from idaes.core.util.misc import svg_tag
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.tables import create_stream_table_dataframe
+
+import idaes.core.util.scaling as iscale
 
 from idaes.generic_models.properties.core.generic.generic_property import (
     GenericParameterBlock)
 from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock)
+
 from idaes.generic_models.unit_models import (
     Mixer,
     Heater,
@@ -60,90 +68,33 @@ from idaes.generic_models.unit_models.pressure_changer import \
 from idaes.generic_models.unit_models.separator import SplittingType
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
+from idaes.power_generation.properties.natural_gas_PR import \
+    get_NG_properties, rxn_configuration
+from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
+    build_SOFC_ROM, initialize_SOFC_ROM
+
 import logging
-
-# Custom imports
-from properties.natural_gas_prop import get_SOFC_properties, rxn_configuration
-from ROM.SOFC_ROM import make_SOFC_ROM
-
-# %% SOFC Power Island Section
 
 
 def build_power_island(m):
-    NG_config = get_SOFC_properties(
-        components=['H2', 'CO', 'CH4', "C2H6", "C3H8", "C4H10",
-                    "H2O", 'CO2',
+    # create property packages - 3 property packages and 1 reaction
+    NG_config = get_NG_properties(
+        components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
                     'N2', 'O2', 'Ar'])
     m.fs.NG_props = GenericParameterBlock(default=NG_config)
-    # apply scaling factors
-    m.fs.NG_props.set_default_scaling("flow_mol", 1e-3)
-    m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3, index='Vap')
-    m.fs.NG_props.set_default_scaling("temperature", 1e-2)
-    m.fs.NG_props.set_default_scaling("pressure", 1e-5)
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 10)
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'H2'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'CO'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'CH4'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'H2O'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'CO2'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'N2'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'O2'))
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'Ar'))
-    m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-3)
 
-    syn_config = get_SOFC_properties(
-        components=["H2", "CO", "CH4",
-                    "H2O", "CO2",
-                    "N2", "O2", "Ar"])
+    syn_config = get_NG_properties(
+        components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"])
     m.fs.syn_props = GenericParameterBlock(default=syn_config)
-    # apply scaling factors
-    m.fs.syn_props.set_default_scaling("flow_mol", 1e-3)
-    m.fs.syn_props.set_default_scaling("flow_mol_phase", 1e-3, index='Vap')
-    m.fs.syn_props.set_default_scaling("temperature", 1e-2)
-    m.fs.syn_props.set_default_scaling("pressure", 1e-5)
-    m.fs.syn_props.set_default_scaling("mole_frac_comp", 10)
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'H2'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'CO'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'CH4'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'H2O'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'CO2'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'N2'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'O2'))
-    m.fs.syn_props.set_default_scaling(
-        "mole_frac_phase_comp", 10, index=('Vap', 'Ar'))
-    m.fs.syn_props.set_default_scaling("enth_mol_phase", 1e-3)
+
+    air_config = get_NG_properties(
+        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
+    m.fs.air_props = GenericParameterBlock(default=air_config)
 
     m.fs.rxn_props = GenericReactionParameterBlock(
         default={"property_package": m.fs.syn_props, **rxn_configuration})
 
-    air_config = get_SOFC_properties(
-        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
-    m.fs.air_props = GenericParameterBlock(default=air_config)
-    # apply scaling factors
-    m.fs.air_props.set_default_scaling("flow_mol", 1e-3)
-    m.fs.air_props.set_default_scaling("flow_mol_phase", 1e-3)
-    m.fs.air_props.set_default_scaling("temperature", 1e-2)
-    m.fs.air_props.set_default_scaling("pressure", 1e-5)
-    m.fs.air_props.set_default_scaling("mole_frac_comp", 1e1)
-    m.fs.air_props.set_default_scaling("mole_frac_phase_comp", 1e1)
-    m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-3)
-
-    # anode side units
+    # build anode side units
     m.fs.anode_mix = Mixer(
         default={"inlet_list": ["feed", "recycle"],
                  "property_package": m.fs.NG_props})
@@ -167,11 +118,31 @@ def build_power_island(m):
                  "inlet_property_package": m.fs.NG_props,
                  "outlet_property_package": m.fs.syn_props})
 
+    # C2H6, C3H8, and C4H10 are not present in the system after the prereformer
+    # the property package is changed to improve model robustness
+    @m.fs.anode_translator.Constraint(m.fs.time)
+    def anode_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.anode_translator.Constraint(m.fs.time)
+    def anode_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.anode_translator.Constraint(m.fs.time)
+    def anode_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    @m.fs.anode_translator.Constraint(m.fs.time, m.fs.syn_props.component_list)
+    def anode_translator_x(b, t, j):
+        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
+
     m.fs.fuel_cell_mix = Mixer(
         default={"inlet_list": ["fuel_inlet", "ion_inlet"],
                  "momentum_mixing_type": MomentumMixingType.none,
                  "property_package": m.fs.syn_props})
 
+    # outlet pressure should be equal to fuel inlet pressure because oxygen is
+    # traveling through a solid electrolyte
     @m.fs.fuel_cell_mix.Constraint(m.fs.time)
     def ion_mix_constraint(b, t):
         return b.outlet.pressure[t] == b.fuel_inlet.pressure[t]
@@ -197,7 +168,30 @@ def build_power_island(m):
                  "inlet_property_package": m.fs.syn_props,
                  "outlet_property_package": m.fs.NG_props})
 
-    # cathode side units
+    # recycle is fed back to a part of the system that contains higher
+    # hydrocarbons, so property package must be translated
+    @m.fs.recycle_translator.Constraint(m.fs.time)
+    def recycle_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.recycle_translator.Constraint(m.fs.time)
+    def recycle_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.recycle_translator.Constraint(m.fs.time)
+    def recycle_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    @m.fs.recycle_translator.Constraint(m.fs.time,
+                                        m.fs.syn_props.component_list)
+    def recycle_translator_x(b, t, j):
+        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
+
+    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C2H6'].fix(0)
+    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C3H8'].fix(0)
+    m.fs.recycle_translator.outlet.mole_frac_comp[0, 'C4H10'].fix(0)
+
+    # build cathode side units
     m.fs.air_blower = PressureChanger(
         default={'compressor': True,
                  'property_package': m.fs.air_props,
@@ -216,15 +210,37 @@ def build_power_island(m):
         default={"inlet_list": ["feed", "recycle"],
                  "property_package": m.fs.air_props})
 
+    # represents oxygen moving across SOFC electrolyte
     m.fs.cathode = Separator(
         default={"outlet_list": ["air_outlet", "ion_outlet"],
                  "split_basis": SplittingType.componentFlow,
                  "property_package": m.fs.air_props})
 
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'H2O'].fix(0)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'CO2'].fix(0)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'N2'].fix(0)
+    m.fs.cathode.split_fraction[0, 'ion_outlet', 'Ar'].fix(0)
+
     m.fs.cathode_translator = Translator(
         default={"outlet_state_defined": True,
                  "inlet_property_package": m.fs.air_props,
                  "outlet_property_package": m.fs.syn_props})
+
+    # cathode side O2 crosses the electrolyte to anode side
+    @m.fs.cathode_translator.Constraint(m.fs.time)
+    def cathode_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.cathode_translator.Constraint(m.fs.time)
+    def cathode_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.cathode_translator.Constraint(m.fs.time)
+    def cathode_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    m.fs.cathode_translator.outlet.mole_frac_comp.fix(0)
+    m.fs.cathode_translator.outlet.mole_frac_comp[0, 'O2'].fix(1)
 
     m.fs.cathode_heat = Heater(
         default={"has_pressure_change": True,
@@ -240,7 +256,7 @@ def build_power_island(m):
                  'thermodynamic_assumption':
                      ThermodynamicAssumption.isentropic})
 
-    # combustor and HRSG units
+    # build combustor and HRSG units
     m.fs.cathode_exhaust_split = Separator(
         default={"outlet_list": ["exhaust_outlet", "combustor_outlet"],
                  "property_package": m.fs.air_props})
@@ -259,6 +275,28 @@ def build_power_island(m):
         default={"outlet_state_defined": True,
                  "inlet_property_package": m.fs.air_props,
                  "outlet_property_package": m.fs.syn_props})
+
+    # for the portion of the cathode exhaust entering the combustor
+    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time)
+    def cathode_exhaust_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time)
+    def cathode_exhaust_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time)
+    def cathode_exhaust_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time,
+                                                m.fs.air_props.component_list)
+    def cathode_exhaust_translator_x(b, t, j):
+        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
+
+    for j in m.fs.syn_props.component_list:
+        if j not in m.fs.air_props.component_list:
+            m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, j].fix(0)
 
     m.fs.combustor_mix = Mixer(
         default={"inlet_list": ["anode_inlet", "cathode_inlet"],
@@ -282,7 +320,7 @@ def build_power_island(m):
                  "property_package": m.fs.syn_props})
 
     # build arcs to connect unit operations
-    # anode side arcs
+    # arcs for anode side
     m.fs.ANODE_MIXER = Arc(
         source=m.fs.anode_mix.outlet, destination=m.fs.anode_hx.tube_inlet)
 
@@ -318,7 +356,7 @@ def build_power_island(m):
         source=m.fs.recycle_translator.outlet,
         destination=m.fs.anode_mix.recycle)
 
-    # cathode side arcs
+    # arcs for cathode side
     m.fs.AIR_BLOWER = Arc(
         source=m.fs.air_blower.outlet, destination=m.fs.cathode_hx.tube_inlet)
 
@@ -355,7 +393,7 @@ def build_power_island(m):
         source=m.fs.cathode_blower.outlet,
         destination=m.fs.cathode_mix.recycle)
 
-    # combustor and HRSG arcs
+    # arcs for combustor and HRSG
     m.fs.CATHODE_HX_HOT_OUT = Arc(
         source=m.fs.cathode_hx.shell_outlet,
         destination=m.fs.cathode_exhaust_split.inlet)
@@ -394,89 +432,6 @@ def build_power_island(m):
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
 
-    # build translator block constraints
-    # anode translator
-    @m.fs.anode_translator.Constraint(m.fs.time)
-    def temp_constraint(b, t):
-        return b.inlet.temperature[t] == b.outlet.temperature[t]
-
-    @m.fs.anode_translator.Constraint(m.fs.time)
-    def pressure_constraint(b, t):
-        return b.inlet.pressure[t] == b.outlet.pressure[t]
-
-    @m.fs.anode_translator.Constraint(m.fs.time)
-    def flow_constraint(b, t):
-        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
-
-    @m.fs.anode_translator.Constraint(m.fs.time,
-                                      m.fs.syn_props.component_list)
-    def mole_frac_constraint(b, t, j):
-        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
-
-    # anode recycle translator
-    @m.fs.recycle_translator.Constraint(m.fs.time)
-    def temp_constraint(b, t):
-        return b.inlet.temperature[t] == b.outlet.temperature[t]
-
-    @m.fs.recycle_translator.Constraint(m.fs.time)
-    def pressure_constraint(b, t):
-        return b.inlet.pressure[t] == b.outlet.pressure[t]
-
-    @m.fs.recycle_translator.Constraint(m.fs.time)
-    def flow_constraint(b, t):
-        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
-
-    @m.fs.recycle_translator.Constraint(m.fs.time,
-                                        m.fs.syn_props.component_list)
-    def mole_frac_constraint(b, t, j):
-        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
-
-    for j in m.fs.NG_props.component_list:
-        if j not in m.fs.syn_props.component_list:
-            m.fs.recycle_translator.outlet.mole_frac_comp[0, j].fix(0)
-
-    # cathode translator
-    @m.fs.cathode_translator.Constraint(m.fs.time)
-    def temp_constraint(b, t):
-        return b.inlet.temperature[t] == b.outlet.temperature[t]
-
-    @m.fs.cathode_translator.Constraint(m.fs.time)
-    def pressure_constraint(b, t):
-        return b.inlet.pressure[t] == b.outlet.pressure[t]
-
-    @m.fs.cathode_translator.Constraint(m.fs.time)
-    def flow_constraint(b, t):
-        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
-
-    m.fs.cathode_translator.outlet.mole_frac_comp.fix(0)
-    m.fs.cathode_translator.outlet.mole_frac_comp[0, 'O2'].fix(1)
-
-    # cathode exhaust translator
-    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time)
-    def temp_constraint(b, t):
-        return b.inlet.temperature[t] == b.outlet.temperature[t]
-
-    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time)
-    def pressure_constraint(b, t):
-        return b.inlet.pressure[t] == b.outlet.pressure[t]
-
-    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time)
-    def flow_constraint(b, t):
-        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
-
-    air_species = ["N2", "O2", "Ar", "H2O", "CO2"]
-
-    @m.fs.cathode_exhaust_translator.Constraint(m.fs.time, air_species)
-    def mole_frac_constraint(b, t, j):
-        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
-
-    m.fs.cathode_exhaust_translator.outlet.mole_frac_comp.fix(0)
-    m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, 'H2O'].unfix()
-    m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, 'CO2'].unfix()
-    m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, 'O2'].unfix()
-    m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, 'N2'].unfix()
-    m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[0, 'Ar'].unfix()
-
 
 def set_power_island_inputs(m):
     ###################
@@ -484,20 +439,20 @@ def set_power_island_inputs(m):
     ###################
 
     # syngas feed conditions
-    m.fs.anode_mix.feed.flow_mol.fix(3642)  # mol/s
-    m.fs.anode_mix.feed.temperature.fix(626.5)  # K
-    m.fs.anode_mix.feed.pressure.fix(137888)  # Pa, equal to 20 psia
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'CH4'].fix(0.1890)
+    m.fs.anode_mix.feed.flow_mol.fix(3639)  # mol/s
+    m.fs.anode_mix.feed.temperature.fix(621.3)  # K
+    m.fs.anode_mix.feed.pressure.fix(137895)  # Pa, equal to 20 psia
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'CH4'].fix(0.1787)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'C2H6'].fix(0.0061)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'C3H8'].fix(0.0013)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'C4H10'].fix(0.0008)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'CO'].fix(0.0913)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'CO2'].fix(0.0437)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'H2'].fix(0.2761)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'H2O'].fix(0.1113)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'N2'].fix(0.2877)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'CO'].fix(0.0909)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'CO2'].fix(0.0438)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'H2'].fix(0.2752)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'H2O'].fix(0.1118)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'N2'].fix(0.2879)
     m.fs.anode_mix.feed.mole_frac_comp[0, 'O2'].fix(0.0000)
-    m.fs.anode_mix.feed.mole_frac_comp[0, 'Ar'].fix(0.0035)
+    m.fs.anode_mix.feed.mole_frac_comp[0, 'Ar'].fix(0.0034)
 
     # anode heat exchanger
     m.fs.anode_hx.tube.deltaP.fix(-137.9)  # equal to -0.02 psi
@@ -509,7 +464,7 @@ def set_power_island_inputs(m):
     m.fs.prereformer.heat_duty.fix(0)
     m.fs.prereformer.deltaP.fix(-137.9)  # equal to -0.02 psi
 
-    m.fs.anode.outlet.temperature.fix(979.44)  # K, does not stay fixed
+    m.fs.anode.outlet.temperature.fix(979.93)  # K, does not stay fixed
     m.fs.anode.outlet.pressure.fix(137137)  # Pa, equal to 19.89 psia
 
     # anode recycle and blower
@@ -539,17 +494,13 @@ def set_power_island_inputs(m):
     # cathode heat exchanger
     m.fs.cathode_hx.tube_outlet.pressure.fix(105490)  # equal to 15.3 psia
     m.fs.cathode_hx.shell.deltaP.fix(-1379)  # equal to -0.2 psi
-    m.fs.cathode_hx.area.fix(17024)  # m2
+    m.fs.cathode_hx.area.fix(17159)  # m2
     m.fs.cathode_hx.overall_heat_transfer_coefficient.fix(80)  # W/m2K
 
     # cathode
     m.fs.cathode.ion_outlet.flow_mol.fix(1670)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'H2O'].fix(0)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'CO2'].fix(0)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'N2'].fix(0)
-    m.fs.cathode.split_fraction[0, 'ion_outlet', 'Ar'].fix(0)
 
-    m.fs.cathode_heat.outlet.temperature.fix(1000)  # K
+    m.fs.cathode_heat.outlet.temperature.fix(999.4)  # K
     m.fs.cathode_heat.outlet.pressure.fix(104111)  # Pa, equal to 15.1 psi
 
     # cathode recycle and blower
@@ -582,309 +533,73 @@ def set_power_island_inputs(m):
     m.fs.anode_HRSG.deltaP.fix(-1379)  # Pa, equal to -0.2 psi
 
 
-def initialize_power_island(m):
-    # cathode side
-    m.fs.air_blower.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.cathode_hx.tube_inlet, m.fs.air_blower.outlet)
-
-    # fix cathode inlet to initial guess
-    m.fs.cathode.inlet.flow_mol.fix(34161)
-    m.fs.cathode.inlet.temperature.fix(891)
-    m.fs.cathode.inlet.pressure.fix(105490)
-    m.fs.cathode.inlet.mole_frac_comp[0, 'H2O'].fix(0.0109)
-    m.fs.cathode.inlet.mole_frac_comp[0, 'CO2'].fix(0.0003)
-    m.fs.cathode.inlet.mole_frac_comp[0, 'N2'].fix(0.8099)
-    m.fs.cathode.inlet.mole_frac_comp[0, 'O2'].fix(0.1690)
-    m.fs.cathode.inlet.mole_frac_comp[0, 'Ar'].fix(0.0099)
-
-    m.fs.cathode.initialize(outlvl=logging.INFO)
-
-    m.fs.cathode.inlet.unfix()
-
-    # cathode translator block
-    copy_port_values(
-        m.fs.cathode_translator.inlet, m.fs.cathode.ion_outlet)
-
-    calculate_variable_from_constraint(
-        m.fs.cathode_translator.outlet.flow_mol[0],
-        m.fs.cathode_translator.flow_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.cathode_translator.outlet.temperature[0],
-        m.fs.cathode_translator.temp_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.cathode_translator.outlet.pressure[0],
-        m.fs.cathode_translator.pressure_constraint[0])
-
-    m.fs.cathode_translator.initialize()
-
-    # rest of cathode side
-    copy_port_values(
-        m.fs.cathode_heat.inlet, m.fs.cathode.air_outlet)
-
-    m.fs.cathode_heat.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.cathode_recycle.inlet, m.fs.cathode_heat.outlet)
-
-    m.fs.cathode_recycle.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.cathode_hx.shell_inlet, m.fs.cathode_recycle.exhaust)
-
-    m.fs.cathode_hx.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.cathode_blower.inlet, m.fs.cathode_recycle.recycle)
-
-    m.fs.cathode_blower.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.cathode_mix.recycle, m.fs.cathode_blower.outlet)
-
-    copy_port_values(
-        m.fs.cathode_mix.feed, m.fs.cathode_hx.tube_outlet)
-
-    m.fs.cathode_mix.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.cathode.inlet, m.fs.cathode_mix.outlet)
-
-    # anode side
-    # fix anode inlet to initial guess
-    m.fs.anode.inlet.flow_mol.fix(9801)
-    m.fs.anode.inlet.temperature.fix(845)
-    m.fs.anode.inlet.pressure.fix(137612)
-    m.fs.anode.inlet.mole_frac_comp[0, 'CH4'].fix(0.057)
-    m.fs.anode.inlet.mole_frac_comp[0, 'CO'].fix(0.043)
-    m.fs.anode.inlet.mole_frac_comp[0, 'CO2'].fix(0.122)
-    m.fs.anode.inlet.mole_frac_comp[0, 'H2'].fix(0.222)
-    m.fs.anode.inlet.mole_frac_comp[0, 'H2O'].fix(0.187)
-    m.fs.anode.inlet.mole_frac_comp[0, 'N2'].fix(0.195)
-    m.fs.anode.inlet.mole_frac_comp[0, 'O2'].fix(0.172)
-    m.fs.anode.inlet.mole_frac_comp[0, 'Ar'].fix(0.002)
-
-    m.fs.anode.initialize(outlvl=logging.INFO)
-
-    m.fs.anode.inlet.unfix()
-
-    copy_port_values(
-        m.fs.anode_recycle.inlet, m.fs.anode.outlet)
-
-    m.fs.anode_recycle.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.anode_blower.inlet, m.fs.anode_recycle.recycle)
-
-    m.fs.anode_blower.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.recycle_translator.inlet, m.fs.anode_blower.outlet)
-
-    # anode recycle translator
-    calculate_variable_from_constraint(
-        m.fs.recycle_translator.outlet.flow_mol[0],
-        m.fs.recycle_translator.flow_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.recycle_translator.outlet.temperature[0],
-        m.fs.recycle_translator.temp_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.recycle_translator.outlet.pressure[0],
-        m.fs.recycle_translator.pressure_constraint[0])
-
-    for key in m.fs.recycle_translator.mole_frac_constraint.keys():
-        calculate_variable_from_constraint(
-            m.fs.recycle_translator.outlet.mole_frac_comp[key],
-            m.fs.recycle_translator.mole_frac_constraint[key])
-
-    m.fs.recycle_translator.initialize()
-
-    copy_port_values(
-        m.fs.anode_mix.recycle, m.fs.recycle_translator.outlet)
-
-    m.fs.anode_mix.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.anode_hx.tube_inlet, m.fs.anode_mix.outlet)
-
-    copy_port_values(
-        m.fs.anode_hx.shell_inlet, m.fs.anode_recycle.exhaust)
-
-    m.fs.anode_hx.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.prereformer.inlet, m.fs.anode_hx.tube_outlet)
-
-    copy_port_values(
-        m.fs.prereformer.outlet, m.fs.prereformer.inlet)
-
-    m.fs.prereformer.gibbs_scaling = 1e-5
-
-    m.fs.prereformer.initialize(outlvl=logging.INFO)
-
-    copy_port_values(
-        m.fs.anode_translator.inlet, m.fs.prereformer.outlet)
-
-    # anode translator
-    calculate_variable_from_constraint(
-        m.fs.anode_translator.outlet.flow_mol[0],
-        m.fs.anode_translator.flow_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.anode_translator.outlet.temperature[0],
-        m.fs.anode_translator.temp_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.anode_translator.outlet.pressure[0],
-        m.fs.anode_translator.pressure_constraint[0])
-
-    for key in m.fs.anode_translator.mole_frac_constraint.keys():
-        calculate_variable_from_constraint(
-            m.fs.anode_translator.outlet.mole_frac_comp[key],
-            m.fs.anode_translator.mole_frac_constraint[key])
-
-    m.fs.anode_translator.initialize()
-
-    copy_port_values(
-        m.fs.fuel_cell_mix.fuel_inlet, m.fs.anode_translator.outlet)
-
-    copy_port_values(
-        m.fs.fuel_cell_mix.ion_inlet, m.fs.cathode_translator.outlet)
-
-    m.fs.fuel_cell_mix.initialize(outlvl=logging.INFO)
-
-    ############################
-    # Combustor and HRSG section
-    ############################
-
-    # cathode side
-    copy_port_values(m.fs.cathode_exhaust_split.inlet,
-                     m.fs.cathode_hx.shell_outlet)
-
-    m.fs.cathode_exhaust_split.initialize(outlvl=logging.INFO)
-
-    copy_port_values(m.fs.cathode_expander.inlet,
-                     m.fs.cathode_exhaust_split.exhaust_outlet)
-
-    m.fs.cathode_expander.initialize(outlvl=logging.INFO)
-
-    copy_port_values(m.fs.cathode_HRSG.inlet,
-                     m.fs.cathode_expander.outlet)
-
-    m.fs.cathode_HRSG.initialize(outlvl=logging.INFO)
-
-    copy_port_values(m.fs.cathode_exhaust_translator.inlet,
-                     m.fs.cathode_exhaust_split.combustor_outlet)
-
-    # cathode exhaust translator
-    calculate_variable_from_constraint(
-        m.fs.cathode_exhaust_translator.outlet.flow_mol[0],
-        m.fs.cathode_exhaust_translator.flow_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.cathode_exhaust_translator.outlet.temperature[0],
-        m.fs.cathode_exhaust_translator.temp_constraint[0])
-
-    calculate_variable_from_constraint(
-        m.fs.cathode_exhaust_translator.outlet.pressure[0],
-        m.fs.cathode_exhaust_translator.pressure_constraint[0])
-
-    for key in m.fs.cathode_exhaust_translator.mole_frac_constraint.keys():
-        calculate_variable_from_constraint(
-            m.fs.cathode_exhaust_translator.outlet.mole_frac_comp[key],
-            m.fs.cathode_exhaust_translator.mole_frac_constraint[key])
-
-    m.fs.cathode_exhaust_translator.initialize()
-
-    # anode side
-    copy_port_values(m.fs.combustor_mix.cathode_inlet,
-                     m.fs.cathode_exhaust_translator.outlet)
-
-    copy_port_values(m.fs.combustor_mix.anode_inlet,
-                     m.fs.anode_hx.shell_outlet)
-
-    m.fs.combustor_mix.initialize(outlvl=logging.INFO)
-
-    copy_port_values(m.fs.combustor.inlet,
-                     m.fs.combustor_mix.outlet)
-
-    m.fs.combustor.initialize()
-
-    copy_port_values(m.fs.combustor_expander.inlet,
-                     m.fs.combustor.outlet)
-
-    m.fs.combustor_expander.initialize()
-
-    copy_port_values(m.fs.anode_HRSG.inlet,
-                     m.fs.combustor_expander.outlet)
-
-    m.fs.anode_HRSG.initialize()
-
-# %% Reformer Section
-
-
 def build_reformer(m):
-    # build property package
-    natural_gas_config = get_SOFC_properties(
-        components=['CH4', 'CO', 'CO2', 'H2', 'H2O', 'C2H6', 'C3H8', 'C4H10',
-                    'N2', 'O2', 'Ar'])
-    m.fs.natural_gas_props = GenericParameterBlock(default=natural_gas_config)
-
     # build unit models
     m.fs.reformer_recuperator = HeatExchanger(
         default={"delta_temperature_callback":
                  delta_temperature_underwood_callback,
-                 "shell": {"property_package": m.fs.natural_gas_props},
-                 "tube": {"property_package": m.fs.natural_gas_props}})
+                 "shell": {"property_package": m.fs.NG_props},
+                 "tube": {"property_package": m.fs.NG_props}})
 
     m.fs.NG_expander = PressureChanger(
         default={'compressor': False,
-                 'property_package': m.fs.natural_gas_props,
+                 'property_package': m.fs.NG_props,
                  'thermodynamic_assumption':
                      ThermodynamicAssumption.isentropic})
 
     m.fs.reformer_bypass = Separator(
         default={"outlet_list": ["reformer_outlet", "bypass_outlet"],
-                 "property_package": m.fs.natural_gas_props})
+                 "property_package": m.fs.NG_props})
 
     m.fs.air_compressor_s1 = PressureChanger(
         default={"compressor": True,
-                 "property_package": m.fs.natural_gas_props,
+                 "property_package": m.fs.NG_props,
                  "thermodynamic_assumption":
                      ThermodynamicAssumption.isentropic})
 
+    # sets air flow to reformer based on NG flow
+    @m.fs.Constraint()
+    def reformer_air_rule(fs):
+        ng_flow = m.fs.reformer_recuperator.tube_inlet.flow_mol[0]
+        air_flow = m.fs.air_compressor_s1.inlet.flow_mol[0]
+        IR = m.fs.reformer_bypass.split_fraction[0, 'bypass_outlet']
+        return air_flow == 2.868*(1 - IR)*ng_flow
+
     m.fs.intercooler_s1 = Heater(
-        default={"property_package": m.fs.natural_gas_props,
+        default={"property_package": m.fs.NG_props,
                  "has_pressure_change": True})
 
     m.fs.air_compressor_s2 = PressureChanger(
         default={"compressor": True,
-                 "property_package": m.fs.natural_gas_props,
+                 "property_package": m.fs.NG_props,
                  "thermodynamic_assumption":
                      ThermodynamicAssumption.isentropic})
 
     m.fs.intercooler_s2 = Heater(
-        default={"property_package": m.fs.natural_gas_props,
+        default={"property_package": m.fs.NG_props,
                  "has_pressure_change": True})
 
     m.fs.reformer_mix = Mixer(
         default={"inlet_list": ["gas_inlet", "oxygen_inlet", "steam_inlet"],
-                 "property_package": m.fs.natural_gas_props})
+                 "property_package": m.fs.NG_props})
+
+    # sets steam flow to reformer based on NG flow
+    @m.fs.Constraint()
+    def reformer_steam_flow(fs):
+        ng_flow = m.fs.reformer_recuperator.tube_inlet.flow_mol[0]
+        steam_flow = m.fs.reformer_mix.steam_inlet.flow_mol[0]
+        IR = m.fs.reformer_bypass.split_fraction[0, 'bypass_outlet']
+        return steam_flow == (1 - IR)*ng_flow
 
     m.fs.reformer = GibbsReactor(
         default={"has_heat_transfer": True,
                  "has_pressure_change": True,
                  "inert_species": ["N2", "Ar"],
-                 "property_package": m.fs.natural_gas_props})
+                 "property_package": m.fs.NG_props})
 
     m.fs.bypass_rejoin = Mixer(
         default={"inlet_list": ["syngas_inlet", "bypass_inlet"],
-                 "property_package": m.fs.natural_gas_props})
+                 "property_package": m.fs.NG_props})
 
     # build and connect arcs
     m.fs.TO_NG_EXP = Arc(
@@ -962,7 +677,7 @@ def set_reformer_inputs(m):
     m.fs.reformer_bypass.split_fraction[0, 'bypass_outlet'].fix(0.6)
 
     # air to reformer
-    m.fs.air_compressor_s1.inlet.flow_mol.fix(1332.9)  # mol/s
+    m.fs.air_compressor_s1.inlet.flow_mol[0] == 1332.9  # mol/s
     m.fs.air_compressor_s1.inlet.temperature.fix(288.15)  # K
     m.fs.air_compressor_s1.inlet.pressure.fix(101353)  # Pa, equal to 14.7 psia
     m.fs.air_compressor_s1.inlet.mole_frac_comp.fix(0)
@@ -986,7 +701,7 @@ def set_reformer_inputs(m):
     m.fs.intercooler_s2.deltaP.fix(-3447)  # Pa, equal to -0.5 psi
 
     # steam to reformer
-    m.fs.reformer_mix.steam_inlet.flow_mol.fix(464.77)  # mol/s
+    m.fs.reformer_mix.steam_inlet.flow_mol[0] == 464.77  # mol/s
     m.fs.reformer_mix.steam_inlet.temperature.fix(422)  # K
     m.fs.reformer_mix.steam_inlet.pressure.fix(206843)  # Pa, equal to 30 psia
     m.fs.reformer_mix.steam_inlet.mole_frac_comp.fix(0)
@@ -997,41 +712,300 @@ def set_reformer_inputs(m):
     m.fs.reformer.outlet.temperature.fix(1060.93)  # K, equal to 1450 F
 
 
+def scale_flowsheet(m):
+    # set NG_props default scaling
+    m.fs.NG_props.set_default_scaling("flow_mol", 1e-3)
+    m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.NG_props.set_default_scaling("temperature", 1e-2)
+    m.fs.NG_props.set_default_scaling("pressure", 1e-5)
+
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e1)
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C2H6")
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C3H8")
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C4H10")
+
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e1)
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2,
+                                      index=('Vap', 'C2H6'))
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2,
+                                      index=('Vap', 'C3H8'))
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2,
+                                      index=('Vap', 'C4H10'))
+
+    m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-3)
+    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
+
+    # set syn_props default scaling
+    m.fs.syn_props.set_default_scaling("flow_mol", 1e-3)
+    m.fs.syn_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.syn_props.set_default_scaling("temperature", 1e-2)
+    m.fs.syn_props.set_default_scaling("pressure", 1e-5)
+    m.fs.syn_props.set_default_scaling("mole_frac_comp", 1e1)
+    m.fs.syn_props.set_default_scaling("mole_frac_phase_comp", 1e1)
+    m.fs.syn_props.set_default_scaling("enth_mol_phase", 1e-3)
+    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-1)
+
+    # set air_props default scaling
+    m.fs.air_props.set_default_scaling("flow_mol", 1e-3)
+    m.fs.air_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.air_props.set_default_scaling("temperature", 1e-2)
+    m.fs.air_props.set_default_scaling("pressure", 1e-5)
+    m.fs.air_props.set_default_scaling("mole_frac_comp", 1e1)
+    m.fs.air_props.set_default_scaling("mole_frac_phase_comp", 1e1)
+    m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-3)
+    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-3)
+
+    iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
+    iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+
+    iscale.calculate_scaling_factors(m)
+    # apply scaling factors
+    m.fs.NG_props.set_default_scaling("flow_mol", 1e-3)
+    m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.NG_props.set_default_scaling("temperature", 1e-2)
+    m.fs.NG_props.set_default_scaling("pressure", 1e-5)
+
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e1)
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C2H6")
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C3H8")
+    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C4H10")
+
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e1)
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2,
+                                      index=('Vap', 'C2H6'))
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2,
+                                      index=('Vap', 'C3H8'))
+    m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2,
+                                      index=('Vap', 'C4H10'))
+
+    m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-3)
+    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
+
+    iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
+
+    iscale.calculate_scaling_factors(m)
+
+
+def initialize_power_island(m):
+    # cathode side
+    m.fs.air_blower.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.cathode_hx.tube_inlet, m.fs.air_blower.outlet)
+
+    # fix cathode inlet to initial guess
+    m.fs.cathode.inlet.flow_mol[0] = 34174
+    m.fs.cathode.inlet.temperature[0] = 892
+    m.fs.cathode.inlet.pressure[0] = 105490
+    m.fs.cathode.inlet.mole_frac_comp[0, 'H2O'] = 0.0109
+    m.fs.cathode.inlet.mole_frac_comp[0, 'CO2'] = 0.0003
+    m.fs.cathode.inlet.mole_frac_comp[0, 'N2'] = 0.8099
+    m.fs.cathode.inlet.mole_frac_comp[0, 'O2'] = 0.1690
+    m.fs.cathode.inlet.mole_frac_comp[0, 'Ar'] = 0.0099
+
+    m.fs.cathode.initialize(outlvl=logging.INFO)
+
+    m.fs.cathode.inlet.unfix()
+
+    # cathode translator block
+    copy_port_values(
+        m.fs.cathode_translator.inlet, m.fs.cathode.ion_outlet)
+
+    m.fs.cathode_translator.initialize()
+
+    # rest of cathode side
+    copy_port_values(
+        m.fs.cathode_heat.inlet, m.fs.cathode.air_outlet)
+
+    m.fs.cathode_heat.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.cathode_recycle.inlet, m.fs.cathode_heat.outlet)
+
+    m.fs.cathode_recycle.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.cathode_hx.shell_inlet, m.fs.cathode_recycle.exhaust)
+
+    m.fs.cathode_hx.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.cathode_blower.inlet, m.fs.cathode_recycle.recycle)
+
+    m.fs.cathode_blower.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.cathode_mix.recycle, m.fs.cathode_blower.outlet)
+
+    copy_port_values(
+        m.fs.cathode_mix.feed, m.fs.cathode_hx.tube_outlet)
+
+    m.fs.cathode_mix.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.cathode.inlet, m.fs.cathode_mix.outlet)
+
+    # anode side
+    # anode inlet is used as tear stream
+    m.fs.anode.inlet.flow_mol[0] = 9702
+    m.fs.anode.inlet.temperature[0] = 844
+    m.fs.anode.inlet.pressure[0] = 137612
+    m.fs.anode.inlet.mole_frac_comp[0, 'CH4'] = 0.058
+    m.fs.anode.inlet.mole_frac_comp[0, 'CO'] = 0.044
+    m.fs.anode.inlet.mole_frac_comp[0, 'CO2'] = 0.123
+    m.fs.anode.inlet.mole_frac_comp[0, 'H2'] = 0.223
+    m.fs.anode.inlet.mole_frac_comp[0, 'H2O'] = 0.183
+    m.fs.anode.inlet.mole_frac_comp[0, 'N2'] = 0.195
+    m.fs.anode.inlet.mole_frac_comp[0, 'O2'] = 0.172
+    m.fs.anode.inlet.mole_frac_comp[0, 'Ar'] = 0.002
+
+    m.fs.anode.lagrange_mult[0, "C"] = 51092
+    m.fs.anode.lagrange_mult[0, "H"] = 78296
+    m.fs.anode.lagrange_mult[0, "O"] = 291784
+
+    m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 0
+
+    m.fs.anode.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.anode_recycle.inlet, m.fs.anode.outlet)
+
+    m.fs.anode_recycle.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.anode_blower.inlet, m.fs.anode_recycle.recycle)
+
+    m.fs.anode_blower.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.recycle_translator.inlet, m.fs.anode_blower.outlet)
+
+    m.fs.recycle_translator.initialize()
+
+    copy_port_values(
+        m.fs.anode_mix.recycle, m.fs.recycle_translator.outlet)
+
+    m.fs.anode_mix.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.anode_hx.tube_inlet, m.fs.anode_mix.outlet)
+
+    copy_port_values(
+        m.fs.anode_hx.shell_inlet, m.fs.anode_recycle.exhaust)
+
+    m.fs.anode_hx.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.prereformer.inlet, m.fs.anode_hx.tube_outlet)
+
+    copy_port_values(
+        m.fs.prereformer.outlet, m.fs.prereformer.inlet)
+
+    m.fs.prereformer.gibbs_scaling = 1e-4
+
+    m.fs.prereformer.lagrange_mult[0, "C"] = 9707
+    m.fs.prereformer.lagrange_mult[0, "H"] = 62744
+    m.fs.prereformer.lagrange_mult[0, "O"] = 293569
+
+    m.fs.prereformer.outlet.mole_frac_comp[0, "O2"] = 0
+    m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"] = 0.003
+    m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"] = 0
+    m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"] = 0
+    m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"] = 0
+
+    m.fs.prereformer.initialize(outlvl=logging.INFO)
+
+    copy_port_values(
+        m.fs.anode_translator.inlet, m.fs.prereformer.outlet)
+
+    m.fs.anode_translator.initialize()
+
+    copy_port_values(
+        m.fs.fuel_cell_mix.fuel_inlet, m.fs.anode_translator.outlet)
+
+    copy_port_values(
+        m.fs.fuel_cell_mix.ion_inlet, m.fs.cathode_translator.outlet)
+
+    m.fs.fuel_cell_mix.initialize(outlvl=logging.INFO)
+
+    ##############################
+    # Combustor and HRSG section #
+    ##############################
+
+    # cathode side
+    copy_port_values(m.fs.cathode_exhaust_split.inlet,
+                     m.fs.cathode_hx.shell_outlet)
+
+    m.fs.cathode_exhaust_split.initialize(outlvl=logging.INFO)
+
+    copy_port_values(m.fs.cathode_expander.inlet,
+                     m.fs.cathode_exhaust_split.exhaust_outlet)
+
+    m.fs.cathode_expander.initialize(outlvl=logging.INFO)
+
+    copy_port_values(m.fs.cathode_HRSG.inlet,
+                     m.fs.cathode_expander.outlet)
+
+    m.fs.cathode_HRSG.initialize(outlvl=logging.INFO)
+
+    copy_port_values(m.fs.cathode_exhaust_translator.inlet,
+                     m.fs.cathode_exhaust_split.combustor_outlet)
+
+    m.fs.cathode_exhaust_translator.initialize()
+
+    # anode side
+    copy_port_values(m.fs.combustor_mix.cathode_inlet,
+                     m.fs.cathode_exhaust_translator.outlet)
+
+    copy_port_values(m.fs.combustor_mix.anode_inlet,
+                     m.fs.anode_hx.shell_outlet)
+
+    m.fs.combustor_mix.initialize(outlvl=logging.INFO)
+
+    copy_port_values(m.fs.combustor.inlet,
+                     m.fs.combustor_mix.outlet)
+
+    m.fs.combustor.initialize()
+
+    copy_port_values(m.fs.combustor_expander.inlet,
+                     m.fs.combustor.outlet)
+
+    m.fs.combustor_expander.initialize()
+
+    copy_port_values(m.fs.anode_HRSG.inlet,
+                     m.fs.combustor_expander.outlet)
+
+    m.fs.anode_HRSG.initialize()
+
+
 def initialize_reformer(m):
-    m.fs.reformer.inlet.flow_mol.fix(2262)  # mol/s
-    m.fs.reformer.inlet.temperature.fix(470)  # K
-    m.fs.reformer.inlet.pressure.fix(203395)  # Pa
-    m.fs.reformer.inlet.mole_frac_comp[0, 'CH4'].fix(0.191)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'C2H6'].fix(0.006)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'C3H8'].fix(0.002)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'C4H10'].fix(0.001)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'H2'].fix(0)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'CO'].fix(0)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'CO2'].fix(0.002)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'H2O'].fix(0.212)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'N2'].fix(0.458)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'O2'].fix(0.122)
-    m.fs.reformer.inlet.mole_frac_comp[0, 'Ar'].fix(0.006)
+    m.fs.reformer.inlet.flow_mol[0] = 2262  # mol/s
+    m.fs.reformer.inlet.temperature[0] = 470  # K
+    m.fs.reformer.inlet.pressure[0] = 203395  # Pa
+    m.fs.reformer.inlet.mole_frac_comp[0, 'CH4'] = 0.191
+    m.fs.reformer.inlet.mole_frac_comp[0, 'C2H6'] = 0.006
+    m.fs.reformer.inlet.mole_frac_comp[0, 'C3H8'] = 0.002
+    m.fs.reformer.inlet.mole_frac_comp[0, 'C4H10'] = 0.001
+    m.fs.reformer.inlet.mole_frac_comp[0, 'H2'] = 0
+    m.fs.reformer.inlet.mole_frac_comp[0, 'CO'] = 0
+    m.fs.reformer.inlet.mole_frac_comp[0, 'CO2'] = 0.002
+    m.fs.reformer.inlet.mole_frac_comp[0, 'H2O'] = 0.212
+    m.fs.reformer.inlet.mole_frac_comp[0, 'N2'] = 0.458
+    m.fs.reformer.inlet.mole_frac_comp[0, 'O2'] = 0.122
+    m.fs.reformer.inlet.mole_frac_comp[0, 'Ar'] = 0.006
 
-    m.fs.reformer.gibbs_scaling = 1e-5
+    m.fs.reformer.lagrange_mult[0, 'C'] = 39230
+    m.fs.reformer.lagrange_mult[0, 'H'] = 81252
+    m.fs.reformer.lagrange_mult[0, 'O'] = 315049
 
-    m.fs.reformer.lagrange_mult[0, 'Ar'] = 217511
-    m.fs.reformer.lagrange_mult[0, 'C'] = 35595
-    m.fs.reformer.lagrange_mult[0, 'H'] = 79455
-    m.fs.reformer.lagrange_mult[0, 'N'] = 111756
-    m.fs.reformer.lagrange_mult[0, 'O'] = 315023
+    m.fs.reformer.outlet.mole_frac_comp[0, 'O2'] = 0
+    m.fs.reformer.outlet.mole_frac_comp[0, 'Ar'] = 0.004
+    m.fs.reformer.outlet.mole_frac_comp[0, 'CH4'] = 0.0005
+    m.fs.reformer.outlet.mole_frac_comp[0, 'C2H6'] = 0
+    m.fs.reformer.outlet.mole_frac_comp[0, 'C3H8'] = 0
+    m.fs.reformer.outlet.mole_frac_comp[0, 'C4H10'] = 0
 
-    m.fs.reformer.heat_duty[0] = 16748188
-
-    ref_solver = pyo.SolverFactory('ipopt')
-    ref_solver.options = {'tol': 1e-6, 'bound_push': 1e-16}
-
-    m.fs.reformer.control_volume.properties_in.initialize()
-    m.fs.reformer.control_volume.properties_out.initialize()
-    ref_solver.solve(m.fs.reformer.control_volume, tee=True)
-    ref_solver.solve(m.fs.reformer, tee=True)
-
-    m.fs.reformer.inlet.unfix()
+    m.fs.reformer.initialize()
 
     # reformer recuperator
     copy_port_values(
@@ -1096,31 +1070,29 @@ def connect_reformer_to_power_island(m):
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
 
 
-# %% SOFC ROM
-
-
-def build_SOFC_ROM(m):
+def SOFC_ROM_setup(m):
     # create the ROM
-    m.fs.SOFC = pyo.Block()
-    make_SOFC_ROM(m.fs.SOFC)
+    build_SOFC_ROM(m.fs)
 
-    # flowsheet - ROM interconnection constraints
-    def fuel_temp_match(fs):
+    # build constraints connecting flowsheet to ROM input vars
+
+    @m.fs.Constraint()
+    def ROM_fuel_inlet_temperature(fs):
         return(fs.SOFC.fuel_temperature ==
-               fs.anode_mix.feed.temperature[0] - 273)
-    m.fs.fuel_temp_constraint = pyo.Constraint(rule=fuel_temp_match)
+               fs.anode_mix.feed.temperature[0]/pyunits.K - 273)
 
-    def air_temp_match(fs):
+    @m.fs.Constraint()
+    def ROM_air_inlet_temperature(fs):
         return(fs.SOFC.air_temperature ==
-               fs.cathode_mix.outlet.temperature[0] - 273)
-    m.fs.air_temp_constraint = pyo.Constraint(rule=air_temp_match)
+               fs.cathode.inlet.temperature[0]/pyunits.K - 273)
 
-    def air_recirc_match(fs):
+    @m.fs.Constraint()
+    def ROM_air_recirculation(fs):
         return(fs.SOFC.air_recirculation ==
                fs.cathode_recycle.split_fraction[0, 'recycle'])
-    m.fs.air_recirc_constraint = pyo.Constraint(rule=air_recirc_match)
 
-    def OTC_rule(fs):
+    @m.fs.Constraint()
+    def ROM_OTC(fs):
         O_frac = (1 * fs.fuel_cell_mix.fuel_inlet.mole_frac_comp[0, 'CO']
                   + 2 * fs.fuel_cell_mix.fuel_inlet.mole_frac_comp[0, 'CO2']
                   + 1 * fs.fuel_cell_mix.fuel_inlet.mole_frac_comp[0, 'H2O'])
@@ -1130,9 +1102,9 @@ def build_SOFC_ROM(m):
                   + 1 * fs.fuel_cell_mix.fuel_inlet.mole_frac_comp[0, 'CH4'])
 
         return fs.SOFC.OTC == O_frac/C_frac
-    m.fs.OTC_constraint = pyo.Constraint(rule=OTC_rule)
 
-    def fuel_utilization_rule(fs):
+    @m.fs.Constraint()
+    def ROM_fuel_utilization(fs):
         full_O2_flow = (fs.anode_mix.feed.flow_mol[0] * (
             0.5 * fs.anode_mix.feed.mole_frac_comp[0, 'H2'] +
             0.5 * fs.anode_mix.feed.mole_frac_comp[0, 'CO'] +
@@ -1144,9 +1116,8 @@ def build_SOFC_ROM(m):
         return (fs.SOFC.fuel_util*full_O2_flow ==
                 fs.cathode.ion_outlet.flow_mol[0])
 
-    m.fs.fuel_util_constraint = pyo.Constraint(rule=fuel_utilization_rule)
-
-    def air_utilization_rule(fs):
+    @m.fs.Constraint()
+    def ROM_air_utilization(fs):
         air_in = (fs.cathode_hx.tube_inlet.flow_mol[0] *
                   fs.cathode_hx.tube_inlet.mole_frac_comp[0, 'O2'])
 
@@ -1155,171 +1126,190 @@ def build_SOFC_ROM(m):
 
         return fs.SOFC.air_util == 1 - air_out/air_in
 
-    m.fs.air_util_constraint = pyo.Constraint(rule=air_utilization_rule)
+    @m.fs.Constraint()
+    def ROM_internal_reformation(fs):
+        return (fs.SOFC.internal_reforming ==
+                fs.reformer_bypass.split_fraction[0, 'bypass_outlet'])
 
-    if hasattr(m.fs, "reformer_bypass"):
-        def internal_ref_rule(fs):
-            return (fs.SOFC.internal_reforming ==
-                    fs.reformer_bypass.split_fraction[0, 'bypass_outlet'])
-        m.fs.internal_ref_constraint = pyo.Constraint(rule=internal_ref_rule)
+    # we want to analyze this flowsheet in terms of ROM inputs, so fix ROM
+    # inputs and unfix flowsheet vars that control inputs
 
-    else:
-        m.fs.SOFC.internal_reforming.fix(0.6)
-
+    # current density
     m.fs.SOFC.current_density.fix(4000)
+
+    # fuel temperature
+    m.fs.reformer_recuperator.tube_outlet.temperature.unfix()
+    m.fs.SOFC.fuel_temperature.fix(348.33)
+
+    # internal reformation fraction
+    m.fs.reformer_bypass.split_fraction[0, 'bypass_outlet'].unfix()
+    m.fs.SOFC.internal_reforming.fix(0.6)
+
+    # air temperature - constrained by max cell temperature
+    m.fs.cathode_hx.area.unfix()
+    m.fs.SOFC.max_cell_temperature.fix(750)
+
+    # air recirculation fraction
+    m.fs.cathode_recycle.split_fraction[0, 'recycle'].unfix()
+    m.fs.SOFC.air_recirculation.fix(0.5)
+
+    # oxygen to carbon ratio
+    m.fs.anode_recycle.split_fraction[0, 'recycle'].unfix()
+    m.fs.SOFC.OTC.fix(2.1)
+
+    # fuel utilization
+    m.fs.cathode.ion_outlet.flow_mol.unfix()
+    m.fs.SOFC.fuel_util.fix(0.8)
+
+    # air utilization - constrained by deltaT across cell
+    m.fs.air_blower.inlet.flow_mol.unfix()
+    m.fs.SOFC.deltaT_cell.fix(100)
+
+    # pressure
     m.fs.SOFC.pressure.fix(1)
 
-    # constraints for reporting results
-    m.fs.stack_power = pyo.Var(initialize=600e6)
+    # initialize ROM
+    calculate_variable_from_constraint(m.fs.SOFC.air_temperature,
+                                       m.fs.ROM_air_inlet_temperature)
+    calculate_variable_from_constraint(m.fs.SOFC.air_util,
+                                       m.fs.ROM_air_utilization)
+    initialize_SOFC_ROM(m.fs.SOFC)
 
-    def stack_power_rule(fs):  # power in MW
-        F = 96487  # C/mol e-
-        current = m.fs.cathode.ion_outlet.flow_mol[0]*4*F
-        return fs.stack_power == current*fs.SOFC.stack_voltage
-    m.fs.stack_power_constraint = pyo.Constraint(rule=stack_power_rule)
+    # add constraints for power calculations
+    m.fs.F = pyo.Param(initialize=96487, units=pyunits.C/pyunits.mol)
+    m.fs.stack_current = pyo.Var(initialize=650, units=pyunits.MA)
+    m.fs.stack_power = pyo.Var(initialize=600, units=pyunits.MW)
 
-    def cathode_heat_target(fs):
-        return -1*fs.anode.heat_duty[0] - fs.stack_power
-    m.fs.cathode_heat_eq = pyo.Expression(rule=cathode_heat_target)
+    @m.fs.Constraint()
+    def stack_current_constraint(fs):
+        return (fs.stack_current ==
+                pyunits.convert(4*fs.F*m.fs.cathode.ion_outlet.flow_mol[0],
+                                pyunits.MA))
+
+    @m.fs.Constraint()
+    def stack_power_constraint(fs):
+        return fs.stack_power == fs.stack_current*fs.SOFC.stack_voltage
+
+    # initialize power calculations
+    calculate_variable_from_constraint(m.fs.stack_current,
+                                       m.fs.stack_current_constraint)
+    calculate_variable_from_constraint(m.fs.stack_power,
+                                       m.fs.stack_power_constraint)
 
 
-def add_anode_temp_constraint(m):
+def add_SOFC_energy_balance(m):
+    @m.fs.Constraint()
+    def ROM_anode_outlet_temperature(fs):
+        return (fs.SOFC.anode_outlet_temperature ==
+                fs.anode.outlet.temperature[0]/pyunits.K - 273)
+
     m.fs.anode.outlet.temperature.unfix()
 
-    def outlet_fuel_temp_rule(fs):
-        return (fs.anode.outlet.temperature[0] - 273 ==
-                fs.SOFC.anode_outlet_temperature)
-    m.fs.outet_fuel_temp_constraint = pyo.Constraint(
-        rule=outlet_fuel_temp_rule)
+    @m.fs.Constraint()
+    def SOFC_energy_balance(fs):
+        return (-1*pyunits.convert(fs.anode.heat_duty[0], pyunits.MW) ==
+                fs.stack_power +
+                pyunits.convert(fs.cathode_heat.heat_duty[0], pyunits.MW))
 
-
-def add_cathode_heat_constraint(m):
     m.fs.cathode_heat.outlet.temperature.unfix()
 
-    def cathode_heat_rule(fs):
-        return (fs.cathode_heat.heat_duty[0]*1e-6 ==
-                (-1*fs.anode.heat_duty[0] - fs.stack_power)*1e-6)
-    m.fs.cathode_heat_constraint = pyo.Constraint(rule=cathode_heat_rule)
 
+def add_result_constraints(m):
+    # total heat supplied to HRSG
+    m.fs.HRSG_heat_duty = pyo.Var(initialize=300, units=pyunits.MW)
 
-# %% Results
-
-
-def add_result_constraints(m, ref=True):
-    # heat supplied to HRSG
-    m.fs.HRSG_heat_duty = pyo.Var(initialize=50e6)
-
-    def HRSG_heat_duty_rule(fs):
+    @m.fs.Constraint()
+    def HRSG_heat_duty_constraint(fs):
         return (-1*fs.HRSG_heat_duty ==
-                fs.anode_HRSG.heat_duty[0] + fs.cathode_HRSG.heat_duty[0])
-    m.fs.HRSG_heat_duty_constraint = pyo.Constraint(rule=HRSG_heat_duty_rule)
+                pyunits.convert(fs.anode_HRSG.heat_duty[0], pyunits.MW) +
+                pyunits.convert(fs.cathode_HRSG.heat_duty[0], pyunits.MW))
 
     # heat required for generating reformer steam
-    m.fs.reformer_steam_heat = pyo.Var(initialize=1e6)
+    m.fs.reformer_steam_heat = pyo.Var(initialize=25, units=pyunits.MW)
 
-    if ref:
-        # only valid when steam is heated to 422 K (149 C)
-        def reformer_steam_heat_rule(fs):
-            return (fs.reformer_steam_heat ==
-                    50735 * fs.reformer_mix.steam_inlet.flow_mol[0])
-        m.fs.reformer_steam_heat_eq = pyo.Constraint(
-            rule=reformer_steam_heat_rule)
-
-    else:
-        m.fs.reformer_steam_heat.fix(0)
+    # only valid when steam is heated to 422 K (149 C)
+    @m.fs.Constraint()
+    def reformer_steam_heat_constraint(fs):
+        return (fs.reformer_steam_heat == 0.050735*pyunits.MJ/pyunits.mol *
+                fs.reformer_mix.steam_inlet.flow_mol[0])
 
     # HRSG heat applied toward steam cycle
-    m.fs.steam_cycle_heat = pyo.Var(initialize=50e6)
+    m.fs.steam_cycle_heat = pyo.Var(initialize=300, units=pyunits.MW)
 
-    def steam_cycle_heat_rule(fs):
-        return (fs.steam_cycle_heat == fs.HRSG_heat_duty
-                - fs.reformer_steam_heat - fs.reformer.heat_duty[0])
-    m.fs.steam_cycle_heat_eq = pyo.Constraint(rule=steam_cycle_heat_rule)
+    @m.fs.Constraint()
+    def steam_cycle_heat_constraint(fs):
+        return (fs.steam_cycle_heat == fs.HRSG_heat_duty -
+                fs.reformer_steam_heat -
+                pyunits.convert(fs.reformer.heat_duty[0], pyunits.MW))
 
     # power generated by steam cycle
-    m.fs.steam_cycle_power = pyo.Var(initialize=10e6)
-    m.fs.steam_cycle_efficiency = pyo.Param(initialize=0.38,
-                                            mutable=True)
+    m.fs.steam_cycle_power = pyo.Var(initialize=100, units=pyunits.MW)
+    m.fs.steam_cycle_efficiency = pyo.Param(initialize=0.38, mutable=True)
 
-    def steam_cycle_power_rule(fs):
+    @m.fs.Constraint()
+    def steam_cycle_power_constraint(fs):
         return (fs.steam_cycle_power ==
                 fs.steam_cycle_heat * fs.steam_cycle_efficiency)
-    m.fs.steam_cycle_power_eq = pyo.Constraint(rule=steam_cycle_power_rule)
 
     # stack AC power
-    m.fs.stack_power_AC = pyo.Var(initialize=600e6)
-    m.fs.inverter_efficiency = pyo.Param(initialize=0.97,
-                                         mutable=True)
+    m.fs.stack_power_AC = pyo.Var(initialize=550, units=pyunits.MW)
+    m.fs.inverter_efficiency = pyo.Param(initialize=0.97, mutable=True)
 
-    def stack_AC_power_rule(fs):
+    @m.fs.Constraint()
+    def stack_AC_power_constraint(fs):
         return fs.stack_power_AC == fs.stack_power * fs.inverter_efficiency
-    m.fs.stack_AC_power_constraint = pyo.Constraint(rule=stack_AC_power_rule)
 
     # gross plant power
-    m.fs.gross_power = pyo.Var(initialize=700e6)
+    m.fs.gross_power = pyo.Var(initialize=670, units=pyunits.MW)
 
-    def gross_power_rule(fs):
-        return (fs.gross_power == (fs.stack_power_AC
-                                   + fs.steam_cycle_power
-                                   + -1*fs.NG_expander.work_mechanical[0]))
-    m.fs.gross_power_constraint = pyo.Constraint(rule=gross_power_rule)
+    @m.fs.Constraint()
+    def gross_power_constraint(fs):
+        return (fs.gross_power == fs.stack_power_AC +
+                fs.steam_cycle_power +
+                -1*pyunits.convert(fs.NG_expander.work_mechanical[0],
+                                   pyunits.MW))
 
     # auxiliary load of the plant
-    m.fs.auxiliary_load = pyo.Var(initialize=10e6)
+    m.fs.auxiliary_load = pyo.Var(initialize=10, units=pyunits.MW)
 
-    def auxiliary_load_rule(fs):
-        return (fs.auxiliary_load == fs.air_blower.work_mechanical[0]
-                + fs.cathode_blower.work_mechanical[0]
-                + fs.anode_blower.work_mechanical[0]
-                + fs.air_compressor_s1.work_mechanical[0]
-                + fs.air_compressor_s2.work_mechanical[0])
-    m.fs.auxiliary_load_constraint = pyo.Constraint(rule=auxiliary_load_rule)
+    @m.fs.Constraint()
+    def auxiliary_load_constraint(fs):
+        return (fs.auxiliary_load == pyunits.convert(
+                   (fs.air_blower.work_mechanical[0] +
+                    fs.cathode_blower.work_mechanical[0] +
+                    fs.anode_blower.work_mechanical[0] +
+                    fs.air_compressor_s1.work_mechanical[0] +
+                    fs.air_compressor_s2.work_mechanical[0]), pyunits.MW))
 
     # net plant power
-    m.fs.net_power = pyo.Var(initialize=600e6)
+    m.fs.net_power = pyo.Var(initialize=660, units=pyunits.MW)
 
-    def net_power_rule(fs):
+    @m.fs.Constraint()
+    def net_power_constraint(fs):
         return fs.net_power == fs.gross_power - fs.auxiliary_load
-    m.fs.net_power_constraint = pyo.Constraint(rule=net_power_rule)
-
-    # CO2 emissions in g/kWh
-    m.fs.CO2_emissions = pyo.Var(initialize=1000)
-
-    def CO2_emission_rule(fs):
-        mass_flow = (fs.anode_HRSG.outlet.flow_mol[0] *
-                     fs.anode_HRSG.outlet.mole_frac_comp[0, 'CO2'] * 44.01)
-        return fs.CO2_emissions == mass_flow/(fs.net_power/3.6e6)
-    m.fs.CO2_eq = pyo.Constraint(rule=CO2_emission_rule)
 
     # HHV efficiency
-    m.fs.HHV_efficiency = pyo.Var(initialize=1)
+    m.fs.HHV_efficiency = pyo.Var(initialize=0.6)
 
+    @m.fs.Constraint()
     def efficiency_rule(fs):
-        NG_HHV = 908839.23  # J/mol
-        return (fs.HHV_efficiency ==
-                fs.net_power /
-                (NG_HHV * fs.reformer_recuperator.tube_inlet.flow_mol[0]))
-    m.fs.efficiency_eq = pyo.Constraint(rule=efficiency_rule)
+        NG_HHV = 908839.23*pyunits.J/pyunits.mol
+        return (fs.HHV_efficiency == fs.net_power /
+                pyunits.convert(
+                    (NG_HHV * fs.reformer_recuperator.tube_inlet.flow_mol[0]),
+                    pyunits.MW))
 
-    # scale result variables
-    iscale.set_scaling_factor(m.fs.HRSG_heat_duty, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer_steam_heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.steam_cycle_heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.steam_cycle_power, 1e-6)
-    iscale.set_scaling_factor(m.fs.stack_power_AC, 1e-6)
-    iscale.set_scaling_factor(m.fs.gross_power, 1e-6)
-    iscale.set_scaling_factor(m.fs.auxiliary_load, 1e-6)
-    iscale.set_scaling_factor(m.fs.net_power, 1e-6)
+    # CO2 emissions in g/kWh
+    m.fs.CO2_emissions = pyo.Var(initialize=300,
+                                 units=pyunits.g/pyunits.kWh)
 
-    # scale result constraints
-    iscale.constraint_scaling_transform(m.fs.HRSG_heat_duty_constraint, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.reformer_steam_heat_eq, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.steam_cycle_heat_eq, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.steam_cycle_power_eq, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.stack_AC_power_constraint, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.gross_power_constraint, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.auxiliary_load_constraint, 1e-6)
-    iscale.constraint_scaling_transform(m.fs.net_power_constraint, 1e-6)
+    @m.fs.Constraint()
+    def CO2_emission_constraint(fs):
+        mass_flow = (fs.anode_HRSG.outlet.flow_mol[0] *
+                     fs.anode_HRSG.outlet.mole_frac_comp[0, 'CO2'] *
+                     44.01*pyunits.g/pyunits.mol)
+        return fs.CO2_emissions == pyunits.convert((mass_flow/fs.net_power),
+                                                   (pyunits.g/pyunits.kWh))
 
 
 def make_stream_dict(m):
@@ -1385,7 +1375,7 @@ def pfd_result(outfile, m, df):
     tags["fuel_util"] = fstr(pyo.value(m.fs.SOFC.fuel_util), 3)
     tags["air_util"] = fstr(pyo.value(m.fs.SOFC.air_util), 3)
     tags["voltage"] = fstr(pyo.value(m.fs.SOFC.stack_voltage), 4)
-    tags["power"] = fstr((pyo.value(m.fs.stack_power)/1e6), 1)
+    tags["power"] = fstr(pyo.value(m.fs.stack_power), 1)
     tags["recuperator_duty"] = fstr(
         (pyo.value(m.fs.reformer_recuperator.heat_duty[0])/1e6), 1)
     tags["anode_hx_duty"] = fstr(
@@ -1395,14 +1385,14 @@ def pfd_result(outfile, m, df):
     tags["anode_duty"] = fstr((pyo.value(m.fs.anode.heat_duty[0])/1e6), 2)
     tags["cathode_duty"] = fstr(
         (pyo.value(m.fs.cathode_heat.heat_duty[0])/1e6), 2)
-    tags["stack_power_AC"] = fstr(pyo.value(m.fs.stack_power_AC)/1e6, 1)
-    tags["HRSG_power"] = fstr(pyo.value(m.fs.steam_cycle_power)/1e6, 1)
+    tags["stack_power_AC"] = fstr(pyo.value(m.fs.stack_power_AC), 1)
+    tags["HRSG_power"] = fstr(pyo.value(m.fs.steam_cycle_power), 1)
     tags["expander_power"] = fstr(-1*pyo.value(
         m.fs.NG_expander.work_mechanical[0])/1e6, 1)
-    tags["aux_load"] = fstr(pyo.value(m.fs.auxiliary_load)/1e6, 1)
-    tags["net_power"] = fstr(pyo.value(m.fs.net_power)/1e6, 1)
+    tags["aux_load"] = fstr(pyo.value(m.fs.auxiliary_load), 1)
+    tags["net_power"] = fstr(pyo.value(m.fs.net_power), 1)
     tags["thermal_input"] = fstr(pyo.value(
-        m.fs.net_power/m.fs.HHV_efficiency)/1e6, 1)
+        m.fs.net_power/m.fs.HHV_efficiency), 1)
     tags["efficiency"] = fstr(pyo.value(m.fs.HHV_efficiency)*100, 2)
     tags["emissions"] = fstr(pyo.value(m.fs.CO2_emissions), 1)
 
@@ -1410,3 +1400,46 @@ def pfd_result(outfile, m, df):
                                      "NGFC_results_template.svg")
     with open(original_svg_file, "r") as f:
         svg_tag(tags, f, outfile=outfile)
+
+
+def main():
+    # create model and flowsheet
+    m = pyo.ConcreteModel(name='NGFC without carbon capture')
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    # solver and options
+    solver = pyo.SolverFactory("ipopt")
+    solver.options = {'bound_push': 1e-16}
+
+    if os.path.exists('NGFC_flowsheet_init.json'):
+        build_power_island(m)
+        build_reformer(m)
+        connect_reformer_to_power_island(m)
+        SOFC_ROM_setup(m)
+        add_SOFC_energy_balance(m)
+        add_result_constraints(m)
+        scale_flowsheet(m)
+        ms.from_json(m, fname='NGFC_flowsheet_init.json')
+
+    else:
+        build_power_island(m)
+        build_reformer(m)
+        set_power_island_inputs(m)
+        set_reformer_inputs(m)
+        scale_flowsheet(m)
+        initialize_power_island(m)
+        initialize_reformer(m)
+        connect_reformer_to_power_island(m)
+        SOFC_ROM_setup(m)
+        add_SOFC_energy_balance(m)
+        add_result_constraints(m)
+        solver.solve(m, tee=True)
+        ms.to_json(m, fname='NGFC_flowsheet_init.json')
+
+    # uncomment to report results
+    # make_stream_dict(m)
+    # df = create_stream_table_dataframe(streams=m._streams, orient="index")
+    # pfd_result("NGFC_results.svg", m, df)
+
+    return m
+

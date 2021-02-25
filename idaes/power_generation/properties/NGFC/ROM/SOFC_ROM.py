@@ -28,7 +28,7 @@ Github page: https://github.com/NGFC-Lib/NGFC-Lib.
 """
 
 import os
-from pyomo.environ import Constraint, Param, Var, exp, value, units
+from pyomo.environ import Block, Constraint, Param, Var, exp, value, units
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.fileutils import this_file_dir
 
@@ -52,7 +52,9 @@ def build_matrix(index1, index2, values):
     return d
 
 
-def make_SOFC_ROM(b):
+def build_SOFC_ROM(m):
+    m.SOFC = b = Block()
+
     # load kriging coefficients
     fname = 'kriging_coefficients.dat'
     path = os.path.join(this_file_dir(), fname)
@@ -136,9 +138,9 @@ def make_SOFC_ROM(b):
     b.current_density = Var(initialize=4000,
                             units=units.A/units.m**2,
                             bounds=(2000, 6000))
-
+    # units for T should be degC but pyomo doesn't support conversion from K
     b.fuel_temperature = Var(initialize=500,
-                             units=units.C,
+                             units=None,
                              bounds=(15, 600))
 
     b.internal_reforming = Var(initialize=0.4,
@@ -146,7 +148,7 @@ def make_SOFC_ROM(b):
                                bounds=(0, 1))
 
     b.air_temperature = Var(initialize=700,
-                            units=units.C,
+                            units=None,
                             bounds=(550, 800))
 
     b.air_recirculation = Var(initialize=0.5,
@@ -240,18 +242,18 @@ def make_SOFC_ROM(b):
     b.ROM_output_eqs = Constraint(output_index, rule=ROM_output_rule)
 
     # create output variables and constraints
-    b.anode_outlet_temperature = Var(initialize=600, units=units.C)
-    b.cathode_outlet_temperature = Var(initialize=600, units=units.C)
+    b.anode_outlet_temperature = Var(initialize=600, units=None)
+    b.cathode_outlet_temperature = Var(initialize=600, units=None)
     b.stack_voltage = Var(initialize=1, units=units.V)
-    b.max_cell_temperature = Var(initialize=750, units=units.C)
-    b.deltaT_cell = Var(initialize=100, units=units.C)
+    b.max_cell_temperature = Var(initialize=750, units=None)
+    b.deltaT_cell = Var(initialize=100, units=None)
 
     def anode_outlet_rule(b):
-        return b.anode_outlet_temperature == b.ROM_output[11]*units.C
+        return b.anode_outlet_temperature == b.ROM_output[11]
     b.anode_outlet_eq = Constraint(rule=anode_outlet_rule)
 
     def cathode_outlet_rule(b):
-        return b.cathode_outlet_temperature == b.ROM_output[13]*units.C
+        return b.cathode_outlet_temperature == b.ROM_output[13]
     b.cathode_outlet_eq = Constraint(rule=cathode_outlet_rule)
 
     def stack_voltage_rule(b):
@@ -259,11 +261,11 @@ def make_SOFC_ROM(b):
     b.stack_voltage_eq = Constraint(rule=stack_voltage_rule)
 
     def max_cell_temp_rule(b):
-        return b.max_cell_temperature == b.ROM_output[8]*units.C
+        return b.max_cell_temperature == b.ROM_output[8]
     b.max_cell_temp_eq = Constraint(rule=max_cell_temp_rule)
 
     def deltaT_cell_rule(b):
-        return b.deltaT_cell == b.ROM_output[10]*units.C
+        return b.deltaT_cell == b.ROM_output[10]
     b.deltaT_cell_eq = Constraint(rule=deltaT_cell_rule)
 
 

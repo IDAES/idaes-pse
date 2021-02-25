@@ -27,8 +27,8 @@ Author: Alex Noring
 
 import pytest
 
-from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import make_SOFC_ROM,\
-    initialize_SOFC_ROM
+from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
+    build_SOFC_ROM, initialize_SOFC_ROM
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
@@ -53,8 +53,7 @@ class TestSOFCROM(object):
     @pytest.fixture()
     def m(self):
         m = ConcreteModel()
-        m.SOFC = Block()
-        make_SOFC_ROM(m.SOFC)
+        build_SOFC_ROM(m)
         return m
 
     @pytest.mark.build
