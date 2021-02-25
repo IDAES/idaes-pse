@@ -646,6 +646,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     sum(kinetic_term(b, t, p, j) for p in cplist) *
                     b._rxn_rate_conv(t, j, has_rate_reactions) +
                     sum(equilibrium_term(b, t, p, j) for p in cplist) +
+                    sum(inherent_term(b, t, p, j) for p in cplist) +
                     sum(transfer_term(b, t, p, j) for p in cplist) +
                     user_term_mol(b, t, j) + user_term_mass(b, t, j))
         else:

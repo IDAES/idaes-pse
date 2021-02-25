@@ -28,7 +28,7 @@ class power_law_rate():
     def return_expression(b, rblock, r_idx, T):
         e = None
         # Get reaction orders and construct power law expression
-        for p, j in b.state_ref.params._phase_component_set:
+        for p, j in b.phase_component_set:
             o = rblock.reaction_order[p, j]
 
             if e is None and o != 0:
