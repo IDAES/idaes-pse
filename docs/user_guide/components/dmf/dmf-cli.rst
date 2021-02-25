@@ -168,11 +168,6 @@ commands, below is a simple example that uses each command:
     6dde data newfile 2019-04-20 15:33:23
 
 
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. program:: dmf-find
 
 dmf find
@@ -272,11 +267,6 @@ filters for files that were modified after the given date and time.
     id   type desc      modified
     2517 data file1.txt 2019-04-29 17:29:00
     344c data file2.txt 2019-04-29 17:29:01
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. program:: dmf-info
 
@@ -404,10 +394,6 @@ And one more time, in "compact" JSON:
         $ dmf info --format jsonc 0b62
         {"id_": "0b62d999f0c44b678980d6a5e4f5d37d", "type": "data", "aliases": [], "codes": [], "collaborators": [], "created": 1553363375.817961, "modified": 1553363375.817961, "creator": {"name": "dang"}, "data": {}, "datafiles": [{"desc": "foo13", "path": "foo13", "sha1": "feee44ad365b6b1ec75c5621a0ad067371102854", "is_copy": true}], "datafiles_dir": "/home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52", "desc": "foo13", "relations": [{"predicate": "derived", "identifier": "1e41e6ae882b4622ba9043f4135f2143", "role": "object"}], "sources": [], "tags": [], "version_info": {"created": 1553363375.817961, "version": [0, 0, 0, ""], "name": ""}, "doc_id": 4}
 
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. program:: dmf-init
 
@@ -500,11 +486,6 @@ have permissions to create directories:
     $ chmod 000 forbidden
     $ dmf init forbidden/ws --create
     Cannot create workspace: path 'forbidden/ws' not accessible
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. program:: dmf-ls
 
@@ -641,11 +622,6 @@ Add ``--no-prefix`` to show the full identifier:
     0b62d999f0c44b678980d6a5e4f5d37d data foo13
     6c9a85629cb24e9796a2d123e9b03601 data foo14
     d3d5981106ce4d9d8cccd4e86c2cd184 data bar1
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. program:: dmf-register
 
@@ -922,11 +898,6 @@ between multiple versions of the same underlying data:
         └──┤version├─▶ ef2d code -
 
 
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. program:: dmf-related
 
 dmf related
@@ -1043,11 +1014,6 @@ four resource (e.g., `A`):
 If you change the direction of relations, you will get much the same
 result, but with the arrows reversed.
 
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. program:: dmf-rm
 
 dmf rm
@@ -1153,11 +1119,6 @@ Remove multiple resources that share a common prefix. In this case, use the
 
 .. note this is harder to test since we need to force a non-unique
 .. prefix. Is it worth it??
-
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. image:: ../../../_images/blue-white-band.png
-    :width: 100%
-.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. program:: dmf-status
 

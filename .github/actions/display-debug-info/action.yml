@@ -8,10 +8,10 @@ runs:
       run: |
         echo "::group::Environment"
         env
-        echo "::endgroup"
+        echo "::endgroup::"
     - name: Display GitHub event payload
       shell: bash
       run: |
         echo "::group::GitHub event payload"
         jq . "$GITHUB_EVENT_PATH"
-        echo "::endgroup"
+        echo "::endgroup::"
