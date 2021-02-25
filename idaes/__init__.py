@@ -62,17 +62,17 @@ def _create_testing_dir():
 try:
     _create_data_dir()
 except FileNotFoundError:
-    pass # the standard place for this doen't exist, shouldn't be a show stopper
+    pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
 try:
     _create_bin_dir()
 except FileNotFoundError:
-    pass # the standard place for this doen't exist, shouldn't be a show stopper
+    pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
 try:
     _create_testing_dir()
 except FileNotFoundError:
-    pass # the standard place for this doen't exist, shouldn't be a show stopper
+    pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
 
 reconfig = cfg.reconfig
