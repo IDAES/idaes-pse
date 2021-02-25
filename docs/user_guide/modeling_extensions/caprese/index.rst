@@ -8,7 +8,7 @@ Caprese
     nmpc
     mhe
 
-.. image:: ../../../_images/logocappresse-01.png
+.. image:: /images/logocappresse-01.png
     :width: 300px
     :align: center
 
