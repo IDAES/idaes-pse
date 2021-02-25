@@ -29,6 +29,7 @@ import os
 
 import pytest
 import pyomo.environ as pyo
+from pyomo.common.fileutils import this_file_dir
 
 from idaes.power_generation.flowsheets.NGFC.NGFC_flowsheet import (
     build_power_island,
@@ -123,8 +124,8 @@ def test_ROM(m):
 
 @pytest.mark.component
 def test_json_load(m):
-    assert os.path.exists('NGFC_flowsheet_init.json')
-    ms.from_json(m, fname='NGFC_flowsheet_init.json')
+    fname = os.path.join(this_file_dir(), 'NGFC_flowsheet_init.json')
+    ms.from_json(m, fname=fname)
 
     assert (pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) ==
             pytest.approx(1670.093, 1e-5))
