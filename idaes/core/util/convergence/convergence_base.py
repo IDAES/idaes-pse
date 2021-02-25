@@ -86,6 +86,8 @@ convergence_classes = {}
 
 def register_convergence_class(name):
     def _register_convergence_class(cls):
+        if name in convergence_classes:
+            raise KeyError(f"Convergence class {name} already registered.")
         convergence_classes[name] = ".".join([cls.__module__, cls.__name__])
         return cls
     return _register_convergence_class
@@ -430,6 +432,37 @@ def run_convergence_evaluation_from_sample_file(sample_file):
                 '{convergence_evaluation_class_str} in sample file: {sample_file}')
     return run_convergence_evaluation(jsondict, conv_eval)
 
+def run_single_sample_from_sample_file(sample_file, name):
+    # load the sample file
+    try:
+        with open(sample_file, 'r') as fd:
+            jsondict = json.load(fd, object_pairs_hook=OrderedDict)
+    except Exception as e:
+        _log.exception(f'Error reading json file {sample_file}')
+        raise ValueError(f'Problem reading json file: {sample_file}')
+
+    # create the convergence evaluation object
+    convergence_evaluation_class_str = jsondict[
+            'convergence_evaluation_class_str']
+    try:
+        convergence_evaluation_class = _class_import(
+                                            convergence_evaluation_class_str)
+        conv_eval = convergence_evaluation_class()
+    except Exception as e:
+        _log.exception(f'Error creating class: {convergence_evaluation_class_str}')
+        raise ValueError(
+                f'Invalid value specified for convergence_evaluation_class_str:'
+                '{convergence_evaluation_class_str} in sample file: {sample_file}')
+    return run_single_sample(jsondict, conv_eval, name)
+
+def run_single_sample(sample_file_dict, conv_eval, name):
+    inputs = sample_file_dict['inputs']
+    samples = sample_file_dict['samples']
+    model = conv_eval.get_initialized_model()
+    _set_model_parameters_from_sample(model, inputs, sample_file_dict["samples"][name])
+    solver = conv_eval.get_solver()
+    return _run_ipopt_with_stats(model, solver)
+
 
 def run_convergence_evaluation(sample_file_dict, conv_eval):
     """
@@ -484,13 +517,6 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
                 (status_obj, solved, iters, time) = \
                     _run_ipopt_with_stats(model, solver)
 
-        # run without output capture
-        # model = conv_eval.get_initialized_model()
-        # _set_model_parameters_from_sample(model, inputs, ss)
-        # solver = conv_eval.get_solver()
-        # (status_obj, solved, iters, time) = \
-        #        _run_ipopt_with_stats(model, solver)
-
         if not solved:
             _log.error(f'Sample: {sample_name} failed to converge.')
 
@@ -506,18 +532,52 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     return inputs, samples, global_results
 
 
-def save_convergence_statistics(inputs, results, dmf=None, path=None):
+def save_convergence_statistics(
+    inputs,
+    results,
+    dmf=None,
+    display=True,
+    json_path=None,
+    report_path=None):
+    """
+    """
     s = Stats(inputs, results)
-    s.report()
-    if path is not None:
-        with open(path, "w") as f:
+    if display:
+        s.report()
+    if report_path:
+        with open(report_path, "w") as f:
+            s.report(f)
+    if json_path is not None:
+        with open(json_path, "w") as f:
             s.to_json(f)
     if dmf is not None:
-        save_results_to_dmf(dmf, inputs, results, s)
+        s.to_dmf(dmf)
+    return s
 
 
 class Stats(object):
-    def __init__(self, inputs, results):
+    def __init__(self, inputs=None, results=None, from_dict=None, from_json=None):
+        """A convergence stats and results object.  This class stores the
+        convergence test evaluation results and generates reports and storage
+        formats.
+
+        Args:
+            inputs: sample inputs
+            results: convergence evaluation results
+            from_dict: load a stats object from a given dict
+            from_json: load a stats object from a json file path
+        """
+        # Reload from a dict or json file.  This can be used to compare results
+        # or generate new reports from.
+        if from_json:
+            with open(from_json, "r") as f:
+                from_dict = json.load(f)
+        if from_dict:
+            self.from_dict(from_dict)
+            return
+        assert inputs is not None
+        assert results is not None
+
         self.inputs = inputs
         self.results = results
         self.notable_cases, self.failed_cases = [], []
@@ -567,11 +627,11 @@ class Stats(object):
             r['flag'] = flag
             if flag != '':
                 self.notable_cases.append(r)
-            if r['solved'] is not True:
-                self.failed_cases.append(r)
-            else:
-                self.iters_successful.append(r['iters'])
-                self.time_successful.append(r['time'])
+
+
+    def from_dict(self, d):
+        for k, v in d.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         keys = [a for a in dir(self) if not a.startswith("_")
@@ -581,17 +641,10 @@ class Stats(object):
             d[k] = getattr(self, k)
         return d
 
-    def from_dict(self):
-        keys = [a for a in dir(self) if not a.startswith("_")
-            and not callable(getattr(self, a))]
-        for k, v in d.items():
-            if k in keys:
-                setattr(self, k, v)
-
     def to_json(self, fp):
         json.dump(self.to_dict(), fp, indent=4)
 
-    def to_dmf(self):
+    def to_dmf(self, dmf):
         rsrc = resource.Resource(value={
             'name': 'convergence_results',
             'desc': 'statistics returned from run_convergence_evaluation',
@@ -599,48 +652,48 @@ class Stats(object):
             'data': stats.to_dict()}, type_=resource.ResourceTypes.data)
         dmf.add(rsrc)
 
-    def report(self, io=sys.stdout):
+    def report(self, fp=sys.stdout):
         s = self
         res = self.results
         n = len(res)
-        io.write(f"\n{'='*24}{'Scenario Statistics':^24s}{'='*24}\n\n")
-        io.write(f"{'Parameter':>20s}{'Min':>10s}{'Mean':>10s}"
+        fp.write(f"\n{'='*24}{'Scenario Statistics':^24s}{'='*24}\n\n")
+        fp.write(f"{'Parameter':>20s}{'Min':>10s}{'Mean':>10s}"
                  f"{'Stdev':>10s}{'Max':>10s}\n")
-        io.write(f"{'-'*60}\n")
+        fp.write(f"{'-'*60}\n")
         for k, v in self.inputs.items():
             values = [res[i]['sample_point'][k] for i in range(n)]
-            io.write(f"{k:>20s}{float(np.min(values)):10.3g}"
+            fp.write(f"{k:>20s}{float(np.min(values)):10.3g}"
                      f"{float(np.mean(values)):10.3g}"
                      f"{float(np.std(values)):10.3g}"
                      f"{float(np.max(values)):10.3}\n")
-        io.write(f"{'-'*60}\n\n")
-        io.write(f"\n{'='*24}{'Summary':^24s}{'='*24}\n\n")
+        fp.write(f"{'-'*60}\n\n")
+        fp.write(f"\n{'='*24}{'Summary':^24s}{'='*24}\n\n")
         nsuc = n - len(s.failed_cases)
-        io.write(f"Number of Successful Cases (solved=True): {nsuc}/{n}\n\n")
-        io.write(f"{'':20s}{'min':>10s}{'-1std':>10s}{'mean':>10s}"
+        fp.write(f"Number of Successful Cases (solved=True): {nsuc}/{n}\n\n")
+        fp.write(f"{'':20s}{'min':>10s}{'-1std':>10s}{'mean':>10s}"
                  f"{'+1std':>10s}{'max':>10s}\n")
-        io.write(f"{'-'*70}\n")
-        io.write(f"{'Iterations':>20s}{s.iters_min:10.3g}"
+        fp.write(f"{'-'*70}\n")
+        fp.write(f"{'Iterations':>20s}{s.iters_min:10.3g}"
                  f"{(s.iters_mean - s.iters_std):10.3g}"
                  f"{s.iters_mean:10.3g}{(s.iters_mean + s.iters_std):10.3g}"
                  f"{s.iters_max:10.3g}\n")
-        io.write(f"{'Solver Time (s)':>20s}{s.time_min:10.3g}"
+        fp.write(f"{'Solver Time (s)':>20s}{s.time_min:10.3g}"
                  f"{(s.time_mean - s.time_std):10.3g}"
                  f"{s.time_mean:10.3g}{(s.time_mean + s.time_std):10.3g}"
                  f"{s.time_max:10.3g}\n")
-        io.write(f"{'-'*70}\n\n")
+        fp.write(f"{'-'*70}\n\n")
         # print the detailed table
-        io.write(f"\n{'='*24}{'Table of Results':^24s}{'='*24}\n\n")
-        io.write(f"{'Flag':>5s}{'Name':>20s}{'Solved':>10s}"
+        fp.write(f"\n{'='*24}{'Table of Results':^24s}{'='*24}\n\n")
+        fp.write(f"{'Flag':>5s}{'Name':>20s}{'Solved':>10s}"
                  f"{'Iters':>10s}{'Time':>10s}\n")
-        io.write(f"{'-'*55}\n")
+        fp.write(f"{'-'*55}\n")
         for r in res:
-            io.write(f"{r['flag']:>5s}{r['name']:>20s}{str(r['solved']):>10s}"
+            fp.write(f"{r['flag']:>5s}{r['name']:>20s}{str(r['solved']):>10s}"
                      f"{r['iters']:>10d}{r['time']:>10.2f}\n")
-        io.write(f"{'-'*55}\n\n")
-        io.write(f"\n{'='*24}{'Notable Cases':^24s}{'='*24}\n\n")
+        fp.write(f"{'-'*55}\n\n")
+        fp.write(f"\n{'='*24}{'Notable Cases':^24s}{'='*24}\n\n")
         if len(s.notable_cases) == 0:
-            io.write("... None\n")
+            fp.write("... None\n")
         for c in s.notable_cases:
             msg = ''
             if c['flag'] == 'F':
@@ -652,7 +705,7 @@ class Stats(object):
             elif c['flag'] == 'TI':
                 msg = 'high iteration count; long runtime'
 
-            io.write(f"{c['name']} : {msg}\n")
+            fp.write(f"{c['name']} : {msg}\n")
 
             for k, v in c['sample_point'].items():
                 if k == '_name':
@@ -665,20 +718,5 @@ class Stats(object):
                     mean = self.inputs[k]['mean']
                     std = self.inputs[k]['std']
                     alpha = (v - mean) / std
-                    io.write(f"  {k:20s}: {v:10g} ({alpha:5.2f} standard "
+                    fp.write(f"  {k:20s}: {v:10g} ({alpha:5.2f} standard "
                              "deviations above/below the mean)\n")
-
-
-def save_results_to_dmf(dmf, inputs, results, stats):
-    """Save results of run, along with stats, to DMF.
-
-    Args:
-        dmf (DMF): Data management framework object
-        inputs (dict): Run inputs
-        results (dict): Run results
-        stats (Stats): Calculated result statistics
-
-    Returns:
-        None
-    """
-    stats.to_dmf()
