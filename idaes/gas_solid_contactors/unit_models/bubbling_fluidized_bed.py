@@ -12,23 +12,20 @@
 ##############################################################################
 """
 IDAES Bubbling Fluidized Bed Model.
-
 The 2-region bubbling fluidized bed model is a 1D axially discretized model
 with two phases (gas and solid), and two regions (bubble and emulsion)
 resulting in 3 control volume_1D blocks (bubble, gas_emulsion solid_emulsion).
 The model captures the gas-solid interaction between both phases and regions
 through reaction, mass and heat transfer.
-
 Equations written in this model were derived from:
 A. Lee, D.C. Miller. A one-dimensional (1-D) three-region model for a bubbling
 fluidized-bed Adsorber, Ind. Eng. Chem. Res. 52 (2013) 469–484.
-
 Assumptions:
 Property package contains temperature and pressure variables
 Property package contains minimum fluidization velocity and voidage parameters
 Gas emulsion is at minimum fluidization conditions
 Gas feeds into emulsion region before the excess enters into the bubble region
-
+Solid superficial velocity is constant throughout the bed
 """
 
 # Import Python libraries
@@ -51,8 +48,7 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        BurntToast)
+from idaes.core.util.exceptions import (ConfigurationError)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
@@ -67,7 +63,9 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("BubblingFluidizedBed")
 class BubblingFluidizedBedData(UnitModelBlockData):
-    """Standard Bubbling Fluidized Bed Unit Model Class."""
+    """
+    Standard Bubbling Fluidized Bed Unit Model Class
+    """
 
     # Create template for unit level config arguments
     CONFIG = UnitModelBlockData.CONFIG()
@@ -231,10 +229,8 @@ see reaction package for documentation.}"""))
     def build(self):
         """
         Begin building model
-
         Args:
             None
-
         Returns:
             None
         """
@@ -531,10 +527,8 @@ see reaction package for documentation.}"""))
     def _make_vars_params(self):
         """
         Make model variables and parameters.
-
         Args:
             None
-
         Returns:
             None
         """
@@ -579,6 +573,10 @@ see reaction package for documentation.}"""))
                 self.length_domain,
                 domain=Reals,
                 doc='Emulsion Region Superficial Gas Velocity [m/s]')
+        self.velocity_superficial_solid = Var(
+                self.flowsheet().config.time,
+                domain=Reals, initialize=0.01,
+                doc='Solid superficial velocity [m/s]')
 
         # Bubble Dimensions and Hydrodynamics
         self.bubble_diameter = Var(
@@ -626,6 +624,11 @@ see reaction package for documentation.}"""))
                 self.length_domain,
                 domain=Reals,
                 doc='Bubble Rise Velocity [m/s]')
+        self.average_gas_density = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                domain=Reals,
+                doc='average gas density [mol/m3]')
 
         # Gas emulsion heterogeneous reaction variable
         self.gas_emulsion_hetero_rxn = Var(
@@ -900,8 +903,7 @@ see reaction package for documentation.}"""))
                          doc="Emulsion Region Voidage")
         def emulsion_voidage(b, t, x):
             return (b.voidage_emulsion[t, x] ==
-                    b.solid_emulsion.properties[t, x]._params.voidage_mf
-                    )
+                    b.solid_emulsion.properties[t, x]._params.voidage_mf)
 
         # Bubble velocity - Davidson model
         @self.Constraint(self.flowsheet().config.time,
@@ -914,35 +916,54 @@ see reaction package for documentation.}"""))
                 b.solid_emulsion.properties[t, x]._params.velocity_mf +
                 b.velocity_bubble_rise[t, x])
 
-        # Emulsion region gas velocity - Davidson model
+        # Average gas density (moles)
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
-                         doc="Emulsion Region Superficial Gas Velocity")
-        def emulsion_gas_velocity(b, t, x):
+                         doc="Average gas density")
+        def average_gas_density_eqn(b, t, x):
             return (
-                b.velocity_emulsion_gas[t, x] ==
-                b.solid_emulsion.properties[t, x]._params.velocity_mf)
+                b.average_gas_density[t, x] *
+                (b.bubble.properties[t, x].flow_mol +
+                 b.gas_emulsion.properties[t, x].flow_mol) ==
+                ((b.bubble.properties[t, x].flow_mol *
+                  b.bubble.properties[t, x].dens_mol) +
+                 (b.gas_emulsion.properties[t, x].flow_mol *
+                  b.gas_emulsion.properties[t, x].dens_mol))
+                )
 
-        # Superficial gas velocity (computes delta at the boundary from
-        # known vg at gas inlet)
+        # Superficial gas velocity
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
                          doc="Superficial Gas Velocity")
         def velocity_gas_superficial(b, t, x):
+            return (
+                b.bubble.properties[t, x].flow_mol +
+                b.gas_emulsion.properties[t, x].flow_mol
+                ==
+                b.velocity_superficial_gas[t, x] * b.bed_area *
+                b.average_gas_density[t, x])
+
+        # Bubble volume fraction
+        # This computes delta for emulsion at minimum fluidization velocity
+        @self.Constraint(self.flowsheet().config.time,
+                         self.length_domain,
+                         doc="volume fraction occupied by bubbles")
+        def bubble_vol_frac_eqn(b, t, x):
             return (b.velocity_superficial_gas[t, x] ==
                     b.velocity_bubble[t, x] * b.delta[t, x] +
-                    b.velocity_emulsion_gas[t, x])
-    
-        # Particle porosity constraint
-        # Particle porosity is assumed constant
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Constant particle porosity")
-        def particle_porosity_constraint(b, t, x):
-            return (
-                b.solid_emulsion.properties[t, x].particle_porosity ==
-                b.solid_inlet_block[t].particle_porosity)
+                    b.solid_emulsion.properties[t, x]._params.velocity_mf)
+
+        # Solid superficial velocity
+        @self.Constraint(self.flowsheet().config.time,
+                         self.length_domain,
+                         doc="Solid superficial velocity")
+        # This equation uses inlet values to compute the constant solid
+        # superficial velocity, and then computes the
+        # solid particle density or flowrate through the rest of the bed.
+        def solid_super_vel(b, t, x):
+            return (b.velocity_superficial_solid[t] * b.bed_area *
+                    b.solid_emulsion.properties[t, x].dens_mass_particle ==
+                    b.solid_emulsion.properties[t, x].flow_mass)
 
         # Gas_emulsion pressure drop calculation
         if self.config.has_pressure_change:
@@ -1276,13 +1297,24 @@ see reaction package for documentation.}"""))
                     b.bubble.properties[t, 0].flow_mol +
                     b.gas_emulsion.properties[t, 0].flow_mol)
 
-        # Superficial velocity of gas at inlet
+        # Particle porosity at inlet
+        @self.Constraint(
+            self.flowsheet().config.time,
+            doc="Constant particle porosity")
+        def particle_porosity_in(b, t):
+            x = b.length_domain.first()
+            return (
+                b.solid_emulsion.properties[t, x].particle_porosity ==
+                b.solid_inlet_block[t].particle_porosity)
+
+        # Emulsion region gas velocity at inlet - Davidson model
         @self.Constraint(self.flowsheet().config.time,
-                         doc="Superficial Velocity of Gas at Inlet")
-        def velocity_superficial_gas_inlet(b, t):
-            return (b.gas_inlet_block[t].flow_mol ==
-                    b.velocity_superficial_gas[t, 0] * b.bed_area *
-                    b.gas_emulsion.properties[t, 0].dens_mol)
+                         doc="Emulsion Region Superficial Gas Velocity")
+        def emulsion_gas_velocity_in(b, t):
+            x = self.length_domain.first()
+            return (
+                b.velocity_emulsion_gas[t, x] ==
+                b.solid_emulsion.properties[t, x]._params.velocity_mf)
 
         # Bubble mole frac at inlet
         @self.Constraint(
@@ -1425,6 +1457,15 @@ see reaction package for documentation.}"""))
                     b.solid_outlet_block[t].get_material_flow_terms(p, j) ==
                     b.solid_emulsion._flow_terms[t, 0, p, j])
 
+        # Solid outlet particle porosity
+        @self.Constraint(
+                self.flowsheet().config.time)
+        def solid_particle_porosity_out(b, t):
+            x = b.length_domain.last()
+            return (
+                b.solid_outlet_block[t].particle_porosity ==
+                b.solid_emulsion.properties[t, x].particle_porosity)
+
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Gas outlet energy balance
             @self.Constraint(
@@ -1491,9 +1532,8 @@ see reaction package for documentation.}"""))
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
-
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
@@ -1613,10 +1653,15 @@ see reaction package for documentation.}"""))
             for x in blk.length_domain:
                 # Superficial velocity initialized at 3 * min fluidization vel.
                 blk.velocity_superficial_gas[t, x].fix(
-                        value(3 *
-                              blk.solid_inlet_block[t]._params.velocity_mf))
-                blk.velocity_emulsion_gas[t, x] = value(
-                        blk.solid_inlet_block[t]._params.velocity_mf)
+                    value(3 * blk.solid_inlet_block[t]._params.velocity_mf))
+
+                # ve is fixed across all bed during initialization of
+                # hydrodynamic sub-model. It will be unfixed during
+                # the mass balance initialization when
+                # ve = f(gas_emulsion flowrate)
+                # is activated, and the ve=vmf at inlet boundary is activated
+                blk.velocity_emulsion_gas[t, x].fix(value(
+                        blk.solid_inlet_block[t]._params.velocity_mf))
                 blk.bubble_diameter[t, x] = value(
                         1.38 * (constants.acceleration_gravity**(-0.2)) *
                         ((blk.velocity_superficial_gas[t, x] -
@@ -1652,11 +1697,15 @@ see reaction package for documentation.}"""))
                         blk.bubble_diameter[t, x].value)
 
         # Unfix variables to make problem square
+        blk.delta.unfix()
         blk.delta_e.unfix()
         blk.voidage_emulsion.unfix()
         blk.bubble_diameter.unfix()
 
         # Activate relavant constraints
+        blk.bubble_vol_frac_eqn.activate()  # delta
+        blk.average_gas_density_eqn.activate()
+
         blk.emulsion_vol_frac.activate()
         blk.average_voidage.activate()
         blk.bubble_growth_coefficient.activate()
@@ -1666,7 +1715,6 @@ see reaction package for documentation.}"""))
         blk.bubble_velocity_rise.activate()
         blk.bubble_velocity.activate()
         blk.emulsion_voidage.activate()
-        blk.emulsion_gas_velocity.activate()
 
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1742,12 +1790,16 @@ see reaction package for documentation.}"""))
                     for j in gas_phase.property_package.component_list:
                         blk.gas_emulsion_hetero_rxn[t, x, j].fix(0.0)
 
-        # Unfix delta and velocity_superficial_gas
+        # Unfix velocity_emulsion_gas
+        blk.velocity_emulsion_gas.unfix()
+
+        # Unfix velocity_superficial_gas
         blk.velocity_superficial_gas.unfix()
-        blk.delta.unfix()
 
         # Activate relevant model level constraints
         blk.velocity_gas_superficial.activate()
+        blk.solid_super_vel.activate()
+
         blk._reformulation_eqn_2.activate()
         blk._reformulation_eqn_3.activate()
         blk.bubble_cloud_mass_trans_coeff.activate()
@@ -1756,15 +1808,15 @@ see reaction package for documentation.}"""))
         blk.gas_emulsion_mass_transfer.activate()
         blk.bubble_gas_flowrate.activate()
         blk.emulsion_gas_flowrate.activate()
-        blk.particle_porosity_constraint.activate()
 
         # Activate relevant boundary constraints
-        blk.velocity_superficial_gas_inlet.activate()
         blk.gas_mole_flow_in.activate()
         blk.bubble_mole_frac_in.activate()
         blk.gas_emulsion_mole_frac_in.activate()
         blk.solid_emulsion_mass_flow_in.activate()
         blk.solid_emulsion_mass_frac_in.activate()
+        blk.particle_porosity_in.activate()
+        blk.emulsion_gas_velocity_in.activate()
 
         # Activate relevant control volume constraints
         blk.bubble.material_balances.activate()
@@ -1805,9 +1857,6 @@ see reaction package for documentation.}"""))
         else:
             init_log.warning('{} Initialisation Step 4a Failed.'
                              .format(blk.name))
-
-        # ---------------------------------------------------------------------
-        # Initialize mass balance - with reactions
 
         # Homogeneous reactions (gas phase rxns)
         if gas_phase.reaction_package is not None:
@@ -2025,6 +2074,7 @@ see reaction package for documentation.}"""))
         blk.gas_pressure_out.activate()
         blk.gas_material_balance_out.activate()
         blk.solid_material_balance_out.activate()
+        blk.solid_particle_porosity_out.activate()
 
         blk.gas_energy_balance_out.activate()
         blk.solid_energy_balance_out.activate()

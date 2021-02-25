@@ -39,12 +39,12 @@ from idaes.generic_models.properties.examples.saponification_thermo import (
 from idaes.generic_models.properties.examples.saponification_reactions import (
     SaponificationReactionParameterBlock)
 
+from idaes.core.util import get_default_solver
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock,
                                      initialization_tester)
 

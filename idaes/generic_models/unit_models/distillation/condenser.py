@@ -41,7 +41,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 _log = idaeslog.getLogger(__name__)
 

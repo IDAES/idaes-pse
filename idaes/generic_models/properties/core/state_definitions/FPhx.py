@@ -270,3 +270,10 @@ def define_state(b):
 
 
 do_not_initialize = ["sum_mole_frac_out"]
+
+
+class FPhx(object):
+    set_metadata = set_metadata
+    define_state = define_state
+    state_initialization = state_initialization
+    do_not_initialize = do_not_initialize

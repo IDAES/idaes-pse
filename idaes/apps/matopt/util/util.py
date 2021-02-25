@@ -51,7 +51,8 @@ def myArrayEq(x, y, atol):
     Returns:
     (bool) true if the two arrays are equal
     """
-    return (np.abs(x - y) < atol).all()
+    return (x[0] - y[0] < atol) and (x[0] - y[0] > -atol) and (x[1] - y[1] < atol) and (x[1] - y[1] > -atol) and (
+            x[2] - y[2] < atol) and (x[2] - y[2] > -atol)
 
 
 myPointEq = myArrayEq

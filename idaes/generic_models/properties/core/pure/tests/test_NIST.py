@@ -44,7 +44,7 @@ def frame():
 
     m.params.config = ConfigBlock(implicit=True)
     m.params.config.parameter_data = {
-        "cp_mol_ig_comp_coeff": {'A': 30.09200,
+        "cp_mol_ig_comp_coeff": {'A': 30.09200,  # parameters for water
                                  'B': 6.832514,
                                  'C': 6.793435,
                                  'D': -2.534480,
@@ -109,10 +109,10 @@ def test_cp_mol_ig_comp(frame):
 
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(35.22, abs=1e-2)
+    assert value(expr) == pytest.approx(35.22, abs=1e-2)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(36.32, abs=1e-2)
+    assert value(expr) == pytest.approx(36.32, abs=1e-2)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
 
@@ -123,10 +123,10 @@ def test_enth_mol_ig_comp(frame):
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(-2130.5 - 241826.4, rel=1e-3)
+    assert value(expr) == pytest.approx(6.92e3 - 241826.4, rel=1e-3)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(1445 - 241826.4, rel=1e-3)
+    assert value(expr) == pytest.approx(10.5e3 - 241826.4, rel=1e-3)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
@@ -138,10 +138,10 @@ def test_enth_mol_ig_comp_no_formation(frame):
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(-2130.5, rel=1e-3)
+    assert value(expr) == pytest.approx(6.92e3, rel=1e-3)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(1445, rel=1e-3)
+    assert value(expr) == pytest.approx(10.5e3, rel=1e-3)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
