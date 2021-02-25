@@ -477,13 +477,13 @@ argument)."""))
                 units=flow_l_units)
 
         # Inherent reaction generation
-        if self.properties.has_inherent_reactions:
+        if self.properties.include_inherent_reactions:
             if not hasattr(self.config.property_package,
                            "inherent_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Property package does not contain a list of "
                     "inherent reactions (inherent_reaction_idx), but "
-                    "has_inherent_reactions is True."
+                    "include_inherent_reactions is True."
                     .format(self.name))
             self.inherent_reaction_generation = Var(
                 self.flowsheet().config.time,
@@ -542,7 +542,7 @@ argument)."""))
 
         def inherent_term(b, t, x, p, j):
             return (b.inherent_reaction_generation[t, x, p, j]
-                    if b.properties.has_inherent_reactions else 0)
+                    if b.properties.include_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, x, p, j):
             if has_phase_equilibrium and \
@@ -641,7 +641,7 @@ argument)."""))
                 else:
                     return Constraint.Skip
 
-        if self.properties.has_inherent_reactions:
+        if self.properties.include_inherent_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.inherent_reaction_extent = Var(
                 self.flowsheet().config.time,
