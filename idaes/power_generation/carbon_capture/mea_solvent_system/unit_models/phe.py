@@ -46,7 +46,7 @@ In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
 # Import Pyomo libraries
 from pyomo.environ import Param, RangeSet, Constraint, Expression,\
     SolverFactory, value, Var, exp, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,

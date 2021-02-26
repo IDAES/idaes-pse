@@ -48,9 +48,8 @@ class TestColumn:
     """
 
     @pytest.mark.solver
-    @pytest.mark.skip(reason="Test fails")
     @pytest.mark.component
-    def test_initialize(self):
+    def test_steady_state_initialization(self):
         # Spacial domain finite elemets and finite element list
         x_nfe = 10
         x_nfe_list = [i / x_nfe for i in range(x_nfe + 1)]
@@ -98,6 +97,66 @@ class TestColumn:
             m.fs.unit.liquid_inlet.mole_frac_comp[t, "MEA"].fix(0.11602)
         initialization_tester(m)
 
+    @pytest.mark.solver
+    @pytest.mark.component
+    def test_dynamic_initialization(self):
+        # Spacial domain finite elemets and finite element list
+        x_nfe = 10
+        x_nfe_list = [i / x_nfe for i in range(x_nfe + 1)]
+
+        # Time horizon
+        t_nfe = 2
+        time_set = [0, 4]
+
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": True,
+                                       'time_units': pyunits.s,
+                                       "time_set": time_set})
+
+        # Set up property package
+        m.fs.vapor_properties = VaporParameterBlock()
+        m.fs.liquid_properties = LiquidParameterBlock()
+
+        # Create instance of column on flowsheet
+        m.fs.unit = PackedColumn(default={
+            "finite_elements": x_nfe,
+            "length_domain_set": x_nfe_list,
+            "transformation_method": "dae.finite_difference",
+            "vapor_side": {
+                "transformation_scheme": "BACKWARD",
+                "property_package": m.fs.vapor_properties,
+                "has_pressure_change": False,
+                "pressure_drop_type": None},
+            "liquid_side":
+            {
+                "transformation_scheme": "FORWARD",
+                "property_package": m.fs.liquid_properties
+            }})
+
+        # Time discretization
+        discretizer = TransformationFactory('dae.finite_difference')
+        discretizer.apply_to(m.fs, wrt=m.fs.time, nfe=t_nfe, scheme='BACKWARD')
+
+        # Fix  input variables
+        m.fs.unit.diameter_column.fix(0.64135)
+        m.fs.unit.length_column.fix(18.15)
+        for t in m.fs.time:
+            # Vapor
+            m.fs.unit.vapor_inlet.flow_mol[t].fix(21.48)
+            m.fs.unit.vapor_inlet.temperature[t].fix(317.88)
+            m.fs.unit.vapor_inlet.pressure[t].fix(107650)
+            m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.11453)
+            m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.08526)
+            m.fs.unit.vapor_inlet.mole_frac_comp[t, "N2"].fix(0.73821)
+            m.fs.unit.vapor_inlet.mole_frac_comp[t, "O2"].fix(0.06200)
+            # Liquid
+            m.fs.unit.liquid_inlet.flow_mol[t].fix(37.55)
+            m.fs.unit.liquid_inlet.temperature[t].fix(319.87)
+            m.fs.unit.liquid_inlet.mole_frac_comp[t, "CO2"].fix(0.00963)
+            m.fs.unit.liquid_inlet.mole_frac_comp[t, "H2O"].fix(0.87435)
+            m.fs.unit.liquid_inlet.mole_frac_comp[t, "MEA"].fix(0.11602)
+        initialization_tester(m)
+
 
     @pytest.fixture(scope="module", params=['absorber', 'stripper'])
     def column_model_ss(self, request):
@@ -118,11 +177,17 @@ class TestColumn:
         m.fs.liquid_properties = LiquidParameterBlock(
             default={'process_type': Fpar})
 
+        if Fpar == 'absorber':
+            col_pressure = 107650
+        elif Fpar == 'stripper':
+            col_pressure = 183430
+
         # Create instance of column on flowsheet
         m.fs.unit = PackedColumn(default={
             "process_type": Fpar,
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
+            "column_pressure": col_pressure,
             "transformation_method": "dae.finite_difference",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
@@ -146,7 +211,7 @@ class TestColumn:
                 # Vapor
                 m.fs.unit.vapor_inlet.flow_mol[t].fix(21.48)
                 m.fs.unit.vapor_inlet.temperature[t].fix(317.88)
-                m.fs.unit.vapor_inlet.pressure[t].fix(107650)
+                m.fs.unit.vapor_inlet.pressure[t].fix(col_pressure)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.11453)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.08526)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "N2"].fix(0.73821)
@@ -169,7 +234,7 @@ class TestColumn:
                 # Vapor
                 m.fs.unit.vapor_inlet.flow_mol[t].fix(17.496)
                 m.fs.unit.vapor_inlet.temperature[t].fix(396.6)
-                m.fs.unit.vapor_inlet.pressure[t].fix(183430)
+                m.fs.unit.vapor_inlet.pressure[t].fix(col_pressure)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.0145)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.9855)
                 # Liquid
@@ -209,11 +274,17 @@ class TestColumn:
         m.fs.liquid_properties = LiquidParameterBlock(
             default={'process_type': Fpar})
 
+        if Fpar == 'absorber':
+            col_pressure = 107650
+        elif Fpar == 'stripper':
+            col_pressure = 183430
+
         # Create instance of column  on flowsheet
         m.fs.unit = PackedColumn(default={
             "process_type": Fpar,
             "finite_elements": x_nfe,
             "length_domain_set": x_nfe_list,
+            "column_pressure": col_pressure,
             "transformation_method": "dae.finite_difference",
             "vapor_side": {
                 "transformation_scheme": "BACKWARD",
@@ -240,7 +311,7 @@ class TestColumn:
                 # Vapor
                 m.fs.unit.vapor_inlet.flow_mol[t].fix(21.48)
                 m.fs.unit.vapor_inlet.temperature[t].fix(317.88)
-                m.fs.unit.vapor_inlet.pressure[t].fix(107650)
+                m.fs.unit.vapor_inlet.pressure[t].fix(col_pressure)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.11453)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.08526)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "N2"].fix(0.73821)
@@ -262,7 +333,7 @@ class TestColumn:
                 # Vapor
                 m.fs.unit.vapor_inlet.flow_mol[t].fix(17.496)
                 m.fs.unit.vapor_inlet.temperature[t].fix(396.6)
-                m.fs.unit.vapor_inlet.pressure[t].fix(183430)
+                m.fs.unit.vapor_inlet.pressure[t].fix(col_pressure)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "CO2"].fix(0.0145)
                 m.fs.unit.vapor_inlet.mole_frac_comp[t, "H2O"].fix(0.9855)
                 # Liquid
@@ -353,4 +424,3 @@ class TestColumn:
                      m.fs.unit.liquid_phase.properties[
                      m.fs.time.last(), 0].mole_frac_comp['MEA']) == \
             pytest.approx(value(m.fs.unit.loading), abs=1e-1)
-

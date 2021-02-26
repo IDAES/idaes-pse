@@ -46,8 +46,8 @@ Industrial & Engineering Chemistry Research,2020. (submitted)
 """
 
 # Import Python libraries and third-party
-import os
 import numpy as np
+import warnings
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
@@ -68,9 +68,10 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
     HeatExchangerFlowPattern as FlowPattern
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.control_volume1d import DistributedVars
 import idaes.logger as idaeslog
-from idaes.core.util import to_json, from_json, StoreSpec
+
 
 __author__ = "Paul Akula, John Eslick"
 
@@ -160,6 +161,21 @@ class PackedColumnData(UnitModelBlockData):
         domain=float,
         description="Void fraction of the packing",
         doc="""packing porosity or void fraction (default= 0.97 )"""))
+    CONFIG.declare("fix_column_pressure", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Indicates whether the column pressure should be fixed",
+        doc="""Indicates whether the column pressure should be fixed or not.
+               The momentum balances are not added when this is True.
+            **default** - True.
+            **Valid values:** {
+            **True** - fix the column pressure and do not add momentum balances,
+            **False** -Do not fix the column pressure and add momentum balances}"""))
+    CONFIG.declare("column_pressure", ConfigValue(
+        default=107650,
+        domain=float,
+        description="fixed column pressure in Pa",
+        doc="""Fixed column operating pressure in Pa"""))
     # Populate the phase side template to default values
     _PhaseCONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
@@ -284,9 +300,45 @@ class PackedColumnData(UnitModelBlockData):
             balance_type=EnergyBalanceType.enthalpyTotal,
             has_heat_transfer=True)
 
-        self.vapor_phase.add_momentum_balances(
-            balance_type=MomentumBalanceType.pressureTotal,
-            has_pressure_change=self.config.vapor_side.has_pressure_change)
+        if not self.config.fix_column_pressure:
+            self.vapor_phase.add_momentum_balances(
+                balance_type=MomentumBalanceType.pressureTotal,
+                has_pressure_change=self.config.vapor_side.has_pressure_change)
+
+            # TO DO : remove this warning when there is support for deltaP
+            warnings.warn("""{} WARNING! WARNING!! WARNING!!!
+                  control volume class has not implemented a method
+                  for pressure drop. Constraint for deltaP must be provided if
+                  has_pressure_change is set to True""".format(self.name))
+        # consistency check
+        if (self.config.vapor_side.has_pressure_change and
+                self.config.fix_column_pressure):
+            raise ConfigurationError(
+                " has_pressure_change is set to {} "
+                " while fix_colume_pressure is set to {}.  "
+                " Set fix_column_pressure to False if has_pressure_change is True."
+                .format(self.config.vapor_side.has_pressure_change,
+                        self.config.fix_column_pressure))
+
+        # TO DO
+        # pressure drop calculation
+        # Correlations for pressure drop and flooding required for design cases
+        if (self.config.vapor_side.has_pressure_change and
+            self.config.vapor_side.pressure_drop_type ==
+                "Stichlmair_Fair_Bravo_correlation"):
+            raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "pressure drop. Please contact the "
+                "developer of the property_package you are using."
+                .format(self.name))
+
+        if (self.config.vapor_side.has_pressure_change and
+                self.config.vapor_side.pressure_drop_type == "GPDC-Kister"):
+            raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "pressure drop. Please contact the "
+                "developer of the property_package you are using."
+                .format(self.name))
 
         self.vapor_phase.apply_transformation()
 
@@ -335,6 +387,9 @@ class PackedColumnData(UnitModelBlockData):
     # ==========================================================================
         """ Add performace equation method"""
         self._make_performance()
+
+        #
+        # Fix the column pressure here
 
     def _make_performance(self):
         """
@@ -403,6 +458,13 @@ class PackedColumnData(UnitModelBlockData):
         self._homotopy_par_h = Param(initialize=0, mutable=True, units=None,
                                      doc='''Continuation parameter to turn on heat
                                      transfer terms gradually''')
+
+        # fixed column pressure
+        if self.config.fix_column_pressure:
+            self.column_pressure = Param(initialize=self.config.column_pressure,
+                                         mutable=True,
+                                         units=pyunits.Pa,
+                                         doc='Fixed operating pressure of column')
 
         # Interfacial area  parameters
         self.area_interfacial_parA = Var(initialize=0.6486,
@@ -568,17 +630,51 @@ class PackedColumnData(UnitModelBlockData):
         cross-sectional area of the control volume changes with time and space.
         '''
 
-        @self.Constraint(self.t,
-                         self.vapor_phase.length_domain,
-                         doc=control_volume_area_definition)
-        def vapor_side_area(bk, t, x):
-            return bk.vapor_phase.area[t, x] == bk.area_column * bk.holdup_vap[t, x]
+        if self.config.dynamic:
+            @self.Constraint(self.t,
+                             self.vapor_phase.length_domain,
+                             doc=control_volume_area_definition)
+            def vapor_side_area(bk, t, x):
+                return bk.vapor_phase.area[t, x] == bk.area_column * bk.holdup_vap[t, x]
 
-        @self.Constraint(self.t,
-                         self.liquid_phase.length_domain,
-                         doc=control_volume_area_definition)
-        def liquid_side_area(bk, t, x):
-            return bk.liquid_phase.area[t, x] == bk.area_column * bk.holdup_liq[t, x]
+            @self.Constraint(self.t,
+                             self.liquid_phase.length_domain,
+                             doc=control_volume_area_definition)
+            def liquid_side_area(bk, t, x):
+                return bk.liquid_phase.area[t, x] == bk.area_column * bk.holdup_liq[t, x]
+        else:
+            self.vapor_phase.area.fix(value(self.area_column))
+            self.liquid_phase.area.fix(value(self.area_column))
+
+        # if column pressure is fixed
+        if self.config.fix_column_pressure:
+            @self.Constraint(self.t,
+                             self.vapor_phase.length_domain,
+                             doc='Sets the fixed column pressure')
+            def vapor_side_pressure(bk, t, x):
+                if x == self.vapor_phase.length_domain.first():
+                    return Constraint.Skip
+                else:
+                    return bk.column_pressure == \
+                        bk.vapor_phase.properties[t, x].pressure
+
+            @self.Constraint(self.t,
+                             self.liquid_phase.length_domain,
+                             doc='Sets the fixed column pressure')
+            def liquid_side_pressure(bk, t, x):
+                if x == self.liquid_phase.length_domain.last():
+                    return Constraint.Skip
+                else:
+                    return bk.liquid_phase.properties[t, x].pressure == \
+                        bk.column_pressure
+        else:
+            @self.Constraint(self.t,
+                             self.liquid_phase.length_domain,
+                             doc='''Mechanical equilibruim: vapor-side pressure
+                                    equal liquid -side pressure''')
+            def mechanical_equil(bk, t, x):
+                return bk.liquid_phase.properties[t, x].pressure == \
+                    bk.vapor_phase.properties[t, x].pressure
 
         # Length of control volume : vapor side and liquid side
         @self.Constraint(doc="Vapor side length")
@@ -609,25 +705,6 @@ class PackedColumnData(UnitModelBlockData):
                 blk.liquid_phase.properties[t, x].conc_mol == \
                 blk.liquid_phase.properties[t, x].flow_mol
 
-        # pressure drop calculation
-        # TO DO
-        # Correlations for pressure drop and flooding required for design cases
-        if (self.config.vapor_side.has_pressure_change and
-            self.config.vapor_side.pressure_drop_type ==
-                "Stichlmair_Fair_Bravo_correlation"):
-            raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "pressure drop. Please contact the "
-                "developer of the property_package you are using."
-                .format(self.name))
-
-        if (self.config.vapor_side.has_pressure_change and
-                self.config.vapor_side.pressure_drop_type == "GPDC-Kister"):
-            raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "pressure drop. Please contact the "
-                "developer of the property_package you are using."
-                .format(self.name))
 
         # ---------------------------------------------------------------------
         # Mass transfer coefficients, Billet and Schultes (1999) correlation,
@@ -972,6 +1049,9 @@ class PackedColumnData(UnitModelBlockData):
             else:
                 return 1 - blk.enhancement_factor[t, x] <= 0.0
 
+        if self.config.dynamic:
+            self.fix_initial_condition()
+
     # ==========================================================================
     # Model initialization routine
     def initialize(blk,
@@ -1036,6 +1116,7 @@ class PackedColumnData(UnitModelBlockData):
             "enthalpy_balances",
             "material_accumulation_disc_eq",
             "energy_accumulation_disc_eq",
+            "mechanical_equil",
             "pressure_balance"]
 
         # ---------------------------------------------------------------------
@@ -1064,12 +1145,13 @@ class PackedColumnData(UnitModelBlockData):
         blk.vapor_phase.heat.fix(0.0)
         blk.liquid_phase.heat.fix(0.0)
         # area
-        blk.vapor_phase.area.fix(1)
-        blk.liquid_phase.area.fix(1)
+        blk.vapor_phase.area.fix(value(blk.area_column))
+        blk.liquid_phase.area.fix(value(blk.area_column))
 
         # other variables
         # Pressure_dx
-        blk.vapor_phase.pressure_dx[:, :].fix(0.0)
+        if not blk.config.fix_column_pressure:
+            blk.vapor_phase.pressure_dx[:, :].fix(0.0)
         # vapor side flow terms
         blk.vapor_phase._enthalpy_flow.fix(1.0)
         blk.vapor_phase.enthalpy_flow_dx[:, :, :].fix(0.0)
@@ -1093,6 +1175,8 @@ class PackedColumnData(UnitModelBlockData):
             blk.vapor_phase.energy_accumulation[:, :, :].fix(0.0)
             blk.vapor_phase.material_holdup[:, :, :, :].fix(1.0)
             blk.vapor_phase.material_accumulation[:, :, :, :].fix(0.0)
+            blk.unfix_initial_condition()
+
 
         # ---------------------------------------------------------------------
         # get values for state variables for initialization
@@ -1151,14 +1235,16 @@ class PackedColumnData(UnitModelBlockData):
         # vapor side
         blk.vapor_phase.properties.release_state(flags=vflag)
         blk.vapor_phase.properties[:, :].temperature.fix()
-        blk.vapor_phase.properties[:, :].pressure.fix()
+        if not blk.config.fix_column_pressure:
+            blk.vapor_phase.properties[:, :].pressure.fix()
 
         blk.vapor_phase._flow_terms[:, :, :, :].unfix()
         blk.vapor_phase.material_flow_dx[:, :, :, :].unfix()
         # liquid-side
         blk.liquid_phase.properties.release_state(flags=lflag)
         blk.liquid_phase.properties[:, :].temperature.fix()
-        blk.liquid_phase.properties[:, :].pressure.fix()
+        if not blk.config.fix_column_pressure:
+            blk.liquid_phase.properties[:, :].pressure.fix()
 
         blk.liquid_phase._flow_terms[:, :, :, :].unfix()
         blk.liquid_phase.material_flow_dx[:, :, :, :].unfix()
@@ -1257,6 +1343,24 @@ class PackedColumnData(UnitModelBlockData):
                     print('')
 
         init_log.info_high("Step 4 complete: {}.".format(idaeslog.condition(res)))
+        # ---------------------------------------------------------------------
+        if not blk.config.fix_column_pressure:
+            for c in ["mechanical_equil"]:
+                getattr(blk, c).activate()
+            for c in ["pressure_balance", "pressure_dx_disc_eq"]:
+                getattr(blk.vapor_phase, c).activate()
+
+            blk.vapor_phase.pressure_dx[:, :].unfix()
+            # Unfix pressure
+            for t in blk.t:
+                for x in blk.vapor_phase.length_domain:
+                    # Unfix all vapor pressure variables except at the inlet
+                    if (blk.vapor_phase.properties[t, x].config.defined_state
+                            is False):
+                        blk.vapor_phase.properties[t, x].pressure.unfix()
+                for x in blk.liquid_phase.length_domain:
+                        blk.liquid_phase.properties[t, x].pressure.unfix()
+
         # ---------------------------------------------------------------------
         init_log.info('STEP 5: Adiabatic chemical absoption')
         init_log.info_high("Homotopy steps:")
@@ -1419,6 +1523,34 @@ class PackedColumnData(UnitModelBlockData):
             for j in liq_comp:
                 if (x != 1 and j != 'CO2'):
                     blk.liquid_phase.properties[0, x].mole_frac_comp[j].fix()
+
+    def unfix_initial_condition(blk):
+        """
+        Initial condition for material and enthalpy balance.
+
+        Mass balance : Initial condition  is determined by
+        fixing n-1 mole fraction and the total molar flowrate
+        Energy balance :Initial condition  is determined by
+        fixing  the temperature.
+        """
+
+        vap_comp = blk.config.vapor_side.property_package.component_list
+        liq_comp = blk.config.liquid_side.property_package.component_list
+
+        for x in blk.vapor_phase.length_domain:
+            if x != 0:
+                blk.vapor_phase.properties[0, x].temperature.unfix()
+                blk.vapor_phase.properties[0, x].flow_mol.unfix()
+            for j in vap_comp:
+                if (x != 0 and j != 'CO2'):
+                    blk.vapor_phase.properties[0, x].mole_frac_comp[j].unfix()
+        for x in blk.liquid_phase.length_domain:
+            if x != 1:
+                blk.liquid_phase.properties[0, x].temperature.unfix()
+                blk.liquid_phase.properties[0, x].flow_mol.unfix()
+            for j in liq_comp:
+                if (x != 1 and j != 'CO2'):
+                    blk.liquid_phase.properties[0, x].mole_frac_comp[j].unfix()
 
     def make_steady_state_column_profile(blk):
         """Steady-state Plot function for Temperature and CO2 Pressure profile."""
