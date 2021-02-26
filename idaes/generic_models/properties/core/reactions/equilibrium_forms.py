@@ -27,8 +27,14 @@ class power_law_equil():
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         e = None
+
+        if hasattr(b.params, "_electrolyte") and b.params._electrolyte:
+            pc_set = b.params.true_phase_component_set
+        else:
+            pc_set = b.phase_component_set
+
         # Get reaction orders and construct power law expression
-        for p, j in b.phase_component_set:
+        for p, j in pc_set:
             o = rblock.reaction_order[p, j]
 
             if e is None and o != 0:

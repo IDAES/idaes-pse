@@ -42,7 +42,20 @@ class van_t_hoff():
             e_units = None
         else:
             order = 0
-            for p, j in parent.config.property_package._phase_component_set:
+
+            try:
+                # This will work for Reaction Packages
+                pc_set = parent.config.property_package._phase_component_set
+            except AttributeError:
+                # Need to allow for inherent reactions in Property Packages
+                if not parent._electrolyte:
+                    # In most cases ,should have _phase_component_set
+                    pc_set = parent._phase_component_set
+                else:
+                    # However, for electrolytes need ture species set
+                    pc_set = parent.true_phase_component_set
+
+            for p, j in pc_set:
                 order += rblock.reaction_order[p, j].value
 
             if (c_form == ConcentrationForm.molarity or

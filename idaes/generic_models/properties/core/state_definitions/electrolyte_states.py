@@ -60,9 +60,13 @@ def _apparent_species_state(b):
         doc="Phase-component molar flowrates of true species",
         units=units["flow_mole"])
 
-    # # Check for inherent reactions and add apparent extent terms if required
-    # if b.has_inherent_reactions:
-    #     assert False
+    # Check for inherent reactions and add apparent extent terms if required
+    if b.has_inherent_reactions:
+        b.inherent_reaction_extent = Var(
+            b.params.inherent_reaction_idx,
+            initialize=0,
+            units=units["flow_mole"],
+            doc="Apparent extent of inherent reactions")
 
     def appr_to_true_species(b, p, j):
         pobj = b.params.get_phase(p)
@@ -78,9 +82,14 @@ def _apparent_species_state(b):
             else:
                 e = b.flow_mol_phase_comp_apparent[p, j]
 
-            # # Next, check for inherent reactions
-            # if b.has_inherent_reactions:
-            #     assert False
+            # Next, check for inherent reactions
+            if b.has_inherent_reactions:
+                for r in b.params.inherent_reaction_idx:
+                    # Get stoichiometric coeffiicient for inherent reactions
+                    gamma = b.params.inherent_reaction_stoichiometry[r, p, j]
+
+                    if gamma != 0:
+                        e += gamma*b.inherent_reaction_extent[r]
 
             return b.flow_mol_phase_comp_true[p, j] == e
         else:

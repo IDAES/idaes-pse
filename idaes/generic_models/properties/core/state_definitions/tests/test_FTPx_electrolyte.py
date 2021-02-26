@@ -238,49 +238,66 @@ class TestApparentSpeciesBasisNoInherent():
 
 
 # -----------------------------------------------------------------------------
+def dens_mol_h20(*args, **kwargs):
+    return 55e3
+
+
+def dens_mol_other(*args, **kwargs):
+    return 0
+
+
 class TestApparentSpeciesBasisInherent():
     config = {
         # Specifying components
         "components": {
             'H2O': {"type": Solvent,
+                    "dens_mol_liq_comp": dens_mol_h20,
                     "parameter_data": {
                         "mw": (18E-3, pyunits.kg/pyunits.mol)}},
             'KHCO3': {"type": Apparent,
                       "dissociation_species": {"K+": 1, "HCO3-": 1},
+                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
             'K2CO3': {"type": Apparent,
                       "dissociation_species": {"K+": 2, "CO3--": 1},
+                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (138.2E-3, pyunits.kg/pyunits.mol)}},
             'KOH': {"type": Apparent,
                     "dissociation_species": {"K+": 1, "OH-": 1},
+                    "dens_mol_liq_comp": dens_mol_other,
                     "parameter_data": {
                         "mw": (56.1E-3, pyunits.kg/pyunits.mol)}},
             'H+': {"type": Cation,
                    "charge": +1,
+                   "dens_mol_liq_comp": dens_mol_other,
                    "parameter_data": {
                         "mw": (1E-3, pyunits.kg/pyunits.mol)}},
             'K+': {"type": Cation,
                    "charge": +1,
+                   "dens_mol_liq_comp": dens_mol_other,
                    "parameter_data": {
                         "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
             'OH-': {"type": Anion,
                     "charge": -1,
+                    "dens_mol_liq_comp": dens_mol_other,
                     "parameter_data": {
                          "mw": (17E-3, pyunits.kg/pyunits.mol)}},
             'HCO3-': {"type": Anion,
                       "charge": -1,
+                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                            "mw": (61E-3, pyunits.kg/pyunits.mol)}},
             'CO3--': {"type": Anion,
                       "charge": -2,
+                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                            "mw": (60E-3, pyunits.kg/pyunits.mol)}}},
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": Ideal,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -419,32 +436,31 @@ class TestApparentSpeciesBasisInherent():
         for i in m.fs.state[1].params.inherent_reaction_idx:
             assert i in ["h2o_si", "co3_hco3"]
 
-    # @pytest.mark.component
-    # def test_solve_for_true_species(self, frame):
-    #     m = frame
+        assert isinstance(m.fs.state[1].inherent_reaction_extent, Var)
+        assert len(m.fs.state[1].inherent_reaction_extent) == 2
 
-    #     m.fs.state[1].flow_mol.fix(2)
-    #     m.fs.state[1].phase_frac["Liq"].fix(0.5)
-    #     m.fs.state[1].temperature.fix(300)
-    #     m.fs.state[1].pressure.fix(1e5)
+    @pytest.mark.component
+    def test_solve_for_true_species(self, frame):
+        m = frame
 
-    #     m.fs.state[1].mole_frac_comp["H2O"].fix(0.25)
-    #     m.fs.state[1].mole_frac_comp["CO2"].fix(0.25)
-    #     m.fs.state[1].mole_frac_comp["KHCO3"].fix(0.25)
-    #     m.fs.state[1].mole_frac_comp["N2"].fix(0.25)
+        m.fs.state[1].flow_mol.fix(2)
+        m.fs.state[1].temperature.fix(350)
+        m.fs.state[1].pressure.fix(1e5)
 
-    #     m.fs.state[1].mole_frac_phase_comp["Vap", "KHCO3"].fix(1/6)
-    #     m.fs.state[1].mole_frac_phase_comp["Vap", "CO2"].fix(1/6)
+        m.fs.state[1].mole_frac_comp["H2O"].fix(0.8)
+        m.fs.state[1].mole_frac_comp["K2CO3"].fix(0.2)
+        m.fs.state[1].mole_frac_comp["KHCO3"].fix(0)
+        m.fs.state[1].mole_frac_comp["KOH"].fix(0)
 
-    #     assert degrees_of_freedom(m.fs) == 0
+        assert degrees_of_freedom(m.fs) == 0
 
-    #     solver = get_default_solver()
-    #     res = solver.solve(m.fs, tee=True)
+        solver = get_default_solver()
+        res = solver.solve(m.fs, tee=True)
 
-    #     # Check for optimal solution
-    #     assert res.solver.termination_condition == \
-    #         TerminationCondition.optimal
-    #     assert res.solver.status == SolverStatus.ok
+        # Check for optimal solution
+        assert res.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert res.solver.status == SolverStatus.ok
 
     #     # Check true species flowrates
     #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "H2O"]) ==

@@ -115,7 +115,7 @@ class GenericParameterData(PhysicalParameterBlock):
         description="Bounds for state variables",
         doc="""A dict containing bounds to use for state variables."""))
     CONFIG.declare("state_components", ConfigValue(
-        default=StateIndex.apparent,
+        default=StateIndex.true,
         domain=In(StateIndex),
         doc="Index state variables by true or apparent components",
         description="Argument idicating whether the true or apparent species "
@@ -1369,8 +1369,10 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_equilibrium)
 
         # Add inherent reaction constraints if necessary
-        if (self.params.has_inherent_reactions
-                and not self.config.defined_state):
+        if (self.params.has_inherent_reactions and (
+                not self.config.defined_state or
+                (self.params._electrolyte and
+                 self.params.config.state_components == StateIndex.apparent))):
             def equil_rule(b, r):
                 rblock = getattr(b.params, "reaction_"+r)
 
