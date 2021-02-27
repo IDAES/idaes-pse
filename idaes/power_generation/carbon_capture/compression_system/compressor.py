@@ -376,6 +376,7 @@ VaneDiffuserType.custom}""",
             return b.eff_p_v[t] * b.impeller_work_coeff[t] == b.mu_p_v[t]
 
         # --------------------------------------------------------------------
+
         # Calculate total enthalpy and entropy change through the stage
         @self.Expression(self.flowsheet().config.time, doc="Specific "
                          "Enthalpy Change of Isentropic Process")
@@ -523,7 +524,7 @@ VaneDiffuserType.custom}""",
                     b.coeff_b * b.psi_3[t] + b.coeff_c
 
     def initialize(blk, state_args={}, outlvl=idaeslog.NOTSET, solver='ipopt',
-                   optarg={'tol': 1e-6, 'max_iter': 200}):
+                   optarg={'tol': 1e-6, 'max_iter': 50}):
         """
         Initialize the inlet compressor stage model.
         This deactivates the specialized constraints,
@@ -542,47 +543,45 @@ VaneDiffuserType.custom}""",
         flags = blk.control_volume.initialize(state_args=state_args,
                                               hold_state=True)
 
-        for t in blk.flowsheet().config.time:
-            for k, v in blk.inlet.vars.items():
-                v[t].fix()
-            for k, v in blk.outlet.vars.items():
-                v[t].unfix()
+        opt = SolverFactory(solver)
+        opt.options = optarg
 
+        for t in blk.flowsheet().config.time:
             # if there is not a good guess for efficiency or outlet pressure
             # provide something reasonable.
             eff = blk.efficiency_isentropic[t]
-            eff.fix(eff.value if value(eff) > 0.3
-                    and value(eff) < 1.0 else 0.85)
-            # for outlet pressure try outlet pressure, pressure ratio
-            # then if none of those look reasonable use a pressure ratio of 2.0
-            # to calculate outlet pressure
-            Pout = blk.outlet.pressure[t]
-            Pin = blk.inlet.pressure[t]
-            prratio = value(Pout/Pin)
-            if value(Pout / Pin) < 4.0 or value(Pout / Pin) > 1.0:
-                if value(blk.ratioP[t]) < 4.0 and value(blk.ratioP[t]) > 1.0:
-                    Pout.fix(value(Pin * blk.ratioP[t]))
-                elif prratio < 4.0 and prratio > 1.0:
-                    Pout.fix(value(prratio*Pin))
-                else:
-                    Pout.fix(value(Pin * 2.0))
-            else:
-                Pout.fix()
+            eff.fix(eff.value if value(eff) > 0.3 and value(eff
+                                                            ) < 1.0 else 0.85)
+            # check for alternate pressure specs
+            if blk.outlet.pressure[t].fixed:
+                blk.ratioP[t] = value(
+                    blk.outlet.pressure[t] / blk.inlet.pressure[t])
+            elif blk.control_volume.deltaP[t].fixed:
+                blk.ratioP[t] = value(
+                    (blk.control_volume.deltaP[t] + blk.inlet.pressure[t]
+                     ) / blk.inlet.pressure[t])
+            elif blk.ratioP[t].fixed:
+                blk.outlet.pressure[t] = value(
+                    blk.ratioP[t] * blk.inlet.pressure[t])
 
-        blk.deltaP[:] = value(Pout - Pin)
-        blk.ratioP[:] = value(Pout / Pin)
+            # initialize the isentropic state block
+            isen_state_args = blk.properties_isentropic[t].define_state_vars()
+            blk.properties_isentropic.initialize(isen_state_args)
 
-        for t in blk.flowsheet().config.time:
-            blk.properties_isentropic[t].pressure.value = value(
-                blk.outlet.pressure[t]
-            )
-            blk.properties_isentropic[t].flow_mol.value = value(
-                blk.inlet.flow_mol[t])
-            blk.properties_isentropic[t].enth_mol.value = value(
-                blk.inlet.enth_mol[t] * 1.2
-            )
-            blk.outlet.flow_mol[t].value = value(blk.inlet.flow_mol[t])
-            blk.outlet.enth_mol[t].value = value(blk.inlet.enth_mol[t] * 1.2)
+            # initialize outlet state
+            blk.outlet.flow_mol[t] = value(blk.inlet.flow_mol[t])
+            # blk.outlet.enth_mol[t] = value(blk.inlet.enth_mol[t] * 1.2)
+
+            @blk.Expression(blk.flowsheet().config.time,
+                            doc="outlet enthalpy expression")
+            def h_o(blk, t):
+                return blk.inlet.enth_mol[t] + (
+                    blk.properties_isentropic[t].enth_mol -
+                    blk.inlet.enth_mol[t]) / blk.efficiency_isentropic[t]
+            blk.outlet.enth_mol[t] = value(blk.h_o[t])
+            # blk.control_volume.work[t] = value(
+            # blk.inlet.flow_mol[t]*blk.inlet.enth_mol[t] -
+            # 	blk.outlet.flow_mol[t]*blk.outlet.enth_mol[t])
 
         # Deactivate special constraints
         blk.eff_isen_eqn.deactivate()
