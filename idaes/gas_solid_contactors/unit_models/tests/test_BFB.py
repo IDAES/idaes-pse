@@ -211,8 +211,8 @@ class TestIronOC(object):
                           Constraint)
 
         assert number_variables(iron_oc) == 1436
-        assert number_total_constraints(iron_oc) == 1395
-        assert number_unused_variables(iron_oc) == 15
+        assert number_total_constraints(iron_oc) == 1392
+        assert number_unused_variables(iron_oc) == 18
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
@@ -418,8 +418,8 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.isothermal_bubble, Constraint)
 
         assert number_variables(iron_oc) == 1156
-        assert number_total_constraints(iron_oc) == 1052
-        assert number_unused_variables(iron_oc) == 79
+        assert number_total_constraints(iron_oc) == 1049
+        assert number_unused_variables(iron_oc) == 82
         print(unused_variables_set(iron_oc))
 
     @pytest.mark.unit
