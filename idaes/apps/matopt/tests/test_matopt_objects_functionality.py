@@ -39,7 +39,7 @@ def test_functionality_FCCLattice():
     assert areEqual(lattice.FCC110LayerSpacing, sqrt(2) / 2, 1e-4)
 
 
-@pytest.mark.units
+@pytest.mark.unit
 def test_functionality_CubicLattice():
     lattice = test_construct_CubicLattice()
     assert lattice.areNeighbors(np.zeros(3, dtype=float), np.array([1.0, 0.0, 0.0]))
