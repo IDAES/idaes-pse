@@ -24,14 +24,17 @@ from pyomo.environ import ConcreteModel, value, Param, TransformationFactory,\
 
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
+from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column \
+    import PackedColumn, ProcessType
+from idaes.power_generation.carbon_capture.mea_solvent_system.properties.vapor_prop \
+    import VaporParameterBlock
+from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_prop \
+    import LiquidParameterBlock
+
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester, get_default_solver
-# Access the mea_solvent_system dir from the current dir (tests dir)
-sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-
-from unit_models.column import PackedColumn
-from properties.vapor_prop import VaporParameterBlock
-from properties.liquid_prop import LiquidParameterBlock
+# # Access the mea_solvent_system dir from the current dir (tests dir)
+# sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 # -----------------------------------------------------------------------------
 solver = get_default_solver()
@@ -47,7 +50,6 @@ class TestColumn:
     -Pressure: Pa
     """
 
-    @pytest.mark.solver
     @pytest.mark.component
     def test_steady_state_initialization(self):
         # Spacial domain finite elemets and finite element list
@@ -97,8 +99,7 @@ class TestColumn:
             m.fs.unit.liquid_inlet.mole_frac_comp[t, "MEA"].fix(0.11602)
         initialization_tester(m)
 
-    @pytest.mark.solver
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_dynamic_initialization(self):
         # Spacial domain finite elemets and finite element list
         x_nfe = 10
@@ -158,7 +159,8 @@ class TestColumn:
         initialization_tester(m)
 
 
-    @pytest.fixture(scope="module", params=['absorber', 'stripper'])
+    @pytest.fixture(scope="module",
+                    params=[ProcessType.absorber, ProcessType.stripper])
     def column_model_ss(self, request):
         """ Setup for steady-state column"""
 
@@ -177,9 +179,9 @@ class TestColumn:
         m.fs.liquid_properties = LiquidParameterBlock(
             default={'process_type': Fpar})
 
-        if Fpar == 'absorber':
+        if Fpar == ProcessType.absorber:
             col_pressure = 107650
-        elif Fpar == 'stripper':
+        elif Fpar == ProcessType.stripper:
             col_pressure = 183430
 
         # Create instance of column on flowsheet
@@ -202,7 +204,7 @@ class TestColumn:
 
         # Fix  input variables
         m.fs.unit.diameter_column.fix(0.64135)
-        if Fpar == 'absorber':
+        if Fpar == ProcessType.absorber:
             m.fs.unit.length_column.fix(18.15)
             # Stream expected exit temperature
             m.fs.unit.vapor_exit_temp = Param(initialize=346.17684550190495)
@@ -225,7 +227,7 @@ class TestColumn:
 
             # Initialize column
             m.fs.unit.initialize()
-        elif Fpar == 'stripper':
+        elif Fpar == ProcessType.stripper:
             m.fs.unit.length_column.fix(12.1)
             # Stream expected  exit temperature
             m.fs.unit.vapor_exit_temp = Param(initialize=396.51574931626186)
@@ -250,7 +252,8 @@ class TestColumn:
         return m
 
 
-    @pytest.fixture(scope="module", params=['absorber', 'stripper'])
+    @pytest.fixture(scope="module",
+                    params=[ProcessType.absorber, ProcessType.stripper])
     def column_model_dyn(self, request):
         """ Setup for dynamic column"""
 
@@ -274,9 +277,9 @@ class TestColumn:
         m.fs.liquid_properties = LiquidParameterBlock(
             default={'process_type': Fpar})
 
-        if Fpar == 'absorber':
+        if Fpar == ProcessType.absorber:
             col_pressure = 107650
-        elif Fpar == 'stripper':
+        elif Fpar == ProcessType.stripper:
             col_pressure = 183430
 
         # Create instance of column  on flowsheet
@@ -303,7 +306,7 @@ class TestColumn:
 
         # Fix inputs variables
         m.fs.unit.diameter_column.fix(0.64135)
-        if Fpar == 'absorber':
+        if Fpar == ProcessType.absorber:
             m.fs.unit.length_column.fix(18.15)
             # Rich loading at the bottom of column @ final time
             m.fs.unit.loading = Param(initialize=0.4927155969073804)
@@ -325,7 +328,7 @@ class TestColumn:
 
             # Initialize column
             m.fs.unit.initialize()
-        elif Fpar == 'stripper':
+        elif Fpar == ProcessType.stripper:
             m.fs.unit.length_column.fix(12.1)
             # Lean loading at the bottom of column @ final time
             m.fs.unit.loading = Param(initialize=0.17982818165156983)

@@ -49,6 +49,7 @@ Industrial & Engineering Chemistry Research,2020. (submitted)
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Expression, Param, Reals, NonNegativeReals,
@@ -78,6 +79,11 @@ __author__ = "Paul Akula, John Eslick"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+class ProcessType(Enum):
+    absorber = 1
+    stripper = 2
 
 
 @declare_process_block_class("PackedColumn")
@@ -142,8 +148,8 @@ class PackedColumnData(UnitModelBlockData):
         **FlowPattern.countercurrent** - countercurrent flow,
         **FlowPattern.cocurrent** - cocurrent flow}"""))
     CONFIG.declare("process_type", ConfigValue(
-        default='absorber',
-        domain=In(['absorber', 'stripper']),
+        default=ProcessType.absorber,
+        domain=In(ProcessType),
         description="Flag indicating the type of  process",
         doc="""Flag indicating either absorption or stripping process.
             **default** - ProcessType.absorber.
@@ -1180,7 +1186,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # get values for state variables for initialization
-        if blk.config.process_type == 'absorber':
+        if blk.config.process_type == ProcessType.absorber:
             vapor_phase_state_args = {
                 'flow_mol': blk.vapor_inlet.flow_mol[0].value,
                 'temperature': blk.vapor_inlet.temperature[0].value,
@@ -1190,7 +1196,7 @@ class PackedColumnData(UnitModelBlockData):
                  'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value,
                  'N2': blk.vapor_inlet.mole_frac_comp[0, 'N2'].value,
                  'O2': blk.vapor_inlet.mole_frac_comp[0, 'O2'].value}}
-        elif blk.config.process_type == 'stripper':
+        elif blk.config.process_type == ProcessType.stripper:
             vapor_phase_state_args = {
                 'flow_mol': blk.vapor_inlet.flow_mol[0].value,
                 'temperature': blk.vapor_inlet.temperature[0].value,
@@ -1264,7 +1270,7 @@ class PackedColumnData(UnitModelBlockData):
             getattr(blk.vapor_phase, c).activate()
 
         # solve for a small length if stripper
-        if (blk.config.process_type == 'stripper'):
+        if (blk.config.process_type == ProcessType.stripper):
             _specified_length = value(blk.length_column)
             blk.length_column.fix(0.6)
 
@@ -1420,7 +1426,7 @@ class PackedColumnData(UnitModelBlockData):
         init_log.info_high("Step 5 complete: {}.".format(idaeslog.condition(res)))
         # ---------------------------------------------------------------------
         # scale up at this if stripper
-        if (blk.config.process_type == 'stripper'):
+        if (blk.config.process_type == ProcessType.stripper):
             packing_height = np.linspace(0.6, _specified_length, num=10)
             init_log.info_high('SCALEUP Stripper height')
             for L in packing_height:
