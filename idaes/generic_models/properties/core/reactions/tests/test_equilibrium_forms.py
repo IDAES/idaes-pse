@@ -57,6 +57,8 @@ def test_power_law_equil_no_order():
 
     # Create a dummy state block
     m.rxn = Block([1])
+    add_object_reference(
+        m.rxn[1], "phase_component_set", m.pparams._phase_component_set)
     add_object_reference(m.rxn[1], "params", m.rparams)
     add_object_reference(m.rxn[1], "state_ref", m.thermo[1])
 
@@ -127,6 +129,8 @@ def test_power_law_equil_with_order():
 
     # Create a dummy state block
     m.rxn = Block([1])
+    add_object_reference(
+        m.rxn[1], "phase_component_set", m.pparams._phase_component_set)
     add_object_reference(m.rxn[1], "params", m.rparams)
     add_object_reference(m.rxn[1], "state_ref", m.thermo[1])
 

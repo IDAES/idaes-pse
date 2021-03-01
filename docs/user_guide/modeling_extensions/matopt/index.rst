@@ -14,7 +14,7 @@ Thank you for your interest in MatOpt. We would love to hear your feedback! Plea
 
 If you are using MatOpt, please consider citing:
 
-* Hanselman, C.L., Yin, X., Miller, D.C. and Gounaris, C.E., 2020. MatOpt: A Python package for nanomaterials design using discrete optimization. *In preparation*.
+* Hanselman, C.L., Yin, X., Miller, D.C. and Gounaris, C.E., 2021. `MatOpt: A Python package for nanomaterials discrete optimization. <http://gounaris.cheme.cmu.edu/drafts/Draft_MATOPT.pdf>`_
 
 
 Basic Usage
@@ -144,8 +144,8 @@ The results of the optimization process will be loaded into ``Design`` objects a
 
 MatOpt Examples
 ---------------
-Five `case studies
-<https://github.com/IDAES/examples-pse/tree/main/src/matopt>`_ are provided to illustrate the detailed usage of MatOpt. In each case, a Jupyter notebook with explanations as well as an equivalent Python script is provided.
+Several `case studies
+<https://idaes.github.io/examples-pse/latest/Examples/MatOpt/index.html>`_ are provided to illustrate the detailed usage of MatOpt. In each case, a Jupyter notebook with explanations as well as an equivalent Python script is provided.
 
 References
 ----------
@@ -153,5 +153,5 @@ References
 * Hanselman, C.L., Alfonso, D.R., Lekse, J.W., Matranga, C., Miller, D.C. and Gounaris, C.E., 2019. `A framework for optimizing oxygen vacancy formation in doped perovskites. <https://www.sciencedirect.com/science/article/pii/S0098135418310998>`_ *Computers & Chemical Engineering*, 126, pp.168-177.
 * Hanselman, C.L., Zhong, W., Tran, K., Ulissi, Z.W. and Gounaris, C.E., 2019. `Optimization-based design of active and stable nanostructured surfaces. <https://pubs.acs.org/doi/abs/10.1021/acs.jpcc.9b08431>`_ *The Journal of Physical Chemistry C*, 123(48), pp.29209-29218.
 * Isenberg, N.M., Taylor, M.G., Yan, Z., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2020. `Identification of optimally stable nanocluster geometries via mathematical optimization and density-functional theory. <https://pubs.rsc.org/en/content/articlelanding/2019/me/c9me00108e#!divAbstract>`_ *Molecular Systems Design & Engineering*.
-* Yin, X., Isenberg, N.M., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2020. A mathematical optimization-based design framework for identifying stable bimetallic nanoclusters. *In preparation*.
-* Hanselman, C.L., Yin, X., Miller, D.C. and Gounaris, C.E., 2020. MatOpt: A Python package for nanomaterials design using discrete optimization. *In preparation*.
+* Yin, X., Isenberg, N.M., Hanselman, C.L., Mpourmpakis, G. and Gounaris, C.E., 2021. A mathematical optimization-based design framework for identifying stable bimetallic nanoclusters. *In preparation*.
+* Hanselman, C.L., Yin, X., Miller, D.C. and Gounaris, C.E., 2021. `MatOpt: A Python package for nanomaterials discrete optimization. <http://gounaris.cheme.cmu.edu/drafts/Draft_MATOPT.pdf>`_
