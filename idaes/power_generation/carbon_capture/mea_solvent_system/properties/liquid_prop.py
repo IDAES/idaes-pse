@@ -22,8 +22,8 @@ components: Carbondioxide (CO2), Monoethanolamine (MEA), Water (H2O)
 """
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint, Expression, Param, SolverFactory, Reference,
-                           PositiveReals, Reals, NonNegativeReals,
+from pyomo.environ import (Constraint, Expression, Param, SolverFactory,
+                           Reference, PositiveReals, Reals, NonNegativeReals,
                            Set, value, Var, exp, log, units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigValue, In
@@ -41,6 +41,8 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column \
+    import ProcessType
 
 
 import idaes.logger as idaeslog
@@ -62,8 +64,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
     """
     CONFIG = PhysicalParameterBlock.CONFIG()
     CONFIG.declare("process_type", ConfigValue(
-        default='absorber',
-        domain=In(['absorber', 'stripper']),
+        default=ProcessType.absorber,
+        domain=In(ProcessType),
         description="Flag indicating the type of  process",
         doc="""Flag indicating either absorption or stripping process.
             **default** - ProcessType.absorber.
@@ -1238,9 +1240,9 @@ class LiquidStateBlockData(StateBlockData):
         Heat of absorption of CO2 J/mol
         '''
         def rule_habs(blk):
-            if blk.config.parameters.config.process_type == 'stripper':
+            if blk.config.parameters.config.process_type == ProcessType.stripper:
                 return -97000
-            elif blk.config.parameters.config.process_type == 'absorber':
+            elif blk.config.parameters.config.process_type == ProcessType.absorber:
                 return -84000
         try:
             self.habs = Expression(rule=rule_habs,
