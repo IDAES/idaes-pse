@@ -1407,8 +1407,8 @@ class GenericStateBlockData(StateBlockData):
         Yields:
             components present in phase.
         """
-        for j in self.params.component_list:
-            if (phase, j) in self.params._phase_component_set:
+        for j in self.component_list:
+            if (phase, j) in self.phase_component_set:
                 yield j
 
     # -------------------------------------------------------------------------
