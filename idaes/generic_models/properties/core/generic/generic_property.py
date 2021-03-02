@@ -249,6 +249,11 @@ class GenericParameterData(PhysicalParameterBlock):
             elif ptype is AqueousPhase:
                 # If there is an aqueous phase, set _electrolyte = True
                 self._electrolyte = True
+                # Check that specified property package supports electrolytes
+                eos = d["equation_of_state"]
+                if (not hasattr(eos, "electrolyte_support") or
+                        not eos.electrolyte_support):
+                    raise Exception()
 
             self.add_component(str(p), ptype(default=d))
 
@@ -808,6 +813,10 @@ class GenericParameterData(PhysicalParameterBlock):
              'compress_fact_phase': {'method': '_compress_fact_phase'},
              'conc_mol_comp': {'method': '_conc_mol_comp'},
              'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
+             'conc_mol_phase_comp_apparent': {
+                 'method': '_conc_mol_phase_comp_apparent'},
+             'conc_mol_phase_comp_true': {
+                 'method': '_conc_mol_phase_comp_true'},
              'cp_mol': {'method': '_cp_mol'},
              'cp_mol_phase': {'method': '_cp_mol_phase'},
              'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
@@ -1556,6 +1565,31 @@ class GenericStateBlockData(StateBlockData):
                 doc="Molar concentration of component by phase")
         except AttributeError:
             self.del_component(self.conc_mol_phase_comp)
+            raise
+
+    def _conc_mol_phase_comp_appr(self):
+        try:
+            def rule_conc_mol_phase_comp_appr(b, p, j):
+                return (b.dens_mol_phase[p] *
+                        b.mole_frac_phase_comp_apparent[p, j])
+            self.conc_mol_phase_comp_apparent = Expression(
+                self.params.apparent_phase_component_set,
+                rule=rule_conc_mol_phase_comp_appr,
+                doc="Molar concentration of apparent component by phase")
+        except AttributeError:
+            self.del_component(self.conc_mol_phase_comp_apparent)
+            raise
+
+    def _conc_mol_phase_comp_true(self):
+        try:
+            def rule_conc_mol_phase_comp_true(b, p, j):
+                return b.dens_mol_phase[p]*b.mole_frac_phase_comp_true[p, j]
+            self.conc_mol_phase_comp_true = Expression(
+                self.params.true_phase_component_set,
+                rule=rule_conc_mol_phase_comp_true,
+                doc="Molar concentration of true component by phase")
+        except AttributeError:
+            self.del_component(self.conc_mol_phase_comp_true)
             raise
 
     def _cp_mol(self):

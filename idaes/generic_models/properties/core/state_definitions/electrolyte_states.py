@@ -13,7 +13,8 @@
 """
 Methods for creating additional state variables for electrolyte systems
 """
-from pyomo.environ import Constraint, NonNegativeReals, Reference, Var
+from pyomo.environ import (
+    Constraint, NonNegativeReals, Reference, units as pyunits, Var)
 
 from idaes.generic_models.properties.core.generic.generic_property import \
     StateIndex
@@ -60,6 +61,13 @@ def _apparent_species_state(b):
         doc="Phase-component molar flowrates of true species",
         units=units["flow_mole"])
 
+    b.mole_frac_phase_comp_true = Var(
+        b.params.true_phase_component_set,
+        initialize=1/len(b.params.true_species_set),
+        bounds=(0, None),
+        doc="Phase-component molar fractions of true species",
+        units=pyunits.dimensionless)
+
     # Check for inherent reactions and add apparent extent terms if required
     if b.has_inherent_reactions:
         b.inherent_reaction_extent = Var(
@@ -100,6 +108,17 @@ def _apparent_species_state(b):
         b.params.true_phase_component_set,
         rule=appr_to_true_species,
         doc="Apparent to true species conversion")
+
+    def true_species_mole_fractions(b, p, j):
+        return (b.mole_frac_phase_comp_true[p, j] *
+                sum(b.flow_mol_phase_comp_true[p, k]
+                    for k in b.params.true_species_set
+                    if (p, k) in b.params.true_phase_component_set) ==
+                b.flow_mol_phase_comp_true[p, j])
+    b.true_mole_frac_constraint = Constraint(
+        b.params.true_phase_component_set,
+        rule=true_species_mole_fractions,
+        doc="Calculation of true species mole fractions")
 
 
 def _true_species_state(b):

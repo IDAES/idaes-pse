@@ -297,7 +297,7 @@ class TestApparentSpeciesBasisInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": Ideal,
+                            "equation_of_state": ENRTL,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -425,8 +425,12 @@ class TestApparentSpeciesBasisInherent():
         # Check for true species components
         assert isinstance(m.fs.state[1].flow_mol_phase_comp_true, Var)
         assert len(m.fs.state[1].flow_mol_phase_comp_true) == 6
+        assert isinstance(m.fs.state[1].mole_frac_phase_comp_true, Var)
+        assert len(m.fs.state[1].mole_frac_phase_comp_true) == 6
         assert isinstance(m.fs.state[1].appr_to_true_species, Constraint)
         assert len(m.fs.state[1].appr_to_true_species) == 6
+        assert isinstance(m.fs.state[1].true_mole_frac_constraint, Constraint)
+        assert len(m.fs.state[1].true_mole_frac_constraint) == 6
 
         # Check for inherent reactions
         assert m.fs.state[1].has_inherent_reactions
@@ -462,25 +466,70 @@ class TestApparentSpeciesBasisInherent():
             TerminationCondition.optimal
         assert res.solver.status == SolverStatus.ok
 
-    #     # Check true species flowrates
-    #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "H2O"]) ==
-    #             pytest.approx(1/6, rel=1e-5))
-    #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "CO2"]) ==
-    #             pytest.approx(1/6, rel=1e-5))
-    #     assert (value(
-    #         m.fs.state[1].flow_mol_phase_comp_true["Vap", "KHCO3"]) ==
-    #             pytest.approx(1/6, rel=1e-5))
-    #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Vap", "N2"]) ==
-    #             pytest.approx(0.5, rel=1e-5))
-    #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Liq", "H2O"]) ==
-    #             pytest.approx(1/3, rel=1e-5))
-    #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Liq", "CO2"]) ==
-    #             pytest.approx(1/3, rel=1e-5))
-    #     assert (value(m.fs.state[1].flow_mol_phase_comp_true["Liq", "K+"]) ==
-    #             pytest.approx(1/3, rel=1e-5))
-    #     assert (value(
-    #         m.fs.state[1].flow_mol_phase_comp_true["Liq", "HCO3-"]) ==
-    #             pytest.approx(1/3, rel=1e-5))
+        # Check apparent species flowrates
+        for j in m.fs.state[1].mole_frac_comp:
+            assert (
+                value(m.fs.state[1].flow_mol_phase_comp_apparent["Liq", j]) ==
+                pytest.approx(value(m.fs.state[1].flow_mol *
+                                    m.fs.state[1].mole_frac_comp[j]),
+                              rel=1e-5))
+
+        # Check element balances
+        assert(value(
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "K2CO3"]*2 +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KHCO3"] +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KOH"]) ==
+            pytest.approx(value(
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "K+"]),
+                rel=1e-5))
+        assert(value(
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "K2CO3"] +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KHCO3"]) ==
+            pytest.approx(value(
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "CO3--"] +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "HCO3-"]),
+                rel=1e-5))
+        assert(value(
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "K2CO3"]*3 +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KHCO3"]*3 +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KOH"] +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "H2O"]) ==
+            pytest.approx(value(
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "CO3--"]*3 +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "HCO3-"]*3 +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "OH-"] +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "H2O"]),
+                rel=1e-5))
+        assert(value(
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KHCO3"] +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "KOH"] +
+            m.fs.state[1].flow_mol_phase_comp_apparent["Liq", "H2O"]*2) ==
+            pytest.approx(value(
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "HCO3-"] +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "OH-"] +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "H+"] +
+                m.fs.state[1].flow_mol_phase_comp_true["Liq", "H2O"]*2),
+                rel=1e-5))
+
+        # Check true species mole fractions
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "CO3--"]) ==
+            pytest.approx(0.142857, rel=1e-5))
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "H+"]) ==
+            pytest.approx(7.77981E-08, rel=1e-5))
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "H2O"]) ==
+            pytest.approx(0.571428, rel=1e-5))
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "HCO3-"]) ==
+            pytest.approx(6.88829E-08, rel=1e-5))
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "K+"]) ==
+            pytest.approx(0.285714, rel=1e-5))
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "OH-"]) ==
+            pytest.approx(1.46681E-07, rel=1e-5))
 
 
 # -----------------------------------------------------------------------------
