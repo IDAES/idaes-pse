@@ -50,8 +50,6 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_default_solver
 
-import idaes.logger as idaeslog
-
 
 # -----------------------------------------------------------------------------
 class TestApparentSpeciesBasisNoInherent():
@@ -456,20 +454,15 @@ class TestApparentSpeciesBasisInherent():
 
         assert degrees_of_freedom(m.fs) == 0
 
-        m.fs.state.initialize(outlvl=idaeslog.DEBUG)
+        m.fs.state.initialize()
 
         solver = get_default_solver()
-        res = solver.solve(m.fs, tee=True)
+        res = solver.solve(m.fs)
 
         # Check for optimal solution
         assert res.solver.termination_condition == \
             TerminationCondition.optimal
         assert res.solver.status == SolverStatus.ok
-
-        m.fs.state.display()
-        m.fs.state[1].conc_mol_phase_comp_true.display()
-        m.fs.state[1].k_eq.display()
-        m.fs.state[1].inherent_equilibrium_constraint.pprint()
 
         # Check apparent species flowrates
         for j in m.fs.state[1].mole_frac_comp:
@@ -520,23 +513,21 @@ class TestApparentSpeciesBasisInherent():
         assert(value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "CO3--"]) ==
             pytest.approx(0.142857, rel=1e-5))
-        # assert(value(
-        #     m.fs.state[1].mole_frac_phase_comp_true["Liq", "H+"]) ==
-        #     pytest.approx(7.77981E-08, rel=1e-5))
+        assert(value(
+            m.fs.state[1].mole_frac_phase_comp_true["Liq", "H+"]) ==
+            pytest.approx(2.90081e-16, rel=1e-5))
         assert(value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "H2O"]) ==
-            pytest.approx(0.571428, rel=1e-5))
+            pytest.approx(0.571429, rel=1e-5))
         assert(value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "HCO3-"]) ==
-            pytest.approx(6.88829E-08, rel=1e-5))
+            pytest.approx(1.13961e-08, rel=1e-5))
         assert(value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "K+"]) ==
             pytest.approx(0.285714, rel=1e-5))
         assert(value(
             m.fs.state[1].mole_frac_phase_comp_true["Liq", "OH-"]) ==
-            pytest.approx(1.46681E-07, rel=1e-5))
-
-        assert False
+            pytest.approx(1.139606e-08, rel=1e-5))
 
 # -----------------------------------------------------------------------------
 class TestTrueSpeciesBasisNoInherent():
