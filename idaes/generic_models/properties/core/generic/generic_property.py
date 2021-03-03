@@ -29,6 +29,7 @@ from pyomo.environ import (Block,
                            units as pyunits)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -1218,7 +1219,31 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         for k in blk.keys():
+
             blk[k].params.config.state_definition.state_initialization(blk[k])
+
+            if blk[k].params._electrolyte:
+                # Need to initialize true/apparent species as well
+                # # First, activate the assoicated constraints
+                # for c in blk[k].component_objects(Constraint):
+                #     # Activate common constraints
+                #     if c.local_name in ["appr_to_true_species",
+                #                         "true_mole_frac_constraint"]:
+                #         c.activate()
+
+                if blk[k].params.config.state_components == StateIndex.true:
+                    raise Exception
+                elif blk[k].params.config.state_components == StateIndex.apparent:
+                    # First calcualte initial values for true species flows
+                    for p, j in blk[k].params.true_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].flow_mol_phase_comp_true[p, j],
+                            blk[k].appr_to_true_species[p, j])
+                    # Need to calculate all flows before doing mole fractions
+                    for p, j in blk[k].params.true_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].mole_frac_phase_comp_true[p, j],
+                            blk[k].true_mole_frac_constraint[p, j])
 
             # If state block has phase equilibrium, use the average of all
             # _teq's as an initial guess for T

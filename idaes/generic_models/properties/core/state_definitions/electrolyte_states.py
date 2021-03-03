@@ -70,7 +70,7 @@ def _apparent_species_state(b):
 
     # Check for inherent reactions and add apparent extent terms if required
     if b.has_inherent_reactions:
-        b.inherent_reaction_extent = Var(
+        b.apparent_inherent_reaction_extent = Var(
             b.params.inherent_reaction_idx,
             initialize=0,
             units=units["flow_mole"],
@@ -97,7 +97,7 @@ def _apparent_species_state(b):
                     gamma = b.params.inherent_reaction_stoichiometry[r, p, j]
 
                     if gamma != 0:
-                        e += gamma*b.inherent_reaction_extent[r]
+                        e += gamma*b.apparent_inherent_reaction_extent[r]
 
             return b.flow_mol_phase_comp_true[p, j] == e
         else:
