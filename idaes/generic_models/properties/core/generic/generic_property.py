@@ -772,7 +772,8 @@ class GenericParameterData(PhysicalParameterBlock):
         # Set default scaling factors
         # First, call set_dfault_scaling_factors method from state definiton
         try:
-            self.config.state_definition.set_default_scaling_factors(self)
+            print("In try")
+            self.config.state_definition.define_default_scaling_factors(self)
         except AttributeError:
             pass
         # Next, apply any user-defined scaling factors

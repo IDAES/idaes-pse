@@ -497,3 +497,31 @@ class TestBTExample(object):
                 value(m.fs.state[1].entr_mol_phase["Liq"]), 1e-5) == -372.869
         assert pytest.approx(
                 value(m.fs.state[1].entr_mol_phase["Vap"]), 1e-5) == -278.766
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, m):
+        m.fs.state[1].calculate_scaling_factors()
+
+        print(m.fs.props.default_scaling_factor)
+        m.fs.state[1].scaling_factor.display()
+
+        assert len(m.fs.state[1].scaling_factor) == 11
+        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1.0
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase["Liq"]] == 1.0
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase["Vap"]] == 1.0
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].mole_frac_comp["benzene"]] == 100
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].mole_frac_comp["toluene"]] == 100
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].mole_frac_phase_comp["Liq", "benzene"]] == 100
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].mole_frac_phase_comp["Liq", "toluene"]] == 100
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].mole_frac_phase_comp["Vap", "benzene"]] == 100
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]] == 100
+        assert m.fs.state[1].scaling_factor[m.fs.state[1].pressure] == 1e-5
+        assert m.fs.state[1].scaling_factor[m.fs.state[1].temperature] == 1e-2

@@ -14,7 +14,8 @@
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, NonNegativeReals, Var, value
+from pyomo.environ import \
+    Constraint, NonNegativeReals, Var, value, units as pyunits
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -407,14 +408,44 @@ def state_initialization(b):
 
 def define_default_scaling_factors(b):
     # Get bounds and initial values from config args
-    units = b.params.get_metadata().derived_units
+    units = b.get_metadata().derived_units
+    state_bounds = b.config.state_bounds
 
-    f_bounds, f_init = get_bounds_from_config(
-        b, "flow_mol_comp", units["flow_mole"])
-    p_bounds, p_init = get_bounds_from_config(
-        b, "pressure", units["pressure"])
-    t_bounds, t_init = get_bounds_from_config(
-        b, "temperature", units["temperature"])
+    if state_bounds is None:
+        return
+
+    try:
+        f_bounds = state_bounds["flow_mol_comp"]
+        if len(f_bounds) == 4:
+            f_init = pyunits.convert_value(f_bounds[1],
+                                           from_units=f_bounds[3],
+                                           to_units=units["flow_mole"])
+        else:
+            f_init = f_bounds[1]
+    except KeyError:
+        f_init = 1
+
+    try:
+        p_bounds = state_bounds["pressure"]
+        if len(p_bounds) == 4:
+            p_init = pyunits.convert_value(p_bounds[1],
+                                           from_units=p_bounds[3],
+                                           to_units=units["pressure"])
+        else:
+            p_init = p_bounds[1]
+    except KeyError:
+        p_init = 1
+
+    try:
+        t_bounds = state_bounds["temperature"]
+        if len(t_bounds) == 4:
+            t_init = pyunits.convert_value(t_bounds[1],
+                                           from_units=t_bounds[3],
+                                           to_units=units["temperature"])
+        else:
+            t_init = t_bounds[1]
+    except KeyError:
+        t_init = 1
 
     # Set default scaling factors
     b.set_default_scaling("flow_mol", 1/f_init)
@@ -433,4 +464,4 @@ class FTPx(object):
     define_state = define_state
     state_initialization = state_initialization
     do_not_initialize = do_not_initialize
-    define_default_Scaling_factors = define_default_scaling_factors
+    define_default_scaling_factors = define_default_scaling_factors
