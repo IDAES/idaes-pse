@@ -18,7 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Constraint, Set, SolverFactory, units, Var
+from pyomo.environ import Constraint, Set, units, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -132,6 +132,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.del_component(unit.__dummy_equality_idx)
     unit.del_component(unit.__dummy_var)
 
+
 # -----------------------------------------------------------------------------
 # Define some generic PhysicalBlock and ReactionBlock classes for testing
 @declare_process_block_class("PhysicalParameterTestBlock")
@@ -154,6 +155,17 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
+        # Add inherent reactions for use when needed
+        self.inherent_reaction_idx = Set(initialize=["i1", "i2"])
+        self.inherent_reaction_stoichiometry = {("i1", "p1", "c1"): 1,
+                                                ("i1", "p1", "c2"): 1,
+                                                ("i1", "p2", "c1"): 1,
+                                                ("i1", "p2", "c2"): 1,
+                                                ("i2", "p1", "c1"): 1,
+                                                ("i2", "p1", "c2"): 1,
+                                                ("i2", "p2", "c1"): 1,
+                                                ("i2", "p2", "c2"): 1}
+
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
         self.default_balance_switch = 1
@@ -175,7 +187,6 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.set_default_scaling("material_dens_mol", 113)
         self.set_default_scaling("material_flow_mass", 114)
         self.set_default_scaling("material_dens_mass", 115)
-
 
     @classmethod
     def define_metadata(cls, obj):
@@ -243,7 +254,6 @@ class StateTestBlockData(StateBlockData):
             return b.material_dens_mass
         else:
             return b.material_dens_mol
-
 
     def get_enthalpy_flow_terms(b, p):
         return b.enthalpy_flow

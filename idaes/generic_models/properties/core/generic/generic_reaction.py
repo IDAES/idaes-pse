@@ -65,11 +65,15 @@ class ConcentrationForm(Enum):
 
 
 def get_concentration_term(blk, r_idx):
-    # conc_form = rblock.config.concentration_form
-    try:
-        conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
-    except KeyError:
-        conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
+    if "rate_reactions" in blk.params.config:
+        try:
+            conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
+        except KeyError:
+            conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
+        state = blk.state_ref
+    else:
+        conc_form = blk.params.config.inherent_reactions[r_idx].concentration_form
+        state = blk
 
     if conc_form is None:
         raise ConfigurationError(
@@ -77,18 +81,18 @@ def get_concentration_term(blk, r_idx):
             "Please ensure that this argument is included in your "
             "configuration dict.".format(blk.name))
     elif conc_form == ConcentrationForm.molarity:
-        conc_term = getattr(blk.state_ref, "conc_mol_phase_comp")
+        conc_term = getattr(state, "conc_mol_phase_comp")
     elif conc_form == ConcentrationForm.activity:
-        conc_term = getattr(blk.state_ref, "act_phase_comp")
+        conc_term = getattr(state, "act_phase_comp")
     elif conc_form == ConcentrationForm.molality:
-        conc_term = getattr(blk.state_ref, "molality_phase_comp")
+        conc_term = getattr(state, "molality_phase_comp")
     elif conc_form == ConcentrationForm.moleFraction:
-        conc_term = getattr(blk.state_ref, "mole_frac_phase_comp")
+        conc_term = getattr(state, "mole_frac_phase_comp")
     elif conc_form == ConcentrationForm.massFraction:
-        conc_term = getattr(blk.state_ref, "mass_frac_phase_comp")
+        conc_term = getattr(state, "mass_frac_phase_comp")
     elif conc_form == ConcentrationForm.partialPressure:
-        conc_term = (getattr(blk.state_ref, "mole_frac_phase_comp") *
-                     getattr(blk.state_ref, "pressure"))
+        conc_term = (getattr(state, "mole_frac_phase_comp") *
+                     getattr(state, "pressure"))
     else:
         raise BurntToast(
             "{} get_concentration_term received unrecognised "
@@ -258,7 +262,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
 
         # Construct equilibrium reaction attributes if required
         if len(self.config.equilibrium_reactions) > 0:
-            # Construct rate reaction index
+            # Construct equilibrium reaction index
             self.equilibrium_reaction_idx = Set(
                 initialize=self.config.equilibrium_reactions.keys())
 
