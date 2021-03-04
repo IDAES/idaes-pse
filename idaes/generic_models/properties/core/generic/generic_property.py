@@ -1414,6 +1414,10 @@ class GenericStateBlockData(StateBlockData):
                 doc="Inherent reaction equilibrium constraint",
                 rule=equil_rule)
 
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.

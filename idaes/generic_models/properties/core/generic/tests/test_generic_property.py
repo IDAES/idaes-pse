@@ -920,7 +920,6 @@ class TestGenericParameterBlock(object):
         assert dsf[("mw", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
-
     @pytest.mark.unit
     def test_default_scaling_convert(self):
         m = ConcreteModel()
@@ -997,3 +996,25 @@ class TestGenericStateBlock(object):
         assert frame.props[1].state_defined
         assert isinstance(frame.props[1].dummy_var, Var)
         assert frame.props[1].eos_common == 2
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, frame):
+        frame.props[1].calculate_scaling_factors()
+
+        assert len(frame.props[1].scaling_factor) == 8
+        assert frame.props[1].scaling_factor[
+            frame.props[1].temperature] == 0.01
+        assert frame.props[1].scaling_factor[
+            frame.props[1].pressure] == 1e-5
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p1", "a"]] == 100
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p1", "b"]] == 100
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p1", "c"]] == 100
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p2", "a"]] == 100
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p2", "b"]] == 100
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p2", "c"]] == 100
