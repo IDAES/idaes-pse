@@ -269,6 +269,29 @@ def define_state(b):
     b.define_display_vars = define_display_vars_FcPh
 
 
+def define_default_scaling_factors(b):
+    # Get bounds and initial values from config args
+    units = b.params.get_metadata().derived_units
+
+    f_bounds, f_init = get_bounds_from_config(
+        b, "flow_mol_comp", units["flow_mole"])
+    h_bounds, h_init = get_bounds_from_config(
+        b, "enth_mol", units["energy_mole"])
+    p_bounds, p_init = get_bounds_from_config(
+        b, "pressure", units["pressure"])
+    t_bounds, t_init = get_bounds_from_config(
+        b, "temperature", units["temperature"])
+
+    # Set default scaling factors
+    b.set_default_scaling("flow_mol", 1/f_init)
+    b.set_default_scaling("flow_mol_phase", 1/f_init)
+    b.set_default_scaling("flow_mol_comp", 1/f_init)
+    b.set_default_scaling("flow_mol_phase_comp", 1/f_init)
+    b.set_default_scaling("pressure", 1/p_init)
+    b.set_default_scaling("temperature", 1/t_init)
+    b.set_default_scaling("enth_mol", 1/h_init)
+
+
 # Inherit state_initialization from FTPX form, as the process is the same
 
 
@@ -280,3 +303,4 @@ class FcPh(object):
     define_state = define_state
     state_initialization = state_initialization
     do_not_initialize = do_not_initialize
+    define_default_Scaling_factors = define_default_scaling_factors

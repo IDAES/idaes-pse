@@ -46,6 +46,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     equil_rxn_config
@@ -184,6 +185,13 @@ class GenericParameterData(PhysicalParameterBlock):
 
     CONFIG.declare("inherent_reactions", ConfigBlock(
         implicit=True, implicit_domain=equil_rxn_config))
+
+    # User-defined default scaling factors
+    CONFIG.declare("default_scaling_factors", ConfigValue(
+        domain=dict,
+        description="User-defined default scaling factors",
+        doc="Dict of user-defined proeprties and associated default "
+        "scaling factors"))
 
     def build(self):
         '''
@@ -760,6 +768,19 @@ class GenericParameterData(PhysicalParameterBlock):
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
+
+        # Set default scaling factors
+        # First, call set_dfault_scaling_factors method from state definiton
+        try:
+            self.config.state_definition.set_default_scaling_factors(self)
+        except AttributeError:
+            pass
+        # Next, apply any user-defined scaling factors
+        if self.config.default_scaling_factors is not None:
+            self.default_scaling_factor.update(
+                self.config.default_scaling_factors)
+        # Finally, call populate_default_scaling_factors method to fill blanks
+        iscale.populate_default_scaling_factors(self)
 
     def configure(self):
         """

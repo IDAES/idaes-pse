@@ -890,6 +890,71 @@ class TestGenericParameterBlock(object):
                     "e1": {"stoichiometry": {("p1", "a"): -3,
                                              ("p1", "b"): 4}}}})
 
+    @pytest.mark.unit
+    def test_default_scaling(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units})
+
+        dsf = m.params.default_scaling_factor
+
+        assert dsf[("temperature", None)] == 1e-2
+        assert dsf[("pressure", None)] == 1e-5
+        assert dsf[("dens_mol_phase", None)] == 1e-2
+        assert dsf[("enth_mol", None)] == 1e-4
+        assert dsf[("entr_mol", None)] == 1e-2
+        assert dsf[("fug_phase_comp", None)] == 1e-4
+        assert dsf[("fug_coeff_phase_comp", None)] == 1
+        assert dsf[("gibbs_mol", None)] == 1e-4
+        assert dsf[("mole_frac_comp", None)] == 1e2
+        assert dsf[("mole_frac_phase_comp", None)] == 1e2
+        assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_phase", None)] == 1e3
+
+
+    @pytest.mark.unit
+    def test_default_scaling_convert(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": dummy_eos},
+                    "p2": {"equation_of_state": dummy_eos}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.minutes,
+                               "length": pyunits.foot,
+                               "mass": pyunits.pound,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.degR}})
+
+        dsf = m.params.default_scaling_factor
+
+        assert dsf[("temperature", None)] == 1e-2
+        assert dsf[("pressure", None)] == 1e-8
+        assert dsf[("dens_mol_phase", None)] == 1
+        assert dsf[("enth_mol", None)] == 1e-9
+        assert dsf[("entr_mol", None)] == 1e-7
+        assert dsf[("fug_phase_comp", None)] == 1e-7
+        assert dsf[("fug_coeff_phase_comp", None)] == 1
+        assert dsf[("gibbs_mol", None)] == 1e-9
+        assert dsf[("mole_frac_comp", None)] == 1e2
+        assert dsf[("mole_frac_phase_comp", None)] == 1e2
+        assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_phase", None)] == 1e3
+
 
 # -----------------------------------------------------------------------------
 # Dummy methods for testing build calls to sub-modules
