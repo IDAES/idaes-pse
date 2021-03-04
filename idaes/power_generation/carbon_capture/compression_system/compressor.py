@@ -20,11 +20,10 @@ of Greenhouse Gas Control. v62., page 31-45
 Created: April 2020
 __Author__ = "Quang Minh Le, John Eslick, Andrew Lee"
 """
-
-from __future__ import division
 from pyomo.environ import (SolverFactory,
-                           NonNegativeReals, Var, Param,
-                           value, log, sqrt, exp,
+                           NonNegativeReals, Var,
+                           Param, value, log,
+                           sqrt, exp,
                            units as pyunits)
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
@@ -46,7 +45,7 @@ class ImpellerType(Enum):
     custom = 3
 
 
-def _cover_impeller_callback(blk):
+def _build_cover_impeller_equations(blk):
     blk.mass_flow_coeff = Var(blk.flowsheet().config.time,
                               initialize=0.0735,
                               doc="Compressor Flow Coefficient",
@@ -65,7 +64,7 @@ def _cover_impeller_callback(blk):
                       0.51 * phi + phi**2 - 7.6 * phi**3 - 0.00025) * 100
 
 
-def _open_impeller_callback(blk):
+def _build_open_impeller_equations(blk):
     blk.mass_flow_coeff = Var(blk.flowsheet().config.time,
                               initialize=0.0735,
                               doc="Compressor Flow Coefficient",
@@ -92,16 +91,17 @@ class VaneDiffuserType(Enum):
     custom = 3
 
 
-def _vane_diffuser_callback(blk):
+def _build_vane_diffuser_equations(blk):
     @blk.Constraint(blk.flowsheet().config.time)
     def polytropic_head_coeff_eqn(b, t):
         return b.mu_p[t] == b.mu_p_v[t]
 
+    @blk.Constraint(blk.flowsheet().config.time)
     def polytropic_efficiency_eqn(b, t):
         return b.eff_p[t] == b.eff_p_v[t]
 
 
-def _vaneless_diffuser_callback(blk):
+def _build_vaneless_diffuser_equations(blk):
     blk.mass_flow_coeff = Var(blk.flowsheet().config.time,
                               initialize=0.0735,
                               doc="Compressor Flow Coefficient",
@@ -111,6 +111,7 @@ def _vaneless_diffuser_callback(blk):
     def polytropic_head_coeff_eqn(b, t):
         return b.mu_p[t] == b.impeller_work_coeff[t] * b.eff_p[t]
 
+    @blk.Constraint(blk.flowsheet().config.time)
     def polytropic_efficiency_eqn(b, t):
         phi = blk.mass_flow_coeff[t]
         return (b.eff_p[t] - b.eff_p_v[t]) * (
@@ -145,14 +146,6 @@ ImpellerType.custom}""",
         ),
     )
     CONFIG.declare(
-        "impeller_callback",
-        ConfigValue(
-            default=None,
-            description="This is a callback that adds an impeller.  The"
-            "callback function takes the impeller block data argument.",
-        ),
-    )
-    CONFIG.declare(
         "vane_diffuser_type",
         ConfigValue(
             default=VaneDiffuserType.vane_diffuser,
@@ -167,15 +160,6 @@ with the vane_diffuser_rule argument.
 VaneDiffuserType.vane_diffuser,
 VaneDiffuserType.vaneless_diffuser,
 VaneDiffuserType.custom}""",
-        ),
-    )
-    CONFIG.declare(
-        "vane_diffuser_callback",
-        ConfigValue(
-            default=None,
-            description="This is a callback that adds a vane diffuser."
-            "The callback function takes the vane diffuser"
-            "block data argument.",
         ),
     )
     CONFIG.declare(
@@ -222,11 +206,6 @@ VaneDiffuserType.custom}""",
                       doc="Impeller Tip Speed",
                       bounds=(0, 4000),
                       units=pyunits.m / pyunits.s)
-        self.c0 = Var(self.flowsheet().config.time,
-                      initialize=260,
-                      doc="Speed of Sound in Inlet Gas Stream",
-                      bounds=(0, 4000),
-                      units=pyunits.m / pyunits.s)
         self.delta_enth_polytropic = Var(self.flowsheet().config.time,
                                          initialize=2548.5,
                                          doc="Polytropic Enthalpy Change",
@@ -256,8 +235,6 @@ VaneDiffuserType.custom}""",
                       initialize=0.1,
                       doc='Rotational Mach Number',
                       bounds=(0, 5))
-        self.kappaT = Var(self.flowsheet().config.time,
-                          initialize=5.0e-7, units=1 / pyunits.Pa)
         self.Ma_max = Var(self.flowsheet().config.time,
                           initialize=0.1,
                           doc='Rotational Mach Number Upper limit',
@@ -274,27 +251,17 @@ VaneDiffuserType.custom}""",
                          within=NonNegativeReals,
                          units=pyunits.dimensionless)
         ########################################################
-        # Declare parameters for the model
-        self.k_v = Param(default=1.2766,
-                         mutable=False,
-                         doc="Heat Capacity Ratio",
-                         within=NonNegativeReals)
-        self.z_s = Param(default=0.97373,
-                         mutable=True,
-                         doc="Compressibility factors at suction",
-                         within=NonNegativeReals)
-        self.z_d1 = Param(default=0.88949,
-                          mutable=True,
-                          within=NonNegativeReals)
-        self.dp = Param(default=1,
-                        within=NonNegativeReals,
-                        doc='A Pressure Difference'
-                        'for Finite Difference Derivative Calculation',
-                        units=pyunits.Pa)
-        self.efficiency_mech = Param(default=0.97,
-                                     doc="Mechanical Efficiency")
-        self.eff_drive = Param(default=1.0,
-                               doc="Driver efficiency")
+
+        # Declare variables for the model
+        self.z_s = Var(initialize=0.97373,
+                       doc="Compressibility factors at suction")
+        self.z_d1 = Var(initialize=0.88949,
+                        doc="variable used for calculating"
+                        "compressibility factor at discharge pressure")
+        self.efficiency_mech = Var(initialize=0.97,
+                                   doc="Mechanical Efficiency")
+        self.eff_drive = Var(initialize=1.0,
+                             doc="Driver efficiency")
 
         ############################################################
 
@@ -302,31 +269,16 @@ VaneDiffuserType.custom}""",
         self.deltaP[:] = 0     # to avoid an error later in initialize
 
         ###########################################################
-        # Speed of sound calculations
-        # Finite difference derivative for Kappa_T calculation
-        @self.Constraint(self.flowsheet().config.time, doc="Isothermal "
-                         "Compressibility[m2/N]")
-        def kappaT_con(b, t):
-            Ps = properties_in[t].pressure
-            P0_f = Ps + b.dp
-            rho_v0 = properties_in[t].dens_mol
-            rho_v0f = (P0_f / Ps) * rho_v0
-            return b.kappaT[t] * b.dp == 1 - rho_v0 / rho_v0f
-
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Speed of Sound at Inlet Condition")
-        def c0_con(b, t):
-            Cp0 = properties_in[t].cp_mol
-            Cv0 = properties_in[t].cv_mol
-            mw = properties_in[t].mw
-            rho_v0 = properties_in[t].dens_mol
-            return b.c0[t]**2 * (Cv0 * mw * b.kappaT[t] * rho_v0) == Cp0
-
-        # --------------------------------------------------------------------
         # Tip speed, mass flow coefficient, Mach number, and pressure ratio
+        # suggested by John and Andrew, I assume that the property package
+        # calculates the speed of sound
         @self.Constraint(self.flowsheet().config.time, doc="Mach Number")
         def Ma_con(b, t):
-            return b.Ma[t] == b.U2[t] / b.c0[t]
+            # not sure if there are two phases at the inlet
+            # but I assume that this contains single vapor phase.
+            speed_of_sound = self.control_volume.properties_in[
+                t].speed_sound_phase['Vap']
+            return b.Ma[t] == b.U2[t] / speed_of_sound
 
         @self.Constraint(self.flowsheet().config.time, doc='Pressure Ratio')
         def Pratio_con(b, t):
@@ -339,36 +291,24 @@ VaneDiffuserType.custom}""",
             return b.U2[t] == 2 * const.pi * b.r2 * b.rspeed[t]
 
         # set up the vane diffuser rule.
-        vdcb = self.config.vane_diffuser_callback
         vdselect = self.config.vane_diffuser_type
-        if vdselect is not VaneDiffuserType.custom and vdcb is not None:
+        if vdselect is not VaneDiffuserType.custom:
             _log.warning("A vane diffuser callback was provided"
                          "but the valve diffuser type is not custom.")
         if vdselect == VaneDiffuserType.vane_diffuser:
-            _vane_diffuser_callback(self)
+            _build_vane_diffuser_equations(self)
         elif vdselect == VaneDiffuserType.vaneless_diffuser:
-            _vaneless_diffuser_callback(self)
-        else:
-            if vdcb is None:
-                raise ConfigurationError(
-                    "No custom vane diffuser callback provided")
-            vdcb(self)
+            _build_vaneless_diffuser_equations(self)
 
         # set up the impeller rule.
-        icb = self.config.impeller_callback
         iselect = self.config.impeller_type
-        if iselect is not ImpellerType.custom and icb is not None:
+        if iselect is not ImpellerType.custom:
             _log.warning("An impeller callback was provided but the impeller"
                          "type is not custom.")
         if iselect == ImpellerType.cover_impeller:
-            _cover_impeller_callback(self)
+            _build_cover_impeller_equations(self)
         elif iselect == ImpellerType.open_impeller:
-            _open_impeller_callback(self)
-        else:
-            if icb is None:
-                raise ConfigurationError(
-                    "No custom impeller callback provided")
-            icb(self)
+            _build_open_impeller_equations(self)
 
         @self.Constraint(self.flowsheet().config.time, doc="Polytropic "
                          "Efficiency")
@@ -469,7 +409,8 @@ VaneDiffuserType.custom}""",
         @self.Expression(self.flowsheet().config.time,
                          doc="Isentropic Head")
         def ys_model(b, t):
-            a = (b.k_v - 1) / b.k_v
+            k_v = self.control_volume.properties_in[t].heat_capacity_ratio
+            a = (k_v - 1) / k_v
             Pratio = b.ratioP[t]
             Tin = properties_in[t].temperature
             mw = properties_in[t].mw
@@ -523,7 +464,7 @@ VaneDiffuserType.custom}""",
                 return b.psi_s[t] == b.coeff_a * b.psi_3[t]**2 + \
                     b.coeff_b * b.psi_3[t] + b.coeff_c
 
-    def initialize(blk, state_args={}, outlvl=idaeslog.NOTSET, solver='ipopt',
+    def initialize(self, state_args={}, outlvl=idaeslog.NOTSET, solver='ipopt',
                    optarg={'tol': 1e-6, 'max_iter': 50}):
         """
         Initialize the inlet compressor stage model.
@@ -537,123 +478,126 @@ VaneDiffuserType.custom}""",
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-
-        flags = blk.control_volume.initialize(state_args=state_args,
-                                              hold_state=True)
+        init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        for t in blk.flowsheet().config.time:
+        in_flags = self.control_volume.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+            state_args=state_args,
+        )
+        out_flags = self.control_volume.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=False,
+            state_args=state_args,
+        )
+
+        for t in self.flowsheet().config.time:
             # if there is not a good guess for efficiency or outlet pressure
             # provide something reasonable.
-            eff = blk.efficiency_isentropic[t]
+            eff = self.efficiency_isentropic[t]
             eff.fix(eff.value if value(eff) > 0.3 and value(eff
                                                             ) < 1.0 else 0.85)
             # check for alternate pressure specs
-            if blk.outlet.pressure[t].fixed:
-                blk.ratioP[t] = value(
-                    blk.outlet.pressure[t] / blk.inlet.pressure[t])
-            elif blk.control_volume.deltaP[t].fixed:
-                blk.ratioP[t] = value(
-                    (blk.control_volume.deltaP[t] + blk.inlet.pressure[t]
-                     ) / blk.inlet.pressure[t])
-            elif blk.ratioP[t].fixed:
-                blk.outlet.pressure[t] = value(
-                    blk.ratioP[t] * blk.inlet.pressure[t])
+            #
+            if self.outlet.pressure[t].fixed:
+                self.ratioP[t] = value(
+                    self.outlet.pressure[t] / self.inlet.pressure[t])
+            elif self.ratioP[t].fixed:
+                self.outlet.pressure[t] = value(
+                    self.ratioP[t] * self.inlet.pressure[t])
 
-            # initialize the isentropic state block
-            isen_state_args = blk.properties_isentropic[t].define_state_vars()
-            blk.properties_isentropic.initialize(isen_state_args)
-
-            # initialize outlet state
-            blk.outlet.flow_mol[t] = value(blk.inlet.flow_mol[t])
-            # blk.outlet.enth_mol[t] = value(blk.inlet.enth_mol[t] * 1.2)
-
-            @blk.Expression(blk.flowsheet().config.time,
-                            doc="outlet enthalpy expression")
-            def h_o(blk, t):
-                return blk.inlet.enth_mol[t] + (
-                    blk.properties_isentropic[t].enth_mol -
-                    blk.inlet.enth_mol[t]) / blk.efficiency_isentropic[t]
-            blk.outlet.enth_mol[t] = value(blk.h_o[t])
-            # blk.control_volume.work[t] = value(
-            # blk.inlet.flow_mol[t]*blk.inlet.enth_mol[t] -
-            # 	blk.outlet.flow_mol[t]*blk.outlet.enth_mol[t])
+            # intialize isentropic property block
+            isen_state = {}
+            t_init = self.flowsheet().config.time.first()
+            for i in self.properties_isentropic[
+                    t_init].define_state_vars().keys():
+                state_var = getattr(self.control_volume.properties_out[
+                    t_init], i)
+                if state_var.is_indexed:
+                    isen_state[i] = {}
+                    for j in state_var:
+                        isen_state[i][j] = value(state_var[j])
+                else:
+                    isen_state[i] = value(state_var)
+            self.properties_isentropic.initialize(
+                state_args=isen_state, solver=solver, optarg=optarg)
 
         # Deactivate special constraints
-        blk.eff_isen_eqn.deactivate()
-        blk.Pratio_con.deactivate()
-        blk.kappaT_con.deactivate()
-        blk.c0_con.deactivate()
-        blk.Ma_con.deactivate()
-        blk.rspeed_con.deactivate()
-        blk.eff_p_v_cons.deactivate()
-        blk.polytropic_correlation.deactivate()
-        blk.delta_enth_polytropic_con.deactivate()
-        blk.mass_flow_coeff_eqn.deactivate()
-        blk.psi_3_eqn.deactivate()
-        blk.psi_s_eqn.deactivate()
-        blk.psi_s_stage_eqn.deactivate()
+        self.eff_isen_eqn.deactivate()
+        self.Pratio_con.deactivate()
+        self.Ma_con.deactivate()
+        self.rspeed_con.deactivate()
+        self.eff_p_v_cons.deactivate()
+        self.polytropic_correlation.deactivate()
+        self.delta_enth_polytropic_con.deactivate()
+        self.mass_flow_coeff_eqn.deactivate()
+        self.psi_3_eqn.deactivate()
+        self.psi_s_eqn.deactivate()
+        self.psi_s_stage_eqn.deactivate()
 
+        # call pressure changer initialzation
+        super().initialize(
+            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
+        )
         # Fix variables
-        blk.kappaT.fix()
-        blk.c0.fix()
-        blk.Ma.fix()
-        blk.rspeed.fix()
-        blk.impeller_work_coeff.fix()
-        blk.delta_enth_polytropic.fix()
-        blk.mass_flow_coeff.fix()
-        blk.psi_3.fix()
-        blk.psi_s.fix()
-
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        self.Ma.fix()
+        self.rspeed.fix()
+        self.impeller_work_coeff.fix()
+        self.delta_enth_polytropic.fix()
+        self.mass_flow_coeff.fix()
+        self.psi_3.fix()
+        self.psi_s.fix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
 
         init_log.info_high(
                 "Initialization Step 1 {}.".format(idaeslog.condition(res))
             )
 
         # Activate special constraints
-        blk.eff_isen_eqn.activate()
-        blk.Pratio_con.activate()
-        blk.kappaT_con.activate()
-        blk.c0_con.activate()
-        blk.Ma_con.activate()
-        blk.rspeed_con.activate()
-        blk.eff_p_v_cons.activate()
-        blk.polytropic_correlation.activate()
-        blk.delta_enth_polytropic_con.activate()
-        blk.mass_flow_coeff_eqn.activate()
-        blk.psi_3_eqn.activate()
-        blk.psi_s_eqn.activate()
-        blk.psi_s_stage_eqn.activate()
+        self.eff_isen_eqn.activate()
+        self.Pratio_con.activate()
+        self.Ma_con.activate()
+        self.rspeed_con.activate()
+        self.eff_p_v_cons.activate()
+        self.polytropic_correlation.activate()
+        self.delta_enth_polytropic_con.activate()
+        self.mass_flow_coeff_eqn.activate()
+        self.psi_3_eqn.activate()
+        self.psi_s_eqn.activate()
+        self.psi_s_stage_eqn.activate()
 
         # Unfix variables
-        blk.efficiency_isentropic.unfix()
-        blk.outlet.pressure.unfix()
-        blk.kappaT.unfix()
-        blk.c0.unfix()
-        blk.Ma.unfix()
-        blk.rspeed.unfix()
-        blk.impeller_work_coeff.unfix()
-        blk.delta_enth_polytropic.unfix()
-        blk.mass_flow_coeff.unfix()
-        blk.psi_3.unfix()
-        blk.psi_s.unfix()
+        self.efficiency_isentropic.unfix()
+        self.outlet.pressure.unfix()
+        self.Ma.unfix()
+        self.rspeed.unfix()
+        self.impeller_work_coeff.unfix()
+        self.delta_enth_polytropic.unfix()
+        self.mass_flow_coeff.unfix()
+        self.psi_3.unfix()
+        self.psi_s.unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(blk, tee=slc.tee)
+            res = opt.solve(self, tee=slc.tee)
         init_log.info_high(
                 "Initialization Step 2 {}.".format(idaeslog.condition(res))
             )
 
-        blk.control_volume.release_state(flags=flags, outlvl=outlvl)
+        self.control_volume.properties_in.release_state(
+            flags=in_flags, outlvl=outlvl)
+        self.control_volume.properties_out.release_state(
+            flags=out_flags, outlvl=outlvl)
+        # self.control_volume.release_state(flags=flags, outlvl=outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
