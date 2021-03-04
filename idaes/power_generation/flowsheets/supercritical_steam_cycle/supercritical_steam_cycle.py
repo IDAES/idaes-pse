@@ -743,8 +743,36 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
 
-    iscale.calculate_scaling_factors(m)
 
+    #set scaling factors
+
+    iscale.set_scaling_factor(m.fs.condenser.side_1.heat, 1e-9)
+    iscale.set_scaling_factor(m.fs.condenser.side_2.heat, 1e-9)
+
+    iscale.set_scaling_factor(m.fs.fwh1.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh1.condense.side_2.heat, 1e-7)
+
+    iscale.set_scaling_factor(m.fs.fwh2.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh2.condense.side_2.heat, 1e-7)
+
+    iscale.set_scaling_factor(m.fs.fwh3.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh3.condense.side_2.heat, 1e-7)
+
+    iscale.set_scaling_factor(m.fs.fwh4.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh4.condense.side_2.heat, 1e-7)
+    
+    iscale.set_scaling_factor(m.fs.fwh6.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh6.condense.side_2.heat, 1e-7)
+    
+    iscale.set_scaling_factor(m.fs.fwh7.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh7.condense.side_2.heat, 1e-7)
+    
+    iscale.set_scaling_factor(m.fs.fwh8.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh8.condense.side_2.heat, 1e-7)
+
+    iscale.calculate_scaling_factors(m)
+    
+    
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "tol": 1e-7,
