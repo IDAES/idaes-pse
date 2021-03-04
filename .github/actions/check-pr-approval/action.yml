@@ -24,7 +24,7 @@ runs:
         curl "$url" > "${{ inputs.query-result-path }}"
         echo "::group::Query results"
         jq . "${{ inputs.query-result-path }}"
-        echo "::endgroup"
+        echo "::endgroup::"
       shell: bash
     - id: check-approval
       shell: bash

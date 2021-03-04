@@ -112,13 +112,14 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
 
     m.fs.inlet = Arc(source=m.fs.mixer.outlet, destination=m.fs.cstr.inlet)
 
-    # This constraint is in lieu of tracking the CSTR's level and allowing
-    # the outlet flow rate to be another degree of freedom.
-    # ^ Not sure how to do this in IDAES.
-    @m.fs.cstr.Constraint(m.fs.time,
-        doc='Total flow rate balance')
-    def total_flow_balance(cstr, t):
-        return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
+    if not steady:
+        # This constraint is in lieu of tracking the CSTR's level and allowing
+        # the outlet flow rate to be another degree of freedom.
+        # ^ Not sure how to do this in IDAES.
+        @m.fs.cstr.Constraint(m.fs.time,
+            doc='Total flow rate balance')
+        def total_flow_balance(cstr, t):
+            return (cstr.inlet.flow_vol[t] == cstr.outlet.flow_vol[t])
 
     # Specify initial condition for energy
     if not steady:
@@ -149,4 +150,3 @@ if __name__ == '__main__':
 
     assert degrees_of_freedom(m_plant) == 0
     assert degrees_of_freedom(m_ss) == 0
-

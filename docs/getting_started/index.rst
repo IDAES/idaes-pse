@@ -1,6 +1,8 @@
 Getting Started
 ===============
 
+.. _IDAES Installation:
+
 Installation
 ------------
 To install the IDAES PSE framework, follow the set of instructions below that are
@@ -176,6 +178,37 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
    error handling. The number of tests that failed and succeeded is reported at the end of the pytest
    output. You can report problems on the |github-issues|
    (Please try to be specific about the command and the offending output.)
+
+**Install IDAES using Conda**
+
+As an alternative to the ``pip install`` method described above, IDAES can also be installed using the Conda package manager.
+
+1. Create a new Conda environment with a name of your choice (in this example, ``my-idaes-env``)::
+
+    conda create --yes --name my-idaes-env python=3.8
+
+..
+
+    .. note:: The ``--yes`` optional flag can be used to perform the installation without having it pausing to ask for confirmation.
+
+2. Activate the ``my-idaes-env`` Conda environment::
+
+    conda activate my-idaes-env
+
+..
+
+    .. note:: This step is needed when starting a new session or a new console tab/window.
+
+3. Install the IDAES Conda package using the ``conda install`` subcommand::
+
+    conda install --yes -c IDAES-PSE -c conda-forge idaes-pse
+
+..
+
+    .. note:: The most recent stable release will be selected by default.
+              To instead select a particular version, specify the version tag using an ``=`` after the package name, e.g. ``idaes-pse=1.9.0rc0``.
+
+4. To complete the installation, follow the instructions described in the previous section from Step 2 ("Run the ``idaes get-extensions`` command...") onward.
 
 Optional Dependencies
 ---------------------

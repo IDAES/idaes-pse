@@ -18,7 +18,8 @@ import types
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint,
+from pyomo.environ import (Block,
+                           Constraint,
                            Expression,
                            Set,
                            Param,
@@ -26,14 +27,15 @@ from pyomo.environ import (Constraint,
                            value,
                            Var,
                            units as pyunits)
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialFlowBasis)
 from idaes.core.components import Component, __all_components__
 from idaes.core.phases import Phase, AqueousPhase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
@@ -45,6 +47,8 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 import idaes.logger as idaeslog
 
+from idaes.generic_models.properties.core.generic.generic_reaction import \
+    equil_rxn_config
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, GenericPropertyPackageError)
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
@@ -169,6 +173,17 @@ class GenericParameterData(PhysicalParameterBlock):
         description="Include enthalpy of formation in property calculations",
         doc="Flag indiciating whether enthalpy of formation should be included"
         " when calculating specific enthalpies."))
+
+    # Config arguments for inherent reactions
+    CONFIG.declare("reaction_basis", ConfigValue(
+        default=MaterialFlowBasis.molar,
+        domain=In(MaterialFlowBasis),
+        doc="Basis of reactions",
+        description="Argument indicating basis of reaction terms. Should be "
+        "an instance of a MaterialFlowBasis Enum"))
+
+    CONFIG.declare("inherent_reactions", ConfigBlock(
+        implicit=True, implicit_domain=equil_rxn_config))
 
     def build(self):
         '''
@@ -642,6 +657,95 @@ class GenericParameterData(PhysicalParameterBlock):
             pobj = self.get_phase(p)
             pobj.config.equation_of_state.build_parameters(pobj)
 
+        # Next, add inherent reactions if they exist
+        if len(self.config.inherent_reactions) > 0:
+            # Set has_inherent_reactions flag
+            self._has_inherent_reactions = True
+
+            # Construct inherent reaction index
+            self.inherent_reaction_idx = Set(
+                initialize=self.config.inherent_reactions.keys())
+
+            # Construct inherent reaction stoichiometry dict
+            if self._electrolyte:
+                pcset = self.true_phase_component_set
+            else:
+                pcset = self._phase_component_set
+
+            self.inherent_reaction_stoichiometry = {}
+            for r, rxn in self.config.inherent_reactions.items():
+                for p, j in pcset:
+                    self.inherent_reaction_stoichiometry[(r, p, j)] = 0
+
+                if rxn.stoichiometry is None:
+                    raise ConfigurationError(
+                        "{} inherent reaction {} was not provided with a "
+                        "stoichiometry configuration argument."
+                        .format(self.name, r))
+                else:
+                    for k, v in rxn.stoichiometry.items():
+                        if k[0] not in self.phase_list:
+                            raise ConfigurationError(
+                                "{} stoichiometry for inherent reaction {} "
+                                "included unrecognised phase {}."
+                                .format(self.name, r, k[0]))
+                        if k[1] not in self.component_list:
+                            raise ConfigurationError(
+                                "{} stoichiometry for inherent reaction {} "
+                                "included unrecognised component {}."
+                                .format(self.name, r, k[1]))
+                        self.inherent_reaction_stoichiometry[
+                            (r, k[0], k[1])] = v
+
+                # Check that a method was provided for the equilibrium form
+                if rxn.equilibrium_form is None:
+                    raise ConfigurationError(
+                        "{} inherent reaction {} was not provided with a "
+                        "equilibrium_form configuration argument."
+                        .format(self.name, r))
+
+                # Construct blocks to contain parameters for each reaction
+                self.add_component("reaction_"+str(r), Block())
+
+                rblock = getattr(self, "reaction_"+r)
+                r_config = self.config.inherent_reactions[r]
+
+                order_init = {}
+                for p, j in pcset:
+                    if "reaction_order" in r_config.parameter_data:
+                        try:
+                            order_init[p, j] = r_config.parameter_data[
+                                "reaction_order"][p, j]
+                        except KeyError:
+                            order_init[p, j] = 0
+                    else:
+                        # Assume elementary reaction and use stoichiometry
+                        try:
+                            # Here we use the stoic. coeff. directly
+                            # However, solids should be excluded as they
+                            # normally do not appear in the equilibrium
+                            # relationship
+                            pobj = self.get_phase(p)
+                            if not pobj.is_solid_phase():
+                                order_init[p, j] = r_config.stoichiometry[p, j]
+                            else:
+                                order_init[p, j] = 0
+                        except KeyError:
+                            order_init[p, j] = 0
+
+                rblock.reaction_order = Var(
+                        pcset,
+                        initialize=order_init,
+                        doc="Reaction order",
+                        units=None)
+
+                for val in self.config.inherent_reactions[r].values():
+                    try:
+                        val.build_parameters(
+                            rblock, self.config.inherent_reactions[r])
+                    except AttributeError:
+                        pass
+
         # Call custom user parameter method
         self.parameters()
 
@@ -724,7 +828,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_dew': {'method': '_pressure_dew'},
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
-             'temperature_dew': {'method': '_temperature_dew'}})
+             'temperature_dew': {'method': '_temperature_dew'},
+             'dh_rxn': {'method': '_dh_rxn'}})
 
 
 class _GenericStateBlock(StateBlock):
@@ -763,6 +868,20 @@ class _GenericStateBlock(StateBlock):
             return params.true_phase_component_set
         elif params.config["state_components"] == StateIndex.apparent:
             return params.apparent_phase_component_set
+        else:
+            raise BurntToast(
+                "{} unrecognized value for configuration argument "
+                "'state_components'; this should never happen. Please contact "
+                "the IDAES developers with this bug.".format(self.name))
+
+    def _has_inherent_reactions(self):
+        params = self._get_parameter_block()
+
+        if params.config["state_components"] == StateIndex.true:
+            return params.has_inherent_reactions
+        elif params.config["state_components"] == StateIndex.apparent:
+            # If using apparent species basis, ignore inherent reactions
+            return False
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
@@ -817,6 +936,9 @@ class _GenericStateBlock(StateBlock):
                     blk[k].sum_mole_frac_out.deactivate()
                 except AttributeError:
                     pass
+
+                if hasattr(blk[k], "inherent_equilibrium_constraint"):
+                    blk[k].inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -1242,6 +1364,35 @@ class GenericStateBlockData(StateBlockData):
                 self.params.component_list,
                 rule=rule_equilibrium)
 
+        # Add inherent reaction constraints if necessary
+        if (self.params.has_inherent_reactions
+                and not self.config.defined_state):
+            def equil_rule(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+
+                return carg["equilibrium_form"].return_expression(
+                    b, rblock, r, b.temperature)
+
+            def keq_rule(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+
+                return carg["equilibrium_constant"].return_expression(
+                    b, rblock, r, b.temperature)
+
+            self.k_eq = Expression(
+                self.params.inherent_reaction_idx,
+                doc="Equilibrium constant for inherent reactions",
+                rule=keq_rule)
+
+            self.inherent_equilibrium_constraint = Constraint(
+                self.params.inherent_reaction_idx,
+                doc="Inherent reaction equilibrium constraint",
+                rule=equil_rule)
+
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
@@ -1649,6 +1800,20 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
             raise
+
+    def _dh_rxn(self):
+        def dh_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.inherent_reactions[r]
+
+            return carg["heat_of_reaction"].return_expression(
+                b, rblock, r, b.temperature)
+
+        self.dh_rxn = Expression(
+            self.params.inherent_reaction_idx,
+            doc="Specific heat of reaction for inherent reactions",
+            rule=dh_rule)
 
 
 def _valid_VL_component_list(blk, pp):
