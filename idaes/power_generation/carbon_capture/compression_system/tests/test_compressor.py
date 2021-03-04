@@ -29,6 +29,7 @@ import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
      import CompressionStage
 
+# from compressor_v9 import CompressionStage
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
 # -----------------------------------------------------------------------------
@@ -57,7 +58,7 @@ def build_unit():
     hin_co2 = swco2.htpx(T=t*pyo.units.K, P=p*pyo.units.Pa)
 
     # inlet stream
-    m.fs.unit.ratioP[:].value = 2.3351
+    # m.fs.unit.ratioP.value = 2.3351
     m.fs.unit.inlet.flow_mol[:].fix(fin)
     m.fs.unit.inlet.enth_mol[:].fix(hin_co2)
     m.fs.unit.inlet.pressure[:].fix(p)
@@ -65,6 +66,12 @@ def build_unit():
     # inlet specifications
     m.fs.unit.U2[0].value = 315.3
     m.fs.unit.U2.fix()
+
+    # fix compressor specifications
+    m.fs.unit.z_s.fix(0.97373)
+    m.fs.unit.z_d1.fix(0.88949)
+    m.fs.unit.efficiency_mech.fix(0.97)
+    m.fs.unit.eff_drive.fix(1.0)
 
     return m
 
@@ -75,7 +82,7 @@ def test_basic_build(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 15
+    assert len(m.fs.unit.config) == 13
     # assert m.fs.unit.config.has_heat_transfer
     assert m.fs.unit.config.thermodynamic_assumption
     assert m.fs.unit.config.property_package is m.fs.properties_co2
@@ -115,7 +122,7 @@ def test_run(build_unit):
                       * m.fs.unit.outlet.enth_mol[0]
                       + m.fs.unit.work_mechanical[0]))
     # pressure change
-    assert (pytest.approx(185822.29121655718, abs=0.1) ==
+    assert (pytest.approx(185822.3, abs=0.1) ==
             pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
     assert (pytest.approx(0, abs=1e-2) ==
