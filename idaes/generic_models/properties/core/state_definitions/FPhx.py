@@ -275,7 +275,7 @@ def define_default_scaling_factors(b):
         return
 
     try:
-        f_bounds = state_bounds["flow_mol_comp"]
+        f_bounds = state_bounds["flow_mol"]
         if len(f_bounds) == 4:
             f_init = pyunits.convert_value(f_bounds[1],
                                            from_units=f_bounds[3],

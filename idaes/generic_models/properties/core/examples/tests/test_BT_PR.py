@@ -506,11 +506,11 @@ class TestBTExample(object):
         m.fs.state[1].scaling_factor.display()
 
         assert len(m.fs.state[1].scaling_factor) == 11
-        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1.0
+        assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].flow_mol_phase["Liq"]] == 1.0
+            m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].flow_mol_phase["Vap"]] == 1.0
+            m.fs.state[1].flow_mol_phase["Vap"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].mole_frac_comp["benzene"]] == 100
         assert m.fs.state[1].scaling_factor[
