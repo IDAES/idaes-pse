@@ -49,7 +49,8 @@ def _build_cover_impeller_equations(blk):
     blk.mass_flow_coeff = Var(blk.flowsheet().config.time,
                               initialize=0.0735,
                               doc="Compressor Flow Coefficient",
-                              bounds=(0.01, 0.15))
+                              bounds=(0.01, 0.15),
+                              units=pyunits.dimensionless)
 
     @blk.Constraint(blk.flowsheet().config.time)
     def impeller_work_coeff_eqn(b, t):
@@ -188,14 +189,6 @@ VaneDiffuserType.custom}""",
         properties_in = self.control_volume.properties_in
         properties_out = self.control_volume.properties_out
 
-        self.mass_flow_coeff = Var(self.flowsheet().config.time,
-                                   initialize=0.0735,
-                                   doc="Compressor Flow Coefficient",
-                                   bounds=(0.01, 0.15),
-                                   units=pyunits.dimensionless)
-        self.r2 = Var(initialize=0.075,
-                      doc="Impeller Tip Radius",
-                      units=pyunits.m)
         self.rspeed = Var(self.flowsheet().config.time,
                           initialize=1500,
                           doc='Rotation Speed of The Impeller',
@@ -239,7 +232,6 @@ VaneDiffuserType.custom}""",
                           initialize=0.1,
                           doc='Rotational Mach Number Upper limit',
                           bounds=(0, 5))
-        # dynamic related variables
         self.psi_3 = Var(self.flowsheet().config.time,
                          initialize=0.01,
                          doc="Dimensionless Exit Flow Coefficient",
@@ -251,7 +243,6 @@ VaneDiffuserType.custom}""",
                          within=NonNegativeReals,
                          units=pyunits.dimensionless)
         ########################################################
-
         # Declare variables for the model
         self.z_s = Var(initialize=0.97373,
                        doc="Compressibility factors at suction")
@@ -262,6 +253,9 @@ VaneDiffuserType.custom}""",
                                    doc="Mechanical Efficiency")
         self.eff_drive = Var(initialize=1.0,
                              doc="Driver efficiency")
+        self.r2 = Var(initialize=0.075,
+                      doc="Impeller Tip Radius",
+                      units=pyunits.m)
 
         ############################################################
 
@@ -270,12 +264,11 @@ VaneDiffuserType.custom}""",
 
         ###########################################################
         # Tip speed, mass flow coefficient, Mach number, and pressure ratio
-        # suggested by John and Andrew, I assume that the property package
-        # calculates the speed of sound
+        # suggested by John and Andrew, let the property package
+        # calculate the speed of sound
         @self.Constraint(self.flowsheet().config.time, doc="Mach Number")
         def Ma_con(b, t):
-            # not sure if there are two phases at the inlet
-            # but I assume that this contains single vapor phase.
+            # assume single vapor phase.
             speed_of_sound = self.control_volume.properties_in[
                 t].speed_sound_phase['Vap']
             return b.Ma[t] == b.U2[t] / speed_of_sound
@@ -293,8 +286,7 @@ VaneDiffuserType.custom}""",
         # set up the vane diffuser rule.
         vdselect = self.config.vane_diffuser_type
         if vdselect is not VaneDiffuserType.custom:
-            _log.warning("A vane diffuser callback was provided"
-                         "but the valve diffuser type is not custom.")
+            _log.warning("A valve diffuser type is not custom.")
         if vdselect == VaneDiffuserType.vane_diffuser:
             _build_vane_diffuser_equations(self)
         elif vdselect == VaneDiffuserType.vaneless_diffuser:
@@ -303,8 +295,7 @@ VaneDiffuserType.custom}""",
         # set up the impeller rule.
         iselect = self.config.impeller_type
         if iselect is not ImpellerType.custom:
-            _log.warning("An impeller callback was provided but the impeller"
-                         "type is not custom.")
+            _log.warning("An impeller type is not custom.")
         if iselect == ImpellerType.cover_impeller:
             _build_cover_impeller_equations(self)
         elif iselect == ImpellerType.open_impeller:
@@ -334,12 +325,12 @@ VaneDiffuserType.custom}""",
         def deltaS(b, t):
             return properties_out[t].entr_mol - properties_in[t].entr_mol
 
-        @self.Constraint(self.flowsheet().config.time, doc="Isentropic"
-                         "efficiency")
-        def eff_isen_eqn(b, t):
-            eff_isen = b.efficiency_isentropic[t]
-            return eff_isen * b.delta_enth_actual[t] == \
-                b.delta_enth_isentropic[t]
+        # @self.Constraint(self.flowsheet().config.time, doc="Isentropic"
+        #                  "efficiency")
+        # def eff_isen_eqn(b, t):
+        #     eff_isen = b.efficiency_isentropic[t]
+        #     return eff_isen * b.delta_enth_actual[t] == \
+        #         b.delta_enth_isentropic[t]
 
         @self.Constraint(self.flowsheet().config.time, doc="Polytropic "
                          "Enthalpy Correlation")
@@ -422,7 +413,8 @@ VaneDiffuserType.custom}""",
         def psi_s_eqn(b, t):
             return b.psi_s[t] == 2 * b.ys_model[t] / (b.U2[t]**2)
 
-        # Ang is used to estimate coeffcients a, b, c for first stage
+        # IGV angle is used to estimate coeffcients a, b, c
+        # in first stage compressor
         if self.config.first_stage is True:
             self.Ang = Var(self.flowsheet().config.time,
                            initialize=0,
@@ -491,6 +483,7 @@ VaneDiffuserType.custom}""",
             hold_state=True,
             state_args=state_args,
         )
+
         out_flags = self.control_volume.properties_out.initialize(
             outlvl=outlvl,
             optarg=optarg,
@@ -531,10 +524,8 @@ VaneDiffuserType.custom}""",
                 state_args=isen_state, solver=solver, optarg=optarg)
 
         # Deactivate special constraints
-        self.eff_isen_eqn.deactivate()
         self.Pratio_con.deactivate()
         self.Ma_con.deactivate()
-        self.rspeed_con.deactivate()
         self.eff_p_v_cons.deactivate()
         self.polytropic_correlation.deactivate()
         self.delta_enth_polytropic_con.deactivate()
@@ -543,13 +534,13 @@ VaneDiffuserType.custom}""",
         self.psi_s_eqn.deactivate()
         self.psi_s_stage_eqn.deactivate()
 
-        # call pressure changer initialzation
+        # call pressure changer initialization
         super().initialize(
             state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
         )
+
         # Fix variables
         self.Ma.fix()
-        self.rspeed.fix()
         self.impeller_work_coeff.fix()
         self.delta_enth_polytropic.fix()
         self.mass_flow_coeff.fix()
@@ -564,10 +555,8 @@ VaneDiffuserType.custom}""",
             )
 
         # Activate special constraints
-        self.eff_isen_eqn.activate()
         self.Pratio_con.activate()
         self.Ma_con.activate()
-        self.rspeed_con.activate()
         self.eff_p_v_cons.activate()
         self.polytropic_correlation.activate()
         self.delta_enth_polytropic_con.activate()
@@ -576,11 +565,11 @@ VaneDiffuserType.custom}""",
         self.psi_s_eqn.activate()
         self.psi_s_stage_eqn.activate()
 
+        # constraint_list.activate()
+
         # Unfix variables
         self.efficiency_isentropic.unfix()
-        self.outlet.pressure.unfix()
         self.Ma.unfix()
-        self.rspeed.unfix()
         self.impeller_work_coeff.unfix()
         self.delta_enth_polytropic.unfix()
         self.mass_flow_coeff.unfix()
@@ -597,7 +586,6 @@ VaneDiffuserType.custom}""",
             flags=in_flags, outlvl=outlvl)
         self.control_volume.properties_out.release_state(
             flags=out_flags, outlvl=outlvl)
-        # self.control_volume.release_state(flags=flags, outlvl=outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
