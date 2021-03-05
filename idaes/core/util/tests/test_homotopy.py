@@ -32,12 +32,13 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import get_default_solver
 
 from idaes.core.util.homotopy import homotopy
-import idaes.solvers as isolve
-
-isolve.use_idaes_solver_configuration_deafults()
 
 # Set module level pyest marker
 pytestmark = pytest.mark.solver
+
+import idaes.core.solvers
+
+idaes.core.solvers.use_idaes_solver_configuration_deafults()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing

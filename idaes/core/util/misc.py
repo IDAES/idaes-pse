@@ -25,7 +25,7 @@ from pyomo.core.base.util import disable_methods
 from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
-from idaes.core.solvers import SolverFactory
+import idaes.core.solvers
 
 _log = idaeslog.getLogger(__name__)
 
@@ -36,8 +36,7 @@ def get_default_solver():
     Tries to set-up the default solver for testing, and returns None if not
     available
     """
-    # if the solver is not available this will raise an unknown solver exception
-    return SolverFactory("default")
+    return idaes.core.solvers.SolverWrapper("default", register=False)()
 
 
 # Author: Andrew Lee

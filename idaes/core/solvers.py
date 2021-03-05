@@ -6,7 +6,7 @@ _use_idaes_config = False
 
 
 class SolverWrapper(object):
-    def __init__(self, name):
+    def __init__(self, name, register=True):
         self.name = name
         if name == 'default':
             self.solver = None
@@ -14,9 +14,10 @@ class SolverWrapper(object):
         else:
             self.solver = SolverFactory.get_class(name)
             doc = SolverFactory.doc(name)
-        SolverFactory.unregister(name)
-        # Re-register the solver (register is a decorator)
-        SolverFactory.register(name, doc)(self)
+        if register:
+            SolverFactory.unregister(name)
+            # Re-register the solver (register is a decorator)
+            SolverFactory.register(name, doc)(self)
 
     def __call__(self, *args, **kwargs):
         global _use_idaes_config
@@ -38,10 +39,6 @@ class SolverWrapper(object):
                         if opk not in kwargs["options"]:
                             kwargs["options"][opk] = opv
         return solver(*args, **kwargs)
-
-
-if 'default' not in SolverFactory:
-    SolverWrapper('default')
 
 
 def use_idaes_solver_configuration_deafults(b=True):
@@ -70,3 +67,5 @@ def use_idaes_solver_configuration_deafults(b=True):
             if isinstance(SolverFactory.get_class(c), SolverWrapper):
                 continue
             SolverWrapper(c)
+        if 'default' not in SolverFactory:
+            SolverWrapper('default')
