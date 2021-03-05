@@ -10,10 +10,13 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-import idaes.core.solvers
 import pyomo.environ as pyo
 import pytest
 import idaes
+import idaes.core.solvers as isolve
+
+isolve.use_idaes_solver_configuration_deafults()
+
 
 @pytest.mark.unit
 def test_ipopt_idaes_available():
@@ -40,6 +43,10 @@ def test_ipopt_idaes_config():
     idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = orig
     solver = pyo.SolverFactory('ipopt', options={"tol":1})
     assert solver.options["tol"] == 1
+    isolve.use_idaes_solver_configuration_deafults(False)
+    solver = pyo.SolverFactory('ipopt')
+    assert "nlp_scaling_method" not in solver.options
+    isolve.use_idaes_solver_configuration_deafults()
 
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
