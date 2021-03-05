@@ -103,7 +103,7 @@ def min_scaling_factor(iter, default=1, warning=True):
     minimum scaling factor.
 
     Args:
-        iter: Iterable yeilding Pyomo componentes
+        iter: Iterable yeilding Pyomo components
         default: The default value used when a scaling factor is missing.  If
             None, this will raise an exception when scaling factors are missing.
             The default is default=1.

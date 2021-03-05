@@ -13,6 +13,7 @@
 """
 Library of common forms for phase equilibrium constraints
 """
+import idaes.core.util.scaling as iscale
 
 
 class fugacity():
@@ -25,6 +26,15 @@ class fugacity():
                 b.params.get_phase(phase2).config.equation_of_state
                 .fug_phase_comp_eq(b, phase2, comp, pp))
 
+    @staticmethod
+    def calculate_scaling_factors(b, phase1, phase2, comp):
+        sf_1 = iscale.get_scaling_factor(
+            b.fug_phase_comp[phase1, comp], default=1, warning=True)
+        sf_2 = iscale.get_scaling_factor(
+            b.fug_phase_comp[phase2, comp], default=1, warning=True)
+
+        return min(sf_1, sf_2)
+
 
 class log_fugacity():
 
@@ -35,3 +45,8 @@ class log_fugacity():
                 .log_fug_phase_comp_eq(b, phase1, comp, pp) ==
                 b.params.get_phase(phase2).config.equation_of_state
                 .log_fug_phase_comp_eq(b, phase2, comp, pp))
+
+    @staticmethod
+    def calculate_scaling_factors(b, phase1, phase2, comp):
+        # For log fugacity, assume already well scaled
+        return 1

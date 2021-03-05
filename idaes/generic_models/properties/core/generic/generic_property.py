@@ -1422,19 +1422,45 @@ class GenericStateBlockData(StateBlockData):
             self.temperature, default=1, warning=True)
 
         # Add scaling for components in build method
+        # Phase equilibrium temperature
         if hasattr(self, "_teq"):
             iscale.set_scaling_factor(self._teq, sf_T)
 
+        # Other EoS variables and constraints
         for p in self.params.phase_list:
             pobj = self.params.get_phase(p)
             pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
 
+        # Phase equilibrium constraint
         if hasattr(self, "equilibrium_constraint"):
             pe_form_config = self.params.config.phase_equilibrium_state
             for pp in self.params._pe_pairs:
                 pe_form_config[pp].calculate_scaling_factors(self, pp)
 
-             # iscale.constraint_scaling_transform(self._teq_constraint, sf_T)
+            for k in self.equilibrium_constraint:
+                sf_fug = self.params.get_component(
+                    k[2]).config.phase_equilibrium_form[
+                        (k[0], k[1])].calculate_scaling_factors(
+                            self, k[0], k[1], k[2])
+
+                iscale.constraint_scaling_transform(
+                    self.equilibrium_constraint[k], sf_fug)
+
+        # Inherent reactions
+        if hasattr(self, "k_eq"):
+            for r in self.params.inherent_reaction_idx:
+                rblock = getattr(self.params, "reaction_"+r)
+                carg = self.params.config.inherent_reactions[r]
+                sf_keq = carg[
+                    "equilibrium_constant"].calculate_scaling_factors(
+                        self, rblock)
+
+                iscale.set_scaling_factor(self.k_eq, sf_keq)
+                iscale.constraint_scaling_transform(
+                    self.inherent_equilibrium_constraint[k], sf_keq)
+
+        # Add scaling for additional Vars and Constraints
+        # Bubble and dew points
 
     def components_in_phase(self, phase):
         """
