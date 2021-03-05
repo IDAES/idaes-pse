@@ -29,7 +29,7 @@ import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
      import CompressionStage
 
-# from compressor_v9 import CompressionStage
+# from compressor_v10 import CompressionStage
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
 # -----------------------------------------------------------------------------
@@ -53,21 +53,22 @@ def build_unit():
     # compressor first stage
     p = 1.13937 * 1e5  # Pa
     t = 40.0113 + 273.15  # K
-    fin = 1548.52  # mol/s 1689.31
+    fin = 1548.52  # mol/s
 
     hin_co2 = swco2.htpx(T=t*pyo.units.K, P=p*pyo.units.Pa)
 
     # inlet stream
-    # m.fs.unit.ratioP.value = 2.3351
+    m.fs.unit.ratioP[0].value = 2.3351
+    m.fs.unit.U2[0].value = 315.3
     m.fs.unit.inlet.flow_mol[:].fix(fin)
     m.fs.unit.inlet.enth_mol[:].fix(hin_co2)
     m.fs.unit.inlet.pressure[:].fix(p)
 
     # inlet specifications
-    m.fs.unit.U2[0].value = 315.3
     m.fs.unit.U2.fix()
 
     # fix compressor specifications
+    m.fs.unit.r2.fix(0.075)
     m.fs.unit.z_s.fix(0.97373)
     m.fs.unit.z_d1.fix(0.88949)
     m.fs.unit.efficiency_mech.fix(0.97)
