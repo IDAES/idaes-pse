@@ -26,7 +26,7 @@ class SolverWrapper(object):
         else:
             name = self.name
             solver = self.solver
-        if name in idaes.cfg and _use_idaes_config:
+        if name in idaes.cfg and (_use_idaes_config or name == "default"):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
                     kwargs[k] = v
@@ -38,6 +38,10 @@ class SolverWrapper(object):
                         if opk not in kwargs["options"]:
                             kwargs["options"][opk] = opv
         return solver(*args, **kwargs)
+
+
+if 'default' not in SolverFactory:
+    SolverWrapper('default')
 
 
 def use_idaes_solver_configuration_deafults(b=True):
@@ -66,5 +70,3 @@ def use_idaes_solver_configuration_deafults(b=True):
             if isinstance(SolverFactory.get_class(c), SolverWrapper):
                 continue
             SolverWrapper(c)
-        if 'default' not in SolverFactory:
-            SolverWrapper('default')
