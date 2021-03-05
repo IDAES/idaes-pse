@@ -15,17 +15,23 @@ Library of common forms for phase equilibrium constraints
 """
 
 
-def fugacity(b, phase1, phase2, comp):
-    pp = (phase1, phase2)
-    return (b.params.get_phase(phase1)
-            .config.equation_of_state.fug_phase_comp_eq(b, phase1, comp, pp) ==
-            b.params.get_phase(phase2)
-            .config.equation_of_state.fug_phase_comp_eq(b, phase2, comp, pp))
+class fugacity():
+
+    @staticmethod
+    def return_expression(b, phase1, phase2, comp):
+        pp = (phase1, phase2)
+        return (b.params.get_phase(phase1).config.equation_of_state
+                .fug_phase_comp_eq(b, phase1, comp, pp) ==
+                b.params.get_phase(phase2).config.equation_of_state
+                .fug_phase_comp_eq(b, phase2, comp, pp))
 
 
-def log_fugacity(b, phase1, phase2, comp):
-    pp = (phase1, phase2)
-    return (b.params.get_phase(phase1).config.equation_of_state
-            .log_fug_phase_comp_eq(b, phase1, comp, pp) ==
-            b.params.get_phase(phase2).config.equation_of_state
-            .log_fug_phase_comp_eq(b, phase2, comp, pp))
+class log_fugacity():
+
+    @staticmethod
+    def return_expression(b, phase1, phase2, comp):
+        pp = (phase1, phase2)
+        return (b.params.get_phase(phase1).config.equation_of_state
+                .log_fug_phase_comp_eq(b, phase1, comp, pp) ==
+                b.params.get_phase(phase2).config.equation_of_state
+                .log_fug_phase_comp_eq(b, phase2, comp, pp))

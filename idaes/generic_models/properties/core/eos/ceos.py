@@ -298,6 +298,10 @@ class Cubic(EoSBase):
                                          function="ceos_z_vap"))
 
     @staticmethod
+    def calculate_scaling_factors(b, pobj):
+        pass
+
+    @staticmethod
     def build_parameters(b):
         b._cubic_type = b.config.equation_of_state_options["type"]
         cname = b._cubic_type.name

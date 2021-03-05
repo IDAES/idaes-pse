@@ -417,14 +417,12 @@ def define_default_scaling_factors(b):
     try:
         f_bounds = state_bounds["flow_mol"]
         if len(f_bounds) == 4:
-            print("Should see this")
             f_init = pyunits.convert_value(f_bounds[1],
                                            from_units=f_bounds[3],
                                            to_units=units["flow_mole"])
         else:
             f_init = f_bounds[1]
     except KeyError:
-        print("Don't want to see this")
         f_init = 1
 
     try:

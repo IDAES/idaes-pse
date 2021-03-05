@@ -1373,9 +1373,9 @@ class GenericStateBlockData(StateBlockData):
                     return Constraint.Skip
                 config = b.params.get_component(j).config
                 try:
-                    e_mthd = config.phase_equilibrium_form[(phase1, phase2)]
+                    e_mthd = config.phase_equilibrium_form[(phase1, phase2)].return_expression
                 except KeyError:
-                    e_mthd = config.phase_equilibrium_form[(phase2, phase1)]
+                    e_mthd = config.phase_equilibrium_form[(phase2, phase1)].return_expression
                 if e_mthd is None:
                     raise GenericPropertyPackageError(b,
                                                       "phase_equilibrium_form")
@@ -1417,6 +1417,24 @@ class GenericStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
+
+        sf_T = iscale.get_scaling_factor(
+            self.temperature, default=1, warning=True)
+
+        # Add scaling for components in build method
+        if hasattr(self, "_teq"):
+            iscale.set_scaling_factor(self._teq, sf_T)
+
+        for p in self.params.phase_list:
+            pobj = self.params.get_phase(p)
+            pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
+
+        if hasattr(self, "equilibrium_constraint"):
+            pe_form_config = self.params.config.phase_equilibrium_state
+            for pp in self.params._pe_pairs:
+                pe_form_config[pp].calculate_scaling_factors(self, pp)
+
+             # iscale.constraint_scaling_transform(self._teq_constraint, sf_T)
 
     def components_in_phase(self, phase):
         """
