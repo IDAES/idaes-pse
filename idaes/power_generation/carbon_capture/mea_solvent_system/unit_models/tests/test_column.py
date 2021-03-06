@@ -14,8 +14,6 @@
 Author: Paul Akula, Anuja Deshpande
 """
 # Import Python libraries
-import sys
-import os
 import pytest
 
 # Import Pyomo libraries
@@ -33,8 +31,7 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester, get_default_solver
-# # Access the mea_solvent_system dir from the current dir (tests dir)
-# sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+
 
 # -----------------------------------------------------------------------------
 solver = get_default_solver()

@@ -11,30 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-IDAES Continous Differential Contactor (CDC) Model.
-MEA GEN1 Rate-Based Packed Column.
-
-Schematic Diagram:
-
-    Clean Gas  <----+     +<---- Lean Solvent
-                    |     |
-                   +----  -+ --- L,  z=1.0
-                   |      /|
-                   |     / |
-                   |    /  |
-                   |  ABS  |
-                   |  /    |
-                   | /     |
-                   |/      |
-                   +-------+ --- 0, z=0.0
-                    |     |
-    Flue gas ------>+     +---->Rich Solvent
-
-    z: dimensionless distance in axial direction
-    L: column length
-    L*z: distance in axial direction
-    The column height can be changed without changing the discretiation
-    by changing L.
+IDAES First Generation (GEN1) MEA Rate-Based Packed Column.
 
 Detailed model equations can be found in the supplimentary information
 of the paper :
@@ -42,7 +19,8 @@ Akula, Paul; Eslick, John; Bhattacharyya, Debangsu; Miller, David
 "Model Development, Validation, and Part-Load Optimization of a
 MEA-Based Post-Combustion CO2 Capture Process
 Under Part-Load and Variable Capture Operation,
-Industrial & Engineering Chemistry Research,2020. (submitted)
+Industrial & Engineering Chemistry Research,2021. (submitted)
+
 """
 
 # Import Python libraries and third-party
@@ -88,7 +66,10 @@ class ProcessType(Enum):
 
 @declare_process_block_class("PackedColumn")
 class PackedColumnData(UnitModelBlockData):
-    """Standard Continous Differential Contactor (CDC) Model Class."""
+    """
+    Standard Continous Differential Contactor (CDC) Model Class.
+
+    """
 
     # Configuration template for unit level arguments applicable to both phases
     CONFIG = UnitModelBlockData.CONFIG()
@@ -101,98 +82,94 @@ class PackedColumnData(UnitModelBlockData):
         domain=In(DistributedVars),
         description="Argument for defining form of area variable",
         doc="""Argument defining whether area variable should be spatially
-        variant or not. **default** - DistributedVars.uniform.
-        **Valid values:** {
-        DistributedVars.uniform - area does not vary across spatial domian,
-        DistributedVars.variant - area can vary over the domain and is indexed
-        by time and space.}"""))
+variant or not.
+**default** - DistributedVars.uniform.
+**Valid values:** {
+DistributedVars.uniform - area does not vary across spatial domian,
+DistributedVars.variant - area can vary over the domain and is indexed
+by time and space.}"""))
 
     CONFIG.declare("finite_elements", ConfigValue(
         default=10,
         domain=int,
         description="Number of finite elements length domain",
         doc="""Number of finite elements to use when discretizing length
-            domain (default=10)"""))
+domain (default=20)"""))
     CONFIG.declare("length_domain_set", ConfigValue(
         default=[0.0, 1.0],
         domain=list,
-        description="Number of finite elements length domain",
+       description="Number of finite elements length domain",
         doc="""length_domain_set - (optional) list of point to use to
-            initialize a new ContinuousSet if length_domain is not
-            provided (default = [0.0, 1.0]).
-            domain (default = [0.0, 1.0])"""))
+initialize a new ContinuousSet if length_domain is not
+provided (default = [0.0, 1.0])"""))
     CONFIG.declare("transformation_method", ConfigValue(
         default="dae.finite_difference",
         description="Method to use for DAE transformation",
         doc="""Method to use to transform domain. Must be a method recognised
-            by the Pyomo TransformationFactory,
-            **default** - "dae.finite_difference".
-            **Valid values:** {
-            **"dae.finite_difference"**
-                   - Use a finite difference transformation method,
-            **"dae.collocation"**
-                   - use a collocation transformation method}"""))
+by the Pyomo TransformationFactory,
+**default** - "dae.finite_difference".
+**Valid values:** {
+**"dae.finite_difference"** - Use a finite difference transformation method,
+**"dae.collocation"** - use a collocation transformation method}"""))
     CONFIG.declare("collocation_points", ConfigValue(
         default=3,
         domain=int,
         description="Number of collocation points per finite element",
         doc="""Number of collocation points to use per finite element when
-            discretizing length domain (default=3)"""))
+discretizing length domain (default=3)"""))
     CONFIG.declare("flow_type", ConfigValue(
         default=FlowPattern.countercurrent,
         domain=In(FlowPattern),
         description="Flow configuration of PackedColumn",
-        doc="""PackedColumn flow pattern
-        **default** - FlowPattern.countercurrent.
-        **Valid values:** {
-        **FlowPattern.countercurrent** - countercurrent flow,
-        **FlowPattern.cocurrent** - cocurrent flow}"""))
+        doc="""PackedColumn flow pattern,
+**default** - FlowPattern.countercurrent.
+**Valid values:** {
+**FlowPattern.countercurrent** - countercurrent flow,
+**FlowPattern.cocurrent** - cocurrent flow}"""))
     CONFIG.declare("process_type", ConfigValue(
         default=ProcessType.absorber,
         domain=In(ProcessType),
         description="Flag indicating the type of  process",
         doc="""Flag indicating either absorption or stripping process.
-            **default** - ProcessType.absorber.
-            **Valid values:** {
-            **ProcessType.absorber** - absorption process,
-            **ProcessType.stripper** - stripping process.}"""))
+**default** - ProcessType.absorber.
+**Valid values:** {
+**ProcessType.absorber** - absorption process,
+**ProcessType.stripper** - stripping process.}"""))
     CONFIG.declare("packing_specific_area", ConfigValue(
         default=250,
         domain=float,
         description="Specific surface area of packing (m^2/m^3)",
-        doc="""Surface area of packing per unit volume of column
-            (default= 250 m2/m3)"""))
+        doc="Surface area of packing per unit volume of column(default= 250 m2/m3)"))
     CONFIG.declare("packing_void_fraction", ConfigValue(
         default=0.97,
         domain=float,
         description="Void fraction of the packing",
-        doc="""packing porosity or void fraction (default= 0.97 )"""))
+        doc="Packing porosity or void fraction (default= 0.97 )"))
     CONFIG.declare("fix_column_pressure", ConfigValue(
         default=True,
         domain=In([True, False]),
         description="Indicates whether the column pressure should be fixed",
         doc="""Indicates whether the column pressure should be fixed or not.
-               The momentum balances are not added when this is True.
-            **default** - True.
-            **Valid values:** {
-            **True** - fix the column pressure and do not add momentum balances,
-            **False** -Do not fix the column pressure and add momentum balances}"""))
+The momentum balances are not added when this is True.
+**default** - True.
+**Valid values:** {
+**True** - fix the column pressure and do not add momentum balances,
+**False** -Do not fix the column pressure and add momentum balances}"""))
     CONFIG.declare("column_pressure", ConfigValue(
         default=107650,
         domain=float,
         description="fixed column pressure in Pa",
-        doc="""Fixed column operating pressure in Pa"""))
+        doc="Fixed column operating pressure in Pa"))
     # Populate the phase side template to default values
     _PhaseCONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-            constructed,
-            **default** - False.
-            **Valid values:** {
-            **True** - include pressure change terms,
-            **False** - exclude pressure change terms.}"""))
+        doc="""Indicates whether terms for pressure change should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
     _PhaseCONFIG.declare("pressure_drop_type", ConfigValue(
         default=None,
         domain=In(["Billet_Schultes_correlation",
@@ -200,48 +177,45 @@ class PackedColumnData(UnitModelBlockData):
                    "GPDC-Kister"]),
         description="Construction flag for type of pressure drop",
         doc="""Indicates what type of pressure drop correlation should be used,
-            **default** - None
-            **Valid values:** {
-            **None** - set pressure drop to zero,
-            **"Stichlmair_Fair_Bravo_correlation"**
-                      - Use the Stichlmair_Fair_Bravo_correlation model
-            **"GPDC-Kister"**
-                - Use the Generalized Pressure Drop Correlation of Kister 2007
-            **"Billet_Schultes_correlation"**
-                     - Use the Billet_Schultes_correlation model}"""))
+**default**- None.
+**Valid values:** {
+**None** - set pressure drop to zero,
+**"Stichlmair_Fair_Bravo_correlation"** - Use the Stichlmair_Fair_Bravo_correlation model
+**"GPDC-Kister"** - Use the Generalized Pressure Drop Correlation of Kister 2007
+**"Billet_Schultes_correlation"** - Use the Billet_Schultes_correlation model}"""))
     _PhaseCONFIG.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
         description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations
-            (default = 'use_parent_value')
-                - 'use_parent_value' - get package from parent (default = None)
-                - a ParameterBlock object"""))
+(default = 'use_parent_value')
+- 'use_parent_value' - get package from parent (default = None)
+- a ParameterBlock object"""))
     _PhaseCONFIG.declare("property_package_args", ConfigValue(
         default={},
         description="Arguments for constructing vapor property package",
         doc="""A dict of arguments to be passed to the PropertyBlockData
-            and used when constructing these
-            (default = 'use_parent_value')
-            - 'use_parent_value' - get package from parent (default = None)
-            - a dict (see property package for documentation)"""))
+and used when constructing these
+(default = 'use_parent_value')
+- 'use_parent_value' - get package from parent (default = None)
+- a dict (see property package for documentation)
+
+            """))
     _PhaseCONFIG.declare("transformation_scheme", ConfigValue(
         default="BACKWARD",
         description="Scheme to use for DAE transformation",
         doc="""Scheme to use when transformating domain. See Pyomo
-            documentation for supported schemes,
-            **default** - "BACKWARD".
-            **Valid values:** {
-            **"BACKWARD"**
-                 - Use a BACKWARD finite difference transformation method,
-            **"FORWARD""**
-                 - Use a FORWARD finite difference transformation method,
-            **"LAGRANGE-RADAU""**
-                 - use a collocation transformation method}"""))
+documentation for supported schemes,
+**default** - "BACKWARD".
+**Valid values:** {
+**"BACKWARD"** - Use a BACKWARD finite difference transformation method,
+**"FORWARD""** - Use a FORWARD finite difference transformation method,
+**"LAGRANGE-RADAU""** - use a collocation transformation method}"""))
 
     # Create individual config blocks for vapor(gas) and liquid sides
     CONFIG.declare("vapor_side",
                    _PhaseCONFIG(doc="vapor side config arguments"))
+
     CONFIG.declare("liquid_side",
                    _PhaseCONFIG(doc="liquid side config arguments"))
 
@@ -350,7 +324,9 @@ class PackedColumnData(UnitModelBlockData):
 
     # ==========================================================================
         """ Build Control volume 1D for liquid phase and
-            populate liquid control volume"""
+            populate liquid control volume
+
+        """
         self.liquid_phase = ControlVolume1DBlock(default={
             "transformation_method": self.config.transformation_method,
             "transformation_scheme": self.config.liquid_side.transformation_scheme,
@@ -394,18 +370,15 @@ class PackedColumnData(UnitModelBlockData):
         """ Add performace equation method"""
         self._make_performance()
 
-        #
-        # Fix the column pressure here
 
     def _make_performance(self):
         """
         Constraints for unit model.
 
-        Args:
-            None
+        Args: None
 
-        Returns:
-            None
+        Returns: None
+
         """
 
         # ======================================================================
@@ -694,6 +667,7 @@ class PackedColumnData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Hydrodynamic contraints
         # Vapor superficial velocity
+
         @self.Constraint(self.t,
                          self.vapor_phase.length_domain,
                          doc="Vapor superficial velocity")
@@ -807,6 +781,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # mass tranfer term handle
         # liquid side
+
         @self.Constraint(self.t,
                          self.liquid_phase.length_domain,
                          liquid_phase_list_ref,
@@ -842,6 +817,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # Heat transfer coefficients, Chilton Colburn  analogy
         # Vapor-liquid heat transfer coefficient [J/m2.s.K]
+
         def rule_heat_transfer_coeff(blk, t, x):
             if x == self.vapor_phase.length_domain.first():
                 return Expression.Skip
@@ -908,6 +884,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # heat transfer handle
         # vapor  heat transfer handle
+
         @self.Constraint(self.t,
                          self.vapor_phase.length_domain,
                          doc="vapor - heat transfer handle")
@@ -1060,6 +1037,7 @@ class PackedColumnData(UnitModelBlockData):
 
     # ==========================================================================
     # Model initialization routine
+
     def initialize(blk,
                    vapor_phase_state_args={},
                    liquid_phase_state_args={},
@@ -1072,7 +1050,7 @@ class PackedColumnData(UnitModelBlockData):
         """
         Column initialization.
 
-        Arguments
+        Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
@@ -1081,10 +1059,9 @@ class PackedColumnData(UnitModelBlockData):
                                for turning mass transfer constrainst gradually
             homotopy_steps_h : List of continuations steps between 0 and 1
                                for turning heat transfer constraints gradually
-
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            solver : str indicating whcih solver to use during initialization (default = 'ipopt')
+
         """
 
         # Set up logger for initialization and solve
@@ -1135,16 +1112,20 @@ class PackedColumnData(UnitModelBlockData):
         # Hydrodynamics - velocity
         blk.velocity_liq.fix()
         blk.velocity_vap.fix()
+
         # interface pressure
         blk.pressure_equil.fix()
+
         # flux
         blk.N_v.fix(0.0)
         blk.vapor_phase.mass_transfer_term.fix(0.0)
         blk.liquid_phase.mass_transfer_term.fix(0.0)
+
         # Enhancement factor model
         blk.enhancement_factor.fix()
         blk.yi_MEA.fix()
         blk.yeq_CO2.fix()
+
         # heat transfer
         blk.heat_vap.fix(0.0)
         blk.heat_liq.fix(0.0)
@@ -1158,16 +1139,19 @@ class PackedColumnData(UnitModelBlockData):
         # Pressure_dx
         if not blk.config.fix_column_pressure:
             blk.vapor_phase.pressure_dx[:, :].fix(0.0)
+
         # vapor side flow terms
         blk.vapor_phase._enthalpy_flow.fix(1.0)
         blk.vapor_phase.enthalpy_flow_dx[:, :, :].fix(0.0)
         blk.vapor_phase._flow_terms.fix(1.0)
         blk.vapor_phase.material_flow_dx[:, :, :, :].fix(0.0)
+
         # liquid side flow terms
         blk.liquid_phase._enthalpy_flow.fix(1.0)
         blk.liquid_phase.enthalpy_flow_dx[:, :, :].fix(0.0)
         blk.liquid_phase._flow_terms.fix(1.0)
         blk.liquid_phase.material_flow_dx[:, :, :, :].fix(0.0)
+
         # accumulation terms
         # fix accumulation terms to zero and holdup to 1
         if blk.config.dynamic:
@@ -1186,6 +1170,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # ---------------------------------------------------------------------
         # get values for state variables for initialization
+
         if blk.config.process_type == ProcessType.absorber:
             vapor_phase_state_args = {
                 'flow_mol': blk.vapor_inlet.flow_mol[0].value,
@@ -1224,6 +1209,7 @@ class PackedColumnData(UnitModelBlockData):
             optarg=optarg,
             solver=solver,
             hold_state=True)
+
         # Initialize liquid_phase properties block
         lflag = blk.liquid_phase.properties.initialize(
             state_args=liquid_phase_state_args,
@@ -1239,6 +1225,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # unfix flow variable terms
         # vapor side
+
         blk.vapor_phase.properties.release_state(flags=vflag)
         blk.vapor_phase.properties[:, :].temperature.fix()
         if not blk.config.fix_column_pressure:
@@ -1257,6 +1244,7 @@ class PackedColumnData(UnitModelBlockData):
 
         # activate mass balance related equations
         # liquid control volume
+
         for c in [
                 "material_balances",
                 "material_flow_linking_constraints",
@@ -1283,10 +1271,7 @@ class PackedColumnData(UnitModelBlockData):
         init_log.info_high('(3a) Velocities & Interface pressure')
         init_log.info_high('(3b) Enhancement factor')
 
-        # Initialize :
-        #   --> Velocities
-        #   --> Interface pressure
-        #   --> Enhancement factor
+        # Initialize : Velocities, Interface pressure, Enhancement factor
 
         # velocity
         blk.velocity_vap.unfix()
@@ -1357,6 +1342,7 @@ class PackedColumnData(UnitModelBlockData):
                 getattr(blk.vapor_phase, c).activate()
 
             blk.vapor_phase.pressure_dx[:, :].unfix()
+
             # Unfix pressure
             for t in blk.t:
                 for x in blk.vapor_phase.length_domain:
@@ -1390,6 +1376,7 @@ class PackedColumnData(UnitModelBlockData):
         blk.heat_liq.unfix()
         blk.vapor_phase.heat.unfix()
         blk.liquid_phase.heat.unfix()
+
         # unfix enthalpy flow variable terms
         blk.vapor_phase._enthalpy_flow[:, :, :].unfix()
         blk.vapor_phase.enthalpy_flow_dx[:, :, :].unfix()
@@ -1404,12 +1391,14 @@ class PackedColumnData(UnitModelBlockData):
                 "vapor_phase_heat_transfer_handle",
                 "liquid_phase_heat_transfer_handle"]:
             getattr(blk, c).activate()
+
         # liquid control volume
         for c in [
                 "enthalpy_flow_linking_constraint",
                 "enthalpy_flow_dx_disc_eq",
                 "enthalpy_balances"]:
             getattr(blk.liquid_phase, c).activate()
+
         # vapor control volume
         for c in [
                 "enthalpy_flow_linking_constraint",
@@ -1424,6 +1413,7 @@ class PackedColumnData(UnitModelBlockData):
                 res = opt.solve(blk, tee=slc.tee)
 
         init_log.info_high("Step 5 complete: {}.".format(idaeslog.condition(res)))
+
         # ---------------------------------------------------------------------
         # scale up at this if stripper
         if (blk.config.process_type == ProcessType.stripper):
@@ -1443,6 +1433,7 @@ class PackedColumnData(UnitModelBlockData):
             init_log.info('STEP 6: unfix Accumulation and Holdup terms')
             init_log.info_high("6a Holdup calculations")
             init_log.info_high("6b Include Accumulation terms")
+
             # activate holdup constraints
             # unit model
             for c in [
@@ -1488,6 +1479,7 @@ class PackedColumnData(UnitModelBlockData):
                     "material_accumulation_disc_eq",
                     "energy_accumulation_disc_eq"]:
                 getattr(blk.liquid_phase, c).activate()
+
             # vapor control volume
             for c in [
                     "material_accumulation_disc_eq",
@@ -1508,8 +1500,10 @@ class PackedColumnData(UnitModelBlockData):
 
         Mass balance : Initial condition  is determined by
         fixing n-1 mole fraction and the total molar flowrate
+
         Energy balance :Initial condition  is determined by
         fixing  the temperature.
+
         """
 
         vap_comp = blk.config.vapor_side.property_package.component_list
@@ -1532,12 +1526,8 @@ class PackedColumnData(UnitModelBlockData):
 
     def unfix_initial_condition(blk):
         """
-        Initial condition for material and enthalpy balance.
+        Function to unfix initial condition for material and enthalpy balance.
 
-        Mass balance : Initial condition  is determined by
-        fixing n-1 mole fraction and the total molar flowrate
-        Energy balance :Initial condition  is determined by
-        fixing  the temperature.
         """
 
         vap_comp = blk.config.vapor_side.property_package.component_list
@@ -1559,14 +1549,19 @@ class PackedColumnData(UnitModelBlockData):
                     blk.liquid_phase.properties[0, x].mole_frac_comp[j].unfix()
 
     def make_steady_state_column_profile(blk):
-        """Steady-state Plot function for Temperature and CO2 Pressure profile."""
+        """
+        Steady-state Plot function for Temperature and CO2 Pressure profile.
+
+        """
 
         normalised_column_height = [x for x in blk.vapor_phase.length_domain]
         simulation_time = [t for t in blk.t]
+
         # final time
         tf = simulation_time[-1]
         CO2_profile = []
         liquid_temperature_profile = []
+
         # APPEND RESULTS
         for x in blk.vapor_phase.length_domain:
             CO2_profile.append(
@@ -1609,23 +1604,30 @@ class PackedColumnData(UnitModelBlockData):
                        fontsize=fontsize)
         ax2.tick_params(axis='y', labelcolor='g',
                         direction='in', labelsize=labelsize)
+
         # get the labels
         lab_1 = lab1 + lab2
         labels_1 = [l.get_label() for l in lab_1]
         ax1.legend(lab_1, labels_1, loc='lower center', fontsize=fontsize)
         fig.tight_layout()
+
         # show graph
         plt.show()
 
     def make_dynamic_column_profile(blk):
-        """dynamic Plot function for Temperature and CO2 Pressure profile."""
+        """
+        Dynamic Plot function for Temperature and CO2 Pressure profile.
+
+        """
 
         normalised_column_height = [x for x in blk.vapor_phase.length_domain]
         simulation_time = [t for t in blk.t]
         fluegas_flow = [value(blk.vapor_inlet.flow_mol[t]) for t in blk.t]
+
         # final time
         tf = simulation_time[-1]
         nf = len(simulation_time)
+
         # mid-time
         if nf % 2 == 0:
             tm = int(nf / 2)

@@ -13,26 +13,12 @@
 """
 IDAES PLATE HEAT EXCHANGER MODEL (PHE) USING EFFECTIVENESS-NTU METHOD
 
-Schematic diagram
-
-hot fluid----->|                                                   |<--- cold fluid
-(even channels)|      Pass 1   |     Pass 2 to P-1 |    Pass P     |(odd channels)
-               |    ___     ___|                   |    ___     ___|
-               |   |   |   |   |                   |   |   |   |   |
-               |   |   |   |   |                   |   |   |   |   |
-               |   |   |   |   |                   |   |   |   |   |
-               |   |___|   |___|                   |   |___|   |___|
-               |               |                   |               |
-channels         1   2   3  Np                       1   2   3  Np
-
-P  : number of passes(same for both fluids)
-if P is even: PHE is in counter-current mode
-if P is odd : PHE  is in co-current mode
-Np : number of channels in a pass(should be even for balanced PHE)
+Notes:
+Let P = number of passes(same for both fluids)
+if P is even PHE is in counter-current mode
+if P is odd PHE  is in co-current mode
 Hot and cold fluids flow alternatively in the channels.
 Divider plates may be used to partition the passes in separate sections.
-
-Note:
 The heat transfer area  of a single plate depends on the total heat transfer area
 as specified by the manufacturer and the total number of active plates.
 
@@ -41,6 +27,7 @@ Akula, P., Eslick, J., Bhattacharyya, D. and Miller, D.C., 2019.
 Modelling and Parameter Estimation of a Plate Heat Exchanger
 as Part of a Solvent-Based Post-Combustion CO2 Capture System.
 In Computer Aided Chemical Engineering (Vol. 47, pp. 47-52). Elsevier.
+
 """
 
 # Import Pyomo libraries

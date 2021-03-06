@@ -17,8 +17,6 @@ Author: Paul Akula
 """
 # Import Python libraries
 import pytest
-import sys
-import os
 
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, value, TerminationCondition
@@ -27,11 +25,11 @@ from pyomo.environ import ConcreteModel, value, TerminationCondition
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester, get_default_solver
-# Access mea_column_files dir from the current dir (tests dir)
-sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_prop \
+    import LiquidParameterBlock
+from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.phe \
+    import PHE
 
-from unit_models.phe import PHE
-from properties.liquid_prop import LiquidParameterBlock
 
 solver = get_default_solver()
 
