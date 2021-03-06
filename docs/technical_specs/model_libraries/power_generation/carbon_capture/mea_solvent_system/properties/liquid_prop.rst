@@ -6,7 +6,7 @@ capture using Monoethalnolamine (MEA) solvent includes :
 
 *  Liquid density and molar volume.
 *  Specific heat capacity of liquid (MEA, H2O).
-*  Specific heat capacity of CO2 loaded solution.
+*  Specific heat capacity of CO2-loaded solution.
 *  Heat of CO2 absorption.
 *  Henry’s constant.
 *  Concentration based equilibrium constants.

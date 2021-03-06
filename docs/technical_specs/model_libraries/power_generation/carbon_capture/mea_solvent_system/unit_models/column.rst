@@ -86,19 +86,19 @@ process for post-combustion carbon capture using MEA solvent.
 Initialization
 --------------
 
-The PackedColumn unit uses uses two homotopy/continuation parameters
+The ``PackedColumn`` unit uses  two homotopy/continuation parameters
 ( :math:`\lambda_{1}`, :math:`\lambda_{2}`) as shown in Figure 2 to initalize the column in
 steady-state mode (this is extended over the entire time horizon for dynamic
-simulation while fixing the accumations terms to zero). The functions,
-:math:`g_{1}(x)`, :math:`g_{2}(x)`, :math:`f(x)`, describe the Constraints
+simulation while fixing the accumulation terms to zero). The functions,
+:math:`g_{1}(x)`, :math:`g_{2}(x)`, :math:`f(x)`, describe the ``Constraints``
 when the homotopy parameters become zero or unity. The initialization
 routine uses the user-provided inputs to initialize the properties and then
 first solves only the material balance equations by turning off the heat and
-mass transfer rates Constraints. Then, the isothermal chemical absorption
-continuation  parameter, :math:`\lambda_{1}`, is used to turn on the mass transfer
-Constraints gradually with values ranging from 0 to 1. Subsequently, the adiabatic
+mass transfer rates ``Constraints``. Then, the isothermal chemical absorption
+continuation  parameter, :math:`\lambda_{1}`, is used to turn on the **mass transfer**
+``Constraints`` gradually with values ranging from 0 to 1. Subsequently, the adiabatic
 chemical absorption continuation parameter, :math:`\lambda_{2}`, is used to turn
-on the heat transfer equations gradually with values ranging from 0 to 1 to
+on the **heat transfer** equations gradually with values ranging from 0 to 1 to
 finish initializing the packed column. Lastly, for dynamic simulation, the
 accumulation terms are computed to initialize the dynamic column.
 

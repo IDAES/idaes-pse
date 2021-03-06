@@ -1,18 +1,18 @@
 Plate Heat Exchanger
 ====================
 
-The thermal model of IDAES Plate Heat Exchanger (PHE) as part of MEA scrubbing
-process for post-combustion carbon capture (PCC) is based on the effectiveness-
-Number of Transfer Units (e-NTU) approach. The PHE consists of many plates
-stacked together where hot and cold fluids flow alternatively in the series of
-channels formed between the plates as shown in Figure 1(A). Divider plates may
-be used to partition the PHE into separate operating zones. The basic details of
-a gasketed plate are shown in Figure 1(B). To reduce the  regeneration energy
-requirement for PCC using MEA solvent, heat from the hot lean solvent leaving
-the stripper is recovered in the PHE which has very low temperature approach
-for pre-heating the cold rich solvent leaving the absorber. For more information
-on the PHE model see
-`Akula et al. (2019) <https://doi.org/10.1016/B978-0-12-818597-1.50008-4>`_.
+The thermal model of IDAES Plate Heat Exchanger (PHE) as part of the MEA
+scrubbing process for post-combustion carbon capture (PCC) is based on the
+Effectiveness-Number of Transfer Units (e-NTU) approach. The rich solvent
+leaving the absorber is pre-heated in the PHE using heat recovered from the
+lean solvent leaving the stripper to reduce the regeneration energy requirement.
+The series of plates stacked together form channels where hot and cold fluids
+flow alternatively as shown in Figure 1(A). Divider plates enable the
+partitioning of PHEs into different operating zones. The main dimensions of
+a gasket plate are shown in Figure 1(B). The PHE is a viable alternative to
+the conventional Shell and Tube Heat Exchanger specifically because of its
+lower approach temperature difference capability. For more information on the
+PHE model see `Akula et al. (2019) <https://doi.org/10.1016/B978-0-12-818597-1.50008-4>`_.
 
 .. figure:: ./phe_a.png
   :alt: Z-configuration Plate Heat Exchanger with P passes
