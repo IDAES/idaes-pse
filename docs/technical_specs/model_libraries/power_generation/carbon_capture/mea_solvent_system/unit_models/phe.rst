@@ -56,7 +56,7 @@ Specification
    "``plate_vertical_dist``","Vertical distance between centers of ports (Lv)", ":math:`m`"
    "``plate_horizontal_dist``","Horizontal distance between centers of ports (Lh)", ":math:`m`"
    "``plate_pact_length``","Compressed plate pact length(optional)", ":math:`m`"
-   "``surface_enlargement_factor``","Ratio of single plate area obtained from the total area)
+   "``surface_enlargement_factor``","Ratio of single plate area obtained from the total area
    to the projected plate area(optional)", ":math:`m^{2}`"
    "``plate_gap``","Distance between two adjacent plates that forms a flow channel", ":math:`m` "
    "**Operating parameters**", " ", " "
