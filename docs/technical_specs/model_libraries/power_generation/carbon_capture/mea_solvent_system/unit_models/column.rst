@@ -37,8 +37,8 @@ Due to the reactions in the liquid phase, the apparent species (``H2O, MEA and C
 are reconstituted from the true species (``H2O, MEA, CO2, MEA+, MEACOO-, HCO3-``)
 in the speciation model based on the kinetics below:
 
-  .. math:: \mathrm{CO_2 + 2MEA  \leftrightharpoons  MEA^{+} + MEACOO^{-}}
-  .. math:: \mathrm{CO_2 + MEA + H_2O  \leftrightharpoons  MEA^{+} + HCO^{-}_{3}}
+.. math:: \mathrm{CO_2 + 2MEA  \leftrightharpoons  MEA^{+} + MEACOO^{-}}
+.. math:: \mathrm{CO_2 + MEA + H_2O  \leftrightharpoons  MEA^{+} + HCO^{-}_{3}}
 
 
 Specification
