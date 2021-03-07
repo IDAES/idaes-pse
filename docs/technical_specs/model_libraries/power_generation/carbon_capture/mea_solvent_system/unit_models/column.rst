@@ -14,7 +14,7 @@ counter-current arrangement as shown in Figure 1(A).
     :width: 100%
     :align: center
 
-    **Figure 1. Schematic diagram of : (A) Packed column (B) Model strcuture in IDAES**
+    **Figure 1. Schematic diagram of : (A) Packed column (B) Packed column structure in IDAES**
 
 
 Degrees of Freedom
@@ -64,7 +64,7 @@ Specification
 Model Structure
 ---------------
 
-The PackedColumn unit model consists of two
+The ``PackedColumn`` unit model consists of two
 :ref:`ControlVolume1D Blocks <technical_specs/core/control_volume_1d:1D Control Volume Class>`
 (named ``vapor_phase`` and ``liquid_phase``), each with one Inlet Port (named ``vapor_inlet``
 and ``liquid_inlet``) and one Outlet Port (named ``vapor_outlet`` and ``liquid_outlet``)
@@ -78,8 +78,9 @@ off of the :ref:`Physical Property Package Class <technical_specs/core/physical_
 Additional Constraints (Performance Equations)
 ----------------------------------------------
 
-The PackedColumn unit model writes additional Constraints beyond those written
-by the ControlVolume Block to describe the reactive absorption / desorption
+The ``PackedColumn`` unit  writes additional ``Constraints`` beyond those written
+by the :ref:`ControlVolume1D Blocks <technical_specs/core/control_volume_1d:1D Control Volume Class>`
+to describe the reactive absorption / desorption
 process for post-combustion carbon capture using MEA solvent.
 
 
@@ -99,7 +100,7 @@ continuation  parameter, :math:`\lambda_{1}`, is used to turn on the **mass tran
 ``Constraints`` gradually with values ranging from 0 to 1. Subsequently, the adiabatic
 chemical absorption continuation parameter, :math:`\lambda_{2}`, is used to turn
 on the **heat transfer** equations gradually with values ranging from 0 to 1 to
-finish initializing the packed column. Lastly, for dynamic simulation, the
+finish initializing the ``PackedColumn``. Lastly, for dynamic simulation, the
 accumulation terms are computed to initialize the dynamic column.
 
 

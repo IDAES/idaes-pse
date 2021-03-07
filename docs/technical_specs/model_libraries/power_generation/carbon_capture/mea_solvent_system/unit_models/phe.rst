@@ -35,7 +35,7 @@ Degrees of Freedom
 Once the configuration parameters (construction arguments of the PHE Class)
 have been specified, the PHE unit model has 12 degrees of freedom which are the
 operating parameters as listed in the Specification Table below. The indexed
-components for ``mole_frac_comp`` are ``H2O``, ``MEA`` and ``CO2``.
+components for ``mole_frac_comp`` are ``H2O, MEA and CO2``.
 
 
 Specification
@@ -77,9 +77,8 @@ The PHE unit model consists of two
 :ref:`ControlVolume0D Blocks <technical_specs/core/control_volume_0d:0D Control Volume Class>`
 (named ``hot_side`` and ``cold_side``), each with one Inlet Port (named ``hot_inlet``
 and ``cold_inlet``) and one Outlet Port (named ``hot_outlet`` and ``cold_outlet``).
-The ``hot_side`` and ``cold_side`` ControlVolume0D blocks use the
-:ref:`Liquid Phase Property Methods <technical_specs/model_libraries/power_generation/carbon_capture/mea_solvent_system/properties/liquid_prop:Liquid Phase Property Methods>`
-which is built off of the
+The ``hot_side`` and ``cold_side`` ControlVolume0D Blocks use the
+:ref:`Liquid Phase Property Methods <technical_specs/model_libraries/power_generation/carbon_capture/mea_solvent_system/properties/liquid_prop:Liquid Phase Property Methods>` which is built off of the
 :ref:`Physical Property Package Class <technical_specs/core/physical_property_class:Physical Property Package Classes>`.
 The Energy balance is based on the effectiveness Number of Transfer units
 (E-NTU method) and is included as performance equations (Additional Constraints).
@@ -89,9 +88,10 @@ Hence, the control volume energy balances are not added.
 Additional Constraints
 ----------------------
 
-The PHE unit model writes additional Constraints beyond those written by the
-ControlVolume Block to describe the heat exchanger between the rich and lean
-solvent for post-combustion carbon capture using MEA solvent.
+The PHE unit model writes additional ``Constraints`` beyond those written by the
+:ref:`ControlVolume0D Blocks <technical_specs/core/control_volume_0d:0D Control Volume Class>`
+to describe the heat exchanger between the rich and lean solvent for
+post-combustion carbon capture using MEA solvent.
 
 
 
