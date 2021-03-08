@@ -1373,9 +1373,11 @@ class GenericStateBlockData(StateBlockData):
                     return Constraint.Skip
                 config = b.params.get_component(j).config
                 try:
-                    e_mthd = config.phase_equilibrium_form[(phase1, phase2)].return_expression
+                    e_mthd = config.phase_equilibrium_form[
+                        (phase1, phase2)].return_expression
                 except KeyError:
-                    e_mthd = config.phase_equilibrium_form[(phase2, phase1)].return_expression
+                    e_mthd = config.phase_equilibrium_form[
+                        (phase2, phase1)].return_expression
                 if e_mthd is None:
                     raise GenericPropertyPackageError(b,
                                                       "phase_equilibrium_form")
@@ -1416,51 +1418,74 @@ class GenericStateBlockData(StateBlockData):
 
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
-        super().calculate_scaling_factors()
+        # super().calculate_scaling_factors()
 
         sf_T = iscale.get_scaling_factor(
             self.temperature, default=1, warning=True)
+        sf_P = iscale.get_scaling_factor(
+            self.pressure, default=1, warning=True)
+        sf_mf = iscale.get_scaling_factor(
+            self.mole_frac_phase_comp, default=1e3, warning=True)
 
-        # Add scaling for components in build method
-        # Phase equilibrium temperature
-        if hasattr(self, "_teq"):
-            iscale.set_scaling_factor(self._teq, sf_T)
+        # # Add scaling for components in build method
+        # # Phase equilibrium temperature
+        # if hasattr(self, "_teq"):
+        #     iscale.set_scaling_factor(self._teq, sf_T)
 
-        # Other EoS variables and constraints
-        for p in self.params.phase_list:
-            pobj = self.params.get_phase(p)
-            pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
+        # # Other EoS variables and constraints
+        # for p in self.params.phase_list:
+        #     pobj = self.params.get_phase(p)
+        #     pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
 
-        # Phase equilibrium constraint
-        if hasattr(self, "equilibrium_constraint"):
-            pe_form_config = self.params.config.phase_equilibrium_state
-            for pp in self.params._pe_pairs:
-                pe_form_config[pp].calculate_scaling_factors(self, pp)
+        # # Phase equilibrium constraint
+        # if hasattr(self, "equilibrium_constraint"):
+        #     pe_form_config = self.params.config.phase_equilibrium_state
+        #     for pp in self.params._pe_pairs:
+        #         pe_form_config[pp].calculate_scaling_factors(self, pp)
 
-            for k in self.equilibrium_constraint:
-                sf_fug = self.params.get_component(
-                    k[2]).config.phase_equilibrium_form[
-                        (k[0], k[1])].calculate_scaling_factors(
-                            self, k[0], k[1], k[2])
+        #     for k in self.equilibrium_constraint:
+        #         sf_fug = self.params.get_component(
+        #             k[2]).config.phase_equilibrium_form[
+        #                 (k[0], k[1])].calculate_scaling_factors(
+        #                     self, k[0], k[1], k[2])
 
-                iscale.constraint_scaling_transform(
-                    self.equilibrium_constraint[k], sf_fug)
+        #         iscale.constraint_scaling_transform(
+        #             self.equilibrium_constraint[k], sf_fug)
 
-        # Inherent reactions
-        if hasattr(self, "k_eq"):
-            for r in self.params.inherent_reaction_idx:
-                rblock = getattr(self.params, "reaction_"+r)
-                carg = self.params.config.inherent_reactions[r]
-                sf_keq = carg[
-                    "equilibrium_constant"].calculate_scaling_factors(
-                        self, rblock)
+        # # Inherent reactions
+        # if hasattr(self, "k_eq"):
+        #     for r in self.params.inherent_reaction_idx:
+        #         rblock = getattr(self.params, "reaction_"+r)
+        #         carg = self.params.config.inherent_reactions[r]
+        #         sf_keq = carg[
+        #             "equilibrium_constant"].calculate_scaling_factors(
+        #                 self, rblock)
 
-                iscale.set_scaling_factor(self.k_eq, sf_keq)
-                iscale.constraint_scaling_transform(
-                    self.inherent_equilibrium_constraint[k], sf_keq)
+        #         iscale.set_scaling_factor(self.k_eq, sf_keq)
+        #         iscale.constraint_scaling_transform(
+        #             self.inherent_equilibrium_constraint[r], sf_keq)
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
+        if hasattr(self, "_mole_frac_tbub"):
+            # iscale.set_scaling_factor(self.temperature_bubble, sf_T)
+            # iscale.set_scaling_factor(self._mole_frac_tbub, sf_mf)
+            self.params.config.bubble_dew_method.scale_temperature_bubble(self)
+
+        # if hasattr(self, "_mole_frac_tdew"):
+        #     iscale.set_scaling_factor(self.temperature_dew, sf_T)
+        #     iscale.set_scaling_factor(self._mole_frac_tdew, sf_mf)
+        #     self.params.config.bubble_dew_method.scale_temperature_dew(self)
+
+        # if hasattr(self, "_mole_frac_pbub"):
+        #     iscale.set_scaling_factor(self.pressure_bubble, sf_P)
+        #     iscale.set_scaling_factor(self._mole_frac_pbub, sf_mf)
+        #     self.params.config.bubble_dew_method.scale_pressure_bubble(self)
+
+        # if hasattr(self, "_mole_frac_pdew"):
+        #     iscale.set_scaling_factor(self.pressure_dew, sf_P)
+        #     iscale.set_scaling_factor(self._mole_frac_pdew, sf_mf)
+        #     self.params.config.bubble_dew_method.scale_pressure_dew(self)
 
     def components_in_phase(self, phase):
         """

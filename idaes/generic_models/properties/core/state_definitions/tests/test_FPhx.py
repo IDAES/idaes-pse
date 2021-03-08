@@ -1024,23 +1024,23 @@ class TestCommon(object):
         assert frame.props[1].scaling_factor[
             frame.props[1].dens_mol_phase["b"]] == 1e-2
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_comp["c1"]] == 1e2
+            frame.props[1].mole_frac_comp["c1"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_comp["c2"]] == 1e2
+            frame.props[1].mole_frac_comp["c2"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_comp["c3"]] == 1e2
+            frame.props[1].mole_frac_comp["c3"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["a", "c1"]] == 1e2
+            frame.props[1].mole_frac_phase_comp["a", "c1"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["a", "c2"]] == 1e2
+            frame.props[1].mole_frac_phase_comp["a", "c2"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["a", "c3"]] == 1e2
+            frame.props[1].mole_frac_phase_comp["a", "c3"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["b", "c1"]] == 1e2
+            frame.props[1].mole_frac_phase_comp["b", "c1"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["b", "c2"]] == 1e2
+            frame.props[1].mole_frac_phase_comp["b", "c2"]] == 1e3
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["b", "c3"]] == 1e2
+            frame.props[1].mole_frac_phase_comp["b", "c3"]] == 1e3
         assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[
             frame.props[1].temperature] == 1e-2

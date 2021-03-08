@@ -203,6 +203,20 @@ class TestStateBlock(object):
         assert degrees_of_freedom(model.fs.unit) == 0
 
     @pytest.mark.component
+    def test_scaling(self, model):
+
+        # model.fs.unit.control_volume.properties_in[0].calculate_scaling_factors()
+        # model.fs.unit.control_volume.properties_out[0].calculate_scaling_factors()
+        import idaes.core.util.scaling as iscale
+        iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_in[0].eq_mole_frac_tbub["Vap", "Liq"], 1e3)
+        iscale.constraint_scaling_transform(
+                model.fs.unit.control_volume.properties_out[0].eq_mole_frac_tbub["Vap", "Liq"], 1e3)
+        
+        model.fs.unit.control_volume.properties_out[0].eq_mole_frac_tbub.pprint()
+        assert False
+
+    @pytest.mark.component
     def test_initialize(self, model):
 
         initialization_tester(model, dof=0)

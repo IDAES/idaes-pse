@@ -915,8 +915,8 @@ class TestGenericParameterBlock(object):
         assert dsf[("fug_phase_comp", None)] == 1e-4
         assert dsf[("fug_coeff_phase_comp", None)] == 1
         assert dsf[("gibbs_mol", None)] == 1e-4
-        assert dsf[("mole_frac_comp", None)] == 1e2
-        assert dsf[("mole_frac_phase_comp", None)] == 1e2
+        assert dsf[("mole_frac_comp", None)] == 1e3
+        assert dsf[("mole_frac_phase_comp", None)] == 1e3
         assert dsf[("mw", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
@@ -949,8 +949,8 @@ class TestGenericParameterBlock(object):
         assert dsf[("fug_phase_comp", None)] == 1e-7
         assert dsf[("fug_coeff_phase_comp", None)] == 1
         assert dsf[("gibbs_mol", None)] == 1e-9
-        assert dsf[("mole_frac_comp", None)] == 1e2
-        assert dsf[("mole_frac_phase_comp", None)] == 1e2
+        assert dsf[("mole_frac_comp", None)] == 1e3
+        assert dsf[("mole_frac_phase_comp", None)] == 1e3
         assert dsf[("mw", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
@@ -1007,14 +1007,14 @@ class TestGenericStateBlock(object):
         assert frame.props[1].scaling_factor[
             frame.props[1].pressure] == 1e-5
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["p1", "a"]] == 100
+            frame.props[1].mole_frac_phase_comp["p1", "a"]] == 1000
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["p1", "b"]] == 100
+            frame.props[1].mole_frac_phase_comp["p1", "b"]] == 1000
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["p1", "c"]] == 100
+            frame.props[1].mole_frac_phase_comp["p1", "c"]] == 1000
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["p2", "a"]] == 100
+            frame.props[1].mole_frac_phase_comp["p2", "a"]] == 1000
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["p2", "b"]] == 100
+            frame.props[1].mole_frac_phase_comp["p2", "b"]] == 1000
         assert frame.props[1].scaling_factor[
-            frame.props[1].mole_frac_phase_comp["p2", "c"]] == 100
+            frame.props[1].mole_frac_phase_comp["p2", "c"]] == 1000

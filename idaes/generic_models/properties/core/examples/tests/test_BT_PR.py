@@ -502,9 +502,6 @@ class TestBTExample(object):
     def test_basic_scaling(self, m):
         m.fs.state[1].calculate_scaling_factors()
 
-        print(m.fs.props.default_scaling_factor)
-        m.fs.state[1].scaling_factor.display()
-
         assert len(m.fs.state[1].scaling_factor) == 14
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[
@@ -512,17 +509,17 @@ class TestBTExample(object):
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].flow_mol_phase["Vap"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].mole_frac_comp["benzene"]] == 100
+            m.fs.state[1].mole_frac_comp["benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].mole_frac_comp["toluene"]] == 100
+            m.fs.state[1].mole_frac_comp["toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].mole_frac_phase_comp["Liq", "benzene"]] == 100
+            m.fs.state[1].mole_frac_phase_comp["Liq", "benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].mole_frac_phase_comp["Liq", "toluene"]] == 100
+            m.fs.state[1].mole_frac_phase_comp["Liq", "toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].mole_frac_phase_comp["Vap", "benzene"]] == 100
+            m.fs.state[1].mole_frac_phase_comp["Vap", "benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]] == 100
+            m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[m.fs.state[1].pressure] == 1e-5
         assert m.fs.state[1].scaling_factor[m.fs.state[1].temperature] == 1e-2
         assert m.fs.state[1].scaling_factor[m.fs.state[1]._teq] == 1e-2

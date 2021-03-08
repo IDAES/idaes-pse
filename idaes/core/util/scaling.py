@@ -243,8 +243,8 @@ def populate_default_scaling_factors(c):
                 "fug_phase_comp": (1e4*pyo.units.Pa, "pressure"),
                 "fug_coeff_phase_comp": (1*pyo.units.dimensionless, None),
                 "gibbs_mol": (1e4*pyo.units.J/pyo.units.mol, "energy_mole"),
-                "mole_frac_comp": (0.01*pyo.units.dimensionless, None),
-                "mole_frac_phase_comp": (0.01*pyo.units.dimensionless, None),
+                "mole_frac_comp": (0.001*pyo.units.dimensionless, None),
+                "mole_frac_phase_comp": (0.001*pyo.units.dimensionless, None),
                 "mw": (1e-3*pyo.units.kg/pyo.units.mol, "molecular_weight"),
                 "mw_phase": (1e-3*pyo.units.kg/pyo.units.mol,
                              "molecular_weight")}
