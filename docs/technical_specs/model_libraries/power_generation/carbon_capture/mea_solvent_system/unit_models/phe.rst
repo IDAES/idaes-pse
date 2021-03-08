@@ -57,7 +57,7 @@ Specification
    "``plate_horizontal_dist``","Horizontal distance between centers of ports (Lh)", ":math:`m`"
    "``plate_pact_length``","Compressed plate pact length (optional)", ":math:`m`"
    "``surface_enlargement_factor``","Ratio of single plate area obtained from the total area
-   to the projected plate area (optional)", ":math:`m^{2}`"
+   to the projected plate area (optional)", "None"
    "``plate_gap``","Distance between two adjacent plates that forms a flow channel", ":math:`m` "
    "**Operating parameters**", " ", " "
    "``hot_inlet.flow_mol``", "Hot fluid inlet total molar flowrate", ":math:`mol/s`"
