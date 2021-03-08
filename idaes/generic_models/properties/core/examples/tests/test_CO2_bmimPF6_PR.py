@@ -188,8 +188,21 @@ class TestStateBlock(object):
                          "Temperature",
                          "Pressure"]
 
+    @pytest.mark.ui
     @pytest.mark.unit
-    def test_unit_dof(self, model):
+    def test_report(self, model):
+        model.fs.props[1].report()
+
+
+class TestFlashIntegration(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+
+        model.fs = FlowsheetBlock(default={"dynamic": False})
+
+        model.fs.param = GenericParameterBlock(default=configuration)
+
         model.fs.unit = Flash(default={"property_package": model.fs.param,
                                        "has_heat_transfer": False,
                                        "has_pressure_change": False})
@@ -200,20 +213,15 @@ class TestStateBlock(object):
         model.fs.unit.inlet.mole_frac_comp[0, "carbon_dioxide"].fix(1/2)
         model.fs.unit.inlet.mole_frac_comp[0, "bmimPF6"].fix(1/2)
 
-        assert degrees_of_freedom(model.fs.unit) == 0
+        assert degrees_of_freedom(model.fs) == 0
+
+        return model
 
     @pytest.mark.component
     def test_scaling(self, model):
+        model.fs.unit.control_volume.properties_in[0].calculate_scaling_factors()
+        model.fs.unit.control_volume.properties_out[0].calculate_scaling_factors()
 
-        # model.fs.unit.control_volume.properties_in[0].calculate_scaling_factors()
-        # model.fs.unit.control_volume.properties_out[0].calculate_scaling_factors()
-        import idaes.core.util.scaling as iscale
-        iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_in[0].eq_mole_frac_tbub["Vap", "Liq"], 1e3)
-        iscale.constraint_scaling_transform(
-                model.fs.unit.control_volume.properties_out[0].eq_mole_frac_tbub["Vap", "Liq"], 1e3)
-        
-        model.fs.unit.control_volume.properties_out[0].eq_mole_frac_tbub.pprint()
         assert False
 
     @pytest.mark.component
@@ -246,4 +254,4 @@ class TestStateBlock(object):
     @pytest.mark.ui
     @pytest.mark.unit
     def test_report(self, model):
-        model.fs.props[1].report()
+        model.fs.unit.report()
