@@ -22,7 +22,7 @@ from pyomo.opt import SolverFactory
 import shutil
 import logging
 from collections import namedtuple
-from sens import sensitivity_calculation # will replace with pyomo 
+from idaes.apps.uncertainty_propagation.sens import sensitivity_calculation # will replace with pyomo 
 
 logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
