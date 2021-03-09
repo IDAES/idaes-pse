@@ -13,26 +13,20 @@
 """
 Tests for Caprese helper utility functions.
 """
-
 import pytest
 from pytest import approx
-from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, Objective,
-                           TransformationFactory, TerminationCondition,
-                           Reference)
-from pyomo.network import Arc
+
+from pyomo.environ import SolverFactory, Var, value, Reference
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.dae.flatten import flatten_dae_components
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-        MomentumBalanceType)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator, unfixed_variables_generator)
-from idaes.core.util.initialization import initialize_by_time_element
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.generic_models.unit_models import CSTR, Mixer, MomentumMixingType
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom, 
+        activated_equalities_generator,
+        )
 from idaes.apps.caprese.util import *
+from idaes.apps.caprese.common.config import NoiseBoundOption
 from idaes.apps.caprese.examples.cstr_model import make_model
 import idaes.logger as idaeslog
 
@@ -51,143 +45,6 @@ if solver_available:
                       'halt_on_ampl_error': 'yes'}
 else:
     solver = None
-
-
-@pytest.mark.unit
-def test_find_comp_in_block():
-    m1 = ConcreteModel()
-
-    @m1.Block([1,2,3])
-    def b1(b):
-        b.v = Var([1,2,3])
-
-    m2 = ConcreteModel()
-
-    @m2.Block([1,2,3])
-    def b1(b):
-        b.v = Var([1,2,3,4])
-
-    @m2.Block([1,2,3])
-    def b2(b):
-        b.v = Var([1,2,3])
-
-    v1 = m1.b1[1].v[1]
-
-    assert find_comp_in_block(m2, m1, v1) is m2.b1[1].v[1]
-
-    v2 = m2.b2[1].v[1]
-    v3 = m2.b1[3].v[4]
-
-    # These should result in Attribute/KeyErrors
-    #find_comp_in_block(m1, m2, v2)
-    #find_comp_in_block(m1, m2, v3)
-    assert find_comp_in_block(m1, m2, v2, allow_miss=True) is None
-    assert find_comp_in_block(m1, m2, v3, allow_miss=True) is None
-
-
-@pytest.mark.unit
-def test_NMPCVarLocator():
-    m = ConcreteModel()
-    m.time = Set(initialize=[1,2,3])
-    m.v = Var(m.time, ['a','b','c'])
-
-    varlist = [Reference(m.v[:,'a']),
-               Reference(m.v[:,'b']),
-               Reference(m.v[:,'b'])]
-    group = NMPCVarGroup(varlist, m.time)
-
-    categ = VariableCategory.DIFFERENTIAL
-    locator = NMPCVarLocator(categ, group, 0, is_ic=True)
-
-    assert locator.category == VariableCategory.DIFFERENTIAL
-    assert locator.group is group
-    assert locator.location == 0
-    assert locator.is_ic == True
-
-
-@pytest.mark.unit
-def test_copy_values():
-    # Define m1
-    m1 = ConcreteModel()
-    m1.time = Set(initialize=[1,2,3,4,5])
-
-    m1.v1 = Var(m1.time, initialize=1)
-    
-    @m1.Block(m1.time)
-    def blk(b, t):
-        b.v2 = Var(initialize=1)
-
-    # Define m2
-    m2 = ConcreteModel()
-    m2.time = Set(initialize=[1,2,3,4,5])
-
-    m2.v1 = Var(m2.time, initialize=2)
-    
-    @m2.Block(m2.time)
-    def blk(b, t):
-        b.v2 = Var(initialize=2)
-
-    ###
-
-    scalar_vars_1, dae_vars_1 = flatten_dae_components(m1, m1.time, Var)
-    scalar_vars_2, dae_vars_2 = flatten_dae_components(m2, m2.time, Var)
-
-    m2.v1[2].set_value(5)
-    m2.blk[2].v2.set_value(5)
-
-    copy_values_at_time(dae_vars_1, dae_vars_2, 1, 2)
-
-    for t in m1.time:
-        if t != 1:
-            assert m1.v1[t].value == 1
-            assert m1.blk[t].v2.value == 1
-        else:
-            assert m1.v1[t].value == 5
-            assert m1.blk[t].v2.value == 5
-
-
-@pytest.mark.unit
-def test_find_slices_in_model():
-    # Define m1
-    m1 = ConcreteModel()
-    m1.time = Set(initialize=[1,2,3,4,5])
-
-    m1.v1 = Var(m1.time, initialize=1)
-    
-    @m1.Block(m1.time)
-    def blk(b, t):
-        b.v2 = Var(initialize=1)
-
-    # Define m2
-    m2 = ConcreteModel()
-    m2.time = Set(initialize=[1,2,3,4,5])
-
-    m2.v1 = Var(m2.time, initialize=2)
-    
-    @m2.Block(m2.time)
-    def blk(b, t):
-        b.v2 = Var(initialize=2)
-
-    ###
-
-    scalar_vars_1, dae_vars_1 = flatten_dae_components(m1, m1.time, Var)
-    scalar_vars_2, dae_vars_2 = flatten_dae_components(m2, m2.time, Var)
-
-    t0_tgt = m1.time.first()
-    group = NMPCVarGroup(dae_vars_1, m1.time)
-    categ = VariableCategory.ALGEBRAIC
-    locator = ComponentMap([(var[t0_tgt], NMPCVarLocator(categ, group, i))
-                                for i, var in enumerate(dae_vars_1)])
-
-    tgt_slices = find_slices_in_model(m1, m1.time, m2, m2.time, 
-            locator, dae_vars_2)
-
-    dae_var_set_1 = ComponentSet(dae_vars_1)
-    assert len(dae_var_set_1) == len(tgt_slices)
-    assert len(tgt_slices) == len(dae_vars_2)
-    for i, _slice in enumerate(tgt_slices):
-        assert dae_vars_2[i].name == _slice.name
-        assert _slice in dae_var_set_1
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -230,8 +87,227 @@ def test_initialize_by_element_in_range():
     assert mod.fs.cstr.outlet.conc_mol[2, 'P'].value == approx(0.4372, abs=1e-4)
 
 
+@pytest.mark.unit
+def test_get_violated_bounds():
+    bounds = (1., 2.)
+    val = 1.5
+    assert get_violated_bounds(val, bounds) == (None, 0)
+
+    val = 0.8
+    assert get_violated_bounds(val, bounds) == (1., 1)
+
+    val = 2.5
+    assert get_violated_bounds(val, bounds) == (2., -1)
+
+
+@pytest.mark.unit
+def test_apply_noise():
+    random.seed(1234)
+    noise_function = random.gauss
+    val_list = [1., 2., 3.]
+    params_list = [0.05, 0.05, 0.05]
+    new_vals = apply_noise(val_list, params_list, noise_function)
+
+    for val, new_val, p in zip(val_list, new_vals, params_list):
+        assert abs(val - new_val) < 3*p
+
+    noise_function = lambda val, rad: random.uniform(val - rad, val + rad)
+    new_vals = apply_noise(val_list, params_list, noise_function)
+    for val, new_val, p in zip(val_list, new_vals, params_list):
+        assert abs(val - new_val) <= p
+
+
+@pytest.mark.unit
+def test_apply_bounded_noise_discard():
+    NBO = NoiseBoundOption
+    random.seed(2345)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 2.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+    N = 100
+    results = [set(), set()]
+    for _ in range(N):
+        # Very low probability we ever need to discard more than 15 times
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.DISCARD, max_number_discards=15)
+        for r, n in zip(results, newvals):
+            r.add(n)
+
+    for val, res, (lb, ub) in zip(vals, results, bounds_list):
+        # Vanishingly small probability we get the same value twice.
+        assert len(res) == 100
+
+        inner_lb = val + (lb-val)/2
+        inner_ub = val + (ub-val)/2
+        n_inner = 0
+        n_outer = 0
+        for r in res:
+            # Vanishingly small probability we land exactly on a bound
+            assert lb < r and r < ub
+            if inner_lb < val and val < inner_ub:
+                n_inner += 1
+            else:
+                n_outer += 1
+
+        # Expect values to be clustered around the nominal.
+        assert n_inner > n_outer
+
+    with pytest.raises(MaxDiscardError):
+        for _ in range(N):
+            # Very likely that we will eventually need to discard a value
+            newvals = apply_noise_with_bounds(vals, params, noise_function,
+                    bounds_list, bound_option=NBO.DISCARD,
+                    max_number_discards=0)
+
+    with pytest.raises(MaxDiscardError):
+        for _ in range(N):
+            # In fact, very likely that we will need to discard more than
+            # 5 times consecutively over the course of generating 100 numbers
+            newvals = apply_noise_with_bounds(vals, params, noise_function,
+                    bounds_list, bound_option=NBO.DISCARD,
+                    max_number_discards=5)
+            # We could calculate the expected max number of discards to generate
+            # 100 values with the above mu, sigma, and bounds, but that seems
+            # unnecessary. For now I am satisfied that this number seems to be
+            # between 5 and 15 for gauss(10., 2.) \in (9., 11.)
+        
+
+@pytest.mark.unit
+def test_apply_bounded_noise_push_zero_eps():
+    NBO = NoiseBoundOption
+    random.seed(3456)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 2.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+
+@pytest.mark.unit
+def test_apply_bounded_noise_push_nonzero_eps():
+    NBO = NoiseBoundOption
+    random.seed(3456)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 2.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+    N = 100
+    results = [[], []]
+    for _ in range(N):
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.PUSH, bound_push=0.0)
+        for r, n in zip(results, newvals):
+            r.append(n)
+
+    # These flags will be used to make sure we cover both branches of an
+    # "if tree" below.
+    b1, b2 = False, False
+
+    for val, res, p, (lb, ub) in zip(vals, results, params, bounds_list):
+        # Very low probability we DON'T get the same value at least
+        # twice. (I.e. we never exceed the same bound more than once.)
+        assert len(set(res)) < 100
+
+        n_ub = 0
+        n_lb = 0
+        n_interior = 0
+        for r in res:
+            assert lb <= r <= ub
+            if r == lb:
+                n_lb += 1
+            elif r == ub:
+                n_ub += 1
+            else:
+                n_interior += 1
+
+        assert n_lb >= 1
+        assert n_ub >= 1
+        assert n_interior >= 1
+
+        # Very rough check that the distribution looks something like we
+        # expect.
+        if (val-lb) >= p and (ub-val) >= p:
+            # If our bounds are at least sigma from the mean, we expect more
+            # "interior" points than points at the bounds.
+            assert n_interior > n_lb + n_ub
+            b1 = True
+        elif (val-lb) <= p/2 and (ub-val) <= p/2:
+            # If our bounds are within sigma/2 of the mean, we expect more
+            # points at the bounds than in the interior.
+            assert n_lb + n_ub > n_interior
+            b2 = True
+        else:
+            raise RuntimeError()
+
+    # Sanity. Make sure we covered both branches.
+    assert b1 and b2
+
+    # Now test with a nonzero bound push
+    eps_b = 0.01
+    results = [[], []]
+    for _ in range(N):
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.PUSH, bound_push=eps_b)
+        for r, n in zip(results, newvals):
+            r.append(n)
+
+    for val, res, p, (lb, ub) in zip(vals, results, params, bounds_list):
+        # Very low probability we DON'T get the same value at least
+        # twice. (I.e. we never exceed the same bound more than once.)
+        assert len(set(res)) < 100
+
+        n_ub = 0
+        n_lb = 0
+        for r in res:
+            # Satisfy bounds strictly
+            assert lb < r < ub
+            if r == lb+eps_b:
+                n_lb += 1
+            elif r == ub-eps_b:
+                n_ub += 1
+
+        assert n_lb >= 1
+        assert n_ub >= 1
+
+
+@pytest.mark.unit
+def test_apply_bounded_noise_fail():
+    NBO = NoiseBoundOption
+    random.seed(13456)
+    noise_function = random.gauss
+    vals = [5., 10.]
+    params = [1., 1.]
+    bounds_list = [(4., 6.), (9., 11.)]
+
+    N = 10
+    results = [[], []]
+    with pytest.raises(RuntimeError):
+        # This is a very frail option
+        for _ in range(N):
+            newvals = apply_noise_with_bounds(vals, params, noise_function,
+                    bounds_list, bound_option=NBO.FAIL)
+            for r, n in zip(results, newvals):
+                r.append(n)
+
+    N = 2
+    results = [[], []]
+    for _ in range(N):
+        newvals = apply_noise_with_bounds(vals, params, noise_function,
+                bounds_list, bound_option=NBO.FAIL)
+        for r, n in zip(results, newvals):
+            r.append(n)
+
+    for val, res, p, (lb, ub) in zip(vals, results, params, bounds_list):
+        # Expect unique values that don't violate the bounds
+        assert len(set(res)) == N
+        for r in res:
+            assert lb < r < ub
+    
+
 @pytest.mark.component
-def test_add_noise_at_time():
+def _test_add_noise_at_time():
     mod = make_model(horizon=2, ntfe=20)
     time = mod.fs.time
     t0 = time.first()
@@ -334,39 +410,9 @@ def test_add_noise_at_time():
                                      weights=[1,1,1,1,1],
                                      sig_0=0.05)
 
-    @pytest.mark.unit
-    def test_get_violated_bounds_at_time():
-        m = ConcreteModel()
-        m.time = Set(initialize=[1,2,3])
-        m.v = Var(m.time, ['a','b','c'], initialize=5)
-
-        varlist = [Reference(m.v[:,'a']),
-                   Reference(m.v[:,'b']),
-                   Reference(m.v[:,'c'])]
-        group = NMPCVarGroup(varlist, m.time)
-        group.set_lb(0, 0)
-        group.set_lb(1, 6)
-        group.set_lb(2, 0)
-        group.set_ub(0, 4)
-        group.set_ub(1, 10)
-        group.set_ub(2, 10)
-        violated = get_violated_bounds_at_time(group, [1,2,3], tolerance=1e-8)
-        violated_set = ComponentSet(violated)
-        for t in m.time:
-            assert m.v[t,'a'] in violated_set
-            assert m.v[t,'b'] in violated_set
-
-        violated = get_violated_bounds_at_time(group, 2, tolerance=1e-8)
-        violated_set = ComponentSet(violated)
-        assert m.v[2,'a'] in violated_set
-        assert m.v[2,'b'] in violated_set
-
-
 if __name__ == '__main__':
-    test_find_comp_in_block()
-    test_NMPCVarLocator()
-    test_copy_values()
-    test_find_slices_in_model()
-    test_initialize_by_element_in_range()
-    test_add_noise_at_time()
-
+    test_apply_bounded_noise_push_zero_eps()
+    test_apply_bounded_noise_push_nonzero_eps()
+    test_apply_bounded_noise_discard()
+    test_apply_bounded_noise_fail()
+    print('Tests passed!')
