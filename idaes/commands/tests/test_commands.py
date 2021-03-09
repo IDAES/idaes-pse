@@ -149,8 +149,7 @@ def test_examples_cli_copy(runner, tempdir):
     assert result.exit_code == -1
     # local dir exists, no REPO_DIR in it
     src_dir = tempdir / "examples-dev"
-    if not src_dir.exists():
-        src_dir.mkdir()
+    src_dir.mkdir(exist_ok=True)
     result = runner.invoke(
         examples.get_examples, ["-d", dirname, "--local", str(src_dir), "-I"]
     )
@@ -257,15 +256,12 @@ def test_examples_install_src():
     _log.debug(f"install_src: curdir={os.curdir}")
     # create fake package
     src_dir = tempdir / "src"
-    if not src_dir.exists():
-        src_dir.mkdir()
+    src_dir.mkdir(exist_ok=True)
     m1_dir = src_dir / "module1"
-    if not m1_dir.exists():
-        m1_dir.mkdir()
+    m1_dir.mkdir(exist_ok=True)
     (m1_dir / "groot.py").open("w").write("print('I am groot')\n")
     m2_dir = m1_dir / "module1_1"
-    if not m2_dir.exists():
-        m2_dir.mkdir()
+    m2_dir.mkdir(exist_ok=True)
     (m2_dir / "groot.py").open("w").write("print('I am groot')\n")
     # install it
     examples.install_src("0.0.0", src_dir)
