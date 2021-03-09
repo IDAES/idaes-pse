@@ -24,8 +24,9 @@ from pyomo.environ import (ConcreteModel, Constraint,
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
+# Need define_default_scaling_factors, even though it is not used directly
 from idaes.generic_models.properties.core.state_definitions.FcTP import \
-    define_state, set_metadata
+    define_state, set_metadata, define_default_scaling_factors
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -1045,6 +1046,48 @@ class TestCommon(object):
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 2
+
+    @pytest.mark.unit
+    def test_calculate_scaling_factors(self, frame):
+        frame.props[1].calculate_scaling_factors()
+
+        assert len(frame.props[1].scaling_factor) == 19
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase["a"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase["b"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_comp["c1"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_comp["c2"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_comp["c3"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].dens_mol_phase["a"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].dens_mol_phase["b"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_comp["c1"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_comp["c2"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_comp["c3"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["a", "c1"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["a", "c2"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["a", "c3"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["b", "c1"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["b", "c2"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["b", "c3"]] == 1e3
+        assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
+        assert frame.props[1].scaling_factor[
+            frame.props[1].temperature] == 1e-2
 
     # Test General Methods
     @pytest.mark.unit

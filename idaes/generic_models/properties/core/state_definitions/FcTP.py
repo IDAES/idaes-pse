@@ -14,7 +14,8 @@
 Methods for setting up FcTP as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, Expression, NonNegativeReals, Var
+from pyomo.environ import \
+    Constraint, Expression, NonNegativeReals, Var, units as pyunits
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -245,6 +246,56 @@ def define_state(b):
     b.define_display_vars = define_display_vars_FTPx
 
 
+def define_default_scaling_factors(b):
+    # Get bounds and initial values from config args
+    units = b.get_metadata().derived_units
+    state_bounds = b.config.state_bounds
+
+    if state_bounds is None:
+        return
+
+    try:
+        f_bounds = state_bounds["flow_mol_comp"]
+        if len(f_bounds) == 4:
+            f_init = pyunits.convert_value(f_bounds[1],
+                                           from_units=f_bounds[3],
+                                           to_units=units["flow_mole"])
+        else:
+            f_init = f_bounds[1]
+    except KeyError:
+        f_init = 1
+
+    try:
+        p_bounds = state_bounds["pressure"]
+        if len(p_bounds) == 4:
+            p_init = pyunits.convert_value(p_bounds[1],
+                                           from_units=p_bounds[3],
+                                           to_units=units["pressure"])
+        else:
+            p_init = p_bounds[1]
+    except KeyError:
+        p_init = 1
+
+    try:
+        t_bounds = state_bounds["temperature"]
+        if len(t_bounds) == 4:
+            t_init = pyunits.convert_value(t_bounds[1],
+                                           from_units=t_bounds[3],
+                                           to_units=units["temperature"])
+        else:
+            t_init = t_bounds[1]
+    except KeyError:
+        t_init = 1
+
+    # Set default scaling factors
+    b.set_default_scaling("flow_mol", 1/f_init)
+    b.set_default_scaling("flow_mol_phase", 1/f_init)
+    b.set_default_scaling("flow_mol_comp", 1/f_init)
+    b.set_default_scaling("flow_mol_phase_comp", 1/f_init)
+    b.set_default_scaling("pressure", 1/p_init)
+    b.set_default_scaling("temperature", 1/t_init)
+
+
 # Inherit state_initialization from FTPX form, as the process is the same
 
 
@@ -256,3 +307,4 @@ class FcTP(object):
     define_state = define_state
     state_initialization = state_initialization
     do_not_initialize = do_not_initialize
+    define_default_scaling_factors = define_default_scaling_factors

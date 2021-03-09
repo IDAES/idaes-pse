@@ -45,6 +45,10 @@ class ENRTL(EoSBase):
         #             .format(b.name))
         # b._return_component_list = types.MethodType(_return_component_list, b)
 
+    @staticmethod
+    def calculate_scaling_factors(b, pobj):
+        pass
+
     def build_parameters(b):
         pass
 

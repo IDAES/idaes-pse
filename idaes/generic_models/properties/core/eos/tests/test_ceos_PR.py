@@ -50,9 +50,10 @@ def set_metadata(b):
 
 
 # Dummy methods for dummied submodules
-def dummy_pe(b, *args):
-    # Return a dummy expression for the constraint
-    return b.temperature == 100
+class dummy_pe():
+    def return_expression(b, *args):
+        # Return a dummy expression for the constraint
+        return b.temperature == 100
 
 
 def phase_equil(b, *args):

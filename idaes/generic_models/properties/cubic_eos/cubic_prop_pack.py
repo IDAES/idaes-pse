@@ -1639,7 +1639,7 @@ class CubicStateBlockData(StateBlockData):
                 log(b.temperature/b.params.temperature_ref))
 
     def calculate_scaling_factors(self):
-        # Get default scale factors and do caclulations from base classes
+        # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
         phases = self.params.config.valid_phase

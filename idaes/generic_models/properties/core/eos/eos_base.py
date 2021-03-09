@@ -40,6 +40,10 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "common"))
 
     @staticmethod
+    def calculate_scaling_factors(b, pobj):
+        raise NotImplementedError(_msg(b, "calculate_scaling_factors"))
+
+    @staticmethod
     def build_parameters(b):
         raise NotImplementedError(_msg(b, "build_parameters"))
 
