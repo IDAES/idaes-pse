@@ -24,6 +24,7 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config, get_method, GenericPropertyPackageError
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -120,8 +121,7 @@ def define_state(b):
     if b.config.defined_state is False:
         # applied at outlet only
         b.sum_mole_frac_out = Constraint(
-            expr=1e3 == 1e3*sum(b.mole_frac_comp[i]
-                                for i in b.component_list))
+            expr=1 == sum(b.mole_frac_comp[i] for i in b.component_list))
 
     if len(b.phase_list) == 1:
         def rule_total_mass_balance(b):
@@ -129,8 +129,8 @@ def define_state(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return 1e3*b.mole_frac_comp[i] == \
-                1e3*b.mole_frac_phase_comp[b.phase_list[1], i]
+            return b.mole_frac_comp[i] == \
+                b.mole_frac_phase_comp[b.phase_list[1], i]
         b.component_flow_balances = Constraint(b.component_list,
                                                rule=rule_comp_mass_balance)
 
@@ -155,14 +155,12 @@ def define_state(b):
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return 1e3*sum(b.mole_frac_phase_comp[b.phase_list[1], i]
-                           for i in b.component_list
-                           if (b.phase_list[1], i)
-                           in b.phase_component_set) -\
-                1e3*sum(b.mole_frac_phase_comp[b.phase_list[2], i]
-                        for i in b.component_list
-                        if (b.phase_list[2], i)
-                        in b.phase_component_set) == 0
+            return sum(b.mole_frac_phase_comp[b.phase_list[1], i]
+                       for i in b.component_list
+                       if (b.phase_list[1], i) in b.phase_component_set) -\
+                sum(b.mole_frac_phase_comp[b.phase_list[2], i]
+                    for i in b.component_list
+                    if (b.phase_list[2], i) in b.phase_component_set) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
@@ -181,9 +179,9 @@ def define_state(b):
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
-            return 1e3*sum(b.mole_frac_phase_comp[p, i]
-                           for i in b.component_list
-                           if (p, i) in b.phase_component_set) == 1e3
+            return sum(b.mole_frac_phase_comp[p, i]
+                       for i in b.component_list
+                       if (p, i) in b.phase_component_set) == 1
         b.sum_mole_frac = Constraint(b.phase_list,
                                      rule=rule_mole_frac)
 
@@ -407,6 +405,11 @@ def state_initialization(b):
 
 
 def define_default_scaling_factors(b):
+    """
+    Method to set default scaling factors for the property package. Scaling
+    factors are based on the default initial value for each variable provided
+    in the state_bounds config argument.
+    """
     # Get bounds and initial values from config args
     units = b.get_metadata().derived_units
     state_bounds = b.config.state_bounds
@@ -456,6 +459,57 @@ def define_default_scaling_factors(b):
     b.set_default_scaling("temperature", 1/t_init)
 
 
+def calculate_scaling_factors(b):
+    sf_flow = iscale.get_scaling_factor(
+        b.flow_mol, default=1, warning=True)
+    sf_mf = iscale.get_scaling_factor(
+        b.mole_frac_phase_comp, default=1e3, warning=True)
+
+    if b.config.defined_state is False:
+        iscale.constraint_scaling_transform(b.sum_mole_frac_out, sf_mf)
+
+    if len(b.phase_list) == 1:
+        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+
+        for j in b.component_list:
+            sf_j = sf_mf = iscale.get_scaling_factor(
+                b.mole_frac_phase_comp[j], default=1e3, warning=True)
+            iscale.constraint_scaling_transform(
+                b.component_flow_balances[j], sf_j)
+
+        # b.phase_fraction_constraint is well scaled
+
+    elif len(b.phase_list) == 2:
+        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+
+        for j in b.component_list:
+            sf_j = sf_mf = iscale.get_scaling_factor(
+                b.mole_frac_comp[j], default=1e3, warning=True)
+            iscale.constraint_scaling_transform(
+                b.component_flow_balances[j], sf_j*sf_flow)
+
+        iscale.constraint_scaling_transform(b.sum_mole_frac, sf_mf)
+
+        for p in b.phase_list:
+            iscale.constraint_scaling_transform(
+                b.phase_fraction_constraint[p], sf_flow)
+
+    else:
+        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+
+        for j in b.component_list:
+            sf_j = sf_mf = iscale.get_scaling_factor(
+                b.mole_frac_comp[j], default=1e3, warning=True)
+            iscale.constraint_scaling_transform(
+                b.component_flow_balances[j], sf_j*sf_flow)
+
+        for p in b.phase_list:
+            iscale.constraint_scaling_transform(
+                b.sum_mole_frac[p], sf_mf)
+            iscale.constraint_scaling_transform(
+                b.phase_fraction_constraint[p], sf_flow)
+
+
 do_not_initialize = ["sum_mole_frac_out"]
 
 
@@ -465,3 +519,4 @@ class FTPx(object):
     state_initialization = state_initialization
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
+    calculate_scaling_factors = calculate_scaling_factors

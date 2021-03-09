@@ -24,7 +24,7 @@ from pyomo.util.check_units import (
 
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.generic_models.properties.core.state_definitions.FPhx import \
-    define_state, set_metadata, define_default_scaling_factors
+    FPhx, define_state, set_metadata, define_default_scaling_factors
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -931,7 +931,7 @@ class TestCommon(object):
                 "phases": {
                     "a": {"equation_of_state": dummy_eos},
                     "b": {"equation_of_state": dummy_eos}},
-                "state_definition": modules[__name__],
+                "state_definition": FPhx,
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "state_bounds": {
@@ -952,8 +952,6 @@ class TestCommon(object):
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
         m.props[1].enth_mol_phase = Var(m.params.phase_list, initialize=1)
-
-        define_state(m.props[1])
 
         return m
 

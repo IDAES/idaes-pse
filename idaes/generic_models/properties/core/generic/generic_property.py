@@ -1420,6 +1420,9 @@ class GenericStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
+        # Sclae state variables and associated constraints
+        self.params.config.state_definition.calculate_scaling_factors(self)
+
         sf_T = iscale.get_scaling_factor(
             self.temperature, default=1, warning=True)
         sf_P = iscale.get_scaling_factor(

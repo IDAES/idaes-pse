@@ -190,6 +190,11 @@ def state_initialization(b):
 
 
 def define_default_scaling_factors(b):
+    """
+    Method to set default scaling factors for the property package. Scaling
+    factors are based on the default initial value for each variable provided
+    in the state_bounds config argument.
+    """
     # Get bounds and initial values from config args
     units = b.get_metadata().derived_units
     state_bounds = b.config.state_bounds
@@ -239,6 +244,10 @@ def define_default_scaling_factors(b):
     b.set_default_scaling("temperature", 1/t_init)
 
 
+def calculate_scaling_factors(b):
+    pass
+
+
 do_not_initialize = []
 
 
@@ -248,3 +257,4 @@ class FpcTP(object):
     state_initialization = state_initialization
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
+    calculate_scaling_factors = calculate_scaling_factors
