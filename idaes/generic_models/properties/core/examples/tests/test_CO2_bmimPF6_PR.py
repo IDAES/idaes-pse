@@ -156,6 +156,53 @@ class TestStateBlock(object):
         assert_units_consistent(model)
 
     @pytest.mark.unit
+    def test_basic_scaling(self, model):
+        model.fs.props[1].calculate_scaling_factors()
+        model.fs.props[1].scaling_factor.display()
+
+        assert len(model.fs.props[1].scaling_factor) == 18
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase["Liq"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase["Vap"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].mole_frac_comp["bmimPF6"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].mole_frac_comp["carbon_dioxide"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].mole_frac_phase_comp["Liq", "bmimPF6"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].mole_frac_phase_comp[
+                "Liq", "carbon_dioxide"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].mole_frac_phase_comp[
+                "Vap", "carbon_dioxide"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].pressure] == 1e-5
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].temperature] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1]._teq] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1]._teq["Vap", "Liq"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1]._t1_Vap_Liq] == 1e-2
+
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1]._mole_frac_tbub] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1]._mole_frac_tbub[
+                "Vap", "Liq", "carbon_dioxide"]] == 1000
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].temperature_bubble] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
+
+    @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.fs.props[1].define_state_vars()
 
@@ -215,14 +262,13 @@ class TestFlashIntegration(object):
 
         assert degrees_of_freedom(model.fs) == 0
 
+        # Apply scaling - model will not solver without this
+        model.fs.unit.control_volume.properties_in[
+            0].calculate_scaling_factors()
+        model.fs.unit.control_volume.properties_out[
+            0].calculate_scaling_factors()
+
         return model
-
-    @pytest.mark.component
-    def test_scaling(self, model):
-        model.fs.unit.control_volume.properties_in[0].calculate_scaling_factors()
-        model.fs.unit.control_volume.properties_out[0].calculate_scaling_factors()
-
-        assert False
 
     @pytest.mark.component
     def test_initialize(self, model):
