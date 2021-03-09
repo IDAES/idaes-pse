@@ -12,6 +12,7 @@
 ##############################################################################
 
 import idaes
+import os
 import pandas as pd
 import numpy as np
 from scipy import sparse
@@ -21,6 +22,7 @@ from pyomo.opt import SolverFactory
 import shutil
 import logging
 from collections import namedtuple
+from sens import sensitivity_calculation # will replace with pyomo 
 
 logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
@@ -62,6 +64,17 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
             Estimated parameters
         results.cov: numpy.ndarray
             Covariance of theta_out
+        results.gradient_f_dic: numpy.ndarray 
+            gradient of the objective function with respect to all decision variables at the optimal solution 
+            with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+        results.gradient_c_dic: numpy.ndarray
+            gradient of the constraints with respect to all decision variables at the optimal solution
+            with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
+            Only non-zero gradients are included.
+        results.dsdp_dic: dict
+            gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name).
+            e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
+                     'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
         results.propagation_f: dict
             error propagation in the objective function with the dictionary key, 'objective' 
             if the objective function doesn't include any uncertain parameters, return an empty dictionary        
@@ -109,11 +122,12 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
             theta_out[var_dic[i]] = theta[i]
         theta_names = [var_dic[v] for v in theta_names] 
     else:
-        theta_out = theta 
-    propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
+        theta_out = theta
     
-    Output = namedtuple('Output',['obj', 'theta_out', 'cov', 'propagation_f', 'propagation_c'])
-    results= Output(obj, theta_out, cov, propagation_f, propagation_c)
+    gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
+    
+    Output = namedtuple('Output',['obj', 'theta_out', 'cov', 'gradient_f_dic','gradient_c_dic', 'dsdp_dic', 'propagation_f', 'propagation_c'])
+    results= Output(obj, theta_out, cov, gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c)
     
     return results
 
@@ -139,9 +153,20 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         Indicates that ef solver output should be teed
     solver_options: dict, optional
         Provides options to the solver (also the name of an attribute)
-    
+
     Returns
     -------
+    gradient_f_dic: dic
+        gradient of the objective function with respect to all decision variables at the optimal solution 
+        with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+    gradient_c_dic: dic
+        gradient of the constraints with respect to all decision variables at the optimal solution
+        with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
+        Only non-zero gradients are included.
+    dsdp_dic: dict
+        gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name).    
+        e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
+                     'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
     propagation_f: dictionary
         error propagation in the objective function with the dictionary key, 'objective' 
         if the objective function doesn't include any uncertain parameters, return an empty dictionary        
@@ -149,7 +174,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         error propagation in the constraints with the dictionary keys, 'constraints r'
         where r is the line number. 
         if no constraint includes uncertain parameters, return an empty dictionary      
- 
+
     Raises
     ------
     Exception
@@ -178,9 +203,14 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         for v in theta_names:
             eval('model.'+v).setlb(theta[v])
             eval('model.'+v).setub(theta[v])
+
     # get gradient of the objective function, constraints, and the column number of each theta
-    gradient_f, gradient_c,line_dic = get_sensitivity(model, theta_names, tee)
-    
+    gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic = get_sensitivity(model, theta_names, tee)
+    if variable_clean:
+        dsdp_dic = get_dsdp(model, theta_names, theta, tee, None, var_dic)
+    else:
+        dsdp_dic = get_dsdp(model, theta_names, theta, tee)      
+   
     # calculate error propagation g*cov*g 
     # objective function: 
     for cc in list(model.component_data_objects(Objective,
@@ -222,10 +252,95 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     else:
         propagation_c = {}
 
-    return propagation_f, propagation_c
+    return gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c
+
+def get_dsdp(model, theta_names, theta, tee=False, solver_options=None,var_dic=None):
+    """This function calculates gradient vector of the (decision variables, parameters) with respect to the paramerters (theta_names).
+    e.g) min 1
+         s.t x1 = p1
+             x2 = p2
+    the function retuns 
+    {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
+     'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
+    
+    Parameters
+    ----------
+    model: Pyomo ConcreteModel
+        model should includes an objective function 
+    theta_names: list of strings
+        List of Var names
+    theta: dict
+        Estimated parameters
+    tee: bool, optional
+        Indicates that ef solver output should be teed
+    solver_options: dict, optional
+        Provides options to the solver (also the name of an attribute)
+    var_dic: dictionary
+        If any original variable contains "'", need an auxiliary dictionary  with keys theta_namess without "'", values with "'".
+        e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
+
+    Returns
+    -------
+    dsdp_dic: dict
+        gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name).
+        e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
+                     'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
+ 
+    """    
+    m = model.clone()    
+    original_Param = []
+    perturbed_Param = []
+    m.extra = ConstraintList()
+    for v in theta_names:
+        if var_dic == None :
+            setattr(m, str('original_')+v ,Param(initialize=theta[v], mutable=True))
+            setattr(m, str('perturbed_')+v ,Param(initialize=theta[v]))
+            m.extra.add(eval('m.'+v) - eval('m.original_'+v) == 0 )
+            original_Param.append(eval('m.original_'+v))
+            perturbed_Param.append(eval('m.perturbed_'+v))
+        else:
+            # v already remove all spaces and "
+            v_tmp = v.replace('.', '_')
+            v_tmp = v_tmp.replace(',', '_')
+            v_tmp = v_tmp.replace('[', '_')
+            v_tmp = v_tmp.replace(']', '_')
+            setattr(m, str('original_')+v_tmp ,Param(initialize=theta[v], mutable=True))
+            setattr(m, str('perturbed_')+v_tmp ,Param(initialize=theta[v]))
+            m.extra.add(eval('m.'+var_dic[v]) - eval('m.original_'+v_tmp) == 0 )
+            original_Param.append(eval('m.original_'+v_tmp))
+            perturbed_Param.append(eval('m.perturbed_'+v_tmp))
+ 
+    m_kaug_dsdp = sensitivity_calculation('kaug',m,original_Param,perturbed_Param, tee)
+    with open ("./dsdp/col_row.col", "r") as myfile:
+        col = myfile.read().splitlines()
+    dsdp = np.loadtxt("./dsdp/dsdp_in_.in")
+    dsdp = dsdp.reshape((len(theta_names), int(len(dsdp)/len(theta_names))))
+    dsdp = dsdp[:len(theta_names), :len(col)]
+    dsdp_dic = {}
+    for i in range(len(theta_names)):
+        for j in range(len(col)):
+            if "_SENSITIVITY_TOOLBOX_DATA" not in col[j]:
+                dsdp_dic["d("+col[j] +")/d("+theta_names[i]+")"] =  -dsdp[i, j]
+    try:
+        shutil.rmtree('dsdp', ignore_errors=True)
+    except OSError:
+        pass
+    return dsdp_dic
 
 def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector of the objective function and constraints with respect to the variables in theta_names.
+    
+    e.g) min f: x1+x2+p1+p2 
+         s.t c1: x1 = p1
+             c2: x2 = p2
+             \hat{p1} <= p1 <= \hat{p1}
+             \hat{p2} <= p2 <= \hat{p2}  
+    - Variables = (x1, x2, p1, p2)
+    - Fix p1 and p2 with estimated values
+    - The optmial solution is (\hat{p1}, \hat{p2}, \hat{p1}, \hat{p2})          
+    - The function provides gradient vector at the optimal solution
+      gradient vector of the objective function = {'d(f)/d(x1)': 1.0, 'd(f)/d(x2)': 1.0, 'd(f)/d(p1)': 1.0, 'd(f)/d(p2)': 1.0}}
+      gradient vector of the constraints = {'d(c1)/d(x1)': 1.0, 'd(c3)/d(x1)': -1.0, 'd(c2)/d(x2)': 1.0, 'd(c4)/d(x2)': -1.0}
     
     Parameters
     ----------
@@ -242,12 +357,18 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     -------
     gradient_f: numpy.ndarray
         gradient vector of the objective function with respect to all decision variables at the optimal solution
+    gradient_f_dic: dic
+        gradient_f with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
     gradient_c: numpy.ndarray
         gradient vector of the constraints with respect to all decision variables at the optimal solution
         Each row contains column number, row number, and value
         If no constraint exists, return []
+    gradient_c: dic
+        gradient_c with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
+        Only non-zero gradients are included.
     line_dic: dict
         column numbers of the theta_names in the model. Index starts from 1
+
     Raises
     ------
     RuntimeError
@@ -298,6 +419,11 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
         line_dic[v] = line_num('col_row.col', v)
     # load gradient of the objective function
     gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
+    with open ("col_row.col", "r") as myfile:
+        col = myfile.read().splitlines()
+    gradient_f_dic = {}
+    for i in range(len(col)):
+        gradient_f_dic["d(f)/d("+col[i]+")"] = gradient_f[i]
     # load gradient of all constraints (sparse)
     # If no constraint exists, return []
     num_constraints = len(list(model.component_data_objects(Constraint,
@@ -305,15 +431,19 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
                                                             descend_into=True)))
     if num_constraints > 0 :
         gradient_c = np.loadtxt("./GJH/A_print.txt")
+        row_number, col_number = np.shape(gradient_c)
+        gradient_c_dic = {}
+        for i in range(row_number):
+            gradient_c_dic["d(c"+ str(int(gradient_c[i,0]))+")/d("+col[int(gradient_c[i,1]-1)]+")"] = gradient_c[i,2]
     else:
         gradient_c = np.array([])
-
+        gradient_c_dic = {}
     # remove all generated files
     shutil.move("col_row.nl", "./GJH/")
     shutil.move("col_row.col", "./GJH/")
     shutil.move("col_row.row", "./GJH/")
     shutil.rmtree('GJH', ignore_errors=True)
-    return gradient_f, gradient_c, line_dic
+    return gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic
 
 def line_num(file_name, target):
     """This function returns the line number contains 'target' in the file_name

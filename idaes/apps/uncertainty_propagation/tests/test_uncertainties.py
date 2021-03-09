@@ -18,7 +18,7 @@ import pandas as pd
 import pytest
 from pytest import approx
 from mock import patch
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty, get_sensitivity, clean_variable_name
+from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty, get_dsdp, get_sensitivity, clean_variable_name
 from pyomo.opt import SolverFactory
 from pyomo.environ import *
 import pyomo.contrib.parmest.parmest as parmest
@@ -101,11 +101,39 @@ class TestUncertaintyPropagation:
         model_uncertain.rate_constant = Var(initialize = 0.5)
         model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
 
-        propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
+        gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
 
         assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
-        
+
+    def test_get_dsdp(self):
+        '''
+        It tests the function get_dsdp with rooney & biegler's model.
+        '''
+        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
+        variable_name = ['asymptote', 'rate_constant']
+        data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
+                                  [4,16.0],[5,15.6],[7,19.8]],
+                            columns=['hour', 'y'])
+        def SSE(model, data):
+            expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
+            return expr
+        parmest_class = parmest.Estimator(rooney_biegler_model, data,variable_name,SSE)
+        obj, theta, cov = parmest_class.theta_est(calc_cov=True)
+        model_uncertain= ConcreteModel()
+        model_uncertain.asymptote = Var(initialize = 15)
+        model_uncertain.rate_constant = Var(initialize = 0.5)
+        model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
+        theta= {'asymptote': 19.142575284617866, 'rate_constant': 0.53109137696521}
+        for v in variable_name:
+            getattr(model_uncertain, v).setlb(theta[v])
+            getattr(model_uncertain, v).setub(theta[v])
+        dsdp_dic =  get_dsdp(model_uncertain, variable_name, theta)
+        assert dsdp_dic['d(asymptote)/d(asymptote)'] == approx(1.0)
+        assert dsdp_dic['d(rate_constant)/d(asymptote)'] == approx(0.0)
+        assert dsdp_dic['d(asymptote)/d(rate_constant)'] == approx(0.0)
+        assert dsdp_dic['d(rate_constant)/d(rate_constant)'] == approx(1.0)
+    
     def test_get_sensitivity(self):
         '''
         It tests the function get_sensitivity with rooney & biegler's model.
@@ -128,8 +156,10 @@ class TestUncertaintyPropagation:
         for v in variable_name:
             getattr(model_uncertain, v).setlb(theta[v])
             getattr(model_uncertain, v).setub(theta[v])
-        gradient_f, gradient_c, line_dic =  get_sensitivity(model_uncertain, variable_name)
-        
+        gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic =  get_sensitivity(model_uncertain, variable_name)
+
+        assert gradient_f_dic['d(f)/d(asymptote)'] == approx(0.99506259)
+        assert gradient_f_dic['d(f)/d(rate_constant)'] == approx(0.945148)
         assert gradient_f == approx(np.array([0.99506259, 0.945148]))
         assert gradient_c == approx(np.array([]))
         assert line_dic['asymptote'] == approx(1)
