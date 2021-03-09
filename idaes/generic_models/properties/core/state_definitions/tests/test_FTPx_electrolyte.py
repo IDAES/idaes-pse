@@ -356,6 +356,8 @@ class TestApparentSpeciesBasisInherent():
                 [1],
                 default={"defined_state": True})
 
+        m.fs.state[1].calculate_scaling_factors()
+
         return m
 
     @pytest.mark.unit
