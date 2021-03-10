@@ -225,15 +225,15 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         for i in frame.props[1].component_flow_balances:
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
-                1e3*frame.props[1].mole_frac_comp[i] -
-                1e3*frame.props[1].mole_frac_phase_comp[
-                        frame.params.phase_list[1], i])
+                frame.props[1].mole_frac_comp[i] -
+                frame.props[1].mole_frac_phase_comp[
+                    frame.params.phase_list[1], i])
 
         assert isinstance(frame.props[1].sum_mole_frac_out, Constraint)
         assert len(frame.props[1].sum_mole_frac_out) == 1
         assert str(frame.props[1].sum_mole_frac_out.body) == str(
-                1e3*sum(frame.props[1].mole_frac_comp[i]
-                        for i in frame.props[1].params.component_list))
+                sum(frame.props[1].mole_frac_comp[i]
+                    for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 1
@@ -350,9 +350,9 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         for i in frame.props[1].component_flow_balances:
             assert i in frame.props[1].params.component_list
             assert str(frame.props[1].component_flow_balances[i].body) == str(
-                1e3*frame.props[1].mole_frac_comp[i] -
-                1e3*frame.props[1].mole_frac_phase_comp[
-                        frame.params.phase_list[1], i])
+                frame.props[1].mole_frac_comp[i] -
+                frame.props[1].mole_frac_phase_comp[
+                    frame.params.phase_list[1], i])
 
         assert not hasattr(frame.props[1], "sum_mole_frac_out")
 
@@ -483,18 +483,18 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         assert isinstance(frame.props[1].sum_mole_frac, Constraint)
         assert len(frame.props[1].sum_mole_frac) == 1
         assert str(frame.props[1].sum_mole_frac.body) == str(
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[1], i]
-                        for i in frame.props[1].params.component_list) -
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[2], i]
-                        for i in frame.props[1].params.component_list))
+                sum(frame.props[1].mole_frac_phase_comp[
+                    frame.props[1].params.phase_list[1], i]
+                    for i in frame.props[1].params.component_list) -
+                sum(frame.props[1].mole_frac_phase_comp[
+                    frame.props[1].params.phase_list[2], i]
+                    for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].sum_mole_frac_out, Constraint)
         assert len(frame.props[1].sum_mole_frac_out) == 1
         assert str(frame.props[1].sum_mole_frac_out.body) == str(
-                1e3*sum(frame.props[1].mole_frac_comp[i]
-                        for i in frame.props[1].params.component_list))
+                sum(frame.props[1].mole_frac_comp[i]
+                    for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 2
@@ -623,12 +623,12 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         assert isinstance(frame.props[1].sum_mole_frac, Constraint)
         assert len(frame.props[1].sum_mole_frac) == 1
         assert str(frame.props[1].sum_mole_frac.body) == str(
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[1], i]
-                        for i in frame.props[1].params.component_list) -
-                1e3*sum(frame.props[1].mole_frac_phase_comp[
-                        frame.props[1].params.phase_list[2], i]
-                        for i in frame.props[1].params.component_list))
+                sum(frame.props[1].mole_frac_phase_comp[
+                    frame.props[1].params.phase_list[1], i]
+                    for i in frame.props[1].params.component_list) -
+                sum(frame.props[1].mole_frac_phase_comp[
+                    frame.props[1].params.phase_list[2], i]
+                    for i in frame.props[1].params.component_list))
 
         assert not hasattr(frame.props[1], "sum_mole_frac_out")
 
@@ -757,14 +757,14 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         for p in frame.props[1].sum_mole_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
-                            for i in frame.props[1].params.component_list))
+                    sum(frame.props[1].mole_frac_phase_comp[p, i]
+                        for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].sum_mole_frac_out, Constraint)
         assert len(frame.props[1].sum_mole_frac_out) == 1
         assert str(frame.props[1].sum_mole_frac_out.body) == str(
-                1e3*sum(frame.props[1].mole_frac_comp[i]
-                        for i in frame.props[1].params.component_list))
+                sum(frame.props[1].mole_frac_comp[i]
+                    for i in frame.props[1].params.component_list))
 
         assert isinstance(frame.props[1].phase_fraction_constraint, Constraint)
         assert len(frame.props[1].phase_fraction_constraint) == 3
@@ -905,8 +905,8 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         for p in frame.props[1].sum_mole_frac:
             assert p in frame.params.phase_list
             assert str(frame.props[1].sum_mole_frac[p].body) == str(
-                    1e3*sum(frame.props[1].mole_frac_phase_comp[p, i]
-                            for i in frame.props[1].params.component_list))
+                    sum(frame.props[1].mole_frac_phase_comp[p, i]
+                        for i in frame.props[1].params.component_list))
 
         assert not hasattr(frame.props[1], "sum_mole_frac_out")
 

@@ -24,6 +24,7 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -245,7 +246,11 @@ def define_default_scaling_factors(b):
 
 
 def calculate_scaling_factors(b):
-    pass
+    for p, j in b.phase_component_set:
+        sf = iscale.get_scaling_factor(b.flow_mol_phase_comp[
+            p, j], default=1, warning=True)
+        iscale.constraint_scaling_transform(
+            b.mole_frac_phase_comp_eq[p, j], sf)
 
 
 do_not_initialize = []

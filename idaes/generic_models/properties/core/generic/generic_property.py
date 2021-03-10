@@ -190,7 +190,7 @@ class GenericParameterData(PhysicalParameterBlock):
     CONFIG.declare("default_scaling_factors", ConfigValue(
         domain=dict,
         description="User-defined default scaling factors",
-        doc="Dict of user-defined proeprties and associated default "
+        doc="Dict of user-defined properties and associated default "
         "scaling factors"))
 
     def build(self):

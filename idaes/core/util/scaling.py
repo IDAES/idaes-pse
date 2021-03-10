@@ -229,7 +229,7 @@ def populate_default_scaling_factors(c):
     """
     Method to set default scaling factors for a number of common quantities
     based of typical values expressed in SI units. Values are converted to
-    those used by the proeprty package using Pyomo's unit conversion tools.
+    those used by the property package using Pyomo's unit conversion tools.
     """
     units = c.get_metadata().derived_units
 
