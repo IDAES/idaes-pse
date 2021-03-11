@@ -17,7 +17,7 @@ This module contains miscalaneous utility functions for use in IDAES models.
 import pytest
 
 from pyomo.environ import ConcreteModel, Expression, Set, Block, Var, units
-from pyomo.network import Port
+from pyomo.network import Port, Arc
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
@@ -78,6 +78,26 @@ def test_port_copy():
     assert(m.b2.z[0, "B"] == 7)
     assert(m.b2.z[1, "A"] == 8)
     assert(m.b2.z[1, "B"] == 9)
+
+    m.b2.x = 0
+    m.b2.y[0] = 0
+    m.b2.y[1] = 0
+    m.b2.z[0, "A"] = 0
+    m.b2.z[0, "B"] = 0
+    m.b2.z[1, "A"] = 0
+    m.b2.z[1, "B"] = 0
+
+    m.arc = Arc(source=m.b1.port, dest=m.b2.port)
+    copy_port_values(arc=m.arc)
+
+    assert(m.b2.x == 3)
+    assert(m.b2.y[0] == 4)
+    assert(m.b2.y[1] == 5)
+    assert(m.b2.z[0, "A"] == 6)
+    assert(m.b2.z[0, "B"] == 7)
+    assert(m.b2.z[1, "A"] == 8)
+    assert(m.b2.z[1, "B"] == 9)
+
 
 
 # Author: John Eslick

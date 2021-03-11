@@ -213,18 +213,25 @@ def svg_tag(
 
 
 # Author: John Eslick
-def copy_port_values(destination, source):
+def copy_port_values(destination=None, source=None, arc=None):
     """
     Copy the variable values in the source port to the destination port. The
     ports must containt the same variables.
 
     Args:
-        (pyomo.Port): Copy values from this port
-        (pyomo.Port): Copy values to this port
+        destination (Port): Copy values from this port
+        source (Port): Copy values to this port
+        arc (Arc): If arc is provided, use it to get default values of source
+            and destination
 
     Returns:
         None
     """
+    if arc is not None:
+        if source is None:
+            source = arc.source
+        if destination is None:
+            destination = arc.dest
     for k, v in destination.vars.items():
         if isinstance(v, pyo.Var):
             for i in v:
