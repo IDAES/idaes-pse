@@ -191,7 +191,7 @@ class GenericParameterData(PhysicalParameterBlock):
     CONFIG.declare("default_scaling_factors", ConfigValue(
         domain=dict,
         description="User-defined default scaling factors",
-        doc="Dict of user-defined proeprties and associated default "
+        doc="Dict of user-defined properties and associated default "
         "scaling factors"))
 
     def build(self):
@@ -244,6 +244,9 @@ class GenericParameterData(PhysicalParameterBlock):
         self._electrolyte = False
 
         for p, d in self.config.phases.items():
+            # Create a copy of the phase config dict
+            d = dict(d)
+
             ptype = d.pop("type", None)
 
             if ptype is None:
@@ -300,6 +303,9 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for c, d in self.config.components.items():
+            # Create a copy of the component config dict
+            d = dict(d)
+
             ctype = d.pop("type", None)
             d["_electrolyte"] = self._electrolyte
 
@@ -1244,18 +1250,19 @@ class _GenericStateBlock(StateBlock):
             blk[k].params.config.state_definition.state_initialization(blk[k])
 
             if blk[k].params._electrolyte:
-                # Need to initialize true/apparent species as well
-                # # First, activate the assoicated constraints
-                # for c in blk[k].component_objects(Constraint):
-                #     # Activate common constraints
-                #     if c.local_name in ["appr_to_true_species",
-                #                         "true_mole_frac_constraint"]:
-                #         c.activate()
-
                 if blk[k].params.config.state_components == StateIndex.true:
-                    raise Exception
+                    # First calculate initial values for apparent species flows
+                    for p, j in blk[k].params.apparent_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].flow_mol_phase_comp_apparent[p, j],
+                            blk[k].true_to_appr_species[p, j])
+                    # Need to calculate all flows before doing mole fractions
+                    for p, j in blk[k].params.apparent_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].mole_frac_phase_comp_apparent[p, j],
+                            blk[k].appr_mole_frac_constraint[p, j])
                 elif blk[k].params.config.state_components == StateIndex.apparent:
-                    # First calcualte initial values for true species flows
+                    # First calculate initial values for true species flows
                     for p, j in blk[k].params.true_phase_component_set:
                         calculate_variable_from_constraint(
                             blk[k].flow_mol_phase_comp_true[p, j],
@@ -1459,6 +1466,9 @@ class GenericStateBlockData(StateBlockData):
     def calculate_scaling_factors(self):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
+
+        # Sclae state variables and associated constraints
+        self.params.config.state_definition.calculate_scaling_factors(self)
 
         sf_T = iscale.get_scaling_factor(
             self.temperature, default=1, warning=True)

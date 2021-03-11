@@ -39,6 +39,10 @@ def set_metadata(b):
     pass
 
 
+def calculate_scaling_factors(b):
+    b.scaling_check = True
+
+
 # Dummy build_parameter methods for tests
 def build_parameters(cobj, p):
     cobj.add_component("test_param_"+p, Var(initialize=42))
@@ -1000,6 +1004,8 @@ class TestGenericStateBlock(object):
     @pytest.mark.unit
     def test_basic_scaling(self, frame):
         frame.props[1].calculate_scaling_factors()
+
+        assert frame.props[1].scaling_check
 
         assert len(frame.props[1].scaling_factor) == 8
         assert frame.props[1].scaling_factor[

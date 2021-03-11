@@ -24,6 +24,7 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -187,6 +188,11 @@ def state_initialization(b):
 
 
 def define_default_scaling_factors(b):
+    """
+    Method to set default scaling factors for the property package. Scaling
+    factors are based on the default initial value for each variable provided
+    in the state_bounds config argument.
+    """
     # Get bounds and initial values from config args
     units = b.get_metadata().derived_units
     state_bounds = b.config.state_bounds
@@ -236,6 +242,14 @@ def define_default_scaling_factors(b):
     b.set_default_scaling("temperature", 1/t_init)
 
 
+def calculate_scaling_factors(b):
+    for p, j in b.phase_component_set:
+        sf = iscale.get_scaling_factor(b.flow_mol_phase_comp[
+            p, j], default=1, warning=True)
+        iscale.constraint_scaling_transform(
+            b.mole_frac_phase_comp_eq[p, j], sf)
+
+
 do_not_initialize = []
 
 
@@ -245,3 +259,4 @@ class FpcTP(object):
     state_initialization = state_initialization
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
+    calculate_scaling_factors = calculate_scaling_factors
