@@ -32,6 +32,10 @@ class Ideal(EoSBase):
         pass
 
     @staticmethod
+    def calculate_scaling_factors(b, pobj):
+        pass
+
+    @staticmethod
     def build_parameters(b):
         # No EoS specific parameters required
         pass
