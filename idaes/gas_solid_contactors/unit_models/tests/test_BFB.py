@@ -36,8 +36,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               number_unused_variables,
                                               unused_variables_set)
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_default_solver
 
 from idaes.gas_solid_contactors.unit_models. \
     bubbling_fluidized_bed import BubblingFluidizedBed
@@ -211,8 +211,8 @@ class TestIronOC(object):
                           Constraint)
 
         assert number_variables(iron_oc) == 1436
-        assert number_total_constraints(iron_oc) == 1394
-        assert number_unused_variables(iron_oc) == 16
+        assert number_total_constraints(iron_oc) == 1395
+        assert number_unused_variables(iron_oc) == 15
 
     @pytest.mark.unit
     def test_dof(self, iron_oc):
@@ -418,8 +418,8 @@ class TestIronOC_EnergyBalanceType(object):
         assert isinstance(iron_oc.fs.unit.isothermal_bubble, Constraint)
 
         assert number_variables(iron_oc) == 1156
-        assert number_total_constraints(iron_oc) == 1051
-        assert number_unused_variables(iron_oc) == 80
+        assert number_total_constraints(iron_oc) == 1052
+        assert number_unused_variables(iron_oc) == 79
         print(unused_variables_set(iron_oc))
 
     @pytest.mark.unit

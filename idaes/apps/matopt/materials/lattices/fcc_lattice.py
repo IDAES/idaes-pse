@@ -19,6 +19,7 @@ from .unit_cell_lattice import UnitCell, UnitCellLattice
 from ..geometry import Cube
 from ..tiling import CubicTiling
 from ..transform_func import ScaleFunc, RotateFunc
+from ...util.util import ListHasPoint
 
 
 class FCCLattice(UnitCellLattice):
@@ -35,19 +36,19 @@ class FCCLattice(UnitCellLattice):
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = FCCLattice.RefIAD  # IAD is set correctly after calling applyTransF
-        self._RefNeighborsPattern = [np.array([0.0, -0.5, 0.5]),
-                                     np.array([-0.5, -0.5, 0.0]),
-                                     np.array([-0.5, 0.0, 0.5]),
-                                     np.array([0.5, -0.5, 0.0]),
-                                     np.array([0.0, -0.5, -0.5]),
-                                     np.array([-0.5, 0.0, -0.5]),
-                                     np.array([-0.5, 0.5, 0.0]),
-                                     np.array([0.0, 0.5, 0.5]),
-                                     np.array([0.5, 0.0, 0.5]),
-                                     np.array([0.5, 0.0, -0.5]),
-                                     np.array([0.0, 0.5, -0.5]),
-                                     np.array([0.5, 0.5, 0.0])]
         self.applyTransF(ScaleFunc(IAD / FCCLattice.RefIAD))
+        self._NthNeighbors = [[np.array([0.0, -0.5, 0.5]),
+                               np.array([-0.5, -0.5, 0.0]),
+                               np.array([-0.5, 0.0, 0.5]),
+                               np.array([0.5, -0.5, 0.0]),
+                               np.array([0.0, -0.5, -0.5]),
+                               np.array([-0.5, 0.0, -0.5]),
+                               np.array([-0.5, 0.5, 0.0]),
+                               np.array([0.0, 0.5, 0.5]),
+                               np.array([0.5, 0.0, 0.5]),
+                               np.array([0.5, 0.0, -0.5]),
+                               np.array([0.0, 0.5, -0.5]),
+                               np.array([0.5, 0.5, 0.0])]]
 
     # === CONSTRUCTOR - Aligned with FCC {100}
     @classmethod
@@ -80,13 +81,29 @@ class FCCLattice(UnitCellLattice):
     def areNeighbors(self, P1, P2):
         return np.linalg.norm(P2 - P1) <= self.IAD
 
-    def getNeighbors(self, P):
+    def getNeighbors(self, P, layer=1):
         RefP = self._getConvertToReference(P)
-        result = deepcopy(self._RefNeighborsPattern)
-        for NeighP in result:
+        if layer > len(self._NthNeighbors):
+            self._calculateNeighbors(layer)
+        NBs = deepcopy(self._NthNeighbors[layer - 1])
+        for NeighP in NBs:
             NeighP += RefP
             self._convertFromReference(NeighP)
-        return result
+        return NBs
+
+    def _calculateNeighbors(self, layer):
+        NList = [np.array([0, 0, 0], dtype=float)]
+        for nb in self._NthNeighbors:
+            NList.extend(nb)
+        for _ in range(layer - len(self._NthNeighbors)):
+            tmp = []
+            for P in self._NthNeighbors[len(self._NthNeighbors) - 1]:
+                for Q in self._NthNeighbors[0]:
+                    N = P + Q
+                    if not ListHasPoint(NList, N, 0.001 * FCCLattice.RefIAD):
+                        tmp.append(N)
+                        NList.append(N)
+            self._NthNeighbors.append(tmp)
 
     # === BASIC QUERY METHODS
     @property
@@ -99,8 +116,8 @@ class FCCLattice(UnitCellLattice):
 
     @property
     def FCC100LayerSpacing(self):
-        return self.IAD * 0.5
+        return self.IAD * sqrt(2) / 2
 
     @property
     def FCC110LayerSpacing(self):
-        return self.IAD * sqrt(2) / 2
+        return self.IAD

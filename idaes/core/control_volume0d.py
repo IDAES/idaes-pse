@@ -16,7 +16,7 @@ Base class for control volumes.
 __author__ = "Andrew Lee"
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, units as pyunits, Var
+from pyomo.environ import Constraint, Reals, units as pyunits, Var
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
@@ -60,6 +60,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+
     def build(self):
         """
         Build method for ControlVolume0DBlock blocks.
@@ -327,6 +328,24 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "by equilibrium reactions",
                 units=flow_units)
 
+        # Inherent reaction generation
+        if self.properties_out.has_inherent_reactions:
+            if not hasattr(self.config.property_package,
+                           "inherent_reaction_idx"):
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of "
+                    "inherent reactions (inherent_reaction_idx), but "
+                    "has_inherent_reactions is True."
+                    .format(self.name))
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().config.time,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Amount of component generated in control volume "
+                    "by inherent reactions",
+                units=flow_units)
+
         # Phase equilibrium generation
         if has_phase_equilibrium and \
                 balance_type == MaterialBalanceType.componentPhase:
@@ -367,6 +386,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def equilibrium_term(b, t, p, j):
             return (b.equilibrium_reaction_generation[t, p, j]
                     if has_equilibrium_reactions else 0)
+
+        def inherent_term(b, t, p, j):
+            return (b.inherent_reaction_generation[t, p, j]
+                    if b.properties_out.has_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, p, j):
             if has_phase_equilibrium and \
@@ -460,6 +483,30 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 else:
                     return Constraint.Skip
 
+        if self.properties_out.has_inherent_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.inherent_reaction_extent = Var(
+                    self.flowsheet().config.time,
+                    self.config.property_package.inherent_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Extent of inherent reactions",
+                    units=flow_units)
+
+            @self.Constraint(self.flowsheet().config.time,
+                             pc_set,
+                             doc="Inherent reaction stoichiometry")
+            def inherent_reaction_stoichiometry_constraint(b, t, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, p, j] == (
+                            sum(b.properties_out[t].params.
+                                inherent_reaction_stoichiometry[r, p, j] *
+                                b.inherent_reaction_extent[t, r]
+                                for r in b.config.property_package.
+                                inherent_reaction_idx))
+                else:
+                    return Constraint.Skip
+
         # Add custom terms and material balances
         if balance_type == MaterialBalanceType.componentPhase:
             def user_term_mol(b, t, p, j):
@@ -523,6 +570,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             kinetic_term(b, t, p, j) *
                             b._rxn_rate_conv(t, j, has_rate_reactions) +
                             equilibrium_term(b, t, p, j) +
+                            inherent_term(b, t, p, j) +
                             phase_equilibrium_term(b, t, p, j) +
                             transfer_term(b, t, p, j) +
                             user_term_mol(b, t, p, j) +
@@ -598,6 +646,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     sum(kinetic_term(b, t, p, j) for p in cplist) *
                     b._rxn_rate_conv(t, j, has_rate_reactions) +
                     sum(equilibrium_term(b, t, p, j) for p in cplist) +
+                    sum(inherent_term(b, t, p, j) for p in cplist) +
                     sum(transfer_term(b, t, p, j) for p in cplist) +
                     user_term_mol(b, t, j) + user_term_mass(b, t, j))
         else:
@@ -900,8 +949,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create rules to substitute material balance terms
         # Accumulation term
         def accumulation_term(b, t, e):
-            return pyunits.convert(b.element_accumulation[t, e],
-                                   to_units=units('flow_mole'))if dynamic else 0
+            return pyunits.convert(
+                b.element_accumulation[t, e],
+                to_units=units('flow_mole'))if dynamic else 0
 
         # Mass transfer term
         def transfer_term(b, t, e):
@@ -1119,13 +1169,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_balances(b, t):
             return sum(accumulation_term(b, t, p) for p in phase_list) == (
-                sum(b.properties_in[t].get_enthalpy_flow_terms(p) for p in phase_list)
-                - sum(self.properties_out[t].get_enthalpy_flow_terms(p) for p in phase_list)
-                + heat_term(b, t)
-                + work_term(b, t)
-                + enthalpy_transfer_term(b, t)
-                + rxn_heat_term(b, t)
-                + user_term(t))
+                sum(b.properties_in[t].get_enthalpy_flow_terms(p)
+                    for p in phase_list) -
+                sum(self.properties_out[t].get_enthalpy_flow_terms(p)
+                    for p in phase_list) +
+                heat_term(b, t) +
+                work_term(b, t) +
+                enthalpy_transfer_term(b, t) +
+                rxn_heat_term(b, t) +
+                user_term(t))
 
         # Energy Holdup
         if has_holdup:
@@ -1161,7 +1213,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 .format(self.name))
 
     def add_total_pressure_balances(
-        self, has_pressure_change=False, custom_term=None):
+            self, has_pressure_change=False, custom_term=None):
         """
         This method constructs a set of 0D pressure balances indexed by time.
 
@@ -1265,8 +1317,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              'model_check method to the associated '
                              'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver='ipopt', hold_state=True):
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
+                   solver=None, hold_state=True):
         '''
         Initialization routine for 0D control volume (default solver ipopt)
 
@@ -1276,9 +1328,15 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output log level of initialization routine
+<<<<<<< HEAD
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
+=======
+            optarg : solver options dictionary object (default={})
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+>>>>>>> main
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - True. **Valid values:**
@@ -1293,7 +1351,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             states were fixed during initialization.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
+        init_log = idaeslog.getInitLogger(
+            blk.name, outlvl, tag="control_volume")
         if state_args is None:
             state_args = {}
             state_dict = (

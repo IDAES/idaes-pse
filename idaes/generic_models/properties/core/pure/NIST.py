@@ -103,17 +103,16 @@ class enth_mol_ig_comp():
     def return_expression(b, cobj, T):
         # Specific enthalpy via the Shomate equation
         t = pyunits.convert(T, to_units=pyunits.kiloK)
-        tr = pyunits.convert(b.params.temperature_ref, to_units=pyunits.kiloK)
 
         h_form = b.params.config.include_enthalpy_of_formation
         H = (cobj.cp_mol_ig_comp_coeff_H if not h_form
              else 0*pyunits.kJ*pyunits.mol**-1)
 
-        h = (cobj.cp_mol_ig_comp_coeff_A*(t-tr) +
-             (cobj.cp_mol_ig_comp_coeff_B/2)*(t**2-tr**2) +
-             (cobj.cp_mol_ig_comp_coeff_C/3)*(t**3-tr**3) +
-             (cobj.cp_mol_ig_comp_coeff_D/4)*(t**4-tr**4) -
-             cobj.cp_mol_ig_comp_coeff_E*(1/t-1/tr) +
+        h = (cobj.cp_mol_ig_comp_coeff_A*t +
+             (cobj.cp_mol_ig_comp_coeff_B/2)*t**2 +
+             (cobj.cp_mol_ig_comp_coeff_C/3)*t**3 +
+             (cobj.cp_mol_ig_comp_coeff_D/4)*t**4 -
+             cobj.cp_mol_ig_comp_coeff_E/t +
              cobj.cp_mol_ig_comp_coeff_F -
              H)
 
@@ -188,3 +187,11 @@ class pressure_sat_comp():
         units = b.params.get_metadata().derived_units
         dp_units = units["pressure"]/units["temperature"]
         return pyunits.convert(p_sat_dT, to_units=dp_units)
+
+
+# -----------------------------------------------------------------------------
+class NIST(object):
+    cp_mol_ig_comp = cp_mol_ig_comp
+    enth_mol_ig_comp = enth_mol_ig_comp
+    entr_mol_ig_comp = entr_mol_ig_comp
+    pressure_sat_comp = pressure_sat_comp

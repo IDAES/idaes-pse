@@ -20,7 +20,6 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
-                           Param,
                            Reals,
                            TransformationFactory,
                            units as pyunits,
@@ -477,6 +476,25 @@ argument)."""))
                     "reactions per unit length",
                 units=flow_l_units)
 
+        # Inherent reaction generation
+        if self.properties.has_inherent_reactions:
+            if not hasattr(self.config.property_package,
+                           "inherent_reaction_idx"):
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of "
+                    "inherent reactions (inherent_reaction_idx), but "
+                    "has_inherent_reactions is True."
+                    .format(self.name))
+            self.inherent_reaction_generation = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                pc_set,
+                domain=Reals,
+                initialize=0.0,
+                doc="Amount of component generated in control volume "
+                    "by inherent reactions",
+                units=flow_l_units)
+
         # Phase equilibrium generation
         if has_phase_equilibrium and \
                 balance_type == MaterialBalanceType.componentPhase:
@@ -521,6 +539,10 @@ argument)."""))
         def equilibrium_term(b, t, x, p, j):
             return (b.equilibrium_reaction_generation[t, x, p, j]
                     if has_equilibrium_reactions else 0)
+
+        def inherent_term(b, t, x, p, j):
+            return (b.inherent_reaction_generation[t, x, p, j]
+                    if b.properties.has_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, x, p, j):
             if has_phase_equilibrium and \
@@ -619,6 +641,32 @@ argument)."""))
                 else:
                     return Constraint.Skip
 
+        if self.properties.has_inherent_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.inherent_reaction_extent = Var(
+                self.flowsheet().config.time,
+                self.length_domain,
+                self.config.property_package.inherent_reaction_idx,
+                domain=Reals,
+                initialize=0.0,
+                doc="Extent of inherent reactions at point x",
+                units=flow_l_units)
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.length_domain,
+                             pc_set,
+                             doc="Inherent reaction stoichiometry")
+            def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
+                if (p, j) in pc_set:
+                    return b.inherent_reaction_generation[t, x, p, j] == (
+                        sum(b.properties[t, x].config.parameters.
+                            inherent_reaction_stoichiometry[r, p, j] *
+                            b.inherent_reaction_extent[t, x, r]
+                            for r in b.config.property_package.
+                            inherent_reaction_idx))
+                else:
+                    return Constraint.Skip
+
         # Add custom terms and material balances
         if balance_type == MaterialBalanceType.componentPhase:
             def user_term_mol(b, t, x, p, j):
@@ -689,6 +737,7 @@ argument)."""))
                             b.length*kinetic_term(b, t, x, p, j) *
                             b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                             b.length*equilibrium_term(b, t, x, p, j) +
+                            b.length*inherent_term(b, t, x, p, j) +
                             b.length*phase_equilibrium_term(b, t, x, p, j) +
                             b.length*transfer_term(b, t, x, p, j) +
                             #b.area*diffusion_term(b, t, x, p, j)/b.length +
@@ -774,6 +823,8 @@ argument)."""))
                                      for p in cplist) *
                         b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                         b.length*sum(equilibrium_term(b, t, x, p, j)
+                                     for p in cplist) +
+                        b.length*sum(inherent_term(b, t, x, p, j)
                                      for p in cplist) +
                         b.length*sum(transfer_term(b, t, x, p, j)
                                      for p in cplist) +
@@ -1419,7 +1470,7 @@ argument)."""))
             pressure_l_units = None
 
         # Create dP/dx terms
-        self.pressure = Reference(self.properties[:,:].pressure)
+        self.pressure = Reference(self.properties[:, :].pressure)
 
         self.pressure_dx = DerivativeVar(
                                   self.pressure,
@@ -1461,7 +1512,7 @@ argument)."""))
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
-                return 0 == (b._flow_direction_term*b.pressure_dx[t, x]  +
+                return 0 == (b._flow_direction_term*b.pressure_dx[t, x] +
                              b.length*deltaP_term(b, t, x) +
                              b.length*user_term(t, x))
 
@@ -1567,8 +1618,8 @@ argument)."""))
                         'model_check method to the associated '
                         'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
-                   solver='ipopt', hold_state=True):
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
+                   solver=None, hold_state=True):
         '''
         Initialization routine for 1D control volume (default solver ipopt)
 
@@ -1578,9 +1629,15 @@ argument)."""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
+<<<<<<< HEAD
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
+=======
+            optarg : solver options dictionary object (default={})
+            solver : str indicating whcih solver to use during
+                     initialization (default = None)
+>>>>>>> main
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - True. **Valid values:**
@@ -1596,7 +1653,8 @@ argument)."""))
             triggered.
         '''
         # Get inlet state if not provided
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="control_volume")
+        init_log = idaeslog.getInitLogger(
+            blk.name, outlvl, tag="control_volume")
 
         # Get source block
         if blk._flow_direction == FlowDirection.forward:
@@ -1778,7 +1836,6 @@ argument)."""))
         super().calculate_scaling_factors()
 
         phase_list = self.properties.phase_list
-        pc_set = self.properties.phase_component_set
 
         # Default scale factors
         # If the parent component of an indexed component has a scale factor, but

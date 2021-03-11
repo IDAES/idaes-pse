@@ -7,6 +7,7 @@
     dyn_utils
     homotopy
     initialization
+    phase_equilibria
     model_serializer
     model_statistics
     scaling

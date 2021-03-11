@@ -113,7 +113,7 @@ class UnitCellLattice(Lattice):
         raise NotImplementedError
 
     @abstractmethod
-    def getNeighbors(self, P):
+    def getNeighbors(self, P, layer):
         raise NotImplementedError
 
     # === BASIC QUERY METHODS

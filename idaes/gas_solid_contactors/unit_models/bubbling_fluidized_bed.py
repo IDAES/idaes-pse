@@ -1457,6 +1457,15 @@ see reaction package for documentation.}"""))
                     b.solid_outlet_block[t].get_material_flow_terms(p, j) ==
                     b.solid_emulsion._flow_terms[t, 0, p, j])
 
+        # Solid outlet particle porosity
+        @self.Constraint(
+                self.flowsheet().config.time)
+        def solid_particle_porosity_out(b, t):
+            x = b.length_domain.last()
+            return (
+                b.solid_outlet_block[t].particle_porosity ==
+                b.solid_emulsion.properties[t, x].particle_porosity)
+
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Gas outlet energy balance
             @self.Constraint(
@@ -2065,6 +2074,7 @@ see reaction package for documentation.}"""))
         blk.gas_pressure_out.activate()
         blk.gas_material_balance_out.activate()
         blk.solid_material_balance_out.activate()
+        blk.solid_particle_porosity_out.activate()
 
         blk.gas_energy_balance_out.activate()
         blk.solid_energy_balance_out.activate()
