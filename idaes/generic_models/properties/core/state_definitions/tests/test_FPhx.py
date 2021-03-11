@@ -59,6 +59,8 @@ def test_set_metadata():
 
 
 class TestInvalidBounds(object):
+
+    @pytest.mark.unit
     def test_bad_name(self):
         m = ConcreteModel()
 
@@ -86,6 +88,7 @@ class TestInvalidBounds(object):
             m.props = m.params.build_state_block(
                 [1], default={"defined_state": False})
 
+    @pytest.mark.unit
     def test_mole_frac(self, caplog):
         m = ConcreteModel()
 
