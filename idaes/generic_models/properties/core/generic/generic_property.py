@@ -265,7 +265,10 @@ class GenericParameterData(PhysicalParameterBlock):
                 eos = d["equation_of_state"]
                 if (not hasattr(eos, "electrolyte_support") or
                         not eos.electrolyte_support):
-                    raise Exception()
+                    raise ConfigurationError(
+                        "{} aqueous phase {} was set to use an equation of "
+                        "state whcih does not support electrolytes: {}"
+                        .format(self.name, p, eos))
 
             self.add_component(str(p), ptype(default=d))
 
