@@ -606,7 +606,12 @@ argument)."""))
                              pc_set,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if (p, j) in pc_set:
+                if ((b.config.transformation_scheme != "FORWARD" and
+                     x == b.length_domain.first()) or
+                        (b.config.transformation_scheme == "FORWARD" and
+                         x == b.length_domain.last())):
+                    return Constraint.Skip
+                elif (p, j) in pc_set:
                     rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
@@ -631,7 +636,12 @@ argument)."""))
                              pc_set,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if (p, j) in pc_set:
+                if ((b.config.transformation_scheme != "FORWARD" and
+                     x == b.length_domain.first()) or
+                        (b.config.transformation_scheme == "FORWARD" and
+                         x == b.length_domain.last())):
+                    return Constraint.Skip
+                elif (p, j) in pc_set:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
                         sum(rblock[t, x].config.parameters.
                             equilibrium_reaction_stoichiometry[r, p, j] *
@@ -657,7 +667,12 @@ argument)."""))
                              pc_set,
                              doc="Inherent reaction stoichiometry")
             def inherent_reaction_stoichiometry_constraint(b, t, x, p, j):
-                if (p, j) in pc_set:
+                if ((b.config.transformation_scheme != "FORWARD" and
+                     x == b.length_domain.first()) or
+                        (b.config.transformation_scheme == "FORWARD" and
+                         x == b.length_domain.last())):
+                    return Constraint.Skip
+                elif (p, j) in pc_set:
                     return b.inherent_reaction_generation[t, x, p, j] == (
                         sum(b.properties[t, x].config.parameters.
                             inherent_reaction_stoichiometry[r, p, j] *

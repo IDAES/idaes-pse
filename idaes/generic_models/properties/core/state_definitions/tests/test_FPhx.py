@@ -60,6 +60,7 @@ def test_set_metadata():
 
 
 class TestInvalidBounds(object):
+
     @pytest.mark.unit
     def test_bad_name(self):
         m = ConcreteModel()
