@@ -70,33 +70,55 @@ def test_port_copy():
     m.b2.port.add(m.b2.x, "x")
     m.b2.port.add(m.b2.y, "y")
     m.b2.port.add(m.b2.z, "z")
-    copy_port_values(m.b2.port, m.b1.port)
-    assert(m.b2.x == 3)
-    assert(m.b2.y[0] == 4)
-    assert(m.b2.y[1] == 5)
-    assert(m.b2.z[0, "A"] == 6)
-    assert(m.b2.z[0, "B"] == 7)
-    assert(m.b2.z[1, "A"] == 8)
-    assert(m.b2.z[1, "B"] == 9)
+    def assert_copied_right():
+        assert(m.b2.x == 3)
+        assert(m.b2.y[0] == 4)
+        assert(m.b2.y[1] == 5)
+        assert(m.b2.z[0, "A"] == 6)
+        assert(m.b2.z[0, "B"] == 7)
+        assert(m.b2.z[1, "A"] == 8)
+        assert(m.b2.z[1, "B"] == 9)
 
-    m.b2.x = 0
-    m.b2.y[0] = 0
-    m.b2.y[1] = 0
-    m.b2.z[0, "A"] = 0
-    m.b2.z[0, "B"] = 0
-    m.b2.z[1, "A"] = 0
-    m.b2.z[1, "B"] = 0
-
+    def reset():
+        m.b2.x = 0
+        m.b2.y[0] = 0
+        m.b2.y[1] = 0
+        m.b2.z[0, "A"] = 0
+        m.b2.z[0, "B"] = 0
+        m.b2.z[1, "A"] = 0
+        m.b2.z[1, "B"] = 0
     m.arc = Arc(source=m.b1.port, dest=m.b2.port)
-    copy_port_values(arc=m.arc)
 
-    assert(m.b2.x == 3)
-    assert(m.b2.y[0] == 4)
-    assert(m.b2.y[1] == 5)
-    assert(m.b2.z[0, "A"] == 6)
-    assert(m.b2.z[0, "B"] == 7)
-    assert(m.b2.z[1, "A"] == 8)
-    assert(m.b2.z[1, "B"] == 9)
+    copy_port_values(m.b2.port, m.b1.port)
+    assert_copied_right()
+    reset()
+
+
+    copy_port_values(source=m.b1.port, destination=m.b2.port)
+    assert_copied_right()
+    reset()
+
+    copy_port_values(m.arc)
+    assert_copied_right()
+    reset()
+
+    copy_port_values(arc=m.arc)
+    assert_copied_right()
+    reset()
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(arc=m.b1.port)
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(source=m.b1.port, destination=m.b2.port, arc=m.arc)
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(source=m.b1.port, arc=m.arc)
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(source=m.b1.port, destination=m.arc)
+
+
 
 
 
