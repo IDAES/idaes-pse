@@ -106,7 +106,41 @@ class TestUncertaintyPropagation:
         assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
 
-    def test_get_dsdp(self):
+    def test_get_dsdp1(self):
+        '''
+        It tests the function get_dsdp with a simple nonlinear programming example.
+        
+        min f: p1*x1+ p2*(x2^2) + p1*p2 
+         s.t c1: x1 = p1
+             c2: x2 = p2
+             c3: 10 <= p1 <= 10
+             c4: 5 <= p2 <= 5  
+        '''
+        variable_name = ['p1', 'p2']
+
+        m= ConcreteModel()
+        m.x1 = Var(initialize = 0)
+        m.x2 = Var(initialize = 0)
+        m.p1 = Var(initialize = 0)
+        m.p2 = Var(initialize = 0)
+        m.obj = Objective(expr = m.x1*m.p1+m.x2*m.x2*m.p2 + m.p1*m.p2 , sense=minimize)
+        m.c1 = Constraint(expr = m.x1 == m.p1)
+        m.c2 = Constraint(expr = m.x2 == m.p2)
+        theta= {'p1': 10.0, 'p2': 5.0}
+        for v in variable_name:
+            getattr(m, v).setlb(theta[v])
+            getattr(m, v).setub(theta[v])
+        dsdp_dic = get_dsdp(m, variable_name, theta)
+        assert dsdp_dic['d(x1)/d(p1)'] == approx(1.0)
+        assert dsdp_dic['d(x2)/d(p1)'] == approx(0.0)
+        assert dsdp_dic['d(p1)/d(p1)'] == approx(1.0)
+        assert dsdp_dic['d(p2)/d(p1)'] == approx(0.0)
+        assert dsdp_dic['d(x1)/d(p2)'] == approx(0.0)
+        assert dsdp_dic['d(x2)/d(p2)'] == approx(1.0)
+        assert dsdp_dic['d(p1)/d(p2)'] == approx(0.0)
+        assert dsdp_dic['d(p2)/d(p2)'] == approx(1.0)
+
+    def test_get_dsdp2(self):
         '''
         It tests the function get_dsdp with rooney & biegler's model.
         '''
@@ -134,7 +168,47 @@ class TestUncertaintyPropagation:
         assert dsdp_dic['d(asymptote)/d(rate_constant)'] == approx(0.0)
         assert dsdp_dic['d(rate_constant)/d(rate_constant)'] == approx(1.0)
     
-    def test_get_sensitivity(self):
+    def test_get_sensitivity1(self):
+        '''
+        It tests the function get_sensitivity with a simple nonlinear programming example.
+        
+        min f: p1*x1+ p2*(x2^2) + p1*p2 
+         s.t c1: x1 = p1
+             c2: x2 = p2
+             c3: 10 <= p1 <= 10
+             c4: 5 <= p2 <= 5  
+        '''
+        variable_name = ['p1', 'p2']
+
+        m= ConcreteModel()
+        m.x1 = Var(initialize = 0)
+        m.x2 = Var(initialize = 0)
+        m.p1 = Var(initialize = 0)
+        m.p2 = Var(initialize = 0)
+        m.obj = Objective(expr = m.x1*m.p1+m.x2*m.x2*m.p2 + m.p1*m.p2 , sense=minimize)
+        m.c1 = Constraint(expr = m.x1 == m.p1)
+        m.c2 = Constraint(expr = m.x2 == m.p2)
+        theta= {'p1': 10.0, 'p2': 5.0}
+        for v in variable_name:
+            getattr(m, v).setlb(theta[v])
+            getattr(m, v).setub(theta[v])
+        gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic =  get_sensitivity(m, variable_name)
+        assert gradient_f_dic['d(f)/d(x1)'] == approx(10.0)
+        assert gradient_f_dic['d(f)/d(x2)'] == approx(50.0)
+        assert gradient_f_dic['d(f)/d(p1)'] == approx(15.0)
+        assert gradient_f_dic['d(f)/d(p2)'] == approx(35.0)
+        assert gradient_c_dic['d(c1)/d(x1)'] == approx(1.0)
+        assert gradient_c_dic['d(c1)/d(p1)'] == approx(-1.0)
+        assert gradient_c_dic['d(c2)/d(x2)'] == approx(1.0)
+        assert gradient_c_dic['d(c2)/d(p2)'] == approx(-1.0)
+        assert gradient_f == approx(np.array([10., 50., 15., 35.]))
+        assert gradient_c == approx(np.array([[ 1.,  1.,  1.],[ 3.,  1., -1.],[ 2.,  2.,  1.],[ 4.,  2., -1.]]))
+        assert line_dic['p1'] == approx(3)
+        assert line_dic['p2'] == approx(4)
+
+
+
+    def test_get_sensitivity2(self):
         '''
         It tests the function get_sensitivity with rooney & biegler's model.
         '''        

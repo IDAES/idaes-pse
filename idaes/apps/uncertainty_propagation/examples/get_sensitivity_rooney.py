@@ -47,6 +47,3 @@ for v in variable_name:
     getattr(model_uncertain, v).setub(theta[v])
 
 gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic =  get_sensitivity(model_uncertain, variable_name)
-print(gradient_f_dic)
-
-print(gradient_c_dic)

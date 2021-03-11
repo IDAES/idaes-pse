@@ -330,17 +330,17 @@ def get_dsdp(model, theta_names, theta, tee=False, solver_options=None,var_dic=N
 def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector of the objective function and constraints with respect to the variables in theta_names.
     
-    e.g) min f: x1+x2+p1+p2 
+    e.g) min f: p1*x1+ p2*(x2^2) + p1*p2 
          s.t c1: x1 = p1
              c2: x2 = p2
-             \hat{p1} <= p1 <= \hat{p1}
-             \hat{p2} <= p2 <= \hat{p2}  
+                 10 <= p1 <= 10
+                  5 <= p2 <= 5  
     - Variables = (x1, x2, p1, p2)
     - Fix p1 and p2 with estimated values
-    - The optmial solution is (\hat{p1}, \hat{p2}, \hat{p1}, \hat{p2})          
+    - The optimal solution is (10, 5, 10, 5)          
     - The function provides gradient vector at the optimal solution
-      gradient vector of the objective function = {'d(f)/d(x1)': 1.0, 'd(f)/d(x2)': 1.0, 'd(f)/d(p1)': 1.0, 'd(f)/d(p2)': 1.0}}
-      gradient vector of the constraints = {'d(c1)/d(x1)': 1.0, 'd(c3)/d(x1)': -1.0, 'd(c2)/d(x2)': 1.0, 'd(c4)/d(x2)': -1.0}
+      gradient vector of the objective function = {'d(f)/d(x1)': 10.0, 'd(f)/d(x2)': 50.0, 'd(f)/d(p1)': 15.0, 'd(f)/d(p2)': 35.0}
+      gradient vector of the constraints = {'d(c1)/d(x1)': 1.0, 'd(c1)/d(p1)': -1.0, 'd(c2)/d(x2)': 1.0, 'd(c2)/d(p2)': -1.0} 
     
     Parameters
     ----------
@@ -358,13 +358,13 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     gradient_f: numpy.ndarray
         gradient vector of the objective function with respect to all decision variables at the optimal solution
     gradient_f_dic: dic
-        gradient_f with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+        gradient_f with variable name as key e.g) dic = {'d(f)/d(x1)': 10.0, 'd(f)/d(x2)': 50.0, 'd(f)/d(p1)': 15.0, 'd(f)/d(p2)': 35.0}
     gradient_c: numpy.ndarray
         gradient vector of the constraints with respect to all decision variables at the optimal solution
         Each row contains column number, row number, and value
         If no constraint exists, return []
     gradient_c: dic
-        gradient_c with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
+        gradient_c with constraint number and variable name as key e.g) dic = {'d(c1)/d(x1)': 1.0, 'd(c1)/d(p1)': -1.0, 'd(c2)/d(x2)': 1.0, 'd(c2)/d(p2)': -1.0}
         Only non-zero gradients are included.
     line_dic: dict
         column numbers of the theta_names in the model. Index starts from 1
@@ -434,7 +434,7 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
         row_number, col_number = np.shape(gradient_c)
         gradient_c_dic = {}
         for i in range(row_number):
-            gradient_c_dic["d(c"+ str(int(gradient_c[i,0]))+")/d("+col[int(gradient_c[i,1]-1)]+")"] = gradient_c[i,2]
+            gradient_c_dic["d(c"+ str(int(gradient_c[i,1]))+")/d("+col[int(gradient_c[i,0]-1)]+")"] = gradient_c[i,2]
     else:
         gradient_c = np.array([])
         gradient_c_dic = {}
