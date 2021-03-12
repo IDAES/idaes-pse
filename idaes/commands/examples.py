@@ -399,7 +399,7 @@ def download_contents(target_dir, version):
     # move the REPO_DIR subdirectory into the target dir
     subdir = Path(tempdir.name) / f"{REPO_NAME}-{version}" / REPO_DIR
     _log.debug(f"move {subdir} -> {target_dir}")
-    os.rename(str(subdir), str(target_dir))
+    shutil.move(str(subdir), str(target_dir))
     zipf.close()
 
 
@@ -565,7 +565,7 @@ def install_src(version, target_dir):
         raise InstallError(f"error writing temporary __init__.py files: {err}")
     # temporarily rename target directory to the package name
     _log.info(f"rename {target_dir} -> {examples_dir}")
-    os.rename(target_dir, examples_dir)
+    shutil.move(target_dir, examples_dir)
     # if there is a 'build' directory, move it aside
     build_dir = root_dir / 'build'
     if build_dir.exists():
@@ -573,7 +573,7 @@ def install_src(version, target_dir):
         random_letters = str(uuid1())
         moved_build_dir = f"{build_dir}.{random_letters}"
         _log.debug(f"move existing build dir to {moved_build_dir}")
-        os.rename(str(build_dir), moved_build_dir)
+        shutil.move(str(build_dir), moved_build_dir)
     else:
         _log.debug("no existing build directory (nothing to do)")
         moved_build_dir = None
@@ -603,7 +603,7 @@ def install_src(version, target_dir):
             _log.debug(f"(setup) {line}")
     # name the target directory back to original
     _log.info(f"rename '{examples_dir}' to  '{target_dir}'")
-    os.rename(examples_dir, target_dir)
+    shutil.move(examples_dir, target_dir)
     # remove the empty __init__.py files
     _log.info("remove temporary __init__.py files")
     for d in pydirs:
@@ -618,7 +618,7 @@ def install_src(version, target_dir):
         _log.warning(f"failed to remove build directory {build_dir}: {err}")
     if moved_build_dir is not None:
         _log.info(f"restore build dir '{build_dir}' from '{moved_build_dir}'")
-        os.rename(moved_build_dir, build_dir)
+        shutil.move(moved_build_dir, build_dir)
     # restore previous args
     sys.argv = saved_args
     # change back to previous directory
