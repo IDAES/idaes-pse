@@ -63,7 +63,7 @@ def test_fugacity():
                        "amount": pyunits.mol,
                        "temperature": pyunits.K}})
 
-    assert str(fugacity(m, "Vap", "Liq", "H2O")) == str(
+    assert str(fugacity.return_expression(m, "Vap", "Liq", "H2O")) == str(
         m.x["Vap", "H2O"] == m.x["Liq", "H2O"])
 
 
@@ -92,5 +92,5 @@ def test_log_fugacity():
                        "amount": pyunits.mol,
                        "temperature": pyunits.K}})
 
-    assert str(log_fugacity(m, "Vap", "Liq", "H2O")) == str(
+    assert str(log_fugacity.return_expression(m, "Vap", "Liq", "H2O")) == str(
         42*m.x["Vap", "H2O"] == 42*m.x["Liq", "H2O"])
