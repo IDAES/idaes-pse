@@ -163,6 +163,7 @@ def set_scaling_factor(c, v, data_objects=True):
     Args:
         c: component to supply scaling factor for
         v: scaling factor
+        data_objects: set scaling factors for indexed data objects (default=True)
     Returns:
         None
     """
@@ -189,16 +190,39 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     Args:
         c: component
         default: value to return if no scale factor exists (default=None)
+        warning: whether to log a warning if a scaling factor is not found
+                 (default=False)
+        exception: whether to riase an Exception if a scaling factor is not
+                   found (default=False)
+
+    Returns:
+        scaling factor (float)
     """
-    try:
-        sf = c.parent_block().scaling_factor[c]
-    except (AttributeError, KeyError):
+    def _log_failure(err):
         if warning:
             _log.warning(f"Accessing missing scaling factor for {c}")
         if exception and default is None:
             _log.error(f"Accessing missing scaling factor for {c}")
-            raise
-        sf = default
+            raise err
+        return default
+
+    try:
+        sf = c.parent_block().scaling_factor[c]
+    except KeyError as err:
+        if c.is_indexed():
+            # See if we can get a scaling factor for the IndexedComponent
+            # This will catch cases where scaling factors were not propagated
+            # to the indexed Data components.
+            try:
+                sf = c.parent_block().scaling_factor[c.parent_component()]
+            except KeyError as err:
+                sf = _log_failure(err)
+        else:
+            sf = _log_failure(err)
+
+    except AttributeError as err:
+        sf = _log_failure(err)
+
     return sf
 
 
