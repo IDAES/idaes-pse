@@ -1600,15 +1600,17 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Set scaling for geometry variables
         if hasattr(self, "volume"):
-            if iscale.get_scaling_factor(self.volume) is None:
-                sf = iscale.get_scaling_factor(
-                    self.volume, default=1e-2, warning=True)
-                iscale.set_scaling_factor(self.volume, sf)
+            for t, v in self.volume.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.volume, default=1e-2, warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "phase_fraction"):
-            if iscale.get_scaling_factor(self.phase_fraction) is None:
-                # phase fraction typically between 0.1 and 1
-                iscale.set_scaling_factor(self.phase_fraction, 10)
+            for v in self.phase_fraction.values():
+                if iscale.get_scaling_factor(v) is None:
+                    # phase fraction typically between 0.1 and 1
+                    iscale.set_scaling_factor(v, 10)
 
         # Set scaling factors for common material balance variables
         if hasattr(self, "material_holdup"):
@@ -1638,18 +1640,18 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.reactions[t].reaction_rate[r],
                         default=1,
                         warning=True)
-                    sf *= iscale.get_scaling_factor(self.volume)
+                    sf *= iscale.get_scaling_factor(self.volume[t])
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, p, j), v in self.rate_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
-                        self.rate_reaction_extent)
+                        self.rate_reaction_extent[t, :])
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "equilibrium_reaction_extent"):
-            for (t, r), v in self.equilibrium_reaction_extent.items():
+            for v in self.equilibrium_reaction_extent.values():
                 if iscale.get_scaling_factor(v) is None:
                     # No way to calculate a good guess for this
                     # This is something the user needs to set themselves
@@ -1659,11 +1661,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, p, j), v in self.equilibrium_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
-                        self.equilibrium_reaction_extent)
+                        self.equilibrium_reaction_extent[t, ...])
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "inherent_reaction_extent"):
-            for (t, r), v in self.inherent_reaction_extent.items():
+            for v in self.inherent_reaction_extent.values():
                 if iscale.get_scaling_factor(v) is None:
                     # No way to calculate a good guess for this
                     # This is something the user needs to set themselves
@@ -1673,11 +1675,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, p, j), v in self.inherent_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
-                        self.inherent_reaction_extent)
+                        self.inherent_reaction_extent[t, ...])
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "phase_equilibrium_generation"):
-            for (t, e), v in self.phase_equilibrium_generation.items():
+            for v in self.phase_equilibrium_generation.values():
                 if iscale.get_scaling_factor(v) is None:
                     # No way to calculate a good guess for this
                     # This is something the user needs to set themselves
@@ -1736,7 +1738,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for (t, e), v in self.element_accumulation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
-                        self.elemental_flow_out,
+                        self.elemental_flow_out[t, ...],
                         default=1,
                         warning=True)
                     iscale.set_scaling_factor(v, sf)
@@ -1748,7 +1750,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 flow_basis = self.properties_out[t].get_material_flow_basis()
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
-                        self.elemental_flow_out,
+                        self.elemental_flow_out[t, ...],
                         default=1,
                         warning=True)
                     iscale.set_scaling_factor(v, sf)
@@ -1775,14 +1777,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "heat"):
-            for t, v in self.heat.items():
+            for v in self.heat.values():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(
                         self.heat, default=1e-6, warning=True)
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "work"):
-            for t, v in self.work.items():
+            for v in self.work.values():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(
                         self.work, default=1e-6, warning=True)
@@ -1796,6 +1798,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          for p in phase_list])
                     iscale.set_scaling_factor(v, sf)
 
+        # Set scaling for momentum balance variables
         if hasattr(self, "deltaP"):
             for t, v in self.deltaP.items():
                 if iscale.get_scaling_factor(v) is None:

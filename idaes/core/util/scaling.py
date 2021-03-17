@@ -198,30 +198,15 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     Returns:
         scaling factor (float)
     """
-    def _log_failure(err):
+    try:
+        sf = c.parent_block().scaling_factor[c]
+    except (AttributeError, KeyError):
         if warning:
             _log.warning(f"Accessing missing scaling factor for {c}")
         if exception and default is None:
             _log.error(f"Accessing missing scaling factor for {c}")
-            raise err
-        return default
-
-    try:
-        sf = c.parent_block().scaling_factor[c]
-    except KeyError as err:
-        if c.is_indexed():
-            # See if we can get a scaling factor for the IndexedComponent
-            # This will catch cases where scaling factors were not propagated
-            # to the indexed Data components.
-            try:
-                sf = c.parent_block().scaling_factor[c.parent_component()]
-            except KeyError as err:
-                sf = _log_failure(err)
-        else:
-            sf = _log_failure(err)
-
-    except AttributeError as err:
-        sf = _log_failure(err)
+            raise
+        sf = default
 
     return sf
 
