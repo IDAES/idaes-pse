@@ -503,12 +503,20 @@ class TestBTExample(object):
     @pytest.mark.unit
     def test_basic_scaling(self, m):
 
-        assert len(m.fs.state[1].scaling_factor) == 24
+        assert len(m.fs.state[1].scaling_factor) == 28
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].flow_mol_phase["Vap"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Liq", "benzene"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Liq", "toluene"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Vap", "benzene"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Vap", "toluene"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].mole_frac_comp["benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[

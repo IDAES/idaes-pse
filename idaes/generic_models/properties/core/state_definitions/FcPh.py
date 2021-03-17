@@ -218,10 +218,7 @@ def define_state(b):
     # General Methods
     def get_material_flow_terms_FcPh(p, j):
         """Create material flow terms for control volume."""
-        if j in b.component_list:
-            return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
     b.get_material_flow_terms = get_material_flow_terms_FcPh
 
     def get_enthalpy_flow_terms_FcPh(p):
@@ -231,10 +228,7 @@ def define_state(b):
 
     def get_material_density_terms_FcPh(p, j):
         """Create material density terms."""
-        if j in b.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
     b.get_material_density_terms = get_material_density_terms_FcPh
 
     def get_energy_density_terms_FcPh(p):
