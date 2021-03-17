@@ -405,7 +405,7 @@ def register():
     if _registered:
         return
     try:
-        ip = get_ipython()  # noqa: F821
+        ip = get_ipython()  # noqa: F821  pylint: disable=undefined-variable
         _log.debug('Registering DMF magics')
         ip.register_magics(DmfMagics)
     except:  # noqa: E722
