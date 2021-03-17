@@ -40,6 +40,9 @@ def test_basic_scaling():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
+    # Set flag to include inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_geometry()
@@ -60,8 +63,11 @@ def test_basic_scaling():
 
     # check scaling on select variables
     assert iscale.get_scaling_factor(m.fs.cv.volume[0]) == 1e-2
-    assert iscale.get_scaling_factor(m.fs.cv.deltaP[0]) == 1040  # 10x the properties pressure scaling factor
+    assert iscale.get_scaling_factor(
+        m.fs.cv.deltaP[0]) == 1040  # 10x the properties pressure scaling factor
     assert iscale.get_scaling_factor(m.fs.cv.properties_in[0].flow_vol) == 100
+    assert iscale.get_scaling_factor(
+        m.fs.cv.inherent_reaction_extent[0, "i1"]) == 1
 
     # check scaling on mass, energy, and pressure balances.
     for c in m.fs.cv.material_balances.values():
