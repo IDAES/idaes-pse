@@ -198,10 +198,12 @@ class ReactionParameterBlock(ProcessBlockData,
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
-        return self.reaction_block_class(*args,
+        return self.reaction_block_class(  # pylint: disable=no-callable
+            *args,
                                          **kwargs,
                                          default=default,
-                                         initialize=initialize)
+            initialize=initialize
+        )
 
     def _validate_property_parameter_units(self):
         """
