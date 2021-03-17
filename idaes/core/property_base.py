@@ -198,10 +198,12 @@ class PhysicalParameterBlock(ProcessBlockData,
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
-        return self.state_block_class(*args,
+        return self.state_block_class(  # pylint: disable=not-callable
+            *args,
                                       **kwargs,
                                       default=default,
-                                      initialize=initialize)
+            initialize=initialize
+        )
 
     def get_phase_component_set(self):
         """
