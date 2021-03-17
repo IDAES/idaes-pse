@@ -2,3 +2,7 @@
 init-hook="import sys; sys.path.append('.pylint')"
 load-plugins=idaes_transform
 ignore-patterns=test_.*
+
+[MESSAGES CONTROL]
+disable=no-self-argument,
+    bad-super-call,
