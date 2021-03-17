@@ -15,7 +15,7 @@ _logger = logging.getLogger('pylint.ideas_plugin')
 
 
 # TODO figure out a better way to integrate this with pylint logging and/or verbosity settings
-_display = _notify = print
+_display = _notify = lambda *a, **kw: None
 
 
 def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_block_class"):
@@ -122,13 +122,37 @@ def get_concrete_pyomo_var_class(node: astroid.ClassDef, context=None) -> astroi
         pass
 """
     simple_var_cls_node = extract_node(clsdef_code)
-    print(simple_var_cls_node)
     return simple_var_cls_node
+
+
+def is_base_pyomo_rangeset_class(node):
+    try:
+        return 'pyomo.core.base.set.RangeSet' in node.qname()
+    except AttributeError:
+        pass
+    return False
+
+
+def get_concrete_pyomo_rangeset_class(node: astroid.ClassDef, context=None) -> astroid.ClassDef:
+    clsdef_code = """
+    from pyomo.base.set import RangeSet, _FiniteRangeSetData
+    class ConcreteRangeSet(RangeSet, _FiniteRangeSetData):
+        pass
+"""
+    concrete_cls_node = extract_node(clsdef_code)
+    return concrete_cls_node
 
 
 def infer_concrete_var_instance(node: astroid.ClassDef, context=None):
     _display(f'abstract var class: {node}')
     concrete_cls_node = get_concrete_pyomo_var_class(node, context=context)
+    _display(f'concrete var class: {concrete_cls_node}')
+    return iter([concrete_cls_node.instantiate_class()])
+
+
+def infer_concrete_rangeset_instance(node: astroid.ClassDef, context=None):
+    _display(f'abstract var class: {node}')
+    concrete_cls_node = get_concrete_pyomo_rangeset_class(node, context=context)
     _display(f'concrete var class: {concrete_cls_node}')
     return iter([concrete_cls_node.instantiate_class()])
 
@@ -168,6 +192,10 @@ astroid.MANAGER.register_transform(
 
 astroid.MANAGER.register_transform(
     astroid.ClassDef, astroid.inference_tip(infer_concrete_var_instance), is_base_pyomo_var_class
+)
+
+astroid.MANAGER.register_transform(
+    astroid.ClassDef, astroid.inference_tip(infer_concrete_rangeset_instance), is_base_pyomo_rangeset_class
 )
 
 astroid.MANAGER.register_transform(
