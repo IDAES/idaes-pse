@@ -329,13 +329,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 units=flow_units)
 
         # Inherent reaction generation
-        if self.properties_out.has_inherent_reactions:
+        if self.properties_out.include_inherent_reactions:
             if not hasattr(self.config.property_package,
                            "inherent_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Property package does not contain a list of "
                     "inherent reactions (inherent_reaction_idx), but "
-                    "has_inherent_reactions is True."
+                    "include_inherent_reactions is True."
                     .format(self.name))
             self.inherent_reaction_generation = Var(
                 self.flowsheet().config.time,
@@ -389,7 +389,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         def inherent_term(b, t, p, j):
             return (b.inherent_reaction_generation[t, p, j]
-                    if b.properties_out.has_inherent_reactions else 0)
+                    if b.properties_out.include_inherent_reactions else 0)
 
         def phase_equilibrium_term(b, t, p, j):
             if has_phase_equilibrium and \
@@ -483,7 +483,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 else:
                     return Constraint.Skip
 
-        if self.properties_out.has_inherent_reactions:
+        if self.properties_out.include_inherent_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.inherent_reaction_extent = Var(
                     self.flowsheet().config.time,

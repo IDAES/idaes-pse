@@ -158,15 +158,23 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_basic_scaling(self, model):
         model.fs.props[1].calculate_scaling_factors()
-        model.fs.props[1].scaling_factor.display()
 
-        assert len(model.fs.props[1].scaling_factor) == 18
+        assert len(model.fs.props[1].scaling_factor) == 21
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].flow_mol] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].flow_mol_phase["Liq"]] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].flow_mol_phase["Vap"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase_comp[
+                "Liq", "bmimPF6"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase_comp[
+                "Liq", "carbon_dioxide"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase_comp[
+                "Vap", "carbon_dioxide"]] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].mole_frac_comp["bmimPF6"]] == 1000
         assert model.fs.props[1].scaling_factor[

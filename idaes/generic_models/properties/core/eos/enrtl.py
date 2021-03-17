@@ -27,6 +27,9 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ENRTL(EoSBase):
+    # Add attribute indicating support for electrolyte systems
+    electrolyte_support = True
+
     def common(b, pobj):
         pass
         # def _return_component_list(b):
@@ -48,3 +51,7 @@ class ENRTL(EoSBase):
 
     def build_parameters(b):
         pass
+
+    @staticmethod
+    def dens_mol_phase(b, p):
+        return 55e3
