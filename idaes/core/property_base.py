@@ -398,6 +398,16 @@ class StateBlock(ProcessBlock):
     def _has_inherent_reactions(self):
         return self._get_parameter_block().has_inherent_reactions
 
+    # Need to separate the existence of inherent reactions from whether they
+    # should be included in material balances
+    # For some cases, Using an apparent species basis means they can be ignored
+    @property
+    def include_inherent_reactions(self):
+        return self._include_inherent_reactions()
+
+    def _include_inherent_reactions(self):
+        return self._get_parameter_block().has_inherent_reactions
+
     def _get_parameter_block(self):
         try:
             return self._block_data_config_default["parameters"]
@@ -604,6 +614,10 @@ should be constructed in this state block,
     @property
     def has_inherent_reactions(self):
         return self.parent_component()._has_inherent_reactions()
+
+    @property
+    def include_inherent_reactions(self):
+        return self.parent_component()._include_inherent_reactions()
 
     def build(self):
         """
