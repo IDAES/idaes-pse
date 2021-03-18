@@ -6,6 +6,12 @@ Set up logging for the idaes module, and import plugins.
 import os
 
 from . import config as cfg
+# WHY: to pylint's puzzlement (and that of the author of this fix),
+# the statement `from . import x as y` results in both `x` and `y`
+# to be added to the global namespace, contrary to what happens with
+# e.g. `from os import path as another_name`
+# therefore, pylint's "Undefined variable 'config'" message is a false positive
+# pylint: disable=undefined-variable
 import logging
 
 from .ver import __version__  # noqa
