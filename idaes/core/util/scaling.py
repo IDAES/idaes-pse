@@ -27,6 +27,8 @@ variables to calculate additional scaling factors.
 
 __author__ = "John Eslick, Tim Bartholomew"
 
+from math import log10
+
 import pyomo.environ as pyo
 from pyomo.core.expr import current as EXPR
 from pyomo.core.expr.visitor import identify_variables
@@ -98,10 +100,10 @@ def map_scaling_factor(iter, default=1, warning=False, func=min):
 
 def min_scaling_factor(iter, default=1, warning=True):
     """Map get_scaling_factor to an iterable of Pyomo components, and get the
-    minimum caling factor.
+    minimum scaling factor.
 
     Args:
-        iter: Iterable yeilding Pyomo componentes
+        iter: Iterable yeilding Pyomo components
         default: The default value used when a scaling factor is missing.  If
             None, this will raise an exception when scaling factors are missing.
             The default is default=1.
@@ -221,6 +223,43 @@ def unset_scaling_factor(c, data_objects=True):
                 del cdat.parent_block().scaling_factor[cdat]
     except (AttributeError, KeyError):
         pass # no scaling factor suffix, is fine
+
+
+def populate_default_scaling_factors(c):
+    """
+    Method to set default scaling factors for a number of common quantities
+    based of typical values expressed in SI units. Values are converted to
+    those used by the property package using Pyomo's unit conversion tools.
+    """
+    units = c.get_metadata().derived_units
+
+    si_scale = {"temperature": (100*pyo.units.K, "temperature"),
+                "pressure": (1e5*pyo.units.Pa, "pressure"),
+                "dens_mol_phase": (100*pyo.units.mol/pyo.units.m**3,
+                                   "density_mole"),
+                "enth_mol": (1e4*pyo.units.J/pyo.units.mol, "energy_mole"),
+                "entr_mol": (100*pyo.units.J/pyo.units.mol/pyo.units.K,
+                             "entropy_mole"),
+                "fug_phase_comp": (1e4*pyo.units.Pa, "pressure"),
+                "fug_coeff_phase_comp": (1*pyo.units.dimensionless, None),
+                "gibbs_mol": (1e4*pyo.units.J/pyo.units.mol, "energy_mole"),
+                "mole_frac_comp": (0.001*pyo.units.dimensionless, None),
+                "mole_frac_phase_comp": (0.001*pyo.units.dimensionless, None),
+                "mw": (1e-3*pyo.units.kg/pyo.units.mol, "molecular_weight"),
+                "mw_phase": (1e-3*pyo.units.kg/pyo.units.mol,
+                             "molecular_weight")}
+
+    for p, f in si_scale.items():
+        # If a defautl scaling factor exists, do not over write it
+        if p not in c.default_scaling_factor.keys():
+            if f[1] is not None:
+                v = pyo.units.convert(f[0], to_units=units[f[1]])
+            else:
+                v = f[0]
+
+            sf = 1/(10**round(log10(pyo.value(v))))
+
+            c.set_default_scaling(p, sf)
 
 
 def __set_constraint_transform_applied_scaling_factor(c, v):

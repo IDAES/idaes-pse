@@ -37,7 +37,7 @@ def test_subcritical_boiler():
     m = blr.main_steady_state()
     assert degrees_of_freedom(m) == 0
     # mass balance
-    assert (pytest.approx(0, abs=1e-3) ==
+    assert (pytest.approx(0, abs=1e-2) ==
             pyo.value(m.fs_main.fs_blr.aRH1.tube_inlet.flow_mol[0]
                       + m.fs_main.fs_blr.aECON.tube_inlet.flow_mol[0]
                       - m.fs_main.fs_blr.aPlaten.outlet.flow_mol[0]
@@ -46,11 +46,11 @@ def test_subcritical_boiler():
                       + m.fs_main.fs_blr.Attemp.Water_inlet.flow_mol[0]
                       ))
     # FEGT temperature
-    assert (pytest.approx(1399.9583, abs=1e-2) ==
+    assert (pytest.approx(1399.9583, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.flue_gas_outlet.temperature[0]))
-    assert (pytest.approx(329148487.5260, abs=1e-1) ==
+    assert (pytest.approx(329148469.4485, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.heat_total_ww[0]))
-    assert (pytest.approx(418839856.6791, abs=1e-1) ==
+    assert (pytest.approx(418839867.42785, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.heat_total[0]))
 
 
@@ -58,18 +58,18 @@ def test_subcritical_boiler():
 def test_subcritical_boiler_dynamic():
     m = blr.main_dynamic()
     assert degrees_of_freedom(m) == 0
-    assert (pytest.approx(1399.9583, abs=1e-3) ==
+    assert (pytest.approx(1399.9583, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.flue_gas_outlet.temperature[0]))
-    assert (pytest.approx(329148487.53436375, abs=1e-1) ==
+    assert (pytest.approx(329148469.4568, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.heat_total_ww[0]))
-    assert (pytest.approx(418839856.6744472, abs=1e-1) ==
+    assert (pytest.approx(418839867.42785, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.heat_total[0]))
-    assert (pytest.approx(1408.9636, abs=1e-3) ==
+    assert (pytest.approx(1408.9636, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.flue_gas_outlet.
                       temperature[60]))
-    assert (pytest.approx(334512567.4457, abs=1e-1) ==
+    assert (pytest.approx(334512549.5052, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.heat_total_ww[60]))
-    assert (pytest.approx(426313180.6785, abs=1e-1) ==
+    assert (pytest.approx(426313190.1620, rel=1e-5) ==
             pyo.value(m.fs_main.fs_blr.aBoiler.heat_total[60]))
 
 
@@ -77,11 +77,11 @@ def test_subcritical_boiler_dynamic():
 def test_steam_cycle():
     m = steam_cycle.main_steady_state()
     assert degrees_of_freedom(m) == 0
-    assert (pytest.approx(61958, abs=1e-1) ==
+    assert (pytest.approx(61958, rel=1e-5) ==
             pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[0]))
-    assert (pytest.approx(12473.27146, abs=1e-2) ==
+    assert (pytest.approx(12473.27146, rel=1e-5) ==
             pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0]))
-    assert (pytest.approx(266.8806, abs=1e-2) ==
+    assert (pytest.approx(266.8806, rel=1e-5) ==
             pyo.value(m.fs_main.fs_stc.power_output[0]))
     assert (pytest.approx(0, abs=1e-2) ==
             pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0]  # turbine inlet
@@ -97,11 +97,11 @@ def test_steam_cycle():
 def test_subc_power_plant():
     m = subcrit_plant.main_steady_state()
     assert degrees_of_freedom(m) == 0
-    assert (pytest.approx(61634.3740, abs=1e-1) ==
+    assert (pytest.approx(61634.3740, rel=1e-5) ==
             pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.enth_mol[0]))
-    assert (pytest.approx(14908.39189, abs=1e-2) ==
+    assert (pytest.approx(14908.39189, rel=1e-5) ==
             pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0]))
-    assert (pytest.approx(320, abs=1e-2) ==
+    assert (pytest.approx(320, rel=1e-5) ==
             pyo.value(m.fs_main.fs_stc.power_output[0]))
     assert (pytest.approx(0, abs=1e-2) ==
             pyo.value(m.fs_main.fs_stc.turb.inlet_split.inlet.flow_mol[0]  # turbine inlet

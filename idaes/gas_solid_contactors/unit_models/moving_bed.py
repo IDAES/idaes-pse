@@ -1026,9 +1026,14 @@ see reaction package for documentation.}"""))
                     for p in solid_phase.property_package.phase_list:
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
-                            calculate_variable_from_constraint(
-                                solid_rxn_gen[t, x, p, j],
-                                solid_phase_stoichiometry_eqn[t, x, p, j])
+                            if not (
+                                (blk.config.transformation_scheme != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.config.transformation_scheme == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                                calculate_variable_from_constraint(
+                                    solid_rxn_gen[t, x, p, j],
+                                    solid_phase_stoichiometry_eqn[t, x, p, j])
 
             blk.gas_comp_hetero_rxn.activate()
             blk.solid_phase.rate_reaction_stoichiometry_constraint.activate()

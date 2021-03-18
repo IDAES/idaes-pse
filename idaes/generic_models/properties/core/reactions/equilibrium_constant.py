@@ -13,7 +13,7 @@
 """
 Methods for calculating equilibrium constants
 """
-from pyomo.environ import exp, Var, units as pyunits
+from pyomo.environ import exp, Var, units as pyunits, value
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     ConcentrationForm
@@ -80,3 +80,7 @@ class van_t_hoff():
               pyunits.convert(c.gas_constant,
                               to_units=units["gas_constant"])) *
             (1/T - 1/rblock.T_eq_ref))
+
+    @staticmethod
+    def calculate_scaling_factors(b, rblock):
+        return 1/value(rblock.k_eq_ref)

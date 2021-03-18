@@ -455,6 +455,13 @@ class TestGenericReactionBlock(object):
         return m
 
     @pytest.mark.unit
+    def test_component_phase_lists(self, model):
+        assert model.rblock[1].component_list is model.params.component_list
+        assert model.rblock[1].phase_list is model.params.phase_list
+        assert model.rblock[1].phase_component_set is \
+            model.params._phase_component_set
+
+    @pytest.mark.unit
     def test_dh_rxn(self, model):
         assert isinstance(model.rxn_params.reaction_r1.dh_rxn_ref, Var)
         assert isinstance(model.rxn_params.reaction_e1.dh_rxn_ref, Var)

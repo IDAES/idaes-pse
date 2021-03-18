@@ -31,6 +31,10 @@ def common(b, pobj):
         b.eos_common = 1
 
 
+def calculate_scaling_factors(b, pobj):
+    pass
+
+
 def build_parameters(b):
     if not hasattr(b, "dummy_param"):
         b.dummy_param = Var(initialize=42)

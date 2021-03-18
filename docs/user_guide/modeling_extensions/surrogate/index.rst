@@ -10,7 +10,7 @@ Surrogate modeling
     helmet/index
     pysmo/index
 
-.. image:: ../../../_images/ddm-software.png
+.. image:: /images/ddm-software.png
     :width: 600px
 
 ALAMOpy, RIPE, and HELMET are
@@ -19,7 +19,7 @@ They are regression tools for the development of property models for kinetics an
 thermodynamics of a system. The provided tools include both ALAMOpy and RIPE that can
 access ALAMO and other solvers through the Python API.
 
-.. image:: ../../../_images/pysmo-logo.png
+.. image:: /images/pysmo-logo.png
     :width: 300px
     :align: center
 
