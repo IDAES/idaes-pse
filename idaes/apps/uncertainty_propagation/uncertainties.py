@@ -279,7 +279,8 @@ def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=Non
                      'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
     col: list
         list of variable names
-    """    
+    """
+    # model is used in this function and get_sensitivity. To avoid conflict, clone the model.
     m = model.clone()    
     original_Param = []
     perturbed_Param = []
