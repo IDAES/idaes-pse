@@ -198,10 +198,10 @@ class ReactionParameterBlock(ProcessBlockData,
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
-        return self.reaction_block_class(  # pylint: disable=no-callable
+        return self.reaction_block_class(  # pylint: disable=not-callable
             *args,
-                                         **kwargs,
-                                         default=default,
+            **kwargs,
+            default=default,
             initialize=initialize
         )
 

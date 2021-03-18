@@ -411,6 +411,11 @@ class StateBlock(ProcessBlock):
         return self._get_parameter_block().has_inherent_reactions
 
     def _get_parameter_block(self):
+        # PYLINT-WHY: self._block_data_config_default is set elsewhere,
+        # and is supposed to already exist as an attribute by the time
+        # (or, it will raise AttributeError at L410)
+        # this method is called, so the pylint errors here are false positives
+        # pylint: disable=no-member,access-member-before-definition
         try:
             return self._block_data_config_default["parameters"]
         except (KeyError, TypeError):
