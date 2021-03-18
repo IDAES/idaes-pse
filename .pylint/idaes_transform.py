@@ -6,6 +6,7 @@ See #1159 for more information.
 """
 import functools
 import logging
+import typing
 
 import astroid
 from astroid.builder import extract_node, parse
@@ -104,59 +105,6 @@ def register_process_block_classes(mod_node: astroid.Module):
         _display(f'{decorated_cls_node.name} -> {decl_cls_node.name}')
 
 
-def is_base_pyomo_var_class(node):
-    try:
-        _display(f'node.qname()={node.qname()}')
-        return 'pyomo.core.base.var.Var' in node.qname()
-    except AttributeError:
-        pass
-    return False
-
-
-def get_concrete_pyomo_var_class(node: astroid.ClassDef, context=None) -> astroid.ClassDef:
-    # node_from_import = extract_node('from pyomo.core.base.var import SimpleVar; SimpleVar')
-    # simple_var_cls_node = astroid.helpers.safe_infer(node_from_import)
-    clsdef_code = """
-    from pyomo.base.var import SimpleVar, IndexedVar
-    class ConcreteVar(SimpleVar, IndexedVar):
-        pass
-"""
-    simple_var_cls_node = extract_node(clsdef_code)
-    return simple_var_cls_node
-
-
-def is_base_pyomo_rangeset_class(node):
-    try:
-        return 'pyomo.core.base.set.RangeSet' in node.qname()
-    except AttributeError:
-        pass
-    return False
-
-
-def get_concrete_pyomo_rangeset_class(node: astroid.ClassDef, context=None) -> astroid.ClassDef:
-    clsdef_code = """
-    from pyomo.base.set import RangeSet, _FiniteRangeSetData
-    class ConcreteRangeSet(RangeSet, _FiniteRangeSetData):
-        pass
-"""
-    concrete_cls_node = extract_node(clsdef_code)
-    return concrete_cls_node
-
-
-def infer_concrete_var_instance(node: astroid.ClassDef, context=None):
-    _display(f'abstract var class: {node}')
-    concrete_cls_node = get_concrete_pyomo_var_class(node, context=context)
-    _display(f'concrete var class: {concrete_cls_node}')
-    return iter([concrete_cls_node.instantiate_class()])
-
-
-def infer_concrete_rangeset_instance(node: astroid.ClassDef, context=None):
-    _display(f'abstract var class: {node}')
-    concrete_cls_node = get_concrete_pyomo_rangeset_class(node, context=context)
-    _display(f'concrete var class: {concrete_cls_node}')
-    return iter([concrete_cls_node.instantiate_class()])
-
-
 def is_config_block_class(node: astroid.ClassDef):
     # NOTE might be necessary to use node.qname() instead, but that's more prone to breaking
     # if the internal package structure is changed
@@ -179,6 +127,30 @@ def disable_attr_checks_on_slots(node: astroid.ClassDef):
     del node.locals['__slots__']
 
 
+def has_conditional_instantiation(node: astroid.ClassDef, context=None):
+    if 'pyomo' not in node.qname():
+        return
+    try:
+        # check if the class defines a __new__()
+        dunder_new_node: astroid.FunctionDef = node.local_attr('__new__')[0]
+    except astroid.AttributeInferenceError:
+        return False
+    else:
+        # _display(node)
+        # find all return statements; if there's more than one, assume that instances are created conditionally,
+        # and therefore the type of the instantiated object cannot be known with static analysis
+        # to be more accurate, we should check for If nodes as well as maybe the presence of other __new__() calls
+        return_statements = list(dunder_new_node.nodes_of_class(astroid.node_classes.Return))
+        return len(return_statements) > 1
+
+
+def make_node_create_uninferable_instance(node: astroid.ClassDef, context=None):
+    def _instantiate_uninferable(*args, **kwargs):
+        return astroid.Uninferable()
+    node.instantiate_class = _instantiate_uninferable
+    return node
+
+
 def register(linter):
     "This function needs to be defined for the plugin to be picked up by Pylint"
 
@@ -191,13 +163,12 @@ astroid.MANAGER.register_transform(
 )
 
 astroid.MANAGER.register_transform(
-    astroid.ClassDef, astroid.inference_tip(infer_concrete_var_instance), is_base_pyomo_var_class
-)
-
-astroid.MANAGER.register_transform(
-    astroid.ClassDef, astroid.inference_tip(infer_concrete_rangeset_instance), is_base_pyomo_rangeset_class
-)
-
-astroid.MANAGER.register_transform(
     astroid.ClassDef, disable_attr_checks_on_slots, is_config_block_class
+)
+
+
+astroid.MANAGER.register_transform(
+    astroid.ClassDef,
+    make_node_create_uninferable_instance,
+    predicate=has_conditional_instantiation
 )
