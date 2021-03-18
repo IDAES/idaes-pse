@@ -22,7 +22,7 @@ from pyomo.opt import SolverFactory
 import shutil
 import logging
 from collections import namedtuple
-from idaes.apps.uncertainty_propagation.sens import sensitivity_calculation # will replace with pyomo 
+from idaes.apps.uncertainty_propagation.sens import sensitivity_calculation # will replace with pyomo (# Pyomo PR 1613: https://github.com/pyomo/pyomo/pull/1613/) 
 
 logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
@@ -76,8 +76,8 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
             e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
                      'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
         results.propagation_f: dict
+            df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
             error propagation in the objective function with the dictionary key, 'objective' 
-            if the objective function doesn't include any uncertain parameters, return an empty dictionary        
         results.propagation_c: dict
             error propagation in the constraints with the dictionary keys, 'constraints l'
             where l is the line number. 
@@ -104,12 +104,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
 
     
     # Remove all "'" and " " in theta_names
-    variable_clean = False
-    for _ in theta_names:
-        if " " in _ or "'" in _:
-            variable_clean = True    
-    if variable_clean:
-        theta_names, var_dic = clean_variable_name(theta_names)
+    theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     parmest_class = parmest.Estimator(model_function, data, theta_names, obj_function,
                  tee, diagnostic_mode, solver_options)
     obj, theta,cov = parmest_class.theta_est(calc_cov=True)
@@ -168,8 +163,8 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
                      'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
     propagation_f: dictionary
+        df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
         error propagation in the objective function with the dictionary key, 'objective' 
-        if the objective function doesn't include any uncertain parameters, return an empty dictionary        
     propagation_c: dictionary
         error propagation in the constraints with the dictionary keys, 'constraints r'
         where r is the line number. 
@@ -186,32 +181,27 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     elif type(model_uncertain).__name__ == 'function':
         model = model_uncertain()
     else:
-        raise Exception('model_uncertain must be either python function or Pyomo ConcreteModel.')
+        raise TypeError('model_uncertain must be either python function or Pyomo ConcreteModel.')
 
     # Remove all "'" in theta_names     
-    variable_clean = False
-    for _ in theta_names:
-        if " " in _ or "'" in _:
-            variable_clean = True
-    if variable_clean:
-        theta_names, var_dic = clean_variable_name(theta_names)
-        # Fix the estiamted paramerters 
-        for v in theta_names:
-            eval('model.'+var_dic[v]).setlb(theta[v])
-            eval('model.'+var_dic[v]).setub(theta[v])
-    else:
-        for v in theta_names:
-            eval('model.'+v).setlb(theta[v])
-            eval('model.'+v).setub(theta[v])
+    theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
+    for v in theta_names:
+        eval('model.'+var_dic[v]).setlb(theta[v])
+        eval('model.'+var_dic[v]).setub(theta[v])
 
     # get gradient of the objective function, constraints, and the column number of each theta
     gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic = get_sensitivity(model, theta_names, tee)
-    if variable_clean:
-        dsdp_dic = get_dsdp(model, theta_names, theta, tee, None, var_dic)
-    else:
-        dsdp_dic = get_dsdp(model, theta_names, theta, tee)      
-   
-    # calculate error propagation g*cov*g 
+    dsdp_dic, col  = get_dsdp(model, theta_names, theta, var_dic,tee)      
+    x_list = [x for x in col if x not in var_dic.keys()]
+    p_list = [x for x in col if x  in var_dic.keys()]
+    fxxp = []
+    for i in p_list:
+        fxxp_tmp = 0
+        for j in x_list:
+            fxxp_tmp = fxxp_tmp + gradient_f_dic['d(f)/d('+j+')']*dsdp_dic['d('+j+')/d('+i+')']
+        fxxp.append(fxxp_tmp)
+    fxxp = np.array(fxxp)
+    # calculate error propagation df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
     # objective function: 
     for cc in list(model.component_data_objects(Objective,
                                             active=True,
@@ -222,8 +212,10 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     propagation_f = {}
     # calculate error propagation of the objective fuction 
     if 'gradient_f_theta' in locals():
-        propagation_f['objective'] = np.dot(gradient_f_theta,np.dot(cov,np.transpose(gradient_f_theta)))
-   
+        propagation_f['objective'] = np.dot(gradient_f_theta,np.dot(cov,np.transpose(gradient_f_theta))) + np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
+    else:
+        propagation_f['objective'] = np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
+
 
     # constraints: 
     num_constraints = len(list(model.component_data_objects(Constraint,
@@ -254,7 +246,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
     return gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c
 
-def get_dsdp(model, theta_names, theta, tee=False, solver_options=None,var_dic=None):
+def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=None):
     """This function calculates gradient vector of the (decision variables, parameters) with respect to the paramerters (theta_names).
     e.g) min 1
          s.t x1 = p1
@@ -285,35 +277,34 @@ def get_dsdp(model, theta_names, theta, tee=False, solver_options=None,var_dic=N
         gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name).
         e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
                      'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
- 
+    col: list
+        list of variable names
     """    
     m = model.clone()    
     original_Param = []
     perturbed_Param = []
     m.extra = ConstraintList()
+    kk = 0
+    if var_dic == {}:
+        for i in theta_names:
+            var_dic[i] = i 
     for v in theta_names:
-        if var_dic == None :
-            setattr(m, str('original_')+v ,Param(initialize=theta[v], mutable=True))
-            setattr(m, str('perturbed_')+v ,Param(initialize=theta[v]))
-            m.extra.add(eval('m.'+v) - eval('m.original_'+v) == 0 )
-            original_Param.append(eval('m.original_'+v))
-            perturbed_Param.append(eval('m.perturbed_'+v))
-        else:
-            # v already remove all spaces and "
-            v_tmp = v.replace('.', '_')
-            v_tmp = v_tmp.replace(',', '_')
-            v_tmp = v_tmp.replace('[', '_')
-            v_tmp = v_tmp.replace(']', '_')
-            setattr(m, str('original_')+v_tmp ,Param(initialize=theta[v], mutable=True))
-            setattr(m, str('perturbed_')+v_tmp ,Param(initialize=theta[v]))
-            m.extra.add(eval('m.'+var_dic[v]) - eval('m.original_'+v_tmp) == 0 )
-            original_Param.append(eval('m.original_'+v_tmp))
-            perturbed_Param.append(eval('m.perturbed_'+v_tmp))
- 
+        v_tmp = str(kk)
+        setattr(m, str('original_')+v_tmp ,Param(initialize=theta[v], mutable=True))
+        setattr(m, str('perturbed_')+v_tmp ,Param(initialize=theta[v]))
+        m.extra.add(eval('m.'+var_dic[v]) - eval('m.original_'+v_tmp) == 0 )
+        original_Param.append(eval('m.original_'+v_tmp))
+        perturbed_Param.append(eval('m.perturbed_'+v_tmp))
+        kk = kk + 1
     m_kaug_dsdp = sensitivity_calculation('kaug',m,original_Param,perturbed_Param, tee)
-    with open ("./dsdp/col_row.col", "r") as myfile:
-        col = myfile.read().splitlines()
-    dsdp = np.loadtxt("./dsdp/dsdp_in_.in")
+
+    try:
+        with open ("./dsdp/col_row.col", "r") as myfile:
+            col = myfile.read().splitlines()
+        dsdp = np.loadtxt("./dsdp/dsdp_in_.in")
+    except Exception as e:
+        print('File not found.')
+
     dsdp = dsdp.reshape((len(theta_names), int(len(dsdp)/len(theta_names))))
     dsdp = dsdp[:len(theta_names), :len(col)]
     dsdp_dic = {}
@@ -325,7 +316,8 @@ def get_dsdp(model, theta_names, theta, tee=False, solver_options=None,var_dic=N
         shutil.rmtree('dsdp', ignore_errors=True)
     except OSError:
         pass
-    return dsdp_dic
+    col = [i for i in col if "_SENSITIVITY_TOOLBOX_DATA" not in i]
+    return dsdp_dic, col
 
 def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector of the objective function and constraints with respect to the variables in theta_names.
@@ -415,12 +407,15 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     model.write('col_row.nl', format='nl', io_options={'symbolic_solver_labels':True})
     # get the column numbers of theta
     line_dic = {}
-    for v in theta_names:
-        line_dic[v] = line_num('col_row.col', v)
-    # load gradient of the objective function
-    gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
-    with open ("col_row.col", "r") as myfile:
-        col = myfile.read().splitlines()
+    try:
+        for v in theta_names:
+            line_dic[v] = line_num('col_row.col', v)
+        # load gradient of the objective function
+        gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
+        with open ("col_row.col", "r") as myfile:
+            col = myfile.read().splitlines()
+    except Exception as e:
+        print('File not found.')
     gradient_f_dic = {}
     for i in range(len(col)):
         gradient_f_dic["d(f)/d("+col[i]+")"] = gradient_f[i]
@@ -430,7 +425,11 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
                                                             active=True,
                                                             descend_into=True)))
     if num_constraints > 0 :
-        gradient_c = np.loadtxt("./GJH/A_print.txt")
+        try:
+            gradient_c = np.loadtxt("./GJH/A_print.txt")
+        except Exception as e:
+            print('./GJH/A_print.txt not found.')
+        gradient_c = np.array([i for i in gradient_c if not np.isclose(i[2],0)])
         row_number, col_number = np.shape(gradient_c)
         gradient_c_dic = {}
         for i in range(row_number):
@@ -443,6 +442,7 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     shutil.move("col_row.col", "./GJH/")
     shutil.move("col_row.row", "./GJH/")
     shutil.rmtree('GJH', ignore_errors=True)
+    
     return gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic
 
 def line_num(file_name, target):
@@ -507,5 +507,5 @@ def clean_variable_name(theta_names):
             clean = True
     if clean:
        logger.warning("All ' and spaces in theta_names are removed.")
-    return theta_names_out, var_dic
+    return theta_names_out, var_dic, clean
 

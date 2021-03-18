@@ -106,6 +106,27 @@ class TestUncertaintyPropagation:
         assert propagation_f['objective'] == approx(5.45439337747349)
         assert propagation_c == {}
 
+    def test_propagate_uncertainty_error(self):
+        '''
+        It tests a TypeError when the modle_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
+        '''
+        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
+        variable_name = ['asymptote', 'rate_constant']
+        data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
+                                  [4,16.0],[5,15.6],[7,19.8]],
+                            columns=['hour', 'y'])
+        def SSE(model, data):
+            expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
+            return expr
+        parmest_class = parmest.Estimator(rooney_biegler_model, data,variable_name,SSE)
+        obj, theta, cov = parmest_class.theta_est(calc_cov=True)
+        model_uncertain= ConcreteModel()
+        model_uncertain.asymptote = Var(initialize = 15)
+        model_uncertain.rate_constant = Var(initialize = 0.5)
+        model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
+        with pytest.raises(TypeError):
+            gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c =  propagate_uncertainty(1, theta, cov, variable_name)
+
     def test_get_dsdp1(self):
         '''
         It tests the function get_dsdp with a simple nonlinear programming example.
@@ -130,7 +151,7 @@ class TestUncertaintyPropagation:
         for v in variable_name:
             getattr(m, v).setlb(theta[v])
             getattr(m, v).setub(theta[v])
-        dsdp_dic = get_dsdp(m, variable_name, theta)
+        dsdp_dic, col = get_dsdp(m, variable_name, theta)
         assert dsdp_dic['d(x1)/d(p1)'] == approx(1.0)
         assert dsdp_dic['d(x2)/d(p1)'] == approx(0.0)
         assert dsdp_dic['d(p1)/d(p1)'] == approx(1.0)
@@ -162,7 +183,7 @@ class TestUncertaintyPropagation:
         for v in variable_name:
             getattr(model_uncertain, v).setlb(theta[v])
             getattr(model_uncertain, v).setub(theta[v])
-        dsdp_dic =  get_dsdp(model_uncertain, variable_name, theta)
+        dsdp_dic, col =  get_dsdp(model_uncertain, variable_name, theta, {})
         assert dsdp_dic['d(asymptote)/d(asymptote)'] == approx(1.0)
         assert dsdp_dic['d(rate_constant)/d(asymptote)'] == approx(0.0)
         assert dsdp_dic['d(asymptote)/d(rate_constant)'] == approx(0.0)
@@ -362,7 +383,7 @@ class TestUncertaintyPropagation:
         It tests the function clean_variable_name when variable names contain ' and spaces.
         '''
         theta_names = ["fs.properties.tau['benzene', 'toluene']", "fs.properties.tau['toluene', 'benzene' ]"] 
-        theta_names_new, var_dic = clean_variable_name(theta_names)
+        theta_names_new, var_dic, clean = clean_variable_name(theta_names)
         theta_names_expected = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
         assert len(theta_names_expected) == len(theta_names_new)
         assert all([a == b for a, b in zip(theta_names_expected, theta_names_new)]) 
@@ -372,13 +393,14 @@ class TestUncertaintyPropagation:
 
         assert len(theta_names) == len(var_dic.values())
         assert all([a == b for a, b in zip(sorted(theta_names), sorted(var_dic.values()))])
-
+        assert clean == True
+     
     def test_clean_variable_name2(self):
         '''
         It tests the function clean_variable_name when variable names do not contain any ' and spaces.
         '''
         theta_names = ["fs.properties.tau[benzene,toluene]", "fs.properties.tau[toluene,benzene]"]
-        theta_names_new, var_dic = clean_variable_name(theta_names)
+        theta_names_new, var_dic, clean = clean_variable_name(theta_names)
         assert len(theta_names) == len(theta_names_new)
         assert all([a == b for a, b in zip(theta_names, theta_names_new)])
 
@@ -387,3 +409,4 @@ class TestUncertaintyPropagation:
 
         assert len(theta_names) == len(var_dic.values())
         assert all([a == b for a, b in zip(sorted(theta_names), sorted(var_dic.values()))])
+        assert clean == False

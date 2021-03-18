@@ -7,6 +7,9 @@
 # rights in this software.
 # This software is distributed under the 3-clause BSD License
 # ______________________________________________________________________________
+
+# Pyomo PR 1613: https://github.com/pyomo/pyomo/pull/1613/
+
 from pyomo.environ import (
         Param,
         Var,
