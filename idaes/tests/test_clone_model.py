@@ -60,4 +60,7 @@ def test_clone(model):
     assert (m2.fs.heater.inlet.flow_mol[0] is
             m2.fs.heater.control_volume.properties_in[0].flow_mol)
 
+    assert not (m2.fs.heater.inlet.flow_mol[0] is
+                model.fs.heater.control_volume.properties_in[0].flow_mol)
+
     pe.TransformationFactory('network.expand_arcs').apply_to(m2)
