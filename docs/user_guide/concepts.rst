@@ -22,7 +22,7 @@ environment, :term:`Pyomo`.
 
 Below is a diagram showing the components of the IDAES Integrated Platform (IDAES-IP).
 
-.. image:: ../_images/IDAES-IP.png
+.. image:: /images/IDAES-IP.png
 
 Terminology
 ^^^^^^^^^^^
@@ -75,7 +75,7 @@ Overview
 The core modeling framework of IDAES was designed to be modular, and is based on the
 block-hierarchical structure shown below:
 
-.. image:: ../_images/IDAES_structure.png
+.. image:: /images/IDAES_structure.png
 
 An IDAES process model begins with a process flowsheet, which is the canvas on which the
 representation of the user’s process will be constructed. Each process consists of a network of

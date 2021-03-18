@@ -662,9 +662,9 @@ discretizing length domain (default=3)"""))
         @self.Constraint(self.flowsheet().config.time,
                          doc="Ra Number of Free Convection")
         def Ra_number_eqn(b, t):
-            return b.N_Ra_root6[t] == b.const_Ra_root6 * sqrt(
+           return b.N_Ra_root6[t] == b.const_Ra_root6 * sqrt(
                 b.drum_do + 2 * b.insulation_thickness) * (
-                    b.drum_wall_temperature[t, b.radial_domain.last()]
+                    b.temp_insulation_outside[t]
                     - b.temperature_ambient[t])**0.166667
 
         # Nu number equation

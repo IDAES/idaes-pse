@@ -8,10 +8,6 @@ HelmValve
 
 This is a steam power generation turbine model for the stages between the inlet
 and outlet.
-This model inherits the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>`
-with the adiabatic options. Beyond the base pressure changer model this provides a pressure
-flow relation as a function of the valve opening fraction.
 
 Example
 -------
@@ -41,16 +37,6 @@ Example
   m.fs.valve.Cv.fix(0.01)
   m.fs.valve.valve_opening.fix(0.5)
   m.fs.valve.initialize(outlvl=1)
-
-Parameters
-----------
-
-=========================== ========================= =========== ==============================================================================================
-Expression                  Symbol                    Index Sets  Doc
-=========================== ========================= =========== ==============================================================================================
-``flow_scale``              :math:`s_f`               None        Factor for scaling the pressure-flow equation, should be same magnitude as expected flow rate
-=========================== ========================= =========== ==============================================================================================
-
 
 Variables
 ---------

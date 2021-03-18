@@ -20,12 +20,12 @@ from pyomo.environ import (Block,
                            SolverStatus,
                            TerminationCondition,
                            value)
-from pyomo.util.check_units import assert_units_equivalent
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -83,7 +83,7 @@ class TestParamBlock(object):
         assert isinstance(model.rxn_params.reaction_R1, Block)
         assert isinstance(model.rxn_params.reaction_R2, Block)
 
-        assert_units_equivalent(model)
+        assert_units_consistent(model)
 
 
 class TestStateBlock(object):
@@ -106,7 +106,7 @@ class TestStateBlock(object):
                 default={"state_block": model.props,
                          "has_equilibrium": True})
 
-        assert_units_equivalent(model)
+        assert_units_consistent(model)
 
         return model
 

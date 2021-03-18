@@ -1,0 +1,40 @@
+/*
+
+Custom local modifications to HTML theme.
+
+*/
+
+/* get rid of some strange stuff with long pages*/
+body {
+    min-height: auto;
+}
+
+/* for code blocks */
+div.highlight pre {
+    font-size: 100%;
+}
+
+/* allow wider pages */
+.wy-nav-content {
+    max-width: 1000px; /* default=800 */
+}
+
+/* Make headings more distinct */
+h1 {
+    color: rgb(36,112,161);
+    font-size: 180%;
+}
+h2 {
+    font-size: 140%;
+}
+/* Override some of the decorations on definition lists.
+ * By only modifying the "simple" class of 'dl', we do not change the display properties of
+ * Python methods and classes (which also use definition lists).
+ */
+.rst-content dl.simple dt,  .rst-content dl.simple dt:first-child {
+    background-color: transparent;
+    border: none;
+    font-weight: bold;
+    color: rgb(64, 64, 64);
+    font-size: 110%;
+}

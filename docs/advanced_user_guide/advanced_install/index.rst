@@ -36,7 +36,7 @@ Fork the Repository
 ^^^^^^^^^^^^^^^^^^^
 You use a "fork" of a repository (or "repo" for short) to create a space where you have complete control and can make changes without directly affecting the main repository.
 
-.. figure:: ../../_images/github-fork-repo_pse.png
+.. figure:: /images/github-fork-repo_pse.png
     :align: right
     :width: 500px
     

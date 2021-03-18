@@ -16,8 +16,6 @@ Common methods used by generic framework
 Author: A Lee
 """
 
-import types
-
 from pyomo.environ import units as pyunits
 
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
@@ -73,14 +71,19 @@ def get_method(self, config_arg, comp=None):
     if c_arg is None:
         raise GenericPropertyPackageError(self, config_arg)
 
-    if isinstance(c_arg, types.ModuleType):
+    # Check to see if c_arg has an attribute with the name of the config_arg
+    # If so, assume c_arg is a class or module holding property subclasses
+    if hasattr(c_arg, config_arg):
         c_arg = getattr(c_arg, config_arg)
 
+    # Try to get the return_expression method from c_arg
+    # Otherwise assume c_arg is the return_expression method
     try:
         mthd = c_arg.return_expression
     except AttributeError:
         mthd = c_arg
 
+    # Call the return_expression method
     if callable(mthd):
         return mthd
     else:

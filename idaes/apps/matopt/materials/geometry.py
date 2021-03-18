@@ -10,7 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-__all__ = ['Parallelepiped', 'RectPrism', 'Cube', 'Rhombohedron', 'Cuboctahedron']
+__all__ = ['Parallelepiped', 'RectPrism', 'Cube', 'Rhombohedron', 'Cuboctahedron', 'Cylinder', 'CylindricalSector']
 
 from abc import abstractmethod, ABC
 from copy import deepcopy
@@ -160,7 +160,7 @@ class Shape(object):
     __contains__ = isInShape
 
     @abstractmethod
-    def getBBox(self):
+    def getBounds(self):
         """ """
         raise NotImplementedError
 
@@ -679,3 +679,195 @@ class Cube(RectPrism, ABC):
     def L(self):
         """ """
         return self._L
+
+
+class Cylinder(Shape, ABC):
+    """ Object to create, manipulate and utilize Cylinder shapes. """
+    # === STANDARD CONSTRUCTOR
+    def __init__(self, Po, R, H, Vh=np.array([0,0,1], dtype=float), Alignment=None):
+        Shape.__init__(self, Po, Alignment)
+        self._R = R
+        self._H = H
+        self._Vh = Vh * self._H / np.linalg.norm(Vh)
+        assert (self.isConsistentWithDesign())
+
+    # === ASSERTION OF CLASS DESIGN
+    def isConsistentWithDesign(self):
+        if len(self.Vh) != 3:
+            return False
+        return self.R > 0 and self.H > 0 and Shape.isConsistentWithDesign(self)
+
+    # === MANIPULATION METHODS
+    def applyTransF(self, TransF):
+        """ Apply the input transform function.
+
+        Args:
+            TransF: Transform function.
+        """
+        if type(TransF) is ScaleFunc:
+            if areEqual(TransF.Scale[0], TransF.Scale[1], Shape.DBL_TOL):
+                self._R *= TransF.Scale[0]
+                self._H *= TransF.Scale[2]
+                TransF.transform(self._Vh)
+            else:
+                raise ValueError('The scaling ratio along the radius directions are not consistent')
+        elif (type(TransF) is RotateFunc) or (type(TransF) is ReflectFunc):
+            TransF.transform(self._Vh)
+        elif not (type(TransF) is ShiftFunc):
+            raise TypeError('MatOpt does not support this transformation type. Please contact MatOpt developer for '
+                            'potential feature addition.')
+        Shape.applyTransF(self, TransF)
+        assert (self.isConsistentWithDesign())
+
+    # === PROPERTY EVALUATION METHODS
+    def isInShape(self, P, tol=Shape.DBL_TOL):
+        """ Check if a point is inside the Cylinder shape within certain tolerance.
+
+        Args:
+            P: Input point
+            tol: Tolerance (Default value = Shape.DBL_TOL)
+
+        Returns:
+            True/False
+        """
+        OP = P - self.Anchor
+        projH = np.dot(OP, self.Vh) / self.H
+        if (projH > -tol) and (projH < self.H + tol):
+            normOP = np.linalg.norm(OP)
+            projR = sqrt(normOP ** 2 - projH ** 2 + tol)
+            return projR < self.R + tol
+        else:
+            return False
+
+    __contains__ = isInShape
+
+    def getBounds(self):
+        """ Get the bounds of each coordinate in the form of an artificial point."""
+        MinP = np.minimum(np.zeros(3, dtype=float), self.Vh) + self.Anchor - np.ones(3, dtype=float) * self.R
+        MaxP = np.maximum(np.zeros(3, dtype=float), self.Vh) + self.Anchor + np.ones(3, dtype=float) * self.R
+        return MinP, MaxP
+
+    # === BASIC QUERY METHODS
+    @property
+    def R(self):
+        """ Radius. """
+        return self._R
+
+    @property
+    def H(self):
+        """ Height. """
+        return self._H
+
+    @property
+    def Vh(self):
+        """ Center axis vector. """
+        return self._Vh
+
+
+class CylindricalSector(Shape, ABC):
+    """ Object to create, manipulate and utilize Cylinder shapes. """
+
+    # === STANDARD CONSTRUCTOR
+    def __init__(self, Po, R, H, Va, Vb, Vh, Alignment=None):
+        Shape.__init__(self, Po, Alignment)
+        self._R = R
+        self._H = H
+        self._Vh = Vh * self._H / np.linalg.norm(Vh)
+        self._Va = Va * self._R / np.linalg.norm(Va)
+        self._Vb = Vb * self._R / np.linalg.norm(Vb)
+        self._Norms = self.setNorms()
+        assert (self.isConsistentWithDesign())
+
+    # === ASSERTION OF CLASS DESIGN
+    def isConsistentWithDesign(self):
+        if self.R > 0 and self.H > 0 and len(self.Vh) == 3 and len(self.Va) == 3 and len(self.Vb) == 3 and len(
+                self.Norms) == 3:
+            if areEqual(np.dot(self.Va, self.Vh), 0.0, Shape.DBL_TOL) and \
+                    areEqual(np.dot(self.Vb, self.Vh), 0.0, Shape.DBL_TOL):
+                return Shape.isConsistentWithDesign(self)
+        return False
+
+    # === AUXILIARY METHODS
+    def setNorms(self):
+        return [np.cross(self._Vb, self._Va), np.cross(self._Va, self._Vh), np.cross(self._Vh, self._Vb)]
+
+    # === MANIPULATION METHODS
+    def applyTransF(self, TransF):
+        """ Apply the input transform function.
+
+        Args:
+            TransF: Transform function.
+        """
+        if type(TransF) is ScaleFunc:
+            if areEqual(TransF.Scale[0], TransF.Scale[1], Shape.DBL_TOL):
+                self._R *= TransF.Scale[0]
+                self._H *= TransF.Scale[2]
+                TransF.transform(self._Vh)
+            else:
+                raise ValueError('The scaling ratio along the radius directions are not consistent')
+        elif (type(TransF) is RotateFunc) or (type(TransF) is ReflectFunc):
+            TransF.transform(self._Va)
+            TransF.transform(self._Vb)
+            TransF.transform(self._Vh)
+            self._Norms = self.setNorms()
+        elif not (type(TransF) is ShiftFunc):
+            raise TypeError('MatOpt does not support this transformation type. Please contact MatOpt developer for '
+                            'potential feature addition.')
+        Shape.applyTransF(self, TransF)
+        assert (self.isConsistentWithDesign())
+
+    # === PROPERTY EVALUATION METHODS
+    def isInShape(self, P, tol=Shape.DBL_TOL):
+        """ Check if a point is inside the Cylinder shape within certain tolerance.
+
+        Args:
+            P: Input point
+            tol: Tolerance (Default value = Shape.DBL_TOL)
+
+        Returns:
+            True/False
+        """
+        OP = P - self.Anchor
+        for n in self.Norms:
+            if np.dot(n, OP) > tol:
+                return False
+        if np.dot(-self.Norms[0], OP - self.Vh) > tol:
+            return False
+        projH = np.linalg.norm(np.dot(OP, self.Vh)) / self.H
+        normP = np.linalg.norm(OP)
+        if sqrt(normP ** 2 - projH ** 2 + tol) > self.R + tol:
+            return False
+        return True
+
+    __contains__ = isInShape
+
+    # === BASIC QUERY METHODS
+    @property
+    def R(self):
+        """ Radius. """
+        return self._R
+
+    @property
+    def H(self):
+        """ Height. """
+        return self._H
+
+    @property
+    def Vh(self):
+        """ Center axis vector. """
+        return self._Vh
+
+    @property
+    def Va(self):
+        """ Left edge vector. """
+        return self._Va
+
+    @property
+    def Vb(self):
+        """ Right edge vector. """
+        return self._Vb
+
+    @property
+    def Norms(self):
+        """ Norms. """
+        return self._Norms

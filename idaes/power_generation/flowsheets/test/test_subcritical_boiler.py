@@ -25,7 +25,7 @@ from idaes.power_generation.flowsheets.subcritical_power_plant.\
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_equalities_generator)
 from idaes.generic_models.properties import iapws95
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_default_solver
 import idaes.core.util.scaling as iscale
 
 solver_available = pyo.SolverFactory('ipopt').available()

@@ -18,7 +18,8 @@ import types
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint,
+from pyomo.environ import (Block,
+                           Constraint,
                            Expression,
                            Set,
                            Param,
@@ -26,14 +27,16 @@ from pyomo.environ import (Constraint,
                            value,
                            Var,
                            units as pyunits)
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialFlowBasis)
 from idaes.core.components import Component, __all_components__
 from idaes.core.phases import Phase, AqueousPhase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
@@ -44,7 +47,10 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
+from idaes.generic_models.properties.core.generic.generic_reaction import \
+    equil_rxn_config
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, GenericPropertyPackageError)
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
@@ -111,7 +117,7 @@ class GenericParameterData(PhysicalParameterBlock):
         description="Bounds for state variables",
         doc="""A dict containing bounds to use for state variables."""))
     CONFIG.declare("state_components", ConfigValue(
-        default=StateIndex.apparent,
+        default=StateIndex.true,
         domain=In(StateIndex),
         doc="Index state variables by true or apparent components",
         description="Argument idicating whether the true or apparent species "
@@ -170,6 +176,24 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="Flag indiciating whether enthalpy of formation should be included"
         " when calculating specific enthalpies."))
 
+    # Config arguments for inherent reactions
+    CONFIG.declare("reaction_basis", ConfigValue(
+        default=MaterialFlowBasis.molar,
+        domain=In(MaterialFlowBasis),
+        doc="Basis of reactions",
+        description="Argument indicating basis of reaction terms. Should be "
+        "an instance of a MaterialFlowBasis Enum"))
+
+    CONFIG.declare("inherent_reactions", ConfigBlock(
+        implicit=True, implicit_domain=equil_rxn_config))
+
+    # User-defined default scaling factors
+    CONFIG.declare("default_scaling_factors", ConfigValue(
+        domain=dict,
+        description="User-defined default scaling factors",
+        doc="Dict of user-defined properties and associated default "
+        "scaling factors"))
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -220,6 +244,9 @@ class GenericParameterData(PhysicalParameterBlock):
         self._electrolyte = False
 
         for p, d in self.config.phases.items():
+            # Create a copy of the phase config dict
+            d = dict(d)
+
             ptype = d.pop("type", None)
 
             if ptype is None:
@@ -234,6 +261,14 @@ class GenericParameterData(PhysicalParameterBlock):
             elif ptype is AqueousPhase:
                 # If there is an aqueous phase, set _electrolyte = True
                 self._electrolyte = True
+                # Check that specified property package supports electrolytes
+                eos = d["equation_of_state"]
+                if (not hasattr(eos, "electrolyte_support") or
+                        not eos.electrolyte_support):
+                    raise ConfigurationError(
+                        "{} aqueous phase {} was set to use an equation of "
+                        "state whcih does not support electrolytes: {}"
+                        .format(self.name, p, eos))
 
             self.add_component(str(p), ptype(default=d))
 
@@ -271,6 +306,9 @@ class GenericParameterData(PhysicalParameterBlock):
                 .format(self.name))
 
         for c, d in self.config.components.items():
+            # Create a copy of the component config dict
+            d = dict(d)
+
             ctype = d.pop("type", None)
             d["_electrolyte"] = self._electrolyte
 
@@ -380,11 +418,15 @@ class GenericParameterData(PhysicalParameterBlock):
                         if self.get_component(j)._is_phase_valid(pobj):
                             # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
+                        if not isinstance(pobj, AqueousPhase):
+                            # Also need to add apparent species
+                            if (p, j) not in pc_set_true:
+                                pc_set_true.append((p, j))
                 else:
                     # Validate that component names are valid and add to pc_set
                     for j in pc_list:
                         if (j not in self.true_species_set and
-                                j not in self.true_species_set):
+                                j not in self.apparent_species_set):
                             # Unrecognised component
                             raise ConfigurationError(
                                 "{} phase-component list for phase {} "
@@ -398,9 +440,9 @@ class GenericParameterData(PhysicalParameterBlock):
                                 "contained component {}, however this "
                                 "component is not valid for the given "
                                 "PhaseType".format(self.name, p, j))
-                        if j not in self.true_species_set:
+                        if j in self.true_species_set:
                             pc_set_true.append((p, j))
-                        if j not in self.apparent_species_set:
+                        if j in self.apparent_species_set:
                             pc_set_appr.append((p, j))
             self.true_phase_component_set = Set(initialize=pc_set_true,
                                                 ordered=True)
@@ -482,6 +524,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     "state_definition configuration argument. Please fix "
                     "your property parameter definition to include this."
                     .format(self.name))
+        elif isinstance(self.config.state_definition, types.ModuleType):
+            _log.info("DEPRECATED - definiton of generic property "
+                      "packages is moving to using static classes "
+                      "instead of modules. Please refer to the IDAES "
+                      "documentation.")
 
         units = self.get_metadata().derived_units
 
@@ -545,6 +592,13 @@ class GenericParameterData(PhysicalParameterBlock):
                         "phase_equilibrium_state was not specified "
                         "for all phase pairs."
                         .format(self.name))
+
+                if isinstance(pie_config[pp], types.ModuleType):
+                    _log.info("DEPRECATED - definiton of generic property "
+                              "packages is moving to using static classes "
+                              "instead of modules. Please refer to the IDAES "
+                              "documentation.")
+
                 for j in self.component_list:
                     if ((pp[0], j) in self._phase_component_set
                             and (pp[1], j) in self._phase_component_set):
@@ -582,12 +636,26 @@ class GenericParameterData(PhysicalParameterBlock):
             cobj = self.get_component(c)
             for a, v in cobj.config.items():
                 if isinstance(v, types.ModuleType):
-                    c_arg = getattr(v, a)
+                    _log.info("DEPRECATED - definiton of generic property "
+                              "packages is moving to using static classes "
+                              "instead of modules. Please refer to the IDAES "
+                              "documentation.")
+
+                # Check to see if v has an attribute build_parameters
+                if hasattr(v, "build_parameters"):
+                    build_parameters = v.build_parameters
                 else:
-                    c_arg = v
-                if hasattr(c_arg, "build_parameters"):
+                    # If not, guess v is a class holding property subclasses
                     try:
-                        c_arg.build_parameters(cobj)
+                        build_parameters = getattr(v, a).build_parameters
+                    except AttributeError:
+                        # If all else fails, assume no build_parameters method
+                        build_parameters = None
+
+                # Call build_parameters if it exists
+                if build_parameters is not None:
+                    try:
+                        build_parameters(cobj)
                     except KeyError:
                         raise ConfigurationError(
                             "{} values were not defined for parameter {} in "
@@ -616,6 +684,95 @@ class GenericParameterData(PhysicalParameterBlock):
             pobj = self.get_phase(p)
             pobj.config.equation_of_state.build_parameters(pobj)
 
+        # Next, add inherent reactions if they exist
+        if len(self.config.inherent_reactions) > 0:
+            # Set has_inherent_reactions flag
+            self._has_inherent_reactions = True
+
+            # Construct inherent reaction index
+            self.inherent_reaction_idx = Set(
+                initialize=self.config.inherent_reactions.keys())
+
+            # Construct inherent reaction stoichiometry dict
+            if self._electrolyte:
+                pcset = self.true_phase_component_set
+            else:
+                pcset = self._phase_component_set
+
+            self.inherent_reaction_stoichiometry = {}
+            for r, rxn in self.config.inherent_reactions.items():
+                for p, j in pcset:
+                    self.inherent_reaction_stoichiometry[(r, p, j)] = 0
+
+                if rxn.stoichiometry is None:
+                    raise ConfigurationError(
+                        "{} inherent reaction {} was not provided with a "
+                        "stoichiometry configuration argument."
+                        .format(self.name, r))
+                else:
+                    for k, v in rxn.stoichiometry.items():
+                        if k[0] not in self.phase_list:
+                            raise ConfigurationError(
+                                "{} stoichiometry for inherent reaction {} "
+                                "included unrecognised phase {}."
+                                .format(self.name, r, k[0]))
+                        if k[1] not in self.component_list:
+                            raise ConfigurationError(
+                                "{} stoichiometry for inherent reaction {} "
+                                "included unrecognised component {}."
+                                .format(self.name, r, k[1]))
+                        self.inherent_reaction_stoichiometry[
+                            (r, k[0], k[1])] = v
+
+                # Check that a method was provided for the equilibrium form
+                if rxn.equilibrium_form is None:
+                    raise ConfigurationError(
+                        "{} inherent reaction {} was not provided with a "
+                        "equilibrium_form configuration argument."
+                        .format(self.name, r))
+
+                # Construct blocks to contain parameters for each reaction
+                self.add_component("reaction_"+str(r), Block())
+
+                rblock = getattr(self, "reaction_"+r)
+                r_config = self.config.inherent_reactions[r]
+
+                order_init = {}
+                for p, j in pcset:
+                    if "reaction_order" in r_config.parameter_data:
+                        try:
+                            order_init[p, j] = r_config.parameter_data[
+                                "reaction_order"][p, j]
+                        except KeyError:
+                            order_init[p, j] = 0
+                    else:
+                        # Assume elementary reaction and use stoichiometry
+                        try:
+                            # Here we use the stoic. coeff. directly
+                            # However, solids should be excluded as they
+                            # normally do not appear in the equilibrium
+                            # relationship
+                            pobj = self.get_phase(p)
+                            if not pobj.is_solid_phase():
+                                order_init[p, j] = r_config.stoichiometry[p, j]
+                            else:
+                                order_init[p, j] = 0
+                        except KeyError:
+                            order_init[p, j] = 0
+
+                rblock.reaction_order = Var(
+                        pcset,
+                        initialize=order_init,
+                        doc="Reaction order",
+                        units=None)
+
+                for val in self.config.inherent_reactions[r].values():
+                    try:
+                        val.build_parameters(
+                            rblock, self.config.inherent_reactions[r])
+                    except AttributeError:
+                        pass
+
         # Call custom user parameter method
         self.parameters()
 
@@ -630,6 +787,19 @@ class GenericParameterData(PhysicalParameterBlock):
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
+
+        # Set default scaling factors
+        # First, call set_dfault_scaling_factors method from state definiton
+        try:
+            self.config.state_definition.define_default_scaling_factors(self)
+        except AttributeError:
+            pass
+        # Next, apply any user-defined scaling factors
+        if self.config.default_scaling_factors is not None:
+            self.default_scaling_factor.update(
+                self.config.default_scaling_factors)
+        # Finally, call populate_default_scaling_factors method to fill blanks
+        iscale.populate_default_scaling_factors(self)
 
     def configure(self):
         """
@@ -672,13 +842,19 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature': {'method': None},
              'pressure': {'method': None},
              'compress_fact_phase': {'method': '_compress_fact_phase'},
+             'conc_mol_comp': {'method': '_conc_mol_comp'},
+             'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
+             'conc_mol_phase_comp_apparent': {
+                 'method': '_conc_mol_phase_comp_apparent'},
+             'conc_mol_phase_comp_true': {
+                 'method': '_conc_mol_phase_comp_true'},
+             'cp_mol': {'method': '_cp_mol'},
+             'cp_mol_phase': {'method': '_cp_mol_phase'},
+             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'dens_mass': {'method': '_dens_mass'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
              'dens_mol_phase': {'method': '_dens_mol_phase'},
-             'cp_mol': {'method': '_cp_mol'},
-             'cp_mol_phase': {'method': '_cp_mol_phase'},
-             'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
              'enth_mol': {'method': '_enth_mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
@@ -696,7 +872,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_dew': {'method': '_pressure_dew'},
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
-             'temperature_dew': {'method': '_temperature_dew'}})
+             'temperature_dew': {'method': '_temperature_dew'},
+             'dh_rxn': {'method': '_dh_rxn'}})
 
 
 class _GenericStateBlock(StateBlock):
@@ -735,6 +912,20 @@ class _GenericStateBlock(StateBlock):
             return params.true_phase_component_set
         elif params.config["state_components"] == StateIndex.apparent:
             return params.apparent_phase_component_set
+        else:
+            raise BurntToast(
+                "{} unrecognized value for configuration argument "
+                "'state_components'; this should never happen. Please contact "
+                "the IDAES developers with this bug.".format(self.name))
+
+    def _include_inherent_reactions(self):
+        params = self._get_parameter_block()
+
+        if params.config["state_components"] == StateIndex.true:
+            return params.has_inherent_reactions
+        elif params.config["state_components"] == StateIndex.apparent:
+            # If using apparent species basis, ignore inherent reactions
+            return False
         else:
             raise BurntToast(
                 "{} unrecognized value for configuration argument "
@@ -789,6 +980,9 @@ class _GenericStateBlock(StateBlock):
                     blk[k].sum_mole_frac_out.deactivate()
                 except AttributeError:
                     pass
+
+                if hasattr(blk[k], "inherent_equilibrium_constraint"):
+                    blk[k].inherent_equilibrium_constraint.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -1055,7 +1249,32 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         for k in blk.keys():
+
             blk[k].params.config.state_definition.state_initialization(blk[k])
+
+            if blk[k].params._electrolyte:
+                if blk[k].params.config.state_components == StateIndex.true:
+                    # First calculate initial values for apparent species flows
+                    for p, j in blk[k].params.apparent_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].flow_mol_phase_comp_apparent[p, j],
+                            blk[k].true_to_appr_species[p, j])
+                    # Need to calculate all flows before doing mole fractions
+                    for p, j in blk[k].params.apparent_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].mole_frac_phase_comp_apparent[p, j],
+                            blk[k].appr_mole_frac_constraint[p, j])
+                elif blk[k].params.config.state_components == StateIndex.apparent:
+                    # First calculate initial values for true species flows
+                    for p, j in blk[k].params.true_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].flow_mol_phase_comp_true[p, j],
+                            blk[k].appr_to_true_species[p, j])
+                    # Need to calculate all flows before doing mole fractions
+                    for p, j in blk[k].params.true_phase_component_set:
+                        calculate_variable_from_constraint(
+                            blk[k].mole_frac_phase_comp_true[p, j],
+                            blk[k].true_mole_frac_constraint[p, j])
 
             # If state block has phase equilibrium, use the average of all
             # _teq's as an initial guess for T
@@ -1202,9 +1421,11 @@ class GenericStateBlockData(StateBlockData):
                     return Constraint.Skip
                 config = b.params.get_component(j).config
                 try:
-                    e_mthd = config.phase_equilibrium_form[(phase1, phase2)]
+                    e_mthd = config.phase_equilibrium_form[
+                        (phase1, phase2)].return_expression
                 except KeyError:
-                    e_mthd = config.phase_equilibrium_form[(phase2, phase1)]
+                    e_mthd = config.phase_equilibrium_form[
+                        (phase2, phase1)].return_expression
                 if e_mthd is None:
                     raise GenericPropertyPackageError(b,
                                                       "phase_equilibrium_form")
@@ -1214,6 +1435,111 @@ class GenericStateBlockData(StateBlockData):
                 self.params.component_list,
                 rule=rule_equilibrium)
 
+        # Add inherent reaction constraints if necessary
+        if (self.params.has_inherent_reactions and (
+                not self.config.defined_state or
+                (self.params._electrolyte and
+                 self.params.config.state_components == StateIndex.apparent))):
+            def equil_rule(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+
+                return carg["equilibrium_form"].return_expression(
+                    b, rblock, r, b.temperature)
+
+            def keq_rule(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+
+                return carg["equilibrium_constant"].return_expression(
+                    b, rblock, r, b.temperature)
+
+            self.k_eq = Expression(
+                self.params.inherent_reaction_idx,
+                doc="Equilibrium constant for inherent reactions",
+                rule=keq_rule)
+
+            self.inherent_equilibrium_constraint = Constraint(
+                self.params.inherent_reaction_idx,
+                doc="Inherent reaction equilibrium constraint",
+                rule=equil_rule)
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        # Sclae state variables and associated constraints
+        self.params.config.state_definition.calculate_scaling_factors(self)
+
+        sf_T = iscale.get_scaling_factor(
+            self.temperature, default=1, warning=True)
+        sf_P = iscale.get_scaling_factor(
+            self.pressure, default=1, warning=True)
+        sf_mf = iscale.get_scaling_factor(
+            self.mole_frac_phase_comp, default=1e3, warning=True)
+
+        # Add scaling for components in build method
+        # Phase equilibrium temperature
+        if hasattr(self, "_teq"):
+            iscale.set_scaling_factor(self._teq, sf_T)
+
+        # Other EoS variables and constraints
+        for p in self.params.phase_list:
+            pobj = self.params.get_phase(p)
+            pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
+
+        # Phase equilibrium constraint
+        if hasattr(self, "equilibrium_constraint"):
+            pe_form_config = self.params.config.phase_equilibrium_state
+            for pp in self.params._pe_pairs:
+                pe_form_config[pp].calculate_scaling_factors(self, pp)
+
+            for k in self.equilibrium_constraint:
+                sf_fug = self.params.get_component(
+                    k[2]).config.phase_equilibrium_form[
+                        (k[0], k[1])].calculate_scaling_factors(
+                            self, k[0], k[1], k[2])
+
+                iscale.constraint_scaling_transform(
+                    self.equilibrium_constraint[k], sf_fug)
+
+        # Inherent reactions
+        if hasattr(self, "k_eq"):
+            for r in self.params.inherent_reaction_idx:
+                rblock = getattr(self.params, "reaction_"+r)
+                carg = self.params.config.inherent_reactions[r]
+                sf_keq = carg[
+                    "equilibrium_constant"].calculate_scaling_factors(
+                        self, rblock)
+
+                iscale.set_scaling_factor(self.k_eq, sf_keq)
+                iscale.constraint_scaling_transform(
+                    self.inherent_equilibrium_constraint[r], sf_keq)
+
+        # Add scaling for additional Vars and Constraints
+        # Bubble and dew points
+        if hasattr(self, "_mole_frac_tbub"):
+            iscale.set_scaling_factor(self.temperature_bubble, sf_T)
+            iscale.set_scaling_factor(self._mole_frac_tbub, sf_mf)
+            self.params.config.bubble_dew_method.scale_temperature_bubble(self)
+
+        if hasattr(self, "_mole_frac_tdew"):
+            iscale.set_scaling_factor(self.temperature_dew, sf_T)
+            iscale.set_scaling_factor(self._mole_frac_tdew, sf_mf)
+            self.params.config.bubble_dew_method.scale_temperature_dew(self)
+
+        if hasattr(self, "_mole_frac_pbub"):
+            iscale.set_scaling_factor(self.pressure_bubble, sf_P)
+            iscale.set_scaling_factor(self._mole_frac_pbub, sf_mf)
+            self.params.config.bubble_dew_method.scale_pressure_bubble(self)
+
+        if hasattr(self, "_mole_frac_pdew"):
+            iscale.set_scaling_factor(self.pressure_dew, sf_P)
+            iscale.set_scaling_factor(self._mole_frac_pdew, sf_mf)
+            self.params.config.bubble_dew_method.scale_pressure_dew(self)
+
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
@@ -1222,8 +1548,8 @@ class GenericStateBlockData(StateBlockData):
         Yields:
             components present in phase.
         """
-        for j in self.params.component_list:
-            if (phase, j) in self.params._phase_component_set:
+        for j in self.component_list:
+            if (phase, j) in self.phase_component_set:
                 yield j
 
     # -------------------------------------------------------------------------
@@ -1346,57 +1672,56 @@ class GenericStateBlockData(StateBlockData):
                     doc="Compressibility of each phase",
                     rule=rule_Z_phase)
         except AttributeError:
-            self.del_component(self.compress_fact_phass)
+            self.del_component(self.compress_fact_phase)
             raise
 
-    def _dens_mass(self):
+    def _conc_mol_comp(self):
         try:
-            def rule_dens_mass(b):
-                return sum(b.dens_mass_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.dens_mass = Expression(
-                    doc="Mixture mass density",
-                    rule=rule_dens_mass)
+            def rule_conc_mol_comp(b, j):
+                return b.dens_mol*b.mole_frac_comp[j]
+            self.conc_mol_comp = Expression(
+                self.component_list,
+                rule=rule_conc_mol_comp,
+                doc="Molar concentration of component")
         except AttributeError:
-            self.del_component(self.dens_mass)
+            self.del_component(self.conc_mol_comp)
             raise
 
-    def _dens_mass_phase(self):
+    def _conc_mol_phase_comp(self):
         try:
-            def rule_dens_mass_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.dens_mass_phase(b, p)
-            self.dens_mass_phase = Expression(
-                    self.params.phase_list,
-                    doc="Mass density of each phase",
-                    rule=rule_dens_mass_phase)
+            def rule_conc_mol_phase_comp(b, p, j):
+                return b.dens_mol_phase[p]*b.mole_frac_phase_comp[p, j]
+            self.conc_mol_phase_comp = Expression(
+                self.phase_component_set,
+                rule=rule_conc_mol_phase_comp,
+                doc="Molar concentration of component by phase")
         except AttributeError:
-            self.del_component(self.dens_mass_phass)
+            self.del_component(self.conc_mol_phase_comp)
             raise
 
-    def _dens_mol(self):
+    def _conc_mol_phase_comp_appr(self):
         try:
-            def rule_dens_mol(b):
-                return sum(b.dens_mol_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.dens_mol = Expression(
-                    doc="Mixture molar density",
-                    rule=rule_dens_mol)
+            def rule_conc_mol_phase_comp_appr(b, p, j):
+                return (b.dens_mol_phase[p] *
+                        b.mole_frac_phase_comp_apparent[p, j])
+            self.conc_mol_phase_comp_apparent = Expression(
+                self.params.apparent_phase_component_set,
+                rule=rule_conc_mol_phase_comp_appr,
+                doc="Molar concentration of apparent component by phase")
         except AttributeError:
-            self.del_component(self.dens_mol)
+            self.del_component(self.conc_mol_phase_comp_apparent)
             raise
 
-    def _dens_mol_phase(self):
+    def _conc_mol_phase_comp_true(self):
         try:
-            def rule_dens_mol_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.dens_mol_phase(b, p)
-            self.dens_mol_phase = Expression(
-                    self.params.phase_list,
-                    doc="Molar density of each phase",
-                    rule=rule_dens_mol_phase)
+            def rule_conc_mol_phase_comp_true(b, p, j):
+                return b.dens_mol_phase[p]*b.mole_frac_phase_comp_true[p, j]
+            self.conc_mol_phase_comp_true = Expression(
+                self.params.true_phase_component_set,
+                rule=rule_conc_mol_phase_comp_true,
+                doc="Molar concentration of true component by phase")
         except AttributeError:
-            self.del_component(self.dens_mol_phase)
+            self.del_component(self.conc_mol_phase_comp_true)
             raise
 
     def _cp_mol(self):
@@ -1431,6 +1756,56 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_cp_mol_phase_comp)
         except AttributeError:
             self.del_component(self.cp_mol_phase_comp)
+            raise
+
+    def _dens_mass(self):
+        try:
+            def rule_dens_mass(b):
+                return sum(b.dens_mass_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.dens_mass = Expression(
+                    doc="Mixture mass density",
+                    rule=rule_dens_mass)
+        except AttributeError:
+            self.del_component(self.dens_mass)
+            raise
+
+    def _dens_mass_phase(self):
+        try:
+            def rule_dens_mass_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.dens_mass_phase(b, p)
+            self.dens_mass_phase = Expression(
+                    self.params.phase_list,
+                    doc="Mass density of each phase",
+                    rule=rule_dens_mass_phase)
+        except AttributeError:
+            self.del_component(self.dens_mass_phase)
+            raise
+
+    def _dens_mol(self):
+        try:
+            def rule_dens_mol(b):
+                return sum(b.dens_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.dens_mol = Expression(
+                    doc="Mixture molar density",
+                    rule=rule_dens_mol)
+        except AttributeError:
+            self.del_component(self.dens_mol)
+            raise
+
+    def _dens_mol_phase(self):
+        try:
+            def rule_dens_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.dens_mol_phase(b, p)
+            self.dens_mol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Molar density of each phase",
+                    rule=rule_dens_mol_phase)
+        except AttributeError:
+            self.del_component(self.dens_mol_phase)
             raise
 
     def _enth_mol(self):
@@ -1564,7 +1939,7 @@ class GenericStateBlockData(StateBlockData):
                     doc="Average molecular weight",
                     expr=sum(self.phase_frac[p] *
                              sum(self.mole_frac_phase_comp[p, j] *
-                                 self.params.get_component(j).mw_comp
+                                 self.params.get_component(j).mw
                                  for j in self.params.component_list)
                              for p in self.params.phase_list))
         except AttributeError:
@@ -1575,7 +1950,7 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_mw_phase(b, p):
                 return sum(b.mole_frac_phase_comp[p, j] *
-                           b.params.get_component(j).mw_comp
+                           b.params.get_component(j).mw
                            for j in b.params.component_list)
             self.mw_phase = Expression(
                     self.params.phase_list,
@@ -1597,6 +1972,20 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
             raise
+
+    def _dh_rxn(self):
+        def dh_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.inherent_reactions[r]
+
+            return carg["heat_of_reaction"].return_expression(
+                b, rblock, r, b.temperature)
+
+        self.dh_rxn = Expression(
+            self.params.inherent_reaction_idx,
+            doc="Specific heat of reaction for inherent reactions",
+            rule=dh_rule)
 
 
 def _valid_VL_component_list(blk, pp):

@@ -1922,6 +1922,63 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
 
 
 @pytest.mark.unit
+def test_add_total_component_balances_in_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    mb = m.fs.cv.add_total_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+    assert isinstance(m.fs.cv.inherent_reaction_generation, Var)
+    assert isinstance(m.fs.cv.inherent_reaction_extent, Var)
+    assert isinstance(m.fs.cv.inherent_reaction_stoichiometry_constraint,
+                      Constraint)
+
+    assert_units_consistent(m)
+
+
+@pytest.mark.unit
+def test_add_total_component_balances_in_rxns_no_idx():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+    # delete inherent_Reaction_dix to trigger exception
+    m.fs.pp.del_component(m.fs.pp.inherent_reaction_idx)
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(PropertyNotSupportedError,
+                       match="fs.cv Property package does not contain a "
+                       "list of inherent reactions \(inherent_reaction_idx\), "
+                       "but include_inherent_reactions is True."):
+        m.fs.cv.add_total_component_balances()
+
+
+@pytest.mark.unit
 def test_add_total_component_balances_phase_eq_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -2909,7 +2966,7 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
     m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
 
-    eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+    m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
     assert_units_consistent(m)
@@ -2934,7 +2991,7 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
     m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
 
-    eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+    m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
     assert_units_consistent(m)
@@ -3256,7 +3313,7 @@ def test_initialize():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    f = m.fs.cv.initialize()
+    m.fs.cv.initialize()
 
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
