@@ -101,14 +101,11 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     if not solver_options==None:
         if not isinstance(solver_options, dict):
             raise ValueError('solver_options must be dictionary.')
-
-    
     # Remove all "'" and " " in theta_names
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     parmest_class = parmest.Estimator(model_function, data, theta_names, obj_function,
                  tee, diagnostic_mode, solver_options)
     obj, theta,cov = parmest_class.theta_est(calc_cov=True)
-    
     # Convert theta keys to the original name 
     # Revert theta_names to be original
     if variable_clean:
@@ -118,12 +115,9 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_names = [var_dic[v] for v in theta_names] 
     else:
         theta_out = theta
-    
     gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
-    
     Output = namedtuple('Output',['obj', 'theta_out', 'cov', 'gradient_f_dic','gradient_c_dic', 'dsdp_dic', 'propagation_f', 'propagation_c'])
     results= Output(obj, theta_out, cov, gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c)
-    
     return results
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
@@ -182,13 +176,11 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         model = model_uncertain()
     else:
         raise TypeError('model_uncertain must be either python function or Pyomo ConcreteModel.')
-
     # Remove all "'" in theta_names     
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     for v in theta_names:
         eval('model.'+var_dic[v]).setlb(theta[v])
         eval('model.'+var_dic[v]).setub(theta[v])
-
     # get gradient of the objective function, constraints, and the column number of each theta
     gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic = get_sensitivity(model, theta_names, tee)
     dsdp_dic, col  = get_dsdp(model, theta_names, theta, var_dic,tee)      
@@ -215,8 +207,6 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         propagation_f['objective'] = np.dot(gradient_f_theta,np.dot(cov,np.transpose(gradient_f_theta))) + np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
     else:
         propagation_f['objective'] = np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
-
-
     # constraints: 
     num_constraints = len(list(model.component_data_objects(Constraint,
                                                             active=True,
@@ -243,7 +233,6 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
             propagation_c['constraints '+str(r)] = float(np.dot(gradient_cc[r-1],np.dot(cov,np.transpose(gradient_cc[r-1]))))
     else:
         propagation_c = {}
-
     return gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c
 
 def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=None):
@@ -443,7 +432,6 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     shutil.move("col_row.col", "./GJH/")
     shutil.move("col_row.row", "./GJH/")
     shutil.rmtree('GJH', ignore_errors=True)
-    
     return gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic
 
 def line_num(file_name, target):
@@ -490,7 +478,6 @@ def clean_variable_name(theta_names):
     var_dic: dict
        dictionary with keys converted theta_names and values origianl theta_names 
     """
-
     # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
     # Save original variables name in to var_dic
     # Remove all "'" and " " in theta_names
