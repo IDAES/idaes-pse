@@ -789,7 +789,7 @@ class GenericParameterData(PhysicalParameterBlock):
         self.config.state_definition.set_metadata(self)
 
         # Set default scaling factors
-        # First, call set_dfault_scaling_factors method from state definiton
+        # First, call set_default_scaling_factors method from state definiton
         try:
             self.config.state_definition.define_default_scaling_factors(self)
         except AttributeError:
