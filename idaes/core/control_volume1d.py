@@ -2049,7 +2049,7 @@ argument)."""))
                         warning=True)
                     iscale.set_scaling_factor(v, sf)
 
-        # Set scaling facotrs for enthalpy balance variables
+        # Set scaling factors for enthalpy balance variables
         if hasattr(self, "_enthalpy_flow"):
             for (t, x, p), v in self._enthalpy_flow.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -2110,25 +2110,29 @@ argument)."""))
                          for p in phase_list])
                     iscale.set_scaling_factor(v, sf)
 
-
-
-
         # Set scaling for momentum balance variables
         if hasattr(self, "pressure_dx"):
-            if iscale.get_scaling_factor(self.pressure_dx) is None:
-                sf = 10 * iscale.get_scaling_factor(
-                    self.properties[0, 0].pressure, default=1, warning=True)
-                iscale.set_scaling_factor(self.pressure_dx, sf)
+            for (t, x), v in self.pressure_dx.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.properties[t, x].pressure,
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "deltaP"):
-            if iscale.get_scaling_factor(self.deltaP) is None:
-                sf = (iscale.get_scaling_factor(self.pressure_dx)
-                      / iscale.get_scaling_factor(self.length))
-                iscale.set_scaling_factor(self.deltaP, sf)
+            for (t, x), v in self.deltaP.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = 10 * iscale.get_scaling_factor(
+                        self.properties[t, x].pressure,
+                        default=1,
+                        warning=True)
+                    iscale.set_scaling_factor(v, sf)
 
-        # Transform constraints in order of appearance -----------------------
+        # Transform constraints in order of appearance
         if hasattr(self, "material_flow_linking_constraints"):
-            for (t, x, p, j), c in self.material_flow_linking_constraints.items():
+            for (t, x, p, j), c in \
+                    self.material_flow_linking_constraints.items():
                 sf = iscale.get_scaling_factor(self._flow_terms[t, x, p, j])
                 iscale.constraint_scaling_transform(c, sf)
 
@@ -2156,7 +2160,8 @@ argument)."""))
             mb_type = self._constructed_material_balance_type
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, x, p, j), c in self.material_balances.items():
-                    sf = iscale.get_scaling_factor(self._flow_terms[t, x, p, j])
+                    sf = iscale.get_scaling_factor(
+                        self._flow_terms[t, x, p, j])
                     iscale.constraint_scaling_transform(c, sf)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
@@ -2168,7 +2173,8 @@ argument)."""))
 
         if hasattr(self, "elemental_flow_constraint"):
             for (t, x, e), c in self.elemental_flow_constraint.items():
-                sf = iscale.get_scaling_factor(self.elemental_flow_term[t, x, e])
+                sf = iscale.get_scaling_factor(
+                    self.elemental_flow_term[t, x, e])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "element_balances"):
@@ -2200,44 +2206,55 @@ argument)."""))
         if hasattr(self, "pressure_balance"):
             for (t, x), c in self.pressure_balance.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.properties[t, x].pressure, default=1e-5))
+                    c, iscale.get_scaling_factor(
+                        self.properties[t, x].pressure,
+                        default=1e-5))
 
         if hasattr(self, "sum_of_phase_fractions"):
             for (t, x), c in self.sum_of_phase_fractions.items():
-                sf = 1  # sum of phase fraction adds to 1
+                sf = iscale.min_scaling_factor(
+                    [self.phase_fraction[t, x, p] for p in phase_list])
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "material_flow_dx_disc_eq"):
             for (t, x, p, j), c in self.material_flow_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.material_flow_dx[t, x, p, j]))
+                    c, iscale.get_scaling_factor(
+                        self.material_flow_dx[t, x, p, j]))
 
         if hasattr(self, "material_accumulation_disc_eq"):
             for (t, x, p, j), c in self.material_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.material_accumulation[t, x, p, j]))
+                    c, iscale.get_scaling_factor(
+                        self.material_accumulation[t, x, p, j]))
 
+        # Scaling for discretization equations
         if hasattr(self, "enthalpy_flow_dx_disc_eq"):
             for (t, x, p), c in self.enthalpy_flow_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.enthalpy_flow_dx[t, x, p]))
+                    c, iscale.get_scaling_factor
+                    (self.enthalpy_flow_dx[t, x, p]))
 
         if hasattr(self, "energy_accumulation_disc_eq"):
             for (t, x, p), c in self.energy_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.energy_accumulation[t, x, p]))
+                    c, iscale.get_scaling_factor(
+                        self.energy_accumulation[t, x, p]))
 
         if hasattr(self, "pressure_dx_disc_eq"):
             for (t, x), c in self.pressure_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.pressure_dx[t, x]))
+                    c, iscale.get_scaling_factor(
+                        self.pressure_dx[t, x]))
 
         if hasattr(self, "elemental_flow_dx_disc_eq"):
             for (t, x, e), c in self.elemental_flow_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.elemental_flow_dx[t, x, e]))
+                    c, iscale.get_scaling_factor(
+                        self.elemental_flow_dx[t, x, e]))
 
         if hasattr(self, "element_accumulation_disc_eq"):
             for (t, x, e), c in self.element_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.element_accumulation[t, x, e]))
+                    c, iscale.get_scaling_factor(
+                        self.element_accumulation[t, x, e]))

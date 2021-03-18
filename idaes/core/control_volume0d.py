@@ -1755,7 +1755,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         warning=True)
                     iscale.set_scaling_factor(v, sf)
 
-        # Set scaling facotrs for enthalpy balance variables
+        # Set scaling factors for enthalpy balance variables
         if hasattr(self, "energy_holdup"):
             for (t, p), v in self.energy_holdup.items():
                 if iscale.get_scaling_factor(v) is None:
