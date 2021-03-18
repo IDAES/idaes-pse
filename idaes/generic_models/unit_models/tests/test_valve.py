@@ -19,21 +19,14 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            units,
-                           value,
-                           Var,
-                           Reference)
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                           value)
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Valve, ValveFunctionType
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (PhysicalParameterTestBlock,
-                                     ReactionParameterTestBlock,
-                                     initialization_tester)
+from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_default_solver
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
@@ -45,6 +38,7 @@ import idaes.core.util.scaling as iscale
 # Get default solver for testing
 solver = get_default_solver()
 solver.options["nlp_scaling_method"] = "user-scaling"
+
 
 class GenericValve(object):
     @pytest.fixture(scope="class")

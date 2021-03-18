@@ -186,16 +186,21 @@ def create_model():
     # translate between the two property calculations, an extra port is added to
     # the mixer which contains temperature, pressure, and vapor fraction
     # quantities.
+    m.fs.condenser_mix._flow_mol_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].flow_mol)
+    m.fs.condenser_mix._temperature_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].temperature)
+    m.fs.condenser_mix._pressure_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].pressure)
+    m.fs.condenser_mix._vapor_frac_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].vapor_frac)
+
     m.fs.condenser_mix.outlet_tpx = Port(
         initialize={
-            "flow_mol": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].flow_mol),
-            "temperature": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].temperature),
-            "pressure": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].pressure),
-            "vapor_frac": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].vapor_frac),
+            "flow_mol": m.fs.condenser_mix._flow_mol_ref,
+            "temperature": m.fs.condenser_mix._temperature_ref,
+            "pressure": m.fs.condenser_mix._pressure_ref,
+            "vapor_frac": m.fs.condenser_mix._vapor_Frac_ref,
         }
     )
 
