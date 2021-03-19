@@ -65,10 +65,10 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         results.cov: numpy.ndarray
             Covariance of theta_out
         results.gradient_f_dic: numpy.ndarray 
-            gradient of the objective function with respect to all decision variables at the optimal solution 
+            gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution 
             with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
         results.gradient_c_dic: numpy.ndarray
-            gradient of the constraints with respect to all decision variables at the optimal solution
+            gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution
             with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
             Only non-zero gradients are included.
         results.dsdp_dic: dict
@@ -146,10 +146,10 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     Returns
     -------
     gradient_f_dic: dic
-        gradient of the objective function with respect to all decision variables at the optimal solution 
+        gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution 
         with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
     gradient_c_dic: dic
-        gradient of the constraints with respect to all decision variables at the optimal solution
+        gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution
         with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
         Only non-zero gradients are included.
     dsdp_dic: dict
@@ -338,11 +338,11 @@ def get_sensitivity(model, theta_names, tee=False, solver_options=None):
     Returns
     -------
     gradient_f: numpy.ndarray
-        gradient vector of the objective function with respect to all decision variables at the optimal solution
+        gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
     gradient_f_dic: dic
         gradient_f with variable name as key e.g) dic = {'d(f)/d(x1)': 10.0, 'd(f)/d(x2)': 50.0, 'd(f)/d(p1)': 15.0, 'd(f)/d(p2)': 35.0}
     gradient_c: numpy.ndarray
-        gradient vector of the constraints with respect to all decision variables at the optimal solution
+        gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution
         Each row contains column number, row number, and value
         If no constraint exists, return []
     gradient_c: dic
