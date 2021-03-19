@@ -1328,15 +1328,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output log level of initialization routine
-<<<<<<< HEAD
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
-=======
             optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
                      initialization (default = None)
->>>>>>> main
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - True. **Valid values:**

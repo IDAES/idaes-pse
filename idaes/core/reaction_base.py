@@ -31,7 +31,12 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
 from idaes.core.util.misc import add_object_reference
-import idaes.core.util.scaling as iscale
+# WHY on Python 3.6, using the alternate syntax "import idaes.core.util.scaling as iscale"
+# fails with "AttributeError: module 'idaes' has no attribute 'core'"
+# this is likely due to a bug/limitation in how the Python import mechanism resolves circular imports
+# for more information, see https://stackoverflow.com/questions/24807434
+# and the official Python bug report: http://bugs.python.org/issue30024
+from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
