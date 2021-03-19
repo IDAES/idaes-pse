@@ -16,6 +16,7 @@ def garbage():
     return uuid.uuid4().hex
 
 
+@pytest.mark.unit
 def test_clazz():
     v1 = getver.Versioned("idaes")
     v2 = getver.Versioned(idaes)
@@ -23,6 +24,7 @@ def test_clazz():
     assert v1.name == v2.name
 
 
+@pytest.mark.unit
 def test_func():
     import numpy
 
@@ -48,6 +50,7 @@ class fake_module:
     __loader__ = fake_loader
 
 
+@pytest.mark.unit
 def test_more_func():
     import six
 
@@ -57,11 +60,13 @@ def test_more_func():
     dmf.get_version_info(fake_module)
 
 
+@pytest.mark.unit
 def test_bad_import(garbage):
     with pytest.raises(getver.ModuleImportError):
         getver.Versioned(garbage)
 
 
+@pytest.mark.unit
 def test_bad_pip(garbage):
     orig, getver.Versioned.PIP = getver.Versioned.PIP, garbage
     with pytest.raises(getver.PipError):
@@ -72,6 +77,7 @@ def test_bad_pip(garbage):
     getver.Versioned.PIP = orig
 
 
+@pytest.mark.unit
 def test_repeated_calls():
     import time
 
