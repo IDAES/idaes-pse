@@ -48,8 +48,13 @@ def _get_platform(fd, platform, arch):
         platform = arch[0]
         if platform == "linux":
             linux_dist = fd.get_os_version().replace(".", "")
+            _log.debug(f"Detected Linux distribution: {linux_dist}")
             if linux_dist in idaes.config.known_binary_platform:
                 platform = linux_dist
+            else:
+                _log.debug(
+                    f"{linux_dist} not recognized as a supported platform. Using"
+                    f"default Linux {idaes.config.binary_platform_map[platform]}.")
     if platform not in idaes.config.known_binary_platform:
         raise Exception("Unknow platform {}".format(platform))
     if platform in idaes.config.binary_platform_map:
