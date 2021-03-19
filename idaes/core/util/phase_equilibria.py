@@ -123,6 +123,7 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
     model.props[1].pressure.fix(pressure)
 
     # Initialize flash unit model
+    model.props[1].calculate_scaling_factors()
     model.props.initialize(optarg=solver_op, outlvl=print_level)
 
     solver = SolverFactory('ipopt')
