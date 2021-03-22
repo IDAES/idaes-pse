@@ -75,23 +75,28 @@ def get_concentration_term(blk, r_idx):
         conc_form = blk.params.config.inherent_reactions[r_idx].concentration_form
         state = blk
 
+    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
+        sub = "_true"
+    else:
+        sub = ""
+
     if conc_form is None:
         raise ConfigurationError(
             "{} concentration_form configuration argument was not set. "
             "Please ensure that this argument is included in your "
             "configuration dict.".format(blk.name))
     elif conc_form == ConcentrationForm.molarity:
-        conc_term = getattr(state, "conc_mol_phase_comp")
+        conc_term = getattr(state, "conc_mol_phase_comp"+sub)
     elif conc_form == ConcentrationForm.activity:
-        conc_term = getattr(state, "act_phase_comp")
+        conc_term = getattr(state, "act_phase_comp"+sub)
     elif conc_form == ConcentrationForm.molality:
-        conc_term = getattr(state, "molality_phase_comp")
+        conc_term = getattr(state, "molality_phase_comp"+sub)
     elif conc_form == ConcentrationForm.moleFraction:
-        conc_term = getattr(state, "mole_frac_phase_comp")
+        conc_term = getattr(state, "mole_frac_phase_comp"+sub)
     elif conc_form == ConcentrationForm.massFraction:
-        conc_term = getattr(state, "mass_frac_phase_comp")
+        conc_term = getattr(state, "mass_frac_phase_comp"+sub)
     elif conc_form == ConcentrationForm.partialPressure:
-        conc_term = (getattr(state, "mole_frac_phase_comp") *
+        conc_term = (getattr(state, "mole_frac_phase_comp"+sub) *
                      getattr(state, "pressure"))
     else:
         raise BurntToast(
