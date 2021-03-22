@@ -1630,13 +1630,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if hasattr(self, "rate_reaction_extent"):
             for (t, r), v in self.rate_reaction_extent.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.reactions[t].reaction_rate[r],
-                        default=1,
-                        warning=True)
-                    if hasattr(self, "volume"):
-                        sf *= iscale.get_scaling_factor(self.volume[t])
-                    iscale.set_scaling_factor(v, sf)
+                    # Control Volume has no way of knowing how best to scale
+                    # reaction extent - e.g. whether it will be calculated from
+                    # reaction rate or a fixed yield. Unit models should
+                    # provide better scaling factors where possible.
+                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, p, j), v in self.rate_reaction_generation.items():

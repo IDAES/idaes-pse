@@ -1915,12 +1915,11 @@ argument)."""))
         if hasattr(self, "rate_reaction_extent"):
             for (t, x, r), v in self.rate_reaction_extent.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.reactions[t, x].reaction_rate[r],
-                        default=1,
-                        warning=True)
-                    sf *= iscale.get_scaling_factor(self._area_func(t, x))
-                    iscale.set_scaling_factor(v, sf)
+                    # Control Volume has no way of knowing how best to scale
+                    # reaction extent - e.g. whether it will be calculated from
+                    # reaction rate or a fixed yield. Unit models should
+                    # provide better scaling factors where possible.
+                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, x, p, j), v in self.rate_reaction_generation.items():
