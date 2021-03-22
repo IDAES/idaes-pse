@@ -276,6 +276,7 @@ def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
     assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
 
 
+@pytest.mark.component
 def test_boiler_demo(serialized_boiler_flowsheet_json):
     import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
     m, solver = blr.main()

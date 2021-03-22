@@ -26,6 +26,8 @@ from idaes.apps.caprese.nmpc_var import (
         )
 import pytest
 
+
+@pytest.mark.unit
 def test_NmpcVar():
     m = pyo.ConcreteModel()
 
@@ -62,6 +64,8 @@ def test_NmpcVar():
     for i, j in m.s1*m.s2:
         assert (i,j) in m.v2
 
+
+@pytest.mark.unit
 def test_custom_vars():
     m = pyo.ConcreteModel()
     m.s = pyo.Set(initialize=[0,1,2])
@@ -86,6 +90,8 @@ def test_custom_vars():
     assert m.meas.ctype == MeasuredVar
     assert m.meas._attr == 'measurement'
 
+
+@pytest.mark.unit
 def test_NmpcVector():
     m = pyo.ConcreteModel()
     m.coords = pyo.Set(initialize=[0, 1, 2, 3])

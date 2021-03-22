@@ -44,6 +44,8 @@ def derivs(z, b, c, d):
     h[5] = g[2]**3*(6*z + 2*b)
     return g, h
 
+
+@pytest.mark.unit
 def test_general_cubic_root_finder():
     plib = os.path.join(idaes.bin_directory, "cubic_roots.so")
     m = pyo.ConcreteModel()

@@ -150,8 +150,8 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit, "deltaP")
 
         assert number_variables(sapon) == 654
-        assert number_total_constraints(sapon) == 595
-        assert number_unused_variables(sapon) == 9
+        assert number_total_constraints(sapon) == 590
+        assert number_unused_variables(sapon) == 14
         assert number_derivative_variables(sapon) == 0
 
     @pytest.mark.component
