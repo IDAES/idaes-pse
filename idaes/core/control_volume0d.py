@@ -1634,7 +1634,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.reactions[t].reaction_rate[r],
                         default=1,
                         warning=True)
-                    sf *= iscale.get_scaling_factor(self.volume[t])
+                    if hasattr(self, "volume"):
+                        sf *= iscale.get_scaling_factor(self.volume[t])
                     iscale.set_scaling_factor(v, sf)
 
         if hasattr(self, "rate_reaction_generation"):
