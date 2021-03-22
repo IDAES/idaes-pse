@@ -4,14 +4,15 @@ import idaes.core as idaes_core
 from idaes.power_generation.unit_models.helm import HelmIsentropicCompressor
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.generic_models.properties import iapws95
-
+from pyomo.environ import units as pyunits
+import idaes
 
 def create_isentropic_compressor(f=1000, T_in=500, p_in=1e6, ratioP=1.5):
     m = pyo.ConcreteModel()
     m.fs = idaes_core.FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.unit = HelmIsentropicCompressor(default={"property_package": m.fs.properties})
-    hin = iapws95.htpx(T_in, p_in) # J/mol
+    hin = iapws95.htpx(T_in*pyunits.K, p_in*pyunits.Pa) # J/mol
     m.fs.unit.inlet.flow_mol[0].fix(f)
     m.fs.unit.inlet.enth_mol[0].fix(hin)
     m.fs.unit.inlet.pressure[0].fix(p_in)
@@ -20,7 +21,7 @@ def create_isentropic_compressor(f=1000, T_in=500, p_in=1e6, ratioP=1.5):
     m.fs.unit.initialize()
     return m
 
-
+@cb.register_convergence_class("HelmIsentropicCompressor")
 class HelmIsentropicCompressorConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """

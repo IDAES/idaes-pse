@@ -28,9 +28,10 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions
+from idaes.commands import examples, extensions, convergence
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
+import idaes
 
 __author__ = "Dan Gunter"
 
@@ -545,3 +546,63 @@ def test_print_extensions_version(runner):
 def test_print_extensions_version(runner):
     result = runner.invoke(extensions.get_extensions_platforms, [])
     assert result.exit_code == 0
+
+#################
+# convergence  #
+################
+
+@pytest.mark.unit
+def test_conv_search(runner):
+    result = runner.invoke(convergence.convergence_search)
+    assert result.exit_code == 0
+
+
+@pytest.mark.unit
+def test_conv_sample(runner):
+    fname = os.path.join(idaes.testing_directory, "sample.json")
+    result = runner.invoke(
+        convergence.convergence_sample,
+        [
+            "-e",
+            "PressureChanger",
+            "-N",
+            "10",
+            "-s",
+            fname,
+        ])
+    assert result.exit_code == 0
+    if os.path.exists(fname):
+        os.remove(fname)
+
+@pytest.mark.integration
+def test_conv_eval(runner):
+    fname = os.path.join(idaes.testing_directory, "sample.json")
+    fname2 = os.path.join(idaes.testing_directory, "result.json")
+    result = runner.invoke(
+        convergence.convergence_sample,
+        [
+            "-e",
+            "PressureChanger",
+            "-N",
+            "10",
+            "-s",
+            fname,
+        ])
+    assert result.exit_code == 0
+    result = runner.invoke(
+        convergence.convergence_eval,
+        [
+            "-s",
+            fname,
+            "-j",
+            fname2
+        ])
+    assert result.exit_code == 0
+    with open(fname2, "r") as f:
+        d = json.load(f)
+    assert "inputs" in d
+    assert len(d["time_successful"]) == 10
+    if os.path.exists(fname):
+        os.remove(fname)
+    if os.path.exists(fname2):
+        os.remove(fname2)
