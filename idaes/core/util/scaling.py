@@ -27,8 +27,9 @@ variables to calculate additional scaling factors.
 
 __author__ = "John Eslick, Tim Bartholomew"
 
+from math import log10
+
 import pyomo.environ as pyo
-from pyomo.core.expr import current as EXPR
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.network import Arc
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
@@ -36,7 +37,6 @@ from pyomo.common.modeling import unique_component_name
 from pyomo.core.base.constraint import _ConstraintData
 from pyomo.common.collections import ComponentMap
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 __author__ = "John Eslick, Tim Bartholomew, Robert Parker"
@@ -65,7 +65,7 @@ def scale_arc_constraints(blk):
         if arc_block is None: # arc not expanded or port empty?
             _log.warning(
                 f"{arc} has no constraints. Has the Arc expansion transform "
-                "been appied?")
+                "been applied?")
             continue
         for c in arc_block.component_data_objects(pyo.Constraint, descend_into=True):
             sf = min_scaling_factor(identify_variables(c.body))
@@ -78,7 +78,7 @@ def map_scaling_factor(iter, default=1, warning=False, func=min):
     maximum scaling factor of a set of components.
 
     Args:
-        iter: Iterable yeilding Pyomo componentes
+        iter: Iterable yielding Pyomo components
         default: The default value used when a scaling factor is missing. The
             default is default=1.
         warning: Log a warning for missing scaling factors
@@ -98,10 +98,10 @@ def map_scaling_factor(iter, default=1, warning=False, func=min):
 
 def min_scaling_factor(iter, default=1, warning=True):
     """Map get_scaling_factor to an iterable of Pyomo components, and get the
-    minimum caling factor.
+    minimum scaling factor.
 
     Args:
-        iter: Iterable yeilding Pyomo componentes
+        iter: Iterable yielding Pyomo components
         default: The default value used when a scaling factor is missing.  If
             None, this will raise an exception when scaling factors are missing.
             The default is default=1.
@@ -163,6 +163,7 @@ def set_scaling_factor(c, v, data_objects=True):
     Args:
         c: component to supply scaling factor for
         v: scaling factor
+        data_objects: set scaling factors for indexed data objects (default=True)
     Returns:
         None
     """
@@ -189,6 +190,13 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     Args:
         c: component
         default: value to return if no scale factor exists (default=None)
+        warning: whether to log a warning if a scaling factor is not found
+                 (default=False)
+        exception: whether to riase an Exception if a scaling factor is not
+                   found (default=False)
+
+    Returns:
+        scaling factor (float)
     """
     try:
         sf = c.parent_block().scaling_factor[c]
@@ -199,6 +207,7 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
             _log.error(f"Accessing missing scaling factor for {c}")
             raise
         sf = default
+
     return sf
 
 
@@ -223,9 +232,46 @@ def unset_scaling_factor(c, data_objects=True):
         pass # no scaling factor suffix, is fine
 
 
+def populate_default_scaling_factors(c):
+    """
+    Method to set default scaling factors for a number of common quantities
+    based of typical values expressed in SI units. Values are converted to
+    those used by the property package using Pyomo's unit conversion tools.
+    """
+    units = c.get_metadata().derived_units
+
+    si_scale = {"temperature": (100*pyo.units.K, "temperature"),
+                "pressure": (1e5*pyo.units.Pa, "pressure"),
+                "dens_mol_phase": (100*pyo.units.mol/pyo.units.m**3,
+                                   "density_mole"),
+                "enth_mol": (1e4*pyo.units.J/pyo.units.mol, "energy_mole"),
+                "entr_mol": (100*pyo.units.J/pyo.units.mol/pyo.units.K,
+                             "entropy_mole"),
+                "fug_phase_comp": (1e4*pyo.units.Pa, "pressure"),
+                "fug_coeff_phase_comp": (1*pyo.units.dimensionless, None),
+                "gibbs_mol": (1e4*pyo.units.J/pyo.units.mol, "energy_mole"),
+                "mole_frac_comp": (0.001*pyo.units.dimensionless, None),
+                "mole_frac_phase_comp": (0.001*pyo.units.dimensionless, None),
+                "mw": (1e-3*pyo.units.kg/pyo.units.mol, "molecular_weight"),
+                "mw_phase": (1e-3*pyo.units.kg/pyo.units.mol,
+                             "molecular_weight")}
+
+    for p, f in si_scale.items():
+        # If a defautl scaling factor exists, do not over write it
+        if p not in c.default_scaling_factor.keys():
+            if f[1] is not None:
+                v = pyo.units.convert(f[0], to_units=units[f[1]])
+            else:
+                v = f[0]
+
+            sf = 1/(10**round(log10(pyo.value(v))))
+
+            c.set_default_scaling(p, sf)
+
+
 def __set_constraint_transform_applied_scaling_factor(c, v):
     """PRIVATE FUNCTION Set the scaling factor used to transform a constraint.
-    This is used to keep track of scaling tranformations that have been applied
+    This is used to keep track of scaling transformations that have been applied
     to constraints.
 
     Args:
@@ -248,7 +294,7 @@ def get_constraint_transform_applied_scaling_factor(c, default=None):
 
     Args:
         c: constraint data object
-        default: value to return if no scaling factor exisits (default=None)
+        default: value to return if no scaling factor exists (default=None)
 
     Returns:
         The scaling factor that has been used to transform the constraint or the
@@ -388,7 +434,7 @@ def constraint_autoscale_large_jac(
     no_scale = False
 ):
     """Automatically scale constraints based on the Jacobian.  This function
-    immitates Ipopt's default constraint scaling.  This scales constraints down
+    imitates Ipopt's default constraint scaling.  This scales constraints down
     to avoid extremely large values in the Jacobian
 
     Args:
@@ -601,7 +647,7 @@ def scale_single_constraint(c):
     """This transforms a constraint with its scaling factor. If there is no
     scaling factor for the constraint, the constraint is not scaled and a
     message is logged. After transforming the constraint the scaling factor,
-    scaling expression, and nomical value are all unset to ensure the constraint
+    scaling expression, and nominal value are all unset to ensure the constraint
     isn't scaled twice.
 
     Args:

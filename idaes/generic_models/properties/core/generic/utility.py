@@ -16,8 +16,6 @@ Common methods used by generic framework
 Author: A Lee
 """
 
-import types
-
 from pyomo.environ import units as pyunits
 
 from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
