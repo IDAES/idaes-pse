@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple
 
 # third-party
 import pandas as pd
+import numpy as np
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -280,6 +281,7 @@ class FlowsheetSerializer:
                 stream_df = stream_df.reset_index().rename(
                     columns={"index": "Variable"}
                 )
+                stream_df = stream_df.replace(np.nan, "NaN", regex=True)
             self._serialized_contents[unit_name]["stream_contents"] = stream_df
 
             performance_df = pd.DataFrame()
@@ -292,6 +294,7 @@ class FlowsheetSerializer:
                 performance_df["Value"] = performance_df["Value"].map(
                     lambda v: value(v)
                 )
+                performance_df = performance_df.replace(np.nan, "NaN", regex=True)
             self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
         elif unit in self._known_endpoints:
