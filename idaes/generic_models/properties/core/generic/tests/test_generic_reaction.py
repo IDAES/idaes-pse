@@ -530,3 +530,25 @@ class TestGenericReactionBlock(object):
             value(model.rblock[1].k_eq["e1"] -
                   model.sblock[1].mole_frac_phase_comp["p2", "c1"]**-3 *
                   model.sblock[1].mole_frac_phase_comp["p2", "c2"]**4)
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, model):
+        model.rblock[1].calculate_scaling_factors()
+
+        assert len(model.rblock[1].scaling_factor) == 3
+
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].dh_rxn["e1"]] == 5e-5
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].dh_rxn["r1"]] == 1e-4
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].k_eq["e1"]] == 1e-2
+
+        # Check that scaling factor was added to equilibrium constraint
+        assert str(model.rblock[1].equilibrium_constraint["e1"].body) == \
+            str((model.rblock[1].k_eq["e1"] -
+                 model.sblock[1].mole_frac_phase_comp["p2", "c1"] **
+                 model.rxn_params.reaction_e1.reaction_order["p2", "c1"] *
+                 model.sblock[1].mole_frac_phase_comp["p2", "c2"] **
+                 model.rxn_params.reaction_e1.reaction_order["p2", "c2"]) *
+                0.01)

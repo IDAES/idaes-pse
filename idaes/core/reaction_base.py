@@ -100,7 +100,7 @@ class ReactionParameterBlock(ProcessBlockData,
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
 
-    # This is a dict to store default property scaling factors. They are
+        # This is a dict to store default property scaling factors. They are
         # defined in the parameter block to provide a universal default for
         # quantities in a particular kind of state block.  For example, you can
         # set flow scaling once instead of for every state block. Some of these
