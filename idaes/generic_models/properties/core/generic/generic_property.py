@@ -46,6 +46,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
+from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -448,6 +449,8 @@ class GenericParameterData(PhysicalParameterBlock):
                                                 ordered=True)
             self.apparent_phase_component_set = Set(initialize=pc_set_appr,
                                                     ordered=True)
+            add_object_reference(
+                self, "_phase_component_set", self.true_phase_component_set)
 
         # Check that each component appears phase-component set
         for j in self.component_list:
