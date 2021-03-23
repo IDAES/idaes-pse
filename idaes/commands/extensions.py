@@ -17,6 +17,7 @@ __author__ = "John Eslick"
 import os
 import click
 import logging
+import idaes
 import idaes.util.download_bin
 from idaes.commands import cb
 
@@ -106,17 +107,31 @@ def get_extensions(
         click.echo("\n* You must provide either a release or url not both.")
     elif url is not None or release is not None:
         click.echo("Getting files...")
-        d = idaes.util.download_bin.download_binaries(
-            release,
-            url,
-            insecure,
-            cacert,
-            verbose,
-            platform,
-            nochecksum,
-            library_only,
-            no_download)
-        click.echo("Done")
+        try:
+            d = idaes.util.download_bin.download_binaries(
+                release,
+                url,
+                insecure,
+                cacert,
+                verbose,
+                platform,
+                nochecksum,
+                library_only,
+                no_download)
+            click.echo("Done")
+        except idaes.util.download_bin.UnsupportedPlatformError as e:
+            click.echo("")
+            click.echo(e)
+            click.echo("")
+            click.echo(
+                "Specify one of the following platforms with --platform <os>:")
+            for i in sorted(idaes.config.known_binary_platform):
+                if i == platform:
+                    # auto or linux specified, and it didn't work.
+                    # will need to be more specific.
+                    continue
+                click.echo(f"  {i}")
+            return
         if no_download:
             for k, i in d.items():
                 click.echo(f"{k:14}: {i}")
