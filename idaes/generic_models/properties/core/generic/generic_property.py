@@ -789,7 +789,7 @@ class GenericParameterData(PhysicalParameterBlock):
         self.config.state_definition.set_metadata(self)
 
         # Set default scaling factors
-        # First, call set_dfault_scaling_factors method from state definiton
+        # First, call set_default_scaling_factors method from state definiton
         try:
             self.config.state_definition.define_default_scaling_factors(self)
         except AttributeError:
@@ -1487,7 +1487,9 @@ class GenericStateBlockData(StateBlockData):
         # Add scaling for components in build method
         # Phase equilibrium temperature
         if hasattr(self, "_teq"):
-            iscale.set_scaling_factor(self._teq, sf_T)
+            for v in self._teq.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_T)
 
         # Other EoS variables and constraints
         for p in self.params.phase_list:
@@ -1514,34 +1516,53 @@ class GenericStateBlockData(StateBlockData):
             for r in self.params.inherent_reaction_idx:
                 rblock = getattr(self.params, "reaction_"+r)
                 carg = self.params.config.inherent_reactions[r]
-                sf_keq = carg[
-                    "equilibrium_constant"].calculate_scaling_factors(
-                        self, rblock)
 
-                iscale.set_scaling_factor(self.k_eq, sf_keq)
+                sf_keq = iscale.get_scaling_factor(self.k_eq[r])
+                if sf_keq is None:
+                    sf_keq = carg[
+                        "equilibrium_constant"].calculate_scaling_factors(
+                            self, rblock)
+                    iscale.set_scaling_factor(self.k_eq[r], sf_keq)
+
                 iscale.constraint_scaling_transform(
                     self.inherent_equilibrium_constraint[r], sf_keq)
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
         if hasattr(self, "_mole_frac_tbub"):
-            iscale.set_scaling_factor(self.temperature_bubble, sf_T)
-            iscale.set_scaling_factor(self._mole_frac_tbub, sf_mf)
+            for v in self.temperature_bubble.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_T)
+            for v in self._mole_frac_tbub.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_mf)
             self.params.config.bubble_dew_method.scale_temperature_bubble(self)
 
         if hasattr(self, "_mole_frac_tdew"):
-            iscale.set_scaling_factor(self.temperature_dew, sf_T)
-            iscale.set_scaling_factor(self._mole_frac_tdew, sf_mf)
+            for v in self.temperature_dew.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_T)
+            for v in self._mole_frac_tdew.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_mf)
             self.params.config.bubble_dew_method.scale_temperature_dew(self)
 
         if hasattr(self, "_mole_frac_pbub"):
-            iscale.set_scaling_factor(self.pressure_bubble, sf_P)
-            iscale.set_scaling_factor(self._mole_frac_pbub, sf_mf)
+            for v in self.pressure_bubble.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_P)
+            for v in self._mole_frac_pbub.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_mf)
             self.params.config.bubble_dew_method.scale_pressure_bubble(self)
 
         if hasattr(self, "_mole_frac_pdew"):
-            iscale.set_scaling_factor(self.pressure_dew, sf_P)
-            iscale.set_scaling_factor(self._mole_frac_pdew, sf_mf)
+            for v in self.pressure_dew.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_P)
+            for v in self._mole_frac_pdew.values():
+                if iscale.get_scaling_factor(v) is None:
+                    iscale.set_scaling_factor(v, sf_mf)
             self.params.config.bubble_dew_method.scale_pressure_dew(self)
 
     def components_in_phase(self, phase):
