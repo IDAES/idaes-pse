@@ -1912,14 +1912,9 @@ argument)."""))
                         self._flow_terms[t, x, p, j])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "rate_reaction_extent"):
-            for (t, x, r), v in self.rate_reaction_extent.items():
-                if iscale.get_scaling_factor(v) is None:
-                    # Control Volume has no way of knowing how best to scale
-                    # reaction extent - e.g. whether it will be calculated from
-                    # reaction rate or a fixed yield. Unit models should
-                    # provide better scaling factors where possible.
-                    iscale.set_scaling_factor(v, 1)
+        # Control Volume has no way of knowing how best to scale
+        # reaction extents - this is something only the unit model can provide
+        # This also applies ot the phase_equilibrium_generation term.
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, x, p, j), v in self.rate_reaction_generation.items():
@@ -1928,13 +1923,6 @@ argument)."""))
                         self.rate_reaction_extent[t, x, :])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "equilibrium_reaction_extent"):
-            for v in self.equilibrium_reaction_extent.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
-
         if hasattr(self, "equilibrium_reaction_generation"):
             for (t, x, p, j), v in self.equilibrium_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -1942,26 +1930,12 @@ argument)."""))
                         self.equilibrium_reaction_extent[t, x, ...])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "inherent_reaction_extent"):
-            for v in self.inherent_reaction_extent.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
-
         if hasattr(self, "inherent_reaction_generation"):
             for (t, x, p, j), v in self.inherent_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
                         self.inherent_reaction_extent[t, x, ...])
                     iscale.set_scaling_factor(v, sf)
-
-        if hasattr(self, "phase_equilibrium_generation"):
-            for v in self.phase_equilibrium_generation.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, "mass_transfer_term"):
             for (t, x, p, j), v in self.mass_transfer_term.items():
