@@ -26,7 +26,7 @@ This module contains the code for convergence testing of the
 PressureChanger model
 '''
 
-
+@cb.register_convergence_class("PressureChanger")
 class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """
