@@ -76,8 +76,6 @@ def test_basic_scaling():
         for x in m.fs.cv.length_domain:
             assert iscale.get_scaling_factor(
                 m.fs.cv.properties[t, x].flow_vol) == 100
-            assert iscale.get_scaling_factor(
-                m.fs.cv.inherent_reaction_extent[t, x, "i1"]) == 1
 
     # check scaling on mass, energy, and pressure balances.
     for c in m.fs.cv.material_balances.values():
@@ -176,7 +174,7 @@ def test_full_auto_scaling():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    assert len(unscaled_var_list) == 44
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -224,7 +222,7 @@ def test_full_auto_scaling_dynamic():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    assert len(unscaled_var_list) == 176
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
@@ -270,7 +268,7 @@ def test_full_auto_scaling_mbtype_phase():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
-    assert len(unscaled_var_list) == 0
+    assert len(unscaled_var_list) == 66
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
