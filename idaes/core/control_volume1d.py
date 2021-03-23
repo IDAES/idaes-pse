@@ -1914,7 +1914,7 @@ argument)."""))
 
         # Control Volume has no way of knowing how best to scale
         # reaction extents - this is something only the unit model can provide
-        # This also applies ot the phase_equilibrium_generation term.
+        # This also applies to the phase_equilibrium_generation term.
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, x, p, j), v in self.rate_reaction_generation.items():

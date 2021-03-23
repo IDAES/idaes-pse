@@ -19,8 +19,6 @@ import pytest
 import pyomo.environ as pyo
 from idaes.core import (
     ControlVolume0DBlock,
-    ControlVolumeBlockData,
-    FlowDirection,
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
@@ -31,7 +29,6 @@ from idaes.core.util.testing import (
     ReactionParameterTestBlock,
 )
 from idaes.core.util import scaling as iscale
-import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -145,6 +142,9 @@ def test_full_auto_scaling():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    # Unscaled variables are:
+    # rate_reaction_extent (2 reactions)
+    # equilibrium_reaction_extent  (2 reactions)
     assert len(unscaled_var_list) == 4
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
@@ -190,6 +190,9 @@ def test_full_auto_scaling_dynamic():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    # Unscaled variables are:
+    # rate_reaction_extent (2 reactions, 4 time points)
+    # equilibrium_reaction_extent  (2 reactions, 4 time points)
     assert len(unscaled_var_list) == 16
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
@@ -235,10 +238,15 @@ def test_full_auto_scaling_mbtype_phase():
 
     # check that all variables have scaling factors
     unscaled_var_list = list(iscale.unscaled_variables_generator(m))
+    # Unscaled variables are:
+    # rate_reaction_extent (2 reactions, 4 time points)
+    # equilibrium_reaction_extent  (2 reactions, 4 time points)
+    # phase_equilibrium_generation  (2 reactions, 4 time points)
     assert len(unscaled_var_list) == 24
     # check that all constraints have been scaled
     unscaled_constraint_list = list(iscale.unscaled_constraints_generator(m))
     assert len(unscaled_constraint_list) == 0
+
 
 @pytest.mark.unit
 def test_full_auto_scaling_mbtype_element():
