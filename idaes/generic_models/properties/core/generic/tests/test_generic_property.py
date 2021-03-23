@@ -1046,18 +1046,6 @@ class TestGenericStateBlock(object):
             pytest.approx(100*42*0.75, rel=1e-4)
         assert value(frame.props[1].flow_vol_phase['p2']) == \
             pytest.approx(100*42*0.25, rel=1e-4)
-        assert value(frame.props[1].flow_mol_phase_comp['p1', 'a']) == \
-            pytest.approx(100*0.75*0.1, rel=1e-4)
-        assert value(frame.props[1].flow_mol_phase_comp['p1', 'b']) == \
-            pytest.approx(100*0.75*0.2, rel=1e-4)
-        assert value(frame.props[1].flow_mol_phase_comp['p1', 'c']) == \
-            pytest.approx(100*0.75*0.7, rel=1e-4)
-        assert value(frame.props[1].flow_mol_phase_comp['p2', 'c']) == \
-            pytest.approx(100*0.25*0.1, rel=1e-4)
-        assert value(frame.props[1].flow_mol_phase_comp['p2', 'b']) == \
-            pytest.approx(100*0.25*0.2, rel=1e-4)
-        assert value(frame.props[1].flow_mol_phase_comp['p2', 'a']) == \
-            pytest.approx(100*0.25*0.7, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['a']) == \
             pytest.approx(100*0.1*0.75 + 100*0.7*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['b']) == \

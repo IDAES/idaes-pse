@@ -838,10 +838,10 @@ class GenericParameterData(PhysicalParameterBlock):
              'flow_mass_phase': {'method': '_flow_mass_phase'},
              'flow_vol_phase': {'method': '_flow_vol_phase'},
              'flow_mol_phase': {'method': '_flow_mol_phase'},
-             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
+             'flow_mol_phase_comp': {'method': None},
              'flow_mol_comp': {'method': '_flow_mol_comp'},
              'mole_frac_comp': {'method': '_mole_frac_comp'},
-             'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
+             'mole_frac_phase_comp': {'method': None},
              'phase_frac': {'method': None},
              'temperature': {'method': None},
              'pressure': {'method': None},
@@ -1888,19 +1888,6 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_flow_mol_comp)
         except AttributeError:
             self.del_component(self.flow_mol_comp)
-            raise
-
-    def _flow_mol_phase_comp(self):
-        try:
-            def rule_flow_mol_phase_comp(b, p, i):
-                return self.mole_frac_phase_comp[p, i]*self.flow_mol_phase[p]
-            self.flow_mol_phase_comp = Expression(
-                self.params.phase_list,
-                self.params.component_list,
-                doc="Phase component molar flow rate",
-                rule=rule_flow_mol_phase_comp)
-        except AttributeError:
-            self.del_component(self.flow_mol_phase_comp)
             raise
 
     def _enth_mol(self):
