@@ -833,11 +833,15 @@ class GenericParameterData(PhysicalParameterBlock):
         # created by state var methods
         obj.add_properties(
             {'flow_mol': {'method': None},
-             'flow_mol_phase': {'method': None},
-             'flow_mol_phase_comp': {'method': None},
-             'flow_mol_comp': {'method': None},
-             'mole_frac_comp': {'method': None},
-             'mole_frac_phase_comp': {'method': None},
+             'flow_vol': {'method': '_flow_vol'},
+             'flow_mass': {'method': '_flow_mass'},
+             'flow_mass_phase': {'method': '_flow_mass_phase'},
+             'flow_vol_phase': {'method': '_flow_vol_phase'},
+             'flow_mol_phase': {'method': '_flow_mol_phase'},
+             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
+             'flow_mol_comp': {'method': '_flow_mol_comp'},
+             'mole_frac_comp': {'method': '_mole_frac_comp'},
+             'mole_frac_phase_comp': {'method': '_mole_frac_phase_comp'},
              'phase_frac': {'method': None},
              'temperature': {'method': None},
              'pressure': {'method': None},
@@ -1806,6 +1810,97 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_dens_mol_phase)
         except AttributeError:
             self.del_component(self.dens_mol_phase)
+            raise
+
+    def _mole_frac_comp(self):
+        """If mole_frac_comp not state var assume mole_frac_phase_comp is"""
+        try:
+            def rule_mole_frac_comp(b, i):
+                return sum(b.phase_frac[p]*b.mole_frac_phase_comp[p, i]
+                    for p in b.params.phase_list)
+            self.mole_frac_comp = Expression(
+                    self.params.component_list,
+                    doc="Mole fraction of each component",
+                    rule=rule_mole_frac_comp)
+        except AttributeError:
+            self.del_component(self.mole_frac_comp)
+            raise
+
+    def _flow_mol_phase(self):
+        try:
+            def rule_flow_mol_phase(b, p):
+                return b.flow_mol*b.phase_frac[p]
+            self.flow_mol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Molar flow rate of each phase",
+                    rule=rule_flow_mol_phase)
+        except AttributeError:
+            self.del_component(self.flow_mol_phase)
+            raise
+
+    def _flow_vol(self):
+        try:
+            self.flow_vol = Expression(
+                expr=self.dens_mol*self.flow_mol, doc="Volumetric flow rate")
+        except AttributeError:
+            self.del_component(self.flow_vol)
+            raise
+
+    def _flow_vol_phase(self):
+        try:
+            def rule_flow_vol_phase(b, p):
+                return b.flow_mol_phase[p]*b.dens_mol_phase[p]
+            self.flow_vol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Volumetric flow rate of each phase",
+                    rule=rule_flow_vol_phase)
+        except AttributeError:
+            self.del_component(self.flow_vol_phase)
+            raise
+
+    def _flow_mass(self):
+        try:
+            self.flow_mass = Expression(
+                expr=self.mw*self.flow_mol, doc="Mass flow rate")
+        except AttributeError:
+            self.del_component(self.flow_mass)
+            raise
+
+    def _flow_mass_phase(self):
+        try:
+            def rule_flow_mass_phase(b, p):
+                return b.mw_phase[p]*b.flow_mol_phase[p]
+            self.flow_mass_phase = Expression(
+                    self.params.phase_list,
+                    doc="Mass flow rate of each phase",
+                    rule=rule_flow_mass_phase)
+        except AttributeError:
+            self.del_component(self.flow_mass_phase)
+            raise
+
+    def _flow_mol_comp(self):
+        try:
+            def rule_flow_mol_comp(b, i):
+                return self.mole_frac_comp[i]*self.flow_mol
+            self.flow_mol_comp = Expression(
+                self.params.component_list,
+                doc="Component molar flow rate",
+                rule=rule_flow_mol_comp)
+        except AttributeError:
+            self.del_component(self.flow_mol_comp)
+            raise
+
+    def _flow_mol_phase_comp(self):
+        try:
+            def rule_flow_mol_phase_comp(b, p, i):
+                return self.mole_frac_phase_comp[p, i]*self.flow_mol_phase[p]
+            self.flow_mol_phase_comp = Expression(
+                self.params.phase_list,
+                self.params.component_list,
+                doc="Phase component molar flow rate",
+                rule=rule_flow_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.flow_mol_phase_comp)
             raise
 
     def _enth_mol(self):
