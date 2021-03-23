@@ -503,7 +503,7 @@ class TestBTExample(object):
     @pytest.mark.unit
     def test_basic_scaling(self, m):
 
-        assert len(m.fs.state[1].scaling_factor) == 28
+        assert len(m.fs.state[1].scaling_factor) == 23
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2
@@ -531,28 +531,19 @@ class TestBTExample(object):
             m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[m.fs.state[1].pressure] == 1e-5
         assert m.fs.state[1].scaling_factor[m.fs.state[1].temperature] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1]._teq] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._teq["Vap", "Liq"]] == 1e-2
         assert m.fs.state[1].scaling_factor[m.fs.state[1]._t1_Vap_Liq] == 1e-2
 
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1]._mole_frac_tbub] == 1000
-        assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "toluene"]] == 1000
-        assert m.fs.state[1].scaling_factor[
-            m.fs.state[1]._mole_frac_tdew] == 1000
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].temperature_bubble] == 1e-2
-        assert m.fs.state[1].scaling_factor[
             m.fs.state[1].temperature_bubble["Vap", "Liq"]] == 1e-2
-        assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].temperature_dew] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].temperature_dew["Vap", "Liq"]] == 1e-2
