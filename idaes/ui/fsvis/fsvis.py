@@ -10,8 +10,11 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
 # stdlib
+from collections import namedtuple
 from pathlib import Path
+import time
 from typing import Optional, Union, Tuple
 import webbrowser
 
@@ -20,10 +23,15 @@ from idaes import logger
 from .model_server import FlowsheetServer
 from . import persist, errors
 
+# Logging
 _log = logger.getLogger(__name__)
 
+# Module globals
 web_server = None
 
+# Classes and functions
+
+VisualizeResult = namedtuple("VisualizeResult", ["save_as", "port"])
 
 def visualize(
     flowsheet,
@@ -33,45 +41,30 @@ def visualize(
     port: Optional[int] = None,
     log_level: int = logger.WARNING,
     quiet: bool = False,
-) -> Tuple[str, int]:
+    loop_forever: bool = False,
+) -> VisualizeResult:
     """Visualize the flowsheet in a web application.
 
     The web application is started in a separate thread and this function returns immediately.
 
-    Also open a browser window to display the visualization app.
-    The URL is also printed (unless ``quiet`` is True).
-
-    **Note**: The visualization server runs in its own thread. If the program that it is running in stops,
-    the visualization UI will not be able to save or refresh its view. This is not an issue in a
-    `REPL <https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop>`_
-    like the Python console, IPython, or Jupyter Notebook,
-    since these all run until the user explicitly closes them. But if you are running from a script, you need to do
-    something to avoid having the program exit after the `visualize()` method returns (which happens very quickly).
-    For example, loop forever in a try/catch clause that will handle KeyboardInterrupt exceptions::
-
-        # Example code for a script, to keep program running after starting visualize() thread
-        my_model.fs.visualize()  # this returns immediately
-        try:
-            print("Type ^C to stop the program")
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("Program stopped")
+    Also open a browser window to display the visualization app. The URL is printed unless ``quiet`` is True.
 
     Args:
         flowsheet: IDAES flowsheet to visualize
         name: Name of flowsheet to display as the title of the visualization
-        save_as: Location to save the current flowsheet layout and values. If this argument is not specified,
-          a default name will be picked in the current working directory. If a string or Path is
-          given, that will be taken as the file in which to save.
+        save_as: Where to save the current flowsheet layout and values. If this argument is not specified,
+          a default name will be picked in the current working directory (if this file already exists, a
+          number will be appended).
         browser: If true, open a browser
         port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, which is a superset of the built-in :mod:`logging` module levels.
           See the :mod:`idaes.logger` module for details
         quiet: If True, suppress printing any messages to standard output (console)
+        loop_forever: If True, don't return but instead loop until a Control-C is received. Useful when
+           invoking this function at the end of a script.
 
     Returns:
-        Tuple (Save location, Port number where server is listening)
+        Save location and port where server is listening (see :var:`VisualizeResult`)
 
     Raises:
         :mod:`idaes.ui.fsvis.errors.VisualizerSaveError`: if the data storage at 'save_as' can't be opened
@@ -79,6 +72,7 @@ def visualize(
     """
     global web_server
 
+    # Initialize IDAES logging
     _init_logging(log_level)
 
     # Start the web server
@@ -93,7 +87,19 @@ def visualize(
     # Set up save location
     use_default = False
     if save_as is None:
-        save_as = name + ".json"
+        # Pick a default save-as file
+        counter, save_as = 0, name + ".json"
+        while counter < 1000:
+            if Path(save_as).exists():
+                counter += 1
+                save_as = f"{name}-{counter}.json"
+            else:
+                break
+        # deal with crazy number of NAME-#.json files for this NAME
+        if counter == 1000:
+            why = f"Found 1000 numbered files of form '{name}-<num>.json'. That's too many."
+            _log.error(f"in visualize(): {why}")
+            raise RuntimeError(why)
         use_default = True
     try:
         datastore = persist.DataStore.create(save_as)
@@ -102,7 +108,9 @@ def visualize(
     if use_default:
         if not quiet:
             cwd = str(Path(save_as).absolute())
-            print("Saving flowsheet to default file '{save_as}' in current directory ({cwd})")
+            print(
+                "Saving flowsheet to default file '{save_as}' in current directory ({cwd})"
+            )
     else:
         if not quiet:
             print("Saving flowsheet to {str(datastore)}")
@@ -133,7 +141,17 @@ def visualize(
     if not quiet:
         print(f"Flowsheet visualization at: {url}")
 
-    return str(save_as), web_server.port
+    if loop_forever:
+        try:
+            if not quiet:
+                print("Type ^C to stop the program")
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            if not quiet:
+                print("Program stopped")
+
+    return VisualizeResult(save_as=str(save_as), port=web_server.port)
 
 
 def _init_logging(lvl):

@@ -15,10 +15,12 @@ Tests for the IDAES Flowsheet Visualizer (IFV).
 
 These are currently integration tests, because the start/stop the embedded HTTP server.
 """
+import glob
 import json
 import logging
-
+import os
 import pytest
+import re
 import requests
 
 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
@@ -166,3 +168,25 @@ class MockWB:
 
     def open(self, *args):
         return self.ok
+
+
+@pytest.mark.unit
+def test_visualize_saveas(flash_model):
+    flowsheet = flash_model.fs
+    fs_name = "test_visualize_saveas"
+    # remove old, if any
+    for f in glob.glob("test_visualize*.json"):
+        os.unlink(f)
+    # test multiple filenames
+    for i in range(3):
+        result = fsvis.visualize(flowsheet, fs_name, browser=False)
+        if i == 0:
+            assert result.save_as == f"{fs_name}.json"
+        else:
+            assert re.match(f"{fs_name}.*{i}.*\.json", result.save_as)
+    # test explicit filename
+    result = fsvis.visualize(flowsheet, fs_name, save_as="howdy", browser=False)
+    assert result.save_as.startswith("howdy")
+    # cleanup
+    for f in glob.glob("test_visualize*.json"):
+        os.unlink(f)
