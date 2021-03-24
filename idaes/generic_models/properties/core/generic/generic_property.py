@@ -836,7 +836,7 @@ class GenericParameterData(PhysicalParameterBlock):
         # TODO : Need to fix to have methods for things that may or may not be
         # created by state var methods
         obj.add_properties(
-            {'flow_mol': {'method': 'flow_mol'},
+            {'flow_mol': {'method': '_flow_mol'},
              'flow_vol': {'method': '_flow_vol'},
              'flow_mass': {'method': '_flow_mass'},
              'flow_mass_phase': {'method': '_flow_mass_phase'},
