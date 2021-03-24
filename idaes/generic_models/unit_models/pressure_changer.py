@@ -853,10 +853,6 @@ see property package for documentation.}""",
         init_log.info_high("Initialization Step 4 {}."
                            .format(idaeslog.condition(res)))
 
-        # ---------------------------------------------------------------------
-        # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl)
-
         if blk.performance_curve.has_constraints():
             blk.performance_curve.activate()
             for t, v in unfix_eff.items():
@@ -869,6 +865,9 @@ see property package for documentation.}""",
                 res = opt.solve(blk, tee=slc.tee)
             init_log.info_high(f"Initialization Step 5 {idaeslog.condition(res)}.")
 
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.control_volume.release_state(flags, outlvl)
         init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
