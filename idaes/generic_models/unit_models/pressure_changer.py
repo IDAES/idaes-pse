@@ -30,9 +30,11 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
     MaterialBalanceType,
+    ProcessBlockData,
     UnitModelBlockData,
     useDefault,
 )
+from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
@@ -48,6 +50,24 @@ class ThermodynamicAssumption(Enum):
     isentropic = 2
     pump = 3
     adiabatic = 4
+
+
+@declare_process_block_class("IsentropicPerformanceCurve")
+class IsentropicPerformanceCurveData(ProcessBlockData):
+    CONFIG = ProcessBlockData.CONFIG()
+    CONFIG.declare("build_callback", ConfigValue(
+        default=None,
+        doc="Callback to add performance curve constraints"))
+
+    def has_constraints(self):
+        for o in self.component_data_objects(Constraint):
+            return True
+        return False
+
+    def build(self):
+        super().build()
+        if self.config.build_callback is not None:
+            self.config.build_callback(self)
 
 
 @declare_process_block_class("PressureChanger")
@@ -172,6 +192,10 @@ block(s) and used when constructing these,
 see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "isentropic_perfomance_curves",
+        IsentropicPerformanceCurveData.CONFIG(),
+    )
 
     def build(self):
         """
@@ -183,7 +207,7 @@ see property package for documentation.}""",
             None
         """
         # Call UnitModel.build
-        super(PressureChangerData, self).build()
+        super().build()
 
         # Add a control volume to the unit including setting up dynamics.
         self.control_volume = ControlVolume0DBlock(
@@ -455,6 +479,38 @@ see property package for documentation.}""",
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 
+        # Add head expressions (often calcuated from performance curve)
+        try:
+            @self.Expression(self.flowsheet().config.time)
+            def head_isentropic(b, t): # units are energy/mass e.g. J/kg
+                if hasattr(b.control_volume.properties_in[t], "flow_mass"):
+                    return (b.work_isentropic[t] /
+                        b.control_volume.properties_in[t].flow_mass)
+                else:
+                    return (b.work_isentropic[t] /
+                        b.control_volume.properties_in[t].flow_mol /
+                        b.control_volume.properties_in[t].mw)
+
+            @self.Expression(self.flowsheet().config.time)
+            def head(b, t): # units are energy/mass e.g. J/kg
+                if hasattr(b.control_volume.properties_in[t], "flow_mass"):
+                    return (b.work_mechanical[t] /
+                        b.control_volume.properties_in[t].flow_mass)
+                else:
+                    return (b.work_mechanical[t] /
+                        b.control_volume.properties_in[t].flow_mol /
+                        b.control_volume.properties_in[t].mw)
+
+        except PropertyNotSupportedError:
+            _log.warning(
+                "flow_mass or flow_mol and mw not supported by property package"
+                " but are required for isentropic pressure changer head"
+                " calculation")
+
+        # Add performace curve block.  If this block is empty that's fine
+        self.performance_curve = IsentropicPerformanceCurve(
+            default=self.config.isentropic_perfomance_curves)
+
     def model_check(blk):
         """
         Check that pressure change matches with compressor argument (i.e. if
@@ -605,7 +661,7 @@ see property package for documentation.}""",
             )
         else:
             # Call the general initialization routine in UnitModelBlockData
-            super(PressureChangerData, blk).initialize(
+            super().initialize(
                 state_args=state_args,
                 outlvl=outlvl,
                 solver=solver,
@@ -644,6 +700,37 @@ see property package for documentation.}""",
         cv = blk.control_volume
         t0 = blk.flowsheet().config.time.first()
         state_args_out = {}
+
+        if blk.performance_curve.has_constraints():
+            blk.performance_curve.deactivate()
+            # The performace curves will provide (maybe indirectly) efficency
+            # and/or pressure ratio. To get through the standard non isentropic
+            # pressure changer init, we'll see if the user provided a guess for
+            # pressure ratio or isentropic efficency and fix them if need. If
+            # not fixed and no guess provided fill in something reasonable until
+            # the performace curves are turned on.
+            unfix_eff = {}
+            unfix_ratioP = {}
+            for t in blk.flowsheet().config.time:
+                if not (blk.ratioP[t].fixed or  blk.deltaP[t].fixed or
+                    cv.properties_out[t].pressure.fixed):
+                    if blk.config.compressor:
+                        if not (value(blk.ratioP[t]) >= 1.01 and
+                            value(blk.ratioP[t]) <= 50):
+                            blk.ratioP[t] = 1.8
+                    else:
+                        if not (value(blk.ratioP[t]) >= 0.01 and
+                            value(blk.ratioP[t]) <= 0.999):
+                            blk.ratioP[t] = 0.7
+                    blk.ratioP[t].fix()
+                    unfix_ratioP[t] = True
+                if not blk.efficiency_isentropic[t].fixed:
+                    if not (value(blk.efficiency_isentropic[t]) >= 0.05 and
+                        value(blk.efficiency_isentropic[t]) <= 1.0):
+                        blk.efficiency_isentropic[t] = 0.8
+                    blk.efficiency_isentropic[t].fix()
+                    unfix_eff[t] = True
+
         if state_args is None:
             state_args = {}
             state_dict = (
@@ -769,10 +856,20 @@ see property package for documentation.}""",
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
-        init_log.info(
-            "Initialization Complete: {}"
-            .format(idaeslog.condition(res))
-        )
+
+        if blk.performance_curve.has_constraints():
+            blk.performance_curve.activate()
+            for t, v in unfix_eff.items():
+                if v:
+                    blk.efficiency_isentropic[t].unfix()
+            for t, v in unfix_ratioP.items():
+                if v:
+                    blk.ratioP[t].unfix()
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.info_high(f"Initialization Step 5 {idaeslog.condition(res)}.")
+
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
