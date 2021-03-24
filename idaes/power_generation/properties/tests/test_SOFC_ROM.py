@@ -57,7 +57,7 @@ class TestSOFCROM(object):
         return m
 
     @pytest.mark.build
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_build(self, m):
         assert degrees_of_freedom(m) == 9
         assert number_variables(m) == 13562
@@ -90,13 +90,13 @@ class TestSOFCROM(object):
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_initialize(self, m):
         initialize_SOFC_ROM(m.SOFC)
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_solve(self, m):
         m.SOFC.current_density.fix(4000)
         m.SOFC.fuel_temperature.fix(348.3)
