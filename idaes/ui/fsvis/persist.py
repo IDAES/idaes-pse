@@ -79,6 +79,10 @@ class DataStore(ABC):
     def __eq__(self, other):
         return str(other) == str(self)
 
+    @property
+    def filename(self):
+        return ""
+
 
 class FileDataStore(DataStore):
     def __init__(self, path: Path):
@@ -132,6 +136,10 @@ class FileDataStore(DataStore):
     def __str__(self):
         return f"file '{self._p}'"
 
+    @property
+    def filename(self):
+        return str(self._p)
+
 
 class MemoryDataStore(DataStore):
     def __init__(self):
@@ -171,7 +179,7 @@ class MemoryDataStore(DataStore):
         return self._data
 
     def __str__(self):
-        return "memory"
+        return "__MEMORY__"
 
 
 class DataStoreManager:

@@ -14,6 +14,7 @@
 # stdlib
 from collections import namedtuple
 from pathlib import Path
+import sys
 import time
 from typing import Optional, Union, Tuple
 import webbrowser
@@ -29,14 +30,28 @@ _log = logger.getLogger(__name__)
 # Module globals
 web_server = None
 
+#: Maximum number of saved versions of the same `save` file.
+#: Set to zero if you want to allow any number.
+MAX_SAVED_VERSIONS = 100
+
+# Exceptions
+
+
+class TooManySavedVersions(Exception):
+    pass
+
 # Classes and functions
 
-VisualizeResult = namedtuple("VisualizeResult", ["save_as", "port"])
+
+VisualizeResult = namedtuple("VisualizeResult", ["store", "port", "server"])
+
 
 def visualize(
     flowsheet,
     name: str = "flowsheet",
-    save_as: Optional[Union[Path, str]] = None,
+    save: Optional[Union[Path, str, bool]] = None,
+    save_dir: Optional[Path] = None,
+    overwrite: bool = False,
     browser: bool = True,
     port: Optional[int] = None,
     log_level: int = logger.WARNING,
@@ -52,9 +67,15 @@ def visualize(
     Args:
         flowsheet: IDAES flowsheet to visualize
         name: Name of flowsheet to display as the title of the visualization
-        save_as: Where to save the current flowsheet layout and values. If this argument is not specified,
-          a default name will be picked in the current working directory (if this file already exists, a
-          number will be appended).
+        save: Where to save the current flowsheet layout and values. If this argument is not specified,
+          "<name>.json" will be used (if this file already exists, a "-<version>" number will be added
+          between the name and the extension). If the value given is the boolean 'False', then nothing
+          will be saved.
+        save_dir: If this argument is given, and ``save`` is not given or a relative path, then it will
+           be used as the directory to save the default or given file. The current working directory is
+           the default. If ``save`` is given and an absolute path, this argument is ignored.
+        overwrite: If True, and the file given by ``save`` exists, overwrite instead of creating a new
+          numbered file.
         browser: If true, open a browser
         port: Start listening on this port. If not given, find an open port.
         log_level: An IDAES logging level, which is a superset of the built-in :mod:`logging` module levels.
@@ -64,11 +85,12 @@ def visualize(
            invoking this function at the end of a script.
 
     Returns:
-        Save location and port where server is listening (see :var:`VisualizeResult`)
+        See :data:`VisualizeResult`
 
     Raises:
         :mod:`idaes.ui.fsvis.errors.VisualizerSaveError`: if the data storage at 'save_as' can't be opened
         :mod:`idaes.ui.fsvis.errors.VisualizerError`: Any other errors
+        RuntimeError: If too many versions of the save file already exist. See :data:`MAX_SAVED_VERSIONS`.
     """
     global web_server
 
@@ -86,34 +108,38 @@ def visualize(
 
     # Set up save location
     use_default = False
-    if save_as is None:
-        # Pick a default save-as file
-        counter, save_as = 0, name + ".json"
-        while counter < 1000:
-            if Path(save_as).exists():
-                counter += 1
-                save_as = f"{name}-{counter}.json"
-            else:
-                break
-        # deal with crazy number of NAME-#.json files for this NAME
-        if counter == 1000:
-            why = f"Found 1000 numbered files of form '{name}-<num>.json'. That's too many."
-            _log.error(f"in visualize(): {why}")
-            raise RuntimeError(why)
+    if save is None:
+        try:
+            save_path = _pick_default_save_location(name, save_dir, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite)
+        except TooManySavedVersions as err:
+            raise RuntimeError(f"In visualize(): {err}")
         use_default = True
-    try:
-        datastore = persist.DataStore.create(save_as)
-    except (ValueError, errors.ProcessingError) as err:
-        raise errors.VisualizerSaveError(save_as, err)
-    if use_default:
-        if not quiet:
-            cwd = str(Path(save_as).absolute())
-            print(
-                "Saving flowsheet to default file '{save_as}' in current directory ({cwd})"
-            )
+    elif save is False:
+        save_path = None
     else:
-        if not quiet:
-            print("Saving flowsheet to {str(datastore)}")
+        try:
+            save_path = Path(save)
+        except TypeError as err:
+            raise errors.VisualizerSaveError(save, f"Cannot convert 'save' value to Path object: {err}")
+        if save_dir is not None and not save_path.is_absolute():
+            save_path = save_dir / save_path
+    # Create datastore for save location
+    if save_path is None:
+        datastore = persist.MemoryDataStore()
+    else:
+        try:
+            datastore = persist.DataStore.create(save_path)
+        except (ValueError, errors.ProcessingError) as err:
+            raise errors.VisualizerSaveError(save_path, err)
+        if use_default:
+            if not quiet:
+                cwd = save_path.parent.absolute()
+                print(
+                    f"Saving flowsheet to default file '{save_path.name}' in current directory ({cwd})"
+                )
+        else:
+            if not quiet:
+                print(f"Saving flowsheet to {str(datastore)}")
 
     # Add our flowsheet to it
     try:
@@ -151,7 +177,43 @@ def visualize(
             if not quiet:
                 print("Program stopped")
 
-    return VisualizeResult(save_as=str(save_as), port=web_server.port)
+    return VisualizeResult(store=datastore, port=web_server.port, server=web_server)
+
+
+def _pick_default_save_location(name, save_dir, max_versions=10, overwrite=None):
+    """Pick a default save location.
+    """
+    if not save_dir:
+        save_dir = Path(".")
+    save_path = save_dir / f"{name}.json"
+    # Handle simple cases: overwrite, and no existing file
+    if overwrite:
+        if save_path.exists():
+            _log.warning("Overwriting existing save file '{save_path}'")
+            save_path.open("w")   # blank file
+        return save_path
+    elif not save_path.exists():
+        return save_path
+    # Find the next version that does not exist
+    _log.info(f"Save file {save_path} exists. Creating new version")
+    counter = 0
+    if max_versions == 0:
+        max_versions = sys.maxsize  # millions of years of file-creating fun
+    while counter < max_versions:
+        if save_path.exists():
+            counter += 1
+            save_file = f"{name}-{counter}.json"
+            save_path = save_dir / save_file
+        else:
+            break
+    # Edge case: too many NAME-#.json files for this NAME
+    if counter == max_versions:
+        why = f"Found {max_versions} numbered files of form '{name}-<num>.json'. That's too many."
+        _log.error(why)
+        raise TooManySavedVersions(why)
+    # Return new (versioned) path
+    _log.info(f"Created new version for save file: {save_path}")
+    return save_path
 
 
 def _init_logging(lvl):

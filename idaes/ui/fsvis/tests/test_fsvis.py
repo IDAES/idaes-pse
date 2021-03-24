@@ -19,6 +19,7 @@ import glob
 import json
 import logging
 import os
+from pathlib import Path
 import pytest
 import re
 import requests
@@ -60,14 +61,14 @@ def flash_model():
 
 
 @pytest.mark.integration
-def test_visualize(flash_model):
+def test_visualize(flash_model, tmp_path):
     from pathlib import Path
 
     flowsheet = flash_model.fs
     # Start the visualization server
-    save_location, port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=None)
+    result = fsvis.visualize(flowsheet, "Flash", browser=False, save_dir=tmp_path)
     # Get the model
-    resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
+    resp = requests.get(f"http://127.0.0.1:{result.port}/fs?id=Flash")
     data = resp.json()
     # Validate the model
     ok, msg = validate_flowsheet(data)
@@ -83,7 +84,7 @@ def test_visualize(flash_model):
     # Modify the model by deleting its one and only component
     flowsheet.del_component("flash")
     # Get the model (again)
-    resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
+    resp = requests.get(f"http://127.0.0.1:{result.port}/fs?id=Flash")
     data = resp.json()
     # Validate the modified model
     expected = {
@@ -105,11 +106,11 @@ def test_save_visualization(flash_model, tmp_path):
     flowsheet = flash_model.fs
     # Start the visualization server, using temporary save location
     save_location = tmp_path / "flash-vis.json"
-    save_location, port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=save_location)
+    fsvis_result = fsvis.visualize(flowsheet, "Flash", browser=False, save=save_location, save_dir=tmp_path)
     # Check the contents of the saved file are the same as what is returned by the server
-    with open(save_location) as fp:
+    with open(fsvis_result.store.filename) as fp:
         file_data = json.load(fp)
-    resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
+    resp = requests.get(f"http://127.0.0.1:{fsvis_result.port}/fs?id=Flash")
     net_data = resp.json()
     assert file_data == net_data
 
@@ -137,19 +138,19 @@ def test_invoke(flash_model):
 @pytest.mark.unit
 def test_visualize_fn(flash_model):
     flowsheet = flash_model.fs
-    filename, _ = fsvis.visualize(flowsheet, browser=False)
-    assert len(filename) > 4  # <something>.<ext>
+    result = fsvis.visualize(flowsheet, browser=False, save=False)
+    assert result.store.filename == ""
     #
     for bad_save_as in (1, "/no/such/file/exists.I.hope", flowsheet):
         with pytest.raises(errors.VisualizerError):
-            fsvis.visualize(flowsheet, save_as=bad_save_as, browser=False)
+            fsvis.visualize(flowsheet, save=bad_save_as, browser=False)
 
 
 @pytest.mark.unit
-def test_flowsheet_name(flash_model):
+def test_flowsheet_name(flash_model, tmp_path):
     raw_name = "Hello World"
-    filename, _ = fsvis.visualize(flash_model.fs, name=raw_name, browser=False)
-    assert(len(filename) > len(raw_name))
+    result = fsvis.visualize(flash_model.fs, name=raw_name, browser=False, save_dir=tmp_path)
+    assert re.search(raw_name, result.store.filename)
 
 
 @pytest.mark.unit
@@ -158,7 +159,7 @@ def test_mock_webbrowser(flash_model):
     wb = fsvis.webbrowser
     for wb_mock in (MockWB(True), MockWB(False)):
         fsvis.webbrowser = wb_mock
-        filename, _ = fsvis.visualize(flash_model.fs)
+        _ = fsvis.visualize(flash_model.fs, save=False)
     fsvis.webbrowser = wb
 
 
@@ -170,23 +171,51 @@ class MockWB:
         return self.ok
 
 
+## Test saving of the status file
+
+@pytest.fixture
+def save_files_prefix(tmp_path):
+    value = str(tmp_path / "test_visualize")
+    # clear out any cruft
+    for filename in glob.glob(str(tmp_path / "test_visualize*")):
+        os.unlink(filename)
+    yield value
+    # clear out any cruft (2)
+    for filename in glob.glob(str(tmp_path / "test_visualize*")):
+        os.unlink(filename)
+
+
 @pytest.mark.unit
-def test_visualize_saveas(flash_model):
+def test_visualize_save_versions(flash_model, save_files_prefix):
+    # test versioned file saves
     flowsheet = flash_model.fs
-    fs_name = "test_visualize_saveas"
-    # remove old, if any
-    for f in glob.glob("test_visualize*.json"):
-        os.unlink(f)
-    # test multiple filenames
+    path = Path(save_files_prefix + "_save")
+    work_dir = path.parent
+    fs_name = path.name
     for i in range(3):
-        result = fsvis.visualize(flowsheet, fs_name, browser=False)
+        result = fsvis.visualize(flowsheet, fs_name, save_dir=work_dir, browser=False)
         if i == 0:
-            assert result.save_as == f"{fs_name}.json"
+            assert re.search(f"{path.name}.json", result.store.filename)
         else:
-            assert re.match(f"{fs_name}.*{i}.*\.json", result.save_as)
+            assert re.search(f"{path.name}.*{i}.*\.json", result.store.filename)
+
+
+@pytest.mark.unit
+def test_visualize_save_explicit(flash_model, save_files_prefix):
     # test explicit filename
-    result = fsvis.visualize(flowsheet, fs_name, save_as="howdy", browser=False)
-    assert result.save_as.startswith("howdy")
-    # cleanup
-    for f in glob.glob("test_visualize*.json"):
-        os.unlink(f)
+    flowsheet = flash_model.fs
+    howdy = Path(save_files_prefix + "_howdy")
+    result = fsvis.visualize(flowsheet, "flowsheet", save=howdy, browser=False)
+    assert re.search(howdy.name, result.store.filename)
+
+
+@pytest.mark.unit
+def test_visualize_save_overwrite(flash_model, save_files_prefix):
+    flowsheet = flash_model.fs
+    howdy = Path(save_files_prefix + "_howdy")
+    howdy.open("w").write("howdy")
+    howdy_stat = os.stat(howdy)
+    result = fsvis.visualize(flowsheet, "flowsheet", save=howdy, overwrite=True, browser=False)
+    howdy_stat2 = os.stat(result.store.filename)
+    assert howdy_stat2.st_mtime > howdy_stat.st_mtime  # modification time should be later
+
