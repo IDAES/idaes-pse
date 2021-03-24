@@ -45,7 +45,9 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError)
+                                        ConfigurationError,
+                                        PropertyPackageError)
+from idaes.core.util.misc import add_object_reference
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -448,6 +450,8 @@ class GenericParameterData(PhysicalParameterBlock):
                                                 ordered=True)
             self.apparent_phase_component_set = Set(initialize=pc_set_appr,
                                                     ordered=True)
+            add_object_reference(
+                self, "_phase_component_set", self.true_phase_component_set)
 
         # Check that each component appears phase-component set
         for j in self.component_list:
@@ -832,14 +836,16 @@ class GenericParameterData(PhysicalParameterBlock):
         # TODO : Need to fix to have methods for things that may or may not be
         # created by state var methods
         obj.add_properties(
-            {'flow_mol': {'method': None},
+            {'flow_mol': {'method': '_flow_mol'},
              'flow_vol': {'method': '_flow_vol'},
              'flow_mass': {'method': '_flow_mass'},
              'flow_mass_phase': {'method': '_flow_mass_phase'},
              'flow_vol_phase': {'method': '_flow_vol_phase'},
              'flow_mol_phase': {'method': '_flow_mol_phase'},
-             'flow_mol_phase_comp': {'method': None},
+             'flow_mass_comp': {'method': '_flow_mass_comp'},
              'flow_mol_comp': {'method': '_flow_mol_comp'},
+             'flow_mass_phase_comp': {'method': '_flow_mass_phase_comp'},
+             'flow_mol_phase_comp': {'method': '_flow_mol_phase_comp'},
              'mole_frac_comp': {'method': '_mole_frac_comp'},
              'mole_frac_phase_comp': {'method': None},
              'phase_frac': {'method': None},
@@ -1833,56 +1839,21 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.dens_mol_phase)
             raise
 
-    def _mole_frac_comp(self):
-        """If mole_frac_comp not state var assume mole_frac_phase_comp is"""
-        try:
-            def rule_mole_frac_comp(b, i):
-                return sum(b.phase_frac[p]*b.mole_frac_phase_comp[p, i]
-                    for p in b.params.phase_list)
-            self.mole_frac_comp = Expression(
-                    self.params.component_list,
-                    doc="Mole fraction of each component",
-                    rule=rule_mole_frac_comp)
-        except AttributeError:
-            self.del_component(self.mole_frac_comp)
-            raise
-
-    def _flow_mol_phase(self):
-        try:
-            def rule_flow_mol_phase(b, p):
-                return b.flow_mol*b.phase_frac[p]
-            self.flow_mol_phase = Expression(
-                    self.params.phase_list,
-                    doc="Molar flow rate of each phase",
-                    rule=rule_flow_mol_phase)
-        except AttributeError:
-            self.del_component(self.flow_mol_phase)
-            raise
-
-    def _flow_vol(self):
-        try:
-            self.flow_vol = Expression(
-                expr=self.dens_mol*self.flow_mol, doc="Volumetric flow rate")
-        except AttributeError:
-            self.del_component(self.flow_vol)
-            raise
-
-    def _flow_vol_phase(self):
-        try:
-            def rule_flow_vol_phase(b, p):
-                return b.flow_mol_phase[p]*b.dens_mol_phase[p]
-            self.flow_vol_phase = Expression(
-                    self.params.phase_list,
-                    doc="Volumetric flow rate of each phase",
-                    rule=rule_flow_vol_phase)
-        except AttributeError:
-            self.del_component(self.flow_vol_phase)
-            raise
-
     def _flow_mass(self):
         try:
-            self.flow_mass = Expression(
-                expr=self.mw*self.flow_mol, doc="Mass flow rate")
+            if self.get_material_flow_basis() == MaterialFlowBasis.mass:
+                self.flow_mass = Expression(
+                    expr=sum(self.flow_mass_comp[j]
+                             for p, j in self.component_list),
+                    doc="Mass flow rate")
+            elif self.get_material_flow_basis() == MaterialFlowBasis.molar:
+                self.flow_mass = Expression(
+                    expr=self.mw*self.flow_mol, doc="Mass flow rate")
+            else:
+                raise PropertyPackageError(
+                    "{} Generic Property Package set to use unsupported "
+                    "material flow basis: {}"
+                    .format(self.name, self.get_material_flow_basis()))
         except AttributeError:
             self.del_component(self.flow_mass)
             raise
@@ -1890,7 +1861,15 @@ class GenericStateBlockData(StateBlockData):
     def _flow_mass_phase(self):
         try:
             def rule_flow_mass_phase(b, p):
-                return b.mw_phase[p]*b.flow_mol_phase[p]
+                if b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return b.flow_mass*b.phase_frac[p]
+                elif self.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    return b.mw_phase[p]*b.flow_mol_phase[p]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
             self.flow_mass_phase = Expression(
                     self.params.phase_list,
                     doc="Mass flow rate of each phase",
@@ -1899,16 +1878,167 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.flow_mass_phase)
             raise
 
+    def _flow_mass_comp(self):
+        try:
+            def rule_flow_mass_comp(b, i):
+                if b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return self.mass_frac_comp[i]*self.flow_mass
+                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return b.flow_mol_comp[i]*b.mw_comp[i]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
+            self.flow_mass_comp = Expression(
+                self.params.component_list,
+                doc="Component mass flow rate",
+                rule=rule_flow_mass_comp)
+        except AttributeError:
+            self.del_component(self.flow_mass_comp)
+            raise
+
+    def _flow_mass_phase_comp(self):
+        try:
+            def rule_flow_mass_phase_comp(b, p, i):
+                if b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    raise PropertyPackageError(
+                        "{} Generic proeprty Package set to use material flow "
+                        "basis {}, but flow_mass_phase_comp was not created "
+                        "by state definition.")
+                elif b.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    return b.flow_mol_phase_comp[p, i]*b.mw_comp[i]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
+            self.flow_mass_phase_comp = Expression(
+                self.params.phase_component_set,
+                doc="Phase-component mass flow rate",
+                rule=rule_flow_mass_phase_comp)
+        except AttributeError:
+            self.del_component(self.flow_mass_phase_comp)
+            raise
+
+    def _flow_mol(self):
+        try:
+            if self.get_material_flow_basis() == MaterialFlowBasis.molar:
+                self.flow_mol = Expression(
+                    expr=sum(self.flow_mol_comp[j]
+                             for p, j in self.component_list),
+                    doc="Total molar flow rate")
+            elif self.get_material_flow_basis() == MaterialFlowBasis.mass:
+                self.flow_mol = Expression(
+                    expr=self.flow_mass/self.mw, doc="Total molar flow rate")
+            else:
+                raise PropertyPackageError(
+                    "{} Generic Property Package set to use unsupported "
+                    "material flow basis: {}"
+                    .format(self.name, self.get_material_flow_basis()))
+        except AttributeError:
+            self.del_component(self.flow_mol)
+            raise
+
+    def _flow_mol_phase(self):
+        try:
+            def rule_flow_mol_phase(b, p):
+                if b.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    return b.flow_mol*b.phase_frac[p]
+                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return b.flow_mass_phase[p]/b.mw_phase[p]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
+            self.flow_mol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Molar flow rate of each phase",
+                    rule=rule_flow_mol_phase)
+        except AttributeError:
+            self.del_component(self.flow_mol_phase)
+            raise
+
     def _flow_mol_comp(self):
         try:
             def rule_flow_mol_comp(b, i):
-                return self.mole_frac_comp[i]*self.flow_mol
+                if b.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    return self.mole_frac_comp[i]*self.flow_mol
+                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return b.flow_mass_comp[i]/b.mw_comp[i]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
             self.flow_mol_comp = Expression(
                 self.params.component_list,
                 doc="Component molar flow rate",
                 rule=rule_flow_mol_comp)
         except AttributeError:
             self.del_component(self.flow_mol_comp)
+            raise
+
+    def _flow_mol_phase_comp(self):
+        try:
+            def rule_flow_mol_phase_comp(b, p, i):
+                if b.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    raise PropertyPackageError(
+                        "{} Generic proeprty Package set to use material flow "
+                        "basis {}, but flow_mol_phase_comp was not created "
+                        "by state definition.")
+                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return b.flow_mass_phase_comp[p, i]/b.mw_comp[i]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
+            self.flow_mol_phase_comp = Expression(
+                self.params.phase_component_set,
+                doc="Phase-component molar flow rate",
+                rule=rule_flow_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.flow_mol_phase_comp)
+            raise
+
+    def _flow_vol(self):
+        try:
+            def _flow_vol_rule(b):
+                if b.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    return self.flow_mol/self.dens_mol
+                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return self.flow_mass/self.dens_mass
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
+            self.flow_vol = Expression(
+                rule=_flow_vol_rule, doc="Volumetric flow rate")
+        except AttributeError:
+            self.del_component(self.flow_vol)
+            raise
+
+    def _flow_vol_phase(self):
+        try:
+            def rule_flow_vol_phase(b, p):
+                if b.get_material_flow_basis() == MaterialFlowBasis.molar:
+                    return b.flow_mol_phase[p]/b.dens_mol_phase[p]
+                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                    return b.flow_mass_phase[p]/b.dens_mass_phase[p]
+                else:
+                    raise PropertyPackageError(
+                        "{} Generic Property Package set to use unsupported "
+                        "material flow basis: {}"
+                        .format(self.name, self.get_material_flow_basis()))
+            self.flow_vol_phase = Expression(
+                    self.params.phase_list,
+                    doc="Volumetric flow rate of each phase",
+                    rule=rule_flow_vol_phase)
+        except AttributeError:
+            self.del_component(self.flow_vol_phase)
             raise
 
     def _enth_mol(self):
@@ -2047,6 +2177,20 @@ class GenericStateBlockData(StateBlockData):
                              for p in self.params.phase_list))
         except AttributeError:
             self.del_component(self.mw)
+            raise
+
+    def _mole_frac_comp(self):
+        """If mole_frac_comp not state var assume mole_frac_phase_comp is"""
+        try:
+            def rule_mole_frac_comp(b, i):
+                return sum(b.phase_frac[p]*b.mole_frac_phase_comp[p, i]
+                           for p in b.params.phase_list)
+            self.mole_frac_comp = Expression(
+                    self.params.component_list,
+                    doc="Mole fraction of each component",
+                    rule=rule_mole_frac_comp)
+        except AttributeError:
+            self.del_component(self.mole_frac_comp)
             raise
 
     def _mw_phase(self):

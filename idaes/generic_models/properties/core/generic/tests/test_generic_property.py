@@ -1028,6 +1028,12 @@ class TestGenericStateBlock(object):
 
     @pytest.mark.unit
     def test_flows(self, frame):
+
+        # Need to set the material flow basis for this test
+        def set_flow_basis():
+            return MaterialFlowBasis.molar
+        frame.props[1].get_material_flow_basis = set_flow_basis
+
         frame.props[1].flow_mol.fix(100)
         frame.props[1].phase_frac['p1'].fix(0.75)
         frame.props[1].phase_frac['p2'].fix(0.25)
@@ -1041,11 +1047,12 @@ class TestGenericStateBlock(object):
         frame.props[1].params.get_component('b').mw = 3
         frame.props[1].params.get_component('c').mw = 4
 
-        assert value(frame.props[1].flow_vol) == pytest.approx(100*42, rel=1e-4)
+        assert value(frame.props[1].flow_vol) == pytest.approx(
+            100/42, rel=1e-4)
         assert value(frame.props[1].flow_vol_phase['p1']) == \
-            pytest.approx(100*42*0.75, rel=1e-4)
+            pytest.approx(100/42*0.75, rel=1e-4)
         assert value(frame.props[1].flow_vol_phase['p2']) == \
-            pytest.approx(100*42*0.25, rel=1e-4)
+            pytest.approx(100/42*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['a']) == \
             pytest.approx(100*0.1*0.75 + 100*0.7*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['b']) == \
@@ -1059,7 +1066,7 @@ class TestGenericStateBlock(object):
                           0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
         assert value(frame.props[1].flow_mass) == \
             pytest.approx(100*0.75*(2*0.1 + 3*0.2 + 4*0.7) +
-                100*0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
+                          100*0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
         assert value(frame.props[1].flow_mass_phase["p1"]) == \
             pytest.approx(100*0.75*(2*0.1 + 3*0.2 + 4*0.7), rel=1e-4)
         assert value(frame.props[1].flow_mass_phase["p2"]) == \
