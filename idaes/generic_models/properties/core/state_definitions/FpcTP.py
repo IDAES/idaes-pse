@@ -22,6 +22,8 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -131,6 +133,9 @@ def define_state(b):
         b.phase_list,
         rule=rule_phase_frac,
         doc='Phase fractions')
+
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
 
     # -------------------------------------------------------------------------
     # General Methods
@@ -248,6 +253,9 @@ def calculate_scaling_factors(b):
             p, j], default=1, warning=True)
         iscale.constraint_scaling_transform(
             b.mole_frac_phase_comp_eq[p, j], sf)
+
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
 
 
 do_not_initialize = []
