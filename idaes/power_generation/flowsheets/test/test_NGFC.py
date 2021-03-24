@@ -57,17 +57,19 @@ solver = get_default_solver()
 def m():
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    build_power_island(m)
+    build_reformer(m)
+    set_power_island_inputs(m)
+    set_reformer_inputs(m)
+    connect_reformer_to_power_island(m)
+
     return m
 
 
 @pytest.mark.component
 def test_build(m):
     """Build NGFC and check for unit ops"""
-    build_power_island(m)
-    build_reformer(m)
-    set_power_island_inputs(m)
-    set_reformer_inputs(m)
-    connect_reformer_to_power_island(m)
 
     assert degrees_of_freedom(m) == 0
 
@@ -82,7 +84,7 @@ def test_build(m):
     assert not m.fs.anode_mix.feed.flow_mol[0].fixed
 
 
-@pytest.mark.component
+@pytest.mark.integration
 def test_initialize(m):
     scale_flowsheet(m)
     initialize_power_island(m)
@@ -103,7 +105,7 @@ def test_initialize(m):
             pytest.approx(475.8, 1e-3))
 
 
-@pytest.mark.component
+@pytest.mark.integration
 def test_ROM(m):
     SOFC_ROM_setup(m)
     add_SOFC_energy_balance(m)
@@ -122,7 +124,7 @@ def test_ROM(m):
     assert hasattr(m.fs, 'CO2_emissions')
 
 
-@pytest.mark.component
+@pytest.mark.integration
 def test_json_load(m):
     fname = os.path.join(this_file_dir(), 'NGFC_flowsheet_init.json')
     ms.from_json(m, fname=fname)
