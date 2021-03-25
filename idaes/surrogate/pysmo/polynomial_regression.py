@@ -354,8 +354,7 @@ class PolynomialRegression:
 
         if no_adaptive_samples is None:
             no_adaptive_samples = 4
-        # PYLINT-TODO: check if using int() here to fix the "invalid-unary-operand-type" error on L961 is OK
-        self.no_adaptive_samples = int(no_adaptive_samples)
+        self.no_adaptive_samples = no_adaptive_samples
 
         self.number_of_samples = regression_data.shape[0]
 
