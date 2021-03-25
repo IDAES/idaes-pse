@@ -6,6 +6,7 @@ See #1159 for more information.
 """
 import functools
 import logging
+import time
 import typing
 
 import astroid
@@ -80,8 +81,6 @@ def create_declared_class_node(decorated_cls_node: astroid.ClassDef):
 
 def is_idaes_module(mod_node: astroid.Module):
     mod_name = mod_node.name
-    if mod_name:
-        _display(f'analyzing module: {mod_name}')
     return 'idaes' in mod_name
 
 
@@ -151,10 +150,6 @@ def make_node_create_uninferable_instance(node: astroid.ClassDef, context=None):
     return node
 
 
-def register(linter):
-    "This function needs to be defined for the plugin to be picked up by Pylint"
-
-
 astroid.MANAGER.register_transform(
     # NOTE both these options were tried to see if there was a difference in performance,
     # but it doesn't seem to be the case at this point
@@ -172,3 +167,49 @@ astroid.MANAGER.register_transform(
     make_node_create_uninferable_instance,
     predicate=has_conditional_instantiation
 )
+
+
+from pylint.reporters import BaseReporter, text, JSONReporter
+
+
+class MultiReporter(BaseReporter):
+    name = 'multi'
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.console = text.ColorizedTextReporter()
+        self.json = JSONReporter(output=open('pylint.json', 'w'))
+        self._start = None
+
+    def __iter__(self):
+        yield self.console
+        yield self.json
+
+    def handle_message(self, msg):
+        for rep in self:
+            rep.handle_message(msg)
+
+    def writeln(self, **kwargs):
+        self.console.writeln(**kwargs)
+
+    @property
+    def elapsed(self):
+        f = time.clock
+        if self._start is None:
+            self._start = f()
+            return 0.
+        return f() - self._start
+
+    def on_set_current_module(self, module, filepath):
+        self.writeln(string=f'{self.elapsed:07.3f} {filepath}')
+        self.console._template = self.console.line_format
+
+    def display_messages(self, layout):
+        self.json.display_messages(layout)
+
+    def _display(self, layout):
+        ...
+
+
+def register(linter):
+    "This function needs to be defined for the plugin to be picked up by pylint"
+    linter.register_reporter(MultiReporter)

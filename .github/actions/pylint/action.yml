@@ -16,4 +16,4 @@ runs:
     - name: Run pylint (errors only)
       shell: bash
       run: |
-        pylint -E --ignore-patterns="test_.*" idaes || true
+        pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_transform.MultiReporter idaes/
