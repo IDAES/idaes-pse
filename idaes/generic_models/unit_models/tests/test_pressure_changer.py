@@ -881,13 +881,14 @@ class Test_costing(object):
             def pc_isen_head_eqn(b, t):
                 prnt = b.parent_block()
                 vflw = prnt.control_volume.properties_in[t].flow_vol
-                return prnt.head_isentropic[t]/1000 == \
+                return b.head_isentropic[t]/1000 == \
                     -75530.8/3.975/1000*vflw/unit_vflw*unit_hd
 
         m.fs.unit = Turbine(default={
             "property_package": m.fs.properties,
             "isentropic_perfomance_curves": {
-                "build_callback": perf_callback}})
+                "build_callback": perf_callback,
+                "build_head_expressions": True}})
 
         # set inputs
         m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
@@ -912,7 +913,9 @@ class Test_costing(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = iapws95.Iapws95ParameterBlock()
-        m.fs.unit = Turbine(default={"property_package": m.fs.properties})
+        m.fs.unit = Turbine(default={
+            "property_package": m.fs.properties,
+            "isentropic_perfomance_curves":{"build_head_expressions":True}})
         unit_hd = units.J/units.kg
         unit_vflw = units.m**3/units.s
         @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
@@ -924,7 +927,7 @@ class Test_costing(object):
         def pc_isen_head_eqn(b, t):
             prnt = b.parent_block()
             vflw = prnt.control_volume.properties_in[t].flow_vol
-            return prnt.head_isentropic[t]/1000 == \
+            return b.head_isentropic[t]/1000 == \
                 -75530.8/3.975/1000*vflw/unit_vflw*unit_hd
 
         # set inputs

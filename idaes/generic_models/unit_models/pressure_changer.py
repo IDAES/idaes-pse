@@ -54,10 +54,23 @@ class ThermodynamicAssumption(Enum):
 
 @declare_process_block_class("IsentropicPerformanceCurve")
 class IsentropicPerformanceCurveData(ProcessBlockData):
-    CONFIG = ProcessBlockData.CONFIG()
+    """Block that holds perfomance curves. Typically these are in the form of
+    constraints that relate head, efficiency, or pressure ratio to volumetric
+    or mass flow.  Additional varaibles can be included if needed, such as
+    speed. For convenience an option is provided to add head expressions to the
+    block. Perfomance curves, and any additional variables, constraints, or
+    expressions can be added to this block either via callback provided to the
+    configuration, or after the model is constructued."""
+
+    CONFIG = ProcessBlockData.CONFIG(
+        doc="Configuration dictionary for the performace curve block.")
     CONFIG.declare("build_callback", ConfigValue(
         default=None,
-        doc="Callback to add performance curve constraints"))
+        doc="Optional callback to add performance curve constraints"))
+    CONFIG.declare("build_head_expressions", ConfigValue(
+        default=False,
+        doc="If true add expressions for 'head' and 'head_isentropic'."
+            " These expressions can be used in perfomance curve constraints."))
 
     def has_constraints(self):
         for o in self.component_data_objects(Constraint):
@@ -66,6 +79,37 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
 
     def build(self):
         super().build()
+        if self.config.build_head_expressions:
+            try:
+                @self.Expression(self.flowsheet().config.time)
+                def head_isentropic(b, t): # units are energy/mass
+                    b = b.parent_block()
+                    if hasattr(b.control_volume.properties_in[t], "flow_mass"):
+                        return (b.work_isentropic[t] /
+                            b.control_volume.properties_in[t].flow_mass)
+                    else:
+                        return (b.work_isentropic[t] /
+                            b.control_volume.properties_in[t].flow_mol /
+                            b.control_volume.properties_in[t].mw)
+
+                @self.Expression(self.flowsheet().config.time)
+                def head(b, t): # units are energy/mass
+                    b = b.parent_block()
+                    if hasattr(b.control_volume.properties_in[t], "flow_mass"):
+                        return (b.work_mechanical[t] /
+                            b.control_volume.properties_in[t].flow_mass)
+                    else:
+                        return (b.work_mechanical[t] /
+                            b.control_volume.properties_in[t].flow_mol /
+                            b.control_volume.properties_in[t].mw)
+
+            except PropertyNotSupportedError:
+                _log.exception(
+                    "flow_mass or flow_mol and mw are not supported by the"
+                    " property package but are required for isentropic pressure"
+                    " changer head calculation")
+                raise
+
         if self.config.build_callback is not None:
             self.config.build_callback(self)
 
@@ -195,6 +239,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "isentropic_perfomance_curves",
         IsentropicPerformanceCurveData.CONFIG(),
+        # doc included in IsentropicPerformanceCurveData
     )
 
     def build(self):
@@ -479,34 +524,6 @@ see property package for documentation.}""",
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 
-        # Add head expressions (often calcuated from performance curve)
-        try:
-            @self.Expression(self.flowsheet().config.time)
-            def head_isentropic(b, t): # units are energy/mass e.g. J/kg
-                if hasattr(b.control_volume.properties_in[t], "flow_mass"):
-                    return (b.work_isentropic[t] /
-                        b.control_volume.properties_in[t].flow_mass)
-                else:
-                    return (b.work_isentropic[t] /
-                        b.control_volume.properties_in[t].flow_mol /
-                        b.control_volume.properties_in[t].mw)
-
-            @self.Expression(self.flowsheet().config.time)
-            def head(b, t): # units are energy/mass e.g. J/kg
-                if hasattr(b.control_volume.properties_in[t], "flow_mass"):
-                    return (b.work_mechanical[t] /
-                        b.control_volume.properties_in[t].flow_mass)
-                else:
-                    return (b.work_mechanical[t] /
-                        b.control_volume.properties_in[t].flow_mol /
-                        b.control_volume.properties_in[t].mw)
-
-        except PropertyNotSupportedError:
-            _log.warning(
-                "flow_mass or flow_mol and mw not supported by property package"
-                " but are required for isentropic pressure changer head"
-                " calculation")
-
         # Add performace curve block.  If this block is empty that's fine
         self.performance_curve = IsentropicPerformanceCurve(
             default=self.config.isentropic_perfomance_curves)
@@ -701,14 +718,18 @@ see property package for documentation.}""",
         t0 = blk.flowsheet().config.time.first()
         state_args_out = {}
 
-        if blk.performance_curve.has_constraints():
+        activate_performance_curves = False
+        # check that performace curves exist and are active before initializing
+        # with them
+        if blk.performance_curve.has_constraints() and blk.performance_curve.active:
+            activate_performance_curves = True
             blk.performance_curve.deactivate()
             # The performace curves will provide (maybe indirectly) efficency
-            # and/or pressure ratio. To get through the standard non isentropic
+            # and/or pressure ratio. To get through the standard isentropic
             # pressure changer init, we'll see if the user provided a guess for
             # pressure ratio or isentropic efficency and fix them if need. If
-            # not fixed and no guess provided fill in something reasonable until
-            # the performace curves are turned on.
+            # not fixed and no guess provided, fill in something reasonable
+            # until the performace curves are turned on.
             unfix_eff = {}
             unfix_ratioP = {}
             for t in blk.flowsheet().config.time:
@@ -853,7 +874,7 @@ see property package for documentation.}""",
         init_log.info_high("Initialization Step 4 {}."
                            .format(idaeslog.condition(res)))
 
-        if blk.performance_curve.has_constraints():
+        if activate_performance_curves:
             blk.performance_curve.activate()
             for t, v in unfix_eff.items():
                 if v:
