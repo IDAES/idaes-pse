@@ -49,3 +49,7 @@ class DatastoreSerializeError(DatastoreError):
 
 class DatastoreSaveError(DatastoreError):
     pass
+
+
+class TooManySavedVersions(Exception):
+    pass
