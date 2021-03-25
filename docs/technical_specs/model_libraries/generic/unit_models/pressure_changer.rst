@@ -164,7 +164,7 @@ curves. The first does not use a callback the second does.
   m.fs.unit.inlet.pressure[0].fix(Pin)
 
   m.fs.unit.initialize()
-  solver.solve(m, tee=True)
+  solver.solve(m, tee=False)
 
   assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
   assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
@@ -212,7 +212,7 @@ The next example shows how to use a callback to add performance curves.
   m.fs.unit.inlet.pressure[0].fix(Pin)
 
   m.fs.unit.initialize()
-  solver.solve(m, tee=True)
+  solver.solve(m, tee=False)
 
   assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
   assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
