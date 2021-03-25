@@ -200,8 +200,8 @@ class PhysicalParameterBlock(ProcessBlockData,
 
         return self.state_block_class(  # pylint: disable=not-callable
             *args,
-                                      **kwargs,
-                                      default=default,
+            **kwargs,
+            default=default,
             initialize=initialize
         )
 
@@ -899,7 +899,7 @@ should be constructed in this state block,
             raise PropertyNotSupportedError(
                     '{} {} is not supported by property package (property is '
                     'not listed in package metadata properties).'
-                    .format(self.name, attr, attr))
+                    .format(self.name, attr))
 
         # Get method name from resulting properties
         try:
