@@ -864,7 +864,7 @@ class Test_costing(object):
             pytest.approx(213199, 1e-5)
 
     @pytest.mark.component
-    def test_turbine_performace_way1(self):
+    def test_turbine_performance_way1(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = iapws95.Iapws95ParameterBlock()
@@ -886,8 +886,8 @@ class Test_costing(object):
 
         m.fs.unit = Turbine(default={
             "property_package": m.fs.properties,
-            "support_isentropic_perfomance_curves":True,
-            "isentropic_perfomance_curves": {"build_callback": perf_callback}})
+            "support_isentropic_performance_curves":True,
+            "isentropic_performance_curves": {"build_callback": perf_callback}})
 
         # set inputs
         m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
@@ -908,13 +908,13 @@ class Test_costing(object):
         assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
 
     @pytest.mark.component
-    def test_turbine_performace_way2(self):
+    def test_turbine_performance_way2(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.properties = iapws95.Iapws95ParameterBlock()
         m.fs.unit = Turbine(default={
             "property_package": m.fs.properties,
-            "support_isentropic_perfomance_curves":True})
+            "support_isentropic_performance_curves":True})
         unit_hd = units.J/units.kg
         unit_vflw = units.m**3/units.s
         @m.fs.unit.performance_curve.Constraint(m.fs.config.time)

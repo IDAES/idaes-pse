@@ -54,16 +54,16 @@ class ThermodynamicAssumption(Enum):
 
 @declare_process_block_class("IsentropicPerformanceCurve")
 class IsentropicPerformanceCurveData(ProcessBlockData):
-    """Block that holds perfomance curves. Typically these are in the form of
+    """Block that holds performance curves. Typically these are in the form of
     constraints that relate head, efficiency, or pressure ratio to volumetric
     or mass flow.  Additional varaibles can be included if needed, such as
     speed. For convenience an option is provided to add head expressions to the
-    block. Perfomance curves, and any additional variables, constraints, or
+    block. performance curves, and any additional variables, constraints, or
     expressions can be added to this block either via callback provided to the
     configuration, or after the model is constructued."""
 
     CONFIG = ProcessBlockData.CONFIG(
-        doc="Configuration dictionary for the performace curve block.")
+        doc="Configuration dictionary for the performance curve block.")
     CONFIG.declare("build_callback", ConfigValue(
         default=None,
         doc="Optional callback to add performance curve constraints"))
@@ -71,7 +71,7 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
         default=True,
         domain=bool,
         doc="If true add expressions for 'head' and 'head_isentropic'."
-            " These expressions can be used in perfomance curve constraints."))
+            " These expressions can be used in performance curve constraints."))
 
     def has_constraints(self):
         for o in self.component_data_objects(Constraint):
@@ -238,16 +238,16 @@ see property package for documentation.}""",
         ),
     )
     CONFIG.declare(
-        "support_isentropic_perfomance_curves",
+        "support_isentropic_performance_curves",
         ConfigValue(
             default=False,
             domain=In([True, False]),
-            doc="Include a block for perfomance curves, configure via"
-                " isentropic_perfomance_curves.",
+            doc="Include a block for performance curves, configure via"
+                " isentropic_performance_curves.",
         ),
     )
     CONFIG.declare(
-        "isentropic_perfomance_curves",
+        "isentropic_performance_curves",
         IsentropicPerformanceCurveData.CONFIG(),
         # doc included in IsentropicPerformanceCurveData
     )
@@ -534,9 +534,9 @@ see property package for documentation.}""",
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 
-        if self.config.support_isentropic_perfomance_curves:
+        if self.config.support_isentropic_performance_curves:
             self.performance_curve = IsentropicPerformanceCurve(
-                default=self.config.isentropic_perfomance_curves)
+                default=self.config.isentropic_performance_curves)
 
     def model_check(blk):
         """
@@ -728,19 +728,19 @@ see property package for documentation.}""",
         t0 = blk.flowsheet().config.time.first()
         state_args_out = {}
 
-        # perfomance curves exist and are active so initialize with them
+        # performance curves exist and are active so initialize with them
         activate_performance_curves = (
             hasattr(blk, "performance_curve") and
             blk.performance_curve.has_constraints() and
             blk.performance_curve.active)
         if activate_performance_curves:
             blk.performance_curve.deactivate()
-            # The performace curves will provide (maybe indirectly) efficency
+            # The performance curves will provide (maybe indirectly) efficency
             # and/or pressure ratio. To get through the standard isentropic
             # pressure changer init, we'll see if the user provided a guess for
             # pressure ratio or isentropic efficency and fix them if need. If
             # not fixed and no guess provided, fill in something reasonable
-            # until the performace curves are turned on.
+            # until the performance curves are turned on.
             unfix_eff = {}
             unfix_ratioP = {}
             for t in blk.flowsheet().config.time:
