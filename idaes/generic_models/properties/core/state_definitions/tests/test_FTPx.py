@@ -984,12 +984,24 @@ class TestCommon(object):
     def test_calculate_scaling_factors(self, frame):
         frame.props[1].calculate_scaling_factors()
 
-        assert len(frame.props[1].scaling_factor) == 16
+        assert len(frame.props[1].scaling_factor) == 22
         assert frame.props[1].scaling_factor[frame.props[1].flow_mol] == 1e-2
         assert frame.props[1].scaling_factor[
             frame.props[1].flow_mol_phase["a"]] == 1e-2
         assert frame.props[1].scaling_factor[
             frame.props[1].flow_mol_phase["b"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["a", "c1"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["a", "c2"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["a", "c3"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["b", "c1"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["b", "c2"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["b", "c3"]] == 1e-2
         assert frame.props[1].scaling_factor[
             frame.props[1].dens_mol_phase["a"]] == 1e-2
         assert frame.props[1].scaling_factor[

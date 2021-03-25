@@ -172,6 +172,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         self._state_block_class = TestStateBlock
 
+        self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mol", 101)
         self.set_default_scaling("flow_mol_phase_comp", 102)
         self.set_default_scaling("test_var", 103)
@@ -320,6 +321,9 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
+
+        self.set_default_scaling("reaction_rate", 101, 'r1')
+        self.set_default_scaling("reaction_rate", 102, 'r2')
 
     @classmethod
     def define_metadata(cls, obj):

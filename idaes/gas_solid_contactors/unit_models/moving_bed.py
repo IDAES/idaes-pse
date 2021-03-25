@@ -983,9 +983,16 @@ see reaction package for documentation.}"""))
                     for p in gas_phase.property_package.phase_list:
                         for j in gas_phase.property_package.component_list:
                             (gas_rxn_gen[t, x, p, j].unfix())
-                            calculate_variable_from_constraint(
-                                gas_rxn_gen[t, x, p, j],
-                                gas_phase_stoichiometry_eqn[t, x, p, j])
+                            if not (
+                                (blk.gas_phase.config.transformation_scheme 
+                                    != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.gas_phase.config.transformation_scheme
+                                    == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                                calculate_variable_from_constraint(
+                                    gas_rxn_gen[t, x, p, j],
+                                    gas_phase_stoichiometry_eqn[t, x, p, j])
 
             gas_phase_stoichiometry_eqn.activate()
             blk.gas_phase_config_rxn_ext.activate()
@@ -1027,9 +1034,11 @@ see reaction package for documentation.}"""))
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.config.transformation_scheme != "FORWARD"
+                                (blk.solid_phase.config.transformation_scheme 
+                                    != "FORWARD"
                                  and x == blk.length_domain.first()) or
-                                (blk.config.transformation_scheme == "FORWARD"
+                                (blk.solid_phase.config.transformation_scheme
+                                    == "FORWARD"
                                  and x == blk.length_domain.last())):
                                 calculate_variable_from_constraint(
                                     solid_rxn_gen[t, x, p, j],

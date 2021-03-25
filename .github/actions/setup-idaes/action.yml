@@ -31,13 +31,3 @@ runs:
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
         echo '::endgroup::'
-        # add bin directory to $PATH (only valid for subsequent steps)
-        echo "$(idaes bin-directory)" >> $GITHUB_PATH
-    - name: Test access to executables
-      shell: bash
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-            ipopt.exe -v
-        else
-            ipopt -v
-        fi

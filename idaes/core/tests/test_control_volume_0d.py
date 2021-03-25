@@ -774,7 +774,7 @@ def test_add_phase_component_balances_in_rxns_no_idx():
     with pytest.raises(PropertyNotSupportedError,
                        match="fs.cv Property package does not contain a "
                        "list of inherent reactions \(inherent_reaction_idx\), "
-                       "but has_inherent_reactions is True."):
+                       "but include_inherent_reactions is True."):
         m.fs.cv.add_phase_component_balances()
 
 
@@ -1360,7 +1360,7 @@ def test_add_total_component_balances_in_rxns_no_idx():
     with pytest.raises(PropertyNotSupportedError,
                        match="fs.cv Property package does not contain a "
                        "list of inherent reactions \(inherent_reaction_idx\), "
-                       "but has_inherent_reactions is True."):
+                       "but include_inherent_reactions is True."):
         m.fs.cv.add_total_component_balances()
 
 

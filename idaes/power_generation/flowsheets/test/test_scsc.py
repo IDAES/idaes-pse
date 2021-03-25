@@ -64,7 +64,7 @@ def test_init(model):
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_init_value(model):
-    assert gross_power_mw(model) == pytest.approx(635.63, abs=1e-2)
+    assert gross_power_mw(model) == pytest.approx(622.38, abs=1e-2)
 
 
 @pytest.mark.integration
@@ -74,4 +74,4 @@ def test_init_value(model):
 def test_valve_change(model):
     model.fs.turb.throttle_valve[1].valve_opening[:].value = 0.25
     model.solver.solve(model, tee=True)
-    assert gross_power_mw(model) == pytest.approx(603.46, abs=1e-2)
+    assert gross_power_mw(model) == pytest.approx(594.66, abs=1e-2)

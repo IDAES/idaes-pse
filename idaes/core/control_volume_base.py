@@ -199,7 +199,7 @@ CONFIG_Template.declare("has_work_transfer", ConfigValue(
 CONFIG_Template.declare("has_enthalpy_transfer", ConfigValue(
     default=False,
     domain=In([True, False]),
-    description="Entahlpy transfer term construction flag",
+    description="Enthalpy transfer term construction flag",
     doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
 should be constructed, **default** - False.
 **Valid values** {
@@ -457,6 +457,8 @@ have a config block which derives from CONFIG_Base,
                 should be included in energy balances
             has_work_transfer (bool): whether generic mass transfer terms
                 should be included in energy balances
+            has_enthalpy_transfer (bool): whether generic enthalpy transfer
+                terms should be included in energy balances
             custom_term (Expression): a Pyomo Expression representing custom
                 terms to be included in energy balances
 
