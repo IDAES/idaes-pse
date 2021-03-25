@@ -239,7 +239,7 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_basic_scaling(self, model):
 
-        assert len(model.props[1].scaling_factor) == 22
+        assert len(model.props[1].scaling_factor) == 26
         assert model.props[1].scaling_factor[model.props[1].enth_mol] == 1e-4
         assert model.props[1].scaling_factor[model.props[1].flow_mol] == 1e-2
         assert model.props[1].scaling_factor[
@@ -250,6 +250,14 @@ class TestStateBlock(object):
             model.props[1].flow_mol_comp["benzene"]] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].flow_mol_comp["toluene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Liq", "benzene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Liq", "toluene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Vap", "benzene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Vap", "toluene"]] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].mole_frac_comp["benzene"]] == 1000
         assert model.props[1].scaling_factor[
