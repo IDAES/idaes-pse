@@ -82,7 +82,7 @@ class TestPressureChanger(object):
                 "property_package": m.fs.properties})
 
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 11
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -676,7 +676,7 @@ class TestTurbine(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 11
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -707,7 +707,7 @@ class TestCompressor(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 11
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -738,7 +738,7 @@ class TestPump(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 11
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -886,9 +886,8 @@ class Test_costing(object):
 
         m.fs.unit = Turbine(default={
             "property_package": m.fs.properties,
-            "isentropic_perfomance_curves": {
-                "build_callback": perf_callback,
-                "build_head_expressions": True}})
+            "support_isentropic_perfomance_curves":True,
+            "isentropic_perfomance_curves": {"build_callback": perf_callback}})
 
         # set inputs
         m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
@@ -915,7 +914,7 @@ class Test_costing(object):
         m.fs.properties = iapws95.Iapws95ParameterBlock()
         m.fs.unit = Turbine(default={
             "property_package": m.fs.properties,
-            "isentropic_perfomance_curves":{"build_head_expressions":True}})
+            "support_isentropic_perfomance_curves":True})
         unit_hd = units.J/units.kg
         unit_vflw = units.m**3/units.s
         @m.fs.unit.performance_curve.Constraint(m.fs.config.time)

@@ -68,7 +68,8 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
         default=None,
         doc="Optional callback to add performance curve constraints"))
     CONFIG.declare("build_head_expressions", ConfigValue(
-        default=False,
+        default=True,
+        domain=bool,
         doc="If true add expressions for 'head' and 'head_isentropic'."
             " These expressions can be used in perfomance curve constraints."))
 
@@ -234,6 +235,15 @@ block(s) and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}""",
+        ),
+    )
+    CONFIG.declare(
+        "support_isentropic_perfomance_curves",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            doc="Include a block for perfomance curves, configure via"
+                " isentropic_perfomance_curves.",
         ),
     )
     CONFIG.declare(
@@ -524,9 +534,9 @@ see property package for documentation.}""",
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
 
-        # Add performace curve block.  If this block is empty that's fine
-        self.performance_curve = IsentropicPerformanceCurve(
-            default=self.config.isentropic_perfomance_curves)
+        if self.config.support_isentropic_perfomance_curves:
+            self.performance_curve = IsentropicPerformanceCurve(
+                default=self.config.isentropic_perfomance_curves)
 
     def model_check(blk):
         """
@@ -718,11 +728,12 @@ see property package for documentation.}""",
         t0 = blk.flowsheet().config.time.first()
         state_args_out = {}
 
-        activate_performance_curves = False
-        # check that performace curves exist and are active before initializing
-        # with them
-        if blk.performance_curve.has_constraints() and blk.performance_curve.active:
-            activate_performance_curves = True
+        # perfomance curves exist and are active so initialize with them
+        activate_performance_curves = (
+            hasattr(blk, "performance_curve") and
+            blk.performance_curve.has_constraints() and
+            blk.performance_curve.active)
+        if activate_performance_curves:
             blk.performance_curve.deactivate()
             # The performace curves will provide (maybe indirectly) efficency
             # and/or pressure ratio. To get through the standard isentropic
