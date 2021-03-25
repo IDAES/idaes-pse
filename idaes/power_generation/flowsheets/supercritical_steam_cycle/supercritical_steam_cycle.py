@@ -229,6 +229,10 @@ def create_model():
     @m.fs.hotwell.Constraint(m.fs.time)
     def mixer_pressure_constraint(b, t):
         return b.condensate_state[t].pressure == b.mixed_state[t].pressure
+    # PYLINT-TODO check if the "function-redefined" pylint error can be addressed
+    # by refactoring the code, e.g. defining mixer_pressure_constraint() once
+    # and registering it with the constraint with call syntax instead of decorators
+    # @m.fs.hotwell.Constraint(m.fs.time)(mixer_pressure_constraint)
 
     # Condensate pump (Use compressor model, since it is more robust if vapor form)
     m.fs.cond_pump = HelmIsentropicCompressor(

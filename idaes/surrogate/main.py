@@ -440,6 +440,7 @@ class Pysmo_rbf(Surrogate):
             list_vars = []
             for i in feature_vec.keys():
                 list_vars.append(feature_vec[i])
+            # PYLINT-TODO: maybe the name of the method should be "generate_expression" like in the self.pyomo_vars case?
             self._model = self.pysmo_rbf_results.rbf_generate_expression(list_vars)
 
 
@@ -491,6 +492,7 @@ class Pysmo_kriging(Surrogate):
             list_vars = []
             for i in feature_vec.keys():
                 list_vars.append(feature_vec[i])
+            # PYLINT-TODO: maybe the name of the method should be "generate_expression" like in the self.pyomo_vars case?
             self._model = self.pysmo_kriging_results.kriging_generate_expression(list_vars)
 
 

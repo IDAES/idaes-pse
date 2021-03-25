@@ -40,6 +40,7 @@ __all__ = ["ripemodel", "ems", "rspace", "sharedata", "debug",
            "gb3d",
            "zlt",
            "grain",
+           # PYLINT-TODO: this seems to be a genuine error since "massact" is not imported from .mechs
            "massact",
            "massactm",
            "getmechs"]
