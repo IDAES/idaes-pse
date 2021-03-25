@@ -185,7 +185,7 @@ The next example shows how to use a callback to add performance curves.
   m.fs.properties = iapws95.Iapws95ParameterBlock()
 
   def perf_callback(blk):
-      # This callback adds constriants to the performance_cruve block.  blk is the
+      # This callback adds constraints to the performance_cruve block. blk is the
       # performance_curve block, but we also want to use quantities from the main
       # pressure changer model, which is the parent block.
       prnt = blk.parent_block()
