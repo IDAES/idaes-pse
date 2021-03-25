@@ -294,6 +294,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
     def set_initial_condition(self):
         if self.config.dynamic is True:
+            # PYLINT-TODO: pylints reports undefined-variable for hot_side and cold_side
+            # check if this should be self.hot_side/self.cold_side instead
             hot_side.material_accumulation[:,:,:].value = 0
             hot_side.energy_accumulation[:,:].value = 0
             hot_side.material_accumulation[0,:,:].fix(0)
