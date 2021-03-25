@@ -56,11 +56,13 @@ def _linear_callback(blk):
 def _quick_open_callback(blk):
     @blk.Expression(blk.flowsheet().config.time)
     def valve_function(b, t):
-        return sqrt(b.valve_opening[t])
+        # PYLINT-TODO: check if fix OK for "undefined-variable 'sqrt'"
+        return pyo.sqrt(b.valve_opening[t])
 
 
 def _equal_percentage_callback(blk):
-    blk.alpha = Var(initialize=1, doc="Valve function parameter")
+    # PYLINT-TODO: check if fix OK for "undefined-variable 'Var'"
+    blk.alpha = pyo.Var(initialize=1, doc="Valve function parameter")
     blk.alpha.fix()
     @blk.Expression(blk.flowsheet().config.time)
     def valve_function(b, t):
@@ -198,7 +200,8 @@ ValveFunctionType.custom}""",
         if vfselect == ValveFunctionType.linear:
             _linear_callback(self)
         elif vfselect == ValveFunctionType.quick_opening:
-            _quick_callback(self)
+            # PYLINT-TODO: check if fix OK for "undefined-variable '_quick_callback'"
+            _quick_open_callback(self)
         elif vfselect == ValveFunctionType.equal_percentage:
             _equal_percentage_callback(self)
         else:
