@@ -219,3 +219,23 @@ def test_visualize_save_overwrite(flash_model, save_files_prefix):
     howdy_stat2 = os.stat(result.store.filename)
     assert howdy_stat2.st_mtime > howdy_stat.st_mtime  # modification time should be later
 
+
+@pytest.mark.unit
+def test_pick_default_max_versions(tmp_path):
+    from idaes.ui.fsvis.fsvis import _pick_default_save_location as pdsl
+    name = "test_pick_default_max_versions"
+    path = pdsl(name, tmp_path)
+    assert str(path).endswith(f"{name}.json")
+    path.open("w").write("hello-0")
+    # version 1
+    path = pdsl(name, tmp_path)
+    assert str(path).endswith(f"{name}-1.json")
+    path.open("w").write("hello-1")
+    # version 2
+    path = pdsl(name, tmp_path)
+    assert str(path).endswith(f"{name}-2.json")
+    path.open("w").write("hello-2")
+    # version 3 -> too many
+    with pytest.raises(errors.TooManySavedVersions):
+        path = pdsl(name, tmp_path, max_versions=3)
+

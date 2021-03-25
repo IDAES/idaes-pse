@@ -34,11 +34,6 @@ web_server = None
 #: Set to zero if you want to allow any number.
 MAX_SAVED_VERSIONS = 100
 
-# Exceptions
-
-
-class TooManySavedVersions(Exception):
-    pass
 
 # Classes and functions
 
@@ -111,7 +106,7 @@ def visualize(
     if save is None:
         try:
             save_path = _pick_default_save_location(name, save_dir, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite)
-        except TooManySavedVersions as err:
+        except errors.TooManySavedVersions as err:
             raise RuntimeError(f"In visualize(): {err}")
         use_default = True
     elif save is False:
@@ -210,7 +205,7 @@ def _pick_default_save_location(name, save_dir, max_versions=10, overwrite=None)
     if counter == max_versions:
         why = f"Found {max_versions} numbered files of form '{name}-<num>.json'. That's too many."
         _log.error(why)
-        raise TooManySavedVersions(why)
+        raise errors.TooManySavedVersions(why)
     # Return new (versioned) path
     _log.info(f"Created new version for save file: {save_path}")
     return save_path
