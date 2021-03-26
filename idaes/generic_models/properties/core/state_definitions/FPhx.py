@@ -138,7 +138,7 @@ def define_state(b):
 
     # Add electrolye state vars if required
     # This must occur before adding the enthalpy constraint, as it needs true
-    # spcies mole fractions
+    # species mole fractions
     if b.params._electrolyte:
         define_electrolyte_state(b)
 
