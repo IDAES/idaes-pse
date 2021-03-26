@@ -23,6 +23,7 @@ from pathlib import Path
 import pytest
 import re
 import requests
+import time
 
 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
 from idaes.core import FlowsheetBlock
@@ -36,8 +37,7 @@ from idaes.ui.flowsheet import validate_flowsheet
 
 @pytest.fixture(scope="module")
 def flash_model():
-    """Flash unit model. Use '.fs' attribute to get the flowsheet.
-    """
+    """Flash unit model. Use '.fs' attribute to get the flowsheet."""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Flash properties
@@ -106,7 +106,9 @@ def test_save_visualization(flash_model, tmp_path):
     flowsheet = flash_model.fs
     # Start the visualization server, using temporary save location
     save_location = tmp_path / "flash-vis.json"
-    fsvis_result = fsvis.visualize(flowsheet, "Flash", browser=False, save=save_location, save_dir=tmp_path)
+    fsvis_result = fsvis.visualize(
+        flowsheet, "Flash", browser=False, save=save_location, save_dir=tmp_path
+    )
     # Check the contents of the saved file are the same as what is returned by the server
     with open(fsvis_result.store.filename) as fp:
         file_data = json.load(fp)
@@ -149,13 +151,16 @@ def test_visualize_fn(flash_model):
 @pytest.mark.unit
 def test_flowsheet_name(flash_model, tmp_path):
     raw_name = "Hello World"
-    result = fsvis.visualize(flash_model.fs, name=raw_name, browser=False, save_dir=tmp_path)
+    result = fsvis.visualize(
+        flash_model.fs, name=raw_name, browser=False, save_dir=tmp_path
+    )
     assert re.search(raw_name, result.store.filename)
 
 
 @pytest.mark.unit
 def test_mock_webbrowser(flash_model):
     from idaes.ui.fsvis import fsvis
+
     wb = fsvis.webbrowser
     for wb_mock in (MockWB(True), MockWB(False)):
         fsvis.webbrowser = wb_mock
@@ -172,6 +177,7 @@ class MockWB:
 
 
 ## Test saving of the status file
+
 
 @pytest.fixture
 def save_files_prefix(tmp_path):
@@ -192,12 +198,21 @@ def test_visualize_save_versions(flash_model, save_files_prefix):
     path = Path(save_files_prefix + "_save")
     work_dir = path.parent
     fs_name = path.name
-    for i in range(3):
-        result = fsvis.visualize(flowsheet, fs_name, save_dir=work_dir, browser=False)
-        if i == 0:
-            assert re.search(f"{path.name}.json", result.store.filename)
+    for i in range(4):
+        save_arg = (True, None)[i % 2]  # try both kinds of 'use default' values
+        if i < 3:
+            result = fsvis.visualize(
+                flowsheet, fs_name, save_dir=work_dir, browser=False, save=save_arg
+            )
+            if i == 0:
+                assert re.search(f"{path.name}.json", result.store.filename)
+            else:
+                assert re.search(f"{path.name}.*{i}.*\.json", result.store.filename)
         else:
-            assert re.search(f"{path.name}.*{i}.*\.json", result.store.filename)
+            msv, fsvis.MAX_SAVED_VERSIONS = fsvis.MAX_SAVED_VERSIONS, i - 1
+            with pytest.raises(RuntimeError):
+                fsvis.visualize(flowsheet, fs_name, save_dir=work_dir, browser=False)
+            fsvis.MAX_SAVED_VERSIONS = msv
 
 
 @pytest.mark.unit
@@ -207,6 +222,23 @@ def test_visualize_save_explicit(flash_model, save_files_prefix):
     howdy = Path(save_files_prefix + "_howdy")
     result = fsvis.visualize(flowsheet, "flowsheet", save=howdy, browser=False)
     assert re.search(howdy.name, result.store.filename)
+    # overwrite but this time break explicit file into relative name and directory
+    result = fsvis.visualize(
+        flowsheet,
+        "flowsheet",
+        save=howdy.name,
+        save_dir=howdy.parent,
+        browser=False,
+        overwrite=True,
+    )
+    assert re.search(howdy.name, result.store.filename)
+
+
+@pytest.mark.unit
+def test_visualize_save_cannot(flash_model, tmp_path):
+    flowsheet = flash_model.fs
+    with pytest.raises(errors.VisualizerError):
+        fsvis.visualize(flowsheet, "foo", save="foo", save_dir=Path("/a/b/c/d/e/f/g"))
 
 
 @pytest.mark.unit
@@ -215,27 +247,60 @@ def test_visualize_save_overwrite(flash_model, save_files_prefix):
     howdy = Path(save_files_prefix + "_howdy")
     howdy.open("w").write("howdy")
     howdy_stat = os.stat(howdy)
-    result = fsvis.visualize(flowsheet, "flowsheet", save=howdy, overwrite=True, browser=False)
+    result = fsvis.visualize(
+        flowsheet, "flowsheet", save=howdy, overwrite=True, browser=False
+    )
     howdy_stat2 = os.stat(result.store.filename)
-    assert howdy_stat2.st_mtime > howdy_stat.st_mtime  # modification time should be later
+    assert (
+        howdy_stat2.st_mtime > howdy_stat.st_mtime
+    )  # modification time should be later
 
 
 @pytest.mark.unit
-def test_pick_default_max_versions(tmp_path):
+def test_pick_default_save_location():
     from idaes.ui.fsvis.fsvis import _pick_default_save_location as pdsl
-    name = "test_pick_default_max_versions"
-    path = pdsl(name, tmp_path)
-    assert str(path).endswith(f"{name}.json")
-    path.open("w").write("hello-0")
-    # version 1
-    path = pdsl(name, tmp_path)
-    assert str(path).endswith(f"{name}-1.json")
-    path.open("w").write("hello-1")
-    # version 2
-    path = pdsl(name, tmp_path)
-    assert str(path).endswith(f"{name}-2.json")
-    path.open("w").write("hello-2")
-    # version 3 -> too many
-    with pytest.raises(errors.TooManySavedVersions):
-        path = pdsl(name, tmp_path, max_versions=3)
+    p = pdsl("foo", None)
+    assert str(p).endswith("foo.json")
+    p = pdsl("foo", Path("/a"))
+    assert p == Path("/a") / "foo.json"
 
+
+@pytest.mark.unit
+def test_existing_save_path(tmp_path):
+    from idaes.ui.fsvis.fsvis import _handle_existing_save_path as hesp
+    name = "foo"
+    save_path = tmp_path / (name + ".json")
+    # not there
+    p = hesp(name, save_path)
+    assert p == save_path
+    # version 1
+    save_path.open("w").write("hello")
+    p1 = hesp(name, save_path)
+    assert p1 != save_path
+    # version 2
+    p1.open("w").write("hello")
+    p2 = hesp(name, save_path)
+    assert str(p2) > str(p1)
+    # version too far
+    p2.open("w").write("hello")
+    with pytest.raises(errors.TooManySavedVersions):
+        p3 = hesp(name, save_path, max_versions=2)
+    # infinite versions
+    p4 = hesp(name, save_path, max_versions=0)
+    assert str(p4) > str(p2)
+    # overwrite
+    p0 = hesp(name, save_path, overwrite=True)
+    assert p0 == save_path
+
+
+@pytest.mark.component
+def test_loop_forever():
+    from threading import Thread
+    for quietness in (True, False):
+        thr = Thread(target=fsvis._loop_forever, args=(quietness,))
+        thr.setDaemon(True)
+        thr.start()
+        # wait a while, make sure it's still alive
+        time.sleep(3)
+        assert thr.is_alive()
+    # threads should die when process exits
