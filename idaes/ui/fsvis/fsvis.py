@@ -37,7 +37,13 @@ MAX_SAVED_VERSIONS = 100
 
 # Classes and functions
 
-
+#: Return value for `visualize()` function. This namedtuple has three
+#: attributes that can be accessed by position or name:
+#:
+#: - store = :class:`idaes.ui.fsvis.persist.DataStore` object (with a ``.filename`` attribute)
+#: - port = Port number (integer) where web server is listening
+#: - server = :class:`idaes.ui.fsvis.model_server.FlowsheetServer` object for the web server thread
+#:
 VisualizeResult = namedtuple("VisualizeResult", ["store", "port", "server"])
 
 
@@ -63,9 +69,9 @@ def visualize(
         flowsheet: IDAES flowsheet to visualize
         name: Name of flowsheet to display as the title of the visualization
         save: Where to save the current flowsheet layout and values. If this argument is not specified,
-          "<name>.json" will be used (if this file already exists, a "-<version>" number will be added
+          "``name``.json" will be used (if this file already exists, a "-`<version>`" number will be added
           between the name and the extension). If the value given is the boolean 'False', then nothing
-          will be saved.
+          will be saved. The boolean 'True' value is treated the same as unspecified.
         save_dir: If this argument is given, and ``save`` is not given or a relative path, then it will
            be used as the directory to save the default or given file. The current working directory is
            the default. If ``save`` is given and an absolute path, this argument is ignored.
@@ -103,11 +109,8 @@ def visualize(
 
     # Set up save location
     use_default = False
-    if save is None:
-        try:
-            save_path = _pick_default_save_location(name, save_dir, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite)
-        except errors.TooManySavedVersions as err:
-            raise RuntimeError(f"In visualize(): {err}")
+    if save is None or save is True:
+        save_path = _pick_default_save_location(name, save_dir)
         use_default = True
     elif save is False:
         save_path = None
@@ -115,17 +118,23 @@ def visualize(
         try:
             save_path = Path(save)
         except TypeError as err:
-            raise errors.VisualizerSaveError(save, f"Cannot convert 'save' value to Path object: {err}")
+            raise errors.VisualizerSaveError(
+                save, f"Cannot convert 'save' value to Path object: {err}"
+            )
         if save_dir is not None and not save_path.is_absolute():
             save_path = save_dir / save_path
     # Create datastore for save location
     if save_path is None:
         datastore = persist.MemoryDataStore()
     else:
+        # deal with duplicate names
         try:
-            datastore = persist.DataStore.create(save_path)
-        except (ValueError, errors.ProcessingError) as err:
-            raise errors.VisualizerSaveError(save_path, err)
+            save_path = _handle_existing_save_path(
+                name, save_path, max_versions=MAX_SAVED_VERSIONS, overwrite=overwrite
+            )
+        except errors.TooManySavedVersions as err:
+            raise RuntimeError(f"In visualize(): {err}")
+        datastore = persist.DataStore.create(save_path)
         if use_default:
             if not quiet:
                 cwd = save_path.parent.absolute()
@@ -140,7 +149,7 @@ def visualize(
     try:
         new_name = web_server.add_flowsheet(name, flowsheet, datastore)
     except (errors.ProcessingError, errors.DatastoreError) as err:
-        raise errors.VisualizerError("Cannot add flowsheet: {err}")
+        raise errors.VisualizerError(f"Cannot add flowsheet: {err}")
 
     if new_name != name:
         _log.warning(f"Flowsheet name changed: old='{name}' new='{new_name}'")
@@ -163,29 +172,38 @@ def visualize(
         print(f"Flowsheet visualization at: {url}")
 
     if loop_forever:
-        try:
-            if not quiet:
-                print("Type ^C to stop the program")
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            if not quiet:
-                print("Program stopped")
+        _loop_forever(quiet)
 
     return VisualizeResult(store=datastore, port=web_server.port, server=web_server)
 
 
-def _pick_default_save_location(name, save_dir, max_versions=10, overwrite=None):
-    """Pick a default save location.
-    """
+def _loop_forever(quiet):
+    try:
+        if not quiet:
+            print("Type ^C to stop the program")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        if not quiet:
+            print("Program stopped")
+
+
+def _pick_default_save_location(name, save_dir):
+    """Pick a default save location."""
     if not save_dir:
         save_dir = Path(".")
     save_path = save_dir / f"{name}.json"
+    return save_path
+
+
+def _handle_existing_save_path(name, save_path, max_versions=10, overwrite=None):
+    """Set up for overwrite/versioning for existing save paths."""
+    save_dir = save_path.parent
     # Handle simple cases: overwrite, and no existing file
     if overwrite:
         if save_path.exists():
             _log.warning("Overwriting existing save file '{save_path}'")
-            save_path.open("w")   # blank file
+            save_path.open("w")  # blank file
         return save_path
     elif not save_path.exists():
         return save_path
@@ -194,13 +212,10 @@ def _pick_default_save_location(name, save_dir, max_versions=10, overwrite=None)
     counter = 0
     if max_versions == 0:
         max_versions = sys.maxsize  # millions of years of file-creating fun
-    while counter < max_versions:
-        if save_path.exists():
-            counter += 1
-            save_file = f"{name}-{counter}.json"
-            save_path = save_dir / save_file
-        else:
-            break
+    while save_path.exists() and counter < max_versions:
+        counter += 1
+        save_file = f"{name}-{counter}.json"
+        save_path = save_dir / save_file
     # Edge case: too many NAME-#.json files for this NAME
     if counter == max_versions:
         why = f"Found {max_versions} numbered files of form '{name}-<num>.json'. That's too many."
