@@ -1574,14 +1574,40 @@ class GenericStateBlockData(StateBlockData):
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
+        As this methid is used only for property calcuations, it should use the
+        true species sset if one exists.
+
         Args:
             phase - phase for which to yield components
+
         Yields:
             components present in phase.
         """
-        for j in self.component_list:
-            if (phase, j) in self.phase_component_set:
+        if not self.params._electrolyte:
+            component_list = self.component_list
+            pc_set = self.phase_component_set
+        else:
+            component_list = self.params.true_species_set
+            pc_set = self.params.true_phase_component_set
+
+        for j in component_list:
+            if (phase, j) in pc_set:
                 yield j
+
+    def get_mole_frac(self):
+        """
+        Property calcuations generally depend on phase_component mole fractions
+        for mixing rules, but in some cases there are multiple component lists
+        to work from. This method is used to return the correct phase-component
+        indexed mole fraction component for the given circumstances.
+
+        Returns:
+            mole fraction object
+        """
+        if not self.params._electrolyte:
+            return self.mole_frac_phase_comp
+        else:
+            return self.mole_frac_phase_comp_true
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points

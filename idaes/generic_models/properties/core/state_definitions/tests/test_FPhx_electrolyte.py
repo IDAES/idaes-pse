@@ -242,12 +242,8 @@ class TestApparentSpeciesBasisNoInherent():
 
 
 # -----------------------------------------------------------------------------
-def dens_mol_h20(*args, **kwargs):
+def dens_mol_h2o(*args, **kwargs):
     return 55e3
-
-
-def dens_mol_other(*args, **kwargs):
-    return 0
 
 
 class TestApparentSpeciesBasisInherent():
@@ -255,47 +251,44 @@ class TestApparentSpeciesBasisInherent():
         # Specifying components
         "components": {
             'H2O': {"type": Solvent,
-                    "dens_mol_liq_comp": dens_mol_h20,
+                    "dens_mol_liq_comp": dens_mol_h2o,
                     "parameter_data": {
                         "mw": (18E-3, pyunits.kg/pyunits.mol)}},
             'KHCO3': {"type": Apparent,
                       "dissociation_species": {"K+": 1, "HCO3-": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
             'K2CO3': {"type": Apparent,
                       "dissociation_species": {"K+": 2, "CO3--": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (138.2E-3, pyunits.kg/pyunits.mol)}},
             'KOH': {"type": Apparent,
                     "dissociation_species": {"K+": 1, "OH-": 1},
-                    "dens_mol_liq_comp": dens_mol_other,
                     "parameter_data": {
                         "mw": (56.1E-3, pyunits.kg/pyunits.mol)}},
             'H+': {"type": Cation,
-                    "charge": +1,
-                    "dens_mol_liq_comp": dens_mol_other,
-                    "parameter_data": {
-                        "mw": (1E-3, pyunits.kg/pyunits.mol)}},
+                   "charge": +1,
+                   "dens_mol_liq_comp": dens_mol_h2o,
+                   "parameter_data": {
+                       "mw": (1E-3, pyunits.kg/pyunits.mol)}},
             'K+': {"type": Cation,
-                    "charge": +1,
-                    "dens_mol_liq_comp": dens_mol_other,
-                    "parameter_data": {
-                        "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
+                   "charge": +1,
+                   "dens_mol_liq_comp": dens_mol_h2o,
+                   "parameter_data": {
+                       "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
             'OH-': {"type": Anion,
                     "charge": -1,
-                    "dens_mol_liq_comp": dens_mol_other,
+                    "dens_mol_liq_comp": dens_mol_h2o,
                     "parameter_data": {
                           "mw": (17E-3, pyunits.kg/pyunits.mol)}},
             'HCO3-': {"type": Anion,
                       "charge": -1,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_h2o,
                       "parameter_data": {
                             "mw": (61E-3, pyunits.kg/pyunits.mol)}},
             'CO3--': {"type": Anion,
                       "charge": -2,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_h2o,
                       "parameter_data": {
                             "mw": (60E-3, pyunits.kg/pyunits.mol)}}},
 
@@ -688,47 +681,44 @@ class TestTrueSpeciesBasisInherent():
         # Specifying components
         "components": {
             'H2O': {"type": Solvent,
-                    "dens_mol_liq_comp": dens_mol_h20,
+                    "dens_mol_liq_comp": dens_mol_h2o,
                     "parameter_data": {
                         "mw": (18E-3, pyunits.kg/pyunits.mol)}},
             'KHCO3': {"type": Apparent,
                       "dissociation_species": {"K+": 1, "HCO3-": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
             'K2CO3': {"type": Apparent,
                       "dissociation_species": {"K+": 2, "CO3--": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (138.2E-3, pyunits.kg/pyunits.mol)}},
             'KOH': {"type": Apparent,
                     "dissociation_species": {"K+": 1, "OH-": 1},
-                    "dens_mol_liq_comp": dens_mol_other,
                     "parameter_data": {
                         "mw": (56.1E-3, pyunits.kg/pyunits.mol)}},
             'H+': {"type": Cation,
                    "charge": +1,
-                   "dens_mol_liq_comp": dens_mol_other,
+                   "dens_mol_liq_comp": dens_mol_h2o,
                    "parameter_data": {
                        "mw": (1E-3, pyunits.kg/pyunits.mol)}},
             'K+': {"type": Cation,
                    "charge": +1,
-                   "dens_mol_liq_comp": dens_mol_other,
+                   "dens_mol_liq_comp": dens_mol_h2o,
                    "parameter_data": {
                        "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
             'OH-': {"type": Anion,
                     "charge": -1,
-                    "dens_mol_liq_comp": dens_mol_other,
+                    "dens_mol_liq_comp": dens_mol_h2o,
                     "parameter_data": {
                         "mw": (17E-3, pyunits.kg/pyunits.mol)}},
             'HCO3-': {"type": Anion,
                       "charge": -1,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_h2o,
                       "parameter_data": {
                           "mw": (61E-3, pyunits.kg/pyunits.mol)}},
             'CO3--': {"type": Anion,
                       "charge": -2,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_h2o,
                       "parameter_data": {
                           "mw": (60E-3, pyunits.kg/pyunits.mol)}}},
 
