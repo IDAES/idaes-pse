@@ -189,16 +189,15 @@ variables, expressions, or constraints required can also be added by the callbac
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        self.deltaP[:].unfix()
-        self.ratioP[:].unfix()
+        self.inlet.fix()
+        self.outlet.unfix()
 
         # fix inlet and free outlet
         for t in self.flowsheet().config.time:
-            for k, v in self.inlet.vars.items():
-                v[t].fix()
-            for k, v in self.outlet.vars.items():
-                v[t].unfix()
             # to calculate outlet pressure
+            if (self.deltaP[t].fixed or self.ratioP[t].fixed or
+                self.outlet.pressure[t].fixed):
+                continue
             Pout = self.outlet.pressure[t]
             Pin = self.inlet.pressure[t]
             if self.deltaP[t].value is not None:
