@@ -189,10 +189,6 @@ variables, expressions, or constraints required can also be added by the callbac
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        self.inlet.fix()
-        self.outlet.unfix()
-
-        # fix inlet and free outlet
         for t in self.flowsheet().config.time:
             # to calculate outlet pressure
             if (self.deltaP[t].fixed or self.ratioP[t].fixed or
