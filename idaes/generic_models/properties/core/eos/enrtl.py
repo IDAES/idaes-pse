@@ -55,3 +55,11 @@ class ENRTL(EoSBase):
     @staticmethod
     def dens_mol_phase(b, p):
         return 55e3
+
+    @staticmethod
+    def enth_mol_phase(b, p):
+        return 1e2*b.temperature
+
+    @staticmethod
+    def enth_mol_phase_comp(b, p, j):
+        return 1e2*b.temperature

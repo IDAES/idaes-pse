@@ -480,7 +480,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j)
@@ -491,7 +491,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j*sf_flow)
@@ -506,7 +506,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j*sf_flow)
