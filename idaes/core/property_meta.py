@@ -344,8 +344,7 @@ class PropertyClassMetadata(object):
         except TypeError:
             raise PropertyPackageError(
                 "{} cannot determine derived units, as property package has "
-                "not defined a set of base units.".format(self.name))
-                # PYLINT-TODO: maybe str(self) or self.__class__.__name__?
+                "not defined a set of base units.".format(str(self)))
 
 
 class PropertyMetadata(dict):
