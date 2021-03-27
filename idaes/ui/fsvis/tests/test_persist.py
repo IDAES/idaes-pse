@@ -23,6 +23,7 @@ from idaes.ui.fsvis import persist, errors
 # === Data ===
 
 bad_data = {"foo": pytest}  # can't serialize as JSON
+bad_data_str = 'Once upon a time..'
 data = {"foo": [{"bar": 123}]}
 data_str = json.dumps(data)
 
@@ -33,6 +34,7 @@ data_str = json.dumps(data)
 def test_file_data_store(tmp_path):
     p = tmp_path / "test.json"
     store = persist.FileDataStore(p)
+    assert p == store.path
     _save_and_load_data(store)
 
 
@@ -83,9 +85,12 @@ def test_datastoremanager_save_load(tmp_path):
 def _save_and_load_data(store):
     with pytest.raises(errors.DatastoreError):
         store.save(bad_data)
+    with pytest.raises(errors.DatastoreError):
+        store.save(bad_data_str)
     store.save(data)
-    result = store.load()
-    assert data == result
+    assert data == store.load()
+    store.save(json.dumps(data))
+    assert data == store.load()
 
 
 def _save_and_load_data_dsm(id_, dsm):

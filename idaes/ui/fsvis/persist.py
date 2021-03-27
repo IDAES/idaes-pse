@@ -114,6 +114,7 @@ class FileDataStore(DataStore):
                     except TypeError as err:
                         raise errors.DatastoreSerializeError(data, err, stream=fp)
                 else:
+                    _parse_json(data)  # validation
                     fp.write(str(data))
         except ValueError as err:
             raise errors.DatastoreError(str(err))
@@ -167,11 +168,7 @@ class MemoryDataStore(DataStore):
                 raise errors.DatastoreSerializeError(data, err)
             self._data = data
         else:
-            try:
-                self._data = json.loads(str(data))
-            except json.JSONDecodeError as err:
-                err2 = f"could not decode string of JSON: {err}"
-                raise errors.DatastoreSerializeError(str(data)[:256], err2)
+            self._data = _parse_json(data)
 
     def load(self) -> Dict:
         if self._data is None:
@@ -180,6 +177,21 @@ class MemoryDataStore(DataStore):
 
     def __str__(self):
         return "__MEMORY__"
+
+
+def _parse_json(data) -> Dict:
+    """Parse string of the data to JSON, with desired exceptions raised.
+
+    Raises:
+        errors.DatastoreSerializeError: If the parse fails
+    """
+    s = str(data)
+    try:
+        data = json.loads(s)
+    except json.decoder.JSONDecodeError as err:
+        err2 = f"could not decode string of JSON: {err}"
+        raise errors.DatastoreSerializeError(s[:256], err2)
+    return data
 
 
 class DataStoreManager:
