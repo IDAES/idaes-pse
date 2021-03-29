@@ -686,6 +686,13 @@ see property package for documentation.}""",
                 solver=solver,
                 optarg=optarg
             )
+        elif routine is ThermodynamicAssumption.adiabatic:
+            blk.init_adiabatic(
+                state_args=state_args,
+                outlvl=outlvl,
+                solver=solver,
+                optarg=optarg
+            )
         else:
             # Call the general initialization routine in UnitModelBlockData
             super().initialize(
@@ -700,6 +707,100 @@ see property package for documentation.}""",
             costing.initialize(blk.costing)
         except AttributeError:
             pass
+
+    def init_adiabatic(blk, state_args, outlvl, solver, optarg):
+        """
+        Initialization routine for unit (default solver ipopt)
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default={'tol': 1e-6})
+            solver : str indicating whcih solver to use during
+                     initialization (default = 'ipopt')
+
+        Returns:
+            None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+        # Set solver options
+        opt = SolverFactory(solver)
+        opt.options = optarg
+
+        cv = blk.control_volume
+        t0 = blk.flowsheet().config.time.first()
+        state_args_out = {}
+
+        if state_args is None:
+            state_args = {}
+            state_dict = (
+                cv.properties_in[t0].define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        # Get initialisation guesses for outlet and isentropic states
+        for k in state_args:
+            if k == "pressure" and k not in state_args_out:
+                # Work out how to estimate outlet pressure
+                if cv.properties_out[t0].pressure.fixed:
+                    # Fixed outlet pressure, use this value
+                    state_args_out[k] = value(
+                        cv.properties_out[t0].pressure)
+                elif blk.deltaP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] + blk.deltaP[t0])
+                elif blk.ratioP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] * blk.ratioP[t0])
+                else:
+                    # Not obvious what to do, use inlet state
+                    state_args_out[k] = state_args[k]
+            elif k not in state_args_out:
+                state_args_out[k] = state_args[k]
+
+        # Initialize state blocks
+        flags = cv.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+            state_args=state_args,
+        )
+        cv.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=False,
+            state_args=state_args_out,
+        )
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}."
+                           .format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}."
+                           .format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.control_volume.release_state(flags, outlvl)
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         """
@@ -776,25 +877,25 @@ see property package for documentation.}""",
                 else:
                     state_args[k] = state_dict[k].value
 
-            # Get initialisation guesses for outlet and isentropic states
-            for k in state_args:
-                if k == "pressure":
-                    # Work out how to estimate outlet pressure
-                    if cv.properties_out[t0].pressure.fixed:
-                        # Fixed outlet pressure, use this value
-                        state_args_out[k] = value(
-                            cv.properties_out[t0].pressure)
-                    elif blk.deltaP[t0].fixed:
-                        state_args_out[k] = value(
-                            state_args[k] + blk.deltaP[t0])
-                    elif blk.ratioP[t0].fixed:
-                        state_args_out[k] = value(
-                            state_args[k] * blk.ratioP[t0])
-                    else:
-                        # Not obvious what to do, use inlet state
-                        state_args_out[k] = state_args[k]
+        # Get initialisation guesses for outlet and isentropic states
+        for k in state_args:
+            if k == "pressure" and k not in state_args_out:
+                # Work out how to estimate outlet pressure
+                if cv.properties_out[t0].pressure.fixed:
+                    # Fixed outlet pressure, use this value
+                    state_args_out[k] = value(
+                        cv.properties_out[t0].pressure)
+                elif blk.deltaP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] + blk.deltaP[t0])
+                elif blk.ratioP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] * blk.ratioP[t0])
                 else:
+                    # Not obvious what to do, use inlet state
                     state_args_out[k] = state_args[k]
+            elif k not in state_args_out:
+                state_args_out[k] = state_args[k]
 
         # Initialize state blocks
         flags = cv.properties_in.initialize(
