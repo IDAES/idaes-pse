@@ -814,7 +814,8 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=6, optarg={}, solver="ipopt", hold_state=False):
+    def initialize(
+        blk, outlvl=idaeslog.NOTSET, optarg={}, solver="ipopt", hold_state=False):
         """
         Initialization routine for mixer (default solver ipopt)
 
@@ -967,7 +968,7 @@ objects linked to all inlet states and the mixed state,
         inlet_list = blk.create_inlet_list()
         for i in inlet_list:
             i_block = getattr(blk, i + "_state")
-            i_block.release_state(flags[i], outlvl=outlvl + 1)
+            i_block.release_state(flags[i], outlvl=outlvl)
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}
