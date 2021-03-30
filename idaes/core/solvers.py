@@ -2,10 +2,9 @@ from pyomo.environ import SolverFactory
 import idaes
 
 
-_use_idaes_config = False
-
-
 class SolverWrapper(object):
+    _use_idaes_config = False
+
     def __init__(self, name, register=True):
         self.name = name
         if name == 'default':
@@ -20,14 +19,13 @@ class SolverWrapper(object):
             SolverFactory.register(name, doc)(self)
 
     def __call__(self, *args, **kwargs):
-        global _use_idaes_config
         if self.name == "default":
             name = idaes.cfg.default_solver
             solver = SolverFactory.get_class(name)
         else:
             name = self.name
             solver = self.solver
-        if name in idaes.cfg and (_use_idaes_config or name == "default"):
+        if name in idaes.cfg and (self._use_idaes_config or name == "default"):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
                     kwargs[k] = v
@@ -54,8 +52,7 @@ def use_idaes_solver_configuration_deafults(b=True):
     Returns:
         None
     """
-    global _use_idaes_config
-    _use_idaes_config = b
+    SolverWrapper._use_idaes_config = b
     if b: # This will let you explicitly state you don't want any part of this
         # so if you only do "use_idaes_solver_configuration_deafults(False)" up-
         # front you are saying I know this stuff exists and I must insist you
