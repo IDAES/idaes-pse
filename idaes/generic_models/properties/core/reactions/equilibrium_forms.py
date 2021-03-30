@@ -63,19 +63,33 @@ class log_power_law_equil():
     def return_expression(b, rblock, r_idx, T):
         e = None
 
+        print("Electrolyte:", b._params._electrolyte)
         if hasattr(b.params, "_electrolyte") and b.params._electrolyte:
+            print("Should see this")
             pc_set = b.params.true_phase_component_set
         else:
+            print("Should not see this")
             pc_set = b.phase_component_set
 
+        print("Starting")
         # Get reaction orders and construct power law expression
         for p, j in pc_set:
             o = rblock.reaction_order[p, j]
+            print(p, j, o.value)
 
             if e is None and o != 0:
+                print("None", o.value)
+                print(safe_log(get_concentration_term(b, r_idx)[p, j], eps=EPS))
+                print()
                 e = o*safe_log(get_concentration_term(b, r_idx)[p, j], eps=EPS)
             elif e is not None and o != 0:
+                print("Building", o.value)
+                print()
+                print(safe_log(get_concentration_term(b, r_idx)[p, j], eps=EPS))
+                print()
                 e = e + o*safe_log(
                     get_concentration_term(b, r_idx)[p, j], eps=EPS)
+        print("Finish")
+        print()
 
         return safe_log(b.k_eq[r_idx], eps=EPS) == e

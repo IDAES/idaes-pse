@@ -116,7 +116,7 @@ class gibbs_energy():
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
               c_form == ConcentrationForm.massFraction):
-            e_units = None
+            e_units = pyunits.dimensionless
         else:
             order = 0
 
