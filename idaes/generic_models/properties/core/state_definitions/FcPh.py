@@ -140,6 +140,12 @@ def define_state(b):
         doc='Phase fractions',
         units=None)
 
+    # Add electrolye state vars if required
+    # This must occur before adding the enthalpy constraint, as it needs true
+    # species mole fractions
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
+
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):
         if len(b.component_list) > 1:
@@ -222,9 +228,6 @@ def define_state(b):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
         b.phase_fraction_constraint = Constraint(b.phase_list,
                                                  rule=rule_phase_frac)
-
-    if b.params._electrolyte:
-        define_electrolyte_state(b)
 
     # -------------------------------------------------------------------------
     # General Methods
