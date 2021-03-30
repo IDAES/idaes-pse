@@ -13,7 +13,7 @@
 """
 Methods for calculating heat of reaction
 """
-from pyomo.environ import Var
+from pyomo.environ import Var, value
 
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.misc import set_param_from_config
@@ -43,3 +43,7 @@ class constant_dh_rxn():
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         return rblock.dh_rxn_ref
+
+    @staticmethod
+    def calculate_scaling_factors(b, rblock):
+        return 1/abs(value(rblock.dh_rxn_ref))

@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.2.2"
+default_binary_release = "2.4.1"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -135,7 +135,7 @@ cfg = None # the idaes ConfigBlock once it's created by new_idaes_config_block()
 
 class ConfigBlockJSONEncoder(json.JSONEncoder):
     """ This class handles non-serializable objects that may appear in the IDAES
-    ConfigBlock.  For not this is only set objects.
+    ConfigBlock. For now this is only set objects.
     """
     def default(self, obj):
         if isinstance(obj, set):
