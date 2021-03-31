@@ -27,16 +27,13 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
-     import CompressionStage
+     import (CompressionStage, VaneDiffuserType, ImpellerType)
 
-# from compressor_v10 import CompressionStage
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
-
-# -----------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
@@ -47,30 +44,29 @@ def build_unit():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties_co2 = swco2.SWCO2ParameterBlock()
     m.fs.unit = CompressionStage(
-        default={"property_package": m.fs.properties_co2})
+        default={"property_package": m.fs.properties_co2,
+                 "impeller_type": ImpellerType.open_impeller,
+                 "vane_diffuser_type": VaneDiffuserType.vane_diffuser})
 
     # Set the compressor inlet conditions and an initial flow guess
-    # compressor first stage
-    p = 1.13937 * 1e5  # Pa
-    t = 40.0113 + 273.15  # K
-    fin = 1548.52  # mol/s
+    p = 1.0951 * 1e5  # Pa
+    t = 40.0113 + 273.15  # K #
+    fin = 1159.44  # mol/s #
 
     hin_co2 = swco2.htpx(T=t*pyo.units.K, P=p*pyo.units.Pa)
 
-    # inlet stream
-    m.fs.unit.ratioP[0].value = 2.3351
-    m.fs.unit.U2[0].value = 315.3
-    m.fs.unit.inlet.flow_mol[:].fix(fin)
-    m.fs.unit.inlet.enth_mol[:].fix(hin_co2)
-    m.fs.unit.inlet.pressure[:].fix(p)
+    m.fs.unit.vapor_inlet.flow_mol[:].fix(fin)
+    m.fs.unit.vapor_inlet.enth_mol[:].fix(hin_co2)
+    m.fs.unit.vapor_inlet.pressure[:].fix(p)
 
     # inlet specifications
-    m.fs.unit.U2.fix()
+    m.fs.unit.U2.fix(315.3)
+    m.fs.unit.vapor_outlet.pressure[:].fix(2.53161*1e5)
 
-    # fix compressor specifications
-    m.fs.unit.r2.fix(0.075)
-    m.fs.unit.z_s.fix(0.97373)
-    m.fs.unit.z_d1.fix(0.88949)
+    # fix compressor specification
+    m.fs.unit.r2.fix(0.67654)
+    m.fs.unit.z_s.fix(0.9952)
+    m.fs.unit.z_d1.fix(0.97373)
     m.fs.unit.efficiency_mech.fix(0.97)
     m.fs.unit.eff_drive.fix(1.0)
 
@@ -83,8 +79,7 @@ def test_basic_build(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 13
-    # assert m.fs.unit.config.has_heat_transfer
+    assert len(m.fs.unit.config) == 14
     assert m.fs.unit.config.thermodynamic_assumption
     assert m.fs.unit.config.property_package is m.fs.properties_co2
 
@@ -123,7 +118,7 @@ def test_run(build_unit):
                       * m.fs.unit.outlet.enth_mol[0]
                       + m.fs.unit.work_mechanical[0]))
     # pressure change
-    assert (pytest.approx(185822.3, abs=0.1) ==
+    assert (pytest.approx(143651.0, abs=0.1) ==
             pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
     assert (pytest.approx(0, abs=1e-2) ==
