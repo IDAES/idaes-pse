@@ -39,7 +39,7 @@ from idaes.core import (
 from idaes.generic_models.unit_models.heat_exchanger import HeatExchangerData
 from idaes.generic_models.unit_models import (
     Mixer, MomentumMixingType, HeatExchanger)
-from idaes.core.util import from_json, to_json, StoreSpec, get_default_solver
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
@@ -198,11 +198,7 @@ class FWHCondensing0DData(HeatExchangerData):
         self.inlet_1.flow_mol.unfix()
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -370,11 +366,7 @@ class FWH0DData(UnitModelBlockData):
             self.cooling.initialize(*args, **kwargs)
 
         # Solve all together
-        if kwargs.get("solver") is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(kwargs.get("solver"))
-            opt.options = kwargs.get("oparg", {})
+        opt = get_solver(kwargs.get("solver"), kwargs.get("oparg", {}))
 
         assert degrees_of_freedom(self) == 0
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

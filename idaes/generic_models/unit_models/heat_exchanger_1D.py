@@ -45,7 +45,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as c
-from idaes.core.util import get_default_solver, scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 import idaes.logger as idaeslog
 
@@ -631,11 +631,7 @@ thickness of the tube""",
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize shell block

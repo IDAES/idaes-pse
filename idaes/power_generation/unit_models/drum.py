@@ -75,7 +75,7 @@ from idaes.power_generation.unit_models.helm.phase_separator import \
     HelmPhaseSeparator
 from idaes.power_generation.unit_models.helm.mixer import HelmMixer
 from idaes.core.util.constants import Constants as const
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
@@ -446,11 +446,7 @@ see property package for documentation.}"""))
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting initialization...")
         # fix FeedWater Inlet

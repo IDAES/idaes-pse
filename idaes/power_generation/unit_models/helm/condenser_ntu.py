@@ -22,7 +22,7 @@ from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigBlock, ConfigValue
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
-from idaes.core.util import get_default_solver, from_json, to_json, StoreSpec
+from idaes.core.util import get_solver, from_json, to_json, StoreSpec
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
 from idaes.generic_models.unit_models.heater import (
@@ -349,11 +349,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         istate = to_json(self, return_dict=True, wts=sp)
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = pyo.SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1)

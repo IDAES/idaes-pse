@@ -27,7 +27,7 @@ import pyomo.environ as pyo
 from idaes.generic_models.properties import iapws95
 from idaes.generic_models.properties import swco2
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 @pytest.mark.component
@@ -119,7 +119,7 @@ def test_PP_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = get_default_solver()
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -281,7 +281,7 @@ def test_power_plant_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = get_default_solver()
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -480,7 +480,7 @@ def test_sCO2_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = get_default_solver()
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -528,7 +528,7 @@ def test_ASU_costing():
     get_ASU_cost(m.fs.ASU, m.fs.ASU.O2_flow)
 
     # try solving
-    solver = get_default_solver()
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \

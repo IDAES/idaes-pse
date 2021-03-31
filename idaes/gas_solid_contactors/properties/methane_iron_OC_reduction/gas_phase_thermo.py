@@ -49,7 +49,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 import idaes.logger as idaeslog
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -291,11 +291,7 @@ class _GasPhaseThermoStateBlock(StateBlock):
                                     "initialization.")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialise values

@@ -22,7 +22,7 @@ __Author__ = "John Eslick"
 from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
-from idaes.core.util import from_json, to_json, StoreSpec, get_default_solver
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -188,11 +188,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                 )
 
         # Create solver
-        if solver is None:
-            slvr = get_default_solver()
-        else:
-            slvr = SolverFactory(solver)
-            slvr.options = optarg
+        slvr = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)

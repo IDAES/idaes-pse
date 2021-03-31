@@ -73,7 +73,7 @@ from collections import OrderedDict
 import os
 from idaes.core.util.model_statistics import degrees_of_freedom
 import logging
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 def main():
@@ -93,7 +93,7 @@ def main():
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Create a solver
-    solver = get_default_solver()
+    solver = get_solver()
     return(m, solver)
 
 

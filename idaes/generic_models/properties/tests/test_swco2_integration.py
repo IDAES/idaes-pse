@@ -19,9 +19,9 @@ import idaes.generic_models.properties.swco2 as swco2
 from idaes.generic_models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
 import idaes
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestIntegration(object):

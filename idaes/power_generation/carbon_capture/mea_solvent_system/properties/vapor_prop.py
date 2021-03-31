@@ -46,7 +46,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unfixed_variables)
 from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column \
     import ProcessType
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula, John Eslick"
@@ -336,11 +336,7 @@ class VaporStateBlockMethods(StateBlock):
                     "during initialization. DoF = {}".format(blk.name, dof))
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialise values

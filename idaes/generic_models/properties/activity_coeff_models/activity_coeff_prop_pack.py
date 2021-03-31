@@ -62,7 +62,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 
@@ -294,11 +294,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                                     "initialization.")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints

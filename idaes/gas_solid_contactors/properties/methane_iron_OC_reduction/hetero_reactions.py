@@ -56,7 +56,7 @@ from idaes.core.util.config import (is_state_block,
                                     is_physical_parameter_block,
                                     is_reaction_parameter_block)
 import idaes.logger as idaeslog
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -269,11 +269,7 @@ class _ReactionBlock(ReactionBlockBase):
                         blk[k].solid_state_ref.dens_mass_skeletal.value)
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # Initialise values
         for k in blk.keys():

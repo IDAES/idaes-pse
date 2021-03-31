@@ -37,7 +37,7 @@ from idaes.generic_models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
 
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -405,11 +405,7 @@ between flow and pressure driven simulations.}""",
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # This shouldn't require too much initializtion, just fixing inlets
         # and solving should always work.

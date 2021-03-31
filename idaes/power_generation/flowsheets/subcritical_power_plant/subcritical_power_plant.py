@@ -31,7 +31,7 @@ import idaes.logger as idaeslog
 import os
 import idaes.core.util.tables as tables
 from idaes.core.util.misc import svg_tag
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -568,7 +568,7 @@ def main_dynamic():
         pyo.value(m_dyn.fs_main.sliding_pressure[0])))
 
     # Set solver
-    solver = get_default_solver()
+    solver = get_solver()
 
     # Check degree of freedom for the dynamic model
     dof = degrees_of_freedom(m_dyn)
@@ -855,8 +855,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         _log.info("Degrees of freedom = {}".format(degrees_of_freedom(m)))
 
         # Solver for solving combined full plant model
-        solver = get_default_solver()
-        solver.options["max_iter"] = 50
+        solver = get_solver(options={"max_iter": 50})
 
         if init:
             res = solver.solve(m, tee=True)

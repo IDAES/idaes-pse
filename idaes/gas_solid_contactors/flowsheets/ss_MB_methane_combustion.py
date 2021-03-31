@@ -23,7 +23,7 @@ import time
 from pyomo.environ import ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -119,7 +119,7 @@ def main():
     t_initialize = time.time()  # Initialization time
 
     # Create a solver
-    solver = get_default_solver()
+    solver = get_solver()
     solver.solve(m.fs.MB, tee=True)
 
     t_simulation = time.time()  # Simulation time

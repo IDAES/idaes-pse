@@ -48,7 +48,7 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
     PropertyNotSupportedError,
 )
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import VarLikeExpression
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -1354,11 +1354,7 @@ objects linked the mixed state and all outlet states,
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # Initialize mixed state block
         if blk.config.mixed_state_block is not None:

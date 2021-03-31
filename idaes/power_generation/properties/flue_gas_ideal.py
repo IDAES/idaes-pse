@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core import (
     MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis)
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from idaes.core.util import constants, get_default_solver
+from idaes.core.util import constants, get_solver
 import idaes.core.util.scaling as iscale
 
 # Import Python libraries
@@ -379,11 +379,7 @@ class _FlueGasStateBlock(StateBlock):
             self.name,outlvl, tag="properties")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)

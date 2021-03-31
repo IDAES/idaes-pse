@@ -84,7 +84,7 @@ from pyomo.environ import (SolverFactory,
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.network import Port
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from pyomo.network import Arc
 
 from idaes.power_generation.unit_models.helm.phase_separator import \
@@ -1047,11 +1047,7 @@ discretizing length domain (default=3)"""))
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting Initialization...")
         # fix FeedWater Inlet

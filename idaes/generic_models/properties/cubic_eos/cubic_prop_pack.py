@@ -61,7 +61,7 @@ from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
 from idaes.core.util.math import safe_log
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
@@ -274,11 +274,7 @@ class _CubicStateBlock(StateBlock):
                                     "initialization.")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations

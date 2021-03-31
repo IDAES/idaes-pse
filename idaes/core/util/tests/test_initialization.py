@@ -42,13 +42,13 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             propagate_state,
                                             solve_indexed_blocks,
                                             initialize_by_time_element)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 __author__ = "Andrew Lee"
 
 
 # Set up solver
-solver = get_default_solver()
+solver = get_solver()
 
 
 @declare_process_block_class("AqueousEnzymeParameterBlock")

@@ -40,7 +40,7 @@ from idaes.core import (ControlVolume0DBlock,
 
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 
@@ -981,11 +981,7 @@ constructed,
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         flags = blk.control_volume.initialize(outlvl=outlvl+1,
                                               optarg=optarg,

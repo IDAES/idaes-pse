@@ -42,7 +42,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -711,11 +711,7 @@ see property package for documentation.}"""))
                     "selected for temperature_spec config argument."
                 )
 
-        if solver is None:
-            solverobj = get_default_solver()
-        else:
-            solverobj = SolverFactory(solver)
-            solverobj.options = optarg
+        solverobj = get_solver(solver, optarg)
 
         if state_args is None:
             state_args = {}

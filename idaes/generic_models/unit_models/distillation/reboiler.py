@@ -40,7 +40,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError, ConfigurationError
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 
@@ -566,11 +566,7 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        if solver is None:
-            solverobj = get_default_solver()
-        else:
-            solverobj = SolverFactory(solver)
-            solverobj.options = optarg
+        solverobj = get_solver(solver, optarg)
 
         # Initialize the inlet and outlet state blocks. Calling the state
         # blocks initialize methods directly so that custom set of state args

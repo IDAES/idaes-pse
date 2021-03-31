@@ -22,7 +22,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -223,11 +223,7 @@ see property package for documentation.}""",
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize state block

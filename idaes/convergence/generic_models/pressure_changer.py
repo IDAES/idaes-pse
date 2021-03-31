@@ -18,7 +18,7 @@ from idaes.generic_models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
 )
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Import property package for testing
 from idaes.generic_models.properties import iapws95 as pp
@@ -82,7 +82,7 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
         m.fs.pc.initialize(state_args=init_state)
 
         # Create a solver for initialization
-        opt = self.get_default_solver()
+        opt = self.get_solver()
         opt.solve(m)
 
         # return the initialized model

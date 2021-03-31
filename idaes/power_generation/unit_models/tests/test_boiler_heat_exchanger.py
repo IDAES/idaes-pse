@@ -36,11 +36,11 @@ from idaes.power_generation.unit_models.boiler_heat_exchanger import (
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import PhysicalParameterTestBlock
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
@@ -142,8 +142,7 @@ def test_boiler_hx():
     assert degrees_of_freedom(m) == 0
 
     m.fs.unit.initialize()
-    # Create a solver
-    solver = get_default_solver()
+
     results = solver.solve(m)
     # Check for optimal solution
     assert results.solver.termination_condition == \

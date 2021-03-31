@@ -56,7 +56,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -1157,11 +1157,7 @@ constructed,
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks

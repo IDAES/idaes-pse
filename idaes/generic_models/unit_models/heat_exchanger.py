@@ -47,7 +47,7 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_default_solver, scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
 _log = idaeslog.getLogger(__name__)
@@ -470,11 +470,7 @@ class HeatExchangerData(UnitModelBlockData):
         cold_side = getattr(self, self.config.cold_side_name)
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1

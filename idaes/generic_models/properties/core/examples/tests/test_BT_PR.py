@@ -31,7 +31,7 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            value)
 
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
@@ -43,7 +43,7 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -85,7 +85,6 @@ class TestBTExample(object):
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
 
-            solver = get_default_solver()
             results = solver.solve(m, tee=True)
 
             assert results.solver.termination_condition == \
@@ -103,7 +102,6 @@ class TestBTExample(object):
 
             m.fs.state.initialize(outlvl=0)
 
-            solver = get_default_solver()
             results = solver.solve(m)
 
             assert results.solver.termination_condition == \
@@ -131,7 +129,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = get_default_solver()
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -194,7 +191,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = get_default_solver()
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -257,7 +253,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = get_default_solver()
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -320,7 +315,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = get_default_solver()
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -383,7 +377,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = get_default_solver()
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -449,7 +442,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = get_default_solver()
         results = solver.solve(m)
 
         # Check for optimal solution

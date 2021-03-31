@@ -27,7 +27,7 @@ from idaes.core import (ControlVolume0DBlock,
                         EnergyBalanceType,
                         MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 
 
@@ -39,7 +39,7 @@ _scalable = (_VarData, _ParamData, _ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------

@@ -35,7 +35,7 @@ from idaes.core import (declare_process_block_class,
                         useDefault)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -372,11 +372,7 @@ see property package for documentation.}"""))
 
         init_log.info("Begin initialization.")
 
-        if solver is None:
-            solverobj = get_default_solver()
-        else:
-            solverobj = SolverFactory(solver)
-            solverobj.options = optarg
+        solverobj = get_solver(solver, optarg)
 
         feed_flags = self.feed_tray.initialize(
             solver=None, optarg={}, outlvl=idaeslog.NOTSET)

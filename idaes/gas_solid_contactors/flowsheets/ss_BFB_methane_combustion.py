@@ -26,7 +26,7 @@ from pyomo.environ import ConcreteModel, value
 
 # Import IDAES core modules
 from idaes.core import FlowsheetBlock
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -142,7 +142,7 @@ def main():
     # Final solve
 
     # Create solver
-    solver = get_default_solver()
+    solver = get_solver()
 
     solver.solve(m.fs.BFB, tee=True)
 

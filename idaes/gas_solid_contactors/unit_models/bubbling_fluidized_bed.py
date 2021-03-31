@@ -54,7 +54,7 @@ from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_min, smooth_max
 import idaes.logger as idaeslog
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 __author__ = "Chinedu Okoli"
 
@@ -1540,11 +1540,7 @@ see reaction package for documentation.}"""))
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names

@@ -46,7 +46,7 @@ from idaes.generic_models.unit_models import (  # basic IDAES unit models, and e
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
-from idaes.core.util import get_default_solver, copy_port_values as _set_port  # for model intialization
+from idaes.core.util import get_solver, copy_port_values as _set_port  # for model intialization
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
@@ -772,7 +772,7 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     iscale.calculate_scaling_factors(m)
     
     
-    solver = get_default_solver()
+    solver = get_solver()
 
     if fileinput is not None:
         init_log.info("Loading initial values from file: {}".format(fileinput))

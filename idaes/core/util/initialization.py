@@ -28,7 +28,7 @@ from idaes.core.util.dyn_utils import (get_activity_dict,
         fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
         get_implicit_index_of_set)
 import idaes.logger as idaeslog
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 
@@ -274,7 +274,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     ignore_dof = kwargs.pop('ignore_dof', False)
-    solver = kwargs.pop('solver', get_default_solver())
+    solver = kwargs.pop('solver', get_solver())
     fix_diff_only = kwargs.pop('fix_diff_only', True)
     # This option makes the assumption that the only variables that
     # link constraints to previous points in time (which must be fixed)

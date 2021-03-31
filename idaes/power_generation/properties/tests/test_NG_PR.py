@@ -38,7 +38,7 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            value)
 
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
@@ -48,7 +48,7 @@ pytestmark = pytest.mark.cubic_root
 prop_available = cubic_roots_available()
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestNaturalGasProps(object):

@@ -38,7 +38,7 @@ from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
-from idaes.core.util import get_default_solver, scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -729,11 +729,7 @@ see property package for documentation.}""",
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         cv = blk.control_volume
         t0 = blk.flowsheet().config.time.first()
@@ -827,11 +823,7 @@ see property package for documentation.}""",
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         cv = blk.control_volume
         t0 = blk.flowsheet().config.time.first()

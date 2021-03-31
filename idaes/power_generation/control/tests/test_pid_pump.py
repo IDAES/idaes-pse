@@ -15,7 +15,7 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util.dyn_utils import (
     copy_values_at_time,
     copy_non_time_indexed_values)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 import pytest
 
@@ -162,7 +162,7 @@ def get_model(dynamic=False):
         m.fs.valve.valve_opening.unfix()
         dof = degrees_of_freedom(m)
         assert dof == 0
-        solver = get_default_solver()
+        solver = get_solver()
         solver.solve(m, tee=True)
 
     else:
@@ -173,7 +173,7 @@ def get_model(dynamic=False):
 
 
 def run_dynamic(m):
-    solver = get_default_solver()
+    solver = get_solver()
 
     # add step change
     for t in m.fs.time:

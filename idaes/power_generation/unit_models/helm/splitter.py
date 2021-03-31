@@ -31,7 +31,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import from_json, to_json, StoreSpec, get_default_solver
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
@@ -278,11 +278,7 @@ from 1 to num_outlets).}""",
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # sp is what to save to make sure state after init is same as the start
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

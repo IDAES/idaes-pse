@@ -42,7 +42,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.constants import Constants as const
 
 import idaes.logger as idaeslog
@@ -337,11 +337,7 @@ see property package for documentation.}"""))
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting initialization...")
 

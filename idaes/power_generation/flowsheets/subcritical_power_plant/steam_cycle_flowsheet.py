@@ -45,7 +45,7 @@ from idaes.power_generation.control.pid_controller import PIDController
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.dyn_utils import copy_values_at_time,\
@@ -968,7 +968,7 @@ def initialize(m):
     solve_log = idaeslog.getSolveLogger(fs.name, outlvl, tag="unit")
     _log.info("Starting steam cycle initialization...")
 
-    solver = get_default_solver()
+    solver = get_solver()
 
     # Set initial condition for dynamic unit models
     t0 = 0
@@ -1639,7 +1639,7 @@ def set_scaling_factors(m):
 
 def main_steady_state():
     m_ss = get_model(dynamic=False)
-    solver = get_default_solver()
+    solver = get_solver()
 
     dof = degrees_of_freedom(m_ss)
     print('dof of full model', dof)
@@ -1688,7 +1688,7 @@ def main_dynamic():
 
     m_dyn.fs_main.fs_stc.spray_valve.valve_opening[0].fix()
 
-    solver = get_default_solver()
+    solver = get_solver()
 
     outlvl = idaeslog.DEBUG
     _log = idaeslog.getLogger(m_dyn.name, outlvl, tag="flowsheet")

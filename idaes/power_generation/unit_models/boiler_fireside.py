@@ -86,7 +86,7 @@ from pyomo.environ import \
     SolverFactory, Var, Param, exp, log, RangeSet, Constraint
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Boiler Team (J. Ma, M. Zamarripa)"
@@ -951,11 +951,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks

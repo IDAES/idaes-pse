@@ -47,7 +47,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock, StateIndex)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 def dummy_method(b, *args, **kwargs):
@@ -211,7 +211,7 @@ class TestApparentSpeciesBasisNoInherent():
 
         assert degrees_of_freedom(m.fs) == 0
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
@@ -459,7 +459,7 @@ class TestApparentSpeciesBasisInherent():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -893,7 +893,7 @@ class TestTrueSpeciesBasisInherent():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution

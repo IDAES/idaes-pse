@@ -48,7 +48,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -1020,11 +1020,7 @@ class _GenericStateBlock(StateBlock):
                                     "during initialization.")
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations

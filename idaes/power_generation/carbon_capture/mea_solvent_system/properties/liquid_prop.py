@@ -44,7 +44,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column \
     import ProcessType
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula, John Eslick"
@@ -522,11 +522,7 @@ class LiquidStateBlockMethods(StateBlock):
                     "during initialization. DoF = {}".format(blk.name, dof))
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialise values

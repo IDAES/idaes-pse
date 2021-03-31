@@ -7,7 +7,7 @@ from idaes.power_generation.unit_models.helm import HelmValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port, get_default_solver
+from idaes.core.util import copy_port_values as _set_port, get_solver
 from idaes.core.util.plot import stitch_dynamic
 
 def create_model_steady_state(f=100, p=5e5, h=5e4):
@@ -32,8 +32,7 @@ def create_model_steady_state(f=100, p=5e5, h=5e4):
 
     m.fs.heater.initialize()
 
-    solver = get_default_solver()
-    solver.options['max_iter'] = 25
+    solver = get_solver(options={"max_iter": 25})
     return m, solver
 
 
@@ -104,8 +103,7 @@ def create_model_dynamic(
     m.fs.heater.control_volume.volume.fix(2.0)
 
     # Initialize the model
-    solver = get_default_solver()
-    solver.options['max_iter'] = 25
+    solver = get_solver(options={"max_iter": 25})
     for t in m.fs.time:
         m.fs.pipe.inlet.flow_mol = 250 # initial guess on flow
     # simple initialize

@@ -53,7 +53,7 @@ from idaes.power_generation.unit_models.helm import \
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.helm import HelmMixer as Mixer
-from idaes.core.util import get_default_solver, copy_port_values as _set_port
+from idaes.core.util import get_solver, copy_port_values as _set_port
 
 _log = idaeslog.getLogger(__name__)
 
@@ -226,11 +226,7 @@ class FWHCondensing0DData(CondenserData):
         self.pressure_change_total_eqn.activate()
 
         # Create solver
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -416,11 +412,7 @@ class FWH0DDynamicData(UnitModelBlockData):
             self.cooling.initialize(*args, **kwargs)
 
         # Create solver
-        if kwargs.get("solver") is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(kwargs.get("solver"))
-            opt.options = kwargs.get("oparg", {})
+        opt = get_solver(kwargs.get("solver"), kwargs.get("oparg", {}))
 
         assert degrees_of_freedom(self) == 0
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

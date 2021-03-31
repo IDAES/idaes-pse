@@ -38,7 +38,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import model_serializer as ms
 import idaes.core.util.scaling as iscale
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
@@ -197,7 +197,7 @@ def initialize(
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
 
-    solver = get_default_solver()
+    solver = get_solver()
     solver.options = optarg
     init_log.info_low("Starting initialization...")
 
@@ -326,7 +326,7 @@ def run_sensitivity():
         iscale.set_scaling_factor(m.fs.Waterwalls[i].heat_flux_conv[0], 1e-5)
     iscale.calculate_scaling_factors(m)
     # solve flowsheet
-    solver = get_default_solver()
+    solver = get_solver()
     solver.options = optarg
     results = solver.solve(m, tee=True)
     print(results)
