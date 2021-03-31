@@ -159,7 +159,7 @@ class TestStateBlock(object):
     def test_basic_scaling(self, model):
         model.fs.props[1].calculate_scaling_factors()
 
-        assert len(model.fs.props[1].scaling_factor) == 21
+        assert len(model.fs.props[1].scaling_factor) == 18
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].flow_mol] == 1e-2
         assert model.fs.props[1].scaling_factor[
@@ -192,21 +192,15 @@ class TestStateBlock(object):
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].temperature] == 1e-2
         assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._teq] == 1e-2
-        assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._teq["Vap", "Liq"]] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._t1_Vap_Liq] == 1e-2
 
         assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._mole_frac_tbub] == 1000
-        assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1000
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._mole_frac_tbub[
                 "Vap", "Liq", "carbon_dioxide"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].temperature_bubble] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
 
