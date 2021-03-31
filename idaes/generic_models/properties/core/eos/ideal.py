@@ -25,6 +25,8 @@ from .eos_base import EoSBase
 
 # TODO: Add support for ideal solids
 class Ideal(EoSBase):
+    # Add attribute indicating support for electrolyte systems
+    electrolyte_support = True
 
     @staticmethod
     def common(b, pobj):
@@ -58,7 +60,7 @@ class Ideal(EoSBase):
         if pobj.is_vapor_phase():
             return b.pressure/(Ideal.gas_constant(b)*b.temperature)
         elif pobj.is_liquid_phase():
-            return sum(b.mole_frac_phase_comp[p, j] *
+            return sum(b.get_mole_frac()[p, j] *
                        get_method(b, "dens_mol_liq_comp", j)(
                            b, cobj(b, j), b.temperature)
                        for j in b.components_in_phase(p))
@@ -67,7 +69,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def cp_mol_phase(b, p):
-        return sum(b.mole_frac_phase_comp[p, j]*b.cp_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac()[p, j]*b.cp_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -84,7 +86,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def enth_mol_phase(b, p):
-        return sum(b.mole_frac_phase_comp[p, j]*b.enth_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac()[p, j]*b.enth_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -101,7 +103,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def entr_mol_phase(b, p):
-        return sum(b.mole_frac_phase_comp[p, j]*b.entr_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac()[p, j]*b.entr_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -111,7 +113,7 @@ class Ideal(EoSBase):
             return (get_method(b, "entr_mol_ig_comp", j)(
                 b, cobj(b, j), b.temperature) -
                 Ideal.gas_constant(b)*log(
-                    b.mole_frac_phase_comp[p, j]*b.pressure /
+                    b.get_mole_frac()[p, j]*b.pressure /
                     b.params.pressure_ref))
         elif pobj.is_liquid_phase():
             # Assume no pressure/volume dependecy of entropy for ideal liquids
@@ -132,9 +134,9 @@ class Ideal(EoSBase):
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
-            return log(b.mole_frac_phase_comp[p, j]) + log(b.pressure)
+            return log(b.get_mole_frac()[p, j]) + log(b.pressure)
         elif pobj.is_liquid_phase():
-            return (log(b.mole_frac_phase_comp[p, j]) +
+            return (log(b.get_mole_frac()[p, j]) +
                     log(get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), b.temperature)))
         else:
@@ -184,7 +186,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def gibbs_mol_phase(b, p):
-        return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac()[p, j]*b.gibbs_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -203,9 +205,9 @@ def _invalid_phase_msg(name, phase):
 def _fug_phase_comp(b, p, j, T):
     pobj = b.params.get_phase(p)
     if pobj.is_vapor_phase():
-        return b.mole_frac_phase_comp[p, j] * b.pressure
+        return b.get_mole_frac()[p, j] * b.pressure
     elif pobj.is_liquid_phase():
-        return (b.mole_frac_phase_comp[p, j] *
+        return (b.get_mole_frac()[p, j] *
                 get_method(b, "pressure_sat_comp", j)(
                     b, cobj(b, j), T))
     else:
