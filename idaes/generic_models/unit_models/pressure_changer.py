@@ -816,18 +816,22 @@ see property package for documentation.}""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None)
 
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        if solver is None:
+            opt = get_default_solver()
+        else:
+            opt = SolverFactory(solver)
+            opt.options = optarg
 
         cv = blk.control_volume
         t0 = blk.flowsheet().config.time.first()
