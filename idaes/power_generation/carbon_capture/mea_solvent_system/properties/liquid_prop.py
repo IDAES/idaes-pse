@@ -44,8 +44,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.column \
     import ProcessType
-
-
+from idaes.core.util import get_default_solver
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula, John Eslick"
@@ -467,7 +466,7 @@ class LiquidStateBlockMethods(StateBlock):
     def initialize(blk, state_args=None,
                    state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
 
@@ -480,8 +479,9 @@ class LiquidStateBlockMethods(StateBlock):
                        state_args dictionary are: flow_mol, temperature,
                        pressure and mole_frac_comp.
           outlvl : sets output level of initialization routine
-          optarg : solver options dictionary object (default=None)
-          solver : str indicating whcih solver to use during initialization (default = "ipopt")
+          optarg : solver options dictionary object (default={})
+          solver : str indicating whcih solver to use during
+                   initialization (default = None)
           hold_state :
                   flag indicating whether the initialization routine
                   should unfix any state variables fixed during initialization (default=False).
@@ -521,9 +521,12 @@ class LiquidStateBlockMethods(StateBlock):
                     "{} - degrees of freedom for state block is not zero "
                     "during initialization. DoF = {}".format(blk.name, dof))
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        if solver is None:
+            opt = get_default_solver()
+        else:
+            opt = SolverFactory(solver)
+            opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialise values
