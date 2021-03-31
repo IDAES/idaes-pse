@@ -60,11 +60,12 @@ kwargs = dict(
         "pint",
         "psutil",
         "pyutilib>=6.0.0",
-        "pyomo>5.7.1,<6",
+        "pyomo>=5.7.3",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
         "python-slugify", # for ui/fsvis
+        "scipy",
         "sympy",
         "tinydb",
         "rbfopt",
@@ -75,9 +76,9 @@ kwargs = dict(
             "idaes = idaes.commands.base:command_base",
         ]
     },
+    # Only installed if [<key>] is added to package name
     extras_require={
-        # For developers. Only installed if [dev] is added to package name
-        "dev": [
+        "dev": [  # Developer extra packages
             "alabaster>=0.7.7",
             # temporarily hold coverage version due to avoid bug in coveralls
             # -alee 12/20/2019
@@ -90,13 +91,12 @@ kwargs = dict(
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
-            # temporarily hold sphinx version to avoid bug with 3.x
-            # -dang 4/22/2020
-            "sphinx>=2.4.4,<3.0.0",
+            # Newer sphinx needed for proper type hint support in docstrings
+            "sphinx>=3.0.0",
             # note: 4/22/2020, removed the version requirement here
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
-            "sphinx-argparse",
+            "sphinx-argparse"
         ]
     },
     package_data={

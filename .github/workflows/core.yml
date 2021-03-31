@@ -35,8 +35,43 @@ defaults:
 
 jobs:
   pytest:
+    # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+        os:
+          - ubuntu-18.04
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Run pytest (not integration) with coverage
+        uses: ./.github/actions/pytest
+        with:
+          markexpr: not integration
+          extra-args: --cov
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v1
+  pytest-rel:
+    # description: Run pytest with release/standard dependencies defined in setup.py
+    name: pytest (rel/py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true  # avoid failing the workflow if an instance of this job fails
     strategy:
       fail-fast: false
       matrix:
@@ -58,13 +93,10 @@ jobs:
         uses: ./.github/actions/setup-idaes
         with:
           install-target: '.'
-      - name: Run pytest (not integration) with coverage
+      - name: Run pytest (not integration) without coverage
         uses: ./.github/actions/pytest
         with:
           markexpr: not integration
-          extra-args: --cov
-      - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v1
   build-docs:
     name: Build Sphinx docs
     runs-on: ubuntu-latest

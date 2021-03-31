@@ -290,6 +290,8 @@ class PropertyClassMetadata(object):
                                  self.default_units["length"]**-3),
                 "density_mole": (self.default_units["amount"] *
                                  self.default_units["length"]**-3),
+                "molecular_weight": (self.default_units["mass"] /
+                                     self.default_units["amount"]),
                 "energy": (self.default_units["mass"] *
                            self.default_units["length"]**2 *
                            self.default_units["time"]**-2),

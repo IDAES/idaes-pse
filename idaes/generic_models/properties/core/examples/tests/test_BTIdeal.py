@@ -38,7 +38,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 
 from idaes.generic_models.properties.core.examples.BT_ideal \
     import configuration
@@ -83,7 +83,7 @@ class TestParamBlock(object):
             "pressure": (5e4, 1e5, 1e6, pyunits.Pa)}
 
         assert model.params.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): smooth_VLE}
+            ("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2
@@ -117,6 +117,8 @@ class TestStateBlock(object):
         model.props = model.params.build_state_block(
                 [1],
                 default={"defined_state": True})
+
+        model.props[1].calculate_scaling_factors()
 
         return model
 
@@ -188,6 +190,55 @@ class TestStateBlock(object):
         model.props[1].mole_frac_comp["toluene"].fix(0.5)
 
         assert degrees_of_freedom(model.props[1]) == 0
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, model):
+        model.props[1].scaling_factor.display()
+        assert len(model.props[1].scaling_factor) == 23
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tbub["Vap", "Liq", "benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tbub["Vap", "Liq", "toluene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tdew["Vap", "Liq", "benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tdew["Vap", "Liq", "toluene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._t1_Vap_Liq] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1]._teq["Vap", "Liq"]] == 1e-2
+        assert model.props[1].scaling_factor[model.props[1].flow_mol] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase["Liq"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase["Vap"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Liq", "benzene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Liq", "toluene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Vap", "benzene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Vap", "toluene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].mole_frac_comp["benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1].mole_frac_comp["toluene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1].mole_frac_phase_comp["Liq", "benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1].mole_frac_phase_comp["Liq", "toluene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1].mole_frac_phase_comp["Vap", "benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1].mole_frac_phase_comp["Vap", "toluene"]] == 1000
+        assert model.props[1].scaling_factor[model.props[1].pressure] == 1e-5
+        assert model.props[1].scaling_factor[
+            model.props[1].temperature] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].temperature_dew["Vap", "Liq"]] == 1e-2
 
     @pytest.mark.initialize
     @pytest.mark.solver

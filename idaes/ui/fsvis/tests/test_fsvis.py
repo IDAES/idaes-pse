@@ -23,8 +23,9 @@ import requests
 
 from pyomo.environ import ConcreteModel, SolverFactory, Constraint, value
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.generic_models.unit_models import Flash
 from idaes.ui.fsvis import fsvis
 from idaes.ui.flowsheet import validate_flowsheet
@@ -37,9 +38,13 @@ def flash_model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Flash properties
-    m.fs.properties = BTXParameterBlock(default={"valid_phase": ('Liq', 'Vap'),
-                                                 "activity_coeff_model": "Ideal",
-                                                 "state_vars": "FTPz"})
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
     # Flash unit
     m.fs.flash = Flash(default={"property_package": m.fs.properties})
     m.fs.flash.inlet.flow_mol.fix(1)
@@ -55,6 +60,7 @@ def flash_model():
 @pytest.mark.integration
 def test_visualize(flash_model):
     from pathlib import Path
+
     flowsheet = flash_model.fs
     # Start the visualization server
     port = fsvis.visualize(flowsheet, "Flash", browser=False, save_as=None)
@@ -78,17 +84,15 @@ def test_visualize(flash_model):
     resp = requests.get(f"http://127.0.0.1:{port}/fs?id=Flash")
     data = resp.json()
     # Validate the modified model
-    expected = {"model":{
-                    "id":"Flash",
-                    "stream_table":{
-                        "columns":["", "Variable"],
-                        "data":[],
-                        "index":[]
-                    },
-                    "unit_models":{},
-                    "arcs":{}
-                },
-                "cells":[]}
+    expected = {
+        "model": {
+            "id": "Flash",
+            "stream_table": {"columns": ["", "Variable"], "data": [], "index": []},
+            "unit_models": {},
+            "arcs": {},
+        },
+        "cells": [],
+    }
     assert data == expected
 
 
@@ -113,3 +117,16 @@ def _canonicalize(d):
         if "ports" in cell:
             items = cell["ports"]["items"]
             cell["ports"]["items"] = sorted(items, key=lambda x: x["group"])
+
+
+@pytest.mark.unit
+def test_invoke(flash_model):
+    # from inspect import signature -- TODO: use for checking params
+    from idaes.ui import fsvis as fsvis_pkg
+
+    functions = {
+        "method": getattr(flash_model.fs, "visualize"),
+        "package": getattr(fsvis_pkg, "visualize"),
+        "module": getattr(fsvis, "visualize"),
+    }
+    # TODO: check params

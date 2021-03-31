@@ -1940,9 +1940,14 @@ see reaction package for documentation.}"""))
                             blk.solid_emulsion_rxn_ext_constraint[t, x, r])
                     for j in solid_phase.property_package.component_list:
                         solid_emulsion_rxn_gen[t, x, 'Sol', j].unfix()
-                        calculate_variable_from_constraint(
-                            solid_emulsion_rxn_gen[t, x, 'Sol', j],
-                            solid_emulsion_stoichiometry_eqn[t, x, 'Sol', j])
+                        if not ((blk.config.transformation_scheme != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.config.transformation_scheme == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                            calculate_variable_from_constraint(
+                                solid_emulsion_rxn_gen[t, x, 'Sol', j],
+                                solid_emulsion_stoichiometry_eqn[t, x,
+                                                                 'Sol', j])
 
             blk.solid_emulsion_rxn_ext_constraint.activate()
             blk.gas_emulsion_hetero_rxn_eqn.activate()
