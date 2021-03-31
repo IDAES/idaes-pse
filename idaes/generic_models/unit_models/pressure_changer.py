@@ -710,7 +710,7 @@ see property package for documentation.}""",
 
     def init_adiabatic(blk, state_args, outlvl, solver, optarg):
         """
-        Initialization routine for unit.
+        Initialization routine for adiabatic pressure changers.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -808,7 +808,7 @@ see property package for documentation.}""",
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         """
-        Initialization routine for unit (default solver ipopt)
+        Initialization routine for isentropic pressure changers.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
