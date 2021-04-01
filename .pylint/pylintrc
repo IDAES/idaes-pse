@@ -8,6 +8,9 @@ disable=no-self-argument,
     bad-super-call,
     assignment-from-none,
 
+[IMPORTS]
+ignored-modules=cvalsim,almsim
+
 [TYPECHECK]
 # prevents members specified here from causing E1101 (no-member)
 # the regular expression is currently matched against the name used at the call site
