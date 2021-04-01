@@ -5,13 +5,7 @@ Set up logging for the idaes module, and import plugins.
 """
 import os
 
-from . import config as cfg
-# WHY: to pylint's puzzlement (and that of the author of this fix),
-# the statement `from . import x as y` results in both `x` and `y`
-# to be added to the global namespace, contrary to what happens with
-# e.g. `from os import path as another_name`
-# therefore, pylint's "Undefined variable 'config'" message is a false positive
-# pylint: disable=undefined-variable
+from . import config
 import logging
 
 from .ver import __version__  # noqa
@@ -23,9 +17,9 @@ data_directory, bin_directory, testing_directory = config.get_data_directory()
 # To avoid a circular import the config module doesn't import idaes, but
 # some functions in the config module that are executed later use this
 # these directories are static from here on.
-cfg.data_directory = data_directory
-cfg.bin_directory = bin_directory
-cfg.testing_directory = testing_directory
+config.data_directory = data_directory
+config.bin_directory = bin_directory
+config.testing_directory = testing_directory
 
 # Set the path for the global and local config files
 _global_config_file = os.path.join(data_directory, "idaes.conf")
@@ -81,6 +75,6 @@ except FileNotFoundError:
     pass # the standard place for this doesn't exist, shouldn't be a show stopper
 
 
-reconfig = cfg.reconfig
-read_config = cfg.read_config
+reconfig = config.reconfig
+read_config = config.read_config
 cfg = _config
