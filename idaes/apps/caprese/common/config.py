@@ -54,14 +54,28 @@ class ControlPenaltyType(ConfigEnum):
 
 
 class VariableCategory(ConfigEnum):
-    DIFFERENTIAL = 51
-    ALGEBRAIC = 52
-    DERIVATIVE = 53
-    INPUT = 54
-    FIXED = 55
-    SCALAR = 56
-    
-    MEASUREMENT = 57
+    DIFFERENTIAL = 1
+    ALGEBRAIC = 2
+    DERIVATIVE = 3
+    INPUT = 4
+    FIXED = 5
+    SCALAR = 6
+    UNUSED = 7
+    DISTURBANCE = 8
+    MEASUREMENT = 9
+
+
+class ConstraintCategory(ConfigEnum):
+    DIFFERENTIAL = 1
+    ALGEBRAIC = 2
+    DISCRETIZATION = 3
+    INPUT = 4
+    INITIAL = 5
+    TERMINAL = 6
+    SENSITIVITY = 7
+    SCALAR = 8
+    UNUSED = 9
+    INEQUALITY = 10
 
 
 class NoiseBoundOption(ConfigEnum):
