@@ -26,6 +26,7 @@ from pyomo.common.config import ConfigBlock
 from pyomo.network import Port, Arc
 
 import idaes.logger as idaeslog
+import idaes.core.solvers
 
 _log = idaeslog.getLogger(__name__)
 
@@ -36,14 +37,7 @@ def get_default_solver():
     Tries to set-up the default solver for testing, and returns None if not
     available
     """
-    if pyo.SolverFactory('ipopt').available(exception_flag=False):
-        solver = pyo.SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6,
-                          'linear_solver': 'ma27'}
-    else:
-        raise RuntimeError("Default solver unavailable.")
-
-    return solver
+    return idaes.core.solvers.SolverWrapper("default", register=False)()
 
 
 # Author: Andrew Lee
