@@ -33,9 +33,12 @@ from idaes.core.util import get_default_solver
 
 from idaes.core.util.homotopy import homotopy
 
-
 # Set module level pyest marker
 pytestmark = pytest.mark.solver
+
+import idaes.core.solvers
+
+idaes.core.solvers.use_idaes_solver_configuration_deafults()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -416,7 +419,7 @@ def test_ideal_prop_max_iter(model2):
 
     assert tc == TerminationCondition.optimal
     assert prog == 1
-    assert ni == 19
+    assert ni == 10
 
     # Check for VLE results
     assert model2.fs.state_block.mole_frac_phase_comp["Liq", "benzene"].value \
