@@ -26,8 +26,12 @@ from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.matching.interface import IncidenceGraphInterface
 
 import idaes.apps.caprese.nmpc_var as nmpc_var
-from idaes.apps.caprese.common.config import VariableCategory
+from idaes.apps.caprese.common.config import (
+        VariableCategory,
+        ConstraintCategory,
+        )
 VC = VariableCategory
+CC = ConstraintCategory
 
 CATEGORY_TYPE_MAP = {
         VariableCategory.DIFFERENTIAL: nmpc_var.DiffVar,
@@ -90,8 +94,12 @@ def categorize_dae_variables_and_constraints(
         dae_cons,
         time,
         index=None,
-        inputs=None,
-        disturbances=None,
+        input_vars=None,
+        disturbance_vars=None,
+        input_cons=None,
+        #active_inequalities=None,
+        # TODO: Allow this option, then filter out inequalities
+        # not included here.
         context=None,
         ):
     # Index that we access when we need to work with a specific data
@@ -106,15 +114,21 @@ def categorize_dae_variables_and_constraints(
         # for general ordered sets.
         t1 = time[2]
 
-    if inputs is None:
-        inputs = []
-    if disturbances is None:
-        disturbances = []
+    if input_vars is None:
+        input_vars = []
+    if input_cons is None:
+        input_cons = []
+    if disturbance_vars is None:
+        disturbance_vars = []
 
     # We will check these sets to determine which components
     # are inputs and disturbances.
-    input_set = ComponentSet(inp[t1] for inp in inputs)
-    disturbance_set = ComponentSet(dist[t1] for dist in disturbances)
+    # Specified input vars/cons and disturbance vars should be in the
+    # form of components indexed only by time. The user can accomplish
+    # this easily with the `Reference` function.
+    input_var_set = ComponentSet(inp[t1] for inp in input_vars)
+    disturbance_var_set = ComponentSet(dist[t1] for dist in disturbance_vars)
+    input_con_set = ComponentSet(inp[t1] for inp in input_cons)
 
     # Filter vars and cons for duplicates.
     visited = set()
@@ -141,8 +155,9 @@ def categorize_dae_variables_and_constraints(
 
     # Filter out inputs and disturbances. These are "not variables"
     # for the sake of having a square DAE model.
-    dae_vars = [var for var in dae_vars if var[t1] not in input_set
-            and var[t1] not in disturbance_set]
+    dae_vars = [var for var in dae_vars if var[t1] not in input_var_set
+            and var[t1] not in disturbance_var_set]
+    dae_cons = [con for con in dae_cons if con[t1] not in input_con_set]
 
     dae_map = ComponentMap()
     dae_map.update(
@@ -265,12 +280,19 @@ def categorize_dae_variables_and_constraints(
         model.del_component(model._temp_dummy_obj)
 
     var_category_dict = {
-            VC.INPUT: inputs,
+            VC.INPUT: input_vars,
             VC.DIFFERENTIAL: diff_vars,
             VC.DERIVATIVE: derivs,
             VC.ALGEBRAIC: alg_vars,
-            #VC.DISTURBANCE: disturbances,
-            #VC.UNUSED: unused_vars,
+            VC.DISTURBANCE: disturbance_vars,
+            VC.UNUSED: unused_vars,
+            }
+    con_category_dict = {
+            CC.INPUT: input_cons,
+            CC.DIFFERENTIAL: diff_cons,
+            CC.DISCRETIZATION: discs,
+            CC.ALGEBRAIC: alg_cons,
+            CC.UNUSED: unused_cons,
             }
     return var_category_dict
 
