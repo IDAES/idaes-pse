@@ -6,6 +6,7 @@ ignore-patterns=test_.*
 [MESSAGES CONTROL]
 disable=no-self-argument,
     bad-super-call,
+    assignment-from-none,
 
 [TYPECHECK]
 # prevents members specified here from causing E1101 (no-member)
