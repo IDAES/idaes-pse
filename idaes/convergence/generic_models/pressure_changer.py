@@ -18,7 +18,6 @@ from idaes.generic_models.unit_models.pressure_changer import (
     PressureChanger,
     ThermodynamicAssumption,
 )
-from idaes.core.util import get_solver
 
 # Import property package for testing
 from idaes.generic_models.properties import iapws95 as pp
@@ -87,3 +86,17 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
 
         # return the initialized model
         return m
+
+    def get_solver(self):
+        """
+        Returns an ipopt solver object with the desired options for
+        convergence evaluation (and initialization)
+        Returns
+        -------
+           Pyomo solver
+        """
+        opt = pe.SolverFactory('ipopt')
+        opt.options = {'tol': 1e-6,
+                       'mu_init': 1e-8,
+                       'bound_push': 1e-8}
+        return opt
