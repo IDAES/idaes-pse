@@ -294,9 +294,7 @@ class FlowsheetSerializer:
                 performance_df = pd.DataFrame(
                     performance_contents["vars"].items(), columns=["Variable", "Value"]
                 )
-                performance_df["Value"] = performance_df["Value"].map(
-                    lambda v: value(v)
-                )
+                performance_df["Value"] = performance_df["Value"].map(value)
                 performance_df = self._convert_for_ajax_compatibility(performance_df)
             self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
