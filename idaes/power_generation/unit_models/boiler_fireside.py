@@ -44,7 +44,8 @@ Notes:
 2. PA to raw coal flow rate ratio can be specified by a flowsheet constraint
 3. Fraction of coal moisture vaporized in mill should be consistent with
    the surrogate model (typically 0.6)
-4. Moisture mass fraction in raw coal is a user input and should be consistent with the values used to train the surrogate model
+4. Moisture mass fraction in raw coal is a user input and should be consistent
+   with the values used to train the surrogate model
 
 
 Surrogate models need to be provided by the user:
@@ -81,10 +82,12 @@ import idaes.logger as idaeslog
 
 
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, Var, Param, exp, log,\
-    RangeSet, Constraint
+from pyomo.environ import \
+    SolverFactory, Var, Param, exp, log, RangeSet, Constraint
 import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
+from idaes.core.util import get_solver
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Boiler Team (J. Ma, M. Zamarripa)"
 __version__ = "1.0.0"
@@ -180,9 +183,9 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # Insert user provided custom surrogate model function
         # self.config.surrogate_function(self)
         if self.config.surrogate_dictionary is None:
-            raise ConfigurationError('User needs to provide '
-                                     'a dictionary of surrogates'.format(self.
-                                                                         name))
+            raise ConfigurationError(
+                '{} - User needs to provide a dictionary of surrogates'
+                .format(self.name))
 
         self.primary_air = self.config.property_package.build_state_block(
             self.flowsheet().config.time,
@@ -218,8 +221,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                               + 2  # flyash surrogate and NOx surrogate
                               ):
             raise ConfigurationError('User needs to provide the same number '
-                            'of surrogate models and water wall zones'
-                            'and/or platen sh and/or boiler roof')
+                                     'of surrogate models and water wall zones'
+                                     'and/or platen sh and/or boiler roof')
 
         # Surrogate model predictions
         # Constraints for heat duty in boiler water wall zones
@@ -915,8 +918,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                     True else 0)
 
     def initialize(blk, state_args_PA=None, state_args_SA=None,
-                   outlvl=idaeslog.NOTSET, solver='ipopt',
-                   optarg={'tol': 1e-6}):
+                   outlvl=idaeslog.NOTSET, solver=None,
+                   optarg={}):
         '''
         Initialization routine.
         1.- initialize state blocks, using an initial guess for inlet
@@ -937,9 +940,9 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -947,8 +950,8 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks
