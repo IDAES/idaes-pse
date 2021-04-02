@@ -54,14 +54,13 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
-from idaes.core.util import get_default_solver
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
