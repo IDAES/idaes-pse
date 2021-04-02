@@ -968,7 +968,7 @@ objects linked to all inlet states and the mixed state,
         inlet_list = blk.create_inlet_list()
         for i in inlet_list:
             i_block = getattr(blk, i + "_state")
-            i_block.release_state(flags[i], outlvl=outlvl + 1)
+            i_block.release_state(flags[i], outlvl=outlvl)
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}
