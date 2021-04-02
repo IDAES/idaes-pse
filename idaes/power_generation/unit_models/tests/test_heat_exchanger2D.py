@@ -37,10 +37,10 @@ from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.power_generation.unit_models.boiler_heat_exchanger_2D import \
     HeatExchangerCrossFlow2D_Header
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 

@@ -19,18 +19,12 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties import iapws95
 from idaes.power_generation.unit_models import FWH0D
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import get_solver
 
-prop_available = iapws95.iapws95_available()
-
-# See if ipopt is available and set up solver
-if pyo.SolverFactory('ipopt').available():
-    solver = pyo.SolverFactory('ipopt')
-else:
-    solver = None
+# Set up solver
+solver = get_solver()
 
 
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_fwh_model():
     model = pyo.ConcreteModel()
