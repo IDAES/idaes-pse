@@ -260,6 +260,9 @@ class FlowsheetSerializer:
         # Note we're only using the keys from self.ports, {port: parentcomponent}
         return set(self.ports) - used_ports
 
+    def _convert_for_ajax_compatibility(self, df):
+        return df.replace(np.nan, "NaN")
+
     def _add_unit_model_with_ports(self, unit):
         unit_name = unit.getname()
         if unit.parent_block() == self.flowsheet:
@@ -281,7 +284,7 @@ class FlowsheetSerializer:
                 stream_df = stream_df.reset_index().rename(
                     columns={"index": "Variable"}
                 )
-                stream_df = stream_df.replace(np.nan, "NaN", regex=True)
+                stream_df = self._convert_for_ajax_compatibility(stream_df)
             self._serialized_contents[unit_name]["stream_contents"] = stream_df
 
             performance_df = pd.DataFrame()
@@ -294,7 +297,7 @@ class FlowsheetSerializer:
                 performance_df["Value"] = performance_df["Value"].map(
                     lambda v: value(v)
                 )
-                performance_df = performance_df.replace(np.nan, "NaN", regex=True)
+                performance_df = self._convert_for_ajax_compatibility(performance_df)
             self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
         elif unit in self._known_endpoints:

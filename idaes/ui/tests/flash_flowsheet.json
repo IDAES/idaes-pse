@@ -54,7 +54,7 @@
                },
                "4":{
                   "Variable":"pressure",
-                  "Inlet":101325.0,
+                  "Inlet": "NaN",
                   "Vapor Outlet":101325.0,
                   "Liquid Outlet":101325.0
                }
