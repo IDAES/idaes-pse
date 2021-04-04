@@ -84,7 +84,10 @@ class _DynamicBlockData(_BlockData):
         """ Generates time-indexed references and categorizes them. """
         model = self.mod
         time = self.time
-        inputs = self._inputs
+        try:
+            inputs = self._inputs
+        except AttributeError:
+            inputs = self._inputs = None
         try:
             measurements = self._measurements
         except AttributeError:
@@ -93,15 +96,19 @@ class _DynamicBlockData(_BlockData):
         # TODO: Give the user the option to provide their own
         # category_dict (they know the structure of their model
         # better than I do...)
-        try:
-            self.category_dict = self._category_dict
-            if VC.INPUT not in self.category_dict and inputs is not None:
+        if self._category_dict is not None:
+            category_dict = self.category_dict = self._category_dict
+            if (VC.INPUT not in category_dict and inputs is not None):
                 self.category_dict[VC.INPUT] = inputs
-            if (VC.MEASUREMENT not in self.category_dict and
-                    measurements is not None):
+            if (VC.MEASUREMENT not in category_dict and measurements is not None):
                 self.category_dict[VC.MEASUREMENT] = measurements
+            self.dae_vars = []
+            for categ, varlist in category_dict.items():
+                if categ is not VC.MEASUREMENT:
+                    # Assume that measurements are duplicates
+                    self.dae_vars.extend(varlist)
 
-        except AttributeError:
+        else:
             scalar_vars, dae_vars = flatten_dae_components(
                     model,
                     time,
@@ -727,8 +734,8 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_measurements = Initializer(kwds.pop('measurements', None),
                 treat_sequences_as_mappings=False)
-        self._init_category_dict = Initializer(kwds.pop('category_dict', None),
-                treat_sequences_as_mappings=False)
+        self._init_category_dict = ConstantInitializer(
+                kwds.pop('category_dict', None))
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):

@@ -539,11 +539,19 @@ class TestDynamicBlock(object):
         t0 = time.first()
         inputs = [model.flow_in[t0]]
         measurements = [model.conc[t0,'A'], model.conc[t0,'B']]
+        scalar_vars, dae_vars = flatten_dae_components(
+                model,
+                time,
+                pyo.Var,
+                )
+        category_dict = categorize_dae_variables(dae_vars, time, inputs,
+                measurements=measurements)
         dyn_block = DynamicBlock(
                 model=model,
                 time=time,
-                inputs=inputs,
-                measurements=measurements,
+                category_dict=category_dict,
+                #inputs=inputs,
+                #measurements=measurements,
                 )
         dyn_block.construct()
         dyn_block.set_sample_time(sample_time)
