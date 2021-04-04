@@ -19,6 +19,7 @@ from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
         ControlPenaltyType,
         )
+from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
         CATEGORY_TYPE_MAP,
@@ -102,31 +103,39 @@ class _ControllerBlockData(_DynamicBlockData):
         was_fixed = ComponentMap()
 
         # Cache "important" values to re-load after solve
-        init_input = list(self.vectors.input[:, t0].value)
-        init_meas = list(self.vectors.measurement[:, t0].value)
+        init_input = list(self.vectors.input[:, t0].value) \
+                if VC.INPUT in self.categories else []
+        init_meas = list(self.vectors.measurement[:, t0].value) \
+                if VC.MEASUREMENT in self.categories else []
 
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
         # it to be fixed if steady state is required.
-        self.vectors.measurement[:,t0].unfix()
+        if VC.MEASUREMENT in self.categories:
+            self.vectors.measurement[:,t0].unfix()
 
-        input_vars = self.vectors.input
-        was_fixed = ComponentMap(
-                (var, var.fixed) for var in input_vars[:,t0]
-                )
-        input_vars[:,t0].unfix()
-        if require_steady == True:
-            self.vectors.derivative[:,t0].fix(0.)
+        if VC.INPUT in self.categories:
+            input_vars = self.vectors.input
+            was_fixed = ComponentMap(
+                    (var, var.fixed) for var in input_vars[:,t0]
+                    )
+            input_vars[:,t0].unfix()
+        if VC.DERIVATIVE in self.categories:
+            if require_steady == True:
+                self.vectors.derivative[:,t0].fix(0.)
 
         self.setpoint_objective.activate()
 
         # Solve single-time point optimization problem
-        dof = degrees_of_freedom(model)
-        if require_steady:
-            assert dof == len(self.INPUT_SET)
-        else:
-            assert dof == (len(self.INPUT_SET) +
-                    len(self.DIFFERENTIAL_SET))
+        #
+        # If these sets do not necessarily exist, then I don't think
+        # I can make any assertion about the number of degrees of freedom
+        #dof = degrees_of_freedom(model)
+        #if require_steady:
+        #    assert dof == len(self.INPUT_SET)
+        #else:
+        #    assert dof == (len(self.INPUT_SET) +
+        #            len(self.DIFFERENTIAL_SET))
         results = solver.solve(self, tee=config.tee)
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
@@ -137,9 +146,11 @@ class _ControllerBlockData(_DynamicBlockData):
         self.setpoint_objective.deactivate()
 
         # Revert changes. Again, order matters
-        if require_steady == True:
-            self.vectors.derivative[:,t0].unfix()
-        self.vectors.measurement[:,t0].fix()
+        if VC.DERIVATIVE in self.categories:
+            if require_steady == True:
+                self.vectors.derivative[:,t0].unfix()
+        if VC.MEASUREMENT in self.categories:
+            self.vectors.measurement[:,t0].fix()
 
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
@@ -148,9 +159,10 @@ class _ControllerBlockData(_DynamicBlockData):
                     comp.activate()
 
         # Fix inputs that were originally fixed
-        for var in self.vectors.input[:,t0]:
-            if was_fixed[var]:
-                var.fix()
+        if VC.INPUT in self.categories:
+            for var in self.vectors.input[:,t0]:
+                if was_fixed[var]:
+                    var.fix()
 
         setpoint_ctype = (DiffVar, AlgVar, InputVar,
                           FixedVar, DerivVar, MeasuredVar)
@@ -158,8 +170,10 @@ class _ControllerBlockData(_DynamicBlockData):
             var.setpoint = var[t0].value
 
         # Restore cached values
-        self.vectors.input.values = init_input
-        self.vectors.measurement.values = init_meas
+        if VC.INPUT in self.categories:
+            self.vectors.input.values = init_input
+        if VC.MEASUREMENT in self.categories:
+            self.vectors.measurement.values = init_meas
 
     def add_setpoint_objective(self, 
             setpoint,
@@ -283,8 +297,14 @@ class _ControllerBlockData(_DynamicBlockData):
         time point. This constraint is skipped at sample points.
         """
         time = self.time
-        input_set = self.INPUT_SET
-        self.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
+        if VC.INPUT in self.categories:
+            input_set = self.INPUT_SET
+            self.pwc_constraint = Constraint(input_set, time, rule=pwc_rule)
+        else:
+            raise RuntimeError(
+                    "Trying to add constraints on inputs but no input "
+                    "variables have been specified."
+                    )
 
 
 class ControllerBlock(DynamicBlock):
