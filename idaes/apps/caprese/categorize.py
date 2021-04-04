@@ -100,7 +100,6 @@ def categorize_dae_variables_and_constraints(
         #active_inequalities=None,
         # TODO: Allow this option, then filter out inequalities
         # not included here.
-        context=None,
         ):
     # Index that we access when we need to work with a specific data
     # object. This would be less necessary if constructing CUIDs was
@@ -294,7 +293,7 @@ def categorize_dae_variables_and_constraints(
             CC.ALGEBRAIC: alg_cons,
             CC.UNUSED: unused_cons,
             }
-    return var_category_dict
+    return var_category_dict, con_category_dict
 
 
 def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
@@ -411,6 +410,8 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
         # override the inferred measurements. Assume the user
         # will modify the state of their variables appropriately.
         category_list_map[VariableCategory.MEASUREMENT] = user_measured_vars
+    # NOTE: `ref` could be a regular time-indexed component (not a reference),
+    # and thus won't have a `referent` attribute. Can check with `is_reference`
     category_dict = {
             category: [
                 Reference(ref.referent, ctype=ctype)
