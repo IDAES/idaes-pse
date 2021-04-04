@@ -20,6 +20,7 @@ from pyomo.common.collections import ComponentSet
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.core.base.block import _BlockData, SubclassOf
+from pyomo.dae.flatten import flatten_dae_components
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
         MomentumBalanceType)
@@ -39,6 +40,7 @@ from idaes.apps.caprese.dynamic_block import (
         IndexedDynamicBlock,
         _DynamicBlockData,
         )
+from idaes.apps.caprese.categorize import categorize_dae_variables
 from idaes.apps.caprese.common.config import (
         VariableCategory,
         InputOption,
