@@ -124,6 +124,13 @@ class _DynamicBlockData(_BlockData):
                     )
             self.category_dict = category_dict
 
+        keys = list(category_dict)
+        for categ in keys:
+            if not category_dict[categ]:
+                # Empty categories cause problems for us down the road
+                # due empty (unknown dimension) slices.
+                category_dict.pop(categ)
+
         self._add_category_blocks()
         self._add_category_references()
 
@@ -243,7 +250,8 @@ class _DynamicBlockData(_BlockData):
             var_name = self._var_name
 
             # Get a slice of the block, e.g. self.DIFFERENTIAL_BLOCK[:]
-            _slice = getattr(self, block_name)[:]
+            block = getattr(self, block_name)
+            _slice = block[:]
             #_slice = self.__getattribute__(block_name)[:]
             # Why does this work when self.__getattr__(block_name) does not?
             # __getattribute__ appears to work just fine...
@@ -258,9 +266,10 @@ class _DynamicBlockData(_BlockData):
             # `self.vectors.differential[i,t0]`
             # to get the "ith coordinate" of the vector of differential
             # variables at time t0.
+            ref = Reference(_slice, ctype=_NmpcVector)
             self.vectors.add_component(
                     categ.name.lower(), # Lowercase of the enum name
-                    Reference(_slice, ctype=_NmpcVector),
+                    ref,
                     )
 
     # Time is added in DynamicBlock.construct but this is nice if the user wants

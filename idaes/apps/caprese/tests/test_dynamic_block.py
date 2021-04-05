@@ -1203,7 +1203,7 @@ class TestDynamicBlock(object):
         category_dict = {
                 VC.INPUT: inputs,
                 VC.MEASUREMENT: measurements,
-                #VC.ALGEBRAIC: [],
+                VC.ALGEBRAIC: [],
                 }
         db = DynamicBlock(
                 model=model,
@@ -1213,8 +1213,8 @@ class TestDynamicBlock(object):
         db.construct()
         db.set_sample_time(0.5)
 
-        db.vectors.input[:, t0].set_value(1.1)
-        db.vectors.measurement[:, t0].set_value(2.2)
-        assert model.flow_in[t0].value == 1.1
-        assert model.conc[t0, 'A'].value == 2.2
-        assert model.conc[t0, 'B'].value == 2.2
+        # Categories with no variables are removed.
+        # If they were retained, trying to iterate
+        # over, e.g., vectors.algebraic[:, :] would
+        # fail due to inconsistent dimension.
+        assert VC.ALGEBRAIC not in db.category_dict
