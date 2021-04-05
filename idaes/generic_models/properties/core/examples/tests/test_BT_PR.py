@@ -27,12 +27,11 @@ from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.environ import (ConcreteModel,
                            Objective,
-                           SolverFactory,
                            SolverStatus,
                            TerminationCondition,
                            value)
 
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
@@ -44,7 +43,7 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -86,7 +85,6 @@ class TestBTExample(object):
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m, tee=True)
 
             assert results.solver.termination_condition == \
@@ -104,7 +102,6 @@ class TestBTExample(object):
 
             m.fs.state.initialize(outlvl=0)
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m)
 
             assert results.solver.termination_condition == \
@@ -113,7 +110,6 @@ class TestBTExample(object):
             while m.fs.state[1].pressure.value <= 1e6:
                 m.fs.state[1].pressure.value = (
                     m.fs.state[1].pressure.value + 1e5)
-                solver = SolverFactory('ipopt')
                 results = solver.solve(m)
                 assert results.solver.termination_condition == \
                     TerminationCondition.optimal
@@ -133,7 +129,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -196,7 +191,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -259,7 +253,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -322,7 +315,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -385,7 +377,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -451,7 +442,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution

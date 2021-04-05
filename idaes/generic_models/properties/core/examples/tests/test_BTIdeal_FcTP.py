@@ -32,7 +32,7 @@ from idaes.core import (MaterialBalanceType,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.core import LiquidPhase, VaporPhase
 
@@ -53,7 +53,7 @@ import idaes.generic_models.properties.core.pure.NIST as NIST
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 config_dict = {
     "components": {
