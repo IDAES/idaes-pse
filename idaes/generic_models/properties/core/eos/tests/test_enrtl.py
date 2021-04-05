@@ -18,6 +18,7 @@ Author: Andrew Lee
 import pytest
 
 from pyomo.environ import (ConcreteModel,
+                           Expression,
                            value,
                            Var,
                            units as pyunits)
@@ -40,9 +41,12 @@ configuration = {
     "components": {
         "H2O": {"type": Solvent},
         "C6H12": {"type": Solute},
-        "NaCl": {"type": Apparent},
-        "HCl": {"type": Apparent},
-        "NaOH": {"type": Apparent},
+        "NaCl": {"type": Apparent,
+                 "dissociation_species": {"Na+": 1, "Cl-": 1}},
+        "HCl": {"type": Apparent,
+                "dissociation_species": {"H+": 1, "Cl-": 1}},
+        "NaOH": {"type": Apparent,
+                 "dissociation_species": {"Na+": 1, "OH-": 1}},
         "Na+": {"type": Cation,
                 "charge": +1},
         "H+": {"type": Cation,
@@ -84,12 +88,20 @@ class TestParameters(object):
                 assert m.params.Liq.alpha[(i, j)].value == 0.2
                 assert m.params.Liq.alpha[(i, j)].fixed
 
+        assert isinstance(m.params.Liq.tau, Var)
+        assert len(m.params.Liq.tau) == 25
+        for (i, j) in m.params.Liq.tau:
+            assert m.params.Liq.tau[(i, j)].value == 0
+            assert m.params.Liq.tau[(i, j)].fixed
+
     @pytest.mark.unit
     def test_parameters_assignment(self):
         test_config = dict(configuration)
         test_config["parameter_data"] = {}
         test_config["parameter_data"]["Liq_alpha"] = {}
         test_config["parameter_data"]["Liq_alpha"][("H2O", "NaCl")] = 0.6
+        test_config["parameter_data"]["Liq_tau"] = {}
+        test_config["parameter_data"]["Liq_tau"][("H2O", "NaCl")] = 0.1
 
         m = ConcreteModel()
 
@@ -110,6 +122,17 @@ class TestParameters(object):
             else:
                 assert m.params.Liq.alpha[(i, j)].value == 0.2
                 assert m.params.Liq.alpha[(i, j)].fixed
+
+        assert isinstance(m.params.Liq.tau, Var)
+        assert len(m.params.Liq.tau) == 25
+        for (i, j) in m.params.Liq.tau:
+            print(i, j)
+            if (i, j) == ("H2O", "NaCl"):
+                assert m.params.Liq.tau[(i, j)].value == 0.1
+                assert m.params.Liq.tau[(i, j)].fixed
+            else:
+                assert m.params.Liq.tau[(i, j)].value == 0
+                assert m.params.Liq.tau[(i, j)].fixed
 
     @pytest.mark.unit
     def test_parameters_unsymmetric_alpha(self):
@@ -163,3 +186,79 @@ class TestParameters(object):
                            match="params.Liq eNRTL alpha parameter provided "
                            "for invalid component pair "):
             m.params = GenericParameterBlock(default=test_config)
+
+    @pytest.mark.unit
+    def test_parameters_tau_asymmetric(self):
+        test_config = dict(configuration)
+        test_config["parameter_data"] = {}
+        test_config["parameter_data"]["Liq_tau"] = {}
+        test_config["parameter_data"]["Liq_tau"][("H2O", "NaCl")] = 0.1
+        test_config["parameter_data"]["Liq_tau"][("NaCl", "H2O")] = -0.1
+
+        m = ConcreteModel()
+
+        m.params = GenericParameterBlock(default=test_config)
+
+        assert isinstance(m.params.Liq.tau, Var)
+        assert len(m.params.Liq.tau) == 25
+        for (i, j) in m.params.Liq.tau:
+            print(i, j)
+            if (i, j) == ("H2O", "NaCl"):
+                assert m.params.Liq.tau[(i, j)].value == 0.1
+                assert m.params.Liq.tau[(i, j)].fixed
+            elif (i, j) == ("NaCl", "H2O"):
+                assert m.params.Liq.tau[(i, j)].value == -0.1
+                assert m.params.Liq.tau[(i, j)].fixed
+            else:
+                assert m.params.Liq.tau[(i, j)].value == 0
+                assert m.params.Liq.tau[(i, j)].fixed
+
+    @pytest.mark.unit
+    def test_parameters_tau_unused_parameter(self):
+        test_config = dict(configuration)
+        test_config["parameter_data"] = {}
+        test_config["parameter_data"]["Liq_tau"] = {}
+        test_config["parameter_data"]["Liq_tau"][("H2O", "Na+")] = 0.6
+
+        m = ConcreteModel()
+
+        # TODO: Can't get regex to match tuple for some reason
+        # For now, just chck the start of the expected string.
+        with pytest.raises(ConfigurationError,
+                           match="params.Liq eNRTL tau parameter provided "
+                           "for invalid component pair "):
+            m.params = GenericParameterBlock(default=test_config)
+
+
+class TestStateBlock(object):
+    @pytest.mark.unit
+    def test_common(self):
+        m = ConcreteModel()
+        m.params = GenericParameterBlock(default=configuration)
+
+        m.state = m.params.build_state_block([1])
+
+        assert isinstance(m.state[1]._X, Expression)
+        assert len(m.state[1]._X) == 6
+        for j in m.state[1]._X:
+            if j in ["H2O", "C6H12"]:
+                # _X should be mole_frac_phase_comp_true
+                assert (str(m.state[1]._X[j]._expr) ==
+                        str(m.state[1].mole_frac_phase_comp_true["Liq", j]))
+            else:
+                # _X should be mutiplied by |charge|
+                assert (str(m.state[1]._X[j]._expr) ==
+                        str(m.state[1].mole_frac_phase_comp_true["Liq", j] *
+                            abs(m.params.get_component(j).config.charge)))
+
+        assert isinstance(m.state[1]._Y, Expression)
+        assert len(m.state[1]._Y) == 4
+        for j in m.state[1]._Y:
+            if j in ["H+", "Na+"]:
+                assert (str(m.state[1]._Y[j]._expr) ==
+                        str(m.state[1]._X[j] /
+                            (m.state[1]._X["Na+"] + m.state[1]._X["H+"])))
+            else:
+                assert (str(m.state[1]._Y[j]._expr) ==
+                        str(m.state[1]._X[j] /
+                            (m.state[1]._X["Cl-"] + m.state[1]._X["OH-"])))

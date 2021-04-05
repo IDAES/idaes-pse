@@ -371,6 +371,11 @@ class GenericParameterData(PhysicalParameterBlock):
                 Set(initialize=apparent_species,
                     ordered=True,
                     doc="Set of apparent components in mixture"))
+            self.add_component(
+                "ion_set",
+                Set(initialize=self.anion_set | self.cation_set,
+                    ordered=True,
+                    doc="Master set of all ions in mixture"))
 
         # Validate phase-component lists, and build _phase_component_set
         if not self._electrolyte:
