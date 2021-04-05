@@ -60,13 +60,23 @@ class ENRTL(EoSBase):
                 if (j, i) not in sym_set:
                     sym_set.append((i, j))
 
-        def alpha_init(b, i, j):
-            try:
-                alpha_data = param_block.config.parameter_data[
-                    b.local_name+"_alpha"]
-            except KeyError:
-                alpha_data = {}
+        # Get user provided values for alpha (if present)
+        try:
+            alpha_data = param_block.config.parameter_data[
+                b.local_name+"_alpha"]
+        except KeyError:
+            alpha_data = {}
 
+        # Check for unused parameters in alpha_data
+        for (i, j) in alpha_data.keys():
+            if (i, j) not in sym_set and (j, i) not in sym_set:
+                raise ConfigurationError(
+                    "{} eNRTL alpha parameter provided for invalid "
+                    "component pair {}. Please check typing and only provide "
+                    "parameters for apparent species pairs."
+                    .format(b.name, (i, j)))
+
+        def alpha_init(b, i, j):
             if (i, j) in alpha_data.keys():
                 v = alpha_data[(i, j)]
                 # Check for non-symmetric value assignment

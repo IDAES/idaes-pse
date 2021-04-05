@@ -33,6 +33,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 
 configuration = {
@@ -127,7 +128,12 @@ class TestParameters(object):
             m.params = GenericParameterBlock(default=test_config)
 
     @pytest.mark.unit
-    def test_parameters_symmetry_duplicate(self):
+    def test_parameters_alpha_symmetry_duplicate(self, caplog):
+        caplog.set_level(
+            idaeslog.INFO,
+            logger=("idaes.generic_models.properties.core."
+                    "generic.generic_property"))
+
         test_config = dict(configuration)
         test_config["parameter_data"] = {}
         test_config["parameter_data"]["Liq_alpha"] = {}
@@ -136,14 +142,14 @@ class TestParameters(object):
 
         m = ConcreteModel()
 
-        with pytest.raises(ConfigurationError,
-                           match="params.Liq eNRTL alpha parameter assigned "
-                           "non-symmetric value for pair \('H2O', 'NaCl'\). "
-                           "Please assign only one value for component pair."):
-            m.params = GenericParameterBlock(default=test_config)
+        m.params = GenericParameterBlock(default=test_config)
+
+        assert ("eNRTL alpha value provided for both ('H2O', 'NaCl') and "
+                "('NaCl', 'H2O'). It is only necessary to provide a "
+                "value for one of these due to symmetry." in caplog.text)
 
     @pytest.mark.unit
-    def test_parameters_unused_parameter(self):
+    def test_parameters_alpha_unused_parameter(self):
         test_config = dict(configuration)
         test_config["parameter_data"] = {}
         test_config["parameter_data"]["Liq_alpha"] = {}
@@ -151,8 +157,9 @@ class TestParameters(object):
 
         m = ConcreteModel()
 
+        # TODO: Can't get regex to match tuple for some reason
+        # For now, just chck the start of the expected string.
         with pytest.raises(ConfigurationError,
-                           match="params.Liq eNRTL alpha parameter assigned "
-                           "non-symmetric value for pair \('H2O', 'NaCl'\). "
-                           "Please assign only one value for component pair."):
+                           match="params.Liq eNRTL alpha parameter provided "
+                           "for invalid component pair "):
             m.params = GenericParameterBlock(default=test_config)
