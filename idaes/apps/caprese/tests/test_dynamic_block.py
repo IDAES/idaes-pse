@@ -45,6 +45,7 @@ from idaes.apps.caprese.common.config import (
         VariableCategory,
         InputOption,
         )
+VC = VariableCategory
 from idaes.apps.caprese.nmpc_var import (
         NmpcVar,
         DiffVar,
@@ -1084,3 +1085,136 @@ class TestDynamicBlock(object):
         blk.load_measurements(vals)
         for b, val in zip(blk.MEASUREMENT_BLOCK.values(), vals):
             assert b.var[t0].value == val
+
+    @pytest.mark.unit
+    def test_categories_only_measurement_input(self):
+        model = make_model(horizon=1, nfe=2)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in]
+        measurements = [
+                pyo.Reference(model.conc[:, 'A']),
+                pyo.Reference(model.conc[:, 'B']),
+                ]
+        category_dict = {
+                VC.INPUT: inputs,
+                VC.MEASUREMENT: measurements,
+                }
+        db = DynamicBlock(
+                model=model,
+                time=time,
+                category_dict=category_dict,
+                )
+        db.construct()
+        db.set_sample_time(0.5)
+
+        db.vectors.input[:, t0].set_value(1.1)
+        db.vectors.measurement[:, t0].set_value(2.2)
+        assert model.flow_in[t0].value == 1.1
+        assert model.conc[t0, 'A'].value == 2.2
+        assert model.conc[t0, 'B'].value == 2.2
+
+    @pytest.mark.component    
+    def test_initialize_only_measurement_input(self):
+        model = make_model(horizon=1, nfe=2)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in]
+        measurements = [
+                pyo.Reference(model.conc[:, 'A']),
+                pyo.Reference(model.conc[:, 'B']),
+                ]
+        category_dict = {
+                VC.INPUT: inputs,
+                VC.MEASUREMENT: measurements,
+                }
+        db = DynamicBlock(
+                model=model,
+                time=time,
+                category_dict=category_dict,
+                )
+        db.construct()
+        db.set_sample_time(0.5)
+
+        db.mod.flow_in[:].set_value(3.0)
+        initialize_t0(db.mod)
+        copy_values_forward(db.mod)
+        db.mod.flow_in[:].set_value(2.0)
+
+        # Don't need to know any of the special categories to initialize
+        # by element. This is only because we have an implicit discretization.
+        db.initialize_by_solving_elements(solver)
+
+        t0 = time.first()
+        tl = time.last()
+        vectors = db.vectors
+        assert vectors.input[0,tl].value == 2.0
+        assert vectors.measurement[0,tl].value == pytest.approx(3.185595567867036)
+        assert vectors.measurement[1,tl].value == pytest.approx(1.1532474073395755)
+        assert model.dcdt[tl, 'A'].value == pytest.approx(0.44321329639889284)
+        assert model.dcdt[tl, 'B'].value == pytest.approx(0.8791007531878847)
+
+    @pytest.mark.unit
+    def test_extra_category(self):
+        model = make_model(horizon=1, nfe=2)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in]
+        measurements = [
+                pyo.Reference(model.conc[:, 'A']),
+                pyo.Reference(model.conc[:, 'B']),
+                ]
+        disturbances = [
+                pyo.Reference(model.conc_in[:, 'A']),
+                pyo.Reference(model.conc_in[:, 'B']),
+                ]
+        category_dict = {
+                VC.INPUT: inputs,
+                VC.MEASUREMENT: measurements,
+                VC.DISTURBANCE: disturbances,
+                }
+        db = DynamicBlock(
+                model=model,
+                time=time,
+                category_dict=category_dict,
+                )
+        db.construct()
+        db.set_sample_time(0.5)
+
+        db.vectors.input[:, t0].set_value(1.1)
+        db.vectors.measurement[:, t0].set_value(2.2)
+        db.vectors.disturbance[:, t0].set_value(3.3)
+        assert model.flow_in[t0].value == 1.1
+        assert model.conc[t0, 'A'].value == 2.2
+        assert model.conc[t0, 'B'].value == 2.2
+        assert model.conc_in[t0, 'A'].value == 3.3
+        assert model.conc_in[t0, 'B'].value == 3.3
+
+    @pytest.mark.unit
+    def test_emtpy_category(self):
+        model = make_model(horizon=1, nfe=2)
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in]
+        measurements = [
+                pyo.Reference(model.conc[:, 'A']),
+                pyo.Reference(model.conc[:, 'B']),
+                ]
+        category_dict = {
+                VC.INPUT: inputs,
+                VC.MEASUREMENT: measurements,
+                #VC.ALGEBRAIC: [],
+                }
+        db = DynamicBlock(
+                model=model,
+                time=time,
+                category_dict=category_dict,
+                )
+        db.construct()
+        db.set_sample_time(0.5)
+
+        db.vectors.input[:, t0].set_value(1.1)
+        db.vectors.measurement[:, t0].set_value(2.2)
+        assert model.flow_in[t0].value == 1.1
+        assert model.conc[t0, 'A'].value == 2.2
+        assert model.conc[t0, 'B'].value == 2.2
