@@ -32,7 +32,7 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -638,11 +638,7 @@ Must be True if dynamic = True,
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        if solver is None:
-            opt = get_default_solver()
-        else:
-            opt = SolverFactory(solver)
-            opt.options = optarg
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize control volume block

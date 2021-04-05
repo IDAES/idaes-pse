@@ -30,11 +30,12 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_
     import LiquidParameterBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester, get_default_solver
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestColumn:
