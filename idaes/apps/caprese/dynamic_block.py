@@ -129,13 +129,22 @@ class _DynamicBlockData(_BlockData):
 
         self.categories = set(category_dict)
 
-        self.differential_vars = category_dict[VC.DIFFERENTIAL]
-        self.algebraic_vars = category_dict[VC.ALGEBRAIC]
-        self.derivative_vars = category_dict[VC.DERIVATIVE]
-        self.input_vars = category_dict[VC.INPUT]
-        self.fixed_vars = category_dict[VC.FIXED]
+        # Now that we don't rely on knowing what the categories
+        # will be, we do not need these attributes. They are, however,
+        # used in the tests, so for now, we add them if possible.
+        if VC.DIFFERENTIAL in category_dict:
+            self.differential_vars = category_dict[VC.DIFFERENTIAL]
+        if VC.ALGEBRAIC in category_dict:
+            self.algebraic_vars = category_dict[VC.ALGEBRAIC]
+        if VC.DERIVATIVE in category_dict:
+            self.derivative_vars = category_dict[VC.DERIVATIVE]
+        if VC.INPUT in category_dict:
+            self.input_vars = category_dict[VC.INPUT]
+        if VC.FIXED in category_dict:
+            self.fixed_vars = category_dict[VC.FIXED]
+        if VC.MEASUREMENT in category_dict:
+            self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
 
-        self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
         # vardata map, which maps each vardata to a unique component indexed
@@ -163,14 +172,12 @@ class _DynamicBlockData(_BlockData):
     @classmethod
     def get_category_block_name(cls, categ):
         """ Gets block name from name of enum entry """
-        categ_name = str(categ).split('.')[1]
-        return categ_name + cls._block_suffix
+        return categ.name + cls._block_suffix
 
     @classmethod
     def get_category_set_name(cls, categ):
         """ Gets set name from name of enum entry """
-        categ_name = str(categ).split('.')[1]
-        return categ_name + cls._set_suffix
+        return categ.name + cls._set_suffix
 
     def _add_category_blocks(self):
         """ Adds an indexed block for each category of variable and
@@ -201,7 +208,14 @@ class _DynamicBlockData(_BlockData):
 
             for i, var in enumerate(varlist):
                 # Add reference-to-timeslices to new blocks:
-                ref = var if var.is_reference() else Reference(var, ctype=ctype)
+                #
+                # Create a new reference if var is not a reference or
+                # it has the wrong ctype...
+                # We may want to reconsider overriding the user's ctype...
+                # We may also want to make sure these references are not
+                # attached to anything. Otherwise we will fail here.
+                ref = var if var.is_reference() and var.ctype is ctype \
+                        else Reference(var, ctype=ctype)
                 category_block[i].add_component(var_name, ref)
                 # These vars were created by the categorizer
                 # and have custom ctypes.
@@ -245,11 +259,7 @@ class _DynamicBlockData(_BlockData):
             # to get the "ith coordinate" of the vector of differential
             # variables at time t0.
             self.vectors.add_component(
-                    ctype._attr,
-                    # ^ I store the name I want this attribute to have,
-                    # e.g. 'differential', on the custom ctype.
-                    # TODO: Name should probably be the name of the enum,
-                    # in lowercase.
+                    categ.name.lower(), # Lowercase of the enum name
                     Reference(_slice, ctype=_NmpcVector),
                     )
 
@@ -420,6 +430,10 @@ class _DynamicBlockData(_BlockData):
         # initialize_by_element_in_range multiple times, so
         # this method does not call `initialize_samples_by_element`
         # in a loop.
+        if VC.DIFFERENTIAL in self.categories:
+            time_linking_vars = self.differential_vars
+        else:
+            time_linking_vars = None
         with square_solve_context as sqs:
             initialize_by_element_in_range(
                     model,
@@ -427,7 +441,8 @@ class _DynamicBlockData(_BlockData):
                     time.first(),
                     time.last(),
                     dae_vars=self.dae_vars,
-                    time_linking_vars=list(self.differential_vars[:]),
+                    #time_linking_vars=list(self.differential_vars[:]),
+                    time_linking_vars=time_linking_vars,
                     outlvl=config.outlvl,
                     solver=solver,
                     )
