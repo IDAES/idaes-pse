@@ -44,18 +44,14 @@ from idaes.generic_models.control import PIDBlock, PIDForm
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util.tests.test_initialization import \
         AqueousEnzymeParameterBlock, EnzymeReactionParameterBlock
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
 __author__ = "Robert Parker"
 
 
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
+solver = get_solver()
 
 
 def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):

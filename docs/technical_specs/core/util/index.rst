@@ -7,10 +7,11 @@
     dyn_utils
     homotopy
     initialization
-    phase_equilibria
+    misc
     model_serializer
     model_statistics
+    phase_equilibria
     scaling
     tables    
     unit_costing
-    var_like_expression    
+

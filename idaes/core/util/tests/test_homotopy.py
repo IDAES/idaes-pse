@@ -29,7 +29,7 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.core.util.homotopy import homotopy
 
@@ -42,7 +42,7 @@ idaes.core.solvers.use_idaes_solver_configuration_deafults()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.fixture()

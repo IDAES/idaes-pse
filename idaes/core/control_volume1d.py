@@ -1637,7 +1637,7 @@ argument)."""))
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
                    solver=None, hold_state=True):
         '''
-        Initialization routine for 1D control volume (default solver ipopt)
+        Initialization routine for 1D control volume.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property

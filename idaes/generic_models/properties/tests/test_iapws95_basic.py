@@ -14,7 +14,7 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
+from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.iapws95 as iapws95
@@ -27,13 +27,6 @@ import idaes
 
 # Mark module as an integration test
 pytestmark = pytest.mark.integration
-
-
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
 
 
 def read_data(fname, mw):
@@ -189,7 +182,6 @@ def binary_derivative_test(f, x0, x1, d0=1e-5, d1=1e-5, tol=0.02):
                 between(h[2], hf[2], hb[2]))
 
 
-@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestHelm(object):
     mw = 0.01801528
     Tc = 647.096
