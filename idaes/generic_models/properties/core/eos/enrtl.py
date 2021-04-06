@@ -15,7 +15,7 @@ Methods for eNRTL activity coefficient method.
 
 Only applicable to liquid/electrolyte phases
 """
-from pyomo.environ import Expression, exp
+from pyomo.environ import Expression, exp, log
 
 from .eos_base import EoSBase
 from .enrtl_submethods import ConstantAlpha, ConstantTau
@@ -229,6 +229,25 @@ class ENRTL(EoSBase):
                                    b.params.true_species_set,
                                    rule=rule_G_expr,
                                    doc="Local interaction G term"))
+
+        # Calculate tau terms
+        def rule_tau_expr(b, i, j):
+            if ((i in molecular_set) and
+                    (j in molecular_set)):
+                return tau_rule(b, pobj, i, j, b.temperature)
+            elif ((i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like ion interactions
+                return Expression.Skip
+            else:
+                alpha = getattr(b, pname+"_alpha")
+                G = getattr(b, pname+"_G")
+                return log(G[i, j])/alpha[i, j]
+        b.add_component(pname+"_tau",
+                        Expression(b.params.true_species_set,
+                                   b.params.true_species_set,
+                                   rule=rule_tau_expr,
+                                   doc="Binary interaction energy parameters"))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

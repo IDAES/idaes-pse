@@ -20,7 +20,7 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Expression,
                            exp,
-                           value,
+                           log,
                            Var,
                            units as pyunits)
 
@@ -449,7 +449,6 @@ class TestStateBlock(object):
         assert isinstance(model.state[1].Liq_G, Expression)
         assert len(model.state[1].Liq_G) == 28
 
-# exp(-alpha[i, j]*tau_rule(b, pobj, i, j, b.temperature))
         # Molecule-molecule interactions
         assert (model.state[1].Liq_G["H2O", "H2O"].expr ==
                 exp(-model.params.Liq.alpha["H2O", "H2O"] *
@@ -646,3 +645,35 @@ class TestStateBlock(object):
         assert ("Cl-", "OH-") not in model.state[1].Liq_G
         assert ("OH-", "Cl-") not in model.state[1].Liq_G
         assert ("OH-", "OH-") not in model.state[1].Liq_G
+
+    @pytest.mark.unit
+    def test_tau(self, model):
+        assert isinstance(model.state[1].Liq_tau, Expression)
+        assert len(model.state[1].Liq_tau) == 28
+
+        # Molecule-molecule interactions
+        assert (model.state[1].Liq_tau["H2O", "H2O"].expr ==
+                model.params.Liq.tau["H2O", "H2O"])
+        assert (model.state[1].Liq_tau["H2O", "C6H12"].expr ==
+                model.params.Liq.tau["H2O", "C6H12"])
+        assert (model.state[1].Liq_tau["C6H12", "C6H12"].expr ==
+                model.params.Liq.tau["C6H12", "C6H12"])
+        assert (model.state[1].Liq_tau["C6H12", "H2O"].expr ==
+                model.params.Liq.tau["H2O", "C6H12"])
+
+        for i, j in model.state[1].Liq_tau:
+            if (i, j) not in [("H2O", "H2O"), ("H2O", "C6H12"),
+                              ("C6H12", "H2O"), ("C6H12", "C6H12")]:
+                assert (model.state[1].Liq_tau[i, j].expr ==
+                        log(model.state[1].Liq_G[i, j]) /
+                        model.state[1].Liq_alpha[i, j])
+
+        # Like-ion interactions
+        assert ("Na+", "Na+") not in model.state[1].Liq_tau
+        assert ("Na+", "H+") not in model.state[1].Liq_tau
+        assert ("H+", "Na+") not in model.state[1].Liq_tau
+        assert ("h+", "H+") not in model.state[1].Liq_tau
+        assert ("Cl-", "Cl-") not in model.state[1].Liq_tau
+        assert ("Cl-", "OH-") not in model.state[1].Liq_tau
+        assert ("OH-", "Cl-") not in model.state[1].Liq_tau
+        assert ("OH-", "OH-") not in model.state[1].Liq_tau
