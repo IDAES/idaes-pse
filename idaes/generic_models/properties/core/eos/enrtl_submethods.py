@@ -17,7 +17,7 @@ Includes temperature dependance rules for alpha and tau
 """
 from pyomo.environ import Reals, units as pyunits, Var
 
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 import idaes.logger as idaeslog
 
 # Set up logger
@@ -87,6 +87,17 @@ class ConstantAlpha(object):
                 doc='Symmetric non-randomness parameters',
                 units=pyunits.dimensionless))
 
+    def return_expression(b, pobj, i, j, T):
+        if (i, j) in pobj.alpha:
+            return pobj.alpha[i, j]
+        elif (j, i) in pobj.alpha:
+            return pobj.alpha[j, i]
+        else:
+            raise BurntToast(
+                "{} alpha rule encountered unexpected index {}. Please contact"
+                "the IDAES Developers with this bug."
+                .format(b.name, (i, j)))
+
 
 class ConstantTau(object):
     def build_parameters(b):
@@ -125,3 +136,6 @@ class ConstantTau(object):
                 initialize=tau_init,
                 doc='Binary interaction energy parameters',
                 units=pyunits.dimensionless))
+
+    def return_expression(b, pobj, i, j, T):
+        pass
