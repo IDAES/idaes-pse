@@ -76,12 +76,14 @@ class ENRTL(EoSBase):
 
         # Calculate mixing factors
         def rule_X(b, j):
-            if j in b.params.cation_set or j in b.params.anion_set:
+            if (pname, j) not in b.params.true_phase_component_set:
+                return Expression.Skip
+            elif j in b.params.cation_set or j in b.params.anion_set:
                 cobj = b.params.get_component(j)
-                return (b.mole_frac_phase_comp_true[pobj.local_name, j] *
+                return (b.mole_frac_phase_comp_true[pname, j] *
                         cobj.config.charge)
             else:
-                return b.mole_frac_phase_comp_true[pobj.local_name, j]
+                return b.mole_frac_phase_comp_true[pname, j]
 
         b.add_component(pname+"_X",
                         Expression(b.params.true_species_set,
@@ -107,7 +109,10 @@ class ENRTL(EoSBase):
         # Calculate alphas for all true species pairings
         def rule_alpha_expr(b, i, j):
             Y = getattr(b, pname+"_Y")
-            if ((i in molecular_set) and
+            if ((pname, i) not in b.params.true_phase_component_set or
+                    (pname, j) not in b.params.true_phase_component_set):
+                return Expression.Skip
+            elif ((i in molecular_set) and
                     (j in molecular_set)):
                 return alpha_rule(b, pobj, i, j, b.temperature)
             elif (i in b.params.cation_set and j in molecular_set):
@@ -173,7 +178,10 @@ class ENRTL(EoSBase):
                 return exp(-alpha_rule(b, pobj, i, j, T) *
                            tau_rule(b, pobj, i, j, T))
 
-            if ((i in molecular_set) and
+            if ((pname, i) not in b.params.true_phase_component_set or
+                    (pname, j) not in b.params.true_phase_component_set):
+                return Expression.Skip
+            elif ((i in molecular_set) and
                     (j in molecular_set)):
                 return _G_appr(b, pobj, i, j, b.temperature)
             elif (i in b.params.cation_set and j in molecular_set):
@@ -232,7 +240,10 @@ class ENRTL(EoSBase):
 
         # Calculate tau terms
         def rule_tau_expr(b, i, j):
-            if ((i in molecular_set) and
+            if ((pname, i) not in b.params.true_phase_component_set or
+                    (pname, j) not in b.params.true_phase_component_set):
+                return Expression.Skip
+            elif ((i in molecular_set) and
                     (j in molecular_set)):
                 return tau_rule(b, pobj, i, j, b.temperature)
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
@@ -276,6 +287,7 @@ def _get_salt(b, p, c, a):
     # Next, check for weak acids and bases
     # TODO: Implement something properly for weak acids and bases
     if c == "H+" or a == "OH-":
+        return "H2O"
         for r in b.params.config.inherent_reactions:
             stoic = b.params.config.inherent_reactions[r].stoichiometry
             # First, length of stoich must be == 3: 2 ions and ion-pair
