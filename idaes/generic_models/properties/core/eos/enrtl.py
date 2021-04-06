@@ -113,37 +113,41 @@ class ENRTL(EoSBase):
             elif (i in b.params.cation_set and j in molecular_set):
                 return sum(
                     Y[k] *
-                    alpha_rule(b, pobj, _get_salt(b, i, k), j, b.temperature)
+                    alpha_rule(
+                        b, pobj, _get_salt(b, pname, i, k), j, b.temperature)
                     for k in b.params.anion_set)
             elif (j in b.params.cation_set and i in molecular_set):
                 return sum(
                     Y[k] *
-                    alpha_rule(b, pobj, _get_salt(b, j, k), i, b.temperature)
+                    alpha_rule(
+                        b, pobj, _get_salt(b, pname, j, k), i, b.temperature)
                     for k in b.params.anion_set)
             elif (i in b.params.anion_set and j in molecular_set):
                 return sum(
                     Y[k] *
-                    alpha_rule(b, pobj, _get_salt(b, k, i), j, b.temperature)
+                    alpha_rule(
+                        b, pobj, _get_salt(b, pname, k, i), j, b.temperature)
                     for k in b.params.cation_set)
             elif (j in b.params.anion_set and i in molecular_set):
                 return sum(
                     Y[k] *
-                    alpha_rule(b, pobj, _get_salt(b, k, j), i, b.temperature)
+                    alpha_rule(
+                        b, pobj, _get_salt(b, pname, k, j), i, b.temperature)
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
-                ipair = _get_salt(b, i, j)
+                ipair = _get_salt(b, pname, i, j)
                 return sum(Y[k]*alpha_rule(b,
                                            pobj,
                                            ipair,
-                                           _get_salt(b, k, j),
+                                           _get_salt(b, pname, k, j),
                                            b.temperature)
                            for k in b.params.cation_set)
             elif (i in b.params.anion_set and j in b.params.cation_set):
-                ipair = _get_salt(b, j, i)
+                ipair = _get_salt(b, pname, j, i)
                 return sum(Y[k]*alpha_rule(b,
                                            pobj,
                                            ipair,
-                                           _get_salt(b, j, k),
+                                           _get_salt(b, pname, j, k),
                                            b.temperature)
                            for k in b.params.anion_set)
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
@@ -175,37 +179,41 @@ class ENRTL(EoSBase):
             elif (i in b.params.cation_set and j in molecular_set):
                 return sum(
                     Y[k] *
-                    _G_appr(b, pobj, _get_salt(b, i, k), j,  b.temperature)
+                    _G_appr(
+                        b, pobj, _get_salt(b, pname, i, k), j,  b.temperature)
                     for k in b.params.anion_set)
             elif (j in b.params.cation_set and i in molecular_set):
                 return sum(
                     Y[k] *
-                    _G_appr(b, pobj, _get_salt(b, j, k), i, b.temperature)
+                    _G_appr(
+                        b, pobj, _get_salt(b, pname, j, k), i, b.temperature)
                     for k in b.params.anion_set)
             elif (i in b.params.anion_set and j in molecular_set):
                 return sum(
                     Y[k] *
-                    _G_appr(b, pobj, _get_salt(b, k, i), j, b.temperature)
+                    _G_appr(
+                        b, pobj, _get_salt(b, pname, k, i), j, b.temperature)
                     for k in b.params.cation_set)
             elif (j in b.params.anion_set and i in molecular_set):
                 return sum(
                     Y[k] *
-                    _G_appr(b, pobj, _get_salt(b, k, j), i, b.temperature)
+                    _G_appr(
+                        b, pobj, _get_salt(b, pname, k, j), i, b.temperature)
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
-                ipair = _get_salt(b, i, j)
+                ipair = _get_salt(b, pname, i, j)
                 return sum(Y[k]*_G_appr(b,
                                         pobj,
                                         ipair,
-                                        _get_salt(b, k, j),
+                                        _get_salt(b, pname, k, j),
                                         b.temperature)
                            for k in b.params.cation_set)
             elif (i in b.params.anion_set and j in b.params.cation_set):
-                ipair = _get_salt(b, j, i)
+                ipair = _get_salt(b, pname, j, i)
                 return sum(Y[k]*_G_appr(b,
                                         pobj,
                                         ipair,
-                                        _get_salt(b, j, k),
+                                        _get_salt(b, pname, j, k),
                                         b.temperature)
                            for k in b.params.anion_set)
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
@@ -239,7 +247,7 @@ class ENRTL(EoSBase):
         return 1e2*b.temperature
 
 
-def _get_salt(b, c, a):
+def _get_salt(b, p, c, a):
     # First, check apparent species
     for app in b.params._apparent_set:
         app_obj = b.params.get_component(app)
@@ -248,8 +256,24 @@ def _get_salt(b, c, a):
             return app
     # Next, check for weak acids and bases
     # TODO: Implement something properly for weak acids and bases
-    if c == "H+":
-        if a == "OH-":
-            return "H2O"
+    if c == "H+" or a == "OH-":
+        for r in b.params.config.inherent_reactions:
+            stoic = b.params.config.inherent_reactions[r].stoichiometry
+            # First, length of stoich must be == 3: 2 ions and ion-pair
+            # Second, stoic mist contain both (p, c) and (p, a)
+            if (len(stoic) == 3 and
+                    (p, c) in stoic and
+                    (p, a) in stoic):
+                # Next, stoic coeff. for c and a must have same sign
+                if stoic[p, c]*stoic[p, a] > 0:
+                    # Need to find remaining component (the ion-pair)
+                    for q, s in stoic:
+                        # Ion-pair must not be a or c
+                        # Stoic coeff. must have opposite sign to c and a
+                        if (stoic[p, s] != stoic[p, c] and
+                                stoic[p, s] != stoic[p, a] and
+                                stoic[p, s]*stoic[p, c] < 0):
+                            return s
+
     raise BurntToast("{} eNRTL error. Could not find ion pair for {}."
                      .format(b.name, (c, a)))

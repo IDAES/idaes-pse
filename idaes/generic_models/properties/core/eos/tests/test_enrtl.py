@@ -34,6 +34,14 @@ from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.reactions.dh_rxn import \
+    constant_dh_rxn
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
+    van_t_hoff
+from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
+    power_law_equil
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    ConcentrationForm)
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -66,7 +74,21 @@ configuration = {
                    "temperature": pyunits.K},
     "state_definition": FTPx,
     "pressure_ref": 1e5,
-    "temperature_ref": 300}
+    "temperature_ref": 300,
+    "inherent_reactions": {
+        "h2o_si": {"stoichiometry": {("Liq", "H2O"): -1,
+                                     ("Liq", "H+"): 1,
+                                     ("Liq", "OH-"): 1},
+                   "heat_of_reaction": constant_dh_rxn,
+                   "equilibrium_constant": van_t_hoff,
+                   "equilibrium_form": power_law_equil,
+                   "concentration_form": ConcentrationForm.molarity,
+                   "parameter_data": {
+                       "reaction_order": {("Liq", "H+"): 1,
+                                          ("Liq", "OH-"): 1},
+                       "dh_rxn_ref": 1,
+                       "k_eq_ref": 1e-14,
+                       "T_eq_ref": 350}}}}
 
 
 class TestParameters(object):
