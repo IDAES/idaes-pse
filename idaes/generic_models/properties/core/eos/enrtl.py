@@ -15,7 +15,7 @@ Methods for eNRTL activity coefficient method.
 
 Only applicable to liquid/electrolyte phases
 """
-from pyomo.environ import Expression
+from pyomo.environ import Expression, exp
 
 from .eos_base import EoSBase
 from .enrtl_submethods import ConstantAlpha, ConstantTau
@@ -55,7 +55,7 @@ class ENRTL(EoSBase):
 
     def common(b, pobj):
         pname = pobj.local_name
-        
+
         molecular_set = b.params.solvent_set | b.params.solute_set
 
         # Check options for alpha rule
@@ -74,6 +74,7 @@ class ENRTL(EoSBase):
         else:
             tau_rule = DefaultTauRule.return_expression
 
+        # Calculate mixing factors
         def rule_X(b, j):
             if j in b.params.cation_set or j in b.params.anion_set:
                 cobj = b.params.get_component(j)
@@ -103,6 +104,7 @@ class ENRTL(EoSBase):
                                    rule=rule_Y,
                                    doc="Charge composition"))
 
+        # Calculate alphas for all true species pairings
         def rule_alpha_expr(b, i, j):
             Y = getattr(b, pname+"_Y")
             if ((i in molecular_set) and
@@ -147,7 +149,7 @@ class ENRTL(EoSBase):
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
                   (i in b.params.anion_set and j in b.params.anion_set)):
                 # No like ion interactions
-                return 0
+                return Expression.Skip
             else:
                 raise BurntToast(
                     "{} eNRTL model encountered unexpected component pair {}."
@@ -158,6 +160,67 @@ class ENRTL(EoSBase):
                                    b.params.true_species_set,
                                    rule=rule_alpha_expr,
                                    doc="Non-randomness parameters"))
+
+        # Calculate G terms
+        def rule_G_expr(b, i, j):
+            Y = getattr(b, pname+"_Y")
+
+            def _G_appr(b, pobj, i, j, T):
+                return exp(-alpha_rule(b, pobj, i, j, T) *
+                           tau_rule(b, pobj, i, j, T))
+
+            if ((i in molecular_set) and
+                    (j in molecular_set)):
+                return _G_appr(b, pobj, i, j, b.temperature)
+            elif (i in b.params.cation_set and j in molecular_set):
+                return sum(
+                    Y[k] *
+                    _G_appr(b, pobj, _get_salt(b, i, k), j,  b.temperature)
+                    for k in b.params.anion_set)
+            elif (j in b.params.cation_set and i in molecular_set):
+                return sum(
+                    Y[k] *
+                    _G_appr(b, pobj, _get_salt(b, j, k), i, b.temperature)
+                    for k in b.params.anion_set)
+            elif (i in b.params.anion_set and j in molecular_set):
+                return sum(
+                    Y[k] *
+                    _G_appr(b, pobj, _get_salt(b, k, i), j, b.temperature)
+                    for k in b.params.cation_set)
+            elif (j in b.params.anion_set and i in molecular_set):
+                return sum(
+                    Y[k] *
+                    _G_appr(b, pobj, _get_salt(b, k, j), i, b.temperature)
+                    for k in b.params.cation_set)
+            elif (i in b.params.cation_set and j in b.params.anion_set):
+                ipair = _get_salt(b, i, j)
+                return sum(Y[k]*_G_appr(b,
+                                        pobj,
+                                        ipair,
+                                        _get_salt(b, k, j),
+                                        b.temperature)
+                           for k in b.params.cation_set)
+            elif (i in b.params.anion_set and j in b.params.cation_set):
+                ipair = _get_salt(b, j, i)
+                return sum(Y[k]*_G_appr(b,
+                                        pobj,
+                                        ipair,
+                                        _get_salt(b, j, k),
+                                        b.temperature)
+                           for k in b.params.anion_set)
+            elif ((i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like ion interactions
+                return Expression.Skip
+            else:
+                raise BurntToast(
+                    "{} eNRTL model encountered unexpected component pair {}."
+                    .format(b.name, (i, j)))
+        b.add_component(pname+"_G",
+                        Expression(b.params.true_species_set,
+                                   b.params.true_species_set,
+                                   rule=rule_G_expr,
+                                   doc="Local interaction G term"))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

@@ -138,4 +138,12 @@ class ConstantTau(object):
                 units=pyunits.dimensionless))
 
     def return_expression(b, pobj, i, j, T):
-        pass
+        if (i, j) in pobj.tau:
+            return pobj.tau[i, j]
+        elif (j, i) in pobj.tau:
+            return pobj.tau[j, i]
+        else:
+            raise BurntToast(
+                "{} tau rule encountered unexpected index {}. Please contact"
+                "the IDAES Developers with this bug."
+                .format(b.name, (i, j)))
