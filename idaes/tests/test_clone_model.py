@@ -14,7 +14,7 @@ import idaes.generic_models.properties.swco2
 from pyomo.network import Arc
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="function")
 def model():
     m = pe.ConcreteModel()
     m.fs = idaes.core.FlowsheetBlock()
@@ -51,7 +51,13 @@ def test_expand_arcs_and_clone(model):
     assert hasattr(model.fs.heater2, "_flow_mol_outlet_ref")
     assert hasattr(model.fs.heater2, "_pressure_outlet_ref")
 
+    assert model.fs.stream._expanded_block is None
+
     m2 = pe.TransformationFactory('network.expand_arcs').create_using(model)
+
+    # Check that Arcs were expanded
+    assert isinstance(m2.fs.stream._expanded_block, pe.Block)
+    assert model.fs.stream._expanded_block is None
 
 
 @pytest.mark.unit
@@ -64,3 +70,7 @@ def test_clone(model):
                 model.fs.heater.control_volume.properties_in[0].flow_mol)
 
     pe.TransformationFactory('network.expand_arcs').apply_to(m2)
+
+    # Check that Arcs were expanded
+    assert isinstance(m2.fs.stream._expanded_block, pe.Block)
+    assert model.fs.stream._expanded_block is None
