@@ -28,13 +28,6 @@ class ConstantAlpha(object):
     def build_parameters(b):
         param_block = b.parent_block()
 
-        # Build symmetric indexing set
-        sym_set = []
-        for i in param_block.apparent_species_set:
-            for j in param_block.apparent_species_set:
-                if (j, i) not in sym_set:
-                    sym_set.append((i, j))
-
         # Get user provided values for alpha (if present)
         try:
             alpha_data = param_block.config.parameter_data[
@@ -44,11 +37,12 @@ class ConstantAlpha(object):
 
         # Check for unused parameters in alpha_data
         for (i, j) in alpha_data.keys():
-            if (i, j) not in sym_set and (j, i) not in sym_set:
+            if ((i, j) not in b.component_pair_set_symmetric and
+                    (j, i) not in b.component_pair_set_symmetric):
                 raise ConfigurationError(
                     "{} eNRTL alpha parameter provided for invalid "
                     "component pair {}. Please check typing and only provide "
-                    "parameters for apparent species pairs."
+                    "parameters for valid species pairs."
                     .format(b.name, (i, j)))
 
         def alpha_init(b, i, j):
@@ -81,7 +75,7 @@ class ConstantAlpha(object):
 
         b.add_component(
             'alpha',
-            Var(sym_set,
+            Var(b.component_pair_set_symmetric,
                 within=Reals,
                 initialize=alpha_init,
                 doc='Symmetric non-randomness parameters',
@@ -112,12 +106,11 @@ class ConstantTau(object):
 
         # Check for unused parameters in tau_data
         for (i, j) in tau_data.keys():
-            if (i not in param_block.apparent_species_set or
-                    j not in param_block.apparent_species_set):
+            if (i, j) not in b.component_pair_set:
                 raise ConfigurationError(
                     "{} eNRTL tau parameter provided for invalid "
                     "component pair {}. Please check typing and only provide "
-                    "parameters for apparent species pairs."
+                    "parameters for valid species pairs."
                     .format(b.name, (i, j)))
 
         def tau_init(b, i, j):
@@ -130,8 +123,7 @@ class ConstantTau(object):
 
         b.add_component(
             'tau',
-            Var(param_block.apparent_species_set,
-                param_block.apparent_species_set,
+            Var(b.component_pair_set,
                 within=Reals,
                 initialize=tau_init,
                 doc='Binary interaction energy parameters',
