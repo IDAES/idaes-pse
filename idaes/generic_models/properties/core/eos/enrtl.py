@@ -184,73 +184,60 @@ class ENRTL(EoSBase):
                                    rule=rule_alpha_expr,
                                    doc="Non-randomness parameters"))
 
-        # # Calculate G terms
-        # def rule_G_expr(b, i, j):
-        #     Y = getattr(b, pname+"_Y")
+        # Calculate G terms
+        def rule_G_expr(b, i, j):
+            Y = getattr(b, pname+"_Y")
 
-        #     def _G_appr(b, pobj, i, j, T):
-        #         return exp(-alpha_rule(b, pobj, i, j, T) *
-        #                    tau_rule(b, pobj, i, j, T))
+            def _G_appr(b, pobj, i, j, T):
+                return exp(-alpha_rule(b, pobj, i, j, T) *
+                           tau_rule(b, pobj, i, j, T))
 
-        #     if ((pname, i) not in b.params.true_phase_component_set or
-        #             (pname, j) not in b.params.true_phase_component_set):
-        #         return Expression.Skip
-        #     elif ((i in molecular_set) and
-        #             (j in molecular_set)):
-        #         return _G_appr(b, pobj, i, j, b.temperature)
-        #     elif (i in b.params.cation_set and j in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             _G_appr(
-        #                 b, pobj, _get_salt(b, pname, i, k), j,  b.temperature)
-        #             for k in b.params.anion_set)
-        #     elif (j in b.params.cation_set and i in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             _G_appr(
-        #                 b, pobj, _get_salt(b, pname, j, k), i, b.temperature)
-        #             for k in b.params.anion_set)
-        #     elif (i in b.params.anion_set and j in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             _G_appr(
-        #                 b, pobj, _get_salt(b, pname, k, i), j, b.temperature)
-        #             for k in b.params.cation_set)
-        #     elif (j in b.params.anion_set and i in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             _G_appr(
-        #                 b, pobj, _get_salt(b, pname, k, j), i, b.temperature)
-        #             for k in b.params.cation_set)
-        #     elif (i in b.params.cation_set and j in b.params.anion_set):
-        #         ipair = _get_salt(b, pname, i, j)
-        #         return sum(Y[k]*_G_appr(b,
-        #                                 pobj,
-        #                                 ipair,
-        #                                 _get_salt(b, pname, k, j),
-        #                                 b.temperature)
-        #                    for k in b.params.cation_set)
-        #     elif (i in b.params.anion_set and j in b.params.cation_set):
-        #         ipair = _get_salt(b, pname, j, i)
-        #         return sum(Y[k]*_G_appr(b,
-        #                                 pobj,
-        #                                 ipair,
-        #                                 _get_salt(b, pname, j, k),
-        #                                 b.temperature)
-        #                    for k in b.params.anion_set)
-        #     elif ((i in b.params.cation_set and j in b.params.cation_set) or
-        #           (i in b.params.anion_set and j in b.params.anion_set)):
-        #         # No like ion interactions
-        #         return Expression.Skip
-        #     else:
-        #         raise BurntToast(
-        #             "{} eNRTL model encountered unexpected component pair {}."
-        #             .format(b.name, (i, j)))
-        # b.add_component(pname+"_G",
-        #                 Expression(b.params.true_species_set,
-        #                            b.params.true_species_set,
-        #                            rule=rule_G_expr,
-        #                            doc="Local interaction G term"))
+            if ((pname, i) not in b.params.true_phase_component_set or
+                    (pname, j) not in b.params.true_phase_component_set):
+                return Expression.Skip
+            elif (i == j or
+                  (i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like species interactions
+                return Expression.Skip
+            elif ((i in molecular_set) and
+                    (j in molecular_set)):
+                return _G_appr(b, pobj, i, j, b.temperature)
+            elif (i in b.params.cation_set and j in molecular_set):
+                return sum(
+                    Y[k] * _G_appr(b, pobj, (i+", "+k), j,  b.temperature)
+                    for k in b.params.anion_set)
+            elif (j in b.params.cation_set and i in molecular_set):
+                return sum(
+                    Y[k] * _G_appr(b, pobj, (j+", "+k), i, b.temperature)
+                    for k in b.params.anion_set)
+            elif (i in b.params.anion_set and j in molecular_set):
+                return sum(
+                    Y[k] * _G_appr(b, pobj, (k+", "+i), j, b.temperature)
+                    for k in b.params.cation_set)
+            elif (j in b.params.anion_set and i in molecular_set):
+                return sum(
+                    Y[k] * _G_appr(b, pobj, (k+", "+j), i, b.temperature)
+                    for k in b.params.cation_set)
+            elif (i in b.params.cation_set and j in b.params.anion_set):
+                return sum(Y[k] * _G_appr(
+                    b, pobj, (i+", "+j), (k+", "+j), b.temperature)
+                    for k in b.params.cation_set
+                    if i != k)
+            elif (i in b.params.anion_set and j in b.params.cation_set):
+                return sum(Y[k] * _G_appr(
+                    b, pobj, (j+", "+i), (j+", "+k), b.temperature)
+                    for k in b.params.anion_set
+                    if i != k)
+            else:
+                raise BurntToast(
+                    "{} eNRTL model encountered unexpected component pair {}."
+                    .format(b.name, (i, j)))
+        b.add_component(pname+"_G",
+                        Expression(b.params.true_species_set,
+                                   b.params.true_species_set,
+                                   rule=rule_G_expr,
+                                   doc="Local interaction G term"))
 
         # # Calculate tau terms
         # def rule_tau_expr(b, i, j):
@@ -289,19 +276,3 @@ class ENRTL(EoSBase):
     @staticmethod
     def enth_mol_phase_comp(b, p, j):
         return 1e2*b.temperature
-
-
-def _get_salt(b, p, c, a):
-    # First, check apparent species
-    for app in b.params._apparent_set:
-        app_obj = b.params.get_component(app)
-        if (c in app_obj.config.dissociation_species and
-                a in app_obj.config.dissociation_species):
-            return app
-    # Next, check for weak acids and bases
-    # TODO: Implement something properly for weak acids and bases
-    if c == "H+" or a == "OH-":
-        return "H2O"
-
-    raise BurntToast("{} eNRTL error. Could not find ion pair for {}."
-                     .format(b.name, (c, a)))
