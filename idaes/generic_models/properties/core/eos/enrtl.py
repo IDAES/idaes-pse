@@ -49,7 +49,7 @@ class ENRTL(EoSBase):
         comp_pairs_sym = []
         for i in comps:
             for j in comps:
-                if i != j:
+                if i in pblock.solvent_set | pblock.solute_set or i != j:
                     comp_pairs.append((i, j))
                     if (j, i) not in comp_pairs_sym:
                         comp_pairs_sym.append((i, j))
@@ -131,11 +131,6 @@ class ENRTL(EoSBase):
             if ((pname, i) not in b.params.true_phase_component_set or
                     (pname, j) not in b.params.true_phase_component_set):
                 return Expression.Skip
-            elif (i == j or
-                  (i in b.params.cation_set and j in b.params.cation_set) or
-                  (i in b.params.anion_set and j in b.params.anion_set)):
-                # No like species interactions
-                return Expression.Skip
             elif ((i in molecular_set) and
                     (j in molecular_set)):
                 return alpha_rule(b, pobj, i, j, b.temperature)
@@ -173,6 +168,10 @@ class ENRTL(EoSBase):
                                b, pobj, (j+", "+i), (j+", "+k), b.temperature)
                            for k in b.params.anion_set
                            if i != k)
+            elif ((i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like-ion interactions
+                return Expression.Skip
             else:
                 raise BurntToast(
                     "{} eNRTL model encountered unexpected component pair {}."
@@ -194,11 +193,6 @@ class ENRTL(EoSBase):
 
             if ((pname, i) not in b.params.true_phase_component_set or
                     (pname, j) not in b.params.true_phase_component_set):
-                return Expression.Skip
-            elif (i == j or
-                  (i in b.params.cation_set and j in b.params.cation_set) or
-                  (i in b.params.anion_set and j in b.params.anion_set)):
-                # No like species interactions
                 return Expression.Skip
             elif ((i in molecular_set) and
                     (j in molecular_set)):
@@ -229,6 +223,10 @@ class ENRTL(EoSBase):
                     b, pobj, (j+", "+i), (j+", "+k), b.temperature)
                     for k in b.params.anion_set
                     if i != k)
+            elif ((i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like-ion interactions
+                return Expression.Skip
             else:
                 raise BurntToast(
                     "{} eNRTL model encountered unexpected component pair {}."
@@ -244,14 +242,13 @@ class ENRTL(EoSBase):
             if ((pname, i) not in b.params.true_phase_component_set or
                     (pname, j) not in b.params.true_phase_component_set):
                 return Expression.Skip
-            elif (i == j or
-                  (i in b.params.cation_set and j in b.params.cation_set) or
-                  (i in b.params.anion_set and j in b.params.anion_set)):
-                # No like species interactions
-                return Expression.Skip
             elif ((i in molecular_set) and
                     (j in molecular_set)):
                 return tau_rule(b, pobj, i, j, b.temperature)
+            elif ((i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like-ion interactions
+                return Expression.Skip
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
@@ -261,6 +258,31 @@ class ENRTL(EoSBase):
                                    b.params.true_species_set,
                                    rule=rule_tau_expr,
                                    doc="Binary interaction energy parameters"))
+
+        # Local contrubtion to activity coefficient
+        aqu_species = b.params.true_species_set - b.params._non_aqueous_set
+
+        def rule_log_gamma_lc(b, s):
+            X = getattr(b, pname+"_X")
+            G = getattr(b, pname+"_G")
+            tau = getattr(b, pname+"_tau")
+            if (pname, s) not in b.params.true_phase_component_set:
+                # Non-aqueous component
+                return Expression.Skip
+            if s in b.params.cation_set:
+                c = s
+                return 200
+            elif s in b.params.anion_set:
+                a = s
+                return 300
+            else:
+                m = s
+                return sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species)
+        b.add_component(pname+"_log_gamma_lc",
+                        Expression(
+                            b.params.true_species_set,
+                            rule=rule_log_gamma_lc,
+                            doc="Local contribution to activity coefficient"))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):

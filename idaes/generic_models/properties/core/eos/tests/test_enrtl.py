@@ -84,12 +84,12 @@ class TestParameters(object):
                          ("H+, Cl-"), ("H+, OH-")]
 
         assert isinstance(m.params.Liq.component_pair_set, Set)
-        assert len(m.params.Liq.component_pair_set) == 30
+        assert len(m.params.Liq.component_pair_set) == 32
         assert isinstance(m.params.Liq.component_pair_set_symmetric, Set)
-        assert len(m.params.Liq.component_pair_set_symmetric) == 15
+        assert len(m.params.Liq.component_pair_set_symmetric) == 17
 
         assert isinstance(m.params.Liq.alpha, Var)
-        assert len(m.params.Liq.alpha) == 15
+        assert len(m.params.Liq.alpha) == 17
         for (i, j) in m.params.Liq.alpha:
             if i != j:
                 assert (j, i) not in m.params.Liq.alpha
@@ -102,7 +102,7 @@ class TestParameters(object):
                 assert m.params.Liq.alpha[(i, j)].fixed
 
         assert isinstance(m.params.Liq.tau, Var)
-        assert len(m.params.Liq.tau) == 30
+        assert len(m.params.Liq.tau) == 32
         for (i, j) in m.params.Liq.tau:
             assert m.params.Liq.tau[(i, j)].value == 0
             assert m.params.Liq.tau[(i, j)].fixed
@@ -121,7 +121,7 @@ class TestParameters(object):
         m.params = GenericParameterBlock(default=test_config)
 
         assert isinstance(m.params.Liq.alpha, Var)
-        assert len(m.params.Liq.alpha) == 15
+        assert len(m.params.Liq.alpha) == 17
         for (i, j) in m.params.Liq.alpha:
             if i != j:
                 assert (j, i) not in m.params.Liq.alpha
@@ -137,7 +137,7 @@ class TestParameters(object):
                 assert m.params.Liq.alpha[(i, j)].fixed
 
         assert isinstance(m.params.Liq.tau, Var)
-        assert len(m.params.Liq.tau) == 30
+        assert len(m.params.Liq.tau) == 32
         for (i, j) in m.params.Liq.tau:
             print(i, j)
             if (i, j) == ("H2O", "Na+, Cl-"):
@@ -217,7 +217,7 @@ class TestParameters(object):
         m.params = GenericParameterBlock(default=test_config)
 
         assert isinstance(m.params.Liq.tau, Var)
-        assert len(m.params.Liq.tau) == 30
+        assert len(m.params.Liq.tau) == 32
         for (i, j) in m.params.Liq.tau:
             print(i, j)
             if (i, j) == ("H2O", "Na+, Cl-"):
@@ -293,13 +293,17 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_alpha(self, model):
         assert isinstance(model.state[1].Liq_alpha, Expression)
-        assert len(model.state[1].Liq_alpha) == 26
+        assert len(model.state[1].Liq_alpha) == 28
 
         # Molecule-molecule interactions
+        assert (model.state[1].Liq_alpha["H2O", "H2O"].expr ==
+                model.params.Liq.alpha["H2O", "H2O"])
         assert (model.state[1].Liq_alpha["H2O", "C6H12"].expr ==
                 model.params.Liq.alpha["H2O", "C6H12"])
         assert (model.state[1].Liq_alpha["C6H12", "H2O"].expr ==
                 model.params.Liq.alpha["H2O", "C6H12"])
+        assert (model.state[1].Liq_alpha["C6H12", "C6H12"].expr ==
+                model.params.Liq.alpha["C6H12", "C6H12"])
 
         # Molecule-ion interactions
         assert (model.state[1].Liq_alpha["H2O", "Na+"].expr ==
@@ -411,8 +415,6 @@ class TestStateBlock(object):
                  model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
 
         # Like species interactions
-        assert ("H2O", "H2O") not in model.state[1].Liq_alpha
-        assert ("C6H12", "C6H12") not in model.state[1].Liq_alpha
         assert ("Na+", "Na+") not in model.state[1].Liq_alpha
         assert ("Na+", "H+") not in model.state[1].Liq_alpha
         assert ("H+", "Na+") not in model.state[1].Liq_alpha
@@ -425,15 +427,21 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_G(self, model):
         assert isinstance(model.state[1].Liq_G, Expression)
-        assert len(model.state[1].Liq_G) == 26
+        assert len(model.state[1].Liq_G) == 28
 
         # Molecule-molecule interactions
+        assert (model.state[1].Liq_G["H2O", "H2O"].expr ==
+                exp(-model.params.Liq.alpha["H2O", "H2O"] *
+                    model.params.Liq.tau["H2O", "H2O"]))
         assert (model.state[1].Liq_G["H2O", "C6H12"].expr ==
                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
                     model.params.Liq.tau["H2O", "C6H12"]))
         assert (model.state[1].Liq_G["C6H12", "H2O"].expr ==
                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
                     model.params.Liq.tau["H2O", "C6H12"]))
+        assert (model.state[1].Liq_G["C6H12", "C6H12"].expr ==
+                exp(-model.params.Liq.alpha["C6H12", "C6H12"] *
+                    model.params.Liq.tau["C6H12", "C6H12"]))
 
         # Molecule-ion interactions
         assert (model.state[1].Liq_G["H2O", "Na+"].expr ==
@@ -585,8 +593,6 @@ class TestStateBlock(object):
                      model.params.Liq.tau["H+, Cl-", "H+, OH-"])))
 
         # Like species interactions
-        assert ("H2O", "H2O") not in model.state[1].Liq_G
-        assert ("C6H12", "C6H12") not in model.state[1].Liq_G
         assert ("Na+", "Na+") not in model.state[1].Liq_G
         assert ("Na+", "H+") not in model.state[1].Liq_G
         assert ("H+", "Na+") not in model.state[1].Liq_G
@@ -599,13 +605,17 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_tau(self, model):
         assert isinstance(model.state[1].Liq_tau, Expression)
-        assert len(model.state[1].Liq_tau) == 26
+        assert len(model.state[1].Liq_tau) == 28
 
         # Molecule-molecule interactions
+        assert (model.state[1].Liq_tau["H2O", "H2O"].expr ==
+                model.params.Liq.tau["H2O", "H2O"])
         assert (model.state[1].Liq_tau["H2O", "C6H12"].expr ==
                 model.params.Liq.tau["H2O", "C6H12"])
         assert (model.state[1].Liq_tau["C6H12", "H2O"].expr ==
                 model.params.Liq.tau["H2O", "C6H12"])
+        assert (model.state[1].Liq_tau["C6H12", "C6H12"].expr ==
+                model.params.Liq.tau["C6H12", "C6H12"])
 
         for i, j in model.state[1].Liq_tau:
             if (i, j) not in [("H2O", "H2O"), ("H2O", "C6H12"),
@@ -615,8 +625,6 @@ class TestStateBlock(object):
                         model.state[1].Liq_alpha[i, j])
 
         # Like species interactions
-        assert ("H2O", "H2O") not in model.state[1].Liq_tau
-        assert ("C6H12", "C6H12") not in model.state[1].Liq_tau
         assert ("Na+", "Na+") not in model.state[1].Liq_tau
         assert ("Na+", "H+") not in model.state[1].Liq_tau
         assert ("H+", "Na+") not in model.state[1].Liq_tau
