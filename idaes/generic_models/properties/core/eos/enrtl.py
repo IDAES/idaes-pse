@@ -239,27 +239,28 @@ class ENRTL(EoSBase):
                                    rule=rule_G_expr,
                                    doc="Local interaction G term"))
 
-        # # Calculate tau terms
-        # def rule_tau_expr(b, i, j):
-        #     if ((pname, i) not in b.params.true_phase_component_set or
-        #             (pname, j) not in b.params.true_phase_component_set):
-        #         return Expression.Skip
-        #     elif ((i in molecular_set) and
-        #             (j in molecular_set)):
-        #         return tau_rule(b, pobj, i, j, b.temperature)
-        #     elif ((i in b.params.cation_set and j in b.params.cation_set) or
-        #           (i in b.params.anion_set and j in b.params.anion_set)):
-        #         # No like ion interactions
-        #         return Expression.Skip
-        #     else:
-        #         alpha = getattr(b, pname+"_alpha")
-        #         G = getattr(b, pname+"_G")
-        #         return log(G[i, j])/alpha[i, j]
-        # b.add_component(pname+"_tau",
-        #                 Expression(b.params.true_species_set,
-        #                            b.params.true_species_set,
-        #                            rule=rule_tau_expr,
-        #                            doc="Binary interaction energy parameters"))
+        # Calculate tau terms
+        def rule_tau_expr(b, i, j):
+            if ((pname, i) not in b.params.true_phase_component_set or
+                    (pname, j) not in b.params.true_phase_component_set):
+                return Expression.Skip
+            elif (i == j or
+                  (i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like species interactions
+                return Expression.Skip
+            elif ((i in molecular_set) and
+                    (j in molecular_set)):
+                return tau_rule(b, pobj, i, j, b.temperature)
+            else:
+                alpha = getattr(b, pname+"_alpha")
+                G = getattr(b, pname+"_G")
+                return log(G[i, j])/alpha[i, j]
+        b.add_component(pname+"_tau",
+                        Expression(b.params.true_species_set,
+                                   b.params.true_species_set,
+                                   rule=rule_tau_expr,
+                                   doc="Binary interaction energy parameters"))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):
