@@ -14,6 +14,11 @@
 Methods for eNRTL activity coefficient method.
 
 Only applicable to liquid/electrolyte phases
+
+Reference:
+
+Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
+Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
 from pyomo.environ import Expression, exp, log, Set
 
@@ -260,6 +265,8 @@ class ENRTL(EoSBase):
                                    doc="Binary interaction energy parameters"))
 
         # Local contrubtion to activity coefficient
+        # Indicies in expressions use same names as source paper
+        # mp = m'
         aqu_species = b.params.true_species_set - b.params._non_aqueous_set
 
         def rule_log_gamma_lc(b, s):
@@ -277,7 +284,34 @@ class ENRTL(EoSBase):
                 return 300
             else:
                 m = s
-                return sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species)
+                return (sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species) /
+                        sum(X[m]*G[i, m] for i in aqu_species) +
+                        sum((X[mp]*G[m, mp] /
+                             sum(X[i]*G[i, mp] for i in aqu_species)) *
+                            (tau[m, mp] -
+                             (sum(X[i]*G[i, mp]*tau[i, mp]
+                                  for i in aqu_species) /
+                              sum(X[i]*G[i, mp] for i in aqu_species)))
+                            for mp in molecular_set) +
+                        sum((X[c]*G[m, c] /
+                             sum(X[i]*G[i, c]
+                                 for i in (aqu_species-b.params.cation_set))) *
+                            (tau[m, c] -
+                             (sum(X[i]*G[i, c]*tau[i, c]
+                                  for i in (aqu_species-b.params.cation_set)) /
+                              sum(X[i]*G[i, c]
+                                  for i in (aqu_species-b.params.cation_set))))
+                            for c in b.params.cation_set) +
+                        sum((X[a]*G[m, a] /
+                             sum(X[i]*G[i, a]
+                                 for i in (aqu_species-b.params.anion_set))) *
+                            (tau[m, a] -
+                             (sum(X[i]*G[i, a]*tau[i, a]
+                                  for i in (aqu_species-b.params.anion_set)) /
+                              sum(X[i]*G[i, a]
+                                  for i in (aqu_species-b.params.anion_set))))
+                            for a in b.params.anion_set)
+                        )
         b.add_component(pname+"_log_gamma_lc",
                         Expression(
                             b.params.true_species_set,

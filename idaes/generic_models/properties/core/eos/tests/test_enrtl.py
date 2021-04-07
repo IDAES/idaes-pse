@@ -290,6 +290,11 @@ class TestStateBlock(object):
                             (model.state[1].Liq_X["Cl-"] +
                              model.state[1].Liq_X["OH-"])))
 
+        assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
+        assert len(model.state[1].Liq_log_gamma_lc) == 6
+        for k in model.state[1].Liq_log_gamma_lc:
+            assert k in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
+
     @pytest.mark.unit
     def test_alpha(self, model):
         assert isinstance(model.state[1].Liq_alpha, Expression)
