@@ -416,7 +416,7 @@ class TestStateBlock(object):
         assert ("Na+", "Na+") not in model.state[1].Liq_alpha
         assert ("Na+", "H+") not in model.state[1].Liq_alpha
         assert ("H+", "Na+") not in model.state[1].Liq_alpha
-        assert ("h+", "H+") not in model.state[1].Liq_alpha
+        assert ("H+", "H+") not in model.state[1].Liq_alpha
         assert ("Cl-", "Cl-") not in model.state[1].Liq_alpha
         assert ("Cl-", "OH-") not in model.state[1].Liq_alpha
         assert ("OH-", "Cl-") not in model.state[1].Liq_alpha
@@ -590,7 +590,7 @@ class TestStateBlock(object):
         assert ("Na+", "Na+") not in model.state[1].Liq_G
         assert ("Na+", "H+") not in model.state[1].Liq_G
         assert ("H+", "Na+") not in model.state[1].Liq_G
-        assert ("h+", "H+") not in model.state[1].Liq_G
+        assert ("H+", "H+") not in model.state[1].Liq_G
         assert ("Cl-", "Cl-") not in model.state[1].Liq_G
         assert ("Cl-", "OH-") not in model.state[1].Liq_G
         assert ("OH-", "Cl-") not in model.state[1].Liq_G
@@ -620,7 +620,7 @@ class TestStateBlock(object):
         assert ("Na+", "Na+") not in model.state[1].Liq_tau
         assert ("Na+", "H+") not in model.state[1].Liq_tau
         assert ("H+", "Na+") not in model.state[1].Liq_tau
-        assert ("h+", "H+") not in model.state[1].Liq_tau
+        assert ("H+", "H+") not in model.state[1].Liq_tau
         assert ("Cl-", "Cl-") not in model.state[1].Liq_tau
         assert ("Cl-", "OH-") not in model.state[1].Liq_tau
         assert ("OH-", "Cl-") not in model.state[1].Liq_tau
