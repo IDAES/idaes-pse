@@ -278,9 +278,30 @@ class ENRTL(EoSBase):
                 return Expression.Skip
             if s in b.params.cation_set:
                 c = s
-                return 200
+                Z = b.params.get_component(c).config.charge
+                return Z*(
+                    sum((X[m]*G[c, m] /
+                         sum(X[i]*G[i, m] for i in aqu_species)) *
+                        (tau[c, m] -
+                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                          sum(X[i]*G[i, m] for i in aqu_species)))
+                        for m in molecular_set) +
+                    sum(X[i]*G[i, c]*tau[i, c]
+                        for i in (aqu_species-b.params.cation_set)) /
+                    sum(X[i]*G[i, c]
+                        for i in (aqu_species-b.params.cation_set)) +
+                    sum((X[a]*G[c, a] /
+                         sum(X[i]*G[i, a]
+                             for i in (aqu_species-b.params.anion_set))) *
+                        (tau[c, a] -
+                         sum(X[i]*G[i, a]*tau[i, a]
+                             for i in (aqu_species-b.params.anion_set)) /
+                         sum(X[i]*G[i, a]
+                             for i in (aqu_species-b.params.anion_set)))
+                        for a in b.params.anion_set))
             elif s in b.params.anion_set:
                 a = s
+                Z = b.params.get_component(a).config.charge
                 return 300
             else:
                 m = s
