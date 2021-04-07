@@ -17,7 +17,7 @@ __author__ = "John Eslick"
 import os
 import click
 import logging
-import idaes.solvers
+import idaes.util.download_bin
 from idaes.commands import cb
 
 _log = logging.getLogger("idaes.commands.extensions")
@@ -106,7 +106,7 @@ def get_extensions(
         click.echo("\n* You must provide either a release or url not both.")
     elif url is not None or release is not None:
         click.echo("Getting files...")
-        d = idaes.solvers.download_binaries(
+        d = idaes.util.download_bin.download_binaries(
             release,
             url,
             insecure,

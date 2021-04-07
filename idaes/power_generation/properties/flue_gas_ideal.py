@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import (
 from idaes.core import (
     MaterialBalanceType, EnergyBalanceType, MaterialFlowBasis)
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
-from idaes.core.util import constants
+from idaes.core.util import constants, get_solver
 import idaes.core.util.scaling as iscale
 
 # Import Python libraries
@@ -79,12 +79,12 @@ class FlueGasParameterData(PhysicalParameterBlock):
 
         # Molecular weight
         self.mw_comp = Param(self.component_list,
-                             initialize={'O2': 0.031998,
+                             initialize={'O2': 0.0319988,
                                          'N2': 0.0280134,
-                                         'NO': 0.0300057,
-                                         'CO2': 0.04401,
-                                         'H2O': 0.01801528,
-                                         'SO2': 0.0640588},
+                                         'NO': 0.0300061,
+                                         'CO2': 0.0440095,
+                                         'H2O': 0.0180153,
+                                         'SO2': 0.064064},
                              doc='Molecular Weight [kg/mol]',
                              units=pyunits.kg/pyunits.mol)
 
@@ -337,8 +337,8 @@ class _FlueGasStateBlock(StateBlock):
         hold_state=False,
         state_vars_fixed=False,
         outlvl=0,
-        solver='ipopt',
-        optarg={'tol': 1e-8}
+        solver=None,
+        optarg={}
     ):
         """Initialisation routine for property package.
 
@@ -358,9 +358,9 @@ class _FlueGasStateBlock(StateBlock):
                          be False if this state block is used with 0D blocks.
                 - False - states have not been fixed. The state block will deal
                           with fixing/unfixing.
-            optarg: solver options dictionary object (default=None)
+            optarg: solver options dictionary object (default={})
             solver: str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             hold_state: flag indicating whether the initialization routine
                 should unfix any state variables fixed during initialization
                 (default=False).
@@ -378,8 +378,8 @@ class _FlueGasStateBlock(StateBlock):
         solve_log = idaeslog.getSolveLogger(
             self.name,outlvl, tag="properties")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)

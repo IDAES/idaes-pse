@@ -179,3 +179,11 @@ class dens_mol_liq_comp():
         units = b.params.get_metadata().derived_units
 
         return pyunits.convert(rho, units["density_mole"])
+
+
+# -----------------------------------------------------------------------------
+class Perrys(object):
+    cp_mol_liq_comp = cp_mol_liq_comp
+    enth_mol_liq_comp = enth_mol_liq_comp
+    entr_mol_liq_comp = entr_mol_liq_comp
+    dens_mol_liq_comp = dens_mol_liq_comp

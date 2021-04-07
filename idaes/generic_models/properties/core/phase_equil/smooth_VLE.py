@@ -23,6 +23,7 @@ from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.math import smooth_max, smooth_min
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import (
     _valid_VL_component_list)
+import idaes.core.util.scaling as iscale
 
 
 def phase_equil(b, phase_pair):
@@ -88,6 +89,23 @@ def phase_equil(b, phase_pair):
     b.add_component("_teq_constraint"+suffix, Constraint(rule=rule_teq))
 
 
+def calculate_scaling_factors(b, phase_pair):
+    suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
+    sf_T = iscale.get_scaling_factor(
+            b.temperature, default=1, warning=True)
+
+    try:
+        _t1 = getattr(b, "_t1"+suffix)
+        _t1_cons = getattr(b, "_t1_constraint"+suffix)
+        iscale.set_scaling_factor(_t1, sf_T)
+        iscale.constraint_scaling_transform(_t1_cons, sf_T)
+    except AttributeError:
+        pass
+
+    _teq_cons = getattr(b, "_teq_constraint"+suffix)
+    iscale.constraint_scaling_transform(_teq_cons, sf_T)
+
+
 def phase_equil_initialization(b, phase_pair):
     suffix = "_"+phase_pair[0]+"_"+phase_pair[1]
 
@@ -113,3 +131,12 @@ def calculate_teq(b, phase_pair):
                                        b.temperature_dew[phase_pair].value)
     else:
         b._teq[phase_pair].value = _t1.value
+
+
+# -----------------------------------------------------------------------------
+class SmoothVLE(object):
+    # Deprecation: Eventually replace static methods with class methods
+    phase_equil = phase_equil
+    phase_equil_initialization = phase_equil_initialization
+    calculate_teq = calculate_teq
+    calculate_scaling_factors = calculate_scaling_factors

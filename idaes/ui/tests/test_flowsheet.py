@@ -163,6 +163,14 @@ def flash_flowsheet_json():
     s = json_file.open().read()
     return s
 
+
+@pytest.fixture(scope="module")
+def serialized_boiler_flowsheet_json():
+    json_file = test_dir / "serialized_boiler_flowsheet.json"
+    s = json_file.open().read()
+    return s
+
+
 # === Tests ===
 
 
@@ -263,6 +271,17 @@ def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
     """
     test_dict = FlowsheetSerializer(demo_flowsheet, "demo").as_dict()
     stored_dict = json.loads(demo_flowsheet_json)
+    _canonicalize(test_dict)
+    _canonicalize(stored_dict)
+    assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
+
+
+@pytest.mark.component
+def test_boiler_demo(serialized_boiler_flowsheet_json):
+    import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
+    m, solver = blr.main()
+    test_dict = FlowsheetSerializer(m.fs, "boiler").as_dict()
+    stored_dict = json.loads(serialized_boiler_flowsheet_json)
     _canonicalize(test_dict)
     _canonicalize(stored_dict)
     assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)

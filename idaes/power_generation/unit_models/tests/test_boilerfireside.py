@@ -32,13 +32,14 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
 
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.power_generation.unit_models.boiler_fireside import BoilerFireside
 import datadictionary as dat
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 

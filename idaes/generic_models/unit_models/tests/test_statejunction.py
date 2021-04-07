@@ -36,14 +36,14 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
