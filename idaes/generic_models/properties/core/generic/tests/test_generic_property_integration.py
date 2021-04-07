@@ -44,7 +44,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 from idaes.generic_models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 configuration = {
@@ -174,7 +174,7 @@ class TestInherentReactions(object):
 
         frame.fs.H101.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
 
         results = solver.solve(frame)
 
@@ -224,7 +224,7 @@ class TestInherentReactions(object):
 
         frame.fs.H101.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
 
         results = solver.solve(frame)
 
@@ -284,11 +284,11 @@ class TestInherentReactions(object):
         frame.fs.cv.area.fix(1)
         frame.fs.cv.length.fix(1)
 
-        assert(degrees_of_freedom(frame)) == 1  # I have no idea what the DoF is, but it works
+        assert(degrees_of_freedom(frame)) == 0
 
         frame.fs.cv.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
 
         results = solver.solve(frame, tee=True)
 
@@ -349,11 +349,11 @@ class TestInherentReactions(object):
         frame.fs.cv.area.fix(1)
         frame.fs.cv.length.fix(1)
 
-        assert(degrees_of_freedom(frame)) == 1  # I have no idea what the DoF is, but it works
+        assert(degrees_of_freedom(frame)) == 0
 
         frame.fs.cv.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
 
         results = solver.solve(frame)
 
