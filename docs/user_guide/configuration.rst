@@ -41,7 +41,7 @@ is provided.
           "reactions",
           "ui"
       ],
-      "ipopt-idaes":{
+      "ipopt":{
           "options":{
               "nlp_scaling_method":"gradient-based"
           }
@@ -210,19 +210,19 @@ default set of defined tags is not sufficient tags can be added.
 Changes do not require ``idaes.reconfig()``.  The default setting is:
 ``["framework", "model", "flowsheet", "unit", "control_volume", "properties", "reactions", "ui"]``.
 
-ipopt-idaes
-~~~~~~~~~~~
-This is a config block that provides default configuration for the ``ipopt-idaes``.
-``ipopt-idaes`` is a wrapper for the Pyomo ``ipopt`` solver class that allows the
-default solver options to be configured in the general idaes ConfigBlock.
-Currently only solver options can be configured in the ``options`` sub-ConfigBlock.
+ipopt
+~~~~~
+This is a config block that provides default configuration for the ``ipopt`` solver.
+These options are used for ipopt solvers by default when the IDAES SolverFactory
+wrapper is used. Currently only solver options can be configured in the ``options``
+sub-ConfigBlock.
 
 For example to set the default NLP scaling method for ipopt to use idaes-provided
 scaling factors, use the command
-``idaes.cfg["ipopt-idaes"]["options"]["nlp_scaling_method"] = "user-scaling"``
+``idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = "user-scaling"``
 
 Any ipopt solver options that can be passed via command line argument to the ipopt
-AMPL executable solver can be set under ``idaes.cfg["ipopt-idaes"]["options"]``
+AMPL executable solver can be set under ``idaes.cfg["ipopt"]["options"]``
 or equivalently in a configuration file.
 
 Changes do not require ``idaes.reconfig()``.  The default options are:

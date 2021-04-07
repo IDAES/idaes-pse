@@ -39,7 +39,7 @@ from idaes.core import (
 from idaes.generic_models.unit_models.heat_exchanger import HeatExchangerData
 from idaes.generic_models.unit_models import (
     Mixer, MomentumMixingType, HeatExchanger)
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
@@ -175,7 +175,7 @@ class FWHCondensing0DData(HeatExchangerData):
         constraint deactivated; then it activates the constraint and calculates
         a steam inlet flow rate.
         """
-        solver = kwargs.get("solver", "ipopt")
+        solver = kwargs.get("solver", None)
         optarg = kwargs.get("oparg", {})
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -197,8 +197,8 @@ class FWHCondensing0DData(HeatExchangerData):
         self.extraction_rate_constraint.activate()
         self.inlet_1.flow_mol.unfix()
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -364,9 +364,10 @@ class FWH0DData(UnitModelBlockData):
         if config.has_drain_cooling:
             _set_port(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
+
         # Solve all together
-        opt = SolverFactory(kwargs.get("solver", "ipopt"))
-        opt.options = kwargs.get("oparg", {})
+        opt = get_solver(kwargs.get("solver"), kwargs.get("oparg", {}))
+
         assert degrees_of_freedom(self) == 0
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)

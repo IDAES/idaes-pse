@@ -14,7 +14,7 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
+from pyomo.environ import ConcreteModel, value, units as pyunits
 from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 import idaes.generic_models.properties.swco2 as swco2
@@ -25,13 +25,6 @@ import idaes
 
 # Mark module as an integration test
 pytestmark = pytest.mark.integration
-
-
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
 
 
 def read_data(fname, mw):

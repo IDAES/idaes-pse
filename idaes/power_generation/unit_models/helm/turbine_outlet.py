@@ -23,7 +23,7 @@ from pyomo.common.config import In
 from pyomo.environ import Var, sqrt, SolverFactory, value, Param, units as pyunits
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
 from idaes.core import declare_process_block_class
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
@@ -104,8 +104,8 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self,
         state_args={},
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg={},
         calculate_cf=True,
     ):
         """
@@ -182,8 +182,9 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
         self.stodola_equation.activate()
         self.efficiency_correlation.activate()
-        slvr = SolverFactory(solver)
-        slvr.options = optarg
+
+        # Create solver
+        slvr = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)

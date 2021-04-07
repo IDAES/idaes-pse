@@ -32,7 +32,7 @@ Solid superficial velocity is constant throughout the bed
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Reals,
+from pyomo.environ import (Var, Param, Reals, SolverFactory,
                            TerminationCondition, Constraint,
                            TransformationFactory, sqrt, value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -54,6 +54,7 @@ from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_min, smooth_max
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Chinedu Okoli"
 
@@ -1517,8 +1518,7 @@ see reaction package for documentation.}"""))
     # Model initialization routine
 
     def initialize(blk, gas_phase_state_args={}, solid_phase_state_args={},
-                   outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
         """
         Initialisation routine for Bubbling Fluidized Bed unit
 
@@ -1528,13 +1528,9 @@ see reaction package for documentation.}"""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialisation routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -1543,9 +1539,8 @@ see reaction package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names
