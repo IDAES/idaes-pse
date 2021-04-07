@@ -93,101 +93,96 @@ class ENRTL(EoSBase):
         else:
             tau_rule = DefaultTauRule.return_expression
 
-        # # Calculate mixing factors
-        # def rule_X(b, j):
-        #     if (pname, j) not in b.params.true_phase_component_set:
-        #         return Expression.Skip
-        #     elif j in b.params.cation_set or j in b.params.anion_set:
-        #         cobj = b.params.get_component(j)
-        #         return (b.mole_frac_phase_comp_true[pname, j] *
-        #                 cobj.config.charge)
-        #     else:
-        #         return b.mole_frac_phase_comp_true[pname, j]
+        # Calculate mixing factors
+        def rule_X(b, j):
+            if (pname, j) not in b.params.true_phase_component_set:
+                return Expression.Skip
+            elif j in b.params.cation_set or j in b.params.anion_set:
+                cobj = b.params.get_component(j)
+                return (b.mole_frac_phase_comp_true[pname, j] *
+                        cobj.config.charge)
+            else:
+                return b.mole_frac_phase_comp_true[pname, j]
 
-        # b.add_component(pname+"_X",
-        #                 Expression(b.params.true_species_set,
-        #                            rule=rule_X,
-        #                            doc="Charge x mole fraction term"))
+        b.add_component(pname+"_X",
+                        Expression(b.params.true_species_set,
+                                   rule=rule_X,
+                                   doc="Charge x mole fraction term"))
 
-        # def rule_Y(b, j):
-        #     cobj = b.params.get_component(j)
-        #     if cobj.config.charge < 0:
-        #         # Anion
-        #         dom = b.params.anion_set
-        #     else:
-        #         dom = b.params.cation_set
+        def rule_Y(b, j):
+            cobj = b.params.get_component(j)
+            if cobj.config.charge < 0:
+                # Anion
+                dom = b.params.anion_set
+            else:
+                dom = b.params.cation_set
 
-        #     X = getattr(b, pname+"_X")
-        #     return X[j]/sum(X[i] for i in dom)
+            X = getattr(b, pname+"_X")
+            return X[j]/sum(X[i] for i in dom)
 
-        # b.add_component(pname+"_Y",
-        #                 Expression(b.params.ion_set,
-        #                            rule=rule_Y,
-        #                            doc="Charge composition"))
+        b.add_component(pname+"_Y",
+                        Expression(b.params.ion_set,
+                                   rule=rule_Y,
+                                   doc="Charge composition"))
 
-        # # Calculate alphas for all true species pairings
-        # def rule_alpha_expr(b, i, j):
-        #     Y = getattr(b, pname+"_Y")
-        #     if ((pname, i) not in b.params.true_phase_component_set or
-        #             (pname, j) not in b.params.true_phase_component_set):
-        #         return Expression.Skip
-        #     elif ((i in molecular_set) and
-        #             (j in molecular_set)):
-        #         return alpha_rule(b, pobj, i, j, b.temperature)
-        #     elif (i in b.params.cation_set and j in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             alpha_rule(
-        #                 b, pobj, _get_salt(b, pname, i, k), j, b.temperature)
-        #             for k in b.params.anion_set)
-        #     elif (j in b.params.cation_set and i in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             alpha_rule(
-        #                 b, pobj, _get_salt(b, pname, j, k), i, b.temperature)
-        #             for k in b.params.anion_set)
-        #     elif (i in b.params.anion_set and j in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             alpha_rule(
-        #                 b, pobj, _get_salt(b, pname, k, i), j, b.temperature)
-        #             for k in b.params.cation_set)
-        #     elif (j in b.params.anion_set and i in molecular_set):
-        #         return sum(
-        #             Y[k] *
-        #             alpha_rule(
-        #                 b, pobj, _get_salt(b, pname, k, j), i, b.temperature)
-        #             for k in b.params.cation_set)
-        #     elif (i in b.params.cation_set and j in b.params.anion_set):
-        #         ipair = _get_salt(b, pname, i, j)
-        #         return sum(Y[k]*alpha_rule(b,
-        #                                    pobj,
-        #                                    ipair,
-        #                                    _get_salt(b, pname, k, j),
-        #                                    b.temperature)
-        #                    for k in b.params.cation_set)
-        #     elif (i in b.params.anion_set and j in b.params.cation_set):
-        #         ipair = _get_salt(b, pname, j, i)
-        #         return sum(Y[k]*alpha_rule(b,
-        #                                    pobj,
-        #                                    ipair,
-        #                                    _get_salt(b, pname, j, k),
-        #                                    b.temperature)
-        #                    for k in b.params.anion_set)
-        #     elif ((i in b.params.cation_set and j in b.params.cation_set) or
-        #           (i in b.params.anion_set and j in b.params.anion_set)):
-        #         # No like ion interactions
-        #         return Expression.Skip
-        #     else:
-        #         raise BurntToast(
-        #             "{} eNRTL model encountered unexpected component pair {}."
-        #             .format(b.name, (i, j)))
+        # Calculate alphas for all true species pairings
+        def rule_alpha_expr(b, i, j):
+            Y = getattr(b, pname+"_Y")
+            if ((pname, i) not in b.params.true_phase_component_set or
+                    (pname, j) not in b.params.true_phase_component_set):
+                return Expression.Skip
+            elif (i == j or
+                  (i in b.params.cation_set and j in b.params.cation_set) or
+                  (i in b.params.anion_set and j in b.params.anion_set)):
+                # No like species interactions
+                return Expression.Skip
+            elif ((i in molecular_set) and
+                    (j in molecular_set)):
+                return alpha_rule(b, pobj, i, j, b.temperature)
+            elif (i in b.params.cation_set and j in molecular_set):
+                return sum(
+                    Y[k] *
+                    alpha_rule(
+                        b, pobj, (i+", "+k), j, b.temperature)
+                    for k in b.params.anion_set)
+            elif (j in b.params.cation_set and i in molecular_set):
+                return sum(
+                    Y[k] *
+                    alpha_rule(
+                        b, pobj, (j+", "+k), i, b.temperature)
+                    for k in b.params.anion_set)
+            elif (i in b.params.anion_set and j in molecular_set):
+                return sum(
+                    Y[k] *
+                    alpha_rule(
+                        b, pobj, (k+", "+i), j, b.temperature)
+                    for k in b.params.cation_set)
+            elif (j in b.params.anion_set and i in molecular_set):
+                return sum(
+                    Y[k] *
+                    alpha_rule(
+                        b, pobj, (k+", "+j), i, b.temperature)
+                    for k in b.params.cation_set)
+            elif (i in b.params.cation_set and j in b.params.anion_set):
+                return sum(Y[k]*alpha_rule(
+                               b, pobj, (i+", "+j), (k+", "+j), b.temperature)
+                           for k in b.params.cation_set
+                           if i != k)
+            elif (i in b.params.anion_set and j in b.params.cation_set):
+                return sum(Y[k]*alpha_rule(
+                               b, pobj, (j+", "+i), (j+", "+k), b.temperature)
+                           for k in b.params.anion_set
+                           if i != k)
+            else:
+                raise BurntToast(
+                    "{} eNRTL model encountered unexpected component pair {}."
+                    .format(b.name, (i, j)))
 
-        # b.add_component(pname+"_alpha",
-        #                 Expression(b.params.true_species_set,
-        #                            b.params.true_species_set,
-        #                            rule=rule_alpha_expr,
-        #                            doc="Non-randomness parameters"))
+        b.add_component(pname+"_alpha",
+                        Expression(b.params.true_species_set,
+                                   b.params.true_species_set,
+                                   rule=rule_alpha_expr,
+                                   doc="Non-randomness parameters"))
 
         # # Calculate G terms
         # def rule_G_expr(b, i, j):
