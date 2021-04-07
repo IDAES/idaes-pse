@@ -18,7 +18,7 @@ import pandas as pd
 import pytest
 from pytest import approx
 from mock import patch
-from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty, get_dsdp, get_sensitivity, clean_variable_name
+from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty,clean_variable_name
 from pyomo.opt import SolverFactory
 from pyomo.environ import *
 import pyomo.contrib.parmest.parmest as parmest
@@ -127,140 +127,6 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c =  propagate_uncertainty(1, theta, cov, variable_name)
 
-    def test_get_dsdp1(self):
-        '''
-        It tests the function get_dsdp with a simple nonlinear programming example.
-        
-        min f: p1*x1+ p2*(x2^2) + p1*p2 
-         s.t c1: x1 = p1
-             c2: x2 = p2
-             c3: 10 <= p1 <= 10
-             c4: 5 <= p2 <= 5  
-        '''
-        variable_name = ['p1', 'p2']
-
-        m= ConcreteModel()
-        m.x1 = Var(initialize = 0)
-        m.x2 = Var(initialize = 0)
-        m.p1 = Var(initialize = 0)
-        m.p2 = Var(initialize = 0)
-        m.obj = Objective(expr = m.x1*m.p1+m.x2*m.x2*m.p2 + m.p1*m.p2 , sense=minimize)
-        m.c1 = Constraint(expr = m.x1 == m.p1)
-        m.c2 = Constraint(expr = m.x2 == m.p2)
-        theta= {'p1': 10.0, 'p2': 5.0}
-        for v in variable_name:
-            getattr(m, v).setlb(theta[v])
-            getattr(m, v).setub(theta[v])
-        dsdp_dic, col = get_dsdp(m, variable_name, theta)
-        assert dsdp_dic['d(x1)/d(p1)'] == approx(1.0)
-        assert dsdp_dic['d(x2)/d(p1)'] == approx(0.0)
-        assert dsdp_dic['d(p1)/d(p1)'] == approx(1.0)
-        assert dsdp_dic['d(p2)/d(p1)'] == approx(0.0)
-        assert dsdp_dic['d(x1)/d(p2)'] == approx(0.0)
-        assert dsdp_dic['d(x2)/d(p2)'] == approx(1.0)
-        assert dsdp_dic['d(p1)/d(p2)'] == approx(0.0)
-        assert dsdp_dic['d(p2)/d(p2)'] == approx(1.0)
-
-    def test_get_dsdp2(self):
-        '''
-        It tests the function get_dsdp with rooney & biegler's model.
-        '''
-        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
-        variable_name = ['asymptote', 'rate_constant']
-        data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
-                                  [4,16.0],[5,15.6],[7,19.8]],
-                            columns=['hour', 'y'])
-        def SSE(model, data):
-            expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
-            return expr
-        parmest_class = parmest.Estimator(rooney_biegler_model, data,variable_name,SSE)
-        obj, theta, cov = parmest_class.theta_est(calc_cov=True)
-        model_uncertain= ConcreteModel()
-        model_uncertain.asymptote = Var(initialize = 15)
-        model_uncertain.rate_constant = Var(initialize = 0.5)
-        model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
-        theta= {'asymptote': 19.142575284617866, 'rate_constant': 0.53109137696521}
-        for v in variable_name:
-            getattr(model_uncertain, v).setlb(theta[v])
-            getattr(model_uncertain, v).setub(theta[v])
-        dsdp_dic, col =  get_dsdp(model_uncertain, variable_name, theta, {})
-        assert dsdp_dic['d(asymptote)/d(asymptote)'] == approx(1.0)
-        assert dsdp_dic['d(rate_constant)/d(asymptote)'] == approx(0.0)
-        assert dsdp_dic['d(asymptote)/d(rate_constant)'] == approx(0.0)
-        assert dsdp_dic['d(rate_constant)/d(rate_constant)'] == approx(1.0)
-    
-    def test_get_sensitivity1(self):
-        '''
-        It tests the function get_sensitivity with a simple nonlinear programming example.
-        
-        min f: p1*x1+ p2*(x2^2) + p1*p2 
-         s.t c1: x1 = p1
-             c2: x2 = p2
-             c3: 10 <= p1 <= 10
-             c4: 5 <= p2 <= 5  
-        '''
-        variable_name = ['p1', 'p2']
-
-        m= ConcreteModel()
-        m.x1 = Var(initialize = 0)
-        m.x2 = Var(initialize = 0)
-        m.p1 = Var(initialize = 0)
-        m.p2 = Var(initialize = 0)
-        m.obj = Objective(expr = m.x1*m.p1+m.x2*m.x2*m.p2 + m.p1*m.p2 , sense=minimize)
-        m.c1 = Constraint(expr = m.x1 == m.p1)
-        m.c2 = Constraint(expr = m.x2 == m.p2)
-        theta= {'p1': 10.0, 'p2': 5.0}
-        for v in variable_name:
-            getattr(m, v).setlb(theta[v])
-            getattr(m, v).setub(theta[v])
-        gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic =  get_sensitivity(m, variable_name)
-        assert gradient_f_dic['d(f)/d(x1)'] == approx(10.0)
-        assert gradient_f_dic['d(f)/d(x2)'] == approx(50.0)
-        assert gradient_f_dic['d(f)/d(p1)'] == approx(15.0)
-        assert gradient_f_dic['d(f)/d(p2)'] == approx(35.0)
-        assert gradient_c_dic['d(c1)/d(x1)'] == approx(1.0)
-        assert gradient_c_dic['d(c1)/d(p1)'] == approx(-1.0)
-        assert gradient_c_dic['d(c2)/d(x2)'] == approx(1.0)
-        assert gradient_c_dic['d(c2)/d(p2)'] == approx(-1.0)
-        assert gradient_f == approx(np.array([10., 50., 15., 35.]))
-        assert gradient_c == approx(np.array([[ 1.,  1.,  1.],[ 3.,  1., -1.],[ 2.,  2.,  1.],[ 4.,  2., -1.]]))
-        assert line_dic['p1'] == approx(3)
-        assert line_dic['p2'] == approx(4)
-
-
-
-    def test_get_sensitivity2(self):
-        '''
-        It tests the function get_sensitivity with rooney & biegler's model.
-        '''        
-        from idaes.apps.uncertainty_propagation.examples.rooney_biegler import rooney_biegler_model
-        variable_name = ['asymptote', 'rate_constant']
-        data = pd.DataFrame(data=[[1,8.3],[2,10.3],[3,19.0],
-                                  [4,16.0],[5,15.6],[7,19.8]],
-                            columns=['hour', 'y'])
-        def SSE(model, data):
-            expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
-            return expr
-        parmest_class = parmest.Estimator(rooney_biegler_model, data,variable_name,SSE)
-        obj, theta, cov = parmest_class.theta_est(calc_cov=True)
-        model_uncertain= ConcreteModel()
-        model_uncertain.asymptote = Var(initialize = 15)
-        model_uncertain.rate_constant = Var(initialize = 0.5)
-        model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
-        theta= {'asymptote': 19.142575284617866, 'rate_constant': 0.53109137696521}
-        for v in variable_name:
-            getattr(model_uncertain, v).setlb(theta[v])
-            getattr(model_uncertain, v).setub(theta[v])
-        gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic =  get_sensitivity(model_uncertain, variable_name)
-
-        assert gradient_f_dic['d(f)/d(asymptote)'] == approx(0.99506259)
-        assert gradient_f_dic['d(f)/d(rate_constant)'] == approx(0.945148)
-        assert gradient_f == approx(np.array([0.99506259, 0.945148]))
-        assert gradient_c == approx(np.array([]))
-        assert line_dic['asymptote'] == approx(1)
-        assert line_dic['rate_constant'] == approx(2)
-        
-    
     @pytest.mark.unit
     @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
     @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
