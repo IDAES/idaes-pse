@@ -28,7 +28,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
       import (CompressionStage, VaneDiffuserType, ImpellerType)
-
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
 # -----------------------------------------------------------------------------
