@@ -20,7 +20,7 @@ Reference:
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
-from pyomo.environ import Expression, exp, log, Set
+from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
 from .eos_base import EoSBase
 from .enrtl_submethods import ConstantAlpha, ConstantTau
@@ -37,6 +37,10 @@ _log = idaeslog.getLogger(__name__)
 
 DefaultAlphaRule = ConstantAlpha
 DefaultTauRule = ConstantTau
+
+# Closest appraoch parameter - implemented as a global constant for now
+# This is not something the user should be changing in most cases
+ClosestApproach = 14.9
 
 
 class ENRTL(EoSBase):
@@ -142,7 +146,11 @@ class ENRTL(EoSBase):
 
         # Debye-Huckel parameter
         def rule_A_DH(b):
-            v = getattr(b, pname+"_vol_mol_solvent")
+            # Note: Where the paper referes to the dielectric constant, it
+            # actually means the electric permittivity of the solver
+            # eps = eps_r*eps_0 (units F/m)
+            v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
+                                pyunits.m**3/pyunits.mol)
             eps = getattr(b, pname+"_relative_permittivity_solvent")
             eps0 = Constants.vacuum_electric_permittivity
             return ((1/3)*(2*Constants.pi*Constants.avogadro_number/v)**0.5 *
@@ -154,6 +162,28 @@ class ENRTL(EoSBase):
                         Expression(
                             rule=rule_A_DH,
                             doc="Debye-Huckel parameter"))
+
+        # Long-range (PDH) contribution to activity coefficient
+        def rule_log_gamma_pdh(b, j):
+            A = getattr(b, pname+"_A_DH")
+            I = getattr(b, pname+"_ionic_strength")
+            rho = ClosestApproach
+            if j in molecular_set:
+                # Note typo in original paper. Correct power for I is (3/2)
+                return (2*A*I**(3/2)/(1+rho*I**(1/2)))
+            elif j in b.params.cation_set:
+                return 200
+            elif j in b.params.anion_set:
+                return 300
+            else:
+                raise BurntToast(
+                    "{} eNRTL model encountered unexpected component."
+                    .format(b.name))
+        b.add_component(
+            pname+"_log_gamma_pdh",
+            Expression(b.params.true_species_set,
+                       rule=rule_log_gamma_pdh,
+                       doc="Long-range contribution to activity coefficient"))
 
         # Calculate mixing factors
         def rule_X(b, j):
@@ -321,7 +351,7 @@ class ENRTL(EoSBase):
                                    rule=rule_tau_expr,
                                    doc="Binary interaction energy parameters"))
 
-        # Local contrubtion to activity coefficient
+        # Local contribution to activity coefficient
         # Indicies in expressions use same names as source paper
         # mp = m'
         aqu_species = b.params.true_species_set - b.params._non_aqueous_set

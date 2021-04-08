@@ -44,7 +44,7 @@ import idaes.logger as idaeslog
 
 
 def dummy_method(b, *args, **kwargs):
-    return 42
+    return 42*pyunits.mol/pyunits.m**3
 
 
 configuration = {
@@ -348,8 +348,7 @@ class TestStateBlock(object):
 
         assert isinstance(model.state[1].Liq_A_DH, Expression)
         assert len(model.state[1].Liq_A_DH) == 1
-        assert_units_equivalent(model.state[1].Liq_A_DH,
-                                pyunits.mol**-0.5*pyunits.m**(3/2))
+        assert_units_equivalent(model.state[1].Liq_A_DH, pyunits.dimensionless)
         assert model.state[1].Liq_A_DH.expr == (
             (1/3)*(2*Constants.pi*Constants.avogadro_number /
                    model.state[1].Liq_vol_mol_solvent)**0.5 *
@@ -358,6 +357,16 @@ class TestStateBlock(object):
               Constants.vacuum_electric_permittivity *
               Constants.boltzmann_constant *
               model.state[1].temperature))**(3/2))
+
+        assert isinstance(model.state[1].Liq_log_gamma_pdh, Expression)
+        assert len(model.state[1].Liq_log_gamma_pdh) == 6
+        for j in model.state[1].Liq_log_gamma_pdh:
+            assert j in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
+            if j in ["H2O", "C6H12"]:
+                assert model.state[1].Liq_log_gamma_pdh[j].expr == (
+                    (2*model.state[1].Liq_A_DH *
+                     model.state[1].Liq_ionic_strength**(3/2) /
+                     (1+14.9*model.state[1].Liq_ionic_strength**(1/2))))
 
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6
