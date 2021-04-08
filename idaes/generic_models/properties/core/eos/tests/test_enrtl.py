@@ -32,6 +32,7 @@ from idaes.core import (AqueousPhase,
                         Apparent,
                         Anion,
                         Cation)
+from idaes.core.util.constants import Constants
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -274,6 +275,9 @@ class TestStateBlock(object):
 
         m.state = m.params.build_state_block([1])
 
+        # Need to set a vlue of T for checking expressions later
+        m.state[1].temperature.set_value(300)
+
         return m
 
     @pytest.mark.unit
@@ -345,12 +349,15 @@ class TestStateBlock(object):
         assert isinstance(model.state[1].Liq_A_DH, Expression)
         assert len(model.state[1].Liq_A_DH) == 1
         assert_units_equivalent(model.state[1].Liq_A_DH,
-                                pyunits.mol**0.5*pyunits.m**(3/2))
-        # assert model.state[1].Liq_A_DH.expr == (
-        #     (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"]/42 +
-        #      model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]/42) /
-        #     (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] +
-        #      model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]))
+                                pyunits.mol**-0.5*pyunits.m**(3/2))
+        assert model.state[1].Liq_A_DH.expr == (
+            (1/3)*(2*Constants.pi*Constants.avogadro_number /
+                   model.state[1].Liq_vol_mol_solvent)**0.5 *
+            (Constants.elemental_charge**2 /
+             (model.state[1].Liq_relative_permittivity_solvent *
+              Constants.vacuum_electric_permittivity *
+              Constants.boltzmann_constant *
+              model.state[1].temperature))**(3/2))
 
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6
