@@ -180,6 +180,12 @@ VaneDiffuserType.custom}""",
         properties_out = self.control_volume.properties_out
         phase_s = self.config.inlet_phase
 
+        # # Check VaporPhase, used for later modification
+        # for p in self.config.property_package.phase_list:
+        #     pobj = self.config.property_package.get_phase(p)
+        #     if isinstance(pobj, VaporPhase):
+        #         return p
+
         self.mass_flow_coeff = Var(self.flowsheet().config.time,
                                    initialize=0.07,
                                    doc="Compressor Flow Coefficient",
