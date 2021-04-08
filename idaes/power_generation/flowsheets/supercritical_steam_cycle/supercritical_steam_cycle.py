@@ -201,7 +201,7 @@ def create_model():
             "flow_mol": m.fs.condenser_mix._flow_mol_ref,
             "temperature": m.fs.condenser_mix._temperature_ref,
             "pressure": m.fs.condenser_mix._pressure_ref,
-            "vapor_frac": m.fs.condenser_mix._vapor_Frac_ref,
+            "vapor_frac": m.fs.condenser_mix._vapor_frac_ref,
         }
     )
 
