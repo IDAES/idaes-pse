@@ -27,7 +27,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Import Unit Model Modules
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
-     import (CompressionStage, VaneDiffuserType, ImpellerType)
+      import (CompressionStage, VaneDiffuserType, ImpellerType)
 
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
@@ -79,7 +79,7 @@ def test_basic_build(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 14
+    assert len(m.fs.unit.config) == 16
     assert m.fs.unit.config.thermodynamic_assumption
     assert m.fs.unit.config.property_package is m.fs.properties_co2
 
