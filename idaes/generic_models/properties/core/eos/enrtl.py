@@ -122,7 +122,22 @@ class ENRTL(EoSBase):
                         for s in molecular_set))
         b.add_component(pname+"_vol_mol_solvent",
                         Expression(rule=rule_vol_mol_solvent,
-                                   doc="Average molar volume of solvent"))
+                                   doc="Mean molar volume of solvent"))
+
+        # Mean relative permitivity of solvent
+        def rule_eps_solvent(b):
+            return (sum(b.mole_frac_phase_comp_true[pname, s] *
+                        get_method(b, "relative_permittivity_liq_comp", s)(
+                            b, cobj(b, s), b.temperature) *
+                        b.params.get_component(s).mw
+                        for s in molecular_set) /
+                    sum(b.mole_frac_phase_comp_true[pname, s] *
+                        b.params.get_component(s).mw
+                        for s in molecular_set))
+        b.add_component(pname+"_relative_permittivity_solvent",
+                        Expression(
+                            rule=rule_eps_solvent,
+                            doc="Mean relative permittivity  of solvent"))
 
         # Calculate mixing factors
         def rule_X(b, j):

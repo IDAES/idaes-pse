@@ -35,6 +35,8 @@ from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.pure.electrolyte import \
+    relative_permittivity_constant
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -46,9 +48,17 @@ def dummy_method(b, *args, **kwargs):
 configuration = {
     "components": {
         "H2O": {"type": Solvent,
-                "dens_mol_liq_comp": dummy_method},
+                "dens_mol_liq_comp": dummy_method,
+                "relative_permittivity_liq_comp":
+                    relative_permittivity_constant,
+                "parameter_data": {"mw": (18E-3, pyunits.kg/pyunits.mol),
+                                   "relative_permittivity_liq_comp": 101}},
         "C6H12": {"type": Solute,
-                  "dens_mol_liq_comp": dummy_method},
+                  "dens_mol_liq_comp": dummy_method,
+                  "relative_permittivity_liq_comp":
+                      relative_permittivity_constant,
+                  "parameter_data": {"mw": (84E-3, pyunits.kg/pyunits.mol),
+                                     "relative_permittivity_liq_comp": 102}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
         "HCl": {"type": Apparent,
@@ -315,6 +325,21 @@ class TestStateBlock(object):
              model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]/42) /
             (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] +
              model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]))
+
+        assert isinstance(model.state[1].Liq_relative_permittivity_solvent,
+                          Expression)
+        assert len(model.state[1].Liq_relative_permittivity_solvent) == 1
+        assert model.state[1].Liq_relative_permittivity_solvent.expr == (
+            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] *
+             model.params.get_component("H2O").relative_permittivity_liq_comp *
+             model.params.get_component("H2O").mw +
+             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
+             model.params.get_component("C6H12").relative_permittivity_liq_comp *
+             model.params.get_component("C6H12").mw) /
+            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] *
+             model.params.get_component("H2O").mw +
+             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
+             model.params.get_component("C6H12").mw))
 
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6
