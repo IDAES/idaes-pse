@@ -55,13 +55,13 @@ def build_unit():
 
     hin_co2 = swco2.htpx(T=t*pyo.units.K, P=p*pyo.units.Pa)
 
-    m.fs.unit.vapor_inlet.flow_mol[:].fix(fin)
-    m.fs.unit.vapor_inlet.enth_mol[:].fix(hin_co2)
-    m.fs.unit.vapor_inlet.pressure[:].fix(p)
+    m.fs.unit.inlet.flow_mol[:].fix(fin)
+    m.fs.unit.inlet.enth_mol[:].fix(hin_co2)
+    m.fs.unit.inlet.pressure[:].fix(p)
 
     # inlet specifications
     m.fs.unit.U2.fix(315.3)
-    m.fs.unit.vapor_outlet.pressure[:].fix(2.53161*1e5)
+    m.fs.unit.outlet.pressure[:].fix(2.53161*1e5)
 
     # fix compressor specification
     m.fs.unit.r2.fix(0.67654)
@@ -79,7 +79,7 @@ def test_basic_build(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 16
+    assert len(m.fs.unit.config) == 17
     assert m.fs.unit.config.thermodynamic_assumption
     assert m.fs.unit.config.property_package is m.fs.properties_co2
 
