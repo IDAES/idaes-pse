@@ -39,10 +39,16 @@ from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
+def dummy_method(b, *args, **kwargs):
+    return 42
+
+
 configuration = {
     "components": {
-        "H2O": {"type": Solvent},
-        "C6H12": {"type": Solute},
+        "H2O": {"type": Solvent,
+                "dens_mol_liq_comp": dummy_method},
+        "C6H12": {"type": Solute,
+                  "dens_mol_liq_comp": dummy_method},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
         "HCl": {"type": Apparent,
@@ -289,6 +295,26 @@ class TestStateBlock(object):
                         str(model.state[1].Liq_X[j] /
                             (model.state[1].Liq_X["Cl-"] +
                              model.state[1].Liq_X["OH-"])))
+
+        assert isinstance(model.state[1].Liq_ionic_strength, Expression)
+        assert len(model.state[1].Liq_ionic_strength) == 1
+        assert model.state[1].Liq_ionic_strength.expr == (
+            0.5*(model.params.get_component("Na+").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
+                 model.params.get_component("H+").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "H+"]) +
+            0.5*(model.params.get_component("Cl-").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"] +
+                 model.params.get_component("OH-").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]))
+
+        assert isinstance(model.state[1].Liq_vol_mol_solvent, Expression)
+        assert len(model.state[1].Liq_vol_mol_solvent) == 1
+        assert model.state[1].Liq_vol_mol_solvent.expr == (
+            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"]/42 +
+             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]/42) /
+            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] +
+             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]))
 
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6

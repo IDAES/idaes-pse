@@ -24,6 +24,8 @@ from pyomo.environ import Expression, exp, log, Set
 
 from .eos_base import EoSBase
 from .enrtl_submethods import ConstantAlpha, ConstantTau
+from idaes.generic_models.properties.core.generic.utility import (
+    get_method, get_component_object as cobj)
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
@@ -97,6 +99,30 @@ class ENRTL(EoSBase):
                 "tau_rule"].return_expression
         else:
             tau_rule = DefaultTauRule.return_expression
+
+        # Ionic Strength
+        def rule_I(b):
+            return (0.5*sum(b.mole_frac_phase_comp_true[pname, c] *
+                            b.params.get_component(c).config.charge**2
+                            for c in b.params.cation_set) +
+                    0.5*sum(b.mole_frac_phase_comp_true[pname, a] *
+                            b.params.get_component(a).config.charge**2
+                            for a in b.params.anion_set))
+        b.add_component(pname+"_ionic_strength",
+                        Expression(rule=rule_I,
+                                   doc="Ionic strength"))
+
+        # Average molar volume of solvent
+        def rule_vol_mol_solvent(b):
+            return (sum(b.mole_frac_phase_comp_true[pname, s] /
+                        get_method(b, "dens_mol_liq_comp", s)(
+                            b, cobj(b, s), b.temperature)
+                        for s in molecular_set) /
+                    sum(b.mole_frac_phase_comp_true[pname, s]
+                        for s in molecular_set))
+        b.add_component(pname+"_vol_mol_solvent",
+                        Expression(rule=rule_vol_mol_solvent,
+                                   doc="Average molar volume of solvent"))
 
         # Calculate mixing factors
         def rule_X(b, j):
