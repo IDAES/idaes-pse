@@ -111,10 +111,6 @@ Available Functions
 
 .. autofunction:: propagate_uncertainty
 
-.. autofunction:: get_dsdp
-
-.. autofunction:: get_sensitivity
-
 .. autofunction:: clean_variable_name
 
 Examples

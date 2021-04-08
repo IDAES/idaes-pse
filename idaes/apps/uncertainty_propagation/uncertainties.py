@@ -58,6 +58,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     Returns
     -------
     results : namedtuple
+    
         results.obj: float
             objective function value for the given obj_function 
         results.theta_out: dictionary
