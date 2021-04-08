@@ -13,8 +13,7 @@
 """
 Compression Model.
 Current model assumes a single vapor phase.
-There will have a modification that allows properpy package to calculate
-two-phase inlet stream.
+A future enhancement will add support for two-phase flow.
 
 Reference:
 
@@ -117,11 +116,6 @@ def _build_vaneless_diffuser_equations(blk):
 class CompressionStageData(CompressorData):
     # Pressure changer with isentropic compressor options
     CONFIG = CompressorData.CONFIG()
-    CONFIG.declare("inlet_phase", ConfigValue(
-        default='Vap',
-        domain=In(['Liq', 'Vap']),
-        description='Inlet phase',
-        doc='Define inlet phase for property calls'))
     CONFIG.declare(
         "impeller_type",
         ConfigValue(
@@ -175,16 +169,15 @@ VaneDiffuserType.custom}""",
     def build(self):
         super().build()
 
+        if self.config.property_package.phase_list != ["Vap"]:
+            raise ConfigurationError(
+                "{} SCO2 compressor provided with invalid property package. "
+                "The SCO2 compressor only support a single vapor phase."
+                .format(self.name))
+
         # Some shorter refernces to property blocks
         properties_in = self.control_volume.properties_in
         properties_out = self.control_volume.properties_out
-        phase_s = self.config.inlet_phase
-
-        # # Check VaporPhase, used for later modification
-        # for p in self.config.property_package.phase_list:
-        #     pobj = self.config.property_package.get_phase(p)
-        #     if isinstance(pobj, VaporPhase):
-        #         return p
 
         self.mass_flow_coeff = Var(self.flowsheet().config.time,
                                    initialize=0.07,
@@ -266,7 +259,7 @@ VaneDiffuserType.custom}""",
         def Ma_con(b, t):
             # assume single vapor phase.
             speed_of_sound = self.control_volume.properties_in[
-                t].speed_sound_phase[phase_s]
+                t].speed_sound_phase['Vap']
             return b.Ma[t] == b.U2[t] / speed_of_sound
 
         @self.Constraint(self.flowsheet().config.time, doc="Rotation Speed "
@@ -437,8 +430,6 @@ VaneDiffuserType.custom}""",
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        # opt = pyo.SolverFactory(solver)
-        # opt.options = optarg
         # Create solver
         opt = get_solver(solver, optarg)
 
@@ -488,8 +479,6 @@ VaneDiffuserType.custom}""",
         for c in constraint_list:
             self.component(c).deactivate()
 
-        flags = self.control_volume.initialize(
-            state_args=state_args, hold_state=True)
         super().initialize(
             state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg)
 
@@ -503,7 +492,7 @@ VaneDiffuserType.custom}""",
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        self.control_volume.release_state(flags=flags, outlvl=outlvl)
+        self.control_volume.release_state(flags={}, outlvl=outlvl)
         init_log.info(
             "Initialization Complete: {}".format(idaeslog.condition(res))
         )
