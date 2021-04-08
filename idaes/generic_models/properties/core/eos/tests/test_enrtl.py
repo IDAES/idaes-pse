@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            Var,
                            units as pyunits)
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (AqueousPhase,
                         Solvent,
@@ -340,6 +341,16 @@ class TestStateBlock(object):
              model.params.get_component("H2O").mw +
              model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
              model.params.get_component("C6H12").mw))
+
+        assert isinstance(model.state[1].Liq_A_DH, Expression)
+        assert len(model.state[1].Liq_A_DH) == 1
+        assert_units_equivalent(model.state[1].Liq_A_DH,
+                                pyunits.mol**0.5*pyunits.m**(3/2))
+        # assert model.state[1].Liq_A_DH.expr == (
+        #     (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"]/42 +
+        #      model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]/42) /
+        #     (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] +
+        #      model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]))
 
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6

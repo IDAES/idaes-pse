@@ -26,6 +26,7 @@ from .eos_base import EoSBase
 from .enrtl_submethods import ConstantAlpha, ConstantTau
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
+from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
 
@@ -138,6 +139,21 @@ class ENRTL(EoSBase):
                         Expression(
                             rule=rule_eps_solvent,
                             doc="Mean relative permittivity  of solvent"))
+
+        # Debye-Huckel parameter
+        def rule_A_DH(b):
+            v = getattr(b, pname+"_vol_mol_solvent")
+            eps = getattr(b, pname+"_relative_permittivity_solvent")
+            eps0 = Constants.vacuum_electric_permittivity
+            return ((1/3)*(2*Constants.pi*Constants.avogadro_number/v)**0.5 *
+                    (Constants.elemental_charge**2/(
+                        eps*eps0*Constants.boltzmann_constant *
+                        b.temperature))**(3/2)
+                    )
+        b.add_component(pname+"_A_DH",
+                        Expression(
+                            rule=rule_A_DH,
+                            doc="Debye-Huckel parameter"))
 
         # Calculate mixing factors
         def rule_X(b, j):
