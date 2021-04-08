@@ -28,6 +28,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.power_generation.carbon_capture.compression_system.compressor \
       import (CompressionStage, VaneDiffuserType, ImpellerType)
+
 from idaes.core.util.testing import get_default_solver, initialization_tester
 
 # -----------------------------------------------------------------------------
@@ -41,7 +42,9 @@ def build_unit():
     m = pyo.ConcreteModel()
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties_co2 = swco2.SWCO2ParameterBlock()
+    m.fs.properties_co2 = swco2.SWCO2ParameterBlock(default={
+                "phase_presentation": swco2.PhaseType.G
+            })
     m.fs.unit = CompressionStage(
         default={"property_package": m.fs.properties_co2,
                  "impeller_type": ImpellerType.open_impeller,
@@ -78,7 +81,7 @@ def test_basic_build(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 17
+    assert len(m.fs.unit.config) == 16
     assert m.fs.unit.config.thermodynamic_assumption
     assert m.fs.unit.config.property_package is m.fs.properties_co2
 
