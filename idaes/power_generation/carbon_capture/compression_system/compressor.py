@@ -12,6 +12,9 @@
 ##############################################################################
 """
 Compression Model.
+Current model assumes a single vapor phase.
+There will have a modification that allows properpy package to calculate
+two-phase inlet stream.
 
 Reference:
 
@@ -20,6 +23,7 @@ and Control of a Multistage CO2 Compresor System.
 International Journal of Greenhouse Gas Control. v62. page 31-45
 
 Created: April 2020
+
 """
 __Author__ = "Quang Minh Le, John Eslick, Andrew Lee"
 
@@ -31,7 +35,6 @@ from pyomo.environ import (
     value,
     log,
     sqrt,
-    TransformationFactory,
     units as pyunits)
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
@@ -39,6 +42,7 @@ from idaes.core import declare_process_block_class
 from idaes.generic_models.unit_models.pressure_changer import CompressorData
 
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 
@@ -113,6 +117,11 @@ def _build_vaneless_diffuser_equations(blk):
 class CompressionStageData(CompressorData):
     # Pressure changer with isentropic compressor options
     CONFIG = CompressorData.CONFIG()
+    CONFIG.declare("inlet_phase", ConfigValue(
+        default='Vap',
+        domain=In(['Liq', 'Vap']),
+        description='Inlet phase',
+        doc='Define inlet phase for property calls'))
     CONFIG.declare(
         "impeller_type",
         ConfigValue(
@@ -166,40 +175,32 @@ VaneDiffuserType.custom}""",
     def build(self):
         super().build()
 
-        # add ports to compressor
-        self.add_inlet_port(name="vapor_inlet", block=self.control_volume)
-        self.add_outlet_port(name="vapor_outlet", block=self.control_volume)
-
-        # Pyomo arc connect vapor inlet steam with control volume inlet
-        TransformationFactory("network.expand_arcs").apply_to(self)
-
-        #####################################################
-
         # Some shorter refernces to property blocks
         properties_in = self.control_volume.properties_in
         properties_out = self.control_volume.properties_out
+        phase_s = self.config.inlet_phase
 
         self.mass_flow_coeff = Var(self.flowsheet().config.time,
-                                   initialize=0.0735,
+                                   initialize=0.07,
                                    doc="Compressor Flow Coefficient",
                                    bounds=(0.01, 0.15))
         self.rspeed = Var(self.flowsheet().config.time,
-                          initialize=74.1738,
+                          initialize=70.0,
                           doc='Rotation Speed of The Impeller',
                           bounds=(0.5, 8000),
                           units=1 / pyunits.s)
         self.U2 = Var(self.flowsheet().config.time,
-                      initialize=315,
+                      initialize=300,
                       doc="Impeller Tip Speed",
                       bounds=(0, 500),
                       units=pyunits.m / pyunits.s)
         self.delta_enth_polytropic = Var(self.flowsheet().config.time,
-                                         initialize=2548.5,
+                                         initialize=2500,
                                          doc="Polytropic Enthalpy Change",
                                          units=pyunits.J / pyunits.mol,
                                          within=NonNegativeReals)
         self.impeller_work_coeff = Var(self.flowsheet().config.time,
-                                       initialize=0.6993,
+                                       initialize=0.60,
                                        doc="Impeller Work Coefficient",
                                        bounds=(0.001, 1))
         self.mu_p_v = Var(self.flowsheet().config.time,
@@ -219,7 +220,7 @@ VaneDiffuserType.custom}""",
                          doc="Polytropic Efficiency",
                          bounds=(0.001, 1.0))
         self.Ma = Var(self.flowsheet().config.time,
-                      initialize=0.1,
+                      initialize=0.10,
                       doc='Rotational Mach Number',
                       bounds=(0.5, 1.5))
         self.psi_3 = Var(self.flowsheet().config.time,
@@ -235,16 +236,16 @@ VaneDiffuserType.custom}""",
 
         ########################################################
         # Declare variables for the model
-        self.z_s = Var(initialize=0.97373,
+        self.z_s = Var(initialize=0.97,
                        doc="Compressibility factors at suction")
-        self.z_d1 = Var(initialize=0.88949,
-                        doc="variable used for calculating"
+        self.z_d1 = Var(initialize=0.88,
+                        doc="Variable used for calculating"
                         "compressibility factor at discharge pressure")
         self.efficiency_mech = Var(initialize=0.97,
                                    doc="Mechanical Efficiency")
         self.eff_drive = Var(initialize=1.0,
                              doc="Driver efficiency")
-        self.r2 = Var(initialize=0.075,
+        self.r2 = Var(initialize=0.05,
                       doc="Impeller Tip Radius",
                       units=pyunits.m)
 
@@ -259,7 +260,7 @@ VaneDiffuserType.custom}""",
         def Ma_con(b, t):
             # assume single vapor phase.
             speed_of_sound = self.control_volume.properties_in[
-                t].speed_sound_phase['Vap']
+                t].speed_sound_phase[phase_s]
             return b.Ma[t] == b.U2[t] / speed_of_sound
 
         @self.Constraint(self.flowsheet().config.time, doc="Rotation Speed "
@@ -381,8 +382,8 @@ VaneDiffuserType.custom}""",
         def V3dot(b, t):
             Tin = properties_in[t].temperature
             Tout = properties_out[t].temperature
-            Pd = self.vapor_outlet.pressure[t]
-            Ps = self.vapor_inlet.pressure[t]
+            Pd = properties_out[t].pressure
+            Ps = properties_in[t].pressure
             b.z_d = 0.5 * (b.z_s + b.z_d1)
             return b.Vsdot[t] * (b.z_d / b.z_s) * (Tout / Tin) * (Ps / Pd)
 
@@ -400,8 +401,8 @@ VaneDiffuserType.custom}""",
         def ys_model(b, t):
             k_v = self.control_volume.properties_in[t].heat_capacity_ratio
             a = (k_v - 1) / k_v
-            Pd = self.vapor_outlet.pressure[t]
-            Ps = self.vapor_inlet.pressure[t]
+            Pd = properties_out[t].pressure
+            Ps = properties_in[t].pressure
             Tin = properties_in[t].temperature
             mw = properties_in[t].mw
             gas_const = const.gas_constant
@@ -413,8 +414,8 @@ VaneDiffuserType.custom}""",
         def psi_s_eqn(b, t):
             return b.psi_s[t] == 2 * b.ys_model[t] / (b.U2[t]**2)
 
-    def initialize(self, state_args={}, outlvl=idaeslog.NOTSET, solver='ipopt',
-                   optarg={'tol': 1e-6, 'max_iter': 50}):
+    def initialize(self, state_args={}, outlvl=idaeslog.NOTSET, solver=None,
+                   optarg={}):
         """
         Initialize the inlet compressor stage model.
         This deactivates the specialized constraints,
@@ -430,8 +431,10 @@ VaneDiffuserType.custom}""",
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        opt = pyo.SolverFactory(solver)
-        opt.options = optarg
+        # opt = pyo.SolverFactory(solver)
+        # opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         unfix_ratioP = {}
         for t in self.flowsheet().config.time:
@@ -478,12 +481,6 @@ VaneDiffuserType.custom}""",
         # deactivate unit model level constraints
         for c in constraint_list:
             self.component(c).deactivate()
-
-        state_args = {
-            'flow_mol': self.vapor_inlet.flow_mol[0].value,
-            'pressure': self.vapor_inlet.pressure[0].value,
-            'enth_mol': self.vapor_inlet.enth_mol[0].value
-        }
 
         flags = self.control_volume.initialize(
             state_args=state_args, hold_state=True)
