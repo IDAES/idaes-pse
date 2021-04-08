@@ -476,9 +476,8 @@ VaneDiffuserType.custom}""",
             "psi_s_eqn"]
 
         # deactivate unit model level constraints
-        for c in self.component_objects(pyo.Constraint, descend_into=True):
-            if c.local_name in constraint_list:
-                c.deactivate()
+        for c in constraint_list:
+            self.component(c).deactivate()
 
         state_args = {
             'flow_mol': self.vapor_inlet.flow_mol[0].value,
