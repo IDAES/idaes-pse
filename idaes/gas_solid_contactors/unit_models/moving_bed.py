@@ -36,7 +36,7 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Reals, value,
+from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
                            TransformationFactory, Constraint,
                            TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -60,6 +60,7 @@ from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Chinedu Okoli", "Anca Ostace"
 
@@ -800,10 +801,9 @@ see reaction package for documentation.}"""))
     # Model initialization routine
 
     def initialize(blk, gas_phase_state_args={}, solid_phase_state_args={},
-                   outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
         """
-        Initialisation routine for MB unit (default solver ipopt).
+        Initialisation routine for MB unit.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -811,9 +811,9 @@ see reaction package for documentation.}"""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -823,9 +823,8 @@ see reaction package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names
@@ -983,9 +982,16 @@ see reaction package for documentation.}"""))
                     for p in gas_phase.property_package.phase_list:
                         for j in gas_phase.property_package.component_list:
                             (gas_rxn_gen[t, x, p, j].unfix())
-                            calculate_variable_from_constraint(
-                                gas_rxn_gen[t, x, p, j],
-                                gas_phase_stoichiometry_eqn[t, x, p, j])
+                            if not (
+                                (blk.gas_phase.config.transformation_scheme 
+                                    != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.gas_phase.config.transformation_scheme
+                                    == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                                calculate_variable_from_constraint(
+                                    gas_rxn_gen[t, x, p, j],
+                                    gas_phase_stoichiometry_eqn[t, x, p, j])
 
             gas_phase_stoichiometry_eqn.activate()
             blk.gas_phase_config_rxn_ext.activate()
@@ -1026,9 +1032,16 @@ see reaction package for documentation.}"""))
                     for p in solid_phase.property_package.phase_list:
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
-                            calculate_variable_from_constraint(
-                                solid_rxn_gen[t, x, p, j],
-                                solid_phase_stoichiometry_eqn[t, x, p, j])
+                            if not (
+                                (blk.solid_phase.config.transformation_scheme 
+                                    != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.solid_phase.config.transformation_scheme
+                                    == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                                calculate_variable_from_constraint(
+                                    solid_rxn_gen[t, x, p, j],
+                                    solid_phase_stoichiometry_eqn[t, x, p, j])
 
             blk.gas_comp_hetero_rxn.activate()
             blk.solid_phase.rate_reaction_stoichiometry_constraint.activate()

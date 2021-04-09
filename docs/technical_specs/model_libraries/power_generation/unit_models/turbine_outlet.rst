@@ -18,7 +18,7 @@ Example
 
     from pyomo.environ import ConcreteModel, SolverFactory
     from idaes.core import FlowsheetBlock
-    from idaes.power_generation.unit_models import HelmTurbineOutletStage
+    from idaes.power_generation.unit_models.helm import HelmTurbineOutletStage
     from idaes.generic_models.properties import iapws95
 
     m = ConcreteModel()

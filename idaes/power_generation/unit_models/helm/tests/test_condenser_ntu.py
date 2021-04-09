@@ -18,9 +18,9 @@ import pyomo.environ as pyo
 import idaes.core
 from idaes.power_generation.unit_models.helm import HelmNtuCondenser
 from idaes.generic_models.properties import iapws95
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
-solver = get_default_solver()
+solver = get_solver()
 
 @pytest.mark.unit
 @pytest.mark.skipif(solver is None, reason="Solver not available")

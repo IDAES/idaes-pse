@@ -27,7 +27,7 @@ from idaes.core import (ControlVolume0DBlock,
                         EnergyBalanceType,
                         MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 
 
@@ -39,7 +39,7 @@ _scalable = (_VarData, _ParamData, _ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -246,10 +246,6 @@ class PropertyTestHarness(object):
     def test_unit_consistency(self, frame):
         assert_units_consistent(frame)
 
-
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, frame):
         frame._init_dof = degrees_of_freedom(frame.fs.props[1])
 
@@ -258,17 +254,13 @@ class PropertyTestHarness(object):
             raise AttributeError(
                 "State Block has not implemented an initialize method.")
 
-        frame._flags = frame.fs.props.initialize(hold_state=True,
-                                                 solver=solver)
+        frame._flags = frame.fs.props.initialize(hold_state=True)
 
         if degrees_of_freedom(frame.fs.props[1]) != 0:
             raise Exception(
                 "initialize did not result in a State BLock with 0 "
                 "degrees of freedom.")
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_release_state(self, frame):
         if not hasattr(frame.fs.props, "release_state") or \
                 not callable(frame.fs.props.release_state):

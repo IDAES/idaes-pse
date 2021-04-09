@@ -22,7 +22,7 @@ import idaes.logger as idaeslog
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Arc, Port
 from pyomo.environ import value, Integers, RangeSet, TransformationFactory, \
-    Block, Reference
+    Block, Reference, SolverFactory
 from pyomo.util.infeasible import log_infeasible_constraints
 
 # Import IDAES cores
@@ -35,7 +35,7 @@ from idaes.core import (declare_process_block_class,
                         useDefault)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -364,31 +364,32 @@ see property package for documentation.}"""))
                         value(source.vars[v][i])
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, outlvl=idaeslog.NOTSET):
+                   state_args_vap=None, solver=None, optarg={},
+                   outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         init_log.info("Begin initialization.")
 
-        if solver is None:
-            init_log.warning("Solver not provided. Default solver(ipopt) "
-                             "being used for initialization.")
-            solver = get_default_solver()
+        solverobj = get_solver(solver, optarg)
 
-        feed_flags = self.feed_tray.initialize()
+        feed_flags = self.feed_tray.initialize(
+            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         self.propagate_stream_state(
             source=self.feed_tray.vap_out,
             destination=self.condenser.inlet)
 
-        self.condenser.initialize()
+        self.condenser.initialize(
+            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         self.propagate_stream_state(
             source=self.feed_tray.liq_out,
             destination=self.reboiler.inlet)
 
-        self.reboiler.initialize()
+        self.reboiler.initialize(
+            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         # initialize the rectification section
         for i in self._rectification_index:
@@ -400,13 +401,22 @@ see property package for documentation.}"""))
                 destination=self.rectification_section[i].vap_in)
             if i == 1:
                 rect_liq_flags = self.rectification_section[i]. \
-                    initialize(hold_state_liq=True, hold_state_vap=False)
+                    initialize(hold_state_liq=True,
+                               hold_state_vap=False,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             elif i == len(self._rectification_index):
                 rect_vap_flags = \
                     self.rectification_section[i]. \
-                    initialize(hold_state_liq=False, hold_state_vap=True)
+                    initialize(hold_state_liq=False,
+                               hold_state_vap=True,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             else:
-                self.rectification_section[i].initialize()
+                self.rectification_section[i].initialize(
+                    solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         # initialize the stripping section
         for i in self._stripping_index:
@@ -418,12 +428,21 @@ see property package for documentation.}"""))
                 destination=self.stripping_section[i].vap_in)
             if i == self.config.feed_tray_location + 1:
                 strip_liq_flags = self.stripping_section[i]. \
-                    initialize(hold_state_liq=True, hold_state_vap=False)
+                    initialize(hold_state_liq=True,
+                               hold_state_vap=False,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             elif i == self.config.number_of_trays:
                 strip_vap_flags = self.stripping_section[i]. \
-                    initialize(hold_state_liq=False, hold_state_vap=True)
+                    initialize(hold_state_liq=False,
+                               hold_state_vap=True,
+                               solver=None,
+                               optarg={},
+                               outlvl=idaeslog.NOTSET)
             else:
-                self.stripping_section[i].initialize()
+                self.stripping_section[i].initialize(
+                    solver=None, optarg={}, outlvl=idaeslog.NOTSET)
 
         # For initialization purposes and to enable solving individual sections
         # creating a temp block. Note that this temp block is a reference to
@@ -443,7 +462,7 @@ see property package for documentation.}"""))
             self.rectification_vap_stream[:].expanded_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block.rectification, tee=slc.tee)
+            res = solverobj.solve(self._temp_block.rectification, tee=slc.tee)
         init_log.info(
             "Rectification section initialization status {}.".
             format(idaeslog.condition(res))
@@ -460,7 +479,7 @@ see property package for documentation.}"""))
             self.stripping_vap_stream[:].expanded_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block.stripping, tee=slc.tee)
+            res = solverobj.solve(self._temp_block.stripping, tee=slc.tee)
         init_log.info(
             "Stripping section initialization status {}."
             .format(idaeslog.condition(res))
@@ -490,7 +509,7 @@ see property package for documentation.}"""))
             self.feed_vap_out.expanded_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block, tee=slc.tee)
+            res = solverobj.solve(self._temp_block, tee=slc.tee)
         init_log.info(
             "Column section initialization status {}."
             .format(idaeslog.condition(res))
@@ -508,7 +527,7 @@ see property package for documentation.}"""))
             self.condenser_reflux_out.expanded_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self._temp_block, tee=slc.tee)
+            res = solverobj.solve(self._temp_block, tee=slc.tee)
         init_log.info(
             "Column section + Condenser initialization status {}."
             .format(idaeslog.condition(res))
@@ -526,7 +545,7 @@ see property package for documentation.}"""))
         self.del_component(self._temp_block)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
+            res = solverobj.solve(self, tee=slc.tee)
         init_log.info(
             "Column section + Condenser + Reboiler initialization status {}."
             .format(idaeslog.condition(res))

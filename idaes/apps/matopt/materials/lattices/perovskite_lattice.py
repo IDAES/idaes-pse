@@ -58,9 +58,11 @@ class PerovskiteLattice(UnitCellLattice):
     # def isOnLattice(self,P):
 
     def areNeighbors(self, P1, P2):
-        raise NotImplementedError('Decide what this means for PerovskiteLattice...')
+        raise NotImplementedError('PerovskiteLattice: there is no universal definition of nearest neighbors.')
 
-    def getNeighbors(self, P):
+    def getNeighbors(self, P, layer=1):
+        if layer > 2:
+            raise ValueError('PerovskiteLattice: there is no universal definition of N-th nearest neighbors.')
         RefP = self._getConvertToReference(P)
         if self.isASite(P):
             return []

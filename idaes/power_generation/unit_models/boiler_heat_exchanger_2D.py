@@ -35,14 +35,14 @@ from idaes.core import (ControlVolume1DBlock,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection,
-                        UnitModelBlockData,
-                        useDefault)
+                        UnitModelBlockData)
 from pyomo.dae import ContinuousSet, DerivativeVar
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Jinliang Ma, Q. M. Le, M. Zamarripa "
@@ -378,7 +378,7 @@ tube side flows from 1 to 0"""))
 
         # DAE discretization scaling (tube_radius_scaling)
         self.ri_scaling = Param(initialize=0.01, mutable=True,
-                                doc='Inner Radius of Tube for Scaling')
+                                doc='Discretization scaling Tube inner radius')
 
         # Inner diameter of tubes
         self.tube_di = Param(initialize=self.config.tube_inner_diameter,
@@ -399,6 +399,10 @@ tube side flows from 1 to 0"""))
                                         header_wall_thickness,
                                         mutable=False,
                                         doc='Header wall thickness')
+
+            self.head_ri_scaling = Param(initialize=0.1, mutable=True,
+                                         doc='Discretization scaling'
+                                         'of the header inner radius')
 
         # Pitch of tubes between two neighboring columns (in y direction).
         # Always greater than tube outer diameter
@@ -519,8 +523,8 @@ tube side flows from 1 to 0"""))
                 return b.head_ri + b.head_thickness
 
             self.head_r = ContinuousSet(bounds=(
-                value(self.head_ri/self.ri_scaling),
-                value(self.head_ro/self.ri_scaling)))
+                value(self.head_ri/self.head_ri_scaling),
+                value(self.head_ro/self.head_ri_scaling)))
 
         # Define the continuous domains for model
         self.r = ContinuousSet(bounds=(value(self.tube_ri/self.ri_scaling),
@@ -1533,6 +1537,90 @@ tube side flows from 1 to 0"""))
             self.coefficient_therm_expansion_header = Param(initialize=1.2E-5,
                                                             mutable=True)
 
+            # Parameters for heat transfer of outlet header of
+            # counter-current flow with insulation
+            # Thermal conductivity of air
+            self.therm_cond_air = Param(initialize=0.03, mutable=True)
+
+            # Header insulation thermal conductivity
+            self.head_therm_cond_insulation = Param(initialize=0.08,
+                                                    mutable=True)
+
+            # Constant related to Rayleigh number for free convection
+            # (gravity*expansion_coefficient*density
+            # /viscosity/thermal_diffusivity)^(1/6)
+            # Use properties at 50 C and 1 atm, 6.84e7^(1/6)=20.223
+            self.const_head_Ra_root6 = Param(
+                initialize=20.223,
+                mutable=True,
+                doc="Rayleigh number for free convection")
+
+            # Constant related to Nu for free convection,
+            # 0.387/(1+0.721*Pr^(-9/16))^(8/27)
+            # Use properties at 50 C and 1 atm
+            self.const_head_Nu = Param(
+                initialize=0.322, mutable=True,
+                doc="constant related to Nu number for free convection")
+
+            # Variables for heat transfer of header with insulation
+            # Ambient temperature
+            self.temperature_ambient = Var(self.flowsheet().config.time,
+                                           initialize=298.15,
+                                           doc="Ambient Temperature")
+
+            # Header insulation thickness
+            self.head_insulation_thickness = Var(
+                                       initialize=0.05,
+                                       doc="Header insulation thickness")
+
+            # Header inside heat transfer coefficient
+            self.head_hin = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="Inside Heat Transfer Coefficient of Header")
+
+            # Header outside heat transfer coefficient
+            self.head_hout = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="Outside Heat Transfer Coefficient of Header")
+
+            # Insulation free convection heat transfer coefficient
+            self.head_h_free_conv = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="Insulation Free Convection Heat Transfer Coefficient")
+
+            # Ra number of free convection
+            self.head_N_Ra_root6 = Var(
+                self.flowsheet().config.time,
+                initialize=80,
+                doc="1/6 Power of Ra Number of Free Convection of Air")
+
+            # Nu number of free convection for header shell side
+            self.head_N_Nu_shell = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="Nu Number of Free Convection of Air")
+
+            # header tube side velocity
+            self.head_velocity_tube = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="header velocity on tube side")
+
+            # Re number on header tube side
+            self.head_N_Re_tube = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="Nu Number on header tube side")
+
+            # Nu number of free convection on header tube side
+            self.head_N_Nu_tube = Var(
+                self.flowsheet().config.time,
+                initialize=1,
+                doc="Nu Number on header tube side")
+
             # Temperature across header wall thickness
             self.header_wall_temperature = Var(self.flowsheet().config.time,
                                                self.head_r,
@@ -1568,32 +1656,29 @@ tube side flows from 1 to 0"""))
                     return Constraint.Skip
                 if self.config.dynamic is True:
                     return b.head_dTdt[t, r] == \
-                            b.therm_diffus_header / b.ri_scaling**2 * \
+                            b.therm_diffus_header / b.head_ri_scaling**2 * \
                             (b.head_d2Tdr2[t, r] + b.head_dTdr[t, r] / r)
                 else:
-                    return 0 == b.therm_diffus_header / b.ri_scaling**2 \
+                    return 0 == b.therm_diffus_header / b.head_ri_scaling**2 \
                                 * (b.head_d2Tdr2[t, r] + b.head_dTdr[t, r] / r)
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Inner Wall Boundary")
             def head_inner_wall_bc_eqn(b, t):
-                return 0.01 * b.hconv_tube_foul[t, b.tube.length_domain.
-                                                first()] *\
+                return 0.01 * b.head_hin[t] *\
                     (b.tube.properties[t, b.tube.length_domain.first()].
                      temperature -
                      b.header_wall_temperature[t, b.head_r.first()]) == \
                     - 0.01 * b.head_dTdr[t, b.head_r.first()] \
-                    / b.ri_scaling * b.therm_cond_header
+                    / b.head_ri_scaling * b.therm_cond_header
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Outer Wall Boundary")
             def head_outer_wall_bc_eqn(b, t):
-                return 0.01 * b.hconv_shell_foul[t, b.shell.length_domain.
-                                                 first()] * \
+                return 0.01 * b.head_hout[t] * \
                     (b.header_wall_temperature[t, b.head_r.last()] -
-                     b.shell.properties[t, b.shell.length_domain.first()].
-                     temperature) == - 0.01 * \
-                    b.head_dTdr[t, b.head_r.last()] / b.ri_scaling \
+                     b.temperature_ambient[t]) == - 0.01 * \
+                    b.head_dTdr[t, b.head_r.last()] / b.head_ri_scaling \
                     * b.therm_cond_header
 
             # Inner wall BC for dTdt
@@ -1611,15 +1696,15 @@ tube side flows from 1 to 0"""))
                         + b.head_r[2]) / (b.head_r[2]
                                           - b.head_r.first())**2
                         / (3 * b.head_r.first() + b.head_r[2])
-                        / b.ri_scaling**2
+                        / b.head_ri_scaling**2
                         * (b.header_wall_temperature[t, b.head_r[2]]
                            - b.header_wall_temperature[t, b.head_r.first()])
                         + 8 * b.therm_diffus_header / b.therm_cond_header
-                        * b.hconv_tube_foul[t, b.tube.length_domain.first()]
+                        * b.head_hin[t]
                         * b.head_r.first() / (b.head_r[2]
                                               - b.head_r.first())
                         / (3 * b.head_r.first()
-                           + b.head_r[2]) / b.ri_scaling
+                           + b.head_r[2]) / b.head_ri_scaling
                         * (b.tube.properties[t, b.tube.length_domain.first()].
                            temperature
                            - b.header_wall_temperature[t, b.head_r.first()]))
@@ -1637,16 +1722,100 @@ tube side flows from 1 to 0"""))
                                                   + b.head_r[-2])
                      / (b.head_r.last() - b.head_r[-2])**2
                      / (3 * b.head_r.last()
-                        + b.head_r[-2]) / b.ri_scaling**2
+                        + b.head_r[-2]) / b.head_ri_scaling**2
                      * (b.header_wall_temperature[t, b.head_r[-2]]
                         - b.header_wall_temperature[t, b.head_r.last()])
                      + 8 * b.therm_diffus_header / b.therm_cond_header
-                     * b.hconv_shell_foul[t, b.shell.length_domain.first()]
+                     * b.head_hout[t]
                      * b.head_r.last() / (b.head_r.last() - b.head_r[-2])
-                     / (3 * b.head_r.last() + b.head_r[-2]) / b.ri_scaling
-                     * (b.shell.properties[t, b.shell.length_domain.first()].
-                        temperature
+                     / (3 * b.head_r.last() + b.head_r[-2]) / b.head_ri_scaling
+                     * (b.temperature_ambient[t]
                      - b.header_wall_temperature[t, b.head_r.last()]))
+
+            # Calculate header outside and inside heat transfer coefficient
+            # Expressure for insulation heat transfer (conduction)
+            # resistance based on drum metal outside diameter
+            @self.Expression(doc="Heat Transfer Resistance of Insulation")
+            def resistance_insulation(b):
+                return b.head_ro*log((b.head_ro + b.head_insulation_thickness)
+                                     / b.head_ro)/b.head_therm_cond_insulation
+
+            # Equation considering conduction through insulation
+            # and free convection between insulation and ambient
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Outer Side Heat Transfer Coefficient")
+            def head_hout_eqn(b, t):
+                return b.head_hout[t] * (b.resistance_insulation +
+                                         1/b.head_h_free_conv[t]) == 1.0
+
+            # Expressure for outside insulation wall temperature
+            @self.Expression(self.flowsheet().config.time,
+                             doc="Outside Insulation Wall Temperature")
+            def head_temp_insulation_outside(b, t):
+                return b.temperature_ambient[t] + (
+                    b.header_wall_temperature[t, b.head_r.last()]
+                    - b.temperature_ambient[t]) * b.head_hout[t]\
+                    / b.head_h_free_conv[t]
+
+            # Ra number equation
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Ra Number of Free Convection")
+            def head_Ra_number_eqn(b, t):
+                return b.head_N_Ra_root6[t] == b.const_head_Ra_root6 * sqrt(
+                    b.head_do + 2 * b.head_insulation_thickness) * (
+                        b.head_temp_insulation_outside[t]
+                        - b.temperature_ambient[t])**0.166667
+
+            # Nu number equation
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Nu Number of Free Convection")
+            def head_Nu_number_shell_eqn(b, t):
+                return b.head_N_Nu_shell[t] == (0.6 + b.const_head_Nu *
+                                                b.head_N_Ra_root6[t])**2
+
+            # Free convection coefficient based on the drum outside diameter
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Free Convection Heat Transfer Coefficient"
+                             "between Insulation Wall and Ambient")
+            def head_h_free_conv_eqn(b, t):
+                return b.head_h_free_conv[t] == b.head_N_Nu_shell[t] \
+                    * b.therm_cond_air / b.head_do
+
+            # Calculate header inside heat transfer coefficient
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="velocity inside header")
+            def head_velocity_tube_eqn(b, t):
+                return (0.0001 * b.head_velocity_tube[t] * const.pi *
+                        b.head_ri**2 *
+                        b.tube.properties[t, b.tube.length_domain.first()].
+                        dens_mol_phase[phase_s] == 0.0001 * b.tube.
+                        properties[t, b.tube.length_domain.first()].flow_mol)
+
+            # Calculate header Re number on tube side
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Reynolds number inside header")
+            def head_N_Re_tube_eqn(b, t):
+                return (b.head_N_Re_tube[t]
+                        * b.tube.properties[t, b.tube.length_domain.first()].
+                        visc_d_phase[phase_s] ==
+                        b.head_di * b.head_velocity_tube[t]
+                        * b.tube.properties[t, b.tube.length_domain.first()].
+                        dens_mass_phase[phase_s])
+
+            # Calculate header Nu number
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Nuseldt number inside header")
+            def head_N_Nu_tube_eqn(b, t):
+                return b.head_N_Nu_tube[t] == 0.023 * b.head_N_Re_tube[t]**0.8\
+                       * b.tube_N_Pr[t, b.tube.length_domain.first()]**0.4
+
+            # Calculate header hin
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="inside heat transfer coefficient of header")
+            def head_hin_eqn(b, t):
+                return b.head_hin[t] * b.head_di == b.head_N_Nu_tube[t] *\
+                    b.tube.properties[t, b.tube.length_domain.first()].\
+                    therm_cond_phase[phase_s]
 
             # Calculate mechanical and thermal stresses based on EN 13445
             # for thick walled component
@@ -1660,7 +1829,7 @@ tube side flows from 1 to 0"""))
             @self.Expression(self.flowsheet().config.time,
                              doc="Mean Temperature for Header")
             def mean_temperature_header(b, t):
-                return 2 * (b.head_r[2] - b.head_r[1]) * b.ri_scaling**2 \
+                return 2 * (b.head_r[2] - b.head_r[1]) * b.head_ri_scaling**2 \
                         / (b.head_ro**2 - b.head_ri**2) \
                         * (sum(0.5 * (b.head_r[i-1] * b.
                                       header_wall_temperature[t, b.head_r[i-1]]
@@ -1679,9 +1848,9 @@ tube side flows from 1 to 0"""))
                 else:
                     return 2 * (
                         b.head_r[2] - b.head_r[1]
-                        ) * b.ri_scaling**2 / (
+                        ) * b.head_ri_scaling**2 / (
                             (b.head_r[b.head_rindex[r].value]
-                             * b.ri_scaling)**2 - b.head_ri**2
+                             * b.head_ri_scaling)**2 - b.head_ri**2
                             ) * (sum(
                                 0.5 * (
                                     b.head_r[j-1] * b.
@@ -1702,7 +1871,7 @@ tube side flows from 1 to 0"""))
                     return 0.5 * b.Young_modulus_header \
                         * b.coefficient_therm_expansion_header \
                         / (1 - b.Poisson_ratio_header) \
-                        * ((1 - b.head_ri**2 / (r * b.ri_scaling)**2)
+                        * ((1 - b.head_ri**2 / (r * b.head_ri_scaling)**2)
                            * (b.mean_temperature_header[t]
                            - b.discrete_mean_temperature_header[t, r]))
 
@@ -1711,7 +1880,7 @@ tube side flows from 1 to 0"""))
                              doc="Thermal Stress at Circumferential"
                                  "Direction for Header")
             def therm_sigma_theta_header(b, t, r):
-                r_2 = (r * b.ri_scaling)**2
+                r_2 = (r * b.head_ri_scaling)**2
                 return 0.5 * b.Young_modulus_header \
                     * b.coefficient_therm_expansion_header \
                     / (1 - b.Poisson_ratio_header) \
@@ -1776,7 +1945,7 @@ tube side flows from 1 to 0"""))
                                                         first()].
                                              pressure) * b.head_ri**2
                                      * b.head_ro**2 / ((r
-                                                        * b.ri_scaling)**2
+                                                        * b.head_ri_scaling)**2
                                                        * (b.head_ro**2
                                                           - b.head_ri**2))))
 
@@ -1817,8 +1986,8 @@ tube side flows from 1 to 0"""))
                                                     first()].
                                          pressure) *
                                  b.head_ri**2 * b.head_ro**2
-                                 / ((r * b.ri_scaling)**2 * (b.head_ro**2 -
-                                                             b.head_ri**2))))
+                                 / ((r * b.head_ri_scaling)**2 *
+                                    (b.head_ro**2 - b.head_ri**2))))
 
             @self.Expression(self.flowsheet().config.time,
                              doc="Mechanical Stress"
@@ -2155,7 +2324,7 @@ tube side flows from 1 to 0"""))
 
     def initialize(blk, shell_state_args=None, tube_state_args=None,
                    outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg={}):
         """
         HeatExchangerCrossFlow1D initialisation routine
 
@@ -2171,9 +2340,9 @@ tube side flows from 1 to 0"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -2181,8 +2350,8 @@ tube side flows from 1 to 0"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize shell block
@@ -2199,23 +2368,6 @@ tube side flows from 1 to 0"""))
         init_log.info_high("Initialization Step 1 Complete.")
 
         phase_s = blk.config.tube_side_water_phase
-        # set initial values for header T
-        T_out = value(
-            blk.tube.properties[0, blk.tube.length_domain.first()].temperature
-            - 1)
-        T_mid = value(0.5 * (T_out + blk.tube.properties[0,
-                      blk.tube.length_domain.first()].temperature))
-        if blk.config.has_header is True:
-            r_mid = value((blk.head_r.first()+blk.head_r.last())/2)
-            # assume outside wall temperature 1 K lower than fluid temperature
-            slope = value((T_out - blk.tube.properties[0, blk.tube.
-                                                       length_domain.
-                                                       first()].temperature
-                           ) / (blk.head_r.last() - blk.head_r.first()) / 3)
-            for x in blk.head_r:
-                blk.header_wall_temperature[:, x].fix(T_mid + slope*(x-r_mid))
-
-            blk.header_wall_temperature[:, :].unfix()
 
         # In Step 2, fix tube metal temperatures
         # fix fluid state variables (enthalpy/temperature and pressure)
@@ -2352,6 +2504,21 @@ tube side flows from 1 to 0"""))
         blk.heat_tube_eqn.deactivate()
         blk.heat_shell_eqn.deactivate()
 
+        if blk.config.has_header is True:
+            blk.head_heat_conduction_eqn.deactivate()
+            blk.head_inner_wall_bc_eqn.deactivate()
+            blk.head_outer_wall_bc_eqn.deactivate()
+            blk.head_extra_at_inner_wall_eqn.deactivate()
+            blk.head_extra_at_outer_wall_eqn.deactivate()
+            blk.head_hout_eqn.deactivate()
+            blk.head_Ra_number_eqn.deactivate()
+            blk.head_Nu_number_shell_eqn.deactivate()
+            blk.head_h_free_conv_eqn.deactivate()
+            blk.head_velocity_tube_eqn.deactivate()
+            blk.head_N_Re_tube_eqn.deactivate()
+            blk.head_N_Nu_tube_eqn.deactivate()
+            blk.head_hin_eqn.deactivate()
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
@@ -2409,6 +2576,35 @@ tube side flows from 1 to 0"""))
         init_log.info_high(
                 "Initialization Step 4 {}.".format(idaeslog.condition(res))
             )
+
+        if blk.config.has_header is True:
+            blk.head_heat_conduction_eqn.activate()
+            blk.head_inner_wall_bc_eqn.activate()
+            blk.head_outer_wall_bc_eqn.activate()
+            blk.head_extra_at_inner_wall_eqn.activate()
+            blk.head_extra_at_outer_wall_eqn.activate()
+            blk.head_hout_eqn.activate()
+            blk.head_Ra_number_eqn.activate()
+            blk.head_Nu_number_shell_eqn.activate()
+            blk.head_h_free_conv_eqn.activate()
+            blk.head_velocity_tube_eqn.activate()
+            blk.head_N_Re_tube_eqn.activate()
+            blk.head_N_Nu_tube_eqn.activate()
+            blk.head_hin_eqn.activate()
+            temp_head_in = value(
+                blk.tube.properties[0, blk.tube.length_domain.first()].
+                temperature) - 0.1
+            temp_head_out = temp_head_in - 0.5
+            for x in blk.head_r:
+                blk.header_wall_temperature[:, x].value = (
+                    temp_head_in + (temp_head_out - temp_head_in) /
+                    (blk.head_r.last() - blk.head_r.first()) *
+                    (x - blk.head_r.first()))
+
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.info_high(
+                "Initialization Step 5 {}.".format(idaeslog.condition(res)))
 
         blk.tube.release_state(flags_tube)
         blk.shell.release_state(flags_shell)

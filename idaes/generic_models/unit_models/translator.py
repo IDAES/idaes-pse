@@ -22,6 +22,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -196,8 +197,8 @@ see property package for documentation.}""",
         state_args_in={},
         state_args_out={},
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg={},
     ):
         """
         This method calls the initialization method of the state blocks.
@@ -212,18 +213,18 @@ see property package for documentation.}""",
                              initialization (see documentation of the specific
                              property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
+
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(

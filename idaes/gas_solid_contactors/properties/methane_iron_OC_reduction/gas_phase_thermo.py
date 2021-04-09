@@ -51,6 +51,7 @@ from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -239,7 +240,7 @@ class _GasPhaseThermoStateBlock(StateBlock):
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver="ipopt", optarg={"tol": 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -252,9 +253,9 @@ class _GasPhaseThermoStateBlock(StateBlock):
                          Keys for the state_args dictionary are:
                          flow_mol, temperature, pressure and mole_frac_comp
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
-                     initialization (default = "ipopt")
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -291,9 +292,8 @@ class _GasPhaseThermoStateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialise values

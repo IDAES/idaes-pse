@@ -29,7 +29,7 @@ import idaes.logger as idaeslog
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Set, value
+from pyomo.environ import Reference, Expression, Var, Set, value, SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -38,7 +38,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError, \
     PropertyPackageError, PropertyNotSupportedError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 _log = idaeslog.getLogger(__name__)
@@ -638,7 +638,7 @@ see property package for documentation.}"""))
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, hold_state_liq=False,
-                   hold_state_vap=False, solver=None, optarg=None,
+                   hold_state_vap=False, solver=None, optarg={},
                    outlvl=idaeslog.NOTSET):
 
         # TODO:
@@ -651,10 +651,7 @@ see property package for documentation.}"""))
 
         init_log.info("Begin initialization.")
 
-        if solver is None:
-            init_log.warning("Solver not provided. Default solver(ipopt) "
-                             " being used for initialization.")
-            solver = get_default_solver()
+        solverobj = get_solver(solver, optarg)
 
         if self.config.has_liquid_side_draw:
             if not self.liq_side_sf.fixed:
@@ -865,7 +862,7 @@ see property package for documentation.}"""))
                              "proceeding with a potential degree of freedom.")
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
+            res = solverobj.solve(self, tee=slc.tee)
         init_log.info(
             "Mass balance solve {}.".format(idaeslog.condition(res))
         )
@@ -878,7 +875,7 @@ see property package for documentation.}"""))
             pass
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
+            res = solverobj.solve(self, tee=slc.tee)
         init_log.info(
             "Mass and energy balance solve {}.".format(idaeslog.condition(res))
         )
@@ -892,7 +889,7 @@ see property package for documentation.}"""))
 
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
+                res = solverobj.solve(self, tee=slc.tee)
             init_log.info(
                 "Mass, energy and pressure balance solve {}.".
                 format(idaeslog.condition(res)))
