@@ -70,8 +70,8 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
     def initialize(
         self,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg={},
     ):
         """
         Initialize the turbine stage model.  This deactivates the

@@ -23,14 +23,14 @@ from idaes.core import FlowsheetBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseThermoParameterBlock
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------

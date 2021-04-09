@@ -19,26 +19,104 @@ on:
   pull_request:
     types:
       - labeled
+      - synchronize
+  pull_request_review:
+    types:
+      - submitted
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  check-skip:
-    name: Check if integration tests should run
-    # NOTE: the name of the special label is hardcoded here
-    # it would be better to extract it to a more global location, e.g. the workflow-level env context,
-    # but the env context is not available in job-level if expressions (only step-level ones)
-    if: (github.event.action != 'labeled') || (github.event.label.name == 'CI:run-integration')
-    runs-on: ubuntu-latest
+  precheck:
+    name: (util) Check if should run
+    runs-on: ubuntu-20.04
+    # the ">-" YAML syntax will result in a single string without terminating newline
+    # it is used here to make the relatively complex if clause more readable by adding line breaks
+    if: >-
+      (
+        (
+          github.event.action == 'labeled'
+          && contains(github.event.label.description, 'triggers_workflow')
+          && contains(github.event.label.description, github.workflow)
+        )
+        || (
+          github.event.action == 'submitted'
+          && github.event.review.state == 'APPROVED'
+        )
+        || github.event.action == 'synchronize'
+        || !contains(github.event_name, 'pull_request')
+      )
+    outputs:
+      is-pr-approved: ${{ steps.check-pr-approval.outputs.is-approved }}
+      workflow-trigger: ${{ steps.determine-trigger.outputs.workflow-trigger }}
     steps:
-      - name: Notify
-        run: echo "The integration tests will run"
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - id: check-pr-approval
+        uses: ./.github/actions/check-pr-approval
+        if: contains(github.event_name, 'pull_request')
+        with:
+          number: ${{ github.event.pull_request.number }}
+      - name: Process intermediate steps outputs
+        run: |
+          jq . <<EOF
+          ${{ toJSON(steps) }}
+          EOF
+          echo "steps.check-pr-approval.outputs.is-approved=${{ steps.check-pr-approval.outputs.is-approved }}"
+          # make "is_pr_approved" available to next steps as an env variable
+          echo "is_pr_approved=${{ steps.check-pr-approval.outputs.is-approved }}" >> $GITHUB_ENV
+      - id: determine-trigger
+        name: Determine workflow trigger
+        env:
+          _GITHUB_EVENT_ACTION: ${{ github.event.action }}
+        shell: python {0}
+        run: |
+          import json
+          from os import environ as env
+
+          def _display_on_run_dashboard(msg):
+              # workflow warnings are displayed on the workflow run dashboard,
+              # so we use this as a way to display a short summary of why this workflow is being run
+              # without having to dig in each job's log output
+              print(f'::warning ::{msg}')
+          def _set_output(name, val):
+              print(f'::set-output name={name}::{val}')
+
+          event_name = env["GITHUB_EVENT_NAME"]
+          event_action = env["_GITHUB_EVENT_ACTION"]
+          is_pr = 'pull_request' in event_name.lower()
+          # if the event is not a PR event, the "is_pr_approved" env var will be set to an empty string,
+          # which cannot be parsed as valid json
+          is_pr_approved = json.loads(env.get("is_pr_approved") or "null")
+
+          workflow_trigger = 'undetermined'
+
+          if is_pr:
+              if event_action == 'labeled':
+                  workflow_trigger = 'user_dispatch'
+              elif is_pr_approved is True:
+                  workflow_trigger = 'approved_pr'
+              elif is_pr_approved is False:
+                  workflow_trigger = 'unapproved_pr'
+          else:
+              workflow_trigger = 'not_pr'
+
+          msg = f'{workflow_trigger=}    event/action={event_name}/{event_action or "N/A"}    is_pr_approved={is_pr_approved or "N/A"}'
+          _display_on_run_dashboard(msg)
+          _set_output('workflow-trigger', workflow_trigger)
+
   pytest:
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }}/integration)
     runs-on: ${{ matrix.os }}
-    needs: [check-skip]
+    needs: [precheck]
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +124,7 @@ jobs:
           - '3.6'
           - '3.7'
           - '3.8'
+          - '3.9'
         os:
           - ubuntu-18.04
           - windows-latest
@@ -59,8 +138,53 @@ jobs:
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
         with:
-          install-target: '.'
+          install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
         uses: ./.github/actions/pytest
         with:
           markexpr: integration
+  examples:
+    name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: [precheck]
+    if: >-
+      (
+        needs.precheck.outputs.workflow-trigger == 'user_dispatch'
+        || needs.precheck.outputs.workflow-trigger == 'not_pr'
+        || needs.precheck.outputs.workflow-trigger == 'approved_pr'
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          # TODO restore all Python versions once tests pass
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          # WHY anedoctally, we're aware of Python 3.9 having issues with the jupyter stack on Windows
+          # for this reason, we're leaving Python 3.9 commented out for the examples tests until we test properly
+          # - '3.9'
+        os:
+          - ubuntu-18.04
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/display-debug-info
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
+      - name: Fetch and run examples
+        uses: ./.github/actions/run-examples
+        with:
+          git-ref: main
+          working-dir: ${{ runner.temp }}
+      - name: Display error logs
+        if: failure()
+        working-directory: ${{ runner.temp }}
+        run: |
+          cat *errors.txt || echo "No error logs found"

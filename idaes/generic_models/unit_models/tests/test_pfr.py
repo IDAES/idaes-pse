@@ -40,15 +40,15 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_total_constraints,
                                               number_unused_variables,
                                               number_derivative_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -150,8 +150,8 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit, "deltaP")
 
         assert number_variables(sapon) == 654
-        assert number_total_constraints(sapon) == 595
-        assert number_unused_variables(sapon) == 9
+        assert number_total_constraints(sapon) == 590
+        assert number_unused_variables(sapon) == 14
         assert number_derivative_variables(sapon) == 0
 
     @pytest.mark.component

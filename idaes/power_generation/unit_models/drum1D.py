@@ -84,6 +84,7 @@ from pyomo.environ import (SolverFactory,
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.network import Port
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 from pyomo.network import Arc
 
 from idaes.power_generation.unit_models.helm.phase_separator import \
@@ -662,9 +663,9 @@ discretizing length domain (default=3)"""))
         @self.Constraint(self.flowsheet().config.time,
                          doc="Ra Number of Free Convection")
         def Ra_number_eqn(b, t):
-            return b.N_Ra_root6[t] == b.const_Ra_root6 * sqrt(
+           return b.N_Ra_root6[t] == b.const_Ra_root6 * sqrt(
                 b.drum_do + 2 * b.insulation_thickness) * (
-                    b.drum_wall_temperature[t, b.radial_domain.last()]
+                    b.temp_insulation_outside[t]
                     - b.temperature_ambient[t])**0.166667
 
         # Nu number equation
@@ -1019,8 +1020,7 @@ discretizing length domain (default=3)"""))
             self.dTdt[0, :].fix(0)
 
     def initialize(blk, state_args_feedwater={}, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver='ipopt',
-                   optarg={'tol': 1e-6}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
         '''
         Drum initialization routine.
         Keyword Arguments:
@@ -1036,18 +1036,18 @@ discretizing length domain (default=3)"""))
                  * 2 = return solver state for each step in subroutines
                  * 3 = include solver output infomation (tee=True)
 
-        optarg : solver options dictionary object (default={'tol': 1e-6})
+        optarg : solver options dictionary object (default={})
 
         solver : str indicating whcih solver to use during
-                 initialization (default = 'ipopt')
+                 initialization (default = None, use default solver)
 
         Returns: None
         '''
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting Initialization...")
         # fix FeedWater Inlet

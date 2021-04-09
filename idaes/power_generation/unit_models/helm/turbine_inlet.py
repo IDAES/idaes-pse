@@ -19,11 +19,10 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, Param, sqrt, value, SolverFactory, units as pyunits
+from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
-from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -127,8 +126,8 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         self,
         state_args={},
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg={},
         calculate_cf=False,
     ):
         """
@@ -188,8 +187,9 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                     )/Pin
                 )
 
-        slvr = SolverFactory(solver)
-        slvr.options = optarg
+        # Create solver
+        slvr = get_solver(solver, optarg)
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))

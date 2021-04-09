@@ -26,8 +26,9 @@ from idaes.generic_models.unit_models.distillation.condenser \
 from idaes.generic_models.properties.activity_coeff_models.\
     BTX_activity_coeff_VLE import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_default_solver, \
+from idaes.core.util.testing import \
     PhysicalParameterTestBlock, initialization_tester
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property \
     import GenericParameterBlock
@@ -37,7 +38,7 @@ from idaes.generic_models.properties.core.examples.BT_ideal \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.mark.unit

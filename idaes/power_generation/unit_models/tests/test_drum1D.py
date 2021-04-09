@@ -49,10 +49,11 @@ from idaes.generic_models.properties import iapws95
 # from idaes.power_generation.unit_models.drum_1D import Drum1D
 from idaes.power_generation.unit_models.drum1D import Drum1D
 import idaes.core.util.scaling as iscale
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
@@ -152,7 +153,7 @@ def test_run_drum1D(build_drum1D):
                       * m.fs.unit.liquid_outlet.enth_mol[0]
                       + m.fs.unit.heat_duty[0]))
     # pressure drop
-    assert (pytest.approx(3662.5519, abs=1e-3) ==
+    assert (pytest.approx(3662.5483, abs=1e-3) ==
             pyo.value(m.fs.unit.deltaP[0]))
     # mass balance
     assert (pytest.approx(0, abs=1e-3) ==

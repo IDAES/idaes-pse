@@ -17,6 +17,7 @@ from ..geometry import Parallelepiped
 from ..transform_func import ScaleFunc
 from .unit_cell_lattice import UnitCell, UnitCellLattice
 from ..tiling import CubicTiling
+from ...util.util import ListHasPoint
 
 
 class CubicLattice(UnitCellLattice):
@@ -33,19 +34,22 @@ class CubicLattice(UnitCellLattice):
         RefFracPositions = [np.array([0.0, 0.0, 0.0])]
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
-        self._IAD = IAD
-        self._RefNeighborsPattern = [np.array([1.0, 0.0, 0.0]),
-                                     np.array([0.0, 1.0, 0.0]),
-                                     np.array([0.0, 0.0, 1.0]),
-                                     np.array([-1.0, 0.0, 0.0]),
-                                     np.array([0.0, -1.0, 0.0]),
-                                     np.array([0.0, 0.0, -1.0])]
+        self._IAD = CubicLattice.RefIAD
         self.applyTransF(ScaleFunc(IAD / CubicLattice.RefIAD))
+        self._NthNeighbors = [[np.array([1.0, 0.0, 0.0]),
+                               np.array([0.0, 1.0, 0.0]),
+                               np.array([0.0, 0.0, 1.0]),
+                               np.array([-1.0, 0.0, 0.0]),
+                               np.array([0.0, -1.0, 0.0]),
+                               np.array([0.0, 0.0, -1.0])]]
 
     # === MANIPULATION METHODS
     def applyTransF(self, TransF):
         if isinstance(TransF, ScaleFunc):
-            self._IAD *= TransF.Scale
+            if TransF.isIsometric:
+                self._IAD *= TransF.Scale[0]
+            else:
+                raise ValueError('CubicLattice applyTransF: Can only scale isometrically')
         UnitCellLattice.applyTransF(self, TransF)
 
     # === PROPERTY EVALUATION METHODS
@@ -55,13 +59,29 @@ class CubicLattice(UnitCellLattice):
     def areNeighbors(self, P1, P2):
         return np.linalg.norm(P2 - P1) <= self.IAD
 
-    def getNeighbors(self, P):
+    def getNeighbors(self, P, layer=1):
         RefP = self._getConvertToReference(P)
-        result = deepcopy(self._RefNeighborsPattern)
-        for NeighP in result:
+        if layer > len(self._NthNeighbors):
+            self._calculateNeighbors(layer)
+        NBs = deepcopy(self._NthNeighbors[layer - 1])
+        for NeighP in NBs:
             NeighP += RefP
             self._convertFromReference(NeighP)
-        return result
+        return NBs
+
+    def _calculateNeighbors(self, layer):
+        NList = [np.array([0, 0, 0], dtype=float)]
+        for nb in self._NthNeighbors:
+            NList.extend(nb)
+        for _ in range(layer - len(self._NthNeighbors)):
+            tmp = []
+            for P in self._NthNeighbors[len(self._NthNeighbors) - 1]:
+                for Q in self._NthNeighbors[0]:
+                    N = P + Q
+                    if not ListHasPoint(NList, N, 0.001 * CubicLattice.RefIAD):
+                        tmp.append(N)
+                        NList.append(N)
+            self._NthNeighbors.append(tmp)
 
     # === BASIC QUERY METHODS
     @property

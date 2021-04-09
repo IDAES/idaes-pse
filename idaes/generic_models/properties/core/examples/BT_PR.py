@@ -30,12 +30,12 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
+from idaes.generic_models.properties.core.pure import RPP4
 
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {"PR_kappa": {("benzene", "benzene"): 0.000,
                                     ("benzene", "toluene"): 0.000,

@@ -21,7 +21,6 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           SolverFactory,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
@@ -36,12 +35,12 @@ from idaes.power_generation.unit_models.boiler_heat_exchanger import (
         BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock)
+from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
@@ -143,8 +142,7 @@ def test_boiler_hx():
     assert degrees_of_freedom(m) == 0
 
     m.fs.unit.initialize()
-    # Create a solver
-    solver = SolverFactory('ipopt')
+
     results = solver.solve(m)
     # Check for optimal solution
     assert results.solver.termination_condition == \

@@ -36,17 +36,17 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------

@@ -25,7 +25,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -38,7 +38,7 @@ from idaes.generic_models.properties.core.examples.reactions.reaction_example \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestParamBlock(object):

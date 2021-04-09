@@ -31,6 +31,7 @@ import idaes.logger as idaeslog
 import os
 import idaes.core.util.tables as tables
 from idaes.core.util.misc import svg_tag
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -567,12 +568,7 @@ def main_dynamic():
         pyo.value(m_dyn.fs_main.sliding_pressure[0])))
 
     # Set solver
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 60,
-    }
+    solver = get_solver()
 
     # Check degree of freedom for the dynamic model
     dof = degrees_of_freedom(m_dyn)
@@ -859,9 +855,8 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         _log.info("Degrees of freedom = {}".format(degrees_of_freedom(m)))
 
         # Solver for solving combined full plant model
-        optarg = {"tol": 5e-7, "linear_solver": "ma27", "max_iter": 50}
-        solver = pyo.SolverFactory("ipopt")
-        solver.options = optarg
+        solver = get_solver(options={"max_iter": 50})
+
         if init:
             res = solver.solve(m, tee=True)
             _log.info("Solved: {}".format(idaeslog.condition(res)))
@@ -1816,8 +1811,8 @@ if __name__ == "__main__":
     # dynamic simulation. The simulation consists of 5%/min ramping down from
     # full load to 50% load, holding for 30 minutes and then ramping up
     # to 100% load and holding for 20 minutes.
-    # uncomment the code to run this simulation,
-    # note that this simulation takes around ~20 min to complete
+    # uncomment the code (line 1821) to run this simulation,
+    # note that this simulation takes around ~60 minutes to complete
     # m_dyn = main_dynamic()
 
     # This method builds and runs a steady state subcritical coal-fired power
