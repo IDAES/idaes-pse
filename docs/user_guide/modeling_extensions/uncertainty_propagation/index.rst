@@ -1,8 +1,7 @@
 ===============================
 Uncertainty Propagation Toolbox
 ===============================
-The uncertainty_propagation module provides tools for calculating error propagation of the objective function and constraints that include uncertain parameters to be estimated for a given model. 
-For a given model with a dataset, it first estimates parameters. The estimated parameters are passed to the optimization model. Finally, the variance of objective function and constraints with respect to the estimated parameters at the optimal solution are calculated.
+The uncertainty_propagation module is a module for quantifying and propagating parametric uncertainty through an optimization or simulation problem based on an IDAES model.
 
 Consider an optimization problem:
 

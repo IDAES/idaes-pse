@@ -256,7 +256,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
 
 def clean_variable_name(theta_names):
-    """This eunction removes all ' and spaces in theta_names.
+    """This function removes all ' and spaces in theta_names.
     Note: The  current theta_est(calc_cov=True) of parmest in Pyomo doesn't allow ' and spaces in the variable names.
        
     Parameters
