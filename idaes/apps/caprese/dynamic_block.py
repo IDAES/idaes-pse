@@ -758,6 +758,8 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_measurements = Initializer(kwds.pop('measurements', None),
                 treat_sequences_as_mappings=False)
+        # TODO: use Initializer, pass in {None: category_dict} for
+        # SimpleDynamicBlock
         self._init_category_dict = ConstantInitializer(
                 kwds.pop('category_dict', None))
         Block.__init__(self, *args, **kwds)
