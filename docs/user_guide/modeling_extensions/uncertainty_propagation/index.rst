@@ -1,21 +1,25 @@
 ===============================
 Uncertainty Propagation Toolbox
 ===============================
-The uncertainty_propagation module provides tools for calculating error propagation of the objective function and constraints that include uncertain parameters to be estimated for a given model. 
-For a given model with a dataset, it first estimates parameters. The estimated parameters are passed to the optimization model. Finally, the variance of objective function and constraints with respect to the estimated parameters at the optimal solution are calculated.
+The uncertainty_propagation module quantifies and propagates parametric uncertainties through optimization and simulation problem based on IDAES models. The module has two core features:
+1. Given a parameter estimation model and data, calculate the least squares best fit parameter values and estimate their covariance.
+2. Given a process model and the covariance for its parameters, estimate the variance of the optimal solution and the objective function.
 
-Consider an optimization problem:
+Consider the optimization problem:
 
 .. math::
 
    minimize \ \ f(x,p)
 
-    \ \ \ s.t \ \ \ \ \ \ \ \ \ C(x,p) = 0 
+    \ \ \ s.t \ \ \ \ \ \ \ \ \ c(x,p) = 0 
 
    \ \ \ \ \ \ \ \ \  \ \ \ \  \ \ \ x_{lb} <= x <= x_{ub}
 
-, where :math:`x` is a :math:`n\ x\ 1` decision variables vector, :math:`p` is a :math:`m\ x\ 1` parameters, there are :math:`k` constraints, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}`, :math:`x_{lb}` is the lower bound of  :math:`x`, and :math:`x_{ub}` is the upper bound of :math:`x`.
-When the optimal solution is :math:`x^*`and the estimated parameter is :math:`p^*`, we calculate the variability in :math:`f(x^*,p^*)` and :math:`C(x^*,p^*)` due to uncertainty :math:`\Sigma_p` in model parameters :math:`p`, where :math:`\Sigma_p` is a covariance matrix. The variability in :math:`f(x^*,p^*)` and :math:`C(x^*,p^*)` are
+, where :math:`x \in \mathcal{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathcal{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}^{k\ \times\ 1}` are the constraints, and x_{lb} and x_{ub} are the lower and upper bounds, respectively.
+
+Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty. Thus, we want to quantify the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` given the estimate :math:`p^*` with covariance matrix :math:`\Sigma_p`.
+
+Based on a first-order error propagation formula, the variance of the objective function :math:`Var[f(x^*,p^*)]` and constraints :math:`c(x^*,p^*)` are: 
 
 .. math::
 
@@ -27,7 +31,9 @@ When the optimal solution is :math:`x^*`and the estimated parameter is :math:`p^
 
     Var[c_k(x^*,p^*)] = \frac{\partial c_k}{\partial p}  \Sigma_p  \frac{\partial c_k}{\partial p}^T + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_k}{\partial x}^T, 
 
-at :math:`(x^*, p^*)`. All gradients, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}`, are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1], and :math:`\Sigma_p` is either user supplied or from regression. 
+All gradients are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1]. More specifically, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}`, are computed via automatic differentiation whereas :math:`\frac{\partial x}{\partial p}` are computed via nonlinear programming sensitivity theory.
+
+The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with ParmEst). 
 
 **Dependencies**
 
@@ -39,7 +45,8 @@ at :math:`(x^*, p^*)`. All gradients, :math:`\frac{\partial f}{\partial p}, \fra
 
 Basic Usage
 ------------
-The ``uncertainty_propagation``'s main function is **quantify_propagate_uncertainty**. The quantify_propagate_uncertainty python function can have eight arguments and retunrs a namedtuple output. 
+The ``uncertainty_propagation``'s main function is **quantify_propagate_uncertainty**. The quantify_propagate_uncertainty python function can have eight arguments and returns a namedtuple output. 
+
 The following example shows a usage of **quantify_propagate_uncertainty** with a Rooney and Biegler model [2].
 
 .. code:: python
