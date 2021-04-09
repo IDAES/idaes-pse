@@ -86,22 +86,22 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         
     Raises
     ------
-    ValueError
+    TypeError
         When tee entry is not Boolean
-    ValueError
+    TypeError
         When diagnostic_mode entry is not Boolean
-    ValueError
+    TypeError
         When solver_options entry is not None and a Dictionary
     Warnings
         When an element of theta_names includes a space
     """
     if not isinstance(tee, bool):
-        raise ValueError('tee  must be boolean.')
+        raise TypeError('tee  must be boolean.')
     if not isinstance(diagnostic_mode, bool):
-        raise ValueError('diagnostic_mode  must be boolean.')    
+        raise TypeError('diagnostic_mode  must be boolean.')    
     if not solver_options==None:
         if not isinstance(solver_options, dict):
-            raise ValueError('solver_options must be dictionary.')
+            raise TypeError('solver_options must be dictionary.')
     # Remove all "'" and " " in theta_names
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     parmest_class = parmest.Estimator(model_function, data, theta_names, obj_function,
@@ -256,7 +256,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
 
 def clean_variable_name(theta_names):
-    """This eunction removes all ' and spaces in theta_names.
+    """This function removes all ' and spaces in theta_names.
     Note: The  current theta_est(calc_cov=True) of parmest in Pyomo doesn't allow ' and spaces in the variable names.
        
     Parameters
