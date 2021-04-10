@@ -758,10 +758,8 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_measurements = Initializer(kwds.pop('measurements', None),
                 treat_sequences_as_mappings=False)
-        # TODO: use Initializer, pass in {None: category_dict} for
-        # SimpleDynamicBlock
-        self._init_category_dict = ConstantInitializer(
-                kwds.pop('category_dict', None))
+        self._init_category_dict = Initializer(kwds.pop('category_dict', None),
+                treat_sequences_as_mappings=False)
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):
@@ -783,6 +781,8 @@ class DynamicBlock(Block):
 
         if self._init_category_dict is not None:
             block._category_dict = self._init_category_dict(parent, idx)
+        else:
+            block._category_dict = None
 
         block._construct()
 

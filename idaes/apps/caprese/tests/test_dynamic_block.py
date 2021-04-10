@@ -550,7 +550,7 @@ class TestDynamicBlock(object):
         dyn_block = DynamicBlock(
                 model=model,
                 time=time,
-                category_dict=category_dict,
+                category_dict={None: category_dict},
                 #inputs=inputs,
                 #measurements=measurements,
                 )
@@ -1103,7 +1103,7 @@ class TestDynamicBlock(object):
         db = DynamicBlock(
                 model=model,
                 time=time,
-                category_dict=category_dict,
+                category_dict={None: category_dict},
                 )
         db.construct()
         db.set_sample_time(0.5)
@@ -1131,7 +1131,7 @@ class TestDynamicBlock(object):
         db = DynamicBlock(
                 model=model,
                 time=time,
-                category_dict=category_dict,
+                category_dict={None: category_dict},
                 )
         db.construct()
         db.set_sample_time(0.5)
@@ -1176,7 +1176,7 @@ class TestDynamicBlock(object):
         db = DynamicBlock(
                 model=model,
                 time=time,
-                category_dict=category_dict,
+                category_dict={None: category_dict},
                 )
         db.construct()
         db.set_sample_time(0.5)
@@ -1208,7 +1208,7 @@ class TestDynamicBlock(object):
         db = DynamicBlock(
                 model=model,
                 time=time,
-                category_dict=category_dict,
+                category_dict={None: category_dict},
                 )
         db.construct()
         db.set_sample_time(0.5)
