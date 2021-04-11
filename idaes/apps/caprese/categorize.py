@@ -117,6 +117,8 @@ def categorize_dae_variables_and_constraints(
         input_cons = []
     if disturbance_vars is None:
         disturbance_vars = []
+    if active_inequalities is None:
+        active_inequalities = []
 
     # We will check these sets to determine which components
     # are inputs and disturbances.
@@ -164,7 +166,7 @@ def categorize_dae_variables_and_constraints(
     dae_vars = [var for var in dae_vars if var[t1] not in input_var_set
             and var[t1] not in disturbance_var_set]
     dae_cons = [con for con in dae_cons if con[t1] not in input_con_set
-            and (con[t1].equality or con[t1] in active_equality_set)]
+            and (con[t1].equality or con[t1] in active_inequality_set)]
 
     dae_map = ComponentMap()
     dae_map.update(
