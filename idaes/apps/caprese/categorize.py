@@ -97,9 +97,7 @@ def categorize_dae_variables_and_constraints(
         input_vars=None,
         disturbance_vars=None,
         input_cons=None,
-        #active_inequalities=None,
-        # TODO: Allow this option, then filter out inequalities
-        # not included here.
+        active_inequalities=None,
         ):
     # Index that we access when we need to work with a specific data
     # object. This would be less necessary if constructing CUIDs was
@@ -130,8 +128,15 @@ def categorize_dae_variables_and_constraints(
     input_var_set = ComponentSet(inp[t1] for inp in input_vars)
     disturbance_var_set = ComponentSet(dist[t1] for dist in disturbance_vars)
     input_con_set = ComponentSet(inp[t1] for inp in input_cons)
+    active_inequality_set = ComponentSet(con[t1] for con in active_inequalities)
 
     # Filter vars and cons for duplicates.
+    #
+    # Here we assume that if any two components refer to the same
+    # data object at our "representative index" t1, they are
+    # effectively "the same" components, and do not need to both
+    # be included.
+    #
     visited = set()
     filtered_vars = []
     duplicate_vars = []
@@ -158,7 +163,8 @@ def categorize_dae_variables_and_constraints(
     # for the sake of having a square DAE model.
     dae_vars = [var for var in dae_vars if var[t1] not in input_var_set
             and var[t1] not in disturbance_var_set]
-    dae_cons = [con for con in dae_cons if con[t1] not in input_con_set]
+    dae_cons = [con for con in dae_cons if con[t1] not in input_con_set
+            and (con[t1].equality or con[t1] in active_equality_set)]
 
     dae_map = ComponentMap()
     dae_map.update(
@@ -167,8 +173,6 @@ def categorize_dae_variables_and_constraints(
     dae_map.update(
             (con[t1], con) for con in dae_cons
             )
-
-    # TODO: Filter out inequalities
 
     diff_eqn_map = ComponentMap()
     for con in dae_cons:
@@ -183,7 +187,6 @@ def categorize_dae_variables_and_constraints(
     potential_diff_eqn = []
     for var in dae_vars:
         vardata = var[t1]
-        #if _is_derivative_wrt(vardata, time):
         if vardata in diff_eqn_map:
             # This check ensures that vardata is differential wrt time
             # and participates in exactly one non-discretization equation.
@@ -201,6 +204,12 @@ def categorize_dae_variables_and_constraints(
     if len(list(model.component_objects(Objective, active=True))) == 0:
         dummy_obj = True
         model._temp_dummy_obj = Objective(expr=0)
+
+    # TODO: This constructs a constraint Jacobian for the entire model,
+    # which is not necessary as we only use the submatrix at t1. We could
+    # probably save time by putting our vars and cons on a dummy block
+    # as references, then constructing an IncidenceGraphInterface with
+    # that block.
     igraph = IncidenceGraphInterface(model)
 
     variables = [var[t1] for var in dae_vars]
