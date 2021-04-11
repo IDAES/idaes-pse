@@ -25,6 +25,7 @@ from idaes.apps.caprese.categorize import (
         )
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.common.config import ConstraintCategory as CC
+from idaes.apps.caprese.tests.test_simple_model import make_model
 
 __author__ = "Robert Parker"
 
@@ -163,4 +164,69 @@ def test_categorize_simple_model():
     """ Categorize variables and equations in the "simple model" used
     for the base class unit tests.
     """
-    pass
+    m = make_model()
+    m.conc_in.unfix()
+    m.flow_in.unfix()
+    scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
+    scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            dae_vars,
+            dae_cons,
+            m.time,
+            input_vars=[m.flow_in],
+            disturbance_vars=[
+                pyo.Reference(m.conc_in[:, 'A']),
+                pyo.Reference(m.conc_in[:, 'B']),
+                ],
+            )
+    t1 = m.time[2]
+    # Expected variables:
+    expected_vars = {
+            VC.DIFFERENTIAL: ComponentSet([m.conc[t1, 'A'], m.conc[t1, 'B']]),
+            VC.DERIVATIVE: ComponentSet([m.dcdt[t1, 'A'], m.dcdt[t1, 'B']]),
+            VC.ALGEBRAIC: ComponentSet([
+                    m.rate[t1, 'A'],
+                    m.rate[t1, 'B'],
+                    m.flow_out[t1],
+                    ]),
+            VC.INPUT: ComponentSet([m.flow_in[t1]]),
+            VC.DISTURBANCE: ComponentSet([
+                    m.conc_in[t1, 'A'],
+                    m.conc_in[t1, 'B'],
+                    ]),
+            }
+
+    # Expected constraints:
+    expected_cons = {
+            CC.DIFFERENTIAL: ComponentSet([
+                    m.material_balance[t1, 'A'],
+                    m.material_balance[t1, 'B'],
+                    ]),
+            CC.DISCRETIZATION: ComponentSet([
+                    m.dcdt_disc_eq[t1, 'A'],
+                    m.dcdt_disc_eq[t1, 'B'],
+                    ]),
+            CC.ALGEBRAIC: ComponentSet([
+                    m.rate_eqn[t1, 'A'],
+                    m.rate_eqn[t1, 'B'],
+                    m.flow_eqn[t1],
+                    ]),
+            }
+
+    # Expected categories have expected variables and constraints
+    for categ in expected_vars:
+        assert len(expected_vars[categ]) == len(var_partition[categ])
+        for var in var_partition[categ]:
+            assert var[t1] in expected_vars[categ]
+    for categ in var_partition:
+        if categ not in expected_vars:
+            assert len(var_partition[categ]) == 0
+
+    for categ in expected_cons:
+        assert len(expected_cons[categ]) == len(con_partition[categ])
+        for con in con_partition[categ]:
+            assert con[t1] in expected_cons[categ]
+    for categ in con_partition:
+        if categ not in expected_cons:
+            assert len(con_partition[categ]) == 0
