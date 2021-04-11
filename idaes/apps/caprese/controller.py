@@ -259,7 +259,7 @@ class _ControllerBlockData(_DynamicBlockData):
                 )
 
         states = list(self.component_objects(state_ctypes))
-        inputs = self.input_vars
+        inputs = list(self.component_objects(InputVar))
 
         state_term = sum(
                 state.weight*(state[t] - state.setpoint)**2
