@@ -49,7 +49,7 @@ from pyomo.environ import (
         Suffix,
         )
 from pyomo.core.base.util import Initializer, ConstantInitializer
-from pyomo.core.base.block import _BlockData
+from pyomo.core.base.block import _BlockData, SubclassOf
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.common.collections import ComponentMap
 from pyomo.common.config import ConfigDict, ConfigValue
@@ -160,9 +160,11 @@ class _DynamicBlockData(_BlockData):
         # Maps each vardata (of a time-indexed var) to the NmpcVar
         # that contains it.
         self.vardata_map = ComponentMap((var[t], var) 
-                for varlist in category_dict.values()
-                for var in varlist
+                for var in self.component_objects(SubclassOf(NmpcVar))
+                #for varlist in category_dict.values()
+                #for var in varlist
                 for t in time
+                if var.ctype is not MeasuredVar
                 )
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
