@@ -122,9 +122,11 @@ def categorize_dae_variables_and_constraints(
 
     # We will check these sets to determine which components
     # are inputs and disturbances.
-    # Specified input vars/cons and disturbance vars should be in the
-    # form of components indexed only by time. The user can accomplish
-    # this easily with the `Reference` function.
+    #
+    # NOTE: Specified input vars/cons and disturbance vars should be
+    # in the form of components indexed only by time. The user can
+    # accomplish this easily with the `Reference` function.
+    #
     input_var_set = ComponentSet(inp[t1] for inp in input_vars)
     disturbance_var_set = ComponentSet(dist[t1] for dist in disturbance_vars)
     input_con_set = ComponentSet(inp[t1] for inp in input_cons)
