@@ -22,6 +22,7 @@ from pyomo.util.check_units import assert_units_equivalent
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     GenericReactionParameterBlock, ConcentrationForm
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import *
+from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
@@ -267,19 +268,19 @@ class TestVanTHoff(object):
 class TestGibbsEnergy(object):
     @pytest.mark.unit
     def test_gibbs_energy_mole_frac(self, model):
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": 2,
             "ds_rxn_ref": 1,
             "T_eq_ref": 500}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -303,6 +304,14 @@ class TestGibbsEnergy(object):
 
     @pytest.mark.unit
     def test_gibbs_energy_mole_frac_convert(self, model):
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
+            "T_eq_ref": (900, pyunits.degR)}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
+
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
             "dh_rxn_ref": (2000, pyunits.J/pyunits.kmol),
             "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
@@ -313,9 +322,6 @@ class TestGibbsEnergy(object):
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -341,19 +347,19 @@ class TestGibbsEnergy(object):
     def test_gibbs_energy_molarity(self, model):
         model.rparams.config.equilibrium_reactions.r1.concentration_form = \
             ConcentrationForm.molarity
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": 2,
             "ds_rxn_ref": 1,
             "T_eq_ref": 500}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -379,19 +385,19 @@ class TestGibbsEnergy(object):
     def test_gibbs_energy_molarity_convert(self, model):
         model.rparams.config.equilibrium_reactions.r1.concentration_form = \
             ConcentrationForm.molarity
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": (2000, pyunits.J/pyunits.kmol),
             "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
             "T_eq_ref": (900, pyunits.degR)}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -414,22 +420,22 @@ class TestGibbsEnergy(object):
         assert_units_equivalent(rform, pyunits.mol*pyunits.m**-3)
 
     @pytest.mark.unit
-    def test_gibss_energy_molality(self, model):
+    def test_gibbs_energy_molality(self, model):
         model.rparams.config.equilibrium_reactions.r1.concentration_form = \
             ConcentrationForm.molality
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": 2,
             "ds_rxn_ref": 1,
             "T_eq_ref": 500}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -455,19 +461,19 @@ class TestGibbsEnergy(object):
     def test_gibbs_energy_molality_convert(self, model):
         model.rparams.config.equilibrium_reactions.r1.concentration_form = \
             ConcentrationForm.molality
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": (2000, pyunits.J/pyunits.kmol),
             "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
             "T_eq_ref": (900, pyunits.degR)}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -493,19 +499,19 @@ class TestGibbsEnergy(object):
     def test_gibbs_energy_partial_pressure(self, model):
         model.rparams.config.equilibrium_reactions.r1.concentration_form = \
             ConcentrationForm.partialPressure
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": 2,
             "ds_rxn_ref": 1,
             "T_eq_ref": 500}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
@@ -531,19 +537,19 @@ class TestGibbsEnergy(object):
     def test_gibbs_energy_partial_pressure_convert(self, model):
         model.rparams.config.equilibrium_reactions.r1.concentration_form = \
             ConcentrationForm.partialPressure
+        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
+            constant_dh_rxn
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": (2000, pyunits.J/pyunits.kmol),
             "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
             "T_eq_ref": (900, pyunits.degR)}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
 
         gibbs_energy.build_parameters(
             model.rparams.reaction_r1,
             model.rparams.config.equilibrium_reactions["r1"])
 
         # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.dh_rxn_ref, Var)
-        assert model.rparams.reaction_r1.dh_rxn_ref.value == 2
-
         assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
         assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
 
