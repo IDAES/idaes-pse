@@ -522,12 +522,12 @@ class _DynamicBlockData(_BlockData):
                 var.variance = variance_map[var[t0]]
 
     def generate_inputs_at_time(self, t):
-        if VC.MEASUREMENT in self.categories:
+        if VC.INPUT in self.categories:
             for val in self.vectors.input[:,t].value:
                 yield val
         else:
             raise RuntimeError(
-                    "Trying to generate inputs but no measurement "
+                    "Trying to generate inputs but no input "
                     "category has been specified."
                     )
 
