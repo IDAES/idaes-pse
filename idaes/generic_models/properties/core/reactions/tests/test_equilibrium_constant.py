@@ -25,6 +25,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
 from idaes.generic_models.properties.core.reactions.dh_rxn import constant_dh_rxn
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.exceptions import ConfigurationError
 
 
 @pytest.fixture
@@ -301,6 +302,22 @@ class TestGibbsEnergy(object):
             'rparams.reaction_r1.ds_rxn_ref)*dimensionless')
         assert value(rform) == pytest.approx(1.1269, rel=1e-3)
         assert_units_equivalent(rform, None)
+
+    @pytest.mark.unit
+    def test_gibbs_energy_invalid_dh_rxn(self, model):
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "ds_rxn_ref": 1,
+            "T_eq_ref": 500}
+        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
+                                                   units=pyunits.J/pyunits.mol)
+
+        with pytest.raises(ConfigurationError,
+                           match="rparams.reaction_r1 calculating equilibrium "
+                           "constants from Gibbs energy assumes constant "
+                           "heat of reaction."):
+            gibbs_energy.build_parameters(
+                model.rparams.reaction_r1,
+                model.rparams.config.equilibrium_reactions["r1"])
 
     @pytest.mark.unit
     def test_gibbs_energy_mole_frac_convert(self, model):
