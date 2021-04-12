@@ -319,3 +319,92 @@ def test_categorize_simple_model_with_constraints():
     for categ in con_partition:
         if categ not in expected_cons:
             assert len(con_partition[categ]) == 0
+
+
+@pytest.mark.unit
+def test_space_indexed_model():
+    """ The case where a differential variable is "specifed"
+    by an input (boundary condition). This is the case that
+    motivated the development of this categorization method.
+    """
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1])
+    m.space = dae.ContinuousSet(initialize=[0, 1])
+    m.v = pyo.Var(m.time, m.space, initialize=0)
+
+    m.dvdt = dae.DerivativeVar(m.v, wrt=m.time)
+    m.dvdx = dae.DerivativeVar(m.v, wrt=m.space)
+
+    def _balance_rule(m, t, x):
+        return m.dvdt[t, x] + m.dvdx[t, x] == 0
+    m.balance = pyo.Constraint(m.time, m.space, rule=_balance_rule)
+
+    m.u = pyo.Var(m.time, m.space, initialize=0)
+    def _u_eqn_rule(m, t, x):
+        return m.v[t, x] == m.u[t, x]
+    m.u_eqn = pyo.Constraint(m.time, m.space, rule=_u_eqn_rule)
+
+    disc = pyo.TransformationFactory('dae.finite_difference')
+    disc.apply_to(m, wrt=m.time, nfe=2, scheme='BACKWARD')
+    disc.apply_to(m, wrt=m.space, nfe=2, scheme='BACKWARD')
+
+    scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
+    scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            dae_vars,
+            dae_cons,
+            m.time,
+            input_vars=[pyo.Reference(m.u[:, 0])],
+            )
+
+    t1 = m.time[2]
+    # Expected variables:
+    expected_vars = {
+            VC.DIFFERENTIAL: ComponentSet([
+                m.v[t1, x] for x in m.space if x != 0
+                ]),
+            VC.DERIVATIVE: ComponentSet([
+                m.dvdt[t1, x] for x in m.space if x != 0
+                ]),
+            VC.ALGEBRAIC: ComponentSet([
+                m.dvdt[t1, 0],
+                m.v[t1, 0],
+                *[m.dvdx[t1, x] for x in m.space],
+                *[m.u[t1, x] for x in m.space if x != 0],
+                ]),
+            VC.INPUT: ComponentSet([m.u[t1, 0]]),
+            }
+
+    # Expected constraints:
+    expected_cons = {
+            CC.DIFFERENTIAL: ComponentSet([
+                m.balance[t1, x] for x in m.space if x != 0
+                ]),
+            CC.DISCRETIZATION: ComponentSet([
+                m.dvdt_disc_eq[t1, x] for x in m.space if x != 0
+                ]),
+            CC.ALGEBRAIC: ComponentSet([
+                m.balance[t1, 0],
+                m.dvdt_disc_eq[t1, 0],
+                *[m.dvdx_disc_eq[t1, x] for x in m.space if x != 0],
+                *[m.u_eqn[t1, x] for x in m.space],
+                ]),
+            }
+
+    # Expected categories have expected variables and constraints
+    for categ in expected_vars:
+        assert len(expected_vars[categ]) == len(var_partition[categ])
+        for var in var_partition[categ]:
+            assert var[t1] in expected_vars[categ]
+    for categ in var_partition:
+        if categ not in expected_vars:
+            assert len(var_partition[categ]) == 0
+
+    for categ in expected_cons:
+        assert len(expected_cons[categ]) == len(con_partition[categ])
+        for con in con_partition[categ]:
+            assert con[t1] in expected_cons[categ]
+    for categ in con_partition:
+        if categ not in expected_cons:
+            assert len(con_partition[categ]) == 0
