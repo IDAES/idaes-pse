@@ -15,7 +15,7 @@ Methods for ideal equations of state.
 
 Currently only supports liquid and vapor phases
 """
-from pyomo.environ import log
+from pyomo.environ import Expression, log
 
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.utility import (
@@ -204,11 +204,15 @@ def _invalid_phase_msg(name, phase):
 
 def _fug_phase_comp(b, p, j, T):
     pobj = b.params.get_phase(p)
-    if pobj.is_vapor_phase():
-        return b.get_mole_frac()[p, j] * b.pressure
-    elif pobj.is_liquid_phase():
-        return (b.get_mole_frac()[p, j] *
-                get_method(b, "pressure_sat_comp", j)(
-                    b, cobj(b, j), T))
+
+    if cobj(b, j).config.has_vapor_pressure:
+        if pobj.is_vapor_phase():
+            return b.get_mole_frac()[p, j] * b.pressure
+        elif pobj.is_liquid_phase():
+            return (b.get_mole_frac()[p, j] *
+                    get_method(b, "pressure_sat_comp", j)(
+                        b, cobj(b, j), T))
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
     else:
-        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+        return Expression.Skip

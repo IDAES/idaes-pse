@@ -2133,7 +2133,8 @@ argument)."""))
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
-                        [self._flow_terms[t, x, p, j] for p in phase_list])
+                        [self._flow_terms[t, x, p, j] for p in phase_list
+                         if (p, j) in phase_component_set])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 _log.warning(f"Unknown material balance type {mb_type}")
