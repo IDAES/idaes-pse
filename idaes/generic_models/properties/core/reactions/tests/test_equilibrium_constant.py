@@ -300,7 +300,8 @@ class TestGibbsEnergy(object):
         with pytest.raises(ConfigurationError,
                            match="rparams.reaction_r1 calculating equilibrium "
                            "constants from Gibbs energy assumes constant "
-                           "heat of reaction."):
+                           "heat of reaction. Please ensure you are using the "
+                           "constant_dh_rxn method for this reaction"):
             gibbs_energy.build_parameters(
                 model.rparams.reaction_r1,
                 model.rparams.config.equilibrium_reactions["r1"])

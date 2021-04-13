@@ -146,7 +146,9 @@ class gibbs_energy():
         if config.heat_of_reaction is not constant_dh_rxn:
             raise ConfigurationError(
                 "{} calculating equilibrium constants from Gibbs energy "
-                "assumes constant heat of reaction.".format(rblock.name))
+                "assumes constant heat of reaction. Please ensure you are "
+                "using the constant_dh_rxn method for this reaction"
+                .format(rblock.name))
 
         rblock.ds_rxn_ref = Var(
                 doc="Specific molar entropy of reaction at reference state",
