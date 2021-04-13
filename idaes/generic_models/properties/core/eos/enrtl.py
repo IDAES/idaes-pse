@@ -175,7 +175,7 @@ class ENRTL(EoSBase):
                        rule=rule_X_ref,
                        doc="Charge x mole fraction term at reference state"))
 
-        def rule_Y(b, j):  # Eqns 36 and 37
+        def rule_Y(b, j):
             cobj = b.params.get_component(j)
             if cobj.config.charge < 0:
                 # Anion
@@ -184,8 +184,9 @@ class ENRTL(EoSBase):
                 dom = b.params.cation_set
 
             X = getattr(b, pname+"_X")
-            return X[j]/sum(X[i] for i in dom)
-
+            return X[j]/sum(X[i] for i in dom)  # Eqns 36 and 37
+        # Y is a charge ratio, and thus independent of x for symmetric state
+        # TODO: This may need to change for the unsymmetric state
         b.add_component(pname+"_Y",
                         Expression(b.params.ion_set,
                                    rule=rule_Y,
@@ -263,6 +264,8 @@ class ENRTL(EoSBase):
 
         # ---------------------------------------------------------------------
         # Local Contribution Terms
+        # For the symmetric state, all of these are independent of composition
+        # TODO: For the unsymmetric state, it may be necessary to recalculate
         # Calculate alphas for all true species pairings
         def rule_alpha_expr(b, i, j):
             Y = getattr(b, pname+"_Y")
