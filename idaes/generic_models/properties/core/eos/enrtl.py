@@ -23,7 +23,7 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
 from .eos_base import EoSBase
-from .enrtl_submethods import ConstantAlpha, ConstantTau
+from .enrtl_parameters import ConstantAlpha, ConstantTau
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from idaes.core.util.constants import Constants
