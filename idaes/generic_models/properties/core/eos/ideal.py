@@ -133,12 +133,16 @@ class Ideal(EoSBase):
     @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
+
         if pobj.is_vapor_phase():
             return log(b.get_mole_frac()[p, j]) + log(b.pressure)
         elif pobj.is_liquid_phase():
-            return (log(b.get_mole_frac()[p, j]) +
-                    log(get_method(b, "pressure_sat_comp", j)(
-                        b, cobj(b, j), b.temperature)))
+            if cobj(b, j).config.has_vapor_pressure:
+                return (log(b.get_mole_frac()[p, j]) +
+                        log(get_method(b, "pressure_sat_comp", j)(
+                            b, cobj(b, j), b.temperature)))
+            else:
+                return Expression.Skip
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -205,14 +209,14 @@ def _invalid_phase_msg(name, phase):
 def _fug_phase_comp(b, p, j, T):
     pobj = b.params.get_phase(p)
 
-    if cobj(b, j).config.has_vapor_pressure:
-        if pobj.is_vapor_phase():
-            return b.get_mole_frac()[p, j] * b.pressure
-        elif pobj.is_liquid_phase():
+    if pobj.is_vapor_phase():
+        return b.get_mole_frac()[p, j] * b.pressure
+    elif pobj.is_liquid_phase():
+        if cobj(b, j).config.has_vapor_pressure:
             return (b.get_mole_frac()[p, j] *
                     get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), T))
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            return Expression.Skip
     else:
-        return Expression.Skip
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
