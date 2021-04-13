@@ -128,6 +128,10 @@ def define_state(b):
         doc='Phase fractions',
         units=None)
 
+    # Add electrolye state vars if required
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
+
     # Add supporting constraints
     if b.config.defined_state is False:
         # applied at outlet only
@@ -201,9 +205,6 @@ def define_state(b):
         b.phase_fraction_constraint = Constraint(b.phase_list,
                                                  rule=rule_phase_frac)
 
-    if b.params._electrolyte:
-        define_electrolyte_state(b)
-
     # -------------------------------------------------------------------------
     # General Methods
     def get_material_flow_terms_FTPx(p, j):
@@ -258,8 +259,9 @@ def define_state(b):
 def state_initialization(b):
     for p in b.phase_list:
         # Start with phase mole fractions equal to total mole fractions
-        for j in b.components_in_phase(p):
-            b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
+        for j in b.component_list:
+            if (p, j) in b.phase_component_set:
+                b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
 
         b.flow_mol_phase[p].value = value(
                         b.flow_mol / len(b.phase_list))
@@ -480,7 +482,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j)
@@ -491,7 +493,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j*sf_flow)
@@ -506,7 +508,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j*sf_flow)
