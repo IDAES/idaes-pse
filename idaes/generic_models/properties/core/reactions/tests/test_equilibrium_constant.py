@@ -277,34 +277,20 @@ class TestGibbsEnergy(object):
         model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
                                                    units=pyunits.J/pyunits.mol)
 
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.dimensionless)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*dimensionless')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
-        assert_units_equivalent(rform, None)
+        with pytest.raises(
+                ConfigurationError,
+                match="rparams.reaction_r1 calculation of equilibrium constant"
+                " based on Gibbs energy is only supported for molarity or"
+                " activity forms. Currently selected form: "
+                "ConcentrationForm.moleFraction"):
+            gibbs_energy.build_parameters(
+                model.rparams.reaction_r1,
+                model.rparams.config.equilibrium_reactions["r1"])
 
     @pytest.mark.unit
     def test_gibbs_energy_invalid_dh_rxn(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.molarity
         model.rparams.config.equilibrium_reactions.r1.parameter_data = {
             "ds_rxn_ref": 1,
             "T_eq_ref": 500}
@@ -318,47 +304,6 @@ class TestGibbsEnergy(object):
             gibbs_energy.build_parameters(
                 model.rparams.reaction_r1,
                 model.rparams.config.equilibrium_reactions["r1"])
-
-    @pytest.mark.unit
-    def test_gibbs_energy_mole_frac_convert(self, model):
-        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
-            constant_dh_rxn
-        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
-            "T_eq_ref": (900, pyunits.degR)}
-        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
-                                                   units=pyunits.J/pyunits.mol)
-
-        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "dh_rxn_ref": (2000, pyunits.J/pyunits.kmol),
-            "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
-            "T_eq_ref": (900, pyunits.degR)}
-
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.dimensionless)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*dimensionless')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
-        assert_units_equivalent(rform, None)
 
     @pytest.mark.unit
     def test_gibbs_energy_molarity(self, model):
@@ -394,8 +339,9 @@ class TestGibbsEnergy(object):
             'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
             '(8.314462618*(J)/mol/K)*(300*K)) + '
             '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*(mol*m**-3)')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
+            'rparams.reaction_r1.ds_rxn_ref)*'
+            '(999.9999999999999*l/m**3*(mol/l))')
+        assert value(rform) == pytest.approx(1.1269e3, rel=1e-3)
         assert_units_equivalent(rform, pyunits.mol*pyunits.m**-3)
 
     @pytest.mark.unit
@@ -432,8 +378,9 @@ class TestGibbsEnergy(object):
             'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
             '(8.314462618*(J)/mol/K)*(300*K)) + '
             '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*(mol*m**-3)')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
+            'rparams.reaction_r1.ds_rxn_ref)*'
+            '(999.9999999999999*l/m**3*(mol/l))')
+        assert value(rform) == pytest.approx(1.1269e3, rel=1e-3)
         assert_units_equivalent(rform, pyunits.mol*pyunits.m**-3)
 
     @pytest.mark.unit
@@ -448,69 +395,15 @@ class TestGibbsEnergy(object):
         model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
                                                    units=pyunits.J/pyunits.mol)
 
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.mol/pyunits.kg)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*(mol*kg**-1)')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol/pyunits.kg)
-
-    @pytest.mark.unit
-    def test_gibbs_energy_molality_convert(self, model):
-        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
-            ConcentrationForm.molality
-        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
-            constant_dh_rxn
-        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
-            "T_eq_ref": (900, pyunits.degR)}
-        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
-                                                   units=pyunits.J/pyunits.mol)
-
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.mol/pyunits.kg)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*(mol*kg**-1)')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.mol*pyunits.kg**-1)
+        with pytest.raises(
+                ConfigurationError,
+                match="rparams.reaction_r1 calculation of equilibrium constant"
+                " based on Gibbs energy is only supported for molarity or"
+                " activity forms. Currently selected form: "
+                "ConcentrationForm.molality"):
+            gibbs_energy.build_parameters(
+                model.rparams.reaction_r1,
+                model.rparams.config.equilibrium_reactions["r1"])
 
     @pytest.mark.unit
     def test_gibbs_energy_partial_pressure(self, model):
@@ -524,66 +417,12 @@ class TestGibbsEnergy(object):
         model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
                                                    units=pyunits.J/pyunits.mol)
 
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.Pa)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*(kg*m**-1*s**-2)')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.Pa)
-
-    @pytest.mark.unit
-    def test_gibbs_energy_partial_pressure_convert(self, model):
-        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
-            ConcentrationForm.partialPressure
-        model.rparams.config.equilibrium_reactions.r1.heat_of_reaction = \
-            constant_dh_rxn
-        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
-            "ds_rxn_ref": (1000, pyunits.J/pyunits.kmol/pyunits.K),
-            "T_eq_ref": (900, pyunits.degR)}
-        model.rparams.reaction_r1.dh_rxn_ref = Var(initialize=2,
-                                                   units=pyunits.J/pyunits.mol)
-
-        gibbs_energy.build_parameters(
-            model.rparams.reaction_r1,
-            model.rparams.config.equilibrium_reactions["r1"])
-
-        # Check parameter construction
-        assert isinstance(model.rparams.reaction_r1.ds_rxn_ref, Var)
-        assert model.rparams.reaction_r1.ds_rxn_ref.value == 1
-
-        assert isinstance(model.rparams.reaction_r1.T_eq_ref, Var)
-        assert model.rparams.reaction_r1.T_eq_ref.value == 500
-
-        assert_units_equivalent(model.rparams.reaction_r1._keq_units,
-                                pyunits.Pa)
-
-        # Check expression
-        rform = gibbs_energy.return_expression(
-            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
-
-        assert str(rform) == (
-            'exp(- rparams.reaction_r1.dh_rxn_ref/(kg*m**2/J/s**2*'
-            '(8.314462618*(J)/mol/K)*(300*K)) + '
-            '1/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))*'
-            'rparams.reaction_r1.ds_rxn_ref)*(kg*m**-1*s**-2)')
-        assert value(rform) == pytest.approx(1.1269, rel=1e-3)
-        assert_units_equivalent(rform, pyunits.Pa)
+        with pytest.raises(
+                ConfigurationError,
+                match="rparams.reaction_r1 calculation of equilibrium constant"
+                " based on Gibbs energy is only supported for molarity or"
+                " activity forms. Currently selected form: "
+                "ConcentrationForm.partialPressure"):
+            gibbs_energy.build_parameters(
+                model.rparams.reaction_r1,
+                model.rparams.config.equilibrium_reactions["r1"])
