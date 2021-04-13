@@ -267,7 +267,7 @@ class TestParameters(object):
             m.params = GenericParameterBlock(default=test_config)
 
 
-class TestStateBlock(object):
+class TestStateBlockSymmetric(object):
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -282,6 +282,21 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_common(self, model):
+        # Reference state composition
+        assert isinstance(model.state[1].Liq_x_ref, Expression)
+        assert len(model.state[1].Liq_x_ref) == 6
+        for k in model.state[1].Liq_x_ref:
+            assert k in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
+            if k in ["H2O", "C6H12"]:
+                assert model.state[1].Liq_x_ref[k].expr == 0
+            else:
+                assert model.state[1].Liq_x_ref[k].expr == (
+                    model.state[1].mole_frac_phase_comp_true["Liq", k] /
+                    (model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
+                     model.state[1].mole_frac_phase_comp_true["Liq", "H+"] +
+                     model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"] +
+                     model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]))
+
         assert isinstance(model.state[1].Liq_X, Expression)
         assert len(model.state[1].Liq_X) == 6
         for j in model.state[1].Liq_X:
@@ -295,6 +310,19 @@ class TestStateBlock(object):
                 assert (
                     str(model.state[1].Liq_X[j]._expr) ==
                     str(model.state[1].mole_frac_phase_comp_true["Liq", j] *
+                        model.params.get_component(j).config.charge))
+
+        assert isinstance(model.state[1].Liq_X_ref, Expression)
+        assert len(model.state[1].Liq_X_ref) == 6
+        for j in model.state[1].Liq_X_ref:
+            if j in ["H2O", "C6H12"]:
+                # _X should be mole_frac_phase_comp_true
+                assert model.state[1].Liq_X_ref[j]._expr == 0
+            else:
+                # _X should be mutiplied by charge
+                assert (
+                    str(model.state[1].Liq_X_ref[j]._expr) ==
+                    str(model.state[1].Liq_x_ref[j] *
                         model.params.get_component(j).config.charge))
 
         assert isinstance(model.state[1].Liq_Y, Expression)
@@ -317,11 +345,23 @@ class TestStateBlock(object):
             0.5*(model.params.get_component("Na+").config.charge**2 *
                  model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
                  model.params.get_component("H+").config.charge**2 *
-                 model.state[1].mole_frac_phase_comp_true["Liq", "H+"]) +
-            0.5*(model.params.get_component("Cl-").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "H+"] +
+                 model.params.get_component("Cl-").config.charge**2 *
                  model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"] +
                  model.params.get_component("OH-").config.charge**2 *
                  model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]))
+
+        assert isinstance(model.state[1].Liq_ionic_strength_ref, Expression)
+        assert len(model.state[1].Liq_ionic_strength_ref) == 1
+        assert model.state[1].Liq_ionic_strength_ref.expr == (
+            0.5*(model.params.get_component("Na+").config.charge**2 *
+                 model.state[1].Liq_x_ref["Na+"] +
+                 model.params.get_component("H+").config.charge**2 *
+                 model.state[1].Liq_x_ref["H+"] +
+                 model.params.get_component("Cl-").config.charge**2 *
+                 model.state[1].Liq_x_ref["Cl-"] +
+                 model.params.get_component("OH-").config.charge**2 *
+                 model.state[1].Liq_x_ref["OH-"]))
 
         assert isinstance(model.state[1].Liq_vol_mol_solvent, Expression)
         assert len(model.state[1].Liq_vol_mol_solvent) == 1

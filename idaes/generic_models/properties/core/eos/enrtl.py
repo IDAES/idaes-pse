@@ -23,6 +23,7 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
 from .eos_base import EoSBase
+from .enrtl_reference_states import Symmetric
 from .enrtl_parameters import ConstantAlpha, ConstantTau
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
@@ -37,6 +38,12 @@ _log = idaeslog.getLogger(__name__)
 
 DefaultAlphaRule = ConstantAlpha
 DefaultTauRule = ConstantTau
+# TODO: Whilst the basic framework for supporting different reference states is
+# in place, it is likely that the unsymmetric reference state will need
+# x, X and I0 calcuated for each species individually (the symmetric
+# reference state only needs these to be calcuated once). Thi has not been
+# implemented in the current version
+DefaultRefState = Symmetric
 
 # Closest appraoch parameter - implemented as a global constant for now
 # This is not something the user should be changing in most cases
@@ -105,20 +112,89 @@ class ENRTL(EoSBase):
         else:
             tau_rule = DefaultTauRule.return_expression
 
+        # Check options for reference state
+        if (pobj.config.equation_of_state_options is not None and
+                "reference_state" in pobj.config.equation_of_state_options):
+            ref_state = pobj.config.equation_of_state_options[
+                "reference_state"].return_expression
+        else:
+            ref_state = DefaultRefState
+
+        # ---------------------------------------------------------------------
+        # Calculate composition terms at both actual and reference state
+        # Calculate reference state mole fractions
+        ref_state.ref_state(b, pname)
+
         # Ionic Strength
-        def rule_I(b):
+        def rule_I(b):  # Eqn 62
             return (0.5*sum(b.mole_frac_phase_comp_true[pname, c] *
                             b.params.get_component(c).config.charge**2
-                            for c in b.params.cation_set) +
-                    0.5*sum(b.mole_frac_phase_comp_true[pname, a] *
-                            b.params.get_component(a).config.charge**2
-                            for a in b.params.anion_set))
+                            for c in b.params.ion_set))
         b.add_component(pname+"_ionic_strength",
                         Expression(rule=rule_I,
                                    doc="Ionic strength"))
 
+        def rule_I_ref(b):  # Eqn 62 evaluated at reference state
+            x = getattr(b, pname+"_x_ref")
+            return (0.5*sum(x[c] *
+                            b.params.get_component(c).config.charge**2
+                            for c in b.params.ion_set))
+        b.add_component(pname+"_ionic_strength_ref",
+                        Expression(rule=rule_I_ref,
+                                   doc="Ionic strength at reference state"))
+
+        # Calculate mixing factors
+        def rule_X(b, j):  # Eqn 21
+            if (pname, j) not in b.params.true_phase_component_set:
+                return Expression.Skip
+            elif j in b.params.cation_set or j in b.params.anion_set:
+                cobj = b.params.get_component(j)
+                return (b.mole_frac_phase_comp_true[pname, j] *
+                        cobj.config.charge)
+            else:
+                return b.mole_frac_phase_comp_true[pname, j]
+
+        b.add_component(pname+"_X",
+                        Expression(b.params.true_species_set,
+                                   rule=rule_X,
+                                   doc="Charge x mole fraction term"))
+
+        def rule_X_ref(b, j):  # Eqn 21 evaluated at reference state
+            x = getattr(b, pname+"_x_ref")
+            if (pname, j) not in b.params.true_phase_component_set:
+                return Expression.Skip
+            elif j in b.params.cation_set or j in b.params.anion_set:
+                cobj = b.params.get_component(j)
+                return (x[j]*cobj.config.charge)
+            else:
+                return 0
+
+        b.add_component(
+            pname+"_X_ref",
+            Expression(b.params.true_species_set,
+                       rule=rule_X_ref,
+                       doc="Charge x mole fraction term at reference state"))
+
+        def rule_Y(b, j):  # Eqns 36 and 37
+            cobj = b.params.get_component(j)
+            if cobj.config.charge < 0:
+                # Anion
+                dom = b.params.anion_set
+            else:
+                dom = b.params.cation_set
+
+            X = getattr(b, pname+"_X")
+            return X[j]/sum(X[i] for i in dom)
+
+        b.add_component(pname+"_Y",
+                        Expression(b.params.ion_set,
+                                   rule=rule_Y,
+                                   doc="Charge composition"))
+
+        # ---------------------------------------------------------------------
+        # Long-range terms
         # Average molar volume of solvent
-        def rule_vol_mol_solvent(b):
+        def rule_vol_mol_solvent(b):  # Eqn 77
             return (sum(b.mole_frac_phase_comp_true[pname, s] /
                         get_method(b, "dens_mol_liq_comp", s)(
                             b, cobj(b, s), b.temperature)
@@ -130,7 +206,7 @@ class ENRTL(EoSBase):
                                    doc="Mean molar volume of solvent"))
 
         # Mean relative permitivity of solvent
-        def rule_eps_solvent(b):
+        def rule_eps_solvent(b):  # Eqn 78
             return (sum(b.mole_frac_phase_comp_true[pname, s] *
                         get_method(b, "relative_permittivity_liq_comp", s)(
                             b, cobj(b, s), b.temperature) *
@@ -145,8 +221,8 @@ class ENRTL(EoSBase):
                             doc="Mean relative permittivity  of solvent"))
 
         # Debye-Huckel parameter
-        def rule_A_DH(b):
-            # Note: Where the paper referes to the dielectric constant, it
+        def rule_A_DH(b):  # Eqn 61
+            # Note: Where the paper refers to the dielectric constant, it
             # actually means the electric permittivity of the solver
             # eps = eps_r*eps_0 (units F/m)
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
@@ -169,12 +245,12 @@ class ENRTL(EoSBase):
             I = getattr(b, pname+"_ionic_strength")
             rho = ClosestApproach
             if j in molecular_set:
+                # Eqn 69
                 # Note typo in original paper. Correct power for I is (3/2)
                 return (2*A*I**(3/2)/(1+rho*I**(1/2)))
-            elif j in b.params.cation_set:
+            elif j in b.params.ion_set:
+                # Eqn 70
                 return 200
-            elif j in b.params.anion_set:
-                return 300
             else:
                 raise BurntToast(
                     "{} eNRTL model encountered unexpected component."
@@ -185,38 +261,8 @@ class ENRTL(EoSBase):
                        rule=rule_log_gamma_pdh,
                        doc="Long-range contribution to activity coefficient"))
 
-        # Calculate mixing factors
-        def rule_X(b, j):
-            if (pname, j) not in b.params.true_phase_component_set:
-                return Expression.Skip
-            elif j in b.params.cation_set or j in b.params.anion_set:
-                cobj = b.params.get_component(j)
-                return (b.mole_frac_phase_comp_true[pname, j] *
-                        cobj.config.charge)
-            else:
-                return b.mole_frac_phase_comp_true[pname, j]
-
-        b.add_component(pname+"_X",
-                        Expression(b.params.true_species_set,
-                                   rule=rule_X,
-                                   doc="Charge x mole fraction term"))
-
-        def rule_Y(b, j):
-            cobj = b.params.get_component(j)
-            if cobj.config.charge < 0:
-                # Anion
-                dom = b.params.anion_set
-            else:
-                dom = b.params.cation_set
-
-            X = getattr(b, pname+"_X")
-            return X[j]/sum(X[i] for i in dom)
-
-        b.add_component(pname+"_Y",
-                        Expression(b.params.ion_set,
-                                   rule=rule_Y,
-                                   doc="Charge composition"))
-
+        # ---------------------------------------------------------------------
+        # Local Contribution Terms
         # Calculate alphas for all true species pairings
         def rule_alpha_expr(b, i, j):
             Y = getattr(b, pname+"_Y")
@@ -225,37 +271,44 @@ class ENRTL(EoSBase):
                 return Expression.Skip
             elif ((i in molecular_set) and
                     (j in molecular_set)):
+                # alpha equal user provided parameters
                 return alpha_rule(b, pobj, i, j, b.temperature)
             elif (i in b.params.cation_set and j in molecular_set):
+                # Eqn 32
                 return sum(
                     Y[k] *
                     alpha_rule(
                         b, pobj, (i+", "+k), j, b.temperature)
                     for k in b.params.anion_set)
             elif (j in b.params.cation_set and i in molecular_set):
+                # Eqn 32
                 return sum(
                     Y[k] *
                     alpha_rule(
                         b, pobj, (j+", "+k), i, b.temperature)
                     for k in b.params.anion_set)
             elif (i in b.params.anion_set and j in molecular_set):
+                # Eqn 33
                 return sum(
                     Y[k] *
                     alpha_rule(
                         b, pobj, (k+", "+i), j, b.temperature)
                     for k in b.params.cation_set)
             elif (j in b.params.anion_set and i in molecular_set):
+                # Eqn 33
                 return sum(
                     Y[k] *
                     alpha_rule(
                         b, pobj, (k+", "+j), i, b.temperature)
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
+                # Eqn 34
                 return sum(Y[k]*alpha_rule(
                                b, pobj, (i+", "+j), (k+", "+j), b.temperature)
                            for k in b.params.cation_set
                            if i != k)
             elif (i in b.params.anion_set and j in b.params.cation_set):
+                # Eqn 35
                 return sum(Y[k]*alpha_rule(
                                b, pobj, (j+", "+i), (j+", "+k), b.temperature)
                            for k in b.params.anion_set
@@ -279,7 +332,7 @@ class ENRTL(EoSBase):
         def rule_G_expr(b, i, j):
             Y = getattr(b, pname+"_Y")
 
-            def _G_appr(b, pobj, i, j, T):
+            def _G_appr(b, pobj, i, j, T):  # Eqn 23
                 return exp(-alpha_rule(b, pobj, i, j, T) *
                            tau_rule(b, pobj, i, j, T))
 
@@ -288,29 +341,36 @@ class ENRTL(EoSBase):
                 return Expression.Skip
             elif ((i in molecular_set) and
                     (j in molecular_set)):
+                # G comes directly from parameters
                 return _G_appr(b, pobj, i, j, b.temperature)
             elif (i in b.params.cation_set and j in molecular_set):
+                # Eqn 38
                 return sum(
                     Y[k] * _G_appr(b, pobj, (i+", "+k), j,  b.temperature)
                     for k in b.params.anion_set)
             elif (j in b.params.cation_set and i in molecular_set):
+                # Eqn 40
                 return sum(
                     Y[k] * _G_appr(b, pobj, (j+", "+k), i, b.temperature)
                     for k in b.params.anion_set)
             elif (i in b.params.anion_set and j in molecular_set):
+                # Eqn 39
                 return sum(
                     Y[k] * _G_appr(b, pobj, (k+", "+i), j, b.temperature)
                     for k in b.params.cation_set)
             elif (j in b.params.anion_set and i in molecular_set):
+                # Eqn 41
                 return sum(
                     Y[k] * _G_appr(b, pobj, (k+", "+j), i, b.temperature)
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
+                # Eqn 42
                 return sum(Y[k] * _G_appr(
                     b, pobj, (i+", "+j), (k+", "+j), b.temperature)
                     for k in b.params.cation_set
                     if i != k)
             elif (i in b.params.anion_set and j in b.params.cation_set):
+                # Eqn 43
                 return sum(Y[k] * _G_appr(
                     b, pobj, (j+", "+i), (j+", "+k), b.temperature)
                     for k in b.params.anion_set
@@ -336,6 +396,7 @@ class ENRTL(EoSBase):
                 return Expression.Skip
             elif ((i in molecular_set) and
                     (j in molecular_set)):
+                # tau equal to parameter
                 return tau_rule(b, pobj, i, j, b.temperature)
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
                   (i in b.params.anion_set and j in b.params.anion_set)):
@@ -344,6 +405,7 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
+                # Eqn 44
                 return log(G[i, j])/alpha[i, j]
         b.add_component(pname+"_tau",
                         Expression(b.params.true_species_set,
@@ -366,6 +428,7 @@ class ENRTL(EoSBase):
             if s in b.params.cation_set:
                 c = s
                 Z = b.params.get_component(c).config.charge
+                # Eqn 26
                 return Z*(
                     sum((X[m]*G[c, m] /
                          sum(X[i]*G[i, m] for i in aqu_species)) *
@@ -389,6 +452,7 @@ class ENRTL(EoSBase):
             elif s in b.params.anion_set:
                 a = s
                 Z = b.params.get_component(a).config.charge
+                # EQn 27
                 return Z*(
                     sum((X[m]*G[a, m] /
                          sum(X[i]*G[i, m] for i in aqu_species)) *
@@ -411,6 +475,7 @@ class ENRTL(EoSBase):
                         for c in b.params.cation_set))
             else:
                 m = s
+                # Eqn 25
                 return (sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species) /
                         sum(X[m]*G[i, m] for i in aqu_species) +
                         sum((X[mp]*G[m, mp] /
