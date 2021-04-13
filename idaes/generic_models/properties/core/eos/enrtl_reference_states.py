@@ -26,6 +26,8 @@ Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 """
 from pyomo.environ import Expression
 
+from idaes.generic_models.properties.core.generic.utility import (
+    get_component_object as cobj)
 import idaes.logger as idaeslog
 
 
@@ -37,9 +39,11 @@ class Symmetric(object):
     """
     Sub-methods for the symmetric (fused-salt) reference state
     """
+    @staticmethod
     def ref_state(b, pname):
         def rule_x_ref(b, i):
             if i in b.params.ion_set:
+                # Eqn 66
                 return (b.mole_frac_phase_comp_true[pname, i] /
                         sum(b.mole_frac_phase_comp_true[pname, j]
                             for j in b.params.ion_set))
@@ -49,12 +53,23 @@ class Symmetric(object):
         b.add_component(pname+"_x_ref",
                         Expression(b.params.true_species_set, rule=rule_x_ref))
 
-    def delta(i, j):
-        # Delta function used in Eqns 73-76 (not defined in paper)
-        if i == j:
-            return 1
-        else:
-            return 0
+    @staticmethod
+    def ndIdn(b, pname, i):
+        # Eqn 75
+        return 0.5*sum(cobj(b, j).config.charge**2*ndxdn(b, pname, i, j)
+                       for j in b.params.ion_set)
 
-    def ndIdn(b, i, j):
-        pass
+
+def ndxdn(b, pname, i, j):
+    x0 = getattr(b, pname+"_x_ref")
+
+    # Delta function used in Eqns 73-76 (not defined in paper)
+    if i == j:
+        delta = 1
+    else:
+        delta = 0
+
+    # Eqn 76
+    return ((delta - x0[j]) /
+            sum(b.mole_frac_phase_comp_true[pname, k]
+                for k in b.params.ion_set))

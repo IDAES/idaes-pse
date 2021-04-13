@@ -148,9 +148,8 @@ class ENRTL(EoSBase):
             if (pname, j) not in b.params.true_phase_component_set:
                 return Expression.Skip
             elif j in b.params.cation_set or j in b.params.anion_set:
-                cobj = b.params.get_component(j)
                 return (b.mole_frac_phase_comp_true[pname, j] *
-                        cobj.config.charge)
+                        cobj(b, j).config.charge)
             else:
                 return b.mole_frac_phase_comp_true[pname, j]
 
@@ -164,8 +163,7 @@ class ENRTL(EoSBase):
             if (pname, j) not in b.params.true_phase_component_set:
                 return Expression.Skip
             elif j in b.params.cation_set or j in b.params.anion_set:
-                cobj = b.params.get_component(j)
-                return (x[j]*cobj.config.charge)
+                return (x[j]*cobj(b, j).config.charge)
             else:
                 return 0
 
@@ -176,8 +174,7 @@ class ENRTL(EoSBase):
                        doc="Charge x mole fraction term at reference state"))
 
         def rule_Y(b, j):
-            cobj = b.params.get_component(j)
-            if cobj.config.charge < 0:
+            if cobj(b, j).config.charge < 0:
                 # Anion
                 dom = b.params.anion_set
             else:
@@ -244,6 +241,7 @@ class ENRTL(EoSBase):
         def rule_log_gamma_pdh(b, j):
             A = getattr(b, pname+"_A_DH")
             I = getattr(b, pname+"_ionic_strength")
+            I0 = getattr(b, pname+"_ionic_strength_ref")
             rho = ClosestApproach
             if j in molecular_set:
                 # Eqn 69
@@ -251,7 +249,12 @@ class ENRTL(EoSBase):
                 return (2*A*I**(3/2)/(1+rho*I**(1/2)))
             elif j in b.params.ion_set:
                 # Eqn 70
-                return 200
+                z = cobj(b, j).config.charge
+                return (A*((2*z**2/rho) *
+                           log((1+rho*I**0.5)/(1+rho*I0**0.5)) +
+                           (z**2*I**0.5 - 2*I**(3/2)) / (1+rho*I**0.5) -
+                           (2*I*I0**-0.5) / (1+rho*I0**0.5) *
+                           ref_state.ndIdn(b, pname, j)))
             else:
                 raise BurntToast(
                     "{} eNRTL model encountered unexpected component."
