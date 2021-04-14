@@ -199,7 +199,7 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
         scaling factor (float)
     """
     try:
-        if hasattr(c.parent_block(), lock_attribute_creation_context):
+        if hasattr(c.parent_block(), "lock_attribute_creation_context"):
             with c.parent_block().lock_attribute_creation_context():
                 sf = c.parent_block().scaling_factor[c]
         else:
