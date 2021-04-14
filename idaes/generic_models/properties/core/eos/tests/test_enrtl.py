@@ -455,10 +455,29 @@ class TestStateBlockSymmetric(object):
                             model.params.get_component("OH-").config.charge**2 *
                             ndxdn(j, "OH-")))))
 
+        assert isinstance(model.state[1].Liq_log_gamma_lc_I, Expression)
+        assert len(model.state[1].Liq_log_gamma_lc_I) == 6
+        for k in model.state[1].Liq_log_gamma_lc_I:
+            assert k in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
+
+        assert isinstance(model.state[1].Liq_log_gamma_lc_I0, Expression)
+        assert len(model.state[1].Liq_log_gamma_lc_I0) == 4
+        for k in model.state[1].Liq_log_gamma_lc_I0:
+            assert k in ["Na+", "H+", "Cl-", "OH-"]
+            assert model.state[1].Liq_log_gamma_lc_I0[k].expr != \
+                model.state[1].Liq_log_gamma_lc_I[k].expr
+
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6
         for k in model.state[1].Liq_log_gamma_lc:
             assert k in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
+            if k in ["H2O", "C6H12"]:
+                assert model.state[1].Liq_log_gamma_lc[k].expr == \
+                    model.state[1].Liq_log_gamma_lc_I[k]
+            else:
+                assert model.state[1].Liq_log_gamma_lc[k].expr == (
+                    model.state[1].Liq_log_gamma_lc_I[k] -
+                    model.state[1].Liq_log_gamma_lc_I0[k])
 
     @pytest.mark.unit
     def test_alpha(self, model):

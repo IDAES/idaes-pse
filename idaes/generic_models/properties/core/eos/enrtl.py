@@ -420,101 +420,46 @@ class ENRTL(EoSBase):
                                    doc="Binary interaction energy parameters"))
 
         # Local contribution to activity coefficient
-        # Indicies in expressions use same names as source paper
-        # mp = m'
-        aqu_species = b.params.true_species_set - b.params._non_aqueous_set
-
-        def rule_log_gamma_lc(b, s):
+        def rule_log_gamma_lc_I(b, s):
             X = getattr(b, pname+"_X")
             G = getattr(b, pname+"_G")
             tau = getattr(b, pname+"_tau")
-            if (pname, s) not in b.params.true_phase_component_set:
-                # Non-aqueous component
-                return Expression.Skip
-            if s in b.params.cation_set:
-                c = s
-                Z = b.params.get_component(c).config.charge
-                # Eqn 26
-                return Z*(
-                    sum((X[m]*G[c, m] /
-                         sum(X[i]*G[i, m] for i in aqu_species)) *
-                        (tau[c, m] -
-                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
-                          sum(X[i]*G[i, m] for i in aqu_species)))
-                        for m in molecular_set) +
-                    sum(X[i]*G[i, c]*tau[i, c]
-                        for i in (aqu_species-b.params.cation_set)) /
-                    sum(X[i]*G[i, c]
-                        for i in (aqu_species-b.params.cation_set)) +
-                    sum((X[a]*G[c, a] /
-                         sum(X[i]*G[i, a]
-                             for i in (aqu_species-b.params.anion_set))) *
-                        (tau[c, a] -
-                         sum(X[i]*G[i, a]*tau[i, a]
-                             for i in (aqu_species-b.params.anion_set)) /
-                         sum(X[i]*G[i, a]
-                             for i in (aqu_species-b.params.anion_set)))
-                        for a in b.params.anion_set))
-            elif s in b.params.anion_set:
-                a = s
-                Z = b.params.get_component(a).config.charge
-                # EQn 27
-                return Z*(
-                    sum((X[m]*G[a, m] /
-                         sum(X[i]*G[i, m] for i in aqu_species)) *
-                        (tau[a, m] -
-                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
-                          sum(X[i]*G[i, m] for i in aqu_species)))
-                        for m in molecular_set) +
-                    sum(X[i]*G[i, a]*tau[i, a]
-                        for i in (aqu_species-b.params.anion_set)) /
-                    sum(X[i]*G[i, a]
-                        for i in (aqu_species-b.params.anion_set)) +
-                    sum((X[c]*G[a, c] /
-                         sum(X[i]*G[i, c]
-                             for i in (aqu_species-b.params.cation_set))) *
-                        (tau[a, c] -
-                         sum(X[i]*G[i, c]*tau[i, c]
-                             for i in (aqu_species-b.params.cation_set)) /
-                         sum(X[i]*G[i, c]
-                             for i in (aqu_species-b.params.cation_set)))
-                        for c in b.params.cation_set))
-            else:
-                m = s
-                # Eqn 25
-                return (sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species) /
-                        sum(X[m]*G[i, m] for i in aqu_species) +
-                        sum((X[mp]*G[m, mp] /
-                             sum(X[i]*G[i, mp] for i in aqu_species)) *
-                            (tau[m, mp] -
-                             (sum(X[i]*G[i, mp]*tau[i, mp]
-                                  for i in aqu_species) /
-                              sum(X[i]*G[i, mp] for i in aqu_species)))
-                            for mp in molecular_set) +
-                        sum((X[c]*G[m, c] /
-                             sum(X[i]*G[i, c]
-                                 for i in (aqu_species-b.params.cation_set))) *
-                            (tau[m, c] -
-                             (sum(X[i]*G[i, c]*tau[i, c]
-                                  for i in (aqu_species-b.params.cation_set)) /
-                              sum(X[i]*G[i, c]
-                                  for i in (aqu_species-b.params.cation_set))))
-                            for c in b.params.cation_set) +
-                        sum((X[a]*G[m, a] /
-                             sum(X[i]*G[i, a]
-                                 for i in (aqu_species-b.params.anion_set))) *
-                            (tau[m, a] -
-                             (sum(X[i]*G[i, a]*tau[i, a]
-                                  for i in (aqu_species-b.params.anion_set)) /
-                              sum(X[i]*G[i, a]
-                                  for i in (aqu_species-b.params.anion_set))))
-                            for a in b.params.anion_set)
-                        )
-        b.add_component(pname+"_log_gamma_lc",
+
+            return log_gamma_lc(b, pname, s, X, G, tau)
+
+        b.add_component(pname+"_log_gamma_lc_I",
                         Expression(
                             b.params.true_species_set,
-                            rule=rule_log_gamma_lc,
-                            doc="Local contribution to activity coefficient"))
+                            rule=rule_log_gamma_lc_I,
+                            doc="Local contribution at actual state"))
+
+        def rule_log_gamma_lc_I0(b, s):
+            X = getattr(b, pname+"_X_ref")
+            G = getattr(b, pname+"_G")
+            tau = getattr(b, pname+"_tau")
+
+            return log_gamma_lc(b, pname, s, X, G, tau)
+
+        b.add_component(pname+"_log_gamma_lc_I0",
+                        Expression(
+                            b.params.ion_set,
+                            rule=rule_log_gamma_lc_I0,
+                            doc="Local contribution at reference state"))
+
+        def rule_log_gamma_lc(b, s):
+            log_gamma_lc_I = getattr(b, pname+"_log_gamma_lc_I")
+            if s in molecular_set:
+                return log_gamma_lc_I[s]
+            else:
+                log_gamma_lc_I0 = getattr(b, pname+"_log_gamma_lc_I0")
+                return log_gamma_lc_I[s] - log_gamma_lc_I0[s]
+
+        b.add_component(
+            pname+"_log_gamma_lc",
+            Expression(
+                b.params.true_species_set,
+                rule=rule_log_gamma_lc,
+                doc="Local contribution contribution to activity coefficient"))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):
@@ -531,3 +476,101 @@ class ENRTL(EoSBase):
     @staticmethod
     def enth_mol_phase_comp(b, p, j):
         return 1e2*b.temperature
+
+
+def log_gamma_lc(b, pname, s, X, G, tau):
+    # General function for calculating local contributions
+    # The same method can be used for both actual state and reference state
+    # by providing different X, G and tau expressions.
+
+    # Indicies in expressions use same names as source paper
+    # mp = m'
+    molecular_set = b.params.solvent_set | b.params.solute_set
+    aqu_species = b.params.true_species_set - b.params._non_aqueous_set
+
+    if (pname, s) not in b.params.true_phase_component_set:
+        # Non-aqueous component
+        return Expression.Skip
+    if s in b.params.cation_set:
+        c = s
+        Z = b.params.get_component(c).config.charge
+        # Eqn 26
+        return Z*(
+            sum((X[m]*G[c, m] /
+                 sum(X[i]*G[i, m] for i in aqu_species)) *
+                (tau[c, m] -
+                 (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                  sum(X[i]*G[i, m] for i in aqu_species)))
+                # Needed to eliminate term for the symmetric reference state
+                if X[m] != 0 else 0
+                for m in molecular_set) +
+            sum(X[i]*G[i, c]*tau[i, c]
+                for i in (aqu_species-b.params.cation_set)) /
+            sum(X[i]*G[i, c]
+                for i in (aqu_species-b.params.cation_set)) +
+            sum((X[a]*G[c, a] /
+                 sum(X[i]*G[i, a]
+                     for i in (aqu_species-b.params.anion_set))) *
+                (tau[c, a] -
+                 sum(X[i]*G[i, a]*tau[i, a]
+                     for i in (aqu_species-b.params.anion_set)) /
+                 sum(X[i]*G[i, a]
+                     for i in (aqu_species-b.params.anion_set)))
+                for a in b.params.anion_set))
+    elif s in b.params.anion_set:
+        a = s
+        Z = b.params.get_component(a).config.charge
+        # Eqn 27
+        return Z*(
+            sum((X[m]*G[a, m] /
+                 sum(X[i]*G[i, m] for i in aqu_species)) *
+                (tau[a, m] -
+                 (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                  sum(X[i]*G[i, m] for i in aqu_species)))
+                # Needed to eliminate term for the symmetric reference state
+                if X[m] != 0 else 0
+                for m in molecular_set) +
+            sum(X[i]*G[i, a]*tau[i, a]
+                for i in (aqu_species-b.params.anion_set)) /
+            sum(X[i]*G[i, a]
+                for i in (aqu_species-b.params.anion_set)) +
+            sum((X[c]*G[a, c] /
+                 sum(X[i]*G[i, c]
+                     for i in (aqu_species-b.params.cation_set))) *
+                (tau[a, c] -
+                 sum(X[i]*G[i, c]*tau[i, c]
+                     for i in (aqu_species-b.params.cation_set)) /
+                 sum(X[i]*G[i, c]
+                     for i in (aqu_species-b.params.cation_set)))
+                for c in b.params.cation_set))
+    else:
+        m = s
+        # Eqn 25
+        return (sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species) /
+                sum(X[m]*G[i, m] for i in aqu_species) +
+                sum((X[mp]*G[m, mp] /
+                     sum(X[i]*G[i, mp] for i in aqu_species)) *
+                    (tau[m, mp] -
+                     (sum(X[i]*G[i, mp]*tau[i, mp]
+                          for i in aqu_species) /
+                      sum(X[i]*G[i, mp] for i in aqu_species)))
+                    for mp in molecular_set) +
+                sum((X[c]*G[m, c] /
+                     sum(X[i]*G[i, c]
+                         for i in (aqu_species-b.params.cation_set))) *
+                    (tau[m, c] -
+                     (sum(X[i]*G[i, c]*tau[i, c]
+                          for i in (aqu_species-b.params.cation_set)) /
+                      sum(X[i]*G[i, c]
+                          for i in (aqu_species-b.params.cation_set))))
+                    for c in b.params.cation_set) +
+                sum((X[a]*G[m, a] /
+                     sum(X[i]*G[i, a]
+                         for i in (aqu_species-b.params.anion_set))) *
+                    (tau[m, a] -
+                     (sum(X[i]*G[i, a]*tau[i, a]
+                          for i in (aqu_species-b.params.anion_set)) /
+                      sum(X[i]*G[i, a]
+                          for i in (aqu_species-b.params.anion_set))))
+                    for a in b.params.anion_set)
+                )
