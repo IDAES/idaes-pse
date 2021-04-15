@@ -17,6 +17,7 @@ from pyomo.environ import exp, Var, units as pyunits, value
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     ConcentrationForm
+from .dh_rxn import constant_dh_rxn
 from idaes.core.util.misc import set_param_from_config
 from idaes.core.util.constants import Constants as c
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
@@ -141,10 +142,13 @@ class gibbs_energy():
                 "is only supported for molarity or activity forms. "
                 "Currently selected form: {}".format(rblock.name, c_form))
 
-        rblock.dh_rxn_ref = Var(
-                doc="Specific molar heat of reaction at reference state",
-                units=units["energy_mole"])
-        set_param_from_config(rblock, param="dh_rxn_ref", config=config)
+        # Check that heat of reaction is constant
+        if config.heat_of_reaction is not constant_dh_rxn:
+            raise ConfigurationError(
+                "{} calculating equilibrium constants from Gibbs energy "
+                "assumes constant heat of reaction. Please ensure you are "
+                "using the constant_dh_rxn method for this reaction"
+                .format(rblock.name))
 
         rblock.ds_rxn_ref = Var(
                 doc="Specific molar entropy of reaction at reference state",
