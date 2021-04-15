@@ -33,6 +33,12 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
+DEPENDENCIES_FOR_UNSTABLE_VERSION = [
+    "https://github.com/IDAES/Pyomo/archive/IDAES.zip",
+    "https://github.com/Pyomo/PySP/archive/master.zip",
+]
+
+
 kwargs = dict(
     zip_safe=False,
     name=NAME,
@@ -78,7 +84,9 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "dev": [  # Developer extra packages
+        "unstable": DEPENDENCIES_FOR_UNSTABLE_VERSION,
+        "dev": DEPENDENCIES_FOR_UNSTABLE_VERSION + [
+            # Developer extra packages
             "alabaster>=0.7.7",
             # temporarily hold coverage version due to avoid bug in coveralls
             # -alee 12/20/2019
