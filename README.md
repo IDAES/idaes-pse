@@ -44,7 +44,10 @@ in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 To install with `pip`:
 
 ```bash
+# install latest stable release
 pip install idaes_pse
+# install latest version from the main branch of this repository
+pip install 'idaes-pse[unstable] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
 ```
 
 To install with Anaconda's `conda`: **coming soon**

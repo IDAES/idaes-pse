@@ -125,13 +125,17 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
       pip install idaes-pse==1.7
 
-  c. To get the latest development main branch::
+  c. To get the latest version from the GitHub main branch::
 
-      pip install git+https://github.com/idaes/idaes-pse
+      pip install 'idaes-pse[unstable] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
 
-  d. To get a specific fork or branch, for example myfork (of idaes-pse) and mybranch::
+  d. To get the latest version from the GitHub main branch, including development dependencies::
 
-      pip install git+https://github.com/myfork/idaes-pse@mybranch
+      pip install 'idaes-pse[dev] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
+
+  e. To get a specific fork or branch, for example myfork (of idaes-pse) and mybranch::
+
+      pip install 'idaes-pse[dev] @ https://github.com/myfork/idaes-pse/archive/mybranch.zip'
 
 2. Run the :doc:`idaes get-extensions command<../user_guide/commands/get_extensions>`
    to install the compiled binaries::
