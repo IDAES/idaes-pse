@@ -395,7 +395,9 @@ see property package for documentation.}"""))
                         component(local_name)[...]
 
                 # add the reference and variable name to the port
-                port.add(Reference(var), k)
+                ref = Reference(var)
+                setattr(self, "_"+k+"_ref", ref)
+                port.add(ref, k)
 
             elif "frac" in local_name:
 
@@ -499,7 +501,9 @@ see property package for documentation.}"""))
                         component(local_name)[...]
 
                     # add the reference and variable name to the port
-                    port.add(Reference(var), k)
+                    ref = Reference(var)
+                    setattr(self, "_"+k+"_"+port.local_name+"_ref", ref)
+                    port.add(ref, k)
             elif "flow" in local_name:
                 if "phase" not in local_name:
 
@@ -629,7 +633,9 @@ see property package for documentation.}"""))
                             component(local_name)[...]
 
                     # add the reference and variable name to the port
-                    port.add(Reference(var), k)
+                    ref = Reference(var)
+                    setattr(self, "_"+k+"_"+port.local_name+"_ref", ref)
+                    port.add(ref, k)
                 else:
                     raise PropertyNotSupportedError(
                         "Unrecognized enthalpy state variable encountered "
