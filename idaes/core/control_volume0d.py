@@ -1815,7 +1815,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 for (t, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties_in[t].get_material_flow_terms(p, j)
-                         for p in phase_list])
+                         for p in phase_list if (p, j) in phase_component_set])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 # There are some other material balance types but they create
