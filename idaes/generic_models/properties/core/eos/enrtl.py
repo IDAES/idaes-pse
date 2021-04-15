@@ -412,7 +412,8 @@ class ENRTL(EoSBase):
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
                 # Eqn 44
-                return log(G[i, j])/alpha[i, j]
+                return -log(G[i, j])/alpha[i, j]
+
         b.add_component(pname+"_tau",
                         Expression(b.params.true_species_set,
                                    b.params.true_species_set,

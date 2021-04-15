@@ -810,7 +810,7 @@ class TestStateBlockSymmetric(object):
             if (i, j) not in [("H2O", "H2O"), ("H2O", "C6H12"),
                               ("C6H12", "H2O"), ("C6H12", "C6H12")]:
                 assert (model.state[1].Liq_tau[i, j].expr ==
-                        log(model.state[1].Liq_G[i, j]) /
+                        -log(model.state[1].Liq_G[i, j]) /
                         model.state[1].Liq_alpha[i, j])
 
         # Like species interactions
