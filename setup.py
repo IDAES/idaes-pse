@@ -34,8 +34,8 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_UNSTABLE_VERSION = [
-    "https://github.com/IDAES/Pyomo/archive/IDAES.zip",
-    "https://github.com/Pyomo/PySP/archive/master.zip",
+    "https://github.com/IDAES/pyomo/archive/842a2a4892929a2a032c0711a29381a8a5d17c24.zip",
+    "https://github.com/Pyomo/pysp/archive/c08015310bd9615ebbb2b0eb9042334c9306b458.zip",
 ]
 
 
