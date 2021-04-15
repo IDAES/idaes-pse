@@ -18,7 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Constraint, Set, SolverFactory, units, Var
+from pyomo.environ import Constraint, Set, units, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -37,21 +37,20 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
+from idaes.core.util import get_solver as default_solver
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 def get_default_solver():
     """
-    Tries to set-up the default solver for testing, and returns None if not
-    available
+    Move to idaes.core.util.misc - leaving redirection method here for
+    deprecation warning
     """
-    if SolverFactory('ipopt').available(exception_flag=False):
-        solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6,
-                          'linear_solver': 'ma27'}
-    else:
-        solver = None
-
-    return solver
+    _log.warn("Deprecated: get_default_solve has been moved and can now be "
+              "imported from idaes.core.util")
+    return default_solver()
 
 
 def initialization_tester(m, dof=0, unit=None, **init_kwargs):
@@ -133,6 +132,7 @@ def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     unit.del_component(unit.__dummy_equality_idx)
     unit.del_component(unit.__dummy_var)
 
+
 # -----------------------------------------------------------------------------
 # Define some generic PhysicalBlock and ReactionBlock classes for testing
 @declare_process_block_class("PhysicalParameterTestBlock")
@@ -155,12 +155,24 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
+        # Add inherent reactions for use when needed
+        self.inherent_reaction_idx = Set(initialize=["i1", "i2"])
+        self.inherent_reaction_stoichiometry = {("i1", "p1", "c1"): 1,
+                                                ("i1", "p1", "c2"): 1,
+                                                ("i1", "p2", "c1"): 1,
+                                                ("i1", "p2", "c2"): 1,
+                                                ("i2", "p1", "c1"): 1,
+                                                ("i2", "p1", "c2"): 1,
+                                                ("i2", "p2", "c1"): 1,
+                                                ("i2", "p2", "c2"): 1}
+
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
         self.default_balance_switch = 1
 
         self._state_block_class = TestStateBlock
 
+        self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mol", 101)
         self.set_default_scaling("flow_mol_phase_comp", 102)
         self.set_default_scaling("test_var", 103)
@@ -176,7 +188,6 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.set_default_scaling("material_dens_mol", 113)
         self.set_default_scaling("material_flow_mass", 114)
         self.set_default_scaling("material_dens_mass", 115)
-
 
     @classmethod
     def define_metadata(cls, obj):
@@ -245,7 +256,6 @@ class StateTestBlockData(StateBlockData):
         else:
             return b.material_dens_mol
 
-
     def get_enthalpy_flow_terms(b, p):
         return b.enthalpy_flow
 
@@ -311,6 +321,9 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
+
+        self.set_default_scaling("reaction_rate", 101, 'r1')
+        self.set_default_scaling("reaction_rate", 102, 'r2')
 
     @classmethod
     def define_metadata(cls, obj):

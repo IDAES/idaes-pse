@@ -72,6 +72,7 @@ def test_base_build():
 
     assert hasattr(m.fs.config, "time")
 
+
 # -----------------------------------------------------------------------------
 # Test add_geometry
 @pytest.mark.unit
@@ -538,6 +539,7 @@ def test_add_material_balances_default():
 
     assert_units_consistent(m)
 
+
 # -----------------------------------------------------------------------------
 # Test add_phase_component_balances
 @pytest.mark.unit
@@ -727,6 +729,53 @@ def test_add_phase_component_balances_eq_rxns_no_idx():
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
+
+
+@pytest.mark.unit
+def test_add_phase_component_balances_in_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    assert isinstance(m.fs.cv.inherent_reaction_generation, Var)
+    assert isinstance(m.fs.cv.inherent_reaction_extent, Var)
+    assert isinstance(m.fs.cv.inherent_reaction_stoichiometry_constraint,
+                      Constraint)
+
+    assert_units_consistent(m)
+
+
+@pytest.mark.unit
+def test_add_phase_component_balances_in_rxns_no_idx():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+    # delete inherent_Reaction_dix to trigger exception
+    m.fs.pp.del_component(m.fs.pp.inherent_reaction_idx)
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(PropertyNotSupportedError,
+                       match="fs.cv Property package does not contain a "
+                       "list of inherent reactions \(inherent_reaction_idx\), "
+                       "but include_inherent_reactions is True."):
+        m.fs.cv.add_phase_component_balances()
 
 
 @pytest.mark.unit
@@ -1155,6 +1204,7 @@ def test_add_total_component_balances_rate_rxns():
 
     assert_units_consistent(m)
 
+
 @pytest.mark.unit
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
@@ -1265,6 +1315,53 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_component_balances(has_equilibrium_reactions=True)
+
+
+@pytest.mark.unit
+def test_add_total_component_balances_in_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    mb = m.fs.cv.add_total_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+    assert isinstance(m.fs.cv.inherent_reaction_generation, Var)
+    assert isinstance(m.fs.cv.inherent_reaction_extent, Var)
+    assert isinstance(m.fs.cv.inherent_reaction_stoichiometry_constraint,
+                      Constraint)
+
+    assert_units_consistent(m)
+
+
+@pytest.mark.unit
+def test_add_total_component_balances_in_rxns_no_idx():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    # Set property package to contain inherent reactions
+    m.fs.pp._has_inherent_reactions = True
+    # delete inherent_Reaction_dix to trigger exception
+    m.fs.pp.del_component(m.fs.pp.inherent_reaction_idx)
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(PropertyNotSupportedError,
+                       match="fs.cv Property package does not contain a "
+                       "list of inherent reactions \(inherent_reaction_idx\), "
+                       "but include_inherent_reactions is True."):
+        m.fs.cv.add_total_component_balances()
 
 
 @pytest.mark.unit
@@ -1652,7 +1749,7 @@ def test_add_total_element_balances_eq_rxns():
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     with pytest.raises(ConfigurationError):
-        mb = m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
+        m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
 
 
 @pytest.mark.unit
@@ -2018,7 +2115,7 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
     m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
 
-    eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+    m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
     assert_units_consistent(m)
@@ -2039,7 +2136,7 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
     m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
 
-    eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+    m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
     assert isinstance(m.fs.cv.heat_of_reaction, Expression)
 
     assert_units_consistent(m)
@@ -2276,7 +2373,7 @@ def test_initialize():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    f= m.fs.cv.initialize(state_args={})
+    f = m.fs.cv.initialize(state_args={})
 
     for t in m.fs.time:
         assert m.fs.cv.properties_in[t].init_test is True
@@ -2385,7 +2482,6 @@ def test_get_performance_contents():
         assert k in ["Heat of Reaction Term"]
 
     assert len(dd["params"]) == 0
-
 
 
 @pytest.mark.unit

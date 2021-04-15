@@ -22,6 +22,7 @@ from pyutilib.misc import compare_json_files
 import pyomo.environ as pe
 from pyomo.common.fileutils import this_file_dir
 import idaes.core.util.convergence.convergence_base as cb
+import idaes
 
 # See if ipopt is available and set up solver
 ipopt_available = pe.SolverFactory('ipopt').available()
@@ -36,6 +37,7 @@ ceval_unfixedvar_mutableparam_str = (
         'conv_eval_classes.ConvEvalUnfixedVarMutableParam')
 
 currdir = this_file_dir()
+wrtdir = idaes.testing_directory
 
 
 @pytest.mark.unit
@@ -46,7 +48,7 @@ def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
     assert ceval.__class__ == cev.ConvEvalFixedVarMutableParam().__class__
 
     spec = ceval.get_specification()
-    fname = os.path.join(currdir, 'ceval_fixedvar_mutableparam.3.42.json')
+    fname = os.path.join(wrtdir, 'ceval_fixedvar_mutableparam.3.42.json')
     cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str,
                          n_points=3, seed=42)
 
@@ -68,7 +70,7 @@ def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
     assert ceval.__class__ == cev.ConvEvalUnfixedVarMutableParam().__class__
 
     spec = ceval.get_specification()
-    fname = os.path.join(currdir, 'ceval_unfixedvar_mutableparam.3.42.json')
+    fname = os.path.join(wrtdir, 'ceval_unfixedvar_mutableparam.3.42.json')
     cb.write_sample_file(spec, fname,
                          ceval_unfixedvar_mutableparam_str,
                          n_points=3, seed=42)
@@ -88,6 +90,66 @@ def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
     if os.path.exists(fname):
         os.remove(fname)
 
+@pytest.mark.unit
+def test_convergence_evaluation_stats_from_to():
+    ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
+    ceval = ceval_class()
+    import idaes.core.util.convergence.tests.conv_eval_classes as cev
+    assert ceval.__class__ == cev.ConvEvalFixedVarMutableParam().__class__
+
+    spec = ceval.get_specification()
+    fname = os.path.join(wrtdir, 'ceval_fixedvar_mutableparam.3.43.json')
+    cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str,
+                         n_points=3, seed=43)
+
+    inputs, samples, results = \
+        cb.run_convergence_evaluation_from_sample_file(fname)
+
+    s = cb.save_convergence_statistics(inputs, results)
+    d = s.to_dict()
+    s2 = cb.Stats(from_dict=d)
+    fname1 = os.path.join(wrtdir, 'stats1.json')
+    fname2 = os.path.join(wrtdir, 'stats2.json')
+    fname3 = os.path.join(wrtdir, 'stats3.json')
+
+    with open(fname1, "w") as f:
+        s.to_json(f)
+    with open(fname2, "w") as f:
+        s2.to_json(f)
+    compare_json_files(baseline_fname=fname1,
+                       output_fname=fname2,
+                       tolerance=1e-8)
+    s3 = cb.Stats(from_json=fname1)
+    with open(fname3, "w") as f:
+        s3.to_json(f)
+    compare_json_files(baseline_fname=fname1,
+                       output_fname=fname3,
+                       tolerance=1e-8)
+
+    if os.path.exists(fname):
+        os.remove(fname)
+    if os.path.exists(fname1):
+        os.remove(fname1)
+    if os.path.exists(fname2):
+        os.remove(fname2)
+    if os.path.exists(fname3):
+        os.remove(fname3)
+
+@pytest.mark.skipif(not ipopt_available, reason="Ipopt solver not available")
+@pytest.mark.unit
+def test_convergence_evaluation_single():
+    ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
+    ceval = ceval_class()
+    import idaes.core.util.convergence.tests.conv_eval_classes as cev
+    assert ceval.__class__ == cev.ConvEvalFixedVarMutableParam().__class__
+
+    spec = ceval.get_specification()
+    fname = os.path.join(wrtdir, 'ceval_fixedvar_mutableparam.3.43.json')
+    cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str,
+                         n_points=3, seed=43)
+    s, c, t, i = cb.run_single_sample_from_sample_file(fname, name="Sample-1")
+    assert c == True
+
 
 @pytest.mark.unit
 def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
@@ -97,7 +159,7 @@ def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
     assert ceval.__class__ == cev.ConvEvalFixedVarImmutableParam().__class__
 
     spec = ceval.get_specification()
-    fname = os.path.join(currdir, 'ceval_fixedvar_immutableparam.3.42.json')
+    fname = os.path.join(wrtdir, 'ceval_fixedvar_immutableparam.3.42.json')
     cb.write_sample_file(spec, fname,
                          ceval_fixedvar_immutableparam_str,
                          n_points=3, seed=42)
@@ -118,8 +180,7 @@ def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
         os.remove(fname)
 
 
-@pytest.mark.skipif(not ipopt_available,
-                    reason="Ipopt solver not available")
+@pytest.mark.skipif(not ipopt_available, reason="Ipopt solver not available")
 @pytest.mark.unit
 def test_convergence_evaluation_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)

@@ -48,6 +48,7 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
     PropertyNotSupportedError,
 )
+from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import VarLikeExpression
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -1324,16 +1325,16 @@ objects linked the mixed state and all outlet states,
 
     def initialize(
         blk, outlvl=idaeslog.NOTSET, optarg={}, state_args=None,
-        solver="ipopt", hold_state=False
+        solver=None, hold_state=False
     ):
         """
-        Initialization routine for separator (default solver ipopt)
+        Initialization routine for separator
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             state_args: unused, but retained for consistency with other
                         initialization methods
             hold_state : flag indicating whether the initialization routine
@@ -1351,9 +1352,9 @@ objects linked the mixed state and all outlet states,
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # Initialize mixed state block
         if blk.config.mixed_state_block is not None:

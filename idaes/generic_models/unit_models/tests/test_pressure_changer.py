@@ -52,16 +52,15 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
 from idaes.core.util.exceptions import BalanceTypeNotSupportedError
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -82,7 +81,7 @@ class TestPressureChanger(object):
                 "property_package": m.fs.properties})
 
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -676,7 +675,7 @@ class TestTurbine(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -707,7 +706,7 @@ class TestCompressor(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -738,7 +737,7 @@ class TestPump(object):
 
         assert isinstance(m.fs.unit, PressureChangerData)
         # Check unit config arguments
-        assert len(m.fs.unit.config) == 10
+        assert len(m.fs.unit.config) == 12
 
         assert m.fs.unit.config.material_balance_type == \
             MaterialBalanceType.useDefault
@@ -862,3 +861,87 @@ class Test_costing(object):
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value ==\
             pytest.approx(213199, 1e-5)
+
+    @pytest.mark.component
+    def test_turbine_performance_way1(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        def perf_callback(b):
+            unit_hd = units.J/units.kg
+            unit_vflw = units.m**3/units.s
+            @b.Constraint(m.fs.config.time)
+            def pc_isen_eff_eqn(b, t):
+                prnt = b.parent_block()
+                vflw = prnt.control_volume.properties_in[t].flow_vol
+                return prnt.efficiency_isentropic[t] == 0.9/3.975*vflw/unit_vflw
+            @b.Constraint(m.fs.config.time)
+            def pc_isen_head_eqn(b, t):
+                prnt = b.parent_block()
+                vflw = prnt.control_volume.properties_in[t].flow_vol
+                return b.head_isentropic[t]/1000 == \
+                    -75530.8/3.975/1000*vflw/unit_vflw*unit_hd
+
+        m.fs.unit = Turbine(default={
+            "property_package": m.fs.properties,
+            "support_isentropic_performance_curves":True,
+            "isentropic_performance_curves": {"build_callback": perf_callback}})
+
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+        Tin = 500  # K
+        Pin = 1000000  # Pa
+        Pout = 700000  # Pa
+        hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
+        m.fs.unit.inlet.enth_mol[0].fix(hin)
+        m.fs.unit.inlet.pressure[0].fix(Pin)
+
+        m.fs.unit.initialize()
+        assert degrees_of_freedom(m) == 0
+        assert_units_consistent(m.fs.unit)
+        solver.solve(m, tee=True)
+
+        assert value(m.fs.unit.efficiency_isentropic[0]) \
+            == pytest.approx(0.9, rel=1e-3)
+        assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+    @pytest.mark.component
+    def test_turbine_performance_way2(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+        m.fs.unit = Turbine(default={
+            "property_package": m.fs.properties,
+            "support_isentropic_performance_curves":True})
+        unit_hd = units.J/units.kg
+        unit_vflw = units.m**3/units.s
+        @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
+        def pc_isen_eff_eqn(b, t):
+            prnt = b.parent_block()
+            vflw = prnt.control_volume.properties_in[t].flow_vol
+            return prnt.efficiency_isentropic[t] == 0.9/3.975*vflw/unit_vflw
+        @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
+        def pc_isen_head_eqn(b, t):
+            prnt = b.parent_block()
+            vflw = prnt.control_volume.properties_in[t].flow_vol
+            return b.head_isentropic[t]/1000 == \
+                -75530.8/3.975/1000*vflw/unit_vflw*unit_hd
+
+        # set inputs
+        m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+        Tin = 500  # K
+        Pin = 1000000  # Pa
+        Pout = 700000  # Pa
+        hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
+        m.fs.unit.inlet.enth_mol[0].fix(hin)
+        m.fs.unit.inlet.pressure[0].fix(Pin)
+
+        m.fs.unit.initialize()
+        assert degrees_of_freedom(m) == 0
+        assert_units_consistent(m.fs.unit)
+        solver.solve(m, tee=True)
+
+        assert value(m.fs.unit.efficiency_isentropic[0]) \
+            == pytest.approx(0.9, rel=1e-3)
+        assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
