@@ -112,6 +112,9 @@ Finally, the error propagation of the objective function (**results.propagation_
 Available Functions
 -------------------
 
+.. currentmodule:: idaes.apps.uncertainty_propagation.uncertainties
+
+.. autofunction:: quantify_propagate_uncertainty
 
 Examples
 --------

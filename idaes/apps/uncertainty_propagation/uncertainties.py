@@ -26,74 +26,37 @@ from idaes.apps.uncertainty_propagation.sens import get_dsdp, get_dfds_dcds # wi
 
 logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
-def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
-                 tee=False, diagnostic_mode=False, solver_options=None):
+def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, tee=False, diagnostic_mode=False, solver_options=None):
     """
-    This function calculates error propagation of the objective function and constraints. 
-    The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 
-    'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' 
-    calculates error propagation of objective function and constraints in the 'model_uncertain'.    
+    This function calculates error propagation of the objective function and constraints. The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' calculates error propagation of objective function and constraints in the 'model_uncertain'.
     
-    Parameters
-    ----------
-    model_function: function
-        A python Function that generates an instance of the Pyomo model using
-        'data' as the input argument
-    model_uncertain: function or Pyomo ConcreteModel
-        function is a a python Function that generates an instance of the Pyomo model
-    data: pandas DataFrame, list of dictionaries, or list of json file names
-        Data that is used to build an instance of the Pyomo model and 
-        build the objective function
-    theta_names: list of strings
-        List of Var names to estimate
-    obj_function: function, optional
-        Function used to formulate parameter estimation objective, 
-        generally sum of squared error between measurements and model variables.    
-    tee: bool, optional
-        Indicates that ef solver output should be teed
-    diagnostic_mode: bool, optional
-        If True, print diagnostics from the solver
-    solver_options: dict, optional
-        Provides options to the solver (also the name of an attribute)
+    Args:
+        model_function(function)                                                  : A python Function that generates an instance of the Pyomo model using 'data' as the input argument
+        model_uncertain(function or Pyomo ConcreteModel)                          : Function is a a python Function that generates an instance of the Pyomo model
+        data(pandas DataFrame, list of dictionaries, or list of json file names)  : Data that is used to build an instance of the Pyomo model and build the objective function
+        theta_names(list of strings)                                              : List of Var names to estimate
+        obj_function(function, optional)                                          : Function used to formulate parameter estimation objective, generally sum of squared error between measurements and model variables.    
+        tee(bool, optional)                                                       : Indicates that ef solver output should be teed
+        diagnostic_mode(bool, optional)                                           : If True, print diagnostics from the solver
+        solver_options(dict, optional)                                            : Provides options to the solver (also the name of an attribute)
     
-    Returns
-    -------
-    results : namedtuple
-        results.obj: float
-            objective function value for the given obj_function 
-        results.theta_out: dictionary
-            Estimated parameters
-        results.cov: numpy.ndarray
-            Covariance of theta_out
-        results.gradient_f_dic: numpy.ndarray 
-            gradient of the objective function with respect to the (decision variables, parameters) 
-            at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
-        results.gradient_c_dic: numpy.ndarray
-            gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution
-            with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
-            Only non-zero gradients are included.
-        results.dsdp_dic: dict
-            gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name).
-            e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
-                     'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
-        results.propagation_f: dict
-            df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            error propagation in the objective function with the dictionary key, 'objective' 
-        results.propagation_c: dict
-            error propagation in the constraints with the dictionary keys, 'constraints l'
-            where l is the line number. 
-            if no constraint includes uncertain parameters, return an empty dictionary      
+    Returns:
+        tuple   : results object containing the all information including:
+            - results.obj(float)                    : Objective function value for the given obj_function 
+            - results.theta_out(dictionary)         : Estimated parameters
+            - results.cov(numpy.ndarray)            : Covariance of theta_out
+            - results.gradient_f_dic(numpy.ndarray) : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+            - results.gradient_c_dic(numpy.ndarray) : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}. Only non-zero gradients are included.
+            - results.dsdp_dic(dict)                : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
+            - results.propagation_f(dict)           : Error propagation in the objective function with the dictionary key, 'objective', df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.propagation_c(dict)           : Error propagation in the constraints with the dictionary keys, 'constraints l' where l is the line number. If no constraint includes uncertain parameters, return an empty dictionary.
         
-    Raises
-    ------
-    TypeError
-        When tee entry is not Boolean
-    TypeError
-        When diagnostic_mode entry is not Boolean
-    TypeError
-        When solver_options entry is not None and a Dictionary
-    Warnings
-        When an element of theta_names includes a space
+    Raises:
+        TypeError: - When tee entry is not Boolean
+        TypeError: - When diagnostic_mode entry is not Boolean
+        TypeError: - When solver_options entry is not None and a Dictionary
+        Warnings:  - When an element of theta_names includes a space
+    
     """
 
     if not isinstance(tee, bool):
