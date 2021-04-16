@@ -2,7 +2,9 @@
 Uncertainty Propagation Toolbox
 ===============================
 The uncertainty_propagation module quantifies and propagates parametric uncertainties through optimization and simulation problem based on IDAES models. The module has two core features:
+
 1. Given a parameter estimation model and data, calculate the least squares best fit parameter values and estimate their covariance.
+
 2. Given a process model and the covariance for its parameters, estimate the variance of the optimal solution and the objective function.
 
 Consider the optimization problem:
@@ -41,11 +43,7 @@ The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via r
 
 **Dependencies**
 
-`k_aug <https://github.com/dthierry/k_aug>`_ [1] is required to use uncertainty_propagation module. If you have the IDAES framework installed, you can get `k_aug` with the IDAES extensions by running the following command:
-
-.. code-block:: python
-
-   idaes get-extensions
+`k_aug <https://github.com/dthierry/k_aug>`_ [1] is required to use uncertainty_propagation module. The `k_aug` solver executable is easily installed via the ``idaes get-extensions`` command.
 
 Basic Usage
 ------------
@@ -56,7 +54,12 @@ This toolbox has two core functions:
 
 2. **quantify_propagate_uncertainty**: Given an IDAES (Pyomo) regression model and data, first estimate parameters :math:`p` and covariance :math:`\Sigma_p`. Then given a second IDAES (Pyomo) process model, estimate :math:`\text{Var}[f(x^*,p)]`.
 
-The following example shows the usage of **quantify_propagate_uncertainty** for a reaction kinetic problem from Rooney and Biegler [2].
+The following example shows the usage of **quantify_propagate_uncertainty** for a reaction kinetic problem from Rooney and Biegler [2]. Consider the mathematical model:
+
+.. math::
+    y_{i}(\theta_1, \theta_2, t_i) = \theta_1 (1 - e^{-\theta_2 t_i}), \quad i = 1, ..., n
+
+Here :math:`y_i` is the concentration of the chemical product at time :math:`t_i` and :math:`p = (\theta_1, \theta_2)` are the fitted model parameters. 
 
 .. code:: python
 
@@ -110,14 +113,15 @@ The following example shows the usage of **quantify_propagate_uncertainty** for 
 
 The Python function **rooney_biegler_model** generates a Pyomo regression model using the input Pandas DataFrame **data**. This model contains the attributes ``asymptote`` and ``rate_constant`` which are the parameters :math:`p` to be estimated by minimizing the sum of squared errors (SSE). The list **variable_name** contains strings with these attribute names.
 
-Similarly, the Python function **rooney_biegler_model_opt** returns a conrete Pyomo model which the process optimize problem. This specific example has no degrees of freedom (once :math:`p` is specified); the objective function computes the product concentration at time 10.
+Similarly, the Python function **rooney_biegler_model_opt** returns a concrete Pyomo model which is the process optimization problem. This specific example has no degrees of freedom once :math:`p` is specified; the objective function computes the product concentration at time :math:`t=10`.
 
 The function **quantify_propagate_uncertainty** returns the object **results** which contains several important attributes:
+
 * **results.theta_names** contains the names of parameters :math:`p`
 * **results.theta** contains the estimate values for parameters :math:`p`
 * **results.gradient_f_dic** contains the gradients :math:`\frac{\partial f}{\partial asymptote} \text{ and } \frac{\partial f }{\partial rate\_constant}`
 * **results.dsdp_dic** contains the gradients :math:`\frac{\partial asymptote}{\partial asymptote},\frac{\partial rate\_constant}{\partial asymptote},\frac{\partial asymptote}{\partial rate\_constant}, \text{ and } \frac{\partial rate\_constant}{\partial rate\_constant}`
-**results.propagation_f** contains the estimate variance of the objective function 
+* **results.propagation_f** contains the estimate variance of the objective function 
 
 Available Functions
 -------------------
