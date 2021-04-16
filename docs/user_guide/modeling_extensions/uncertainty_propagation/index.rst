@@ -9,27 +9,30 @@ Consider the optimization problem:
 
 .. math::
 
-   minimize \ \ f(x,p)
+   \mathrm{minimize} \ \ f(x,p)
 
     \ \ \ s.t \ \ \ \ \ \ \ \ \ c(x,p) = 0 
 
-   \ \ \ \ \ \ \ \ \  \ \ \ \  \ \ \ x_{lb} <= x <= x_{ub}
+   \ \ \ \ \ \ \ \ \  \ \ \ \  \ \ \ x_{lb} \leq x \leq x_{ub}
 
-, where :math:`x \in \mathcal{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathcal{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}^{k\ \times\ 1}` are the constraints, and x_{lb} and x_{ub} are the lower and upper bounds, respectively.
+Here :math:`x \in \mathcal{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathcal{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}^{k\ \times\ 1}` are the constraints, and :math:`x_{lb}` and :math:`x_{ub}` are the lower and upper bounds, respectively.
 
-Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty. Thus, we want to quantify the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` given the estimate :math:`p^*` with covariance matrix :math:`\Sigma_p`.
+Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty represented with covariance matrix :math:`\Sigma_p`. This toolbox estimates the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` induced by uncertainty in :math:`p^*`.
 
-Based on a first-order error propagation formula, the variance of the objective function :math:`Var[f(x^*,p^*)]` and constraints :math:`c(x^*,p^*)` are: 
+Based on a first-order error propagation formula, the variance of the objective function is:
 
 .. math::
 
-    Var[f(x^*,p^*)] = \frac{\partial f}{\partial p}  \Sigma_p  \frac{\partial f}{\partial p}^T + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial f}{\partial x}^T, 
+    \text{Var}[f(x^*,p^*)] = \frac{\partial f}{\partial p}  \Sigma_p  \frac{\partial f}{\partial p}^T + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial f}{\partial x}^T 
 
-    Var[c_1(x^*,p^*)] = \frac{\partial c_1}{\partial p}  \Sigma_p  \frac{\partial c_1}{\partial p}^T + \frac{\partial c_1}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_1}{\partial x}^T, 
 
-    \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \  \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \vdots
+Likewise, the variance in constraint $k$ is:
 
-    Var[c_k(x^*,p^*)] = \frac{\partial c_k}{\partial p}  \Sigma_p  \frac{\partial c_k}{\partial p}^T + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_k}{\partial x}^T, 
+.. math::
+
+    \text{Var}[c_k(x^*,p^*)] = \frac{\partial c_k}{\partial p}  \Sigma_p  \frac{\partial c_k}{\partial p}^T + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_k}{\partial x}^T
+    
+Note that :math:`\text{Var}[c_k(x^*,p^*)] \approx 0` because the constraints remain feasible for a small perturbation in :math:`p`, i.e.,  :math:`c(x,p) = 0`.
 
 All gradients are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1]. More specifically, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}`, are computed via automatic differentiation whereas :math:`\frac{\partial x}{\partial p}` are computed via nonlinear programming sensitivity theory.
 
