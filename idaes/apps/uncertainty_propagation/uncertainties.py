@@ -52,10 +52,10 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
             - results.propagation_c(dict)           : Error propagation in the constraints with the dictionary keys, 'constraints l' where l is the line number. If no constraint includes uncertain parameters, return an empty dictionary.
         
     Raises:
-        TypeError: - When tee entry is not Boolean
-        TypeError: - When diagnostic_mode entry is not Boolean
-        TypeError: - When solver_options entry is not None and a Dictionary
-        Warnings:  - When an element of theta_names includes a space
+        TypeError:  When tee entry is not Boolean
+        TypeError:  When diagnostic_mode entry is not Boolean
+        TypeError:  When solver_options entry is not None and a Dictionary
+        Warnings:   When an element of theta_names includes a space
     
     """
 
@@ -87,54 +87,28 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
     """
-    This function calculates gradient vector, expectation, and variance of the objective function and constraints
-    of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates 
-    error propagation of the objective function and constraints by using gradient vector and covariance matrix. 
+    This function calculates gradient vector, expectation, and variance of the objective function and constraints  of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates error propagation of the objective function and constraints by using gradient vector and covariance matrix.
     
-    Parameters
-    ----------
-    model_uncertain: function or Pyomo ConcreteModel
-        function is a a python Function that generates an instance of the Pyomo model
-    theta: dict
-        Estimated parameters 
-    cov: numpy.ndarray
-        Covariance matrix of parameters 
-    theta_names: list of strings
-        List of estimated Var names
-    var_dic: dictionary
-        If any original variable contains "'", need an auxiliary dictionary  with keys theta_namess without "'", values with "'".
-        e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 
-                       'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
-    tee: bool, optional
-        Indicates that ef solver output should be teed
-    solver_options: dict, optional
-        Provides options to the solver (also the name of an attribute)
+    Args:
+        model_uncertain(function or Pyomo ConcreteModel) : Function is a a python Function that generates an instance of the Pyomo model
+        theta(dict)                    : Estimated parameters 
+        cov(numpy.ndarray)             : Covariance matrix of parameters 
+        theta_names(list of strings)   : List of estimated Var names
+        var_dic(dictionary)            : If any original variable contains "'", need an auxiliary dictionary  with keys theta_namess without "'", values with "'". e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
+        tee(bool, optional)            : Indicates that ef solver output should be teed
+        solver_options(dict, optional) : Provides options to the solver (also the name of an attribute)
 
-    Returns
-    -------
-    gradient_f_dic: dic
-        gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution 
-        with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
-    gradient_c_dic: dic
-        gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution
-        with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
-        Only non-zero gradients are included.
-    dsdp_dic: dict
-        gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name).    
-        e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 
-                     'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
-    propagation_f: dictionary
-        df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-        error propagation in the objective function with the dictionary key, 'objective' 
-    propagation_c: dictionary
-        error propagation in the constraints with the dictionary keys, 'constraints r'
-        where r is the line number. 
-        if no constraint includes uncertain parameters, return an empty dictionary      
+    Returns:
+        gradient_f_dic(dic)       : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+        gradient_c_dic(dic)       : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}. Only non-zero gradients are included.
+        dsdp_dic(dict)            : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
+        propagation_f(dictionary) : Error propagation in the objective function with the dictionary key, 'objective', df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+        propagation_c(dictionary) : Error propagation in the constraints with the dictionary keys, 'constraints r' where r is the line number. If no constraint includes uncertain parameters, return an empty dictionary      
 
-    Raises
+    Raises:
     ------
-    Exception
-        When model_uncertain is neither 'ConcreteModel' nor 'function'.
+        Exception:  When model_uncertain is neither 'ConcreteModel' nor 'function'.
+        
     """
 
     # define Pyomo model
@@ -224,21 +198,15 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
 def clean_variable_name(theta_names):
     """
-    This function removes all ' and spaces in theta_names.
-    Note: The  current theta_est(calc_cov=True) of parmest 
-          in Pyomo doesn't allow ' and spaces in the variable names.
+    This function removes all ' and spaces in theta_names. Note: The  current theta_est(calc_cov=True) of parmest in Pyomo doesn't allow ' and spaces in the variable names.
        
-    Parameters
-    ----------
-    theta_names: list of strings
-        List of Var names
+    Args:
+        theta_names(list of strings) : List of Var names
     
-    Returns
-    -------
-    theta_names_out: list of strings
-        List of Var names after removing  all ' and spaces
-    var_dic: dict
-       dictionary with keys converted theta_names and values origianl theta_names 
+    Returns:
+        theta_names_out(list of strings) : List of Var names after removing  all ' and spaces
+        var_dic(dict)                    : Dictionary with keys converted theta_names and values origianl theta_names 
+        
     """
 
     # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
@@ -259,4 +227,3 @@ def clean_variable_name(theta_names):
     if clean:
        logger.warning("All ' and spaces in theta_names are removed.")
     return theta_names_out, var_dic, clean
-
