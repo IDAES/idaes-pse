@@ -116,6 +116,10 @@ Available Functions
 
 .. autofunction:: quantify_propagate_uncertainty
 
+.. autofunction:: propagate_uncertainty
+
+.. autofunction:: clean_variable_name
+
 Examples
 --------
 Two `examples
