@@ -99,12 +99,11 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         solver_options(dict, optional) : Provides options to the solver (also the name of an attribute)
 
     Returns:
-    
-        - gradient_f_dic(dic)            : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
-        - gradient_c_dic(dic)            : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}. Only non-zero gradients are included.
-        - dsdp_dic(dict)                 : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
-        - propagation_f(dictionary)      : Error propagation in the objective function with the dictionary key, 'objective', df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-        - propagation_c(dictionary)      : Error propagation in the constraints with the dictionary keys, 'constraints r' where r is the line number. If no constraint includes uncertain parameters, return an empty dictionary      
+            - gradient_f_dic(dic)            : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+            - gradient_c_dic(dic)            : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}. Only non-zero gradients are included.
+            - dsdp_dic(dict)                 : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
+            - propagation_f(dictionary)      : Error propagation in the objective function with the dictionary key, 'objective', df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - propagation_c(dictionary)      : Error propagation in the constraints with the dictionary keys, 'constraints r' where r is the line number. If no constraint includes uncertain parameters, return an empty dictionary      
 
     Raises:
         Exception:  When model_uncertain is neither 'ConcreteModel' nor 'function'.
@@ -204,9 +203,8 @@ def clean_variable_name(theta_names):
         theta_names(list of strings) : List of Var names
     
     Returns:
-    
-        - theta_names_out(list of strings) : List of Var names after removing  all ' and spaces
-        - var_dic(dict)                    : Dictionary with keys converted theta_names and values origianl theta_names 
+            - theta_names_out(list of strings) : List of Var names after removing  all ' and spaces
+            - var_dic(dict)                    : Dictionary with keys converted theta_names and values origianl theta_names 
         
     """
 
