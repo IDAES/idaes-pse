@@ -250,11 +250,11 @@ class ENRTL(EoSBase):
             elif j in b.params.ion_set:
                 # Eqn 70
                 z = cobj(b, j).config.charge
-                return (A*((2*z**2/rho) *
-                           log((1+rho*I**0.5)/(1+rho*I0**0.5)) +
-                           (z**2*I**0.5 - 2*I**(3/2)) / (1+rho*I**0.5) -
-                           (2*I*I0**-0.5) / (1+rho*I0**0.5) *
-                           ref_state.ndIdn(b, pname, j)))
+                return (-A*((2*z**2/rho) *
+                            log((1+rho*I**0.5)/(1+rho*I0**0.5)) +
+                            (z**2*I**0.5 - 2*I**(3/2)) / (1+rho*I**0.5) -
+                            (2*I*I0**-0.5) / (1+rho*I0**0.5) *
+                            ref_state.ndIdn(b, pname, j)))
             else:
                 raise BurntToast(
                     "{} eNRTL model encountered unexpected component."
