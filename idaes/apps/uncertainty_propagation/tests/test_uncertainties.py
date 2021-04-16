@@ -196,7 +196,7 @@ class TestUncertaintyPropagation:
             expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
             return expr
         tee = 1
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee)
 
 
@@ -218,7 +218,7 @@ class TestUncertaintyPropagation:
             return expr
         tee = False
         diagnostic_mode = 1
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode)
 
 
@@ -241,7 +241,7 @@ class TestUncertaintyPropagation:
         tee = False
         diagnostic_mode = False
         solver_options = [1e-8]
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode,solver_options)
 
     def test_clean_variable_name1(self):
