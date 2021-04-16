@@ -27,12 +27,11 @@ from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.environ import (ConcreteModel,
                            Objective,
-                           SolverFactory,
                            SolverStatus,
                            TerminationCondition,
                            value)
 
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 SOUT = idaeslog.INFO
@@ -44,7 +43,7 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -86,7 +85,6 @@ class TestBTExample(object):
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m, tee=True)
 
             assert results.solver.termination_condition == \
@@ -104,7 +102,6 @@ class TestBTExample(object):
 
             m.fs.state.initialize(outlvl=0)
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m)
 
             assert results.solver.termination_condition == \
@@ -113,7 +110,6 @@ class TestBTExample(object):
             while m.fs.state[1].pressure.value <= 1e6:
                 m.fs.state[1].pressure.value = (
                     m.fs.state[1].pressure.value + 1e5)
-                solver = SolverFactory('ipopt')
                 results = solver.solve(m)
                 assert results.solver.termination_condition == \
                     TerminationCondition.optimal
@@ -133,7 +129,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -196,7 +191,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -259,7 +253,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -322,7 +315,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -385,7 +377,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -451,7 +442,6 @@ class TestBTExample(object):
 
         m.fs.state.initialize(outlvl=SOUT)
 
-        solver = SolverFactory('ipopt')
         results = solver.solve(m)
 
         # Check for optimal solution
@@ -503,12 +493,20 @@ class TestBTExample(object):
     @pytest.mark.unit
     def test_basic_scaling(self, m):
 
-        assert len(m.fs.state[1].scaling_factor) == 24
+        assert len(m.fs.state[1].scaling_factor) == 23
         assert m.fs.state[1].scaling_factor[m.fs.state[1].flow_mol] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].flow_mol_phase["Liq"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].flow_mol_phase["Vap"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Liq", "benzene"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Liq", "toluene"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Vap", "benzene"]] == 1e-2
+        assert m.fs.state[1].scaling_factor[
+            m.fs.state[1].flow_mol_phase_comp["Vap", "toluene"]] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].mole_frac_comp["benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
@@ -523,28 +521,19 @@ class TestBTExample(object):
             m.fs.state[1].mole_frac_phase_comp["Vap", "toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[m.fs.state[1].pressure] == 1e-5
         assert m.fs.state[1].scaling_factor[m.fs.state[1].temperature] == 1e-2
-        assert m.fs.state[1].scaling_factor[m.fs.state[1]._teq] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._teq["Vap", "Liq"]] == 1e-2
         assert m.fs.state[1].scaling_factor[m.fs.state[1]._t1_Vap_Liq] == 1e-2
 
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1]._mole_frac_tbub] == 1000
-        assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tbub["Vap", "Liq", "toluene"]] == 1000
-        assert m.fs.state[1].scaling_factor[
-            m.fs.state[1]._mole_frac_tdew] == 1000
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "benzene"]] == 1000
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1]._mole_frac_tdew["Vap", "Liq", "toluene"]] == 1000
         assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].temperature_bubble] == 1e-2
-        assert m.fs.state[1].scaling_factor[
             m.fs.state[1].temperature_bubble["Vap", "Liq"]] == 1e-2
-        assert m.fs.state[1].scaling_factor[
-            m.fs.state[1].temperature_dew] == 1e-2
         assert m.fs.state[1].scaling_factor[
             m.fs.state[1].temperature_dew["Vap", "Liq"]] == 1e-2

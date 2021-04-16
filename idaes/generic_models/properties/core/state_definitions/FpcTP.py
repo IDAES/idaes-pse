@@ -22,6 +22,8 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -132,6 +134,10 @@ def define_state(b):
         rule=rule_phase_frac,
         doc='Phase fractions')
 
+    # Add electrolye state vars if required
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
+
     # -------------------------------------------------------------------------
     # General Methods
     def get_material_flow_terms_FpcTP(p, j):
@@ -146,10 +152,7 @@ def define_state(b):
 
     def get_material_density_terms_FpcTP(p, j):
         """Create material density terms."""
-        if j in b.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
     b.get_material_density_terms = get_material_density_terms_FpcTP
 
     def get_energy_density_terms_FpcTP(p):
@@ -251,6 +254,9 @@ def calculate_scaling_factors(b):
             p, j], default=1, warning=True)
         iscale.constraint_scaling_transform(
             b.mole_frac_phase_comp_eq[p, j], sf)
+
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
 
 
 do_not_initialize = []

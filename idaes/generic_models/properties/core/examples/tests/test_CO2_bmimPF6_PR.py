@@ -26,7 +26,7 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core import Component, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 from idaes.generic_models.properties.core.generic.generic_property import (
@@ -42,7 +42,7 @@ from idaes.generic_models.properties.core.examples.CO2_bmimPF6_PR \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # Test for configuration dictionaries with parameters from Properties of Gases
@@ -158,7 +158,6 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_basic_scaling(self, model):
         model.fs.props[1].calculate_scaling_factors()
-        model.fs.props[1].scaling_factor.display()
 
         assert len(model.fs.props[1].scaling_factor) == 18
         assert model.fs.props[1].scaling_factor[
@@ -167,6 +166,15 @@ class TestStateBlock(object):
             model.fs.props[1].flow_mol_phase["Liq"]] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].flow_mol_phase["Vap"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase_comp[
+                "Liq", "bmimPF6"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase_comp[
+                "Liq", "carbon_dioxide"]] == 1e-2
+        assert model.fs.props[1].scaling_factor[
+            model.fs.props[1].flow_mol_phase_comp[
+                "Vap", "carbon_dioxide"]] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].mole_frac_comp["bmimPF6"]] == 1000
         assert model.fs.props[1].scaling_factor[
@@ -184,21 +192,15 @@ class TestStateBlock(object):
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].temperature] == 1e-2
         assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._teq] == 1e-2
-        assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._teq["Vap", "Liq"]] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._t1_Vap_Liq] == 1e-2
 
         assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._mole_frac_tbub] == 1000
-        assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1000
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._mole_frac_tbub[
                 "Vap", "Liq", "carbon_dioxide"]] == 1000
-        assert model.fs.props[1].scaling_factor[
-            model.fs.props[1].temperature_bubble] == 1e-2
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
 

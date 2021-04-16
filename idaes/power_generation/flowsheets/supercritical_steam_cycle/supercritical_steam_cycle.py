@@ -18,7 +18,7 @@ This model is for demonstration and tutorial purposes only. Before looking at th
 model, it may be useful to look at the process flow diagram (PFD).
 """
 
-__author__ = "John Eslick"
+__author__ = "John Eslick, Maojian Wang"
 
 # Import Python libraries
 from collections import OrderedDict
@@ -39,13 +39,14 @@ from idaes.power_generation.unit_models.helm import (
     HelmMixer,
     HelmIsentropicCompressor,
     HelmTurbineStage,
+    HelmNtuCondenser as Condenser
 )
 from idaes.power_generation.unit_models import FWH0D
 from idaes.generic_models.unit_models import (  # basic IDAES unit models, and enum
     HeatExchanger,
     MomentumMixingType,  # Enum type for mixer pressure calculation selection
 )
-from idaes.core.util import copy_port_values as _set_port  # for model intialization
+from idaes.core.util import get_solver, copy_port_values as _set_port  # for model intialization
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe  # as Pandas DataFrame
 
@@ -186,65 +187,34 @@ def create_model():
     # translate between the two property calculations, an extra port is added to
     # the mixer which contains temperature, pressure, and vapor fraction
     # quantities.
+    m.fs.condenser_mix._flow_mol_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].flow_mol)
+    m.fs.condenser_mix._temperature_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].temperature)
+    m.fs.condenser_mix._pressure_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].pressure)
+    m.fs.condenser_mix._vapor_frac_ref = pyo.Reference(
+        m.fs.condenser_mix.mixed_state[:].vapor_frac)
+
     m.fs.condenser_mix.outlet_tpx = Port(
         initialize={
-            "flow_mol": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].flow_mol),
-            "temperature": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].temperature),
-            "pressure": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].pressure),
-            "vapor_frac": pyo.Reference(
-                m.fs.condenser_mix.mixed_state[:].vapor_frac),
+            "flow_mol": m.fs.condenser_mix._flow_mol_ref,
+            "temperature": m.fs.condenser_mix._temperature_ref,
+            "pressure": m.fs.condenser_mix._pressure_ref,
+            "vapor_frac": m.fs.condenser_mix._vapor_frac_ref,
         }
     )
 
-    # Add the heat exchanger model for the condenser.
-    m.fs.condenser = HeatExchanger(
-        default={
-            "delta_temperature_callback": delta_temperature_underwood_callback,
-            "shell": {"property_package": m.fs.prop_water_tpx},
-            "tube": {"property_package": m.fs.prop_water},
-        }
-    )
-    m.fs.condenser.delta_temperature_out.fix(5)
-
-    # Everything condenses so the saturation pressure determines the condenser
-    # pressure. Deactivate the constraint that is used in the TPx version vapor
-    # fraction constraint and fix vapor fraction to 0.
-    m.fs.condenser.shell.properties_out[:].eq_complementarity.deactivate()
-    m.fs.condenser.shell.properties_out[:].vapor_frac.fix(0)
-
-    # There is some subcooling in the condenser, so we assume the condenser
-    # pressure is actually going to be slightly higher than the saturation
-    # pressure.
-    m.fs.condenser.pressure_over_sat = pyo.Var(
-        m.fs.time,
-        initialize=500,
-        doc="Pressure added to Psat in the condeser. This is to account for"
-        "some subcooling. (Pa)",
-        units=pyo.units.Pa
-    )
-    # Add a constraint for condenser pressure
-    @m.fs.condenser.Constraint(m.fs.time)
-    def eq_pressure(b, t):
-        return (
-            b.shell.properties_out[t].pressure
-            == b.shell.properties_out[t].pressure_sat + b.pressure_over_sat[t]
-        )
-
-    # Extra port on condenser to hook back up to pressure-enthalpy properties
-    m.fs.condenser.outlet_1_ph = Port(
-        initialize={
-            "flow_mol": pyo.Reference(
-                m.fs.condenser.shell.properties_out[:].flow_mol),
-            "pressure": pyo.Reference(
-                m.fs.condenser.shell.properties_out[:].pressure),
-            "enth_mol": pyo.Reference(
-                m.fs.condenser.shell.properties_out[:].enth_mol),
-        }
-    )
-
+    
+    # Add NTU condenser model
+    m.fs.condenser = Condenser(
+        default={"dynamic": False,
+                 "shell": {"has_pressure_change": False,
+                           "property_package": m.fs.prop_water},
+                 "tube": {"has_pressure_change": False,
+                          "property_package": m.fs.prop_water}
+                 })    
+    
     # Add the condenser hotwell.  In steady state a mixer will work.  This is
     # where makeup water is added if needed.
     m.fs.hotwell = HelmMixer(
@@ -487,12 +457,15 @@ def create_model():
     m.fs.EXHST_MAIN = Arc(
         source=m.fs.turb.outlet_stage.outlet, destination=m.fs.condenser_mix.main
     )
+    
     m.fs.condenser_mix_to_condenser = Arc(
-        source=m.fs.condenser_mix.outlet_tpx, destination=m.fs.condenser.inlet_1
+        source=m.fs.condenser_mix.outlet, destination=m.fs.condenser.inlet_1
     )
+    
     m.fs.COND_01 = Arc(
-        source=m.fs.condenser.outlet_1_ph, destination=m.fs.hotwell.condensate
+        source=m.fs.condenser.outlet_1, destination=m.fs.hotwell.condensate
     )
+
     m.fs.COND_02 = Arc(source=m.fs.hotwell.outlet, destination=m.fs.cond_pump.inlet)
     ############################################################################
     #  Low pressure FWHs                                                       #
@@ -682,16 +655,12 @@ def set_model_input(m):
     ############################################################################
     #  Condenser section inputs                                                #
     ############################################################################
-    # cooling water
     m.fs.condenser.inlet_2.flow_mol.fix(2500000)
     m.fs.condenser.inlet_2.enth_mol.fix(1700)
     m.fs.condenser.inlet_2.pressure.fix(500000)
-    # Condenser
-    m.fs.condenser.pressure_over_sat.fix(100)
-    m.fs.condenser.delta_temperature_out.fix(3)
-    m.fs.condenser.area.fix(2.2e4)
-    m.fs.condenser.area.unfix()  # to make solving easier, specifying approach
-    m.fs.condenser.overall_heat_transfer_coefficient.fix(2000)
+    m.fs.condenser.area.fix(13000)
+    m.fs.condenser.overall_heat_transfer_coefficient.fix(15000)
+
     m.fs.hotwell.makeup.flow_mol[:].value = 1 # don't fix is calculated
     m.fs.hotwell.makeup.enth_mol.fix(2500)
     m.fs.hotwell.makeup.pressure.fix(101325)
@@ -779,14 +748,37 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
 
-    iscale.calculate_scaling_factors(m)
+    #set scaling factors
 
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-        "tol": 1e-7,
-        "linear_solver": "ma27",
-        "max_iter": 40,
-    }
+    iscale.set_scaling_factor(m.fs.condenser.side_1.heat, 1e-9)
+    iscale.set_scaling_factor(m.fs.condenser.side_2.heat, 1e-9)
+
+    iscale.set_scaling_factor(m.fs.fwh1.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh1.condense.side_2.heat, 1e-7)
+
+    iscale.set_scaling_factor(m.fs.fwh2.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh2.condense.side_2.heat, 1e-7)
+
+    iscale.set_scaling_factor(m.fs.fwh3.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh3.condense.side_2.heat, 1e-7)
+
+    iscale.set_scaling_factor(m.fs.fwh4.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh4.condense.side_2.heat, 1e-7)
+    
+    iscale.set_scaling_factor(m.fs.fwh6.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh6.condense.side_2.heat, 1e-7)
+    
+    iscale.set_scaling_factor(m.fs.fwh7.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh7.condense.side_2.heat, 1e-7)
+    
+    iscale.set_scaling_factor(m.fs.fwh8.condense.side_1.heat, 1e-7)
+    iscale.set_scaling_factor(m.fs.fwh8.condense.side_2.heat, 1e-7)
+
+    iscale.calculate_scaling_factors(m)
+    
+    
+    solver = get_solver()
+
     if fileinput is not None:
         init_log.info("Loading initial values from file: {}".format(fileinput))
         ms.from_json(m, fname=fileinput)
@@ -851,22 +843,14 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     _set_port(m.fs.condenser_mix.bfpt, m.fs.bfpt.outlet)
     m.fs.condenser_mix.initialize(outlvl=outlvl, optarg=solver.options)
     # initialize condenser hx
-    _set_port(m.fs.condenser.inlet_1, m.fs.condenser_mix.outlet_tpx)
+
+    _set_port(m.fs.condenser.inlet_1, m.fs.condenser_mix.outlet)
     _set_port(m.fs.condenser.outlet_2, m.fs.condenser.inlet_2)
-    # This still has the outlet vapor fraction fixed at 0, so if that isn't
-    # true for the initial pressure guess this could fail to initialize
-    m.fs.condenser.inlet_1.fix()
-    m.fs.condenser.inlet_1.pressure.unfix()
-    with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-        res = solver.solve(m.fs.condenser, tee=slc.tee)
-    init_log.info("Condenser initialized: {}".format(idaeslog.condition(res)))
-    init_log.info_high("Init condenser pressure: {}".format(
-            m.fs.condenser.shell.properties_in[0].pressure.value
-        )
-    )
-    m.fs.condenser.inlet_1.unfix()
+    m.fs.condenser.initialize(outlvl=outlvl, optarg=solver.options)
+    
     # initialize hotwell
-    _set_port(m.fs.hotwell.condensate, m.fs.condenser.outlet_1_ph)
+    _set_port(m.fs.hotwell.condensate, m.fs.condenser.outlet_1)
+    
     m.fs.hotwell.initialize(outlvl=outlvl, optarg=solver.options)
     m.fs.hotwell.condensate.unfix()
     # initialize condensate pump

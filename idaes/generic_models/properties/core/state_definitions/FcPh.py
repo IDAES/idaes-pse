@@ -23,6 +23,8 @@ from idaes.core import (MaterialFlowBasis,
 
 from idaes.generic_models.properties.core.state_definitions.FTPx import (
     state_initialization)
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
 from idaes.core.util.exceptions import ConfigurationError
@@ -124,12 +126,25 @@ def define_state(b):
         doc='Phase mole fractions',
         units=None)
 
+    def Fpc_expr(b, p, j):
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(
+        b.phase_component_set,
+        rule=Fpc_expr,
+        doc='Phase-component molar flowrates')
+
     b.phase_frac = Var(
         b.phase_list,
         initialize=1/len(b.phase_list),
         bounds=(0, None),
         doc='Phase fractions',
         units=None)
+
+    # Add electrolye state vars if required
+    # This must occur before adding the enthalpy constraint, as it needs true
+    # species mole fractions
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
 
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):
@@ -218,10 +233,7 @@ def define_state(b):
     # General Methods
     def get_material_flow_terms_FcPh(p, j):
         """Create material flow terms for control volume."""
-        if j in b.component_list:
-            return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.flow_mol_phase_comp[p, j]
     b.get_material_flow_terms = get_material_flow_terms_FcPh
 
     def get_enthalpy_flow_terms_FcPh(p):
@@ -231,10 +243,7 @@ def define_state(b):
 
     def get_material_density_terms_FcPh(p, j):
         """Create material density terms."""
-        if j in b.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
     b.get_material_density_terms = get_material_density_terms_FcPh
 
     def get_energy_density_terms_FcPh(p):
@@ -389,6 +398,9 @@ def calculate_scaling_factors(b):
                 b.sum_mole_frac[p], sf_mf)
             iscale.constraint_scaling_transform(
                 b.phase_fraction_constraint[p], sf_fp)
+
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
 
 
 # Inherit state_initialization from FTPX form, as the process is the same

@@ -38,6 +38,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 from idaes.core.util.constants import Constants as const
 
 
@@ -614,7 +615,7 @@ see property package for documentation.}"""))
             self.energy_accumulation_metal[0].fix(0)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg={}):
         '''
         Waterwall section initialization routine.
 
@@ -631,9 +632,9 @@ see property package for documentation.}"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -641,8 +642,8 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         flags = blk.control_volume.initialize(
             outlvl=outlvl,
