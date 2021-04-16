@@ -433,7 +433,7 @@ class TestStateBlockSymmetric(object):
                                  "Liq", "OH-"]))
 
                 assert model.state[1].Liq_log_gamma_pdh[j].expr == (
-                    model.state[1].Liq_A_DH * (
+                    -model.state[1].Liq_A_DH * (
                         (2*model.params.get_component(j).config.charge**2 /
                          14.9) *
                         log((1+14.9*model.state[1].Liq_ionic_strength**0.5) /
