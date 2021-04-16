@@ -56,7 +56,7 @@ This toolbox has two core functions:
 
 2. **quantify_propagate_uncertainty**: Given an IDAES (Pyomo) regression model and data, first estimate parameters :math:`p` and covariance :math:`\Sigma_p`. Then given a second IDAES (Pyomo) process model, estimate :math:`\text{Var}[f(x^*,p)]`.
 
-The following example shows the usage of **quantify_propagate_uncertainty** with an example from Rooney and Biegler [2].
+The following example shows the usage of **quantify_propagate_uncertainty** for a reaction kinetic problem from Rooney and Biegler [2].
 
 .. code:: python
 
@@ -108,15 +108,16 @@ The following example shows the usage of **quantify_propagate_uncertainty** with
     
 
 
-Here **rooney_biegler_model** is a Python function that generates an instance of the Pyomo regression model using the input Pandas DataFrame **data**. The function **rooney_biegler_model** should have parameters with the name, **variable_name** to be estimated. The **rooney_biegler_model** is used to estimate parameters by minimizing a given **obj_function**. An example of **obj_function** is the SSE (the sum of squares error). Some outputs are generated in this step. The **results.obj** is an objective function value for the given **obj_function**, the **theta** is estimated parameters, and the **results.cov** is the covariance matrix of **results.theta**.
+The Python function **rooney_biegler_model** generates a Pyomo regression model using the input Pandas DataFrame **data**. This model contains the attributes ``asymptote`` and ``rate_constant`` which are the parameters :math:`p` to be estimated by minimizing the sum of squared errors (SSE). The list **variable_name** contains strings with these attribute names.
 
-The **rooney_biegler_model_opt** is a python function that generates an instance of the Pyomo model or Pyomo ConcreteModel. The objective functions and constraints of **rooney_biegler_model_opt** can include variables with the name, **variable_name**. Note that **rooney_biegler_model_opt** requires an objective function in the model. If the model is not an optimization problem, the objection function can be an arbitrary number, e.g 0. The variable **results.theta_names** are automatically fixed with the estimated **results.theta**. Then, the Pyomo model is solved with the ipopt solver.
-The gradients vector of the objective function
-and the gradients vectors constraints with respect 
-to **variable_name**  are calculated at the optimal solution with the k_aug.  
-The :math:`\frac{\partial f}{\partial asymptote} \text{ and } \frac{\partial f }{\partial rate\_constant}` are in **results.gradient_f_dic**.
-The :math:`\frac{\partial asymptote}{\partial asymptote},\frac{\partial rate\_constant}{\partial asymptote},\frac{\partial asymptote}{\partial rate\_constant}, \text{ and } \frac{\partial rate\_constant}{\partial rate\_constant}` are in **results.dsdp_dic**.
-Finally, the error propagation of the objective function (**results.propagation_f**) is calculated.
+Similarly, the Python function **rooney_biegler_model_opt** returns a conrete Pyomo model which the process optimize problem. This specific example has no degrees of freedom (once :math:`p` is specified); the objective function computes the product concentration at time 10.
+
+The function **quantify_propagate_uncertainty** returns the object **results** which contains several important attributes:
+* **results.theta_names** contains the names of parameters :math:`p`
+* **results.theta** contains the estimate values for parameters :math:`p`
+* **results.gradient_f_dic** contains the gradients :math:`\frac{\partial f}{\partial asymptote} \text{ and } \frac{\partial f }{\partial rate\_constant}`
+* **results.dsdp_dic** contains the gradients :math:`\frac{\partial asymptote}{\partial asymptote},\frac{\partial rate\_constant}{\partial asymptote},\frac{\partial asymptote}{\partial rate\_constant}, \text{ and } \frac{\partial rate\_constant}{\partial rate\_constant}`
+**results.propagation_f** contains the estimate variance of the objective function 
 
 Available Functions
 -------------------
