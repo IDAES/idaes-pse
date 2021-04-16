@@ -28,7 +28,8 @@ logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
 def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, 
                  tee=False, diagnostic_mode=False, solver_options=None):
-    """This function calculates error propagation of the objective function and constraints. 
+    """
+    This function calculates error propagation of the objective function and constraints. 
     The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 
     'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' 
     calculates error propagation of objective function and constraints in the 'model_uncertain'.    
@@ -58,7 +59,6 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     Returns
     -------
     results : namedtuple
-    
         results.obj: float
             objective function value for the given obj_function 
         results.theta_out: dictionary
@@ -66,8 +66,8 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         results.cov: numpy.ndarray
             Covariance of theta_out
         results.gradient_f_dic: numpy.ndarray 
-            gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution 
-            with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
+            gradient of the objective function with respect to the (decision variables, parameters) 
+            at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
         results.gradient_c_dic: numpy.ndarray
             gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution
             with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}
@@ -95,6 +95,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     Warnings
         When an element of theta_names includes a space
     """
+
     if not isinstance(tee, bool):
         raise TypeError('tee  must be boolean.')
     if not isinstance(diagnostic_mode, bool):
@@ -122,7 +123,8 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     return results
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
-    """This function calculates gradient vector, expectation, and variance of the objective function and constraints
+    """
+    This function calculates gradient vector, expectation, and variance of the objective function and constraints
     of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates 
     error propagation of the objective function and constraints by using gradient vector and covariance matrix. 
     
@@ -138,7 +140,8 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         List of estimated Var names
     var_dic: dictionary
         If any original variable contains "'", need an auxiliary dictionary  with keys theta_namess without "'", values with "'".
-        e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
+        e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 
+                       'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
     tee: bool, optional
         Indicates that ef solver output should be teed
     solver_options: dict, optional
@@ -170,6 +173,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     Exception
         When model_uncertain is neither 'ConcreteModel' nor 'function'.
     """
+
     # define Pyomo model
     if type(model_uncertain).__name__ == 'ConcreteModel':
         model = model_uncertain
@@ -256,8 +260,10 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
 
 def clean_variable_name(theta_names):
-    """This function removes all ' and spaces in theta_names.
-    Note: The  current theta_est(calc_cov=True) of parmest in Pyomo doesn't allow ' and spaces in the variable names.
+    """
+    This function removes all ' and spaces in theta_names.
+    Note: The  current theta_est(calc_cov=True) of parmest 
+          in Pyomo doesn't allow ' and spaces in the variable names.
        
     Parameters
     ----------
@@ -271,6 +277,7 @@ def clean_variable_name(theta_names):
     var_dic: dict
        dictionary with keys converted theta_names and values origianl theta_names 
     """
+
     # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
     # Save original variables name in to var_dic
     # Remove all "'" and " " in theta_names
