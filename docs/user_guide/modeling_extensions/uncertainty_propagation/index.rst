@@ -8,39 +8,40 @@ The uncertainty_propagation module quantifies and propagates parametric uncertai
 Consider the optimization problem:
 
 .. math::
-
-   \mathrm{minimize} \ \ f(x,p)
-
-    \ \ \ s.t \ \ \ \ \ \ \ \ \ c(x,p) = 0 
-
-   \ \ \ \ \ \ \ \ \  \ \ \ \  \ \ \ x_{lb} \leq x \leq x_{ub}
+    :nowrap:
+    
+    \begin{align*}
+        \mathrm{minimize} ~~ & f(x,p) \\
+        \mathrm{s.t.} \quad ~ & c(x,p) = 0 \\
+        & x_{lb} \leq x \leq x_{ub}
+    \end{align*}
 
 Here :math:`x \in \mathcal{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathcal{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}^{k\ \times\ 1}` are the constraints, and :math:`x_{lb}` and :math:`x_{ub}` are the lower and upper bounds, respectively.
 
-Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty represented with covariance matrix :math:`\Sigma_p`. This toolbox estimates the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` induced by uncertainty in :math:`p^*`.
+Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty represented with covariance matrix :math:`\Sigma_p`. This toolbox estimates the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` induced by uncertainty in :math:`p`.
 
 Based on a first-order error propagation formula, the variance of the objective function is:
 
 .. math::
 
-    \text{Var}[f(x^*,p^*)] = \frac{\partial f}{\partial p}  \Sigma_p  \frac{\partial f}{\partial p}^T + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial f}{\partial x}^T 
+    \text{Var}[f(x^*,p)] = \frac{\partial f}{\partial p}  \Sigma_p  \frac{\partial f}{\partial p}^T + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial f}{\partial x}^T 
 
 
-Likewise, the variance in constraint $k$ is:
+Likewise, the variance in constraint :math:`k` is:
 
 .. math::
 
-    \text{Var}[c_k(x^*,p^*)] = \frac{\partial c_k}{\partial p}  \Sigma_p  \frac{\partial c_k}{\partial p}^T + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_k}{\partial x}^T
+    \text{Var}[c_k(x^*,p)] = \frac{\partial c_k}{\partial p}  \Sigma_p  \frac{\partial c_k}{\partial p}^T + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_k}{\partial x}^T
     
 Note that :math:`\text{Var}[c_k(x^*,p^*)] \approx 0` because the constraints remain feasible for a small perturbation in :math:`p`, i.e.,  :math:`c(x,p) = 0`.
 
-All gradients are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1]. More specifically, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}`, are computed via automatic differentiation whereas :math:`\frac{\partial x}{\partial p}` are computed via nonlinear programming sensitivity theory.
+All gradients are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1]. More specifically, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}` evaluated at :math:`(x^*, p)` are computed via automatic differentiation whereas :math:`\frac{\partial x}{\partial p}` are computed via nonlinear programming sensitivity theory.
 
-The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with ParmEst). 
+The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with `Pyomo.ParmEst`). 
 
 **Dependencies**
 
-`k_aug <https://github.com/dthierry/k_aug>`_ [1] is required to use uncertainty_propagation module. If you have the IDAES framework installed, you can get k_aug with the IDAES extensions by running the following command:
+`k_aug <https://github.com/dthierry/k_aug>`_ [1] is required to use uncertainty_propagation module. If you have the IDAES framework installed, you can get `k_aug` with the IDAES extensions by running the following command:
 
 .. code-block:: python
 
@@ -48,9 +49,14 @@ The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via r
 
 Basic Usage
 ------------
-The ``uncertainty_propagation``'s main function is **quantify_propagate_uncertainty**. The quantify_propagate_uncertainty python function can have eight arguments and returns a namedtuple output. 
 
-The following example shows a usage of **quantify_propagate_uncertainty** with a Rooney and Biegler model [2].
+This toolbox has two core functions:
+
+1. **propagate_uncertainty**: Given an IDAES (Pyomo) process model with parameters :math:`p` and covariance :math:`\Sigma_p`, estimate :math:`\text{Var}[f(x^*,p)]`.
+
+2. **quantify_propagate_uncertainty**: Given an IDAES (Pyomo) regression model and data, first estimate parameters :math:`p` and covariance :math:`\Sigma_p`. Then given a second IDAES (Pyomo) process model, estimate :math:`\text{Var}[f(x^*,p)]`.
+
+The following example shows the usage of **quantify_propagate_uncertainty** with an example from Rooney and Biegler [2].
 
 .. code:: python
 
@@ -102,7 +108,7 @@ The following example shows a usage of **quantify_propagate_uncertainty** with a
     
 
 
-, where the **rooney_biegler_model** is a python function that generates an instance of the Pyomo model using **data** as the input argument. The **rooney_biegler_model** should have parameters with the name, **variable_name** to be estimated. The **rooney_biegler_model** is used to estimate parameters by minimizing a given **obj_function**. An example of **obj_function** is the SSE (the sum of squares error). Some outputs are generated in this step. The **results.obj** is an objective function value for the given **obj_function**, the **theta** is estimated parameters, and the **results.cov** is the covariance matrix of **results.theta**.
+Here **rooney_biegler_model** is a Python function that generates an instance of the Pyomo regression model using the input Pandas DataFrame **data**. The function **rooney_biegler_model** should have parameters with the name, **variable_name** to be estimated. The **rooney_biegler_model** is used to estimate parameters by minimizing a given **obj_function**. An example of **obj_function** is the SSE (the sum of squares error). Some outputs are generated in this step. The **results.obj** is an objective function value for the given **obj_function**, the **theta** is estimated parameters, and the **results.cov** is the covariance matrix of **results.theta**.
 
 The **rooney_biegler_model_opt** is a python function that generates an instance of the Pyomo model or Pyomo ConcreteModel. The objective functions and constraints of **rooney_biegler_model_opt** can include variables with the name, **variable_name**. Note that **rooney_biegler_model_opt** requires an objective function in the model. If the model is not an optimization problem, the objection function can be an arbitrary number, e.g 0. The variable **results.theta_names** are automatically fixed with the estimated **results.theta**. Then, the Pyomo model is solved with the ipopt solver.
 The gradients vector of the objective function
