@@ -106,7 +106,6 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         propagation_c(dictionary) : Error propagation in the constraints with the dictionary keys, 'constraints r' where r is the line number. If no constraint includes uncertain parameters, return an empty dictionary      
 
     Raises:
-    ------
         Exception:  When model_uncertain is neither 'ConcreteModel' nor 'function'.
         
     """
