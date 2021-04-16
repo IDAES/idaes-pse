@@ -32,7 +32,7 @@ from idaes.core import (MaterialBalanceType,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -46,7 +46,7 @@ from idaes.generic_models.properties.core.examples.BT_ideal \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestParamBlock(object):
@@ -193,13 +193,33 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_basic_scaling(self, model):
-
-        assert len(model.props[1].scaling_factor) == 24
+        model.props[1].scaling_factor.display()
+        assert len(model.props[1].scaling_factor) == 23
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tbub["Vap", "Liq", "benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tbub["Vap", "Liq", "toluene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tdew["Vap", "Liq", "benzene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._mole_frac_tdew["Vap", "Liq", "toluene"]] == 1000
+        assert model.props[1].scaling_factor[
+            model.props[1]._t1_Vap_Liq] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1]._teq["Vap", "Liq"]] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].flow_mol_phase["Liq"]] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].flow_mol_phase["Vap"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Liq", "benzene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Liq", "toluene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Vap", "benzene"]] == 1e-2
+        assert model.props[1].scaling_factor[
+            model.props[1].flow_mol_phase_comp["Vap", "toluene"]] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].mole_frac_comp["benzene"]] == 1000
         assert model.props[1].scaling_factor[
@@ -215,30 +235,8 @@ class TestStateBlock(object):
         assert model.props[1].scaling_factor[model.props[1].pressure] == 1e-5
         assert model.props[1].scaling_factor[
             model.props[1].temperature] == 1e-2
-        assert model.props[1].scaling_factor[model.props[1]._teq] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1]._teq["Vap", "Liq"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1]._t1_Vap_Liq] == 1e-2
-
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tbub] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tbub["Vap", "Liq", "benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tbub["Vap", "Liq", "toluene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tdew] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tdew["Vap", "Liq", "benzene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1]._mole_frac_tdew["Vap", "Liq", "toluene"]] == 1000
-        assert model.props[1].scaling_factor[
-            model.props[1].temperature_bubble] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].temperature_bubble["Vap", "Liq"]] == 1e-2
-        assert model.props[1].scaling_factor[
-            model.props[1].temperature_dew] == 1e-2
         assert model.props[1].scaling_factor[
             model.props[1].temperature_dew["Vap", "Liq"]] == 1e-2
 

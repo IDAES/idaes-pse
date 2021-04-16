@@ -42,18 +42,13 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             propagate_state,
                                             solve_indexed_blocks,
                                             initialize_by_time_element)
+from idaes.core.util import get_solver
 
 __author__ = "Andrew Lee"
 
 
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
-else:
-    solver = None
+# Set up solver
+solver = get_solver()
 
 
 @declare_process_block_class("AqueousEnzymeParameterBlock")

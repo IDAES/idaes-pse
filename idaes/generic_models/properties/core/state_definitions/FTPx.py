@@ -14,8 +14,9 @@
 Methods for setting up FTPx as the state variables in a generic property
 package
 """
+
 from pyomo.environ import \
-    Constraint, NonNegativeReals, Var, value, units as pyunits
+    Constraint, Expression, NonNegativeReals, Var, value, units as pyunits
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -24,7 +25,10 @@ from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config, get_method, GenericPropertyPackageError
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
+
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -110,12 +114,23 @@ def define_state(b):
         doc='Phase mole fractions',
         units=None)
 
+    def Fpc_expr(b, p, j):
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(
+        b.phase_component_set,
+        rule=Fpc_expr,
+        doc='Phase-component molar flowrates')
+
     b.phase_frac = Var(
         b.phase_list,
         initialize=1/len(b.phase_list),
         bounds=(0, None),
         doc='Phase fractions',
         units=None)
+
+    # Add electrolye state vars if required
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
 
     # Add supporting constraints
     if b.config.defined_state is False:
@@ -194,10 +209,7 @@ def define_state(b):
     # General Methods
     def get_material_flow_terms_FTPx(p, j):
         """Create material flow terms for control volume."""
-        if j in b.component_list:
-            return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.flow_mol_phase_comp[p, j]
     b.get_material_flow_terms = get_material_flow_terms_FTPx
 
     def get_enthalpy_flow_terms_FTPx(p):
@@ -207,10 +219,7 @@ def define_state(b):
 
     def get_material_density_terms_FTPx(p, j):
         """Create material density terms."""
-        if j in b.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
+        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
     b.get_material_density_terms = get_material_density_terms_FTPx
 
     def get_energy_density_terms_FTPx(p):
@@ -250,8 +259,9 @@ def define_state(b):
 def state_initialization(b):
     for p in b.phase_list:
         # Start with phase mole fractions equal to total mole fractions
-        for j in b.components_in_phase(p):
-            b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
+        for j in b.component_list:
+            if (p, j) in b.phase_component_set:
+                b.mole_frac_phase_comp[p, j].value = b.mole_frac_comp[j].value
 
         b.flow_mol_phase[p].value = value(
                         b.flow_mol / len(b.phase_list))
@@ -472,8 +482,8 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
-                b.mole_frac_phase_comp[j], default=1e3, warning=True)
+            sf_j = iscale.get_scaling_factor(
+                b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j)
 
@@ -483,7 +493,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j*sf_flow)
@@ -498,7 +508,7 @@ def calculate_scaling_factors(b):
         iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
 
         for j in b.component_list:
-            sf_j = sf_mf = iscale.get_scaling_factor(
+            sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_j*sf_flow)
@@ -508,6 +518,9 @@ def calculate_scaling_factors(b):
                 b.sum_mole_frac[p], sf_mf)
             iscale.constraint_scaling_transform(
                 b.phase_fraction_constraint[p], sf_flow)
+
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
 
 
 do_not_initialize = ["sum_mole_frac_out"]

@@ -18,30 +18,24 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory, value
+from pyomo.environ import ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType
+from idaes.core.util import get_solver
 
 # Set module level pyest marker
 pytestmark = pytest.mark.iapws
 prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
+# set up solver
+solver = get_solver()
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_ph_mixed_byphase():
     """Test mixed phase form with P-H state vars and phase mass balances
@@ -71,9 +65,6 @@ def test_heater_ph_mixed_byphase():
         0.4046781, rel=1e-4)
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_phmixed_mixed_total():
     """Test mixed phase form with P-H state vars and total mass balances
@@ -104,9 +95,6 @@ def test_heater_phmixed_mixed_total():
         0.4046781, rel=1e-4)
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_ph_lg_total():
     """Test liquid/vapor form with P-H state vars and total mass balances
@@ -137,9 +125,6 @@ def test_heater_ph_lg_total():
         0.4046781, rel=1e-4)
 
 
-@pytest.mark.initialize
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_ph_lg_phase():
     """Test liquid/vapor form with P-H state vars and phase mass balances
@@ -164,9 +149,6 @@ def test_heater_ph_lg_phase():
     assert degrees_of_freedom(m) == -1
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_ph_l_phase_two():
     """Test liquid phase only form with P-H state vars and phase mass balances
@@ -199,9 +181,6 @@ def test_heater_ph_l_phase_two():
     assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_ph_l_phase():
     """Test liquid phase only form with P-H state vars and phase mass balances
@@ -230,9 +209,6 @@ def test_heater_ph_l_phase():
     assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_ph_g_phase():
     """Test vapor phase only form with P-H state vars and phase mass balances
@@ -261,9 +237,6 @@ def test_heater_ph_g_phase():
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-6
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_tpx_g_phase():
     """Test vapor phase only form with T-P-x state vars and phase mass balances
@@ -295,9 +268,6 @@ def test_heater_tpx_g_phase():
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-6
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_tpx_lg_total():
     """Test liquid/vapor form with T-P-x state vars and total mass balances. In
@@ -333,9 +303,6 @@ def test_heater_tpx_lg_total():
         0.4046781, rel=1e-4)
 
 
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_tpx_lg_total_2():
     """Test liquid/vapor form with T-P-x state vars and total mass balances. In
@@ -368,8 +335,6 @@ def test_heater_tpx_lg_total_2():
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-2
 
 
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_heater_tpx_lg_phase():
     """Test liquid/vapor form with T-P-x state vars and phase mass balances.
