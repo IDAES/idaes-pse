@@ -31,7 +31,7 @@ from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
 from idaes.core import declare_process_block_class
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 
 # Dummy class to use for Psat calls
@@ -69,8 +69,8 @@ def frame():
                 "components": {
                     "H2O": {"pressure_sat_comp": pressure_sat_comp},
                     "EtOH": {"pressure_sat_comp": pressure_sat_comp}},
-                "phases": {"Liq": {"equation_of_state": dummy_eos},
-                           "Vap": {"equation_of_state": dummy_eos}},
+                "phases": {"Liq": {"equation_of_state": DummyEoS},
+                           "Vap": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
