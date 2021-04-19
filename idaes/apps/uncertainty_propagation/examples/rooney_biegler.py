@@ -41,10 +41,6 @@ def rooney_biegler_model(data):
         return expr
     model.response_function = pyo.Expression(data.hour, rule = response_rule)
     
-    def SSE_rule(m):
-        return sum((data.y[i] - m.response_function[data.hour[i]])**2 for i in data.index)
-    model.SSE = pyo.Objective(rule = SSE_rule, sense=pyo.minimize)
-    
     return model
 
 
