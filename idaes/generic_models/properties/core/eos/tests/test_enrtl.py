@@ -308,11 +308,11 @@ class TestStateBlockSymmetric(object):
                     str(model.state[1].Liq_X[j]._expr) ==
                     str(model.state[1].mole_frac_phase_comp_true["Liq", j]))
             else:
-                # _X should be mutiplied by charge
+                # _X should be mutiplied by |charge|
                 assert (
                     str(model.state[1].Liq_X[j]._expr) ==
                     str(model.state[1].mole_frac_phase_comp_true["Liq", j] *
-                        model.params.get_component(j).config.charge))
+                        abs(model.params.get_component(j).config.charge)))
 
         assert isinstance(model.state[1].Liq_X_ref, Expression)
         assert len(model.state[1].Liq_X_ref) == 6
@@ -321,11 +321,11 @@ class TestStateBlockSymmetric(object):
                 # _X should be mole_frac_phase_comp_true
                 assert model.state[1].Liq_X_ref[j]._expr == 0
             else:
-                # _X should be mutiplied by charge
+                # _X should be mutiplied by |charge|
                 assert (
                     str(model.state[1].Liq_X_ref[j]._expr) ==
                     str(model.state[1].Liq_x_ref[j] *
-                        model.params.get_component(j).config.charge))
+                        abs(model.params.get_component(j).config.charge)))
 
         assert isinstance(model.state[1].Liq_Y, Expression)
         assert len(model.state[1].Liq_Y) == 4
@@ -480,6 +480,13 @@ class TestStateBlockSymmetric(object):
                 assert model.state[1].Liq_log_gamma_lc[k].expr == (
                     model.state[1].Liq_log_gamma_lc_I[k] -
                     model.state[1].Liq_log_gamma_lc_I0[k])
+
+        assert isinstance(model.state[1].Liq_log_gamma, Expression)
+        assert len(model.state[1].Liq_log_gamma) == 6
+        for k, v in model.state[1].Liq_log_gamma.items():
+            assert model.state[1].Liq_log_gamma[k].expr == (
+                model.state[1].Liq_log_gamma_pdh[k] +
+                model.state[1].Liq_log_gamma_lc[k])
 
     @pytest.mark.unit
     def test_alpha(self, model):

@@ -113,7 +113,7 @@ class TestStateBlockSymmetric(object):
         assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
             1e-12, rel=1e-8)
         assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
-            -1e-12, rel=1e-8)
+            1e-12, rel=1e-8)
 
         for v in model.state[1].Liq_Y.values():
             assert value(v) == pytest.approx(1, rel=1e-8)
@@ -168,7 +168,7 @@ class TestStateBlockSymmetric(object):
         assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
             0.5, rel=1e-8)
         assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
-            -0.5, rel=1e-8)
+            0.5, rel=1e-8)
         assert value(model.state[1].Liq_X["H2O"]) == pytest.approx(
             value(model.state[1].Liq_X_ref["H2O"]), rel=1e-8)
         assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
@@ -211,30 +211,53 @@ class TestStateBlockSymmetric(object):
                 pytest.approx(0, abs=1e-10))
 
         assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
-                pytest.approx(exp(-0.2*-4.541)*-4.541, abs=1e-10))
+                pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_lc_I0["Na+"]) ==
-                pytest.approx(exp(-0.2*-4.541)*-4.541, abs=1e-10))
+                pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
-                value(model.state[1].Liq_log_gamma_lc_I0["Na+"]))
-
+                pytest.approx(value(model.state[1].Liq_log_gamma_lc_I0["Na+"]),
+                              abs=1e-12))
         assert (value(model.state[1].Liq_log_gamma_lc["Na+"]) ==
+                pytest.approx(0, abs=1e-10))
+
+        assert (value(model.state[1].Liq_log_gamma["Na+"]) ==
                 pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_pdh["Na+"] +
                       model.state[1].Liq_log_gamma_lc["Na+"]) ==
-                pytest.approx(0, abs=1e-10))
+                pytest.approx(model.state[1].Liq_log_gamma["Na+"], abs=1e-10))
 
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
 
         assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
-                pytest.approx(-exp(-0.2*-4.541)*-4.541, abs=1e-10))
+                pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]) ==
-                pytest.approx(-exp(-0.2*-4.541)*-4.541, abs=1e-10))
+                pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
-                value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]))
-
+                pytest.approx(value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]),
+                              abs=1e-12))
         assert (value(model.state[1].Liq_log_gamma_lc["Cl-"]) ==
+                pytest.approx(0, abs=1e-10))
+
+        assert (value(model.state[1].Liq_log_gamma["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"] +
                       model.state[1].Liq_log_gamma_lc["Cl-"]) ==
-                pytest.approx(0, abs=1e-10))
+                pytest.approx(model.state[1].Liq_log_gamma["Cl-"], abs=1e-10))
+
+    @pytest.mark.unit
+    def test_pure_1molal(self, model):
+        # 1kg H20 = 55.55 mol, 1 mol Na+, 1 mol Cl-, total = 57.55 mol
+        w = 1000/18  # mol H2O per kg H2O
+        # Test pure NaCl
+        model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+            w/(w+2))
+        model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(1/(w+2))
+        model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(1/(w+2))
+
+        assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
+            0.01737451737, rel=1e-8)
+
+        model.state[1].Liq_log_gamma.display()
+
+        assert False

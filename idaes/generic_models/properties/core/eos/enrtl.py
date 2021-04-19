@@ -19,6 +19,9 @@ Reference:
 
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
+
+Noe that "charge number" in the paper referes to the absolute value of the
+ionic charge.
 """
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
@@ -149,7 +152,7 @@ class ENRTL(EoSBase):
                 return Expression.Skip
             elif j in b.params.cation_set or j in b.params.anion_set:
                 return (b.mole_frac_phase_comp_true[pname, j] *
-                        cobj(b, j).config.charge)
+                        abs(cobj(b, j).config.charge))
             else:
                 return b.mole_frac_phase_comp_true[pname, j]
 
@@ -163,7 +166,7 @@ class ENRTL(EoSBase):
             if (pname, j) not in b.params.true_phase_component_set:
                 return Expression.Skip
             elif j in b.params.cation_set or j in b.params.anion_set:
-                return (x[j]*cobj(b, j).config.charge)
+                return (x[j]*abs(cobj(b, j).config.charge))
             else:
                 return 0
 
@@ -249,7 +252,7 @@ class ENRTL(EoSBase):
                 return (2*A*I**(3/2)/(1+rho*I**(1/2)))
             elif j in b.params.ion_set:
                 # Eqn 70
-                z = cobj(b, j).config.charge
+                z = abs(cobj(b, j).config.charge)
                 return (-A*((2*z**2/rho) *
                             log((1+rho*I**0.5)/(1+rho*I0**0.5)) +
                             (z**2*I**0.5 - 2*I**(3/2)) / (1+rho*I**0.5) -
@@ -478,9 +481,16 @@ class ENRTL(EoSBase):
 
         # Overall log gamma
         def rule_log_gamma(b, j):
-            pdh = getattr(pname, +"_log_gamma_pdh")
-            lc = getattr(pname, +"_log_gamma_lc")
-            return pdh + lc
+            pdh = getattr(b, pname+"_log_gamma_pdh")
+            lc = getattr(b, pname+"_log_gamma_lc")
+            return pdh[j] + lc[j]
+
+        b.add_component(
+            pname+"_log_gamma",
+            Expression(
+                b.params.true_species_set,
+                rule=rule_log_gamma,
+                doc="Log of activity coefficient"))
 
     @staticmethod
     def calculate_scaling_factors(b, pobj):
@@ -523,20 +533,13 @@ def log_gamma_lc(b, pname, s, X, G, tau):
         c = s
         Z = b.params.get_component(c).config.charge
 
-        def molecular_contribution(m):
-            if X[m] != 0:
-                return ((X[m]*G[c, m] /
-                        sum(X[i]*G[i, m] for i in aqu_species)) *
-                        (tau[c, m] -
-                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
-                          sum(X[i]*G[i, m] for i in aqu_species))))
-            else:
-                # Limiting case for symmetric reference state
-                return G[c, m]*tau[c, m]
-
         # Eqn 26
         return Z*(
-            sum(molecular_contribution(m)
+            sum((X[m]*G[c, m] /
+                 sum(X[i]*G[i, m] for i in aqu_species)) *
+                (tau[c, m] -
+                 (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                  sum(X[i]*G[i, m] for i in aqu_species)))
                 for m in molecular_set) +
             sum(X[i]*G[i, c]*tau[i, c]
                 for i in (aqu_species-b.params.cation_set)) /
@@ -553,22 +556,15 @@ def log_gamma_lc(b, pname, s, X, G, tau):
                 for a in b.params.anion_set))
     elif s in b.params.anion_set:
         a = s
-        Z = b.params.get_component(a).config.charge
-
-        def molecular_contribution(m):
-            if X[m] != 0:
-                return ((X[m]*G[a, m] /
-                         sum(X[i]*G[i, m] for i in aqu_species)) *
-                        (tau[a, m] -
-                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
-                          sum(X[i]*G[i, m] for i in aqu_species))))
-            else:
-                # Limiting case for symmetric reference state
-                return G[a, m]*tau[a, m]
+        Z = abs(b.params.get_component(a).config.charge)
 
         # Eqn 27
         return Z*(
-            sum(molecular_contribution(m)
+            sum((X[m]*G[a, m] /
+                 sum(X[i]*G[i, m] for i in aqu_species)) *
+                (tau[a, m] -
+                 (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                  sum(X[i]*G[i, m] for i in aqu_species)))
                 for m in molecular_set) +
             sum(X[i]*G[i, a]*tau[i, a]
                 for i in (aqu_species-b.params.anion_set)) /
