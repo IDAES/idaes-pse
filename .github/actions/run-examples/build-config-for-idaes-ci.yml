@@ -7,7 +7,7 @@ notebook:
     num_workers: 1
     continue_on_error: true
     test_mode: true
-    timeout: 300
+    timeout: 600
     error_file: notebook-errors.txt
     template: docs/jupyter_notebook_sphinx.tpl
     directories:

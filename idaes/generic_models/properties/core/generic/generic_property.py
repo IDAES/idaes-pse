@@ -48,6 +48,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -370,6 +371,11 @@ class GenericParameterData(PhysicalParameterBlock):
                 Set(initialize=apparent_species,
                     ordered=True,
                     doc="Set of apparent components in mixture"))
+            self.add_component(
+                "ion_set",
+                Set(initialize=self.anion_set | self.cation_set,
+                    ordered=True,
+                    doc="Master set of all ions in mixture"))
 
         # Validate phase-component lists, and build _phase_component_set
         if not self._electrolyte:
@@ -420,10 +426,12 @@ class GenericParameterData(PhysicalParameterBlock):
                         if self.get_component(j)._is_phase_valid(pobj):
                             # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
-                        if not isinstance(pobj, AqueousPhase):
-                            # Also need to add apparent species
-                            if (p, j) not in pc_set_true:
-                                pc_set_true.append((p, j))
+
+                            if not isinstance(pobj, AqueousPhase):
+                                # Also need to add apparent species
+                                if (p, j) not in pc_set_true:
+                                    pc_set_true.append((p, j))
+
                 else:
                     # Validate that component names are valid and add to pc_set
                     for j in pc_list:
@@ -944,14 +952,14 @@ class _GenericStateBlock(StateBlock):
 
     def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
             state_args : a dict of initial values for the state variables
                     defined by the property package.
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -962,7 +970,7 @@ class _GenericStateBlock(StateBlock):
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -1018,14 +1026,8 @@ class _GenericStateBlock(StateBlock):
                                     "freedom for state block is not zero "
                                     "during initialization.")
 
-        # Set solver options
-        if optarg is None:
-            sopt = {'tol': 1e-8}
-        else:
-            sopt = optarg
-
-        opt = SolverFactory('ipopt')
-        opt.options = sopt
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
@@ -1574,14 +1576,40 @@ class GenericStateBlockData(StateBlockData):
     def components_in_phase(self, phase):
         """
         Generator method which yields components present in a given phase.
+        As this methid is used only for property calcuations, it should use the
+        true species sset if one exists.
+
         Args:
             phase - phase for which to yield components
+
         Yields:
             components present in phase.
         """
-        for j in self.component_list:
-            if (phase, j) in self.phase_component_set:
+        if not self.params._electrolyte:
+            component_list = self.component_list
+            pc_set = self.phase_component_set
+        else:
+            component_list = self.params.true_species_set
+            pc_set = self.params.true_phase_component_set
+
+        for j in component_list:
+            if (phase, j) in pc_set:
                 yield j
+
+    def get_mole_frac(self):
+        """
+        Property calcuations generally depend on phase_component mole fractions
+        for mixing rules, but in some cases there are multiple component lists
+        to work from. This method is used to return the correct phase-component
+        indexed mole fraction component for the given circumstances.
+
+        Returns:
+            mole fraction object
+        """
+        if not self.params._electrolyte:
+            return self.mole_frac_phase_comp
+        else:
+            return self.mole_frac_phase_comp_true
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points

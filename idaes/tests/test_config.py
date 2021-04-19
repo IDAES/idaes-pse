@@ -36,7 +36,7 @@ class TestIdaesConfigure(object):
         ic.read_config(
             os.path.join(idaes.testing_directory, "config_testing_default.json"))
         assert (
-            idaes.cfg["ipopt-idaes"]["options"]["nlp_scaling_method"]
+            idaes.cfg["ipopt"]["options"]["nlp_scaling_method"]
             == "gradient-based")
         assert idaes.cfg["use_idaes_solvers"] == True
         assert idaes.cfg["logging"]["disable_existing_loggers"] == False
