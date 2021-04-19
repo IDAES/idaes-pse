@@ -221,7 +221,7 @@ class ENRTL(EoSBase):
         # Debye-Huckel parameter
         def rule_A_DH(b):  # Eqn 61
             # Note: Where the paper refers to the dielectric constant, it
-            # actually means the electric permittivity of the solver
+            # actually means the electric permittivity of the solvent
             # eps = eps_r*eps_0 (units F/m)
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
                                 pyunits.m**3/pyunits.mol)
@@ -354,33 +354,43 @@ class ENRTL(EoSBase):
                 return sum(
                     Y[k] * _G_appr(b, pobj, (i+", "+k), j,  b.temperature)
                     for k in b.params.anion_set)
-            elif (j in b.params.cation_set and i in molecular_set):
+            elif (i in molecular_set and j in b.params.cation_set):
                 # Eqn 40
                 return sum(
-                    Y[k] * _G_appr(b, pobj, (j+", "+k), i, b.temperature)
+                    Y[k] * _G_appr(b, pobj, i, (j+", "+k), b.temperature)
                     for k in b.params.anion_set)
             elif (i in b.params.anion_set and j in molecular_set):
                 # Eqn 39
                 return sum(
                     Y[k] * _G_appr(b, pobj, (k+", "+i), j, b.temperature)
                     for k in b.params.cation_set)
-            elif (j in b.params.anion_set and i in molecular_set):
+            elif (i in molecular_set and j in b.params.anion_set):
                 # Eqn 41
                 return sum(
-                    Y[k] * _G_appr(b, pobj, (k+", "+j), i, b.temperature)
+                    Y[k] * _G_appr(b, pobj, i, (k+", "+j), b.temperature)
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
                 # Eqn 42
-                return sum(Y[k] * _G_appr(
-                    b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                    for k in b.params.cation_set
-                    if i != k)
+                if len(b.params.cation_set) > 1:
+                    return sum(Y[k] * _G_appr(
+                        b, pobj, (i+", "+j), (k+", "+j), b.temperature)
+                        for k in b.params.cation_set
+                        if i != k)
+                else:
+                    # This term does not exist for single cation systems
+                    # However, need a valid result to calculate tau
+                    return 1
             elif (i in b.params.anion_set and j in b.params.cation_set):
                 # Eqn 43
-                return sum(Y[k] * _G_appr(
-                    b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                    for k in b.params.anion_set
-                    if i != k)
+                if len(b.params.anion_set) > 1:
+                    return sum(Y[k] * _G_appr(
+                        b, pobj, (j+", "+i), (j+", "+k), b.temperature)
+                        for k in b.params.anion_set
+                        if i != k)
+                else:
+                    # This term does not exist for single anion systems
+                    # However, need a valid result to calculate tau
+                    return 1
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
                   (i in b.params.anion_set and j in b.params.anion_set)):
                 # No like-ion interactions
@@ -411,8 +421,12 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
-                # Eqn 44
-                return -log(G[i, j])/alpha[i, j]
+                if G[i, j].expr != 1:
+                    # Eqn 44
+                    return -log(G[i, j])/alpha[i, j]
+                else:
+                    # Catch for cases of single cation/anion systems
+                    return 0
 
         b.add_component(pname+"_tau",
                         Expression(b.params.true_species_set,
@@ -462,9 +476,22 @@ class ENRTL(EoSBase):
                 rule=rule_log_gamma_lc,
                 doc="Local contribution contribution to activity coefficient"))
 
+        # Overall log gamma
+        def rule_log_gamma(b, j):
+            pdh = getattr(pname, +"_log_gamma_pdh")
+            lc = getattr(pname, +"_log_gamma_lc")
+            return pdh + lc
+
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass
+
+    @staticmethod
+    def log_act_coeff(b, p, j):
+        # Overall log gamma
+        pdh = getattr(p, +"_log_gamma_pdh")
+        lc = getattr(p, +"_log_gamma_lc")
+        return pdh[j] + lc[j]
 
     @staticmethod
     def dens_mol_phase(b, p):
@@ -547,8 +574,8 @@ def log_gamma_lc(b, pname, s, X, G, tau):
     else:
         m = s
         # Eqn 25
-        return (sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species) /
-                sum(X[m]*G[i, m] for i in aqu_species) +
+        return (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                sum(X[i]*G[i, m] for i in aqu_species) +
                 sum((X[mp]*G[m, mp] /
                      sum(X[i]*G[i, mp] for i in aqu_species)) *
                     (tau[m, mp] -

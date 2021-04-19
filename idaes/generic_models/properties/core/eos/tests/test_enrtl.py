@@ -22,8 +22,9 @@ from pyomo.environ import (ConcreteModel,
                            exp,
                            log,
                            Set,
-                           Var,
-                           units as pyunits)
+                           units as pyunits,
+                           value,
+                           Var)
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (AqueousPhase,
@@ -35,7 +36,7 @@ from idaes.core import (AqueousPhase,
 from idaes.core.util.constants import Constants
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+        GenericParameterBlock, StateIndex)
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.pure.electrolyte import \
     relative_permittivity_constant
@@ -84,6 +85,7 @@ configuration = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "state_definition": FTPx,
+    "state_components": StateIndex.true,
     "pressure_ref": 1e5,
     "temperature_ref": 300}
 
