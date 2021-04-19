@@ -99,7 +99,7 @@ def test_map_scaling_factor(caplog):
     assert sc.map_scaling_factor(m.x.values(), warning=True) == 1
     logrec = caplog.records[0]
     assert logrec.levelno == logging.WARNING
-    assert "missing scaling factor" in logrec.message
+    assert "scaling factor" in logrec.message
 
     assert sc.map_scaling_factor(m.x.values(), func=max) == 13
     assert sc.map_scaling_factor(m.x.values(), default=20) == 11
