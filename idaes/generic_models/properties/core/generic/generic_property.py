@@ -426,10 +426,12 @@ class GenericParameterData(PhysicalParameterBlock):
                         if self.get_component(j)._is_phase_valid(pobj):
                             # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
-                        if not isinstance(pobj, AqueousPhase):
-                            # Also need to add apparent species
-                            if (p, j) not in pc_set_true:
-                                pc_set_true.append((p, j))
+
+                            if not isinstance(pobj, AqueousPhase):
+                                # Also need to add apparent species
+                                if (p, j) not in pc_set_true:
+                                    pc_set_true.append((p, j))
+
                 else:
                     # Validate that component names are valid and add to pc_set
                     for j in pc_list:
