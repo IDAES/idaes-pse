@@ -522,15 +522,21 @@ def log_gamma_lc(b, pname, s, X, G, tau):
     if s in b.params.cation_set:
         c = s
         Z = b.params.get_component(c).config.charge
+
+        def molecular_contribution(m):
+            if X[m] != 0:
+                return ((X[m]*G[c, m] /
+                        sum(X[i]*G[i, m] for i in aqu_species)) *
+                        (tau[c, m] -
+                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                          sum(X[i]*G[i, m] for i in aqu_species))))
+            else:
+                # Limiting case for symmetric reference state
+                return G[c, m]*tau[c, m]
+
         # Eqn 26
         return Z*(
-            sum((X[m]*G[c, m] /
-                 sum(X[i]*G[i, m] for i in aqu_species)) *
-                (tau[c, m] -
-                 (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
-                  sum(X[i]*G[i, m] for i in aqu_species)))
-                # Needed to eliminate term for the symmetric reference state
-                if X[m] != 0 else 0
+            sum(molecular_contribution(m)
                 for m in molecular_set) +
             sum(X[i]*G[i, c]*tau[i, c]
                 for i in (aqu_species-b.params.cation_set)) /
@@ -548,15 +554,21 @@ def log_gamma_lc(b, pname, s, X, G, tau):
     elif s in b.params.anion_set:
         a = s
         Z = b.params.get_component(a).config.charge
+
+        def molecular_contribution(m):
+            if X[m] != 0:
+                return ((X[m]*G[a, m] /
+                         sum(X[i]*G[i, m] for i in aqu_species)) *
+                        (tau[a, m] -
+                         (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                          sum(X[i]*G[i, m] for i in aqu_species))))
+            else:
+                # Limiting case for symmetric reference state
+                return G[a, m]*tau[a, m]
+
         # Eqn 27
         return Z*(
-            sum((X[m]*G[a, m] /
-                 sum(X[i]*G[i, m] for i in aqu_species)) *
-                (tau[a, m] -
-                 (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
-                  sum(X[i]*G[i, m] for i in aqu_species)))
-                # Needed to eliminate term for the symmetric reference state
-                if X[m] != 0 else 0
+            sum(molecular_contribution(m)
                 for m in molecular_set) +
             sum(X[i]*G[i, a]*tau[i, a]
                 for i in (aqu_species-b.params.anion_set)) /

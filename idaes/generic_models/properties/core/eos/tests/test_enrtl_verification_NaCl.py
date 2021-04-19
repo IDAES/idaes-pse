@@ -169,6 +169,12 @@ class TestStateBlockSymmetric(object):
             0.5, rel=1e-8)
         assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
             -0.5, rel=1e-8)
+        assert value(model.state[1].Liq_X["H2O"]) == pytest.approx(
+            value(model.state[1].Liq_X_ref["H2O"]), rel=1e-8)
+        assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
+            value(model.state[1].Liq_X_ref["Na+"]), rel=1e-8)
+        assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
+            value(model.state[1].Liq_X_ref["Cl-"]), rel=1e-8)
 
         for v in model.state[1].Liq_Y.values():
             assert value(v) == pytest.approx(1, rel=1e-8)
@@ -204,23 +210,31 @@ class TestStateBlockSymmetric(object):
         assert (value(model.state[1].Liq_log_gamma_pdh["Na+"]) ==
                 pytest.approx(0, abs=1e-10))
 
-        # assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
-        #         value(model.state[1].Liq_log_gamma_lc_I0["Na+"]))
+        assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
+                pytest.approx(exp(-0.2*-4.541)*-4.541, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_lc_I0["Na+"]) ==
+                pytest.approx(exp(-0.2*-4.541)*-4.541, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
+                value(model.state[1].Liq_log_gamma_lc_I0["Na+"]))
 
-        # assert (value(model.state[1].Liq_log_gamma_lc["Na+"]) ==
-        #         pytest.approx(0, abs=1e-10))
-        # assert (value(model.state[1].Liq_log_gamma_pdh["Na+"] +
-        #               model.state[1].Liq_log_gamma_lc["Na+"]) ==
-        #         pytest.approx(0, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_lc["Na+"]) ==
+                pytest.approx(0, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_pdh["Na+"] +
+                      model.state[1].Liq_log_gamma_lc["Na+"]) ==
+                pytest.approx(0, abs=1e-10))
 
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
 
-    #     assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
-    #             value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]))
+        assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
+                pytest.approx(-exp(-0.2*-4.541)*-4.541, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]) ==
+                pytest.approx(-exp(-0.2*-4.541)*-4.541, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
+                value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]))
 
-    #     assert (value(model.state[1].Liq_log_gamma_lc["Cl-"]) ==
-    #             pytest.approx(0, abs=1e-10))
-    #     assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"] +
-    #                   model.state[1].Liq_log_gamma_lc["Cl-"]) ==
-    #             pytest.approx(0, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_lc["Cl-"]) ==
+                pytest.approx(0, abs=1e-10))
+        assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"] +
+                      model.state[1].Liq_log_gamma_lc["Cl-"]) ==
+                pytest.approx(0, abs=1e-10))
