@@ -30,7 +30,7 @@
             "stream_contents":{
                "0":{
                   "Variable":"flow_mol",
-                  "Inlet":1.0,
+                  "Inlet": "-Inf",
                   "Vapor Outlet":0.5,
                   "Liquid Outlet":0.5
                },
@@ -48,7 +48,7 @@
                },
                "3":{
                   "Variable":"temperature",
-                  "Inlet":368.0,
+                  "Inlet": "Inf",
                   "Vapor Outlet":298.15,
                   "Liquid Outlet":298.15
                },
