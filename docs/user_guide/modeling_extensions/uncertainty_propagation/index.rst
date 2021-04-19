@@ -79,9 +79,6 @@ Here :math:`y_i` is the concentration of the chemical product at time :math:`t_i
                return expr
            model.response_function = Expression(data.hour, rule = response_rule)
     
-           def SSE_rule(m):
-               return sum((data.y[i] - m.response_function[data.hour[i]])**2 for i in data.index)
-           model.SSE = Objective(rule = SSE_rule, sense=minimize)
            return model
 
    # Define rooney_biegler_model_opt
@@ -100,8 +97,8 @@ Here :math:`y_i` is the concentration of the chemical product at time :math:`t_i
    # Define variable_name
    >>> variable_name = ['asymptote', 'rate_constant']
 
-   # Define obj_function
-   >>> def obj_function(model, data):
+   # Define SSE_obj_function
+   >>> def SSE_obj_function(model, data):
            expr = sum((data.y[i] - model.response_function[data.hour[i]])**2 for i in data.index)
            return expr
 
