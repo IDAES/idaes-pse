@@ -1320,7 +1320,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
                    solver=None, hold_state=True):
         '''
-        Initialization routine for 0D control volume (default solver ipopt)
+        Initialization routine for 0D control volume.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -1627,15 +1627,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         warning=True)
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "rate_reaction_extent"):
-            for (t, r), v in self.rate_reaction_extent.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.reactions[t].reaction_rate[r],
-                        default=1,
-                        warning=True)
-                    sf *= iscale.get_scaling_factor(self.volume[t])
-                    iscale.set_scaling_factor(v, sf)
+        # Control Volume has no way of knowing how best to scale
+        # reaction extents - this is something only the unit model can provide
+        # This also applies to the phase_equilibrium_generation term.
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, p, j), v in self.rate_reaction_generation.items():
@@ -1644,13 +1638,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.rate_reaction_extent[t, :])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "equilibrium_reaction_extent"):
-            for v in self.equilibrium_reaction_extent.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
-
         if hasattr(self, "equilibrium_reaction_generation"):
             for (t, p, j), v in self.equilibrium_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -1658,26 +1645,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.equilibrium_reaction_extent[t, ...])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "inherent_reaction_extent"):
-            for v in self.inherent_reaction_extent.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
-
         if hasattr(self, "inherent_reaction_generation"):
             for (t, p, j), v in self.inherent_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
                         self.inherent_reaction_extent[t, ...])
                     iscale.set_scaling_factor(v, sf)
-
-        if hasattr(self, "phase_equilibrium_generation"):
-            for v in self.phase_equilibrium_generation.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, "mass_transfer_term"):
             for (t, p, j), v in self.mass_transfer_term.items():
@@ -1842,7 +1815,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 for (t, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties_in[t].get_material_flow_terms(p, j)
-                         for p in phase_list])
+                         for p in phase_list if (p, j) in phase_component_set])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 # There are some other material balance types but they create

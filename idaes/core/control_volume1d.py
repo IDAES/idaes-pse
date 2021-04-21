@@ -1637,7 +1637,7 @@ argument)."""))
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
                    solver=None, hold_state=True):
         '''
-        Initialization routine for 1D control volume (default solver ipopt)
+        Initialization routine for 1D control volume.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -1912,15 +1912,9 @@ argument)."""))
                         self._flow_terms[t, x, p, j])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "rate_reaction_extent"):
-            for (t, x, r), v in self.rate_reaction_extent.items():
-                if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.reactions[t, x].reaction_rate[r],
-                        default=1,
-                        warning=True)
-                    sf *= iscale.get_scaling_factor(self._area_func(t, x))
-                    iscale.set_scaling_factor(v, sf)
+        # Control Volume has no way of knowing how best to scale
+        # reaction extents - this is something only the unit model can provide
+        # This also applies to the phase_equilibrium_generation term.
 
         if hasattr(self, "rate_reaction_generation"):
             for (t, x, p, j), v in self.rate_reaction_generation.items():
@@ -1929,13 +1923,6 @@ argument)."""))
                         self.rate_reaction_extent[t, x, :])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "equilibrium_reaction_extent"):
-            for v in self.equilibrium_reaction_extent.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
-
         if hasattr(self, "equilibrium_reaction_generation"):
             for (t, x, p, j), v in self.equilibrium_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
@@ -1943,26 +1930,12 @@ argument)."""))
                         self.equilibrium_reaction_extent[t, x, ...])
                     iscale.set_scaling_factor(v, sf)
 
-        if hasattr(self, "inherent_reaction_extent"):
-            for v in self.inherent_reaction_extent.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
-
         if hasattr(self, "inherent_reaction_generation"):
             for (t, x, p, j), v in self.inherent_reaction_generation.items():
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.min_scaling_factor(
                         self.inherent_reaction_extent[t, x, ...])
                     iscale.set_scaling_factor(v, sf)
-
-        if hasattr(self, "phase_equilibrium_generation"):
-            for v in self.phase_equilibrium_generation.values():
-                if iscale.get_scaling_factor(v) is None:
-                    # No way to calculate a good guess for this
-                    # This is something the user needs to set themselves
-                    iscale.set_scaling_factor(v, 1)
 
         if hasattr(self, "mass_transfer_term"):
             for (t, x, p, j), v in self.mass_transfer_term.items():
@@ -2160,7 +2133,8 @@ argument)."""))
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
-                        [self._flow_terms[t, x, p, j] for p in phase_list])
+                        [self._flow_terms[t, x, p, j] for p in phase_list
+                         if (p, j) in phase_component_set])
                     iscale.constraint_scaling_transform(c, sf)
             else:
                 _log.warning(f"Unknown material balance type {mb_type}")

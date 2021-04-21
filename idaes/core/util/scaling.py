@@ -202,9 +202,15 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
         sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
         if warning:
-            _log.warning(f"Accessing missing scaling factor for {c}")
+            if isinstance(c, pyo.Component):
+                _log.warning(f"Accessing missing scaling factor for {c}")
+            else:
+                _log.warning(f"Trying to get scaling factor for unnamed expr")
         if exception and default is None:
-            _log.error(f"Accessing missing scaling factor for {c}")
+            if isinstance(c, pyo.Component):
+                _log.error(f"Accessing missing scaling factor for {c}")
+            else:
+                _log.error(f"Trying to get scaling factor for unnamed expr")
             raise
         sf = default
 
