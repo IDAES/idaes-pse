@@ -131,20 +131,17 @@ class ModuleClassWalker(Walker):
             for ed in exclude_dirs:
                 expr_list.append("{sl}{d}".format(sl=psep, d=ed))
         self._exclude_expr = re.compile(r"|".join(expr_list))
-        self._history, self._classes = [], []
+        self._history = []
         _log.debug("exclude expr={}".format(self._exclude_expr.pattern))
         self._visited = set()
 
     def walk(self, visitor):
         self._visited = set()
         modules = self._get_modules()
-        self._visit_subclasses(modules, visitor.visit)
+        self._visit_subclasses(modules, visitor)
 
     def get_indexed_classes(self):
         return self._history
-
-    def get_classes(self):
-        return self._classes.copy()
 
     def _get_modules(self):
         _log.debug("getting modules from root: {}".format(self._root))
@@ -168,7 +165,7 @@ class ModuleClassWalker(Walker):
                 if os.path.isdir(path):
                     q.append(path)
 
-    def _visit_subclasses(self, modules, visit):
+    def _visit_subclasses(self, modules, visitor):
         for modname in modules:
             _log.debug("visit module: {}".format(modname))
             try:
@@ -181,7 +178,7 @@ class ModuleClassWalker(Walker):
                 continue
             for item in dir(mod):
                 x = getattr(mod, item)
-                x_id = item
+                x_id = id(x)
                 if inspect.isclass(x) and x_id not in self._visited:
                     self._visited.add(x_id)
                     fullname = modname + "." + x.__name__
@@ -191,15 +188,18 @@ class ModuleClassWalker(Walker):
                         or (self._expr and self._expr.match(x.__name__))
                         or (self._parent and issubclass(x, self._parent))
                     )
-                    if passed_filter and visit(x):
+                    if passed_filter and visitor.visit(x):
                         self._history.append(fullname)
-                        self._classes.append(x)
+                        visitor.save(x)
 
 
 class Visitor(object):
     """Interface for the 'visitor' class passed to Walker subclasses'
     `walk()` method.
     """
+
+    def __init__(self):
+        self._saved = []
 
     def visit(self, obj):
         """Visit one object.
@@ -210,7 +210,16 @@ class Visitor(object):
         Returns:
             True if visit succeeded, else False
         """
-        pass
+        return True
+
+    def save(self, obj):
+        """Save an object for later retrieval.
+        """
+        self._saved.append(obj)
+
+    @property
+    def saved(self):
+        return self._saved
 
 
 class PropertyMetadataVisitor(Visitor):
