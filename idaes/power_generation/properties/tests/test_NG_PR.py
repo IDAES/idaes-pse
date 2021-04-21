@@ -57,7 +57,10 @@ class TestNaturalGasProps(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={'dynamic': False})
 
-        m.fs.props = GenericParameterBlock(default=get_NG_properties())
+        m.fs.props = GenericParameterBlock(default=get_NG_properties(
+            components=[
+                'H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
+                'N2', 'O2', 'Ar']))
         m.fs.state = m.fs.props.build_state_block(
                 [1],
                 default={"defined_state": True})
