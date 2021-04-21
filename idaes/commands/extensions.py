@@ -47,14 +47,6 @@ def print_extensions_version(library_only=False):
     return 0
 
 
-@cb.command(name="get-extensions-platforms", help="List binary extension platforms")
-def get_extensions_platforms():
-    click.echo("\nBuild platforms for IDAES binary Extensions.  Most Linux")
-    click.echo("platforms are interchangeable.")
-    for key, mes in idaes.config.known_binary_platform.items():
-        click.echo("    {}: {}".format(key, mes))
-
-
 @cb.command(name="get-extensions", help="Get solvers and libraries")
 @click.option(
     "--release",
@@ -89,6 +81,14 @@ def get_extensions_platforms():
     "--no-download",
     is_flag=True,
     help="Don't download anything, but report what would be done")
+@click.option(
+    "--show-current-version",
+    is_flag=True,
+    help="Show the version information if any for the currently installed")
+@click.option(
+    "--show-platforms",
+    is_flag=True,
+    help="Show the platform options")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -99,7 +99,20 @@ def get_extensions(
     platform,
     nochecksum,
     library_only,
-    no_download):
+    no_download,
+    show_current_version,
+    show_platforms):
+
+    if show_platforms:
+        click.echo("\nBuild platforms for IDAES binary Extensions.  Most Linux")
+        click.echo("platforms are interchangeable.")
+        for key, mes in idaes.config.known_binary_platform.items():
+            click.echo("    {}: {}".format(key, mes))
+        return
+    elif show_current_version:
+        print_extensions_version()
+        return
+
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -139,8 +152,3 @@ def get_extensions(
             print_extensions_version(library_only)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
-
-
-@cb.command(name="ver-extensions", help="Get solver and library IDAES package version")
-def ver_extensions():
-    return print_extensions_version()
