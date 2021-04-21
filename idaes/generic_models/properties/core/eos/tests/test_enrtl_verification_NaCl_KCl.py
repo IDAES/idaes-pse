@@ -304,9 +304,11 @@ class Test_tau_0(object):
         assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
             0.06293706294, rel=1e-8)
 
+        model.state[1].Liq_log_gamma_pdh.display()
+        model.state[1].Liq_log_gamma_lc_I.display()
         model.state[1].Liq_log_gamma.display()
 
         print(value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
-                          model.state[1].Liq_log_gamma["Cl-"])))
+                         model.state[1].Liq_log_gamma["Cl-"])))
 
         assert False
