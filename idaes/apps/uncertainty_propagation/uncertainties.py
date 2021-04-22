@@ -163,6 +163,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
                 gradient_cc.append(gradient_c[i])
         gradient_cc = np.array(gradient_cc)
         # save unique constraints numbers that contain theta, index starts from 1. 
+        constriant_number = list(set(gradient_cc[:,[1]].flatten().astype(int)))       
         # convert sparse matrix to dense matrix with (value, (row number, column number))
         I,J,V =  gradient_cc[:,[1]].flatten().astype(int)-1, gradient_cc[:,[0]].flatten().astype(int)-1,  gradient_cc[:,[2]].flatten()
         gradient_cc = sparse.coo_matrix((V,(I,J))).todense()
