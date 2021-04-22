@@ -126,7 +126,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     # get gradient of the objective function, constraints, and the column number of each theta
     gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic = get_dfds_dcds(model, theta_names, tee)
     dsdp_dic, col  = get_dsdp(model, theta_names, theta, var_dic,tee)      
-    x_list = [x for x in col if x not in var_dic.keys()]
+    x_list = [x for x in col if x not in var_dic.keys()] #x_list includes only decision variables (exclude theta_names) 
     p_list = theta_names #This makes cov and fxxp have the same order 
     fxxp = []
     for i in p_list:
@@ -163,28 +163,15 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
                 gradient_cc.append(gradient_c[i])
         gradient_cc = np.array(gradient_cc)
         # save unique constraints numbers that contain theta, index starts from 1. 
-        constriant_number = list(set(gradient_cc[:,[1]].flatten().astype(int)))       
         # convert sparse matrix to dense matrix with (value, (row number, column number))
         I,J,V =  gradient_cc[:,[1]].flatten().astype(int)-1, gradient_cc[:,[0]].flatten().astype(int)-1,  gradient_cc[:,[2]].flatten()
         gradient_cc = sparse.coo_matrix((V,(I,J))).todense()
         gradient_dic = {}
+        # propagation_c includes `dc/ds*cov_p*dc/ds`
         propagation_c = {}
         # calculate error propagation of constraints
         for r in range(1,num_constraints+1):
             if r in constriant_number:
-                cxxp = []
-                for i in p_list:
-                    cxxp_tmp = 0
-                    for j in x_list:
-                        cxxp_tmp = 0
-                        # we took the gradients from a sparse matrix
-                        if 'd(c'+str(r)+')/d('+j+')' in gradient_c_dic.keys():
-                            gradient_cx = gradient_c_dic['d(c'+str(r)+')/d('+j+')']
-                        else:
-                            gradient_cx = 0
-                        cxxp_tmp = cxxp_tmp + gradient_cx*dsdp_dic['d('+j+')/d('+i+')']
-                    cxxp.append(cxxp_tmp)
-                cxxp = np.array(cxxp)
                 gradient_dic['constraints '+str(r)] = gradient_cc[r-1]
                 propagation_c['constraints '+str(r)] = float(np.dot(gradient_cc[r-1],np.dot(cov,np.transpose(gradient_cc[r-1]))))
             else:
