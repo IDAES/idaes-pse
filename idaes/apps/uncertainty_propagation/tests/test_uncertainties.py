@@ -109,11 +109,15 @@ class TestUncertaintyPropagation:
 
         propagate_results=  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
         
-        assert propagate_results.gradient_f_dic == {'d(f)/d(asymptote)': 0.9950625870024135, 'd(f)/d(rate_constant)': 0.9451480001755206}
+        assert propagate_results.gradient_f_dic['d(f)/d(asymptote)'] == approx(0.9950625870024135)
+        assert propagate_results.gradient_f_dic['d(f)/d(rate_constant)'] == approx(0.9451480001755206)
         assert propagate_results.gradient_c_dic == {}
-        assert propagate_results.dsdp_dic == {'d(asymptote)/d(asymptote)': 1.0000000000000002, 'd(rate_constant)/d(asymptote)': -0.0, 'd(asymptote)/d(rate_constant)': -0.0, 'd(rate_constant)/d(rate_constant)': 1.0}
+        assert propagate_results.dsdp_dic['d(asymptote)/d(asymptote)'] == approx(1.0000000000000002)
+        assert propagate_results.dsdp_dic['d(rate_constant)/d(asymptote)']  == approx(0.0)
+        assert propagate_results.dsdp_dic['d(asymptote)/d(rate_constant)']  == approx(0.0)
+        assert propagate_results.dsdp_dic['d(rate_constant)/d(rate_constant)'] ==approx(1.0)
         assert propagate_results.propagation_c == {}
-        assert propagate_results.propagation_f == 5.45439337747349
+        assert propagate_results.propagation_f == approx(5.45439337747349)
 
     def test_propagate_uncertainty_error(self):
         '''
