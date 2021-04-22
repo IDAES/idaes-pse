@@ -48,7 +48,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
             - results.gradient_f_dic(numpy.ndarray) : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
             - results.gradient_c_dic(numpy.ndarray) : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}. Only non-zero gradients are included.
             - results.dsdp_dic(dict)                : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
-            - results.propagation_f(dict)           : Error propagation in the objective function with the dictionary key, 'objective', df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.propagation_f(numpy.float64)  : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
             - results.propagation_c(dict)           : Error propagation in the constraints with the dictionary keys, 'constraints l' where l is the line number. If no constraint includes uncertain parameters, return an empty dictionary.
         
     Raises:
@@ -104,7 +104,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
             - gradient_f_dic(dic)            : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
             - gradient_c_dic(dic)            : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}. Only non-zero gradients are included.
             - dsdp_dic(dict)                 : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
-            - propagation_f(dictionary)      : Error propagation in the objective function with the dictionary key, 'objective', df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - propagation_f(numpy.float64)   : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
             - propagation_c(dictionary)      : Error propagation in the constraints with the dictionary keys, 'constraints r' where r is the line number. If no constraint includes uncertain parameters, return an empty dictionary      
 
     Raises:
@@ -146,9 +146,9 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     propagation_f = {}
     # calculate error propagation of the objective fuction
     if 'gradient_f_theta' in locals():
-        propagation_f['objective'] = np.dot(gradient_f_theta,np.dot(cov,np.transpose(gradient_f_theta))) + np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
+        propagation_f = np.dot(gradient_f_theta,np.dot(cov,np.transpose(gradient_f_theta))) + np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
     else:
-        propagation_f['objective'] = np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
+        propagation_f = np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
     # constraints: 
     # calculate error propagation dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
     num_constraints = len(list(model.component_data_objects(Constraint,
