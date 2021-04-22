@@ -46,6 +46,7 @@ from idaes.core.util.exceptions import (
 from idaes.core.util.math import smooth_min
 from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -814,15 +815,16 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=6, optarg={}, solver="ipopt", hold_state=False):
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg={},
+                   solver=None, hold_state=False):
         """
-        Initialization routine for mixer (default solver ipopt)
+        Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - False. **Valid values:**
@@ -839,9 +841,8 @@ objects linked to all inlet states and the mixed state,
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # Initialize inlet state blocks
         flags = {}
@@ -967,7 +968,7 @@ objects linked to all inlet states and the mixed state,
         inlet_list = blk.create_inlet_list()
         for i in inlet_list:
             i_block = getattr(blk, i + "_state")
-            i_block.release_state(flags[i], outlvl=outlvl + 1)
+            i_block.release_state(flags[i], outlvl=outlvl)
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}

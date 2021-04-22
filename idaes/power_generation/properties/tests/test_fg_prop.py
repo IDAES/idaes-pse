@@ -23,17 +23,10 @@ import csv
 import os
 import idaes
 from math import log
+from idaes.core.util import get_solver
 
-
-# Mark module as an integration test
-pytestmark = pytest.mark.integration
-
-
-if pyo.SolverFactory('ipopt').available():
-    solver = pyo.SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
+# Set up solver
+solver = get_solver()
 
 
 def read_data(fname, params):
@@ -74,6 +67,7 @@ def read_data(fname, params):
     return data
 
 
+@pytest.mark.integration
 def test_thermo():
     # Read in test data and add mixtures
     m = pyo.ConcreteModel()

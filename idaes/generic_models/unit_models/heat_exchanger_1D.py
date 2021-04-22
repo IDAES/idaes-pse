@@ -45,7 +45,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.constants import Constants as c
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 import idaes.logger as idaeslog
 
@@ -608,11 +608,11 @@ thickness of the tube""",
         shell_state_args=None,
         tube_state_args=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg={},
     ):
         """
-        Initialization routine for the unit (default solver ipopt).
+        Initialization routine for the unit.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -620,9 +620,9 @@ thickness of the tube""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -630,8 +630,8 @@ thickness of the tube""",
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize shell block

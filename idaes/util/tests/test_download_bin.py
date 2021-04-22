@@ -12,7 +12,7 @@ def _del_data_file(path):
     except OSError:
         pass
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_dl_bin():
     idaes._create_testing_dir()
     _del_data_file(os.path.join(idaes.testing_directory, "version_lib.txt"))

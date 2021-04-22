@@ -61,6 +61,7 @@ from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
 from idaes.core.util.math import safe_log
+from idaes.core.util import get_solver
 from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
@@ -210,7 +211,7 @@ class _CubicStateBlock(StateBlock):
 
     def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -225,7 +226,7 @@ class _CubicStateBlock(StateBlock):
                          * pressure
                          * temperature
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed and
@@ -234,7 +235,7 @@ class _CubicStateBlock(StateBlock):
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -271,14 +272,9 @@ class _CubicStateBlock(StateBlock):
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
-        # Set solver options
-        if optarg is None:
-            sopt = {'tol': 1e-8}
-        else:
-            sopt = optarg
 
-        opt = SolverFactory('ipopt')
-        opt.options = sopt
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
@@ -1639,7 +1635,7 @@ class CubicStateBlockData(StateBlockData):
                 log(b.temperature/b.params.temperature_ref))
 
     def calculate_scaling_factors(self):
-        # Get default scale factors and do caclulations from base classes
+        # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
         phases = self.params.config.valid_phase
