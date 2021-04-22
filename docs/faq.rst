@@ -1,5 +1,5 @@
-Frequently Asked Questions (FAQ)
-================================
+Frequently Asked Questions
+==========================
 
 How do I...
 -----------
