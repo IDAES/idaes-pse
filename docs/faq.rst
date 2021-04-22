@@ -5,7 +5,7 @@ How do I...
 -----------
 
 ... Run some examples?
-    First, install the examples with ``idaes get-examples``. Then run Jupyter in the directory that
+    First, install the examples with ``idaes get-examples``. Then, in the directory that
     this created ("examples", by default), open the main Jupyter notebook with the command
     ``jupyter notebook notebook_index.ipynb``, and use it to navigate to the example(s) of your choice.
 
