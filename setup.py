@@ -33,7 +33,7 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_UNSTABLE_VERSION = [
+DEPENDENCIES_FOR_PRERELEASE_VERSION = [
     "pyutilib @ https://github.com/PyUtilib/pyutilib/archive/master.zip",
     "pyomo @ https://github.com/IDAES/pyomo/archive/842a2a4892929a2a032c0711a29381a8a5d17c24.zip",
     "pysp @ https://github.com/Pyomo/pysp/archive/c08015310bd9615ebbb2b0eb9042334c9306b458.zip",
@@ -85,8 +85,8 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "unstable": DEPENDENCIES_FOR_UNSTABLE_VERSION,
-        "dev": DEPENDENCIES_FOR_UNSTABLE_VERSION + [
+        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
+        "dev": DEPENDENCIES_FOR_PRERELEASE_VERSION + [
             # Developer extra packages
             "alabaster>=0.7.7",
             # temporarily hold coverage version due to avoid bug in coveralls

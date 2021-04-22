@@ -127,7 +127,7 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
   c. To get the latest version from the GitHub main branch::
 
-      pip install 'idaes-pse[unstable] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
+      pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
 
   d. To get the latest version from the GitHub main branch, including development dependencies::
 
