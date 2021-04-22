@@ -49,12 +49,15 @@ class TestUncertaintyPropagation:
         results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE)
 
         assert results.obj == approx(4.331711213656886)
-        assert results.theta_out[variable_name[0]] == approx(19.142575284617866)
-        assert results.theta_out[variable_name[1]] == approx(0.53109137696521)
-        assert results.propagation_f == approx(5.45439337747349)
-        assert results.propagation_c == {}
+        np.testing.assert_array_almost_equal(results.theta_out, [19.142575284617866, 0.53109137696521])
+        assert results.theta_out_keys == ['asymptote', 'rate_constant']
+        np.testing.assert_array_almost_equal(results.gradient_f, [0.99506259, 0.945148])
+        assert results.gradient_f_keys == ['d(f)/d(asymptote)', 'd(f)/d(rate_constant)']
+        assert list(results.propagation_c) == []
+        assert results.propagation_c_keys==[]
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
-        
+        assert results.propagation_f == approx(5.45439337747349)
+
     def test_quantify_propagate_uncertainty2(self):
         '''
         This is the same test as test_quantify_propagate_uncertainty1,
@@ -76,12 +79,15 @@ class TestUncertaintyPropagation:
         results =  quantify_propagate_uncertainty(rooney_biegler_model,model_uncertain, data, variable_name, SSE)
 
         assert results.obj == approx(4.331711213656886)
-        assert results.theta_out[variable_name[0]] == approx(19.142575284617866)
-        assert results.theta_out[variable_name[1]] == approx(0.53109137696521)
+        np.testing.assert_array_almost_equal(results.theta_out, [19.142575284617866, 0.53109137696521])
+        assert results.theta_out_keys == ['asymptote', 'rate_constant']
+        np.testing.assert_array_almost_equal(results.gradient_f, [0.99506259, 0.945148])
+        assert results.gradient_f_keys == ['d(f)/d(asymptote)', 'd(f)/d(rate_constant)']
+        assert list(results.propagation_c) == []
+        assert results.propagation_c_keys==[]
+        np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert results.propagation_f == approx(5.45439337747349)
-        assert results.propagation_c == {}
-        np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))   
- 
+
     def test_propagate_uncertainty(self):
         '''
         It tests the function propagate_uncertainty with rooney & biegler's model.
@@ -101,10 +107,13 @@ class TestUncertaintyPropagation:
         model_uncertain.rate_constant = Var(initialize = 0.5)
         model_uncertain.obj = Objective(expr = model_uncertain.asymptote*( 1 - exp(-model_uncertain.rate_constant*10  )  ), sense=minimize)
 
-        gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_f, propagation_c =  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
-
-        assert propagation_f == approx(5.45439337747349)
-        assert propagation_c == {}
+        propagate_results=  propagate_uncertainty(model_uncertain, theta, cov, variable_name)
+        
+        assert propagate_results.gradient_f_dic == {'d(f)/d(asymptote)': 0.9950625870024135, 'd(f)/d(rate_constant)': 0.9451480001755206}
+        assert propagate_results.gradient_c_dic == {}
+        assert propagate_results.dsdp_dic == {'d(asymptote)/d(asymptote)': 1.0000000000000002, 'd(rate_constant)/d(asymptote)': -0.0, 'd(asymptote)/d(rate_constant)': -0.0, 'd(rate_constant)/d(rate_constant)': 1.0}
+        assert propagate_results.propagation_c == {}
+        assert propagate_results.propagation_f == 5.45439337747349
 
     def test_propagate_uncertainty_error(self):
         '''
@@ -147,16 +156,11 @@ class TestUncertaintyPropagation:
             return expr*1E4
         results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
         assert results.obj == approx(5.074968578304798)
-        assert results.theta_out[variable_name[0]] == approx(-0.8987624039723433)
-        assert results.theta_out[variable_name[1]] == approx(1.4104861106603803)
+        np.testing.assert_array_almost_equal(results.theta_out, [-0.8987624 ,  1.41048611])
+        assert results.theta_out_keys == ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
         assert results.propagation_f == approx(0.0021199499778127204)
-        assert results.propagation_c['constraints 4'] == approx(0.008473482674782129)
-        assert results.propagation_c['constraints 5'] == approx(0.0004612914088240769)
-        assert results.propagation_c['constraints 6'] == approx(0.003094158491940104)
-        assert results.propagation_c['constraints 7'] == approx(0.011260188179282066)
-        assert results.propagation_c['constraints 8'] == approx(0.014194289370065335)
-        assert results.propagation_c['constraints 9'] == approx( 0.005670725779499914)
+        
 
     @pytest.mark.unit
     @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
