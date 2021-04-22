@@ -84,9 +84,6 @@ _component_params = {
                 'F': -9.980797,
                 'G': 172.707974,
                 'H': 0.0},
-            'enth_mol_form_vap_comp_ref': (0, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                130.7, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'CO': {
@@ -108,10 +105,6 @@ _component_params = {
                 'F': -118.0089,
                 'G': 227.3665,
                 'H': -110.5271},
-            'enth_mol_form_vap_comp_ref': (
-                -110530, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                197.7, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'H2O': {
@@ -133,10 +126,6 @@ _component_params = {
                 'F': -250.881,
                 'G': 223.3967,
                 'H': -241.8264},
-            'enth_mol_form_vap_comp_ref': (
-                -241826, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                188.8, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'CO2': {
@@ -158,10 +147,6 @@ _component_params = {
                 'F': -403.6075,
                 'G': 228.2431,
                 'H': -393.5224},
-            'enth_mol_form_vap_comp_ref': (
-                -393510, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                213.8, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'O2': {
@@ -183,9 +168,6 @@ _component_params = {
                 'F': -11.32468,
                 'G': 236.1663,
                 'H': 0.0},
-            'enth_mol_form_vap_comp_ref': (0, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                -205.2, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'N2': {
@@ -207,9 +189,6 @@ _component_params = {
                 'F': -4.935202,
                 'G': 212.39,
                 'H': 0.0},
-            'enth_mol_form_vap_comp_ref': (0, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                -191.6, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'Ar': {
@@ -231,9 +210,6 @@ _component_params = {
                 'F': -6.19735,
                 'G': 179.999,
                 'H': 0.0},
-            'enth_mol_form_vap_comp_ref': (0, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                -154.9, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
     'CH4': {
@@ -255,12 +231,10 @@ _component_params = {
                 'F': -76.84376,
                 'G': 158.7163,
                 'H': -74.8731},
-            'enth_mol_form_vap_comp_ref': (-74870, pyunits.J/pyunits.mol),
-            'entr_mol_form_vap_comp_ref': (
-                186.3, pyunits.J/pyunits.mol/pyunits.K)
         }
     },
-    'C2H6': {'type': Component,
+    'C2H6': {
+        'type': Component,
         'elemental_composition': {'C': 2, 'H': 6},
         'enth_mol_ig_comp': RPP4,
         'entr_mol_ig_comp': RPP4,
@@ -342,10 +316,6 @@ _component_params = {
                 'F': -28.91211,
                 'G': 233.3747,
                 'H': -20.50202},
-            'enth_mol_form_vap_comp_ref': (
-                -20.50e3, pyunits.J/pyunits.mol), # NIST <- Chase 1998
-            'entr_mol_form_vap_comp_ref': (
-                205.77, pyunits.J/pyunits.mol/pyunits.K), # NIST <- Chase 1998
         }
     },
     'SO2': {
@@ -368,10 +338,6 @@ _component_params = {
                 'F': -305.7688,
                 'G': 254.8872,
                 'H': -296.8422},
-            'enth_mol_form_vap_comp_ref': (
-                -296.84e3, pyunits.J/pyunits.mol), # NIST <- Chase 1998
-            'entr_mol_form_vap_comp_ref': (
-                248.21, pyunits.J/pyunits.mol/pyunits.K) # NIST <- Chase 1998
         }
     },
     'C2H4': {
@@ -394,10 +360,6 @@ _component_params = {
                 'F': 48.17332,
                 'G': 163.1568,
                 'H': 52.46694},
-            'enth_mol_form_vap_comp_ref': (
-                52.47e3, pyunits.J/pyunits.mol), # NIST <- Chase 1998
-            'entr_mol_form_vap_comp_ref': (
-                219.32, pyunits.J/pyunits.mol/pyunits.K) # NIST <- Chase 1998
         }
     },
 }
