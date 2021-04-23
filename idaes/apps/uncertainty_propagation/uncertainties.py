@@ -22,7 +22,7 @@ from pyomo.opt import SolverFactory
 import shutil
 import logging
 from collections import namedtuple
-from idaes.apps.uncertainty_propagation.sens import get_dsdp, get_dfds_dcds # will replace with pyomo (# Pyomo PR 1613: https://github.com/pyomo/pyomo/pull/1613/) 
+from idaes.apps.uncertainty_propagation.sens import SensitivityInterface, get_dsdp, get_dfds_dcds # will replace with pyomo (# Pyomo PR 1613: https://github.com/pyomo/pyomo/pull/1613/) 
 
 logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
@@ -43,19 +43,15 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     Returns:
         tuple   : results object containing the all information including:
             - results.obj(float)                    : Objective function value for the given obj_function 
-            - results.theta_out(numpy.ndarray)      : Estimated parameters
-            - results.theta_out_keye(list)          : Parameter names of results.theta_out
-            - results.cov(numpy.ndarray)            : Covariance of theta_out
-            - results.gradient_f(numpy.ndarray)     : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution as key e.g) [0.1, 0.1]
-            - results.gradient_f_dic(list)          : List of names of results.gradient_f e.g) ['d(f)/d(x1)','d(f)/d(x2)']
-            - results.gradient_c(numpy.ndarray)     : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution e.g) [1.1, 0.1]. 
-            - results.gradient_c_dic(list)          : List of names of results.gradient_c e.g) ['d(c1)/d(x1)', 'd(c4)/d(x2)']. 
-            - results.dsdp(numpy.ndarray)           : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) [1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0}
-            - results.dsdp_dic(list)                : List of names of results.dsdp e.g) ['d(x1)/d(p1)', 'd(x2)/d(p1)', 'd(p1)/d(p1)', 'd(p2)/d(p1)','d(x1)/d(p2)','d(x2)/d(p2)','d(p1)/d(p2)', 'd(p2)/d(p2)']
-            - results.propagation_c(numpy.ndarray)  : Error propagation in the constraints If no constraint includes uncertain parameters, return an empty array.
-            - results.propagation_c_dic(list)       : List of names of results.propagation_c
+            - results.theta(dict)                   : Estimated parameters
+            - results.cov(numpy.ndarray)            : Covariance of theta
+            - results.gradient_f(numpy.ndarray)     : Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
+            - results.gradient_c(numpy.ndarray)     : Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution. Each row contains [column number, row number, and value], colum order follows variable order in col. If no constraint exists, return []
+            - results.dsdp(numpy.ndarray)           : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
+            - results.propagation_c(numpy.ndarray)  : Error propagation in the constraints (only constraints have theta_name)  e.g) [[constraint iumber1, error1],[constraint number2, error2]]             
             - results.propagation_f(numpy.float64)  : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-
+            - results.col(list)                     : List of variable names  
+    
     Raises:
         TypeError:  When tee entry is not Boolean
         TypeError:  When diagnostic_mode entry is not Boolean
@@ -87,13 +83,14 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_out = theta
     propagate_results  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
     
-    Output = namedtuple('Output',['obj', 'theta_out', 'theta_out_keys','cov','gradient_f', 'gradient_f_keys', 'gradient_c',  'gradient_c_keys', 'dsdp', 'dsdp_keys', 'propagation_c', 'propagation_c_keys','propagation_f'])
-    results= Output(obj, np.fromiter(theta_out.values(), dtype=float), list(theta_out.keys()), cov, 
-                     np.fromiter(propagate_results.gradient_f_dic.values(), dtype=float), list(propagate_results.gradient_f_dic.keys()),
-                     np.fromiter(propagate_results.gradient_c_dic.values(), dtype=float), list(propagate_results.gradient_c_dic.keys()), 
-                     np.fromiter(propagate_results.dsdp_dic.values(), dtype=float), list(propagate_results.dsdp_dic.keys()),
-                     np.fromiter(propagate_results.propagation_c.values(), dtype=float),list(propagate_results.propagation_c.keys()),
-                     propagate_results.propagation_f)
+    Output = namedtuple('Output',['obj', 'theta', 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
+    results= Output(obj, theta_out, cov, 
+                     propagate_results.gradient_f,
+                     propagate_results.gradient_c, 
+                     propagate_results.dsdp,
+                     propagate_results.propagation_c,
+                     propagate_results.propagation_f,
+                     propagate_results.col)
     return results
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
@@ -111,12 +108,12 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
      Returns:
         tuple   : results object containing the all information including
-            - results.gradient_f_dic(dic)            : Gradient of the objective function with respect to the (decision variables, parameters) at the optimal solution with variable name as key e.g) dic = {d(f)/d(x1):0.1, d(f)/d(x2):0.1}
-            - results. gradient_c_dic(dic)            : Gradient of the constraints with respect to the (decision variables, parameters) at the optimal solution with constraint number and variable name as key e.g) dic = {d(c1)/d(x1):1.1, d(c4)/d(x2):0.1}.
-            - results.dsdp_dic(dict)                 : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). e.g) dict = {'d(x1)/d(p1)': 1.0, 'd(x2)/d(p1)': 0.0, 'd(p1)/d(p1)': 1.0, 'd(p2)/d(p1)': 0.0, 'd(x1)/d(p2)': 0.0, 'd(x2)/d(p2)': 1.0, 'd(p1)/d(p2)': 0.0, 'd(p2)/d(p2)': 1.0}
-            - results.propagation_c(dictionary)      : Error propagation in the constraints with the dictionary keys, 'constraints r' where r is the line number. If no constraint includes uncertain parameters, return an empty dictionary             
-            - results.propagation_f(numpy.float64)   : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
- 
+            - results.gradient_f(numpy.ndarray)    : Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
+            - results.gradient_c(numpy.ndarray)    : Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution. Each row contains [column number, row number, and value], colum order follows variable order in col. If no constraint exists, return []
+            - results.dsdp(numpy.ndarray)          : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
+            - results.propagation_c(numpy.ndarray) : Error propagation in the constraints (only constraints have theta_name)  e.g) [[constraint iumber1, error1],[constraint number2, error2]]             
+            - results.propagation_f(numpy.float64) : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.col(list)                    : List of variable names  
     Raises:
         Exception:  When model_uncertain is neither 'ConcreteModel' nor 'function'.
     """
@@ -134,8 +131,27 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         eval('model.'+var_dic[v]).setlb(theta[v])
         eval('model.'+var_dic[v]).setub(theta[v])
     # get gradient of the objective function, constraints, and the column number of each theta
-    gradient_f,gradient_f_dic, gradient_c,gradient_c_dic, line_dic = get_dfds_dcds(model, theta_names, tee)
-    dsdp_dic, col  = get_dsdp(model, theta_names, theta, var_dic,tee)      
+    gradient_f, gradient_c, col, line_dic = get_dfds_dcds(model, theta_names, tee)
+    dsdp, col  = get_dsdp(model, theta_names, theta, var_dic,tee)      
+    
+    gradient_f_dic = {}
+    for i in range(len(col)):
+        gradient_f_dic["d(f)/d("+col[i]+")"] = gradient_f[i]
+    num_constraints = len(list(model.component_data_objects(Constraint,
+                                                            active=True,
+                                                            descend_into=True)))
+    gradient_c_dic = {}
+    if num_constraints > 0 :
+        gradient_c = np.array([i for i in gradient_c if not np.isclose(i[2],0)])
+        row_number, col_number = np.shape(gradient_c)
+        gradient_c_dic = {}
+        for i in range(row_number):
+            gradient_c_dic["d(c"+ str(int(gradient_c[i,1]))+")/d("+col[int(gradient_c[i,0]-1)]+")"] = gradient_c[i,2]
+    dsdp_dic = {}
+    for i in range(len(theta_names)):
+        for j in range(len(col)):
+            if SensitivityInterface.get_default_block_name() not in col[j]:
+                dsdp_dic["d("+col[j] +")/d("+theta_names[i]+")"] =  -dsdp[i, j]
     x_list = [x for x in col if x not in var_dic.keys()] #x_list includes only decision variables (exclude theta_names) 
     p_list = theta_names #This makes cov and fxxp have the same order 
     fxxp = []
@@ -177,22 +193,17 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         # convert sparse matrix to dense matrix with (value, (row number, column number))
         I,J,V =  gradient_cc[:,[1]].flatten().astype(int)-1, gradient_cc[:,[0]].flatten().astype(int)-1,  gradient_cc[:,[2]].flatten()
         gradient_cc = sparse.coo_matrix((V,(I,J))).todense()
-        gradient_dic = {}
         # propagation_c includes `dc/ds*cov_p*dc/ds`
-        propagation_c = {}
+        propagation_c = []
         # calculate error propagation of constraints
         for r in range(1,num_constraints+1):
             if r in constriant_number:
-                gradient_dic['constraints '+str(r)] = gradient_cc[r-1]
-                propagation_c['constraints '+str(r)] = float(np.dot(gradient_cc[r-1],np.dot(cov,np.transpose(gradient_cc[r-1]))))
-            else:
-                # if constraints not include theta
-                gradient_dic['constraints '+str(r)] = 0
-                propagation_c['constraints '+str(r)] = 0
+                propagation_c.append([int(r), float(np.dot(gradient_cc[r-1],np.dot(cov,np.transpose(gradient_cc[r-1]))))])
     else:
-        propagation_c = {}
-    Output = namedtuple('Output',['gradient_f_dic', 'gradient_c_dic', 'dsdp_dic', 'propagation_c','propagation_f'])
-    results= Output(gradient_f_dic, gradient_c_dic, dsdp_dic, propagation_c, propagation_f)
+        propagation_c = []
+    propagation_c = np.array(propagation_c)
+    Output = namedtuple('Output',['gradient_f', 'gradient_c', 'dsdp', 'propagation_c','propagation_f','col'])
+    results= Output(gradient_f, gradient_c, dsdp, propagation_c, propagation_f,col)
     return results
 
 
