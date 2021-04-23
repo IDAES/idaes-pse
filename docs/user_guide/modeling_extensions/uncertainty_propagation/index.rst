@@ -116,9 +116,9 @@ The function **quantify_propagate_uncertainty** returns the object **results** w
 
 * **results.theta_names** contains the names of parameters :math:`p`
 * **results.theta** contains the estimate values for parameters :math:`p`
-* **results.gradient_f_dic** contains the gradients :math:`\frac{\partial f}{\partial x},~ \frac{\partial f}{\partial p}`
-* **results.gradient_c_dic** contains the Jacobians :math:`\frac{\partial c}{\partial x},~ \frac{\partial c}{\partial p}`
-* **results.dsdp_dic** contains the Jacobians :math:`\frac{\partial x}{\partial p},~\frac{\partial p}{\partial p}``
+* **results.gradient_f** contains the gradients :math:`\frac{\partial f}{\partial x},~ \frac{\partial f}{\partial p}`
+* **results.gradient_c** contains the Jacobians :math:`\frac{\partial c}{\partial x},~ \frac{\partial c}{\partial p}`
+* **results.dsdp** contains the Jacobians :math:`\frac{\partial x}{\partial p},~\frac{\partial p}{\partial p}``
 * **results.propagation_f** contains the estimate variance of the objective function 
 
 Available Functions

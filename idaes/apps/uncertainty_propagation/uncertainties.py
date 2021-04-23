@@ -44,6 +44,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         tuple   : results object containing the all information including:
             - results.obj(float)                    : Objective function value for the given obj_function 
             - results.theta(dict)                   : Estimated parameters
+            - results.theta_names(dict)             : Names of parameters
             - results.cov(numpy.ndarray)            : Covariance of theta
             - results.gradient_f(numpy.ndarray)     : Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
             - results.gradient_c(numpy.ndarray)     : Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution. Each row contains [column number, row number, and value], colum order follows variable order in col. If no constraint exists, return []
@@ -83,8 +84,8 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_out = theta
     propagate_results  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
     
-    Output = namedtuple('Output',['obj', 'theta', 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
-    results= Output(obj, theta_out, cov, 
+    Output = namedtuple('Output',['obj', 'theta', 'theta_names, 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
+    results= Output(obj, theta_out, theta_names, cov, 
                      propagate_results.gradient_f,
                      propagate_results.gradient_c, 
                      propagate_results.dsdp,
