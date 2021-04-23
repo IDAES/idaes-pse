@@ -43,7 +43,7 @@ from idaes.generic_models.properties.core.pure.electrolyte import \
 
 
 def dummy_method(b, *args, **kwargs):
-    return 42*pyunits.mol/pyunits.m**3
+    return 1000/18e-3*pyunits.mol/pyunits.m**3
 
 
 configuration = {
@@ -52,8 +52,9 @@ configuration = {
                 "dens_mol_liq_comp": dummy_method,
                 "relative_permittivity_liq_comp":
                     relative_permittivity_constant,
-                "parameter_data": {"mw": (18E-3, pyunits.kg/pyunits.mol),
-                                   "relative_permittivity_liq_comp": 101}},
+                "parameter_data": {
+                    "mw": (18E-3, pyunits.kg/pyunits.mol),
+                    "relative_permittivity_liq_comp": 73.41965}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
         "KCl": {"type": Apparent,

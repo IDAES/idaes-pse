@@ -212,10 +212,10 @@ class ENRTL(EoSBase):
                         get_method(b, "relative_permittivity_liq_comp", s)(
                             b, cobj(b, s), b.temperature) *
                         b.params.get_component(s).mw
-                        for s in molecular_set) /
+                        for s in b.params.solvent_set) /
                     sum(b.mole_frac_phase_comp_true[pname, s] *
                         b.params.get_component(s).mw
-                        for s in molecular_set))
+                        for s in b.params.solvent_set))
         b.add_component(pname+"_relative_permittivity_solvent",
                         Expression(
                             rule=rule_eps_solvent,
@@ -243,20 +243,20 @@ class ENRTL(EoSBase):
         # Long-range (PDH) contribution to activity coefficient
         def rule_log_gamma_pdh(b, j):
             A = getattr(b, pname+"_A_DH")
-            I = getattr(b, pname+"_ionic_strength")
+            Ix = getattr(b, pname+"_ionic_strength")
             I0 = getattr(b, pname+"_ionic_strength_ref")
             rho = ClosestApproach
             if j in molecular_set:
                 # Eqn 69
                 # Note typo in original paper. Correct power for I is (3/2)
-                return (2*A*I**(3/2)/(1+rho*I**(1/2)))
+                return (2*A*Ix**(3/2)/(1+rho*Ix**(1/2)))
             elif j in b.params.ion_set:
                 # Eqn 70
                 z = abs(cobj(b, j).config.charge)
                 return (-A*((2*z**2/rho) *
-                            log((1+rho*I**0.5)/(1+rho*I0**0.5)) +
-                            (z**2*I**0.5 - 2*I**(3/2)) / (1+rho*I**0.5) -
-                            (2*I*I0**-0.5) / (1+rho*I0**0.5) *
+                            log((1+rho*Ix**0.5)/(1+rho*I0**0.5)) +
+                            (z**2*Ix**0.5 - 2*Ix**(3/2)) / (1+rho*Ix**0.5) -
+                            (2*Ix*I0**-0.5) / (1+rho*I0**0.5) *
                             ref_state.ndIdn(b, pname, j)))
             else:
                 raise BurntToast(
