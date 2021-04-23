@@ -84,7 +84,7 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_out = theta
     propagate_results  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
     
-    Output = namedtuple('Output',['obj', 'theta', 'theta_names, 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
+    Output = namedtuple('Output',['obj', 'theta', 'theta_names', 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
     results= Output(obj, theta_out, theta_names, cov, 
                      propagate_results.gradient_f,
                      propagate_results.gradient_c, 
