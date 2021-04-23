@@ -36,6 +36,8 @@ from idaes.core import VaporPhase, LiquidPhase, Component, PhaseType
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
+from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 
 from idaes.generic_models.properties.core.pure import NIST, RPP4, RPP5
 
@@ -64,9 +66,23 @@ _log = logging.getLogger(__name__)
 # Properties: Critical temperatures and pressures. Omega.
 # Heat capacity coefficients for ethane, propane, and butane.
 
+_phase_dicts = {
+    "Vap": {
+        "type": VaporPhase,
+        "equation_of_state": Cubic,
+        "equation_of_state_options": {"type": CubicType.PR}
+    },
+    "Liq": {
+        "type": LiquidPhase,
+        "equation_of_state": Cubic,
+        "equation_of_state_options": {"type": CubicType.PR}
+    },
+}
+
 _component_params = {
     'H2': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'H': 2},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
@@ -88,6 +104,7 @@ _component_params = {
     },
     'CO': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'C': 1, 'O': 1},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
@@ -109,9 +126,12 @@ _component_params = {
     },
     'H2O': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase, PhaseType.liquidPhase],
+        "phase_equilibrium_form": {("Vap", "Liq"): log_fugacity},
         'elemental_composition': {'H': 2, 'O': 1},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
+        'pressure_sat_comp': NIST,
         'parameter_data': {
             'mw': (0.01801528, pyunits.kg/pyunits.mol),
             'pressure_crit': (221.2e5, pyunits.Pa),
@@ -126,10 +146,15 @@ _component_params = {
                 'F': -250.881,
                 'G': 223.3967,
                 'H': -241.8264},
+            'pressure_sat_comp_coeff': { # NIST <- Stull 1947
+                'A': 4.6543,
+                'B': 1435.264,
+                'C': -64.848},
         }
     },
     'CO2': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'C': 1, 'O': 2},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
@@ -151,6 +176,7 @@ _component_params = {
     },
     'O2': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'O': 2},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
@@ -172,6 +198,7 @@ _component_params = {
     },
     'N2': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'N': 2},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
@@ -193,10 +220,11 @@ _component_params = {
     },
     'Ar': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'Ar': 1},
-         'enth_mol_ig_comp': NIST,
-         'entr_mol_ig_comp': NIST,
-         'parameter_data': {
+        'enth_mol_ig_comp': NIST,
+        'entr_mol_ig_comp': NIST,
+        'parameter_data': {
             'mw': (0.039948, pyunits.kg/pyunits.mol),
             'pressure_crit': (48.7e5, pyunits.Pa),
             'temperature_crit': (150.8, pyunits.K),
@@ -214,6 +242,7 @@ _component_params = {
     },
     'CH4': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'C': 1, 'H': 4},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
@@ -235,6 +264,7 @@ _component_params = {
     },
     'C2H6': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'C': 2, 'H': 6},
         'enth_mol_ig_comp': RPP4,
         'entr_mol_ig_comp': RPP4,
@@ -255,6 +285,7 @@ _component_params = {
     },
     'C3H8': {
         'type': Component,
+        'valid_phase_types': [PhaseType.vaporPhase],
         'elemental_composition': {'C': 3, 'H': 8},
         'enth_mol_ig_comp': RPP4,
         'entr_mol_ig_comp': RPP4,
@@ -364,19 +395,6 @@ _component_params = {
     },
 }
 
-_phase_dicts = {
-    "Vap": {
-        "type": VaporPhase,
-        "equation_of_state": Cubic,
-        "equation_of_state_options": {"type": CubicType.PR}
-    },
-    "Liq": {
-        "type": LiquidPhase,
-        "equation_of_state": Cubic,
-        "equation_of_state_options": {"type": CubicType.PR}
-    },
-}
-
 
 # returns a configuration dictionary for the list of specified components
 def get_prop(components=None, phases="Vap"):
@@ -409,6 +427,10 @@ def get_prop(components=None, phases="Vap"):
         phases = [phases]
     for k in phases:
         configuration["phases"][k] = copy.deepcopy(_phase_dicts[k])
+    if len(phases) > 1:
+        p = tuple(phases)
+        configuration["phases_in_equilibrium"] = [p]
+        configuration["phase_equilibrium_state"] = {p: SmoothVLE}
 
     # Fill the binary parameters with zeros.
     d = configuration["parameter_data"]
