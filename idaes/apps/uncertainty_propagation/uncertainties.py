@@ -83,16 +83,19 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     else:
         theta_out = theta
     propagate_results  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
-    
-    I,J,V =  propagate_results.gradient_c[:,1].flatten().astype(int)-1, propagate_results.gradient_c[:,0].flatten().astype(int)-1, propagate_results.gradient_c[:,2].flatten()
-    coo_ = sparse.coo_matrix((V,(I,J)))
-    print(type(coo_))
+   
+    if len(propagate_results.gradient_c)>0:
+        I,J,V =  propagate_results.gradient_c[:,1].flatten().astype(int)-1, propagate_results.gradient_c[:,0].flatten().astype(int)-1, propagate_results.gradient_c[:,2].flatten()
+        coo_ = sparse.coo_matrix((V,(I,J)))
+    else:
+        coo_ = propagate_results.gradient_c
+
     Output = namedtuple('Output',['obj', 'theta', 'theta_names', 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
     results= Output(obj, theta_out, theta_names, cov, 
                      propagate_results.gradient_f,
                      propagate_results.gradient_c, 
                      propagate_results.dsdp,
-                     propagate_results.propagation_c,
+                     coo_,
                      propagate_results.propagation_f,
                      propagate_results.col)
     return results
