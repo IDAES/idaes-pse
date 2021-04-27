@@ -108,6 +108,8 @@ configuration = {
             ('H2O', 'MEA'): 0.2,
             ('MEA', 'MEA'): 0.2},
         "Liq_tau": {
+            ('H2O', 'MEA'): 0.509893610223642,
+            ('MEA', 'H2O'): -1.38820670926518,
             ('CO2', 'MEA+, HCO3-'): 15.0,
             ('CO2', 'MEA+, MEACOO-'): 15.0,
             ('H2O', 'MEA+, HCO3-'): 8.5721,
@@ -341,20 +343,21 @@ class Test_tau_0(object):
         model.state[1].mole_frac_phase_comp["Liq", "MEACOO-"].set_value(
             0.044654355)
 
-        model.state[1].Liq_vol_mol_solvent.display()
-        print(value(1/model.state[1].Liq_vol_mol_solvent))
-        model.state[1].Liq_relative_permittivity_solvent.display()
-        model.state[1].Liq_A_DH.display()
-        model.state[1].Liq_ionic_strength.display()
-        model.state[1].Liq_log_gamma_pdh.display()
+        # model.state[1].Liq_vol_mol_solvent.display()
+        # model.state[1].Liq_relative_permittivity_solvent.display()
+        # model.state[1].Liq_A_DH.display()
+        # model.state[1].Liq_ionic_strength.display()
+        # model.state[1].Liq_ionic_strength_ref.display()
+        # model.state[1].Liq_log_gamma_pdh.display()
 
         # model.params.Liq.alpha.display()
         # model.params.Liq.tau.display()
 
         # model.state[1].Liq_X.display()
         # model.state[1].Liq_Y.display()
-        # model.state[1].Liq_alpha.display()
-        # model.state[1].Liq_tau.display()
-        # model.state[1].Liq_G.display()
+        model.state[1].Liq_alpha.display()
+        model.state[1].Liq_tau.display()
+        model.state[1].Liq_G.display()
+        model.state[1].Liq_log_gamma_lc.display()
 
         assert False

@@ -43,7 +43,7 @@ from idaes.generic_models.properties.core.pure.electrolyte import \
 
 
 def dummy_method(b, *args, **kwargs):
-    return 42*pyunits.mol/pyunits.m**3
+    return 1000/18e-3*pyunits.mol/pyunits.m**3
 
 
 configuration = {
@@ -52,8 +52,9 @@ configuration = {
                 "dens_mol_liq_comp": dummy_method,
                 "relative_permittivity_liq_comp":
                     relative_permittivity_constant,
-                "parameter_data": {"mw": (18E-3, pyunits.kg/pyunits.mol),
-                                   "relative_permittivity_liq_comp": 101}},
+                "parameter_data": {
+                    "mw": (18E-3, pyunits.kg/pyunits.mol),
+                    "relative_permittivity_liq_comp": 73.41964622627609}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
         "Na+": {"type": Cation,
@@ -87,7 +88,7 @@ class TestStateBlockSymmetric(object):
         m.state = m.params.build_state_block([1])
 
         # Need to set a value of T for checking expressions later
-        m.state[1].temperature.set_value(300)
+        m.state[1].temperature.set_value(313)
 
         return m
 
@@ -275,6 +276,24 @@ class TestStateBlockSymmetric(object):
             0.03358208955, rel=1e-8)
 
         model.state[1].Liq_log_gamma.display()
+
+        assert False
+
+    @pytest.mark.unit
+    def test_01molar(self, model):
+        # 0.1 Molar NaCl
+        model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+            0.996412913511359)
+        model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(
+            0.00179354324432)
+        model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
+            0.00179354324432)
+
+        assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
+            0.00179354324432, rel=1e-8)
+
+        model.state[1].Liq_A_DH.display()
+        model.state[1].Liq_log_gamma_pdh.display()
 
         assert False
 

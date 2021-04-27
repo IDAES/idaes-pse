@@ -226,12 +226,14 @@ class ENRTL(EoSBase):
             # Note: Where the paper refers to the dielectric constant, it
             # actually means the electric permittivity of the solvent
             # eps = eps_r*eps_0 (units F/m)
+            # Note that paper is misisng a required 4*pi term
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
                                 pyunits.m**3/pyunits.mol)
             eps = getattr(b, pname+"_relative_permittivity_solvent")
             eps0 = Constants.vacuum_electric_permittivity
             return ((1/3)*(2*Constants.pi*Constants.avogadro_number/v)**0.5 *
                     (Constants.elemental_charge**2/(
+                        4*Constants.pi *
                         eps*eps0*Constants.boltzmann_constant *
                         b.temperature))**(3/2)
                     )
