@@ -58,7 +58,7 @@ class Constants():
 
     # -------------------------------------------------------------------------
     # Other constants - all values sourced from NIST to avaialble uncertainty
-    # All values retrieved 8th Jan 2020
+    # All values retrieved 8th Jan 2020 unless otherwise noted
 
     # https://physics.nist.gov/cgi-bin/cuu/Value?gn
     acceleration_gravity = 9.80665 * units.metre/units.second**2
@@ -69,3 +69,8 @@ class Constants():
 
     # https://physics.nist.gov/cgi-bin/cuu/Value?me
     mass_electron = 9.1093837015e-31 * units.kilogram
+
+    # https://physics.nist.gov/cgi-bin/cuu/Value?ep0
+    # 8th April 2021
+    vacuum_electric_permittivity = 8.8541878128e-12 * \
+        units.farad*units.metre**-1
