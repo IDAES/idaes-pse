@@ -15,6 +15,7 @@ import os
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 import numpy as np
 import pandas as pd
+from scipy import sparse
 import pytest
 from pytest import approx
 from mock import patch
@@ -53,7 +54,7 @@ class TestUncertaintyPropagation:
         assert list(results.theta.keys()) == ['asymptote', 'rate_constant']
         np.testing.assert_array_almost_equal(results.gradient_f, [0.99506259, 0.945148])
         assert list(results.propagation_c) == []
-        np.testing.assert_array_almost_equal(results.dsdp, [[-1.,  0., -1.,  0.],[ 0., -1.,  0., -1.]])
+        np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
         assert results.propagation_f == approx(5.45439337747349)
         assert results.col == ['asymptote', 'rate_constant']
@@ -84,7 +85,7 @@ class TestUncertaintyPropagation:
         assert list(results.theta.keys()) == ['asymptote', 'rate_constant']
         np.testing.assert_array_almost_equal(results.gradient_f, [0.99506259, 0.945148])
         assert list(results.propagation_c) == []
-        np.testing.assert_array_almost_equal(results.dsdp, [[-1.,  0., -1.,  0.],[ 0., -1.,  0., -1.]])
+        np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert results.propagation_f == approx(5.45439337747349)
         assert results.col == ['asymptote', 'rate_constant']
@@ -113,7 +114,7 @@ class TestUncertaintyPropagation:
        
         np.testing.assert_array_almost_equal(propagate_results.gradient_f, [0.9950625870024135,0.9451480001755206])
         assert list(propagate_results.gradient_c) == []
-        np.testing.assert_array_almost_equal(propagate_results.dsdp, [[-1.,  0., -1.,  0.],[ 0., -1.,  0., -1.]])
+        np.testing.assert_array_almost_equal(propagate_results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         assert list(propagate_results.propagation_c) == []
         assert propagate_results.propagation_f == approx(5.45439337747349)
         assert propagate_results.col == ['asymptote', 'rate_constant']
