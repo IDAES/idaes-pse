@@ -15,6 +15,7 @@
 #            https://www.sfu.ca/~ssurjano/camel6.html
 # This problem utilizes ALAMO's sampling features
 from idaes.surrogate import alamopy
+import pyomo.environ as pyo
 
 # Import additional python modules for creating the synthetic data
 import math
@@ -40,6 +41,7 @@ def test_multiple_input():
     # Specify number of points to be used in the training set
     # Validation data can be provided optionally
     ndata = 10
+    np.random.seed(2)
     x = np.random.uniform([-2, -1], [2, 1], (ndata, 2))
     z = np.zeros((ndata, 2))
     # specify simulator as examples.sixcamel
@@ -60,6 +62,54 @@ def test_multiple_input():
                 'expandoutput':True}
 
     res = alamopy.doalamo(x, z)
+
+@pytest.mark.unit
+def test_gen_pyomo_model():
+
+    if not alamopy.has_alamo():
+        return False
+
+    # Specify number of points to be used in the training set
+    # Validation data can be provided optionally
+    ndata = 20
+    np.random.seed(2)
+    x = np.random.uniform([-2, -1], [2, 1], (ndata, 2))
+    z = np.zeros((ndata, 2))
+    # specify simulator as examples.sixcamel
+    sim = sixcamel
+    for i in range(ndata):
+        z[i, 0] = sim(x[i][0], x[i][1])
+        z[i, 1] = x[i][0]**2
+
+    # # Use alamopy's python function wrapper to avoid using ALAMO's I/O format
+    almsim = alamopy.wrapwriter(sim)
+
+    # NON GENERIC
+    alamo_settings = {'almname': "cam6",
+                      'monomialpower': (1, 2, 3),
+                      'multi2power': (1, 2),
+                      'expandoutput': True}
+
+    res = alamopy.doalamo(x, z, **alamo_settings)
+
+    opt = pyo.SolverFactory("ipopt")
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(range(1, len(x[0])+1), bounds=(0, 1))
+    m.z = pyo.Var()
+
+    pyomo_models = alamopy.generatePyomoExpressions(res, m.x)
+    def z_val(model):
+        return model.z >= pyomo_models['z2']
+    m.valForZ = pyo.Constraint(rule=z_val)
+
+    def min_objective(model):
+        return model.z
+    m.express_rule = pyo.Objective(rule=min_objective, sense=pyo.minimize)
+
+    pyo_results = opt.solve(m)
+
+    assert pytest.approx(4.4935699883076355e-05) == pyo.value(m.x[1])
+    assert pytest.approx(-8.636801831966628e-09) == pyo.value(m.express_rule)
 
 @pytest.mark.unit
 def test_single_input_CV():
@@ -90,4 +140,5 @@ def test_single_input_CV():
                 'maxiter':20,
                 'cvfun':True}
 
-    res = alamopy.doalamo(x, z, lmo = 3)
+    res = alamopy.doalamo(x, z)
+    print(res)

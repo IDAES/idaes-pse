@@ -22,6 +22,11 @@ from idaes.surrogate import alamopy
 from idaes.surrogate.alamopy import almerror
 from idaes.surrogate.alamopy.multos import deletefile, has_alamo
 
+import pyomo.environ as pyo
+from pyomo.core.expr.sympy_tools import PyomoSympyBimap, sympy_available, Sympy2PyomoVisitor, sympy2pyomo_expression
+from sympy.parsing.sympy_parser import parse_expr
+import sympy
+
 
 def doalamo(xdata, zdata, **kwargs):
     """
@@ -352,6 +357,43 @@ def alamo(xdata, zdata, **kwargs):
     cleanFiles(data, debug, pywrite=True, **kwargs)
 
     return data["results"]
+
+
+def generatePyomoExpressions(res, pyomo_vars):
+    """
+    Generate pyomo expressions for use in pyomo models
+    :param res: alamopy results
+    :param pyomo_vars: pyomo variables that match input data (xdata) index
+    :return: pyomo_models (dictionary)
+    """
+
+    pymodel = {}
+    for zlabel in res['zlabels']:
+        # Generate pyomo expression
+        m = pyo.ConcreteModel()
+        # m.x = pyomo_vars
+
+        obj_map = PyomoSympyBimap()
+        obj_map.sympy2pyomo = {}
+        sympy_locals = {}
+        i = 1
+        for label in res['xlabels']:
+            sympy_locals[label] = sympy.Symbol(label)
+            sympy_obj = sympy.Symbol(label)
+            obj_map.sympy2pyomo[sympy_obj] = pyomo_vars[i]
+            # obj_map.sympy2pyomo[sympy_obj] = m.x[i]
+            i += 1
+
+        model_string = ""
+        if type(res['model']) is dict:
+            # key = list(res['model'].keys())[0]
+            model_string = res['model'][zlabel].split('=')[1]
+        else:
+            model_string = res['model'].split('=')[1]
+        model_symp = parse_expr(model_string.replace("^", "**"), local_dict=sympy_locals)
+        model_pyomo = sympy2pyomo_expression(model_symp, obj_map)
+        pymodel[zlabel] = model_pyomo
+    return pymodel
 
 
 # Data Management

@@ -9,11 +9,11 @@ __all__ = ['alamo', 'doalamo', 'getlabels', 'makelabs', 'addCustomFunctions',
            'data', 'debug', 'deletefile', 'movefile', 'catfile', 
            'copyfile', 'has_alamo', 'allcard', 'almlsq',
            'almlsqjac', 'almfeatmat',
-           'ackley', 'branin', 'sixcamel', 'col']
+           'ackley', 'branin', 'sixcamel', 'col', 'generatePyomoExpressions']
 
 from .doalamo import alamo, doalamo, getlabels, makelabs, addCustomFunctions, \
     addCustomConstraints, addBasisGroups, addBasisGroup, addBasisConstraints, \
-    addBasisConstraint, get_alamo_version
+    addBasisConstraint, get_alamo_version, generatePyomoExpressions
 from .allcard import allcard, almlsq, almlsqjac, almfeatmat
 from .almwriter import almwriter
 from .almconfidence import almconfidence
