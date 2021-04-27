@@ -156,7 +156,7 @@ class TestUncertaintyPropagation:
                      model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
             return expr*1E4
         results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
-        rnp.testing.assert_array_almost_equal(esults.obj,5.074968578304798)
+        np.testing.assert_array_almost_equal(results.obj,5.074968578304798)
         np.testing.assert_array_almost_equal(np.fromiter(results.theta.values(), dtype=float), [-0.8987624 ,  1.41048611])
         np.testing.assert_array_almost_equal(results.gradient_f[0], [-0.19649493])
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
