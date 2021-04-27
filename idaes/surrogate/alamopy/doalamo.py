@@ -370,9 +370,6 @@ def generatePyomoExpressions(res, pyomo_vars):
     pymodel = {}
     for zlabel in res['zlabels']:
         # Generate pyomo expression
-        m = pyo.ConcreteModel()
-        # m.x = pyomo_vars
-
         obj_map = PyomoSympyBimap()
         obj_map.sympy2pyomo = {}
         sympy_locals = {}
@@ -381,12 +378,10 @@ def generatePyomoExpressions(res, pyomo_vars):
             sympy_locals[label] = sympy.Symbol(label)
             sympy_obj = sympy.Symbol(label)
             obj_map.sympy2pyomo[sympy_obj] = pyomo_vars[i]
-            # obj_map.sympy2pyomo[sympy_obj] = m.x[i]
             i += 1
 
         model_string = ""
         if type(res['model']) is dict:
-            # key = list(res['model'].keys())[0]
             model_string = res['model'][zlabel].split('=')[1]
         else:
             model_string = res['model'].split('=')[1]

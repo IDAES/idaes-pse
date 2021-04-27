@@ -141,4 +141,3 @@ def test_single_input_CV():
                 'cvfun':True}
 
     res = alamopy.doalamo(x, z)
-    print(res)
