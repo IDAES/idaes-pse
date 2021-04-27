@@ -32,6 +32,7 @@ import shutil
 from pyomo.common.dependencies import (
     numpy as np, numpy_available
     )
+from scipy import sparse
 
 logger = logging.getLogger('pyomo.contrib.sensitivity_toolbox')
 
@@ -200,10 +201,7 @@ def sensitivity_calculation(method, instance, paramList, perturbList,
 
 def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=None):
     """This function calculates gradient vector of the (decision variables, parameters)
-        with respect to the paramerters (theta_names). We assume that the number of 
-        constraints (rows) = Ncon, the number of theta = Ntheta, the numer of decision 
-        (primal) variables = Nx. Then, the number of all variables (columns) = Nvar = Ntheta + Nx.  
-        All results follow row and column order in row and col.
+        with respect to the paramerters (theta_names). 
 
     e.g) min f:  p1*x1+ p2*(x2^2) + p1*p2
          s.t  c1: x1 + x2 = p1
@@ -212,6 +210,13 @@ def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=Non
               p1 = 10
               p2 = 5
     the function retuns dx/dp and dp/dp, and colum orders.
+    
+    The following terms are used to define the output dimensions:
+    Ncon   = number of constraints
+    Nvar   = number of variables (Nx + Ntheta)
+    Nx     = the numer of decision (primal) variables
+    Ntheta = number of uncertain parameters.
+
     Parameters
     ----------
     model: Pyomo ConcreteModel
@@ -232,8 +237,9 @@ def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=Non
 
     Returns
     -------
-    dsdp: numpy.ndarray
-        Ntheta by Nvar size. a Jacobian matrix of the (decision variables, parameters) with respect to paramerters (=theta_name).
+    dsdp: scipy.sparse.csr.csr_matrix
+        Ntheta by Nvar size sparse matrix. A Jacobian matrix of the (decision variables, parameters) 
+        with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
     col: list
         List of variable names
     """
@@ -272,15 +278,17 @@ def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=Non
     except OSError:
         pass
     col = [i for i in col if SensitivityInterface.get_default_block_name() not in i]
-    return dsdp, col
+    dsdp_out = np.zeros((len(theta_names),len(col)))
+    for i in range(len(theta_names)):
+        for j in range(len(col)):
+            if SensitivityInterface.get_default_block_name() not in col[j]:
+                dsdp_out[i,j] =  -dsdp[i, j] # e.g) k_aug dsdp returns -dx1/dx1 = -1.0
+
+    return sparse.csr_matrix(dsdp_out), col
 
 def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     """This function calculates gradient vector of the objective function 
        and constraints with respect to the variables in theta_names.
-       We assume that the number of  constraints (rows) = Ncon, 
-       the number of theta = Ntheta, the numer of decision (primal) variables = Nx. 
-       Then, the number of all variables (columns) = Nvar = Ntheta + Nx. 
-       All results follow row and column order in row and col.
 
     e.g) min f:  p1*x1+ p2*(x2^2) + p1*p2
          s.t  c1: x1 + x2 = p1
@@ -290,6 +298,12 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
               p2 = 5
     - Variables = (x1, x2, x3, p1, p2)
     - Fix p1 and p2 with estimated values
+
+    The following terms are used to define the output dimensions:
+    Ncon   = number of constraints
+    Nvar   = number of variables (Nx + Ntheta)
+    Nx     = the numer of decision (primal) variables
+    Ntheta = number of uncertain parameters.
 
     Parameters
     ----------
@@ -306,8 +320,8 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
     -------
     gradient_f: numpy.ndarray
         Length Nvar array. A gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
-    gradient_c: numpy.ndarray 
-        Ncon by Nvar size matrix. A Jacobian matrix of the constraints with respect to the (decision variables, parameters) at the optimal solution
+    gradient_c: scipy.sparse.csr.csr_matrix
+        Ncon by Nvar size sparse matrix. A Jacobian matrix of the constraints with respect to the (decision variables, parameters) at the optimal solution
         Each row contains [column number, row number, and value], colum order follows variable order in col and index starts from 1. 
         Note that it follows k_aug.
         If no constraint exists, return []
@@ -315,6 +329,7 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
         Size Nvar. list of variable names
     row: list
         Size Ncon+1. List of constraints and objective function names
+        The final element is the objective function name.
     line_dic: dict
         column numbers of the theta_names in the model. Index starts from 1
 
@@ -367,6 +382,7 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
         gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
         with open ("col_row.col", "r") as myfile:
             col = myfile.read().splitlines()
+        col = [i for i in col if SensitivityInterface.get_default_block_name() not in i]
         with open ("col_row.row", "r") as myfile:
             row = myfile.read().splitlines()
     except Exception as e:
@@ -382,7 +398,10 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
             gradient_c = np.loadtxt("./GJH/A_print.txt")
         except Exception as e:
             print('./GJH/A_print.txt not found.')
-        gradient_c = np.array([i for i in gradient_c if not np.isclose(i[2],0,atol=0.0)])
+        row_idx = gradient_c[:,1]-1
+        col_idx = gradient_c[:,0]-1
+        data = gradient_c[:,2]
+        gradient_c = sparse.csr_matrix((data, (row_idx, col_idx)), shape=(len(row)-1, len(col)))
     else:
         gradient_c = np.array([])
     # remove all generated files

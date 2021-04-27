@@ -28,9 +28,14 @@ logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
 def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, tee=False, diagnostic_mode=False, solver_options=None):
     """
-    This function calculates error propagation of the objective function and constraints. The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' calculates error propagation of objective function and constraints in the 'model_uncertain'. We assume that the number of constraints (rows) = Ncon, the number of theta = Ntheta, the numer of decision (primal) variables = Nx. Then, the number of all variables (columns) = Nvar = Ntheta + Nx.  All results follow row and column order in results.row and results.col.
+    This function calculates error propagation of the objective function and constraints. The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' calculates error propagation of objective function and constraints in the 'model_uncertain'. 
 
-    
+    The following terms are used to define the output dimensions:
+    Ncon   = number of constraints
+    Nvar   = number of variables (Nx + Ntheta)
+    Nx     = the numer of decision (primal) variables
+    Ntheta = number of uncertain parameters.
+
     Args:
         model_function(function)                                                  : A python Function that generates an instance of the Pyomo model using 'data' as the input argument
         model_uncertain(function or Pyomo ConcreteModel)                          : Function is a a python Function that generates an instance of the Pyomo model
@@ -100,7 +105,12 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
     """
-    This function calculates gradient vector, expectation, and variance of the objective function and constraints  of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates error propagation of the objective function and constraints by using gradient vector and covariance matrix. We assume that the number of constraints (rows) = m, the number of theta = l, the numer of decision variables = k. Then, the number of all variables (columns) = n = l + k. All results follow row and column order in results.row and results.col.
+    This function calculates gradient vector, expectation, and variance of the objective function and constraints  of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates error propagation of the objective function and constraints by using gradient vector and covariance matrix. 
+    The following terms are used to define the output dimensions:
+    Ncon   = number of constraints
+    Nvar   = number of variables (Nx + Ntheta)
+    Nx     = the numer of decision (primal) variables
+    Ntheta = number of uncertain parameters.
 
     Args:
         model_uncertain(function or Pyomo ConcreteModel) : Function is a a python Function that generates an instance of the Pyomo model
@@ -115,11 +125,11 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
          tuple   : results object containing the all information including
             - results.gradient_f(numpy.ndarray)               : Length Nvar array. Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
             - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar size sparse matrix. Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution.
-            - results.dsdp(scipy.sparse.csr.csr_matrix)       : Ntheta by Nvar size sparse matrix. Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
+            - results.dsdp(scipy.sparse.csr.csr_matrix)       : Ntheta by Nvar size sparse matrix. A Jacobian matrix of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
             - results.propagation_c(numpy.ndarray)            : Length Ncon array. Error propagation in the constraints , dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
             - results.propagation_f(numpy.float64)            : Real number. Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
             - results.col(list)                               : Size Nvar. List of variable names
-            - results.row(list)                               : Size Ncon+1. List of constraints and objective function names
+            - results.row(list)                               : Size Ncon+1. List of constraints and objective function names. The final element is the objective function name.
     
     Raises:
         Exception:  When model_uncertain is neither 'ConcreteModel' nor 'function'.
@@ -137,35 +147,21 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     # Remove all "'" in theta_names     
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     for v in theta_names:
-        eval('model.'+var_dic[v]).setlb(theta[v])
-        eval('model.'+var_dic[v]).setub(theta[v])
+        model.find_component(var_dic[v]).setlb(theta[v])
+        model.find_component(var_dic[v]).setub(theta[v])
     # get gradient of the objective function, constraints, and the column,row names
     dsdp, col = get_dsdp(model, theta_names, theta, var_dic,tee)      
+    dsdp = dsdp.toarray().T # change shape, Nvar by Ntheta
     gradient_f, gradient_c, col,row, line_dic = get_dfds_dcds(model, theta_names, tee)
     num_constraints = len(list(model.component_data_objects(Constraint,
                                                             active=True,
                                                             descend_into=True)))
-    gradient_c_dic = {}
-    if num_constraints > 0 :
-        gradient_c = np.array([i for i in gradient_c if not np.isclose(i[2],0)])
-        row_number, col_number = np.shape(gradient_c)
-        gradient_c_dic = {}
-        for i in range(row_number):
-            gradient_c_dic["d(c"+ str(int(gradient_c[i,1]))+")/d("+col[int(gradient_c[i,0]-1)]+")"] = gradient_c[i,2]
-    
-    # need to reshape the pyomo dsdp input
-    # e.g) kaug dsdp returns -dp1/dp1
-    dsdp_new = np.zeros((len(col), len(theta_names)))
-    for i in range(len(theta_names)):
-        for j in range(len(col)):
-            if SensitivityInterface.get_default_block_name() not in col[j]:
-                dsdp_new[j,i] =  -dsdp[i, j] 
     
     # calculate error propagation of the objective fuction
     # = df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
     # = (df/ds*ds/dp)*cov*(df/ds*ds/dp)
     # step 1. df/ds*ds/dp
-    fssp = np.matmul(np.reshape(gradient_f,(1,len(gradient_f))),np.reshape(dsdp_new,(len(dsdp_new),len(theta_names))))
+    fssp = np.matmul(np.reshape(gradient_f,(1,len(gradient_f))),np.reshape(dsdp,(len(dsdp),len(theta_names))))
     # step 2. (df/ds*ds/dp)*cov*(df/ds*ds/dp)
     propagation_f = np.sum(np.multiply(np.matmul(fssp,cov),fssp))
 
@@ -180,19 +176,21 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         # k_aug sparse form is [col_idx, row_idx, val] with index starts from 1
         # python sparse form is [row_idx, col_idx, val] with index starts from 0
         # note: vairable 'row' from get_dfds_dcds includes objecive function name. i.e, Ncon = len(row)-1
+        '''
         row_idx = gradient_c[:,1]-1
         col_idx = gradient_c[:,0]-1
         data = gradient_c[:,2]
         gradient_c = sparse.csr_matrix((data, (row_idx, col_idx)), shape=(len(row)-1, len(col)))
+        '''
         # step 1. dc/ds*ds/dp
-        cssp = np.matmul(gradient_c.toarray(), dsdp_new)
+        cssp = np.matmul(gradient_c.toarray(), dsdp)
         # step 2. (dc/ds*ds/dp)*cov*(dc/ds*ds/dp)
         propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
     else:
         propagation_c = np.array([])
     
     Output = namedtuple('Output',['gradient_f', 'gradient_c', 'dsdp', 'propagation_c','propagation_f','col','row'])
-    results= Output(gradient_f, gradient_c, sparse.csr_matrix(dsdp_new), propagation_c, propagation_f,col,row)
+    results= Output(gradient_f, gradient_c, sparse.csr_matrix(dsdp), propagation_c, propagation_f,col,row)
     return results
 
 
