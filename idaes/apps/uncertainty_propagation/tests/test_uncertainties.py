@@ -56,7 +56,7 @@ class TestUncertaintyPropagation:
         assert list(results.propagation_c) == []
         np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
-        assert results.propagation_f == approx(5.45439337747349)
+        np.testing.assert_array_almost_equal(results.propagation_f, 5.45439337747349)
         assert results.col == ['asymptote', 'rate_constant']
 
 
@@ -87,7 +87,7 @@ class TestUncertaintyPropagation:
         assert list(results.propagation_c) == []
         np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
-        assert results.propagation_f == approx(5.45439337747349)
+        np.testing.assert_array_almost_equal(results.propagation_f,5.45439337747349)
         assert results.col == ['asymptote', 'rate_constant']
 
 
@@ -116,7 +116,7 @@ class TestUncertaintyPropagation:
         assert list(propagate_results.gradient_c) == []
         np.testing.assert_array_almost_equal(propagate_results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         assert list(propagate_results.propagation_c) == []
-        assert propagate_results.propagation_f == approx(5.45439337747349)
+        np.testing.assert_array_almost_equal(propagate_results.propagation_f,5.45439337747349)
         assert propagate_results.col == ['asymptote', 'rate_constant']
     
     def test_propagate_uncertainty_error(self):
@@ -164,7 +164,7 @@ class TestUncertaintyPropagation:
         assert list(results.theta.keys()) == ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
         np.testing.assert_array_almost_equal(results.gradient_f[0], [-0.19649493])
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
-        assert results.propagation_f == approx(0.0021199499778127204)
+        np.testing.assert_almost_equal(results.propagation_f,0.0021199499778127204)
         
 
     @pytest.mark.unit
