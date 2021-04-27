@@ -57,7 +57,6 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
         np.testing.assert_array_almost_equal(results.propagation_f, 5.45439337747349)
-        assert results.col == ['asymptote', 'rate_constant']
 
 
     def test_quantify_propagate_uncertainty2(self):
@@ -88,7 +87,6 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         np.testing.assert_array_almost_equal(results.propagation_f,5.45439337747349)
-        assert results.col == ['asymptote', 'rate_constant']
 
 
     def test_propagate_uncertainty(self):
@@ -117,7 +115,6 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(propagate_results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         assert list(propagate_results.propagation_c) == []
         np.testing.assert_array_almost_equal(propagate_results.propagation_f,5.45439337747349)
-        assert propagate_results.col == ['asymptote', 'rate_constant']
     
     def test_propagate_uncertainty_error(self):
         '''
@@ -159,9 +156,8 @@ class TestUncertaintyPropagation:
                      model.fs.flash.liq_outlet.mole_frac_comp[0, "benzene"])**2)
             return expr*1E4
         results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt, data, variable_name, SSE)
-        assert results.obj == approx(5.074968578304798)
+        rnp.testing.assert_array_almost_equal(esults.obj,5.074968578304798)
         np.testing.assert_array_almost_equal(np.fromiter(results.theta.values(), dtype=float), [-0.8987624 ,  1.41048611])
-        assert list(results.theta.keys()) == ["fs.properties.tau['benzene','toluene']", "fs.properties.tau['toluene','benzene']"]
         np.testing.assert_array_almost_equal(results.gradient_f[0], [-0.19649493])
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
         np.testing.assert_almost_equal(results.propagation_f,0.0021199499778127204)
