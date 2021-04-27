@@ -258,6 +258,8 @@ def get_dsdp(model, theta_names, theta, var_dic={},tee=False, solver_options=Non
     try:
         with open ("./dsdp/col_row.col", "r") as myfile:
             col = myfile.read().splitlines()
+        with open ("./dsdp/col_row.row", "r") as myfile:
+            row = myfile.read().splitlines()
         dsdp = np.loadtxt("./dsdp/dsdp_in_.in")
     except Exception as e:
         print('File not found.')
@@ -367,6 +369,8 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
         gradient_f = np.loadtxt("./GJH/gradient_f_print.txt")
         with open ("col_row.col", "r") as myfile:
             col = myfile.read().splitlines()
+        with open ("col_row.row", "r") as myfile:
+            row = myfile.read().splitlines()
     except Exception as e:
         print('File not found.')
         raise e
@@ -396,11 +400,13 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
         gradient_c = np.array([])
         gradient_c_dic = {}
     # remove all generated files
+    
     shutil.move("col_row.nl", "./GJH/")
     shutil.move("col_row.col", "./GJH/")
     shutil.move("col_row.row", "./GJH/")
     shutil.rmtree('GJH', ignore_errors=True)
-    return gradient_f, gradient_c, col,line_dic
+    
+    return gradient_f, gradient_c, col,row, line_dic
 
 def line_num(file_name, target):
     """This function returns the line inumber contains 'target' in the file_name.

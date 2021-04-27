@@ -28,7 +28,8 @@ logger = logging.getLogger('idaes.apps.uncertainty_propagation')
 
 def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta_names, obj_function=None, tee=False, diagnostic_mode=False, solver_options=None):
     """
-    This function calculates error propagation of the objective function and constraints. The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' calculates error propagation of objective function and constraints in the 'model_uncertain'.
+    This function calculates error propagation of the objective function and constraints. The parmest uses 'model_function' to estimate uncertain parameters. The uncertain parameters in 'model_uncertain' are fixed with the estimated values. The function 'quantify_propagate_uncertainty' calculates error propagation of objective function and constraints in the 'model_uncertain'. We assume that the number of constraints (rows) = Ncon, the number of theta = Ntheta, the numer of decision (primal) variables = Nx. Then, the number of all variables (columns) = Nvar = Ntheta + Nx.  All results follow row and column order in results.row and results.col.
+
     
     Args:
         model_function(function)                                                  : A python Function that generates an instance of the Pyomo model using 'data' as the input argument
@@ -42,16 +43,17 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
     
     Returns:
         tuple   : results object containing the all information including:
-            - results.obj(float)                    : Objective function value for the given obj_function 
-            - results.theta(dict)                   : Estimated parameters
-            - results.theta_names(dict)             : Names of parameters
-            - results.cov(numpy.ndarray)            : Covariance of theta
-            - results.gradient_f(numpy.ndarray)     : Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
-            - results.gradient_c(scipy.sparse.coo.coo_matrix)     : Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution. Each row contains [column number, row number, and value], colum order follows variable order in col. If no constraint exists, return []. Note: Python sparse matrix index starts from 0.  To match with k_aug sparse form, need to add 1 for each row and col index.
-            - results.dsdp(numpy.ndarray)           : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
-            - results.propagation_c(numpy.ndarray)  : Error propagation in the constraints (only constraints have theta_name)  e.g) [[constraint iumber1, error1],[constraint number2, error2]]             
-            - results.propagation_f(numpy.float64)  : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            - results.col(list)                     : List of variable names  
+            - results.obj(float)                              : Real number. Objective function value for the given obj_function 
+            - results.theta(dict)                             : Size Ntheta python dictionary.  Estimated parameters
+            - results.theta_names(list)                       : Size Ntheta list. Names of parameters
+            - results.cov(numpy.ndarray)                      : Ntheta by Ntheta matrix. Covariance of theta
+            - results.gradient_f(numpy.ndarray)               : Length Nvar array. Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
+            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar size sparse matrix. Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution.
+            - results.dsdp(scipy.sparse.csr.csr_matrix)       : Ntheta by Nvar size sparse matrix. Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
+            - results.propagation_c(numpy.ndarray)            : Length Ncon array. Error propagation in the constraints , dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+            - results.propagation_f(numpy.float64)            : Real number. Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.col(list)                               : Size Nvar. List of variable names
+            - results.row(list)                               : Size Ncon+1. List of constraints and objective function names
     
     Raises:
         TypeError:  When tee entry is not Boolean
@@ -84,66 +86,62 @@ def quantify_propagate_uncertainty(model_function, model_uncertain,  data, theta
         theta_out = theta
     propagate_results  =  propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee)
    
-    if len(propagate_results.gradient_c)>0:
-        I,J,V =  propagate_results.gradient_c[:,1].flatten().astype(int)-1, propagate_results.gradient_c[:,0].flatten().astype(int)-1, propagate_results.gradient_c[:,2].flatten()
-        coo_ = sparse.coo_matrix((V,(I,J)))
-    else:
-        coo_ = propagate_results.gradient_c
-
-    Output = namedtuple('Output',['obj', 'theta', 'theta_names', 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col'])
+    Output = namedtuple('Output',['obj', 'theta', 'theta_names', 'cov','gradient_f', 'gradient_c', 'dsdp', 'propagation_c', 'propagation_f','col','row'])
     results= Output(obj, theta_out, theta_names, cov, 
                      propagate_results.gradient_f,
                      propagate_results.gradient_c, 
                      propagate_results.dsdp,
-                     coo_,
+                     propagate_results.propagation_c,
                      propagate_results.propagation_f,
-                     propagate_results.col)
+                     propagate_results.col,
+                     propagate_results.row
+                     )
     return results
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, solver_options=None):
     """
-    This function calculates gradient vector, expectation, and variance of the objective function and constraints  of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates error propagation of the objective function and constraints by using gradient vector and covariance matrix.
-    
+    This function calculates gradient vector, expectation, and variance of the objective function and constraints  of the model for given estimated optimal parameters and covariance matrix of parameters. It calculates error propagation of the objective function and constraints by using gradient vector and covariance matrix. We assume that the number of constraints (rows) = m, the number of theta = l, the numer of decision variables = k. Then, the number of all variables (columns) = n = l + k. All results follow row and column order in results.row and results.col.
+
     Args:
         model_uncertain(function or Pyomo ConcreteModel) : Function is a a python Function that generates an instance of the Pyomo model
-        theta(dict)                    : Estimated parameters 
-        cov(numpy.ndarray)             : Covariance matrix of parameters 
-        theta_names(list of strings)   : List of estimated Var names
-        var_dic(dictionary)            : If any original variable contains apostrophes, need an auxiliary dictionary with keys theta_namess without apostrophes, values with apostrophes. e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
+        theta(dict)                    : Size Ntheta python dictionary. Estimated parameters
+        cov(numpy.ndarray)             : Ntheta by Ntheta matrix. Covariance matrix of parameters
+        theta_names(list of strings)   : Size Ntheta. List of estimated l theta names
+        var_dic(dictionary)            : Size Ntheta. If any original variable contains apostrophes, need an auxiliary dictionary with keys theta_namess without apostrophes, values with apostrophes. e.g) var_dic: {'fs.properties.tau[benzene,toluene]': "fs.properties.tau['benzene','toluene']", 'fs.properties.tau[toluene,benzene]': "fs.properties.tau['toluene','benzene']"} 
         tee(bool, optional)            : Indicates that ef solver output should be teed
         solver_options(dict, optional) : Provides options to the solver (also the name of an attribute)
 
      Returns:
          tuple   : results object containing the all information including
-            - results.gradient_f(numpy.ndarray)    : Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
-            - results.gradient_c(numpy.ndarray)    : Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution. Each row contains [column number, row number, and value], colum order follows variable order in col. If no constraint exists, return []
-            - results.dsdp(numpy.ndarray)          : Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
-            - results.propagation_c(numpy.ndarray) : Error propagation in the constraints (only constraints have theta_name)  e.g) [[constraint iumber1, error1],[constraint number2, error2]]             
-            - results.propagation_f(numpy.float64) : Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            - results.col(list)                    : List of variable names  
+            - results.gradient_f(numpy.ndarray)               : Length Nvar array. Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
+            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar size sparse matrix. Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution.
+            - results.dsdp(scipy.sparse.csr.csr_matrix)       : Ntheta by Nvar size sparse matrix. Gradient vector of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
+            - results.propagation_c(numpy.ndarray)            : Length Ncon array. Error propagation in the constraints , dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+            - results.propagation_f(numpy.float64)            : Real number. Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.col(list)                               : Size Nvar. List of variable names
+            - results.row(list)                               : Size Ncon+1. List of constraints and objective function names
+    
     Raises:
         Exception:  When model_uncertain is neither 'ConcreteModel' nor 'function'.
     """
 
     # define Pyomo model
-    if type(model_uncertain).__name__ == 'ConcreteModel':
-        model = model_uncertain
-    elif type(model_uncertain).__name__ == 'function':
-        model = model_uncertain()
-    else:
-        raise TypeError('model_uncertain must be either python function or Pyomo ConcreteModel.')
+    try:
+        if isinstance(model_uncertain, Block):
+            model = model_uncertain
+        else:
+            model = model_uncertain()
+    except TypeError as e:
+        raise 'model_uncertain must be either python function or Pyomo ConcreteModel.'
+    
     # Remove all "'" in theta_names     
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     for v in theta_names:
         eval('model.'+var_dic[v]).setlb(theta[v])
         eval('model.'+var_dic[v]).setub(theta[v])
-    # get gradient of the objective function, constraints, and the column number of each theta
-    gradient_f, gradient_c, col, line_dic = get_dfds_dcds(model, theta_names, tee)
-    dsdp, col  = get_dsdp(model, theta_names, theta, var_dic,tee)      
-    
-    gradient_f_dic = {}
-    for i in range(len(col)):
-        gradient_f_dic["d(f)/d("+col[i]+")"] = gradient_f[i]
+    # get gradient of the objective function, constraints, and the column,row names
+    dsdp, col = get_dsdp(model, theta_names, theta, var_dic,tee)      
+    gradient_f, gradient_c, col,row, line_dic = get_dfds_dcds(model, theta_names, tee)
     num_constraints = len(list(model.component_data_objects(Constraint,
                                                             active=True,
                                                             descend_into=True)))
@@ -154,63 +152,47 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         gradient_c_dic = {}
         for i in range(row_number):
             gradient_c_dic["d(c"+ str(int(gradient_c[i,1]))+")/d("+col[int(gradient_c[i,0]-1)]+")"] = gradient_c[i,2]
-    dsdp_dic = {}
+    
+    # need to reshape the pyomo dsdp input
+    # e.g) kaug dsdp returns -dp1/dp1
+    dsdp_new = np.zeros((len(col), len(theta_names)))
     for i in range(len(theta_names)):
         for j in range(len(col)):
             if SensitivityInterface.get_default_block_name() not in col[j]:
-                dsdp_dic["d("+col[j] +")/d("+theta_names[i]+")"] =  -dsdp[i, j]
-    x_list = [x for x in col if x not in var_dic.keys()] #x_list includes only decision variables (exclude theta_names) 
-    p_list = theta_names #This makes cov and fxxp have the same order 
-    fxxp = []
-    for i in p_list:
-        fxxp_tmp = 0
-        for j in x_list:
-            fxxp_tmp = fxxp_tmp + gradient_f_dic['d(f)/d('+j+')']*dsdp_dic['d('+j+')/d('+i+')']
-        fxxp.append(fxxp_tmp)
-    fxxp = np.array(fxxp)
-    # calculate error propagation df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-    # objective function: 
-    for cc in list(model.component_data_objects(Objective,
-                                            active=True,
-                                            descend_into=True)):
-        # save gradient of the objective with respect to only theta_names
-        if any(ele in str(cc.expr) for ele in theta_names):
-            gradient_f_theta = gradient_f[[int(line_dic[v]) -1 for v in theta_names]]
-    propagation_f = {}
+                dsdp_new[j,i] =  -dsdp[i, j] 
+    
     # calculate error propagation of the objective fuction
-    if 'gradient_f_theta' in locals():
-        propagation_f = np.dot(gradient_f_theta,np.dot(cov,np.transpose(gradient_f_theta))) + np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
-    else:
-        propagation_f = np.dot(fxxp,np.dot(cov,np.transpose(fxxp)))
-    # constraints: 
-    # calculate error propagation dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+    # = df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+    # = (df/ds*ds/dp)*cov*(df/ds*ds/dp)
+    # step 1. df/ds*ds/dp
+    fssp = np.matmul(np.reshape(gradient_f,(1,len(gradient_f))),np.reshape(dsdp_new,(len(dsdp_new),len(theta_names))))
+    # step 2. (df/ds*ds/dp)*cov*(df/ds*ds/dp)
+    propagation_f = np.sum(np.multiply(np.matmul(fssp,cov),fssp))
+
+    # calculate error propagation of constraints
+    # = dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+    # = (dc/ds*ds/dp)*cov*(dc/ds*ds/dp)
     num_constraints = len(list(model.component_data_objects(Constraint,
                                                             active=True,
                                                             descend_into=True))) 
     if num_constraints > 0:
-        # save constraints into gradient_cc only if constraints includes theta 
-        # gradient_c[i] is a sparse matrix with column number, row number, and value
-        gradient_cc = []
-        for i in range(gradient_c.shape[0]):
-            if gradient_c[i,[0]] in line_dic.values():
-                gradient_cc.append(gradient_c[i])
-        gradient_cc = np.array(gradient_cc)
-        # save unique constraints numbers that contain theta, index starts from 1. 
-        constriant_number = list(set(gradient_cc[:,[1]].flatten().astype(int)))       
-        # convert sparse matrix to dense matrix with (value, (row number, column number))
-        I,J,V =  gradient_cc[:,[1]].flatten().astype(int)-1, gradient_cc[:,[0]].flatten().astype(int)-1,  gradient_cc[:,[2]].flatten()
-        gradient_cc = sparse.coo_matrix((V,(I,J))).todense()
-        # propagation_c includes `dc/ds*cov_p*dc/ds`
-        propagation_c = []
-        # calculate error propagation of constraints
-        for r in range(1,num_constraints+1):
-            if r in constriant_number:
-                propagation_c.append([int(r), float(np.dot(gradient_cc[r-1],np.dot(cov,np.transpose(gradient_cc[r-1]))))])
+        # gradient_c rearrange.
+        # k_aug sparse form is [col_idx, row_idx, val] with index starts from 1
+        # python sparse form is [row_idx, col_idx, val] with index starts from 0
+        # note: vairable 'row' from get_dfds_dcds includes objecive function name. i.e, Ncon = len(row)-1
+        row_idx = gradient_c[:,1]-1
+        col_idx = gradient_c[:,0]-1
+        data = gradient_c[:,2]
+        gradient_c = sparse.csr_matrix((data, (row_idx, col_idx)), shape=(len(row)-1, len(col)))
+        # step 1. dc/ds*ds/dp
+        cssp = np.matmul(gradient_c.toarray(), dsdp_new)
+        # step 2. (dc/ds*ds/dp)*cov*(dc/ds*ds/dp)
+        propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
     else:
-        propagation_c = []
-    propagation_c = np.array(propagation_c)
-    Output = namedtuple('Output',['gradient_f', 'gradient_c', 'dsdp', 'propagation_c','propagation_f','col'])
-    results= Output(gradient_f, gradient_c, dsdp, propagation_c, propagation_f,col)
+        propagation_c = np.array([])
+    
+    Output = namedtuple('Output',['gradient_f', 'gradient_c', 'dsdp', 'propagation_c','propagation_f','col','row'])
+    results= Output(gradient_f, gradient_c, sparse.csr_matrix(dsdp_new), propagation_c, propagation_f,col,row)
     return results
 
 
