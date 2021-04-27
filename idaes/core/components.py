@@ -75,6 +75,9 @@ class ComponentData(ProcessBlockData):
         description="Flag indicating whether component has a vapor pressure"))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure"))
+    CONFIG.declare("relative_permittivity_liq_comp", ConfigValue(
+        description=
+        "Method to use to calculate liquid phase relative permittivity"))
 
     CONFIG.declare("phase_equilibrium_form", ConfigValue(
         domain=dict,
