@@ -395,9 +395,17 @@ def get_dfds_dcds(model, theta_names, tee=False, solver_options=None):
                                                             descend_into=True)))
     if num_constraints > 0 :
         try:
+            # load text file from kaug
             gradient_c = np.loadtxt("./GJH/A_print.txt")
+            # This is a sparse matrix
+            # gradient_c[:,0] are column index
+            # gradient_c[:,1] are data index
+            # gradient_c[:,1] are the matrix values
         except Exception as e:
-            print('./GJH/A_print.txt not found.')
+            print('kaug file ./GJH/A_print.txt not found.')
+        
+        # Subtract 1 from row and column indices to convert from 
+        # start at 1 (kaug) to start at 0 (numpy)
         row_idx = gradient_c[:,1]-1
         col_idx = gradient_c[:,0]-1
         data = gradient_c[:,2]
