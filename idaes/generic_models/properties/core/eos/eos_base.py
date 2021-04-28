@@ -18,6 +18,9 @@ some. EoS developers should overload all these methods.
 """
 from pyomo.environ import units as pyunits
 from idaes.core.util.constants import Constants as const
+from idaes.generic_models.properties.core.generic.utility import (
+    get_method, get_component_object as cobj)
+from idaes.core.util.exceptions import PropertyNotSupportedError
 
 
 class EoSBase():
@@ -46,6 +49,47 @@ class EoSBase():
     @staticmethod
     def build_parameters(b):
         raise NotImplementedError(_msg(b, "build_parameters"))
+
+    @staticmethod
+    def cp_mol_phase(b, p):
+        raise NotImplementedError(_msg(b, "cp_mol_phase"))
+
+    @staticmethod
+    def cp_mol_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "cp_mol_phase_comp"))
+
+    @staticmethod
+    def cv_mol_phase(b, p):
+        raise NotImplementedError(_msg(b, "cv_mol_phase"))
+
+    @staticmethod
+    def cv_mol_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "cv_mol_phase_comp"))
+
+    @staticmethod
+    def cv_mol_phase_comp_pure(b, p, j):
+        # Method for calculating pure component cv from cp
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            # For ideal gases, cv = cp - R
+            units = b.params.get_metadata().derived_units
+            R = pyunits.convert(const.gas_constant,
+                                to_units=units["heat_capacity_mole"])
+            return (get_method(b, "cp_mol_ig_comp", j)(
+                b, cobj(b, j), b.temperature) - R)
+        elif pobj.is_liquid_phase():
+            # For ideal (incompressible) liquids, cv = cp
+            return get_method(b, "cp_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature)
+        elif pobj.is_liquid_phase():
+            # For ideal (incompressible) solids, cv = cp
+            return get_method(b, "cp_mol_sol_comp", j)(
+                b, cobj(b, j), b.temperature)
+        else:
+            raise PropertyNotSupportedError(
+                "{} received unrecognised phase type {}. Method only "
+                "supports Vapor, Liquid and Solid phase types."
+                .format(b.name, p))
 
     @staticmethod
     def dens_mass_phase(b, p):

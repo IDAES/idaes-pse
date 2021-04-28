@@ -145,6 +145,54 @@ def test_compress_fact_phase_invalid_phase(m_sol):
 
 
 @pytest.mark.unit
+def test_cp_mol_phase(m):
+    m.props[1].cp_mol_phase_comp = Var(m.params.phase_list,
+                                       m.params.component_list)
+
+    for p in m.params.phase_list:
+        assert str(Ideal.cp_mol_phase(m.props[1], p)) == str(
+            sum(m.props[1].mole_frac_phase_comp[p, j] *
+                m.props[1].cp_mol_phase_comp[p, j]
+                for j in m.params.component_list))
+
+
+@pytest.mark.unit
+def test_cp_mol_phase_comp(m):
+    for j in m.params.component_list:
+        m.params.get_component(j).config.cp_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.cp_mol_ig_comp = dummy_call
+
+        assert str(Ideal.cp_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
+        assert str(Ideal.cp_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
+
+
+@pytest.mark.unit
+def test_cv_mol_phase(m):
+    m.props[1].cv_mol_phase_comp = Var(m.params.phase_list,
+                                       m.params.component_list)
+
+    for p in m.params.phase_list:
+        assert str(Ideal.cv_mol_phase(m.props[1], p)) == str(
+            sum(m.props[1].mole_frac_phase_comp[p, j] *
+                m.props[1].cv_mol_phase_comp[p, j]
+                for j in m.params.component_list))
+
+
+@pytest.mark.unit
+def test_cv_mol_phase_comp(m):
+    for j in m.params.component_list:
+        m.params.get_component(j).config.cp_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.cp_mol_ig_comp = dummy_call
+
+        assert str(Ideal.cv_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
+        assert str(Ideal.cv_mol_phase_comp(m.props[1], "Vap", j)) == str(
+            42 - pyunits.convert(
+                const.gas_constant,
+                to_units=pyunits.kg*pyunits.m**2/pyunits.s**2 /
+                pyunits.mol/pyunits.K))
+
+
+@pytest.mark.unit
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
