@@ -110,7 +110,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     Ncon   = number of constraints
     Nvar   = number of variables (Nx + Ntheta)
     Nx     = the numer of decision (primal) variables
-    Ntheta = number of uncertain parameters.
+    Np = number of uncertain parameters.
 
     Args:
         model_uncertain(function or Pyomo ConcreteModel) : Function is a a python Function that generates an instance of the Pyomo model
@@ -123,9 +123,9 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
 
      Returns:
          tuple   : results object containing the all information including
-            - results.gradient_f(numpy.ndarray)               : Length Nvar array. Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
-            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar size sparse matrix. Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution.
-            - results.dsdp(scipy.sparse.csr.csr_matrix)       : Ntheta by Nvar size sparse matrix. A Jacobian matrix of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
+            - results.gradient_f(numpy.ndarray)               : Length Nvar + Np array. Gradient vector of the objective function with respect to the (decision variables, parameters) at the optimal solution
+            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by (Nvar + Np) size sparse matrix. Gradient vector of the constraints with respect to the (decision variables, parameters) at the optimal solution.
+            - results.dsdp(scipy.sparse.csr.csr_matrix)       : (Nx + Np) by Np size sparse matrix. A Jacobian matrix of the (decision variables, parameters) with respect to paramerters (=theta_name). number of rows = len(theta_name), number of columns= len(col)
             - results.propagation_c(numpy.ndarray)            : Length Ncon array. Error propagation in the constraints , dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
             - results.propagation_f(numpy.float64)            : Real number. Error propagation in the objective function, df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
             - results.col(list)                               : Size Nvar. List of variable names

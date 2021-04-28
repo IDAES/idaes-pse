@@ -18,7 +18,7 @@ Consider the optimization problem:
         & x_{lb} \leq x \leq x_{ub}
     \end{align*}
 
-Here :math:`x \in \mathcal{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathcal{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathcal{R}^{n\ \times\ 1}\ \times \mathcal{R}^{m\ \times\ 1} \rightarrow \mathcal{R}^{k\ \times\ 1}` are the constraints, and :math:`x_{lb}` and :math:`x_{ub}` are the lower and upper bounds, respectively.
+Here :math:`x \in \mathbb{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathbb{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathbb{R}^{n\ \times\ 1}\ \times \mathbb{R}^{m\ \times\ 1} \rightarrow \mathbb{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathbb{R}^{n\ \times\ 1}\ \times \mathbb{R}^{m\ \times\ 1} \rightarrow \mathbb{R}^{k\ \times\ 1}` are the constraints, and :math:`x_{lb}` and :math:`x_{ub}` are the lower and upper bounds, respectively.
 
 Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty represented with covariance matrix :math:`\Sigma_p`. This toolbox estimates the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` induced by uncertainty in :math:`p`.
 
