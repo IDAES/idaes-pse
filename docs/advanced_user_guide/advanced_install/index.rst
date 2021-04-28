@@ -112,7 +112,8 @@ Now that conda and pip are installed, and you are in the "idaes" conda environme
 
     Also note that these pip installs would override any package within the conda environment, 
     so if you would like a specific package (e.g. git clone Pyomo), you should look at the 
-    requirements files and only install the packages you need.
+    requirements files and only install the packages you need. Add the ``-e`` flag to make the installation
+    editable. This is recommended if you plan to develop core IDAES code.
 
 You can test that everything is installed properly by running the tests with
 Pytest_:
