@@ -196,9 +196,17 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         gradient_c = sparse.csr_matrix((data, (row_idx, col_idx)), shape=(len(row)-1, len(col)))
         '''
         # step 1. dc/ds*ds/dp
+        # [Ncon x (Nx + Np)] x [(Nx + Np] x Np] = [Ncon x Np] matrix
         cssp = np.matmul(gradient_c.toarray(), dsdp)
-        # step 2. (dc/ds*ds/dp)*cov*(dc/ds*ds/dp)
-        propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
+        
+        # step 2. (dc/ds*ds/dp)*cov*(dc/ds*ds/dp).transpose()
+        # [Ncon x Np] x [Np x Np] x [Np x Ncon]
+        
+        # Not sure if this is correct.
+        # propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
+        
+        # Updated to match propgation_f
+        propagation_c = cssp @ cov.to_numpy() @ cssp.transpose()
     else:
         propagation_c = np.array([])
     
