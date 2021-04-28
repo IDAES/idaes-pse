@@ -160,10 +160,29 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     # calculate error propagation of the objective fuction
     # = df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
     # = (df/ds*ds/dp)*cov*(df/ds*ds/dp)
-    # step 1. df/ds*ds/dp
-    fssp = np.matmul(np.reshape(gradient_f,(1,len(gradient_f))),np.reshape(dsdp,(len(dsdp),len(theta_names))))
-    # step 2. (df/ds*ds/dp)*cov*(df/ds*ds/dp)
-    propagation_f = np.sum(np.multiply(np.matmul(fssp,cov),fssp))
+    # step 1. df/ds*ds/dp 
+    
+    # [1 x (Nx + Np)] matrix
+    df_ds = np.reshape(gradient_f,(1,len(gradient_f)))
+    
+    # [(Nx + Np) x (Np) ] matrix
+    ds_dp = np.reshape(dsdp,(len(dsdp),len(theta_names)))
+    
+    # [1 x Np ] matrix
+    fssp = np.matmul(df_ds,ds_dp)
+    
+    print("df_ds =",df_ds)
+    print("ds_dp =",ds_dp)
+    print("fssp =", fssp)
+    
+    # step 2. (df/ds*ds/dp)*cov*(df/ds*ds/dp).transpose()
+    # [1 x Np] x [Np x Np ] x [Np x 1] = [1 x 1]
+    propagation_f = fssp @ cov.to_numpy() @ fssp.transpose()
+    
+    # convert to scalar
+    propagation_f = propagation_f[0,0]
+    
+    print("propagation_f = ",propagation_f)
 
     # calculate error propagation of constraints
     # = dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
