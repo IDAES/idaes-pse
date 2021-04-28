@@ -21,8 +21,8 @@ min f:  p1*x1+ p2*(x2^2) + p1*p2
               p1 = 10
               p2 = 5
 
-Variables = (x1, x2, x3, p1, p2)
-Parameters = (p1, p2)
+Variables = (x1, x2, x3)
+Parameters (fixed variables) = (p1, p2)
 '''
 
 import idaes
@@ -35,9 +35,15 @@ m = pyo.ConcreteModel()
 m.dual = pyo.Suffix(direction=pyo.Suffix.IMPORT)
 
 # Define variables
-m.x1 = pyo.Var(bounds=(0,10))
-m.x2 = pyo.Var(bounds=(0,10))
-m.x3 = pyo.Var(bounds=(0,10))
+# m.x1 = pyo.Var(bounds=(0,10))
+# m.x2 = pyo.Var(bounds=(0,10))
+# m.x3 = pyo.Var(bounds=(0,10))
+
+m.x1 = pyo.Var()
+m.x2 = pyo.Var()
+m.x3 = pyo.Var()
+
+
 
 # Define parameters
 # m.p1 = pyo.Param(initialize=10, mutable=True)
@@ -69,7 +75,7 @@ print(m.dual.display())
 ### Analytic solution
 '''
 At the optimal solution, none of the bounds are active. As long as the active set
-does not change (i.e., none of the bounds because active), the
+does not change (i.e., none of the bounds become active), the
 first order optimality conditions reduce to a simple linear system.
 '''
 
@@ -203,7 +209,7 @@ sigma_p = [[2, 0], [0, 1]]
 sigma_p = np.array([[2, 0], [0, 1]])
 
 # Nominal values for uncertain parameters
-theta = {'p1':m.p1(), 'p2':m.p2}
+theta = {'p1':m.p1(), 'p2':m.p2()}
 
 # Names of uncertain parameters
 theta_names = ['p1','p2']
