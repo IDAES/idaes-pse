@@ -220,3 +220,33 @@ m.p2.unfix()
 
 ## Run package
 results = propagate_uncertainty(m, theta, sigma_p, theta_names)
+
+## Check results
+#sigma_f_1 = df_dx @ dx_dp @ sigma_p @ dx_dp.transpose() @ df_dx.transpose()
+#sigma_f_2 = df_dp @ sigma_p @ df_dp.transpose()
+#print("sigma_f = ",sigma_f_1 + sigma_f_2)
+
+tmp_f = (df_dp + df_dx @ dx_dp)
+sigma_f = tmp_f @ sigma_p @ tmp_f.transpose()
+print("\nsigma_f = ",sigma_f)
+
+#sigma_c_1 = dc_dx @ dx_dp @ sigma_p @ dx_dp.transpose() @ dc_dx.transpose()
+#sigma_c_2 = dc_dp @ sigma_p @ dc_dp.transpose()
+#print("sigma_c = ",sigma_c_1 + sigma_c_2)
+
+tmp_c = (dc_dp + dc_dx @ dx_dp)
+sigma_c = tmp_c @ sigma_p @ tmp_c.transpose()
+print("\nsigma_c = \n",sigma_c)
+
+## Check results take 2
+print("\n\n")
+grad_f = np.hstack((df_dx, df_dp))
+dsdp = np.vstack((dx_dp,np.eye(2)))
+sigma_f_take_2 = grad_f @ dsdp @ sigma_p @ dsdp.transpose() @ grad_f.transpose()
+# This matches
+print("sigma_f (take 2) = ",sigma_f_take_2)
+
+dc_ds = np.hstack((dc_dx, dc_dp))
+sigma_c_take_2 = dc_ds @ dsdp @ sigma_p @ dsdp.transpose() @ dc_ds.transpose()
+# This matches
+print("sigma_c (take 2) = ",sigma_c_take_2)

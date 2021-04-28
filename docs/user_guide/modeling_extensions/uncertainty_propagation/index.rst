@@ -20,30 +20,30 @@ Consider the optimization problem:
 
 Here :math:`x \in \mathbb{R}^{n\ \times\ 1}` are the decision variables, :math:`p \in \mathbb{R}^{m\ \times\ 1}` are the parameters, :math:`f(x,p):\ \mathbb{R}^{n\ \times\ 1}\ \times \mathbb{R}^{m\ \times\ 1} \rightarrow \mathbb{R}` is the objective function, :math:`c(x,p) = \{c_1(x,p), \ldots, c_k(x,p)\}\ :\ \mathbb{R}^{n\ \times\ 1}\ \times \mathbb{R}^{m\ \times\ 1} \rightarrow \mathbb{R}^{k\ \times\ 1}` are the constraints, and :math:`x_{lb}` and :math:`x_{ub}` are the lower and upper bounds, respectively.
 
-Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty represented with covariance matrix :math:`\Sigma_p`. This toolbox estimates the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p)` induced by uncertainty in :math:`p`.
+Let :math:`x^*` represent the optimal solution given parameters :math:`p^*`. In many process systems engineering problems, :math:`p^*` is estimated from data and has some uncertainty represented with covariance matrix :math:`\Sigma_p`. This toolbox estimates the uncertainty in the optimal solution :math:`x^*` and objective function value :math:`f(x^*, p^*)` induced by uncertainty in :math:`p^*`.
 
 Based on a first-order error propagation formula, the variance of the objective function is:
 
 .. math::
 
-    \text{Var}[f(x^*,p)] = \frac{\partial f}{\partial p}  \Sigma_p  \frac{\partial f}{\partial p}^T + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial f}{\partial x}^T 
+    \text{Var}[f(x^*,p^*)] = \left(\frac{\partial f}{\partial p} + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \right) \Sigma_p  \left(\frac{\partial f}{\partial p} + \frac{\partial f}{\partial x}\frac{\partial x}{\partial p} \right)^T 
 
 
 Likewise, the variance in constraint :math:`k` is:
 
 .. math::
 
-    \text{Var}[c_k(x^*,p)] = \frac{\partial c_k}{\partial p}  \Sigma_p  \frac{\partial c_k}{\partial p}^T + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \Sigma_p   \frac{\partial x}{\partial p}^T\frac{\partial c_k}{\partial x}^T
+    \text{Var}[c_k(x^*,p^*)] = \left(\frac{\partial c_k}{\partial p} + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \right)  \Sigma_p \left(\frac{\partial c_k}{\partial p} + \frac{\partial c_k}{\partial x}\frac{\partial x}{\partial p} \right)^T 
     
 Note that :math:`\text{Var}[c_k(x^*,p^*)] \approx 0` because the constraints remain feasible for a small perturbation in :math:`p`, i.e.,  :math:`c(x,p) = 0`.
 
 All gradients are calculated with `k_aug <https://github.com/dthierry/k_aug>`_  [1]. More specifically, :math:`\frac{\partial f}{\partial p}, \frac{\partial f}{\partial x}, \frac{\partial c_1}{\partial p}, \frac{\partial c_1}{\partial x}, \ldots, \frac{\partial c_k}{\partial p}, \frac{\partial c_k}{\partial x}` evaluated at :math:`(x^*, p)` are computed via automatic differentiation whereas :math:`\frac{\partial x}{\partial p}` are computed via nonlinear programming sensitivity theory.
 
-The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with `Pyomo.ParmEst`). 
+The covariance matrix :math:`\Sigma_p` is either user supplied or obtained via regression (with ``Pyomo.ParmEst``). 
 
 **Dependencies**
 
-`k_aug <https://github.com/dthierry/k_aug>`_ [1] is required to use uncertainty_propagation module. The `k_aug` solver executable is easily installed via the ``idaes get-extensions`` command.
+`k_aug <https://github.com/dthierry/k_aug>`_ [1] is required to use uncertainty_propagation module. The ``k_aug`` solver executable is easily installed via the ``idaes get-extensions`` command.
 
 Basic Usage
 ------------
@@ -116,7 +116,7 @@ The function **quantify_propagate_uncertainty** returns the object **results** w
 
 * **results.theta_names** contains the names of parameters :math:`p`
 * **results.theta** contains the estimate values for parameters :math:`p`
-* **results.gradient_f** contains the gradients :math:`\frac{\partial f}{\partial x},~ \frac{\partial f}{\partial p}`
+* **results.gradient_f** contains the gradient :math:`\frac{\partial f}{\partial x},~ \frac{\partial f}{\partial p}`
 * **results.gradient_c** contains the Jacobians :math:`\frac{\partial c}{\partial x},~ \frac{\partial c}{\partial p}`
 * **results.dsdp** contains the Jacobians :math:`\frac{\partial x}{\partial p},~\frac{\partial p}{\partial p}``
 * **results.propagation_f** contains the estimate variance of the objective function 
