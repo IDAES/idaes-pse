@@ -144,6 +144,24 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     except TypeError as e:
         raise 'model_uncertain must be either python function or Pyomo ConcreteModel.'
     
+    # check and convert (optional) covariance matrix
+    if isinstance(cov, np.ndarray):
+   	    cov_ = cov
+    else:
+    	cov_ = cov.to_numpy()
+    
+    if len(cov_.shape) != 2:
+    	raise ValueError("cov must be a 2-dimensional matrix or dataframe")
+    	
+    if cov_.shape[0] != cov_.shape[1]:
+    	raise ValueError("cov must be square")
+    	
+    if cov_.shape[0] != len(theta_names):
+    	raise ValueError("cov must be a n x n matrix or dataframe where n = len(theta_names)")
+    
+    if len(theta_names) != len(theta):
+    	raise ValueError("theta_names and theta must have the same number of elements")
+    
     # Remove all "'" in theta_names     
     theta_names, var_dic,variable_clean = clean_variable_name(theta_names)
     for v in theta_names:
@@ -156,6 +174,8 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     num_constraints = len(list(model.component_data_objects(Constraint,
                                                             active=True,
                                                             descend_into=True)))
+    
+    
     
     # calculate error propagation of the objective fuction
     # = df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
@@ -173,10 +193,12 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     
     # step 2. (df/ds*ds/dp)*cov*(df/ds*ds/dp).transpose()
     # [1 x Np] x [Np x Np ] x [Np x 1] = [1 x 1]
-    propagation_f = fssp @ cov.to_numpy() @ fssp.transpose()
+    propagation_f = fssp @ cov_ @ fssp.transpose()
     
     # convert to scalar
     propagation_f = propagation_f[0,0]
+    
+    assert propagation_f.shape == (1,1), "propagation_f should be a 1 x 1 matrix. Something is wrong if you are seeing this..."
     
     # calculate error propagation of constraints
     # = dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
@@ -206,7 +228,7 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
         # propagation_c = np.sum(np.matmul(cssp,cov)*cssp,axis=1)
         
         # Updated to match propgation_f
-        propagation_c = cssp @ cov.to_numpy() @ cssp.transpose()
+        propagation_c = cssp @ cov_ @ cssp.transpose()
     else:
         propagation_c = np.array([])
     
