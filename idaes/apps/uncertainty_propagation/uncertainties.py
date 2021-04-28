@@ -171,10 +171,6 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     # [1 x Np ] matrix
     fssp = np.matmul(df_ds,ds_dp)
     
-    print("df_ds =",df_ds)
-    print("ds_dp =",ds_dp)
-    print("fssp =", fssp)
-    
     # step 2. (df/ds*ds/dp)*cov*(df/ds*ds/dp).transpose()
     # [1 x Np] x [Np x Np ] x [Np x 1] = [1 x 1]
     propagation_f = fssp @ cov.to_numpy() @ fssp.transpose()
@@ -182,8 +178,6 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names, tee=False, s
     # convert to scalar
     propagation_f = propagation_f[0,0]
     
-    print("propagation_f = ",propagation_f)
-
     # calculate error propagation of constraints
     # = dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
     # = (dc/ds*ds/dp)*cov*(dc/ds*ds/dp)
