@@ -20,7 +20,8 @@ from pyomo.environ import units as pyunits
 from idaes.core.util.constants import Constants as const
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
-from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core.util.exceptions import (
+    PropertyNotSupportedError, ConfigurationError)
 
 
 class EoSBase():
@@ -110,6 +111,13 @@ class EoSBase():
             # First, need to determine correction between U_form and H_form
             # U_form = H_form - delta_n*R*T
             ele_comp = cobj(b, j).config.elemental_composition
+            if ele_comp is None:
+                raise ConfigurationError(
+                    "{} calculation of internal energy requires elemental "
+                    "composition of all species. Please set this using the "
+                    "elemental_composition argument in the component "
+                    "declaration ({}).".format(b.name, j))
+
             delta_n = 0
             for e, s in ele_comp.items():
                 # Check for any element which is vapor at standard state
@@ -140,6 +148,13 @@ class EoSBase():
             # First, need to determine correction between U_form and H_form
             # U_form = H_form - delta_n*R*T
             ele_comp = cobj(b, j).config.elemental_composition
+            if ele_comp is None:
+                raise ConfigurationError(
+                    "{} calculation of internal energy requires elemental "
+                    "composition of all species. Please set this using the "
+                    "elemental_composition argument in the component "
+                    "declaration ({}).".format(b.name, j))
+
             delta_n = 0
             for e, s in ele_comp.items():
                 # Check for any element which is vapor at standard state
