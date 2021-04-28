@@ -49,6 +49,8 @@ m.x3 = pyo.Var()
 # m.p2 = pyo.Param(initialize=5, mutable=True)
 m.p1 = pyo.Var(initialize=10)
 m.p2 = pyo.Var(initialize=5)
+m.p1.fix()
+m.p2.fix()
 
 # Define constraints
 m.con1 = pyo.Constraint(expr=m.x1 + m.x2 == m.p1)
@@ -106,11 +108,11 @@ The matrix dx_dp constains the sensitivities of x to perturbations in p
 # Columns: parameters p
 dx_dp = np.zeros((3,2))
 
-# dx2/dp1 = 1/(2 * p1)
-dx_dp[1, 0] = 1/(2*m.p1())
+# dx2/dp1 = 1/(2 * p2)
+dx_dp[1, 0] = 1/(2*m.p2())
 
-# dx2/dp2 = (v1 + v2)/(2 * p2**2)
-dx_dp[1,1] = (v1_ + v2_)/(2 * m.p2()**2)
+# dx2/dp2 = -(v1 + v2)/(2 * p2**2)
+dx_dp[1,1] = -(v1_ + v2_)/(2 * m.p2()**2)
 
 # dx1/dp1 = 1 - dx2/dp1
 dx_dp[0, 0] = 1 - dx_dp[1,0]
@@ -119,10 +121,10 @@ dx_dp[0, 0] = 1 - dx_dp[1,0]
 dx_dp[0, 1] = 0 - dx_dp[1,1]
 
 # dx3/dp1 = 1 - dx2/dp1
-dx_dp[2, 0] = 1 - dx_dp[1,0]
+dx_dp[2, 0] = 0 - dx_dp[1,0]
 
 # dx3/dp2 = 0 - dx2/dp2
-dx_dp[2, 1] = 0 - dx_dp[1,1]
+dx_dp[2, 1] = 1 - dx_dp[1,1]
 
 print("\n\ndx/dp =\n",dx_dp)
 
@@ -153,8 +155,8 @@ df_dp = np.zeros(2)
 # df/dxp1 = x1 + p2
 df_dp[0] = x1_ + m.p2()
 
-# df/dp2 = 2 * p2 * x2 + p1
-df_dp[1] = 2 * m.p2() * x2_ + m.p1()
+# df/dp2 = x2**2 + p1
+df_dp[1] = x2_**2 + m.p1()
 
 print("\n\ndf/dp =\n",df_dp)
 
@@ -210,6 +212,11 @@ theta = {'p1':m.p1(), 'p2':m.p2()}
 
 # Names of uncertain parameters
 theta_names = ['p1','p2']
+
+# Important to unfix the parameters!
+# Otherwise k_aug will complain about too few degrees of freedom
+m.p1.unfix()
+m.p2.unfix()
 
 ## Run package
 results = propagate_uncertainty(m, theta, sigma_p, theta_names)
