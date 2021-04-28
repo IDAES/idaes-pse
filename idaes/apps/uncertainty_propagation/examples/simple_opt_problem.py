@@ -49,9 +49,7 @@ m.x3 = pyo.Var()
 # m.p1 = pyo.Param(initialize=10, mutable=True)
 # m.p2 = pyo.Param(initialize=5, mutable=True)
 m.p1 = pyo.Var(initialize=10)
-m.p1.fix()
 m.p2 = pyo.Var(initialize=5)
-m.p2.fix()
 
 # Define constraints
 m.con1 = pyo.Constraint(expr=m.x1 + m.x2 == m.p1)
