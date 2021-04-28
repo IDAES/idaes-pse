@@ -74,7 +74,13 @@ class Ideal(EoSBase):
 
     @staticmethod
     def cv_mol_phase_comp(b, p, j):
-        return EoSBase.cv_mol_phase_comp_pure(b, p, j)
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return EoSBase.cv_mol_ig_comp_pure(b, j)
+        elif pobj.is_liquid_phase():
+            return EoSBase.cv_mol_ls_comp_pure(b, j)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
     def dens_mass_phase(b, p):
@@ -90,6 +96,22 @@ class Ideal(EoSBase):
                        get_method(b, "dens_mol_liq_comp", j)(
                            b, cobj(b, j), b.temperature)
                        for j in b.components_in_phase(p))
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+    @staticmethod
+    def energy_internal_mol_phase(b, p):
+        return sum(b.get_mole_frac()[p, j] *
+                   b.energy_internal_mol_phase_comp[p, j]
+                   for j in b.components_in_phase(p))
+
+    @staticmethod
+    def energy_internal_mol_phase_comp(b, p, j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return EoSBase.energy_internal_mol_ig_comp_pure(b, j)
+        elif pobj.is_liquid_phase():
+            return EoSBase.energy_internal_mol_ls_comp_pure(b, j)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

@@ -67,29 +67,21 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "cv_mol_phase_comp"))
 
     @staticmethod
-    def cv_mol_phase_comp_pure(b, p, j):
-        # Method for calculating pure component cv from cp
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase():
-            # For ideal gases, cv = cp - R
-            units = b.params.get_metadata().derived_units
-            R = pyunits.convert(const.gas_constant,
-                                to_units=units["heat_capacity_mole"])
-            return (get_method(b, "cp_mol_ig_comp", j)(
-                b, cobj(b, j), b.temperature) - R)
-        elif pobj.is_liquid_phase():
-            # For ideal (incompressible) liquids, cv = cp
-            return get_method(b, "cp_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
-        elif pobj.is_liquid_phase():
-            # For ideal (incompressible) solids, cv = cp
-            return get_method(b, "cp_mol_sol_comp", j)(
-                b, cobj(b, j), b.temperature)
-        else:
-            raise PropertyNotSupportedError(
-                "{} received unrecognised phase type {}. Method only "
-                "supports Vapor, Liquid and Solid phase types."
-                .format(b.name, p))
+    def cv_mol_ig_comp_pure(b, j):
+        # Method for calculating pure component ideal gas cv from cp
+        # For ideal gases, cv = cp - R
+        units = b.params.get_metadata().derived_units
+        R = pyunits.convert(const.gas_constant,
+                            to_units=units["heat_capacity_mole"])
+        return (get_method(b, "cp_mol_ig_comp", j)(
+            b, cobj(b, j), b.temperature) - R)
+
+    @staticmethod
+    def cv_mol_ls_comp_pure(b, j):
+        # Method for calculating pure component liquid and solid cv from cp
+        # For ideal (incompressible) liquids and solids, cv = cp
+        return get_method(b, "cp_mol_liq_comp", j)(
+            b, cobj(b, j), b.temperature)
 
     @staticmethod
     def dens_mass_phase(b, p):
@@ -98,6 +90,73 @@ class EoSBase():
     @staticmethod
     def dens_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "dens_mol_phase"))
+
+    @staticmethod
+    def energy_internal_mol_phase(b, p):
+        raise NotImplementedError(_msg(b, "entergy_internal_mol_phase"))
+
+    @staticmethod
+    def energy_internal_mol_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "energy_internal_mol_phase_comp"))
+
+    @staticmethod
+    def energy_internal_mol_ig_comp_pure(b, j):
+        # Method for calculating pure component U from H for ideal gases
+        units = b.params.get_metadata().derived_units
+        R = pyunits.convert(const.gas_constant,
+                            to_units=units["heat_capacity_mole"])
+
+        if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
+            # First, need to determine correction between U_form and H_form
+            # U_form = H_form - delta_n*R*T
+            ele_comp = cobj(b, j).config.elemental_composition
+            delta_n = 0
+            for e, s in ele_comp.items():
+                # Check for any element which is vapor at standard state
+                if e in ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]:
+                    delta_n += -s
+                elif e in ["F", "Cl", "H", "N", "O"]:
+                    delta_n += -s/2  # These are diatomic at standard state
+
+            delta_n += 1  # One mole of gaseous compound is formed
+            dU_form = delta_n*R*b.params.temperature_ref
+        else:
+            dU_form = 0  # No heat of formation to correct
+
+        # For ideal gases, U = H - R(T-T_ref) + dU_form
+        return (get_method(b, "enth_mol_ig_comp", j)(
+            b, cobj(b, j), b.temperature) -
+            R*(b.temperature-b.params.temperature_ref) +
+            dU_form)
+
+    @staticmethod
+    def energy_internal_mol_ls_comp_pure(b, j):
+        # Method for calculating pure component U from H for liquids & solids
+        units = b.params.get_metadata().derived_units
+        R = pyunits.convert(const.gas_constant,
+                            to_units=units["heat_capacity_mole"])
+
+        if cobj(b, j).parent_block().config.include_enthalpy_of_formation:
+            # First, need to determine correction between U_form and H_form
+            # U_form = H_form - delta_n*R*T
+            ele_comp = cobj(b, j).config.elemental_composition
+            delta_n = 0
+            for e, s in ele_comp.items():
+                # Check for any element which is vapor at standard state
+                if e in ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]:
+                    delta_n += -s
+                elif e in ["F", "Cl", "H", "N", "O"]:
+                    delta_n += -s/2  # These are diatomic at standard state
+            dU_form = delta_n*R*b.params.temperature_ref
+
+            # For ideal (incompressible) liquids and solids, U = H + dU_form
+            return (get_method(b, "enth_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature) +
+                dU_form)
+        else:
+            # If not including heat of formation, U = H
+            return get_method(b, "enth_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature)
 
     @staticmethod
     def enth_mol_phase(b, p):

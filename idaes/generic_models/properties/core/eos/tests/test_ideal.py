@@ -226,6 +226,65 @@ def test_dens_mol_phase_invalid_phase(m_sol):
 
 
 @pytest.mark.unit
+def test_energy_internal_mol_phase(m):
+    m.props[1].energy_internal_mol_phase_comp = Var(m.params.phase_list,
+                                                    m.params.component_list)
+
+    for p in m.params.phase_list:
+        assert str(Ideal.energy_internal_mol_phase(m.props[1], p)) == str(
+            sum(m.props[1].mole_frac_phase_comp[p, j] *
+                m.props[1].energy_internal_mol_phase_comp[p, j]
+                for j in m.params.component_list))
+
+
+@pytest.mark.unit
+def test_energy_internal_mol_phase_comp_no_h_form(m):
+    for j in m.params.component_list:
+        m.params.config.include_enthalpy_of_formation = False
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+
+        assert (
+            str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Liq", j)) ==
+            str(42))
+        assert (
+            str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Vap", j)) ==
+            str(42 - pyunits.convert(
+                const.gas_constant,
+                to_units=pyunits.kg*pyunits.m**2/pyunits.s**2 /
+                pyunits.mol/pyunits.K) *
+                (m.props[1].temperature - m.params.temperature_ref)))
+
+
+@pytest.mark.unit
+def test_energy_internal_mol_phase_comp_with_h_form(m):
+    for j in m.params.component_list:
+        m.params.config.include_enthalpy_of_formation = True
+        m.params.get_component(j).config.elemental_composition = {
+            "C": 1, "He": 2, "O": 4}
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+
+        # For liquid phase, delta(n) should be 4 (2*He + 2*O2)
+        assert (
+            str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Liq", j)) ==
+            "42 -4.0*(kg*m**2/J/s**2*(8.314462618*(J)/mol/K))"
+            "*params.temperature_ref")
+        # For vapor phase, delta(n) should be 3 (2*He + 2*O2 - 1*component)
+        assert (
+            str(Ideal.energy_internal_mol_phase_comp(m.props[1], "Vap", j)) ==
+            str(42 - pyunits.convert(
+                    const.gas_constant,
+                    to_units=pyunits.kg*pyunits.m**2/pyunits.s**2 /
+                    pyunits.mol/pyunits.K) *
+                (m.props[1].temperature - m.params.temperature_ref) -
+                3.0*pyunits.convert(
+                    const.gas_constant,
+                    to_units=pyunits.kg*pyunits.m**2/pyunits.s**2 /
+                    pyunits.mol/pyunits.K) * m.params.temperature_ref))
+
+
+@pytest.mark.unit
 def test_enth_mol_phase(m):
     m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
                                          m.params.component_list)
