@@ -25,7 +25,6 @@ Variables = (x1, x2, x3)
 Parameters (fixed variables) = (p1, p2)
 '''
 
-import idaes
 import pyomo.environ as pyo
 import numpy as np
 from idaes.apps.uncertainty_propagation.uncertainties import propagate_uncertainty
