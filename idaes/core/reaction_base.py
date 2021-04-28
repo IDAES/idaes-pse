@@ -16,6 +16,7 @@ This module contains classes for reaction blocks and reaction parameter blocks.
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import Var, Constraint, Expression
 
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
@@ -23,12 +24,19 @@ from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core import MaterialFlowBasis
 from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
 from idaes.core.util.misc import add_object_reference
+# WHY on Python 3.6, using the alternate syntax "import idaes.core.util.scaling as iscale"
+# fails with "AttributeError: module 'idaes' has no attribute 'core'"
+# this is likely due to a bug/limitation in how the Python import mechanism resolves circular imports
+# for more information, see https://stackoverflow.com/questions/24807434
+# and the official Python bug report: http://bugs.python.org/issue30024
+from idaes.core.util import scaling as iscale
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -91,6 +99,66 @@ class ReactionParameterBlock(ProcessBlockData,
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()
+
+        # This is a dict to store default property scaling factors. They are
+        # defined in the parameter block to provide a universal default for
+        # quantities in a particular kind of state block.  For example, you can
+        # set flow scaling once instead of for every state block. Some of these
+        # may be left for the user to set and some may be defined in a property
+        # module where reasonable defaults can be defined a priori. See
+        # set_default_scaling, get_default_scaling, and unset_default_scaling
+        self.default_scaling_factor = {}
+
+    def set_default_scaling(self, attrbute, value, index=None):
+        """Set a default scaling factor for a property.
+
+        Args:
+            attribute: property attribute name
+            value: default scaling factor
+            index: for indexed properties, if this is not provied the scaling
+                factor default applies to all indexed elements where specific
+                indexes are no specifcally specified.
+
+        Returns:
+            None
+        """
+        self.default_scaling_factor[(attrbute, index)] = value
+
+    def unset_default_scaling(self, attrbute, index=None):
+        """Remove a previously set default value
+
+        Args:
+            attribute: property attribute name
+            index: optional index for indexed properties
+
+        Returns:
+            None
+        """
+        try:
+            del self.default_scaling_factor[(attrbute, index)]
+        except KeyError:
+            pass
+
+    def get_default_scaling(self, attrbute, index=None):
+        """ Returns a default scale factor for a property
+
+        Args:
+            attribute: property attribute name
+            index: optional index for indexed properties
+
+        Returns:
+            None
+        """
+        try:
+            # If a specific component data index exists
+            return self.default_scaling_factor[(attrbute, index)]
+        except KeyError:
+            try:
+                # indexed, but no specifc index?
+                return self.default_scaling_factor[(attrbute, None)]
+            except KeyError:
+                # Can't find a default scale factor for what you asked for
+                return None
 
     @property
     def reaction_block_class(self):
@@ -203,6 +271,7 @@ class ReactionBlockBase(ProcessBlock):
         PropertyData objects, and contains methods that can be applied to
         multiple ReactionBlockData objects simultaneously.
     """
+
     def initialize(self, *args):
         """
         This is a default initialization routine for ReactionBlocks to ensure
@@ -257,6 +326,18 @@ should be constructed in this reaction block,
     def __init__(self, *args, **kwargs):
         self._lock_attribute_creation = False
         super().__init__(*args, **kwargs)
+
+    @property
+    def component_list(self):
+        return self.state_ref.component_list
+
+    @property
+    def phase_list(self):
+        return self.state_ref.phase_list
+
+    @property
+    def phase_component_set(self):
+        return self.state_ref.phase_component_set
 
     def lock_attribute_creation_context(self):
         """Returns a context manager that does not allow attributes to be created
@@ -527,3 +608,15 @@ should be constructed in this reaction block,
         comp = getattr(self, attr)
         clear_call_list(self, attr)
         return comp
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+        # Get scaling factor defaults, if no scaling factor set
+        for v in self.component_data_objects(
+            (Constraint, Var, Expression), descend_into=False):
+            if iscale.get_scaling_factor(v) is None:  # don't replace if set
+                name = v.getname().split("[")[0]
+                index = v.index()
+                sf = self.config.parameters.get_default_scaling(name, index)
+                if sf is not None:
+                    iscale.set_scaling_factor(v, sf)

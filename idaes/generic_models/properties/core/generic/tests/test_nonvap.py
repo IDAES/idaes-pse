@@ -36,23 +36,23 @@ from idaes.core.phases import PhaseType as PT
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP as RPP
+import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
 import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -64,8 +64,8 @@ configuration = {
                     "elemental_composition": {"C": 6, "H": 6},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                     "parameter_data": {
                         "mw": 78.1136E-3,
@@ -94,8 +94,8 @@ configuration = {
                     "elemental_composition": {"C": 7, "H": 8},
                     "dens_mol_liq_comp": Perrys,
                     "enth_mol_liq_comp": Perrys,
-                    "enth_mol_ig_comp": RPP,
-                    "pressure_sat_comp": RPP,
+                    "enth_mol_ig_comp": RPP4,
+                    "pressure_sat_comp": RPP4,
                     "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
                     "parameter_data": {
                         "mw": 92.1405E-3,
@@ -158,7 +158,7 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": IdealBubbleDew}
 
 
@@ -196,7 +196,7 @@ class TestParamBlock(object):
                 "pressure": (5e4, 1e5, 1e6)}
 
         assert model.params.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): smooth_VLE}
+            ("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2

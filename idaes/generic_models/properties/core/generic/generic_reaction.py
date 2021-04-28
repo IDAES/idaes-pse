@@ -33,6 +33,7 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (
     BurntToast, ConfigurationError, PropertyPackageError)
+import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
 
@@ -65,11 +66,20 @@ class ConcentrationForm(Enum):
 
 
 def get_concentration_term(blk, r_idx):
-    # conc_form = rblock.config.concentration_form
-    try:
-        conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
-    except KeyError:
-        conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
+    if "rate_reactions" in blk.params.config:
+        try:
+            conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
+        except KeyError:
+            conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
+        state = blk.state_ref
+    else:
+        conc_form = blk.params.config.inherent_reactions[r_idx].concentration_form
+        state = blk
+
+    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
+        sub = "_true"
+    else:
+        sub = ""
 
     if conc_form is None:
         raise ConfigurationError(
@@ -77,18 +87,18 @@ def get_concentration_term(blk, r_idx):
             "Please ensure that this argument is included in your "
             "configuration dict.".format(blk.name))
     elif conc_form == ConcentrationForm.molarity:
-        conc_term = getattr(blk.state_ref, "conc_mole_phase_comp")
+        conc_term = getattr(state, "conc_mol_phase_comp"+sub)
     elif conc_form == ConcentrationForm.activity:
-        conc_term = getattr(blk.state_ref, "act_phase_comp")
+        conc_term = getattr(state, "act_phase_comp"+sub)
     elif conc_form == ConcentrationForm.molality:
-        conc_term = getattr(blk.state_ref, "molality_phase_comp")
+        conc_term = getattr(state, "molality_phase_comp"+sub)
     elif conc_form == ConcentrationForm.moleFraction:
-        conc_term = getattr(blk.state_ref, "mole_frac_phase_comp")
+        conc_term = getattr(state, "mole_frac_phase_comp"+sub)
     elif conc_form == ConcentrationForm.massFraction:
-        conc_term = getattr(blk.state_ref, "mass_frac_phase_comp")
+        conc_term = getattr(state, "mass_frac_phase_comp"+sub)
     elif conc_form == ConcentrationForm.partialPressure:
-        conc_term = (getattr(blk.state_ref, "mole_frac_phase_comp") *
-                     getattr(blk.state_ref, "pressure"))
+        conc_term = (getattr(state, "mole_frac_phase_comp"+sub) *
+                     getattr(state, "pressure"))
     else:
         raise BurntToast(
             "{} get_concentration_term received unrecognised "
@@ -167,6 +177,13 @@ class GenericReactionParameterData(ReactionParameterBlock):
         doc="Dict containing definition of base units of measurement to use "
         "with property package."))
 
+    # User-defined default scaling factors
+    CONFIG.declare("default_scaling_factors", ConfigValue(
+        domain=dict,
+        description="User-defined default scaling factors",
+        doc="Dict of user-defined properties and associated default "
+        "scaling factors"))
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -177,6 +194,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # The super.build tries to validate units, but they have not been set
         # and cannot be set until the config block is created by super.build
         super(ReactionParameterBlock, self).build()
+        self.default_scaling_factor = {}
 
         # Validate and set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
@@ -218,6 +236,15 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # Alias associated property package to keep line length down
         ppack = self.config.property_package
 
+        if not hasattr(ppack, "_electrolyte") or not ppack._electrolyte:
+            pc_set = ppack._phase_component_set
+        elif ppack.config.state_components.name == "true":
+            pc_set = ppack.true_phase_component_set
+        elif ppack.config.state_components.name == "apparent":
+            pc_set = ppack.apparent_phase_component_set
+        else:
+            raise BurntToast()
+
         # Construct rate reaction attributes if required
         if len(self.config.rate_reactions) > 0:
             # Construct rate reaction index
@@ -227,7 +254,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct rate reaction stoichiometry dict
             self.rate_reaction_stoichiometry = {}
             for r, rxn in self.config.rate_reactions.items():
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     self.rate_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
@@ -258,14 +285,14 @@ class GenericReactionParameterData(ReactionParameterBlock):
 
         # Construct equilibrium reaction attributes if required
         if len(self.config.equilibrium_reactions) > 0:
-            # Construct rate reaction index
+            # Construct equilibrium reaction index
             self.equilibrium_reaction_idx = Set(
                 initialize=self.config.equilibrium_reactions.keys())
 
             # Construct equilibrium reaction stoichiometry dict
             self.equilibrium_reaction_stoichiometry = {}
             for r, rxn in self.config.equilibrium_reactions.items():
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     self.equilibrium_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
@@ -321,7 +348,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 r_config = self.config.rate_reactions[r]
 
                 order_init = {}
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     if "reaction_order" in r_config.parameter_data:
                         try:
                             order_init[p, j] = r_config.parameter_data[
@@ -342,7 +369,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                             order_init[p, j] = 0
 
                 rblock.reaction_order = Var(
-                        ppack._phase_component_set,
+                        pc_set,
                         initialize=order_init,
                         doc="Reaction order",
                         units=None)
@@ -360,7 +387,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 r_config = self.config.equilibrium_reactions[r]
 
                 order_init = {}
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     if "reaction_order" in r_config.parameter_data:
                         try:
                             order_init[p, j] = r_config.parameter_data[
@@ -383,7 +410,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                             order_init[p, j] = 0
 
                 rblock.reaction_order = Var(
-                        ppack._phase_component_set,
+                        pc_set,
                         initialize=order_init,
                         doc="Reaction order",
                         units=None)
@@ -394,6 +421,20 @@ class GenericReactionParameterData(ReactionParameterBlock):
                             rblock, self.config.equilibrium_reactions[r])
                     except AttributeError:
                         pass
+                    except KeyError as err:
+                        # This likely arises from mismatched true and apparent
+                        # species sets. Reaction packages must use the same
+                        # basis as the associated thermo properties
+                        # Raise an exception to inform the user
+                        raise PropertyPackageError(
+                            "{} KeyError encountered whilst constructing "
+                            "reaction parameters. This may be due to "
+                            "mismatched state_components between the "
+                            "Reaction Package and the associated Physical "
+                            "Property Package - Reaction Packages must use the"
+                            "same basis (true or apparent species) as the "
+                            "Physical Property Package.".format(self.name),
+                            err)
 
         # As a safety check, make sure all Vars in reaction blocks are fixed
         for v in self.component_objects(Var, descend_into=True):
@@ -404,6 +445,13 @@ class GenericReactionParameterData(ReactionParameterBlock):
                         " a value. Please check your configuration "
                         "arguments.".format(self.name, v.local_name))
                 v[i].fix()
+
+        # Set default scaling factors
+        if self.config.default_scaling_factors is not None:
+            self.default_scaling_factor.update(
+                self.config.default_scaling_factors)
+        # Finally, call populate_default_scaling_factors method to fill blanks
+        iscale.populate_default_scaling_factors(self)
 
     def configure(self):
         """
@@ -481,6 +529,50 @@ class GenericReactionBlockData(ReactionBlockDataBase):
                     "include equilibrium reactions in the package definition."
                     .format(self.name))
             self._equilibrium_constraint()
+
+    def calculate_scaling_factors(self):
+        # Get default scale factors and do calculations from base classes
+        super().calculate_scaling_factors()
+
+        # Lock attribute creation to avoid hasattr triggering builds
+        self._lock_attribute_creation = True
+
+        # Due to the exponential relationship between most reaction properties
+        # and temeprature, it is very hard to calculate good scaling factors
+        # from order-of-magnitude guesses. Thus ,reaction scaling will always
+        # require a lot of user input. Here we will calculate scaling factors
+        # for those properties that have non-exponential relationships to T.
+        if hasattr(self, "dh_rxn"):
+            for r, v in self.dh_rxn.items():
+                if iscale.get_scaling_factor(v) is None:
+                    rblock = getattr(self.params, "reaction_"+r)
+                    try:
+                        carg = self.params.config.rate_reactions[r]
+                    except (AttributeError, KeyError):
+                        carg = self.params.config.equilibrium_reactions[r]
+                    sf = carg["heat_of_reaction"].calculate_scaling_factors(
+                        self, rblock)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "k_eq"):
+            for r, v in self.k_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    rblock = getattr(self.params, "reaction_"+r)
+                    carg = self.params.config.equilibrium_reactions[r]
+                    sf = carg[
+                        "equilibrium_constant"].calculate_scaling_factors(
+                            self, rblock)
+                    iscale.set_scaling_factor(v, sf)
+
+        if hasattr(self, "equilibrium_constraint"):
+            for r, v in self.equilibrium_constraint.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf = iscale.get_scaling_factor(
+                        self.k_eq[r], default=1, warning=True)
+                    iscale.constraint_scaling_transform(v, sf)
+
+        # Unlock attribute creation when done
+        self._lock_attribute_creation = False
 
     def _dh_rxn(self):
         def dh_rule(b, r):

@@ -18,19 +18,19 @@ runs:
     - name: Install idaes and dependencies
       shell: bash
       run: |
+        echo '::group::Output of "pip install" command'
         ${{ inputs.install-command }} ${{ inputs.install-target}}
+        # added temporary additional installation of pysp while waiting for Pyomo/pyomo#1778 to get merged
+        # see https://github.com/IDAES/idaes-pse/pull/249#issuecomment-816108862 for more details
+        ${{ inputs.install-command }} https://github.com/Pyomo/pysp/archive/master.zip
+        echo '::endgroup::'
+        echo '::group::Output of "pip show pyomo idaes-pse"'
+        pip show pyomo idaes-pse
+        echo '::endgroup::'
         idaes --version
     - name: Install extensions
       shell: bash
       run: |
+        echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose
-        # add bin directory to $PATH (only valid for subsequent steps)
-        echo "$(idaes bin-directory)" >> $GITHUB_PATH
-    - name: Test access to executables
-      shell: bash
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-            ipopt.exe -v
-        else
-            ipopt -v
-        fi
+        echo '::endgroup::'

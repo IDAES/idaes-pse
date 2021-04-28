@@ -26,7 +26,8 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Constraint, value, Set
+from pyomo.environ import \
+    Reference, Expression, Var, Constraint, value, Set, SolverFactory
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -41,7 +42,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     ConfigurationError, PropertyNotSupportedError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 
 _log = idaeslog.getLogger(__name__)
 
@@ -210,10 +211,20 @@ see property package for documentation.}"""))
                 # Option 2: if this is false, then user has selected
                 # custom temperature spec and needs to fix an outlet
                 # temperature.
+
+                # Get index for bubble point temperature and and assume it
+                # will have only a single phase equilibrium pair. This is to
+                # support the generic property framework where the T_bubble
+                # is indexed by the phases_in_equilibrium. In distillation,
+                # the assumption is that there will only be a single pair
+                # i.e. vap-liq. 
+                idx = next(iter(self.control_volume.properties_out[
+                    self.flowsheet().config.time.first()].temperature_bubble))
+
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
                         temperature == self.control_volume.properties_out[t].\
-                        temperature_bubble
+                        temperature_bubble[idx]
                 self.eq_total_cond_spec = Constraint(self.flowsheet().time,
                                                      rule=rule_total_cond)
 
@@ -682,7 +693,7 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args=None, solver=None, optarg=None,
+    def initialize(self, state_args=None, solver=None, optarg={},
                    outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
@@ -700,10 +711,7 @@ see property package for documentation.}"""))
                     "selected for temperature_spec config argument."
                 )
 
-        if solver is None:
-            init_log.warning("Solver not provided. Default solver(ipopt) "
-                             " being used for initialization.")
-            solver = get_default_solver()
+        solverobj = get_solver(solver, optarg)
 
         if state_args is None:
             state_args = {}
@@ -716,9 +724,9 @@ see property package for documentation.}"""))
                 if state_dict[k].is_indexed():
                     state_args[k] = {}
                     for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
+                        state_args[k][m] = value(state_dict[k][m])
                 else:
-                    state_args[k] = state_dict[k].value
+                    state_args[k] = value(state_dict[k])
 
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()
@@ -735,7 +743,7 @@ see property package for documentation.}"""))
             self.eq_total_cond_spec.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
+            res = solverobj.solve(self, tee=slc.tee)
         init_log.info(
             "Initialization Complete, {}.".format(idaeslog.condition(res))
         )

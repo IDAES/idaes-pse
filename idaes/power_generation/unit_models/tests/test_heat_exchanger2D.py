@@ -36,10 +36,11 @@ from idaes.generic_models.properties import iapws95
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.power_generation.unit_models.boiler_heat_exchanger_2D import \
     HeatExchangerCrossFlow2D_Header
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
@@ -102,6 +103,8 @@ def build_unit():
     m.fs.unit.fcorrection_htc_shell.fix(1.0)
     m.fs.unit.fcorrection_dp_tube.fix(1.0)
     m.fs.unit.fcorrection_dp_shell.fix(1.0)
+    m.fs.unit.temperature_ambient.fix(350.0)
+    m.fs.unit.head_insulation_thickness.fix(0.025)
     return m
 
 
@@ -149,10 +152,10 @@ def test_initialize_unit(build_unit):
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_run_drum(build_unit):
+def test_run_unit(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
-    optarg = {"tol": 1e-7,
+    optarg = {"tol": 1e-6,
               "linear_solver": "ma27",
               "max_iter": 40}
     solver.options = optarg

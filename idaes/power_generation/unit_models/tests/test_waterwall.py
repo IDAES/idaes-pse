@@ -39,11 +39,11 @@ from idaes.generic_models.properties import iapws95
 
 from idaes.power_generation.unit_models.waterwall_section import \
     WaterwallSection
-from idaes.core.util.testing import (get_default_solver)
+from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 

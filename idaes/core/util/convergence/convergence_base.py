@@ -75,6 +75,22 @@ from pyomo.common.log import LoggingIntercept
 # idaes
 import idaes.core.util.convergence.mpi_utils as mpiu
 from idaes.dmf import resource
+import idaes.logger as idaeslog
+
+# Set up logger
+_log = idaeslog.getLogger(__name__)
+
+
+convergence_classes = {}
+
+
+def register_convergence_class(name):
+    def _register_convergence_class(cls):
+        if name in convergence_classes:
+            raise KeyError(f"Convergence class {name} already registered.")
+        convergence_classes[name] = ".".join([cls.__module__, cls.__name__])
+        return cls
+    return _register_convergence_class
 
 
 class ConvergenceEvaluationSpecification(object):
@@ -320,8 +336,6 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
                         'was not mutable. Please make sure all sampled inputs'
                         ' are either mutable params or fixed vars.')
             comp.set_value(v)
-            # print('Just set', comp,'to', float(v))
-
         elif ctype is Var:
             if not comp.is_fixed():
                 raise ValueError(
@@ -329,7 +343,6 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
                         'was not fixed. Please make sure all sampled inputs'
                         ' are either mutable params or fixed vars.')
             comp.set_value(float(v))
-            # print('Just set', comp,'to', float(v))
         else:
             raise ValueError('Failed to find a valid input component (must be'
                              ' a fixed Var or a mutable Param). Instead,'
@@ -402,8 +415,8 @@ def run_convergence_evaluation_from_sample_file(sample_file):
         with open(sample_file, 'r') as fd:
             jsondict = json.load(fd, object_pairs_hook=OrderedDict)
     except Exception as e:
-        print('Error reading json file: {}'.format(str(e)))
-        raise ValueError('Problem reading json file: {}'.format(sample_file))
+        _log.exception(f'Error reading json file {sample_file}')
+        raise ValueError(f'Problem reading json file: {sample_file}')
 
     # create the convergence evaluation object
     convergence_evaluation_class_str = jsondict[
@@ -413,15 +426,42 @@ def run_convergence_evaluation_from_sample_file(sample_file):
                                             convergence_evaluation_class_str)
         conv_eval = convergence_evaluation_class()
     except Exception as e:
-        print('Error creating the class: {}. Error returned: {}'.format(
-                    convergence_evaluation_class_str,
-                    str(e)))
+        _log.exception(f'Error creating class: {convergence_evaluation_class_str}')
         raise ValueError(
-                'Invalid value specified for convergence_evaluation_class_str:'
-                '{} in sample file: {}'.format(
-                        convergence_evaluation_class_str, sample_file))
-
+                f'Invalid value specified for convergence_evaluation_class_str:'
+                '{convergence_evaluation_class_str} in sample file: {sample_file}')
     return run_convergence_evaluation(jsondict, conv_eval)
+
+def run_single_sample_from_sample_file(sample_file, name):
+    # load the sample file
+    try:
+        with open(sample_file, 'r') as fd:
+            jsondict = json.load(fd, object_pairs_hook=OrderedDict)
+    except Exception as e:
+        _log.exception(f'Error reading json file {sample_file}')
+        raise ValueError(f'Problem reading json file: {sample_file}')
+
+    # create the convergence evaluation object
+    convergence_evaluation_class_str = jsondict[
+            'convergence_evaluation_class_str']
+    try:
+        convergence_evaluation_class = _class_import(
+                                            convergence_evaluation_class_str)
+        conv_eval = convergence_evaluation_class()
+    except Exception as e:
+        _log.exception(f'Error creating class: {convergence_evaluation_class_str}')
+        raise ValueError(
+                f'Invalid value specified for convergence_evaluation_class_str:'
+                '{convergence_evaluation_class_str} in sample file: {sample_file}')
+    return run_single_sample(jsondict, conv_eval, name)
+
+def run_single_sample(sample_file_dict, conv_eval, name):
+    inputs = sample_file_dict['inputs']
+    samples = sample_file_dict['samples']
+    model = conv_eval.get_initialized_model()
+    _set_model_parameters_from_sample(model, inputs, sample_file_dict["samples"][name])
+    solver = conv_eval.get_solver()
+    return _run_ipopt_with_stats(model, solver)
 
 
 def run_convergence_evaluation(sample_file_dict, conv_eval):
@@ -477,15 +517,8 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
                 (status_obj, solved, iters, time) = \
                     _run_ipopt_with_stats(model, solver)
 
-        # run without output capture
-        # model = conv_eval.get_initialized_model()
-        # _set_model_parameters_from_sample(model, inputs, ss)
-        # solver = conv_eval.get_solver()
-        # (status_obj, solved, iters, time) = \
-        #        _run_ipopt_with_stats(model, solver)
-
         if not solved:
-            print('Sample: {} failed to converge.'.format(sample_name))
+            _log.error(f'Sample: {sample_name} failed to converge.')
 
         results_dict = OrderedDict()
         results_dict['name'] = sample_name
@@ -499,16 +532,54 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     return inputs, samples, global_results
 
 
-def save_convergence_statistics(inputs, results, dmf=None):
-    s = Stats(results)
-    if dmf is None:
-        print_convergence_statistics(inputs, results, s)
-    else:
-        save_results_to_dmf(dmf, inputs, results, s)
+def save_convergence_statistics(
+    inputs,
+    results,
+    dmf=None,
+    display=True,
+    json_path=None,
+    report_path=None):
+    """
+    """
+    s = Stats(inputs, results)
+    if display:
+        s.report()
+    if report_path:
+        with open(report_path, "w") as f:
+            s.report(f)
+    if json_path is not None:
+        with open(json_path, "w") as f:
+            s.to_json(f)
+    if dmf is not None:
+        s.to_dmf(dmf)
+    return s
 
 
 class Stats(object):
-    def __init__(self, results):
+    def __init__(self, inputs=None, results=None, from_dict=None, from_json=None):
+        """A convergence stats and results object.  This class stores the
+        convergence test evaluation results and generates reports and storage
+        formats.
+
+        Args:
+            inputs: sample inputs
+            results: convergence evaluation results
+            from_dict: load a stats object from a given dict
+            from_json: load a stats object from a json file path
+        """
+        # Reload from a dict or json file.  This can be used to compare results
+        # or generate new reports from.
+        if from_json:
+            with open(from_json, "r") as f:
+                from_dict = json.load(f)
+        if from_dict:
+            self.from_dict(from_dict)
+            return
+        assert inputs is not None
+        assert results is not None
+
+        self.inputs = inputs
+        self.results = results
         self.notable_cases, self.failed_cases = [], []
         self.iters_successful = list()
         self.time_successful = list()
@@ -540,221 +611,112 @@ class Stats(object):
             self.time_std = float(np.std(self.time_successful))
             self.time_max = float(np.max(self.time_successful))
 
-
-def print_convergence_statistics(inputs, results, s):
-    """
-    Print the statistics returned from run_convergence_evaluation in a set of
-    tables
-
-    Parameters
-    ----------
-    inputs : dict
-       The inputs dictionary returned by run_convergence_evaluation
-    results : dict
-       The results dictionary returned by run_convergence_evaluation
-
-    Returns
-    -------
-       N/A
-    """
-
-    print()
-    print('==== Scenario Statistics ====')
-    print('%20s %10s %10s %10s %10s' % ('Parameter', 'Min', 'Mean',
-                                        'StdDev', 'Max'))
-    print('-'*64)
-    for k, v in inputs.items():
-        values = [results[i]['sample_point'][k] for i in range(len(results))]
-        print('%20s %10g %10g %10g %10g' % (k, np.min(values),
-                                            float(np.mean(values)),
-                                            float(np.std(values)),
-                                            float(np.max(values))))
-    print('-'*64)
-
-    print()
-    print('==== Summary ====')
-    print('Number of Successful Cases (solved=True): %.0f/%.0f' % (
-            len(results) - len(s.failed_cases), len(results)))
-    print('... Iterations      (min, -1std, mean, +1std, max):'
-          '%5.0f, %5f, %5f, %5f, %5.0f'
-          % (s.iters_min, s.iters_mean - s.iters_std,
-             s.iters_mean, s.iters_mean + s.iters_std,
-             s.iters_max))
-
-    print('... Solver Time (s) (min, -1std, mean, +1std, max):'
-          '%5f, %5f, %5f, %5f, %5f'
-          % (s.time_min, s.time_mean - s.time_std,
-             s.time_mean, s.time_mean + s.time_std,
-             s.time_max))
-
-    # print the detailed table
-    print()
-    print('==== Table of Results ====')
-    print()
-    print('%4s %20s %10s %10s %10s' % ('Flag', 'Name', 'Solved',
-                                       'Iters', 'Time'))
-    print('-' * 58)
-    for r in results:
-        flag = ''
-        if r['solved'] is not True:
-            flag = 'F'
-        else:
-            if r['time'] > s.time_mean + 2.0 * s.time_std and \
-                    r['time'] > s.time_mean + 5.0:
-                # add a more absolute check when s.time_std is small
-                flag += 'T'
-            if r['iters'] > s.iters_mean + 2.0 * s.iters_std and \
-                    r['iters'] > s.iters_mean + 5:
-                # add a more absolute check when s.iters_std is small
-                flag += 'I'
-
-        if flag != '':
+        for r in results:
+            flag = ''
+            if r['solved'] is not True:
+                flag = 'F'
+            else:
+                if r['time'] > self.time_mean + 2.0 * self.time_std and \
+                        r['time'] > self.time_mean + 5.0:
+                    # add a more absolute check when s.time_std is small
+                    flag += 'T'
+                if r['iters'] > self.iters_mean + 2.0 * self.iters_std and \
+                        r['iters'] > self.iters_mean + 5:
+                    # add a more absolute check when s.iters_std is small
+                    flag += 'I'
             r['flag'] = flag
-            s.notable_cases.append(r)
-
-        print('%4s %20s %10s %10.0f %10.2f' % (
-                flag, r['name'], r['solved'], r['iters'], r['time']))
-        if r['solved'] is not True:
-            s.failed_cases.append(r)
-        else:
-            s.iters_successful.append(r['iters'])
-            s.time_successful.append(r['time'])
-
-    print('-' * 58)
-
-    print()
-    print('==== Notable Cases ====')
-    if len(s.notable_cases) == 0:
-        print('... None')
-    for c in s.notable_cases:
-        msg = ''
-        if c['flag'] == 'F':
-            msg = 'failed solve'
-        elif c['flag'] == 'T':
-            msg = 'long runtime'
-        elif c['flag'] == 'I':
-            msg = 'high iteration count'
-        elif c['flag'] == 'TI':
-            msg = 'high iteration count; long runtime'
-
-        print(c['name'], ':', msg)
-        for k, v in c['sample_point'].items():
-            if k == '_name':
-                # we need this because the parallel task manager does not
-                # handle dicts  and we add _name to identify the sample name
-                # ToDo: fix this when the parallel task manager is extended to
-                # handle dicts
-                continue
-            if inputs[k]['distribution'] == "normal":
-                mean = inputs[k]['mean']
-                std = inputs[k]['std']
-                alpha = (v - mean) / std
-                print('       %20s: %10g (%5.2f standard deviations'
-                      ' above/below the mean)' % (k, v, alpha))
+            if flag != '':
+                self.notable_cases.append(r)
 
 
-def save_results_to_dmf(dmf, inputs, results, stats):
-    """Save results of run, along with stats, to DMF.
+    def from_dict(self, d):
+        for k, v in d.items():
+            setattr(self, k, v)
 
-    Args:
-        dmf (DMF): Data management framework object
-        inputs (dict): Run inputs
-        results (dict): Run results
-        stats (Stats): Calculated result statistics
+    def to_dict(self):
+        keys = [a for a in dir(self) if not a.startswith("_")
+            and not callable(getattr(self, a))]
+        d = {}
+        for k in keys:
+            d[k] = getattr(self, k)
+        return d
 
-    Returns:
-        None
-    """
-    d = {}  # data
-    x = {}
-    for k, v in inputs.items():
-        values = [results[i]['sample_point'][k] for i in range(len(results))]
-        x[k] = {
-            'min': float(np.min(values)),
-            'mean': float(np.mean(values)),
-            'stdev': float(np.std(values)),
-            'max': float(np.max(values))
-        }
-    d['scenarios'] = x
-    d['summary'] = {
-        'cases_success': len(results) - len(stats.failed_cases),
-        'cases_total': len(results),
-        'iters': {
-            'min': stats.iters_min,
-            '-1std': stats.iters_mean - stats.iters_std,
-            'mean': stats.iters_mean,
-            '+1std': stats.iters_mean + stats.iters_std,
-            'max': stats.iters_max
-        },
-        'time': {
-            'min': stats.time_min,
-            '-1std': stats.time_mean - stats.time_std,
-            'mean': stats.time_mean,
-            '+1std': stats.time_mean + stats.time_std,
-            'max': stats.time_max
-        }
-    }
-    tbl = []
-    for r in results:
-        notable = False
-        solved = r['solved']
-        item = {
-            'solved': solved,
-            'name': r['name'],
-            'iters': r['iters'],
-            'time': r['time']
-        }
-        for vtype in 'time', 'iters':
-            mean, std = [getattr(stats, a) for a in ('{}_mean'.format(vtype),
-                                                     '{}_std'.format(vtype))]
-            if r[vtype] > mean + 2. * std and r[vtype] > mean + 5:
-                item['outlier_{}'.format(vtype)] = True
-                notable = True
-        if not solved:
-            stats.failed_cases.append(r)
-            notable = True
-        else:
-            stats.iters_successful.append(r['iters'])
-            stats.time_successful.append(r['time'])
-        tbl.append(item)
-        if notable:
-            stats.notable_cases.append(r)
-    d['results_table'] = tbl
-    # notable cases
-    cases = []
-    for r in stats.notable_cases:
-        msg, is_outlier = [], False
-        if not r['solved']:
-            msg.append('failed solve')
-        else:
-            is_outlier = True
-            if r['outlier_time']:
-                msg.append('long runtime')
-            if r['outlier_iters']:
-                msg.append('high iteration count')
-        case = {'messages': msg}
-        if is_outlier:
-            outliers = {}
-            for k, v in r['sample_point'].items():
+    def to_json(self, fp):
+        json.dump(self.to_dict(), fp, indent=4)
+
+    def to_dmf(self, dmf):
+        rsrc = resource.Resource(value={
+            'name': 'convergence_results',
+            'desc': 'statistics returned from run_convergence_evaluation',
+            'creator': {'name': getpass.getuser()},
+            'data': stats.to_dict()}, type_=resource.ResourceTypes.data)
+        dmf.add(rsrc)
+
+    def report(self, fp=sys.stdout):
+        s = self
+        res = self.results
+        n = len(res)
+        fp.write(f"\n{'='*24}{'Scenario Statistics':^24s}{'='*24}\n\n")
+        fp.write(f"{'Parameter':>20s}{'Min':>10s}{'Mean':>10s}"
+                 f"{'Stdev':>10s}{'Max':>10s}\n")
+        fp.write(f"{'-'*60}\n")
+        for k, v in self.inputs.items():
+            values = [res[i]['sample_point'][k] for i in range(n)]
+            fp.write(f"{k:>20s}{float(np.min(values)):10.3g}"
+                     f"{float(np.mean(values)):10.3g}"
+                     f"{float(np.std(values)):10.3g}"
+                     f"{float(np.max(values)):10.3}\n")
+        fp.write(f"{'-'*60}\n\n")
+        fp.write(f"\n{'='*24}{'Summary':^24s}{'='*24}\n\n")
+        nsuc = n - len(s.failed_cases)
+        fp.write(f"Number of Successful Cases (solved=True): {nsuc}/{n}\n\n")
+        fp.write(f"{'':20s}{'min':>10s}{'-1std':>10s}{'mean':>10s}"
+                 f"{'+1std':>10s}{'max':>10s}\n")
+        fp.write(f"{'-'*70}\n")
+        fp.write(f"{'Iterations':>20s}{s.iters_min:10.3g}"
+                 f"{(s.iters_mean - s.iters_std):10.3g}"
+                 f"{s.iters_mean:10.3g}{(s.iters_mean + s.iters_std):10.3g}"
+                 f"{s.iters_max:10.3g}\n")
+        fp.write(f"{'Solver Time (s)':>20s}{s.time_min:10.3g}"
+                 f"{(s.time_mean - s.time_std):10.3g}"
+                 f"{s.time_mean:10.3g}{(s.time_mean + s.time_std):10.3g}"
+                 f"{s.time_max:10.3g}\n")
+        fp.write(f"{'-'*70}\n\n")
+        # print the detailed table
+        fp.write(f"\n{'='*24}{'Table of Results':^24s}{'='*24}\n\n")
+        fp.write(f"{'Flag':>5s}{'Name':>20s}{'Solved':>10s}"
+                 f"{'Iters':>10s}{'Time':>10s}\n")
+        fp.write(f"{'-'*55}\n")
+        for r in res:
+            fp.write(f"{r['flag']:>5s}{r['name']:>20s}{str(r['solved']):>10s}"
+                     f"{r['iters']:>10d}{r['time']:>10.2f}\n")
+        fp.write(f"{'-'*55}\n\n")
+        fp.write(f"\n{'='*24}{'Notable Cases':^24s}{'='*24}\n\n")
+        if len(s.notable_cases) == 0:
+            fp.write("... None\n")
+        for c in s.notable_cases:
+            msg = ''
+            if c['flag'] == 'F':
+                msg = 'failed solve'
+            elif c['flag'] == 'T':
+                msg = 'long runtime'
+            elif c['flag'] == 'I':
+                msg = 'high iteration count'
+            elif c['flag'] == 'TI':
+                msg = 'high iteration count; long runtime'
+
+            fp.write(f"{c['name']} : {msg}\n")
+
+            for k, v in c['sample_point'].items():
                 if k == '_name':
                     # we need this because the parallel task manager does not
-                    # handle dicts and we add _name to identify the sample name
-                    # TODO: Fix this when the parallel task manager is extended
-                    # TODO: to handle dicts
+                    # handle dicts  and we add _name to identify the sample name
+                    # ToDo: fix this when the parallel task manager is extended to
+                    # handle dicts
                     continue
-                mean = inputs[k]['mean']
-                std = inputs[k]['std']
-                alpha = (v - mean) / std
-                outliers[k] = (v, alpha)
-            case['outliers'] = outliers
-        else:
-            case['outliers'] = []
-        cases.append(case)
-    d['notable_cases'] = cases
-    # Build and save resource object
-    rsrc = resource.Resource(value={
-        'name': 'convergence_results',
-        'desc': 'statistics returned from run_convergence_evaluation',
-        'creator': {'name': getpass.getuser()},
-        'data': d}, type_=resource.ResourceTypes.data)
-    dmf.add(rsrc)
+                if self.inputs[k]['distribution'] == "normal":
+                    mean = self.inputs[k]['mean']
+                    std = self.inputs[k]['std']
+                    alpha = (v - mean) / std
+                    fp.write(f"  {k:20s}: {v:10g} ({alpha:5.2f} standard "
+                             "deviations above/below the mean)\n")

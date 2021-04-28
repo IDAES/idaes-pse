@@ -6,12 +6,9 @@ Turbine (Stage)
 
 .. module:: idaes.power_generation.unit_models.helm.turbine_stage
 
-This is a steam power generation turbine model for the stages between the inlet
-and outlet.
-This model inherits the :ref:`PressureChanger model
-<technical_specs/model_libraries/generic/unit_models/pressure_changer:Pressure Changer>` with the isentropic options. The
-initialization scheme is the same as the :ref:`TurbineInletStage model
-<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Inlet Stage)>`.
+This is a steam power generation turbine model for intermediate stages between the
+inlet and outlet.  It inherits `HelmIsentropicTurbine
+<technical_specs/model_libraries/power_generation/unit_models/turbine_inlet:Turbine (Isentropic)>`.
 
 Example
 -------
@@ -40,26 +37,19 @@ Example
 Variables
 ---------
 
-This model adds a variable to the base ``PressureChanger model`` to account
-for mechanical efficiency .
-
-=========================== ======================== =========== ======================================================================
-Variable                    Symbol                   Index Sets  Doc
-=========================== ======================== =========== ======================================================================
-``efficiency_mech``         :math:`\eta_{mech}`      None        Mechanical Efficiency (accounts for losses in bearings...)
-=========================== ======================== =========== ======================================================================
-
-The table below shows important variables inherited from the pressure changer model.
-
 =========================== ======================== =========== ==========================================================================================
 Variable                    Symbol                   Index Sets  Doc
 =========================== ======================== =========== ==========================================================================================
+``efficiency_mech``         :math:`\eta_{mech}`      None        Mechanical efficiency (accounts for losses in bearings...)
 ``efficiency_isentropic``   :math:`\eta_{isen}`      time        Isentropic efficiency
 ``deltaP``                  :math:`\Delta P`         time        Pressure change (:math:`P_{out} - P_{in}`) [Pa]
 ``ratioP``                  :math:`P_{ratio}`        time        Ratio of discharge pressure to inlet pressure :math:`\left(\frac{P_{out}}{P_{in}}\right)`
+``shaft_speed``             :math:`s`                time        Shaft speed [hz]
 =========================== ======================== =========== ==========================================================================================
 
-:math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
+The shaft speed is used to calculate specific speed for more advanced turbine models,
+the specific speed expression is available, but otherwise has no effect on the model
+results.
 
 Expressions
 -----------
@@ -72,7 +62,15 @@ Variable                    Symbol                    Index Sets  Doc
 =========================== ========================= =========== ======================================================================
 ``power_thermo``            :math:`\dot{w}_{thermo}`  time        Turbine stage power output not including mechanical loss [W]
 ``power_shaft``             :math:`\dot{w}_{shaft}`   time        Turbine stage power output including mechanical loss (bearings...) [W]
+``specific_speed``          :math:`n_s`               time        Turbine stage specific speed [dimensionless]
 =========================== ========================= =========== ======================================================================
+
+.. math::
+
+  n_s = s\dot{v}^0.5 (w_{isen} / \dot{m}) ** (-0.75)
+
+Where :math:`\dot{m}` is the mass flow rate and :math:`\dot{v}` is the outlet
+volumetric flow.
 
 Constraints
 -----------
@@ -82,9 +80,8 @@ There are no additional constraints.
 Initialization
 --------------
 
-This just calls the initialization routine from ``PressureChanger``, but it is wrapped in
-a function to ensure the state after initialization is the same as before initialization.
-The arguments to the initialization method are the same as PressureChanger.
+To initialize the turbine model, a reasonable guess for the inlet condition and
+deltaP and efficiency should be set by setting the appropriate variables.
 
 TurbineStage Class
 ------------------

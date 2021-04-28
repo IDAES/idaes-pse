@@ -16,7 +16,7 @@ IDAES Component objects
 @author: alee
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
@@ -68,8 +68,16 @@ class ComponentData(ProcessBlockData):
         description="Method to calculate liquid component molar entropies"))
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
+
+    CONFIG.declare("has_vapor_pressure", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Flag indicating whether component has a vapor pressure"))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure"))
+    CONFIG.declare("relative_permittivity_liq_comp", ConfigValue(
+        description=
+        "Method to use to calculate liquid phase relative permittivity"))
 
     CONFIG.declare("phase_equilibrium_form", ConfigValue(
         domain=dict,
@@ -90,7 +98,7 @@ class ComponentData(ProcessBlockData):
             "component_lists needs to be populated."))
 
     def build(self):
-        super(ComponentData, self).build()
+        super().build()
 
         # If the component_list does not exist, add reference to new Component
         # The IF is mostly for backwards compatability, to allow for old-style
@@ -171,8 +179,18 @@ class ComponentData(ProcessBlockData):
         parent._non_aqueous_set.add(self.local_name)
 
     def _is_phase_valid(self, phase):
-        # If no valid phases assigned, assume all are valid
+        # If no valid phases assigned
         if self.config.valid_phase_types is None:
+            try:
+                if phase.is_aqueous_phase():
+                    # If this is an aqueous phase, check for validaity
+                    return self._is_aqueous_phase_valid()
+            except AttributeError:
+                raise TypeError(
+                    "{} Phase {} is not a valid phase object or is undeclared."
+                    " Please check your phase declarations."
+                    .format(self.name, phase))
+            # Otherwise assume all are valid
             return True
 
         # Check for behaviour of phase, and see if that is a valid behaviour
@@ -202,6 +220,7 @@ class ComponentData(ProcessBlockData):
         # Method to indicate if a component type is stable in the aqueous phase
         # General components may not appear in aqueous phases
         return False
+
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
@@ -271,6 +290,11 @@ class IonData(SoluteData):
 
     # Remove valid_phase_types argument, as ions are aqueous phase only
     CONFIG.__delitem__("valid_phase_types")
+    # Set as not having a vapor pressure
+    has_psat = CONFIG.get("has_vapor_pressure")
+    has_psat.set_value(False)
+    has_psat.set_default_value(False)
+    has_psat.set_domain(In([False]))
 
     CONFIG.declare("charge", ConfigValue(
             domain=int,
@@ -366,6 +390,13 @@ class ApparentData(SoluteData):
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """
+    CONFIG = SoluteData.CONFIG()
+    CONFIG.declare("dissociation_species", ConfigValue(
+        domain=dict,
+        default=None,
+        description="Dict of dissociation species",
+        doc="Dict of true species that this species will dissociate into "
+        "upon dissolution along with stoichiometric coefficients."))
 
     def _is_aqueous_phase_valid(self):
         return True

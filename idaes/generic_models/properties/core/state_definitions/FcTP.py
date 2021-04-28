@@ -14,7 +14,8 @@
 Methods for setting up FcTP as the state variables in a generic property
 package
 """
-from pyomo.environ import Constraint, Expression, NonNegativeReals, Var
+from pyomo.environ import \
+    Constraint, Expression, NonNegativeReals, Var, units as pyunits
 
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
@@ -24,8 +25,11 @@ from idaes.generic_models.properties.core.state_definitions.FTPx import (
     state_initialization)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -63,7 +67,7 @@ def define_state(b):
         b, "pressure", units["pressure"])
 
     # Add state variables
-    b.flow_mol_comp = Var(b.params.component_list,
+    b.flow_mol_comp = Var(b.component_list,
                           initialize=f_init,
                           domain=NonNegativeReals,
                           bounds=f_bounds,
@@ -82,96 +86,103 @@ def define_state(b):
 
     # Add supporting variables
     b.flow_mol = Expression(
-        expr=sum(b.flow_mol_comp[j] for j in b.params.component_list),
+        expr=sum(b.flow_mol_comp[j] for j in b.component_list),
         doc="Total molar flowrate")
 
     if f_init is None:
         fp_init = None
     else:
-        fp_init = f_init / len(b.params.phase_list)
+        fp_init = f_init / len(b.phase_list)
 
-    b.flow_mol_phase = Var(b.params.phase_list,
+    b.flow_mol_phase = Var(b.phase_list,
                            initialize=fp_init,
                            domain=NonNegativeReals,
                            bounds=f_bounds,
                            doc='Phase molar flow rates',
                            units=units["flow_mole"])
 
-    b.mole_frac_comp = Var(b.params.component_list,
+    b.mole_frac_comp = Var(b.component_list,
                            bounds=(0, None),
-                           initialize=1 / len(b.params.component_list),
+                           initialize=1 / len(b.component_list),
                            doc='Mixture mole fractions',
                            units=None)
 
     b.mole_frac_phase_comp = Var(
-        b.params._phase_component_set,
-        initialize=1/len(b.params.component_list),
+        b.phase_component_set,
+        initialize=1/len(b.component_list),
         bounds=(0, None),
         doc='Phase mole fractions',
         units=None)
 
+    def flow_mol_phase_comp_rule(b, p, j):
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(b.phase_component_set,
+                                       rule=flow_mol_phase_comp_rule)
+
     b.phase_frac = Var(
-        b.params.phase_list,
-        initialize=1/len(b.params.phase_list),
+        b.phase_list,
+        initialize=1/len(b.phase_list),
         bounds=(0, None),
         doc='Phase fractions',
         units=None)
 
+    # Add electrolye state vars if required
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
+
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):
-        if len(b.params.component_list) > 1:
+        if len(b.component_list) > 1:
             return b.flow_mol_comp[j] == b.mole_frac_comp[j]*sum(
-                b.flow_mol_comp[k] for k in b.params.component_list)
+                b.flow_mol_comp[k] for k in b.component_list)
         else:
             return b.mole_frac_comp[j] == 1
-    b.mole_frac_comp_eq = Constraint(b.params.component_list,
+    b.mole_frac_comp_eq = Constraint(b.component_list,
                                      rule=rule_mole_frac_comp)
 
-    if len(b.params.phase_list) == 1:
+    if len(b.phase_list) == 1:
         def rule_total_mass_balance(b):
-            return b.flow_mol_phase[b.params.phase_list[1]] == b.flow_mol
+            return b.flow_mol_phase[b.phase_list[1]] == b.flow_mol
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.mole_frac_comp[i]*1e3 == \
-                1e3*b.mole_frac_phase_comp[b.params.phase_list[1], i]
-        b.component_flow_balances = Constraint(b.params.component_list,
+            return b.mole_frac_comp[i] == \
+                b.mole_frac_phase_comp[b.phase_list[1], i]
+        b.component_flow_balances = Constraint(b.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p] == 1
-        b.phase_fraction_constraint = Constraint(b.params.phase_list,
+        b.phase_fraction_constraint = Constraint(b.phase_list,
                                                  rule=rule_phase_frac)
 
-    elif len(b.params.phase_list) == 2:
+    elif len(b.phase_list) == 2:
         # For two phase, use Rachford-Rice formulation
         def rule_total_mass_balance(b):
-            return sum(b.flow_mol_phase[p] for p in b.params.phase_list) == \
+            return sum(b.flow_mol_phase[p] for p in b.phase_list) == \
                 b.flow_mol
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list
-                if (p, i) in b.params._phase_component_set)
-        b.component_flow_balances = Constraint(b.params.component_list,
+                for p in b.phase_list
+                if (p, i) in b.phase_component_set)
+        b.component_flow_balances = Constraint(b.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return 1e3*sum(b.mole_frac_phase_comp[b.params.phase_list[1], i]
-                           for i in b.params.component_list
-                           if (b.params.phase_list[1], i)
-                           in b.params._phase_component_set) -\
-                1e3*sum(b.mole_frac_phase_comp[b.params.phase_list[2], i]
-                        for i in b.params.component_list
-                        if (b.params.phase_list[2], i)
-                        in b.params._phase_component_set) == 0
+            return sum(b.mole_frac_phase_comp[b.phase_list[1], i]
+                       for i in b.component_list
+                       if (b.phase_list[1], i) in b.phase_component_set) -\
+                sum(b.mole_frac_phase_comp[b.phase_list[2], i]
+                    for i in b.component_list
+                    if (b.phase_list[2], i) in b.phase_component_set) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
-        b.phase_fraction_constraint = Constraint(b.params.phase_list,
+        b.phase_fraction_constraint = Constraint(b.phase_list,
                                                  rule=rule_phase_frac)
 
     else:
@@ -179,79 +190,193 @@ def define_state(b):
         def rule_comp_mass_balance(b, i):
             return b.flow_mol_comp[i] == sum(
                 b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
-                for p in b.params.phase_list
-                if (p, i) in b.params._phase_component_set)
-        b.component_flow_balances = Constraint(b.params.component_list,
+                for p in b.phase_list
+                if (p, i) in b.phase_component_set)
+        b.component_flow_balances = Constraint(b.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
-            return 1e3*sum(b.mole_frac_phase_comp[p, i]
-                           for i in b.params.component_list
-                           if (p, i) in b.params._phase_component_set) == 1e3
-        b.sum_mole_frac = Constraint(b.params.phase_list,
+            return sum(b.mole_frac_phase_comp[p, i]
+                       for i in b.component_list
+                       if (p, i) in b.phase_component_set) == 1
+        b.sum_mole_frac = Constraint(b.phase_list,
                                      rule=rule_mole_frac)
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
-        b.phase_fraction_constraint = Constraint(b.params.phase_list,
+        b.phase_fraction_constraint = Constraint(b.phase_list,
                                                  rule=rule_phase_frac)
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FTPx(p, j):
+    def get_material_flow_terms_FcTP(p, j):
         """Create material flow terms for control volume."""
-        if j in b.params.component_list:
-            return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
-    b.get_material_flow_terms = get_material_flow_terms_FTPx
+        return b.flow_mol_phase_comp[p, j]
+    b.get_material_flow_terms = get_material_flow_terms_FcTP
 
-    def get_enthalpy_flow_terms_FTPx(p):
+    def get_enthalpy_flow_terms_FcTP(p):
         """Create enthalpy flow terms."""
         return b.flow_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
+    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FcTP
 
-    def get_material_density_terms_FTPx(p, j):
+    def get_material_density_terms_FcTP(p, j):
         """Create material density terms."""
-        if j in b.params.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-        else:
-            return 0
-    b.get_material_density_terms = get_material_density_terms_FTPx
+        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.get_material_density_terms = get_material_density_terms_FcTP
 
-    def get_energy_density_terms_FTPx(p):
+    def get_energy_density_terms_FcTP(p):
         """Create energy density terms."""
         return b.dens_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_energy_density_terms = get_energy_density_terms_FTPx
+    b.get_energy_density_terms = get_energy_density_terms_FcTP
 
-    def default_material_balance_type_FTPx():
+    def default_material_balance_type_FcTP():
         return MaterialBalanceType.componentTotal
-    b.default_material_balance_type = default_material_balance_type_FTPx
+    b.default_material_balance_type = default_material_balance_type_FcTP
 
-    def default_energy_balance_type_FTPx():
+    def default_energy_balance_type_FcTP():
         return EnergyBalanceType.enthalpyTotal
-    b.default_energy_balance_type = default_energy_balance_type_FTPx
+    b.default_energy_balance_type = default_energy_balance_type_FcTP
 
-    def get_material_flow_basis_FTPx():
+    def get_material_flow_basis_FcTP():
         return MaterialFlowBasis.molar
-    b.get_material_flow_basis = get_material_flow_basis_FTPx
+    b.get_material_flow_basis = get_material_flow_basis_FcTP
 
-    def define_state_vars_FTPx():
+    def define_state_vars_FcTP():
         """Define state vars."""
         return {"flow_mol_comp": b.flow_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
-    b.define_state_vars = define_state_vars_FTPx
+    b.define_state_vars = define_state_vars_FcTP
 
-    def define_display_vars_FTPx():
+    def define_display_vars_FcTP():
         """Define display vars."""
         return {"Molar Flowrate": b.flow_mol_comp,
                 "Temperature": b.temperature,
                 "Pressure": b.pressure}
-    b.define_display_vars = define_display_vars_FTPx
+    b.define_display_vars = define_display_vars_FcTP
 
 
-# Inherit state_initialization from FTPX form, as the process is the same
+def define_default_scaling_factors(b):
+    """
+    Method to set default scaling factors for the property package. Scaling
+    factors are based on the default initial value for each variable provided
+    in the state_bounds config argument.
+    """
+    # Get bounds and initial values from config args
+    units = b.get_metadata().derived_units
+    state_bounds = b.config.state_bounds
+
+    if state_bounds is None:
+        return
+
+    try:
+        f_bounds = state_bounds["flow_mol_comp"]
+        if len(f_bounds) == 4:
+            f_init = pyunits.convert_value(f_bounds[1],
+                                           from_units=f_bounds[3],
+                                           to_units=units["flow_mole"])
+        else:
+            f_init = f_bounds[1]
+    except KeyError:
+        f_init = 1
+
+    try:
+        p_bounds = state_bounds["pressure"]
+        if len(p_bounds) == 4:
+            p_init = pyunits.convert_value(p_bounds[1],
+                                           from_units=p_bounds[3],
+                                           to_units=units["pressure"])
+        else:
+            p_init = p_bounds[1]
+    except KeyError:
+        p_init = 1
+
+    try:
+        t_bounds = state_bounds["temperature"]
+        if len(t_bounds) == 4:
+            t_init = pyunits.convert_value(t_bounds[1],
+                                           from_units=t_bounds[3],
+                                           to_units=units["temperature"])
+        else:
+            t_init = t_bounds[1]
+    except KeyError:
+        t_init = 1
+
+    # Set default scaling factors
+    b.set_default_scaling("flow_mol", 1/f_init)
+    b.set_default_scaling("flow_mol_phase", 1/f_init)
+    b.set_default_scaling("flow_mol_comp", 1/f_init)
+    b.set_default_scaling("flow_mol_phase_comp", 1/f_init)
+    b.set_default_scaling("pressure", 1/p_init)
+    b.set_default_scaling("temperature", 1/t_init)
+
+
+def calculate_scaling_factors(b):
+    sf_flow = iscale.get_scaling_factor(b.flow_mol, default=1, warning=True)
+    sf_mf = iscale.get_scaling_factor(
+        b.mole_frac_phase_comp, default=1e3, warning=True)
+
+    for j in b.component_list:
+        sf_j = iscale.get_scaling_factor(
+            b.mole_frac_comp[j], default=1e3, warning=True)
+        iscale.constraint_scaling_transform(b.mole_frac_comp_eq[j], sf_j)
+
+    if len(b.phase_list) == 1:
+        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+
+        for j in b.component_list:
+            sf_j = iscale.get_scaling_factor(
+                b.mole_frac_comp[j], default=1e3, warning=True)
+            iscale.constraint_scaling_transform(
+                b.component_flow_balances[j], sf_j)
+
+        # b.phase_fraction_constraint is well scaled
+
+    elif len(b.phase_list) == 2:
+        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+
+        for j in b.component_list:
+            sf_fc = iscale.get_scaling_factor(
+                b.flow_mol_comp[j], default=1, warning=True)
+            iscale.constraint_scaling_transform(
+                b.component_flow_balances[j], sf_fc)
+
+        iscale.constraint_scaling_transform(b.sum_mole_frac, sf_mf)
+
+        for p in b.phase_list:
+            sf_p = iscale.get_scaling_factor(
+                b.flow_mol_phase[p], default=1, warning=True)
+            iscale.constraint_scaling_transform(
+                b.phase_fraction_constraint[p], sf_p)
+
+    else:
+        for j in b.component_list:
+            sf_fc = iscale.get_scaling_factor(
+                b.flow_mol_comp[j], default=1, warning=True)
+            iscale.constraint_scaling_transform(
+                b.component_flow_balances[j], sf_fc)
+
+        for p in b.phase_list:
+            sf_p = iscale.get_scaling_factor(
+                b.flow_mol_phase[p], default=1, warning=True)
+            iscale.constraint_scaling_transform(
+                b.sum_mole_frac[p], sf_mf)
+            iscale.constraint_scaling_transform(
+                b.phase_fraction_constraint[p], sf_p)
+
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
+
+# Inherit state_initialization from FTPx form, as the process is the same
 
 
 do_not_initialize = []
+
+
+class FcTP(object):
+    set_metadata = set_metadata
+    define_state = define_state
+    state_initialization = state_initialization
+    do_not_initialize = do_not_initialize
+    define_default_scaling_factors = define_default_scaling_factors
+    calculate_scaling_factors = calculate_scaling_factors

@@ -18,6 +18,8 @@ import sys
 import logging
 import textwrap
 
+from pandas import DataFrame
+
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.misc import tabular_writer
 from pyomo.environ import Block, value
@@ -324,7 +326,27 @@ class ProcessBlockData(_BlockData):
         return None
 
     def serialize_contents(self, time_point=0):
-        return self._get_performance_contents(time_point), self._get_stream_table_contents(time_point)
+        """
+        Return the performance contents and stream table
+
+        NOTE: There is the possiblity of a ConfigurationError because 
+        the names of the inlets and outlets of the unit model may not be
+        standard. If this occurs then return an empty dataframe
+
+        Args:
+            time_point: The time
+
+        Returns:
+            performance_contents: Pandas dataframe with the performance contents
+            stream_table: Pandas dataframe with the stream table for a unit model
+        """
+        performance_contents = self._get_performance_contents(time_point)
+        try:
+            stream_table = self._get_stream_table_contents(time_point)
+        except ConfigurationError as err:
+            _log.warning(f"Could not serialize stream table: {err}")
+            stream_table = DataFrame()
+        return performance_contents, stream_table
 
     def _setup_dynamics(self):
         """

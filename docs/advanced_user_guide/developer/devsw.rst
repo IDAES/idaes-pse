@@ -65,7 +65,7 @@ and summarized below:
     * - :ref:`sw-wf-develop`: Make local changes
     * - :ref:`sw-wf-collaborate`: Push the changes to Github, get feedback and merge
 
-.. figure:: ../../_images/sw-overview-workflow.png
+.. figure:: /images/sw-overview-workflow.png
     :align: center
     :width: 500px
 
@@ -105,7 +105,7 @@ You should first visit the repo on Github
 by pointing your browser to https://github.com/IDAES/idaes-dev/. Then you should
 fork the repo into a repo of the same name under your name.
 
-.. figure:: ../../_images/github-fork-repo.png
+.. figure:: /images/github-fork-repo.png
     :align: right
     :width: 500px
 
@@ -192,7 +192,7 @@ We will call a set of changes that belong together, e.g. because they depend on
 each other to work, a "topic". This section describes how to start work on a new
 topic. The workflow for initiating a topic is shown in Figure 3 below.
 
-.. figure:: ../../_images/sw-init-workflow.png
+.. figure:: /images/sw-init-workflow.png
     :align: right
     :height: 400px
 
@@ -212,7 +212,7 @@ There is one more important step to take, that will allow the rest of the projec
 to easily notice your issue: add the issue to the "Priorities" project. The screenshot
 below shows where you need to click to do this.
 
-.. figure:: ../../_images/github-issue-priority.png
+.. figure:: /images/github-issue-priority.png
     :align: right
     :width: 500px
 
@@ -273,7 +273,7 @@ Finally, you are ready to initiate the pull request. Right after you perform the
 URL in Github (https://github.com/IDAES/idaes-dev) and you should see a highlighted
 bar below the tabs, as in Figure 5 below, asking if you want to start a pull-request.
 
-.. figure:: ../../_images/github-start-pullrequest.png
+.. figure:: /images/github-start-pullrequest.png
     :align: right
     :width: 500px
 
@@ -304,7 +304,7 @@ debugging, and committing and pushing to Github. You may go through many (many!)
 iterations of this loop before the code is ready for review. This workflow is
 illustrated in Figure 6.
 
-.. figure:: ../../_images/sw-dev-workflow.png
+.. figure:: /images/sw-dev-workflow.png
     :align: right
     :height: 400px
 
@@ -417,7 +417,7 @@ the code is merged into the main repository. At this point, you can delete the
 "topic branch" used for the pull request, and go back to :ref:`initiate <sw-wf-initiate>` your
 next set of changes.
 
-.. figure:: ../../_images/sw-collaborate-workflow.png
+.. figure:: /images/sw-collaborate-workflow.png
     :align: right
     :height: 400px
 
@@ -489,7 +489,7 @@ i.e. run ``git pull``.
 
 Now you can go and enjoy a tasty beverage. Cheers!
 
-.. image:: ../../_images/beer-coffee-cheers-small.png
+.. image:: /images/beer-coffee-cheers-small.png
 
 
  

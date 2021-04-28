@@ -21,23 +21,21 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            value,
-                           SolverFactory,
-                           units as pyunits,
                            Param)
 from idaes.core import FlowsheetBlock
 # import ideal flue gas prop pack
 from idaes.power_generation.properties import FlueGasParameterBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
+from idaes.core.util import get_solver
 from idaes.power_generation.unit_models.heat_exchanger_3streams import \
     HeatExchangerWith3Streams
 import idaes.core.util.scaling as iscale
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 

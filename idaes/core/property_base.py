@@ -17,7 +17,7 @@ This module contains classes for property blocks and property parameter blocks.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, value, Var, Param, Expression, Constraint
+from pyomo.environ import Set, value, Var, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -95,6 +95,9 @@ class PhysicalParameterBlock(ProcessBlockData,
         if not hasattr(self, "_state_block_class"):
             self._state_block_class = None
 
+        # By default, property packages do not include inherent reactions
+        self._has_inherent_reactions = False
+
         # This is a dict to store default property scaling factors. They are
         # defined in the parameter block to provide a universal default for
         # quantities in a particular kind of state block.  For example, you can
@@ -171,6 +174,10 @@ class PhysicalParameterBlock(ProcessBlockData,
                      "directly. Property package developers should set the "
                      "_state_block_class attribute instead.")
         self._state_block_class = val
+
+    @property
+    def has_inherent_reactions(self):
+        return self._has_inherent_reactions
 
     def build_state_block(self, *args, **kwargs):
         """
@@ -384,6 +391,23 @@ class StateBlock(ProcessBlock):
     def _return_phase_component_set(self):
         return self._get_parameter_block().get_phase_component_set()
 
+    @property
+    def has_inherent_reactions(self):
+        return self._has_inherent_reactions()
+
+    def _has_inherent_reactions(self):
+        return self._get_parameter_block().has_inherent_reactions
+
+    # Need to separate the existence of inherent reactions from whether they
+    # should be included in material balances
+    # For some cases, Using an apparent species basis means they can be ignored
+    @property
+    def include_inherent_reactions(self):
+        return self._include_inherent_reactions()
+
+    def _include_inherent_reactions(self):
+        return self._get_parameter_block().has_inherent_reactions
+
     def _get_parameter_block(self):
         try:
             return self._block_data_config_default["parameters"]
@@ -577,15 +601,23 @@ should be constructed in this state block,
 
     @property
     def component_list(self):
-        return self.parent_component().component_list
+        return self.parent_component()._return_component_list()
 
     @property
     def phase_list(self):
-        return self.parent_component().phase_list
+        return self.parent_component()._return_phase_list()
 
     @property
     def phase_component_set(self):
-        return self.parent_component().phase_component_set
+        return self.parent_component()._return_phase_component_set()
+
+    @property
+    def has_inherent_reactions(self):
+        return self.parent_component()._has_inherent_reactions()
+
+    @property
+    def include_inherent_reactions(self):
+        return self.parent_component()._include_inherent_reactions()
 
     def build(self):
         """

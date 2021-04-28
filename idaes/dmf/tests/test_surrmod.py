@@ -82,7 +82,7 @@ class AlamoMock(object):
 def test_init():
     tmp_dir = scratch_path / "init"
     dmf = DMF(path=tmp_dir, create=True)
-    surrmod.SurrogateModel(Experiment(DMF))
+    surrmod.SurrogateModel(Experiment(dmf))
 
 
 @pytest.mark.skipif(not surrmod.alamo_enabled, reason="ALAMO is disabled")

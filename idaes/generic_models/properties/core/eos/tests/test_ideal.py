@@ -167,8 +167,8 @@ def test_dens_mol_phase_liq(m):
 @pytest.mark.unit
 def test_dens_mol_phase_vap(m):
     assert str(Ideal.dens_mol_phase(m.props[1], "Vap")) == (
-            'props[1].pressure/(kg * m ** 2 / K / mol / s ** 2/J / K / '
-            'mol*(8.314462618*J/mol/K)*props[1].temperature)')
+            'props[1].pressure/(kg*m**2/J/s**2*(8.314462618*(J)/mol/K)'
+            '*props[1].temperature)')
 
 
 @pytest.mark.unit
@@ -225,8 +225,8 @@ def test_entr_mol_phase_comp(m):
 
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
         assert str(Ideal.entr_mol_phase_comp(m.props[1], "Vap", j)) == (
-            '42 - kg * m ** 2 / K / mol / s ** 2/J / K / '
-            'mol*(8.314462618*J/mol/K)*log(props[1].mole_frac_phase_comp'
+            '42 - kg*m**2/J/s**2*(8.314462618*(J)/mol/K)'
+            '*log(props[1].mole_frac_phase_comp'
             '[Vap,{}]*props[1].pressure/params.pressure_ref)'.format(j))
 
 
@@ -256,7 +256,7 @@ def test_fug_phase_comp_vap(m):
 @pytest.mark.unit
 def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo")
+        Ideal.fug_phase_comp(m_sol.props[1], "Sol", "a")
 
 
 @pytest.mark.unit
@@ -281,7 +281,7 @@ def test_fug_phase_comp_vap_eq(m):
 @pytest.mark.unit
 def test_fug_phase_comp_invalid_phase_eq(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
+        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "a", ("Vap", "Liq"))
 
 
 @pytest.mark.unit
