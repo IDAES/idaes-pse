@@ -648,6 +648,26 @@ class TestScaleConstraintsPynumero():
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
         assert m.scaling_factor[m.c3] == pytest.approx(1e-6)
 
+
+    @pytest.mark.unit
+    def test_condition_number(self):
+        """Calculate the condition number of the Jacobian
+        """
+        m = self.model()
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+        m.scaling_factor[m.c1] = 1e-6
+        m.scaling_factor[m.c2] = 1e-6
+        m.scaling_factor[m.c3] = 1e-12
+
+        n = sc.jacobian_cond(m, scaled=True)
+        assert n == pytest.approx(500, abs=200)
+        n = sc.jacobian_cond(m, scaled=False)
+        assert n == pytest.approx(7.5e7, abs=5e6)
+
+
     @pytest.mark.unit
     def test_scale_with_ignore_var_scale_constraint_scale(self):
         """Make sure the Jacobian from Pynumero matches expectation.  This is

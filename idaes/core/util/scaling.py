@@ -28,6 +28,8 @@ variables to calculate additional scaling factors.
 __author__ = "John Eslick, Tim Bartholomew"
 
 from math import log10
+import numpy as np
+import scipy.sparse.linalg as spla
 
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
@@ -437,7 +439,7 @@ def constraint_autoscale_large_jac(
     ignore_variable_scaling=False,
     max_grad=100,
     min_scale=1e-6,
-    no_scale = False
+    no_scale=False
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     imitates Ipopt's default constraint scaling.  This scales constraints down
@@ -499,6 +501,41 @@ def constraint_autoscale_large_jac(
     if n_obj == 0:
         delattr(m, dummy_objective_name)
     return jac, jac_scaled, nlp
+
+
+def get_jacobian(m, scaled=True):
+    """
+    Get the Jacobian matrix at the current model values.
+
+    Args:
+        m: model to get Jacobian from
+        scaled: if True return scaled Jacobian, else get unscaled
+
+    Returns:
+        (Jacobian matrix in Scipy CSR format, Pynumero nlp)
+    """
+    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+    if scaled:
+        return jac_scaled, nlp
+    else:
+        return jac, nlp
+
+
+def jacobian_cond(m, scaled=True, ord=None):
+    """
+    Get the Jacobian matrix at the current model values.
+
+    Args:
+        m: model to get Jacobian from
+        scaled: if True use scaled Jacobian, else use unscaled
+        ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+
+    Returns:
+        Jacobian matrix in Scipy CSR format
+    """
+    jac, nlp = get_jacobian(m, scaled=scaled)
+    jac_inv = spla.inv(jac)
+    return spla.norm(jac, ord)*spla.norm(jac_inv, ord)
 
 
 class CacheVars(object):

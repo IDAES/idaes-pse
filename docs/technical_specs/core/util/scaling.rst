@@ -119,6 +119,9 @@ described above can provide Jacobian information at the current variable values.
 
 .. autofunction:: min_scaling_factor
 
+.. autofunction:: get_jacobian
+
+.. autofunction:: jacobian_cond
 
 Applying Scaling
 ----------------
