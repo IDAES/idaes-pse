@@ -25,10 +25,9 @@ The expressions can be evaluated with variable scaling factors in place of
 variables to calculate additional scaling factors.
 """
 
-__author__ = "John Eslick, Tim Bartholomew"
+__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 
 from math import log10
-import numpy as np
 import scipy.sparse.linalg as spla
 
 import pyomo.environ as pyo
@@ -41,7 +40,6 @@ from pyomo.common.collections import ComponentMap
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.logger as idaeslog
 
-__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 _log = idaeslog.getLogger(__name__)
 
 
