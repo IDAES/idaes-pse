@@ -30,11 +30,12 @@ from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_
     import LiquidParameterBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester, get_default_solver
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestColumn:
@@ -47,7 +48,7 @@ class TestColumn:
     -Pressure: Pa
     """
 
-    @pytest.mark.component
+    @pytest.mark.integration
     def test_steady_state_initialization(self):
         # Spacial domain finite elemets and finite element list
         x_nfe = 10
@@ -155,7 +156,6 @@ class TestColumn:
             m.fs.unit.liquid_inlet.mole_frac_comp[t, "MEA"].fix(0.11602)
         initialization_tester(m)
 
-
     @pytest.fixture(scope="module",
                     params=[ProcessType.absorber, ProcessType.stripper])
     def column_model_ss(self, request):
@@ -247,7 +247,6 @@ class TestColumn:
             m.fs.unit.initialize(
                 homotopy_steps_h=[0.1, 0.2, 0.4, 0.6, 0.8, 1])
         return m
-
 
     @pytest.fixture(scope="module",
                     params=[ProcessType.absorber, ProcessType.stripper])
@@ -345,10 +344,11 @@ class TestColumn:
 
             # Initialize column
             m.fs.unit.initialize(
-                homotopy_steps_h=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
+                homotopy_steps_h=[
+                    0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
         return m
 
-# ------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_steady_state_column_build(self, column_model_ss):

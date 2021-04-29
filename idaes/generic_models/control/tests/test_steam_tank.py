@@ -37,9 +37,8 @@ from idaes.core.util import copy_port_values as _set_port
 from idaes.core.util.plot import stitch_dynamic
 from idaes.generic_models.control import PIDBlock, PIDForm
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
 
 def _valve_pressure_flow_cb(b):
     """
@@ -194,10 +193,8 @@ def create_model(
     m.fs.ctrl.setpoint.fix(3e5)
 
     # Initialize the model
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'tol': 1e-6,
-                      'linear_solver': "ma27",
-                      'max_iter': 100}
+    solver = get_solver()
+
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol = 100  # initial guess on flow
     # simple initialize
@@ -315,18 +312,12 @@ def tpid(form):
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid_velocity():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.velocity)
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid_standard():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.standard)

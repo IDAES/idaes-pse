@@ -114,7 +114,7 @@ see property package for documentation.}""",
 
     def initialize(
         blk, state_args={}, outlvl=idaeslog.NOTSET,
-        solver="ipopt", optarg={"tol": 1e-6}
+        solver=None, optarg={}
     ):
         """
         This method initializes the StateJunction block by calling the
@@ -126,9 +126,9 @@ see property package for documentation.}""",
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
