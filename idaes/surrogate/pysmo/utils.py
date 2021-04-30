@@ -20,7 +20,7 @@
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
 
-__Author__ = "Oluwamayowa Amusat, John Siirola"
+__author__ = "Oluwamayowa Amusat, John Siirola"
 
 from pyomo.core.expr import current as EXPR, native_types
 from pyomo.core.expr.numvalue import value

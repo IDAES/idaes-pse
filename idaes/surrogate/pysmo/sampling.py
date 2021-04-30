@@ -20,7 +20,7 @@ import pandas as pd
 import warnings
 import itertools
 
-__Author__ = "Oluwamayowa Amusat"
+__author__ = "Oluwamayowa Amusat"
 
 
 class FeatureScaling:

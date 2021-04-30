@@ -32,7 +32,7 @@ from six import string_types
 # Imports from IDAES namespace
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
 
-__Author__ = "Oluwamayowa Amusat"
+__author__ = "Oluwamayowa Amusat"
 
 """
 The purpose of this file is to perform radial basis functions in Pyomo.

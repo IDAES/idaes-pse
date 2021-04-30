@@ -32,7 +32,7 @@ from six import string_types
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
 
 
-__Author__ = "Oluwamayowa Amusat"
+__author__ = "Oluwamayowa Amusat"
 
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
