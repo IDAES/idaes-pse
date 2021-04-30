@@ -48,8 +48,11 @@ m.x3 = pyo.Var()
 # Define parameters
 # m.p1 = pyo.Param(initialize=10, mutable=True)
 # m.p2 = pyo.Param(initialize=5, mutable=True)
+# Important Tip: The uncertain parameters need to be defined at Pyomo variables
 m.p1 = pyo.Var(initialize=10)
 m.p2 = pyo.Var(initialize=5)
+# Important Tip: We fix these to first solve with Ipopt. We unfix below
+# before using the uncertainty propagation toolbox.
 m.p1.fix()
 m.p2.fix()
 
@@ -221,24 +224,24 @@ m.p2.unfix()
 
 ## Run package
 results = propagate_uncertainty(m, theta, sigma_p, theta_names)
-## Check results
-#sigma_f_1 = df_dx @ dx_dp @ sigma_p @ dx_dp.transpose() @ df_dx.transpose()
-#sigma_f_2 = df_dp @ sigma_p @ df_dp.transpose()
-#print("sigma_f = ",sigma_f_1 + sigma_f_2)
 
+
+
+
+## Compute uncertainty propagation by hand
+# We now compute the expected result with our 
+# analytic solution.
+
+# Take 1: use the formula in the documentation
 tmp_f = (df_dp + df_dx @ dx_dp)
 sigma_f = tmp_f @ sigma_p @ tmp_f.transpose()
 print("\nsigma_f = ",sigma_f)
-
-#sigma_c_1 = dc_dx @ dx_dp @ sigma_p @ dx_dp.transpose() @ dc_dx.transpose()
-#sigma_c_2 = dc_dp @ sigma_p @ dc_dp.transpose()
-#print("sigma_c = ",sigma_c_1 + sigma_c_2)
 
 tmp_c = (dc_dp + dc_dx @ dx_dp)
 sigma_c = tmp_c @ sigma_p @ tmp_c.transpose()
 print("\nsigma_c = \n",sigma_c)
 
-## Check results take 2
+# Take 2: use an equivalent formula
 print("\n\n")
 grad_f = np.hstack((df_dx, df_dp))
 dsdp = np.vstack((dx_dp,np.eye(2)))
@@ -252,21 +255,40 @@ sigma_c_take_2 = dc_ds @ dsdp @ sigma_p @ dsdp.transpose() @ dc_ds.transpose()
 print("sigma_c (take 2) = ",sigma_c_take_2)
 
 
+## Check results
+# We now check the results for the uncertainty propagation toolbox
 
-
-#np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
-#assert results.propagation_f == pytest.approx(5.45439337747349)
-
+# Check the order from the uncertainty propagation toolbox is as expected
+# TODO: make this test more automated to use this information
+# to reshuffle the analytic soltuion
 assert results.col == ['x1', 'x2', 'p1', 'p2', 'x3']
 assert results.row == ['con1', 'con2', 'obj']
+
+# Define indices to compare results to analytic solution
+# TODO: make this more robust to use the results above
 var_idx = np.array([True,True,False,False,True])
 theta_idx = np.array([False,False,True,True,False])
 
+# Check the gradient of the objective w.r.t. x matches
 np.testing.assert_array_almost_equal(results.gradient_f[var_idx], np.array(df_dx))
+
+# Check the gradient of the objective w.r.t. p (parameters) matches
 np.testing.assert_array_almost_equal(results.gradient_f[theta_idx], np.array(df_dp))
+
+# Check the Jacobian of the constraints w.r.t. x matches
 np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, var_idx], np.array(dc_dx))
+
+# Check the Jacobian of the constraints w.r.t. p (parameters) matches
 np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, theta_idx], np.array(dc_dp))
+
+# Check the NLP sensitivity results for the variables (x) matches
 np.testing.assert_array_almost_equal(results.dsdp.toarray()[var_idx,:], np.array(dx_dp))
+
+# Check the NLP sensitivity results for the parameters (p) matches
 np.testing.assert_array_almost_equal(results.dsdp.toarray()[theta_idx,:], np.array([[1,0],[0,1]]))
+
+# Check the uncertainty propagation results for the constrains matches
 assert results.propagation_c == pytest.approx(np.sum(sigma_c))
+
+# Check the uncertainty propagation results for the objective matches
 assert results.propagation_f == pytest.approx(sigma_f)
