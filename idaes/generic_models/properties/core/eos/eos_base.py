@@ -94,7 +94,7 @@ class EoSBase():
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
-        raise NotImplementedError(_msg(b, "entergy_internal_mol_phase"))
+        raise NotImplementedError(_msg(b, "energy_internal_mol_phase"))
 
     @staticmethod
     def energy_internal_mol_phase_comp(b, p, j):
