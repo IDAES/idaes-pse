@@ -1512,6 +1512,16 @@ class GenericStateBlockData(StateBlockData):
             pobj = self.params.get_phase(p)
             pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
 
+        # Flow and density terms
+        if self.is_property_constructed("_enthalpy_flow_term"):
+            for k, v in self._enthalpy_flow_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
+                                                       default=1)
+                    sf_h = iscale.get_scaling_factor(self.enth_mol_phase[k],
+                                                     default=1)
+                    iscale.set_scaling_factor(v, sf_rho*sf_h)
+
         # Phase equilibrium constraint
         if hasattr(self, "equilibrium_constraint"):
             pe_form_config = self.params.config.phase_equilibrium_state
