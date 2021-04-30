@@ -261,6 +261,7 @@ class TestUncertaintyPropagation:
 
         ## Run package
         results = propagate_uncertainty(m, theta, sigma_p, theta_names)
+        
         ## Check results
 
         tmp_f = (df_dp + df_dx @ dx_dp)
@@ -269,25 +270,39 @@ class TestUncertaintyPropagation:
         tmp_c = (dc_dp + dc_dx @ dx_dp)
         sigma_c = tmp_c @ sigma_p @ tmp_c.transpose()
 
-        grad_f = np.hstack((df_dx, df_dp))
-        dsdp = np.vstack((dx_dp,np.eye(2)))
-        sigma_f_take_2 = grad_f @ dsdp @ sigma_p @ dsdp.transpose() @ grad_f.transpose()
-
-        dc_ds = np.hstack((dc_dx, dc_dp))
-        sigma_c_take_2 = dc_ds @ dsdp @ sigma_p @ dsdp.transpose() @ dc_ds.transpose()
-
+        # This currently just checks if the order of the outputs did not change
+        # TODO: improve test robustness by using this information to set
+        # var_idx and theta_idx. This way the test will still work
+        # regardless of the order. In other words, the analytic solution needs to be
+        # reordered to match the variable/constraint order from
+        # this package. Alternately, the results could be converted into a Pandas dataframe
         assert results.col == ['x1', 'x2', 'p1', 'p2', 'x3']
         assert results.row == ['con1', 'con2', 'obj']
         var_idx = np.array([True,True,False,False,True])
         theta_idx = np.array([False,False,True,True,False])
 
+        # Check the gradient of the objective w.r.t. x matches
         np.testing.assert_array_almost_equal(results.gradient_f[var_idx], np.array(df_dx))
+        
+        # Check the gradient of the objective w.r.t. p (parameters) matches
         np.testing.assert_array_almost_equal(results.gradient_f[theta_idx], np.array(df_dp))
+        
+        # Check the Jacobian of the constraints w.r.t. x matches
         np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, var_idx], np.array(dc_dx))
+        
+        # Check the Jacobian of the constraints w.r.t. p (parameters) matches
         np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, theta_idx], np.array(dc_dp))
+        
+        # Check the NLP sensitivity results for the variables (x) matches
         np.testing.assert_array_almost_equal(results.dsdp.toarray()[var_idx,:], np.array(dx_dp))
+        
+        # Check the NLP sensitivity results for the parameters (p) matches
         np.testing.assert_array_almost_equal(results.dsdp.toarray()[theta_idx,:], np.array([[1,0],[0,1]]))
+        
+        # Check the uncertainty propagation results for the constrains matches
         assert results.propagation_c == pytest.approx(np.sum(sigma_c))
+        
+        # Check the uncertainty propagation results for the objective matches
         assert results.propagation_f == pytest.approx(sigma_f)
 
     def test_propagate_uncertainty_error(self):

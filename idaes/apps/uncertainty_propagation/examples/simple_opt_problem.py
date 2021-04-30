@@ -222,11 +222,8 @@ theta_names = ['p1','p2']
 m.p1.unfix()
 m.p2.unfix()
 
-## Run package
+## Run sensitivity toolbox
 results = propagate_uncertainty(m, theta, sigma_p, theta_names)
-
-
-
 
 ## Compute uncertainty propagation by hand
 # We now compute the expected result with our 
@@ -260,7 +257,7 @@ print("sigma_c (take 2) = ",sigma_c_take_2)
 
 # Check the order from the uncertainty propagation toolbox is as expected
 # TODO: make this test more automated to use this information
-# to reshuffle the analytic soltuion
+# to reshuffle the analytic solution
 assert results.col == ['x1', 'x2', 'p1', 'p2', 'x3']
 assert results.row == ['con1', 'con2', 'obj']
 

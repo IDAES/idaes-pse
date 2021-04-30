@@ -121,6 +121,10 @@ The function **quantify_propagate_uncertainty** returns the object **results** w
 * **results.dsdp** contains the Jacobians :math:`\frac{\partial x}{\partial p},~\frac{\partial p}{\partial p}``
 * **results.propagation_f** contains the estimate variance of the objective function 
 
+Important Notes:
+1. The uncertain parameters :math:`p` should be declared as ``Var`` in Pyomo.
+2. The uncertain parameters :math:`p` should not be fixed in Pyomo. Instead, set the upper and lower bounds equal. If they are fixed, ``k_aug`` will give an error message that the optimization problem has too few degrees of freedom.
+
 Available Functions
 -------------------
 
