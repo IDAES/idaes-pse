@@ -261,6 +261,7 @@ def get_dsdp(model, theta_names, theta, var_dic={},
     if var_dic == {}:
         for i in theta_names:
             var_dic[i] = i
+    '''
     for v in theta_names:
         v_tmp = str(kk)
         original_param_object = Param(initialize=theta[v], mutable=True)
@@ -274,6 +275,20 @@ def get_dsdp(model, theta_names, theta, var_dic={},
     m_kaug_dsdp = sensitivity_calculation('kaug',m,original_Param,
                                           perturbed_Param, tee)
 
+    '''
+    for i, name in enumerate(theta_names):
+        orig_param = Param(initialize=theta[name], mutable=True)
+        ptb_param = Param(initialize=theta[name])
+        m.add_component("original_%s" % i, orig_param)
+        m.add_component("perturbed_%s" % i,ptb_param)
+        cuid = ComponentUID(name)
+        var = cuid.find_component_on(m)
+        m.extra.add(var - orig_param == 0)
+        original_Param.append(orig_param)
+        perturbed_Param.append(ptb_param)
+
+    m_kaug_dsdp = sensitivity_calculation('kaug',m,original_Param,
+                                          perturbed_Param, tee)
     try:
         with open ("./dsdp/col_row.col", "r") as myfile:
             col = myfile.read().splitlines()
