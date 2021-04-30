@@ -115,7 +115,181 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(propagate_results.dsdp.toarray(), [[1.,  0.],[ 0., 1.]])
         assert list(propagate_results.propagation_c) == []
         assert propagate_results.propagation_f == pytest.approx(5.45439337747349)
-    
+
+    def test_propagate_uncertainty1(self):
+        '''
+        It tests the function propagate_uncertainty with
+        min f:  p1*x1+ p2*(x2^2) + p1*p2
+         s.t  c1: x1 + x2 = p1
+              c2: x2 + x3 = p2
+              0 <= x1, x2, x3 <= 10
+              p1 = 10
+              p2 = 5
+
+        Variables = (x1, x2, x3)
+        Parameters (fixed variables) = (p1, p2)
+        '''
+        ### Create optimization model
+        m = ConcreteModel()
+        m.dual = Suffix(direction=Suffix.IMPORT)
+
+        m.x1 = Var()
+        m.x2 = Var()
+        m.x3 = Var()
+
+        # Define parameters
+        m.p1 = Var(initialize=10)
+        m.p2 = Var(initialize=5)
+        m.p1.fix()
+        m.p2.fix()
+
+        # Define constraints
+        m.con1 = Constraint(expr=m.x1 + m.x2-m.p1==0)
+        m.con2 = Constraint(expr=m.x2 + m.x3-m.p2==0)
+
+        # Define objective
+        m.obj = Objective(expr=m.p1*m.x1+ m.p2*(m.x2**2) + m.p1*m.p2, sense=minimize)
+
+        ### Solve optimization model
+        opt = SolverFactory('ipopt',tee=True)
+        opt.solve(m)
+
+        ### Analytic solution
+        '''
+        At the optimal solution, none of the bounds are active. As long as the active set
+        does not change (i.e., none of the bounds become active), the
+        first order optimality conditions reduce to a simple linear system.
+        '''
+
+        # dual variables (multipliers)
+        v2_ = 0
+        v1_ = m.p1()
+
+        # primal variables
+        x2_ = (v1_ + v2_)/(2 * m.p2())
+        x1_ = m.p1() - x2_
+        x3_ = m.p2() - x2_
+          
+        ### Analytic sensitivity
+        '''
+        Using the analytic solution above, we can compute the sensitivies of x and v to
+        perturbations in p1 and p2.
+        The matrix dx_dp constains the sensitivities of x to perturbations in p
+        ''' 
+
+        # Initialize sensitivity matrix Nx x Np
+        # Rows: variables x
+        # Columns: parameters p
+        dx_dp = np.zeros((3,2))
+        # dx2/dp1 = 1/(2 * p2)
+        dx_dp[1, 0] = 1/(2*m.p2())
+        # dx2/dp2 = -(v1 + v2)/(2 * p2**2)
+        dx_dp[1,1] = -(v1_ + v2_)/(2 * m.p2()**2)
+        # dx1/dp1 = 1 - dx2/dp1
+        dx_dp[0, 0] = 1 - dx_dp[1,0]
+        # dx1/dp2 = 0 - dx2/dp2
+        dx_dp[0, 1] = 0 - dx_dp[1,1]
+        # dx3/dp1 = 1 - dx2/dp1
+        dx_dp[2, 0] = 0 - dx_dp[1,0]
+        # dx3/dp2 = 0 - dx2/dp2
+        dx_dp[2, 1] = 1 - dx_dp[1,1]
+
+        '''
+        Similarly, we can compute the gradients df_dx, df_dp
+        and Jacobians dc_dx, dc_dp
+        '''
+
+        # Initialize 1 x 3 array to store (\partial f)/(\partial x)
+        # Elements: variables x
+        df_dx = np.zeros(3)
+        # df/dx1 = p1
+        df_dx[0] = m.p1()
+        # df/dx2 = p2
+        df_dx[1] = 2 * m.p2() * x2_
+        # df/dx3 = 0
+        # Initialize 1 x 2 array to store (\partial f)/(\partial p)
+        # Elements: parameters p
+        df_dp = np.zeros(2)
+        # df/dxp1 = x1 + p2
+        df_dp[0] = x1_ + m.p2()
+        # df/dp2 = x2**2 + p1
+        df_dp[1] = x2_**2 + m.p1()
+
+        # Initialize 2 x 3 array to store (\partial c)/(\partial x)
+        # Rows: constraints c
+        # Columns: variables x
+        dc_dx = np.zeros((2,3))
+        # dc1/dx1 = 1
+        dc_dx[0,0] = 1
+        # dc1/dx2 = 1
+        dc_dx[0,1] = 1
+        # dc2/dx2 = 1
+        dc_dx[1,1] = 1
+        # dc2/dx3 = 1
+        dc_dx[1,2] = 1
+
+        # Remaining entries are 0
+        # Initialize 2 x 2 array to store (\partial c)/(\partial x)
+        # Rows: constraints c
+        # Columns: variables x
+        dc_dp = np.zeros((2,2))
+        # dc1/dp1 = -1
+        dc_dp[0,0] = -1
+        # dc2/dp2 = -1
+        dc_dp[1,1] = -1
+
+        ### Uncertainty propagation
+        '''
+        Now lets test the uncertainty propagation package. We will assume p has covariance
+        sigma_p = [[2, 0], [0, 1]]
+        '''
+
+        ## Prepare inputs
+        # Covariance matrix
+        sigma_p = np.array([[2, 0], [0, 1]])
+
+        # Nominal values for uncertain parameters
+        theta = {'p1':m.p1(), 'p2':m.p2()}
+
+        # Names of uncertain parameters
+        theta_names = ['p1','p2']
+
+        # Important to unfix the parameters!
+        # Otherwise k_aug will complain about too few degrees of freedom
+        m.p1.unfix()
+        m.p2.unfix()
+
+        ## Run package
+        results = propagate_uncertainty(m, theta, sigma_p, theta_names)
+        ## Check results
+
+        tmp_f = (df_dp + df_dx @ dx_dp)
+        sigma_f = tmp_f @ sigma_p @ tmp_f.transpose()
+
+        tmp_c = (dc_dp + dc_dx @ dx_dp)
+        sigma_c = tmp_c @ sigma_p @ tmp_c.transpose()
+
+        grad_f = np.hstack((df_dx, df_dp))
+        dsdp = np.vstack((dx_dp,np.eye(2)))
+        sigma_f_take_2 = grad_f @ dsdp @ sigma_p @ dsdp.transpose() @ grad_f.transpose()
+
+        dc_ds = np.hstack((dc_dx, dc_dp))
+        sigma_c_take_2 = dc_ds @ dsdp @ sigma_p @ dsdp.transpose() @ dc_ds.transpose()
+
+        assert results.col == ['x1', 'x2', 'p1', 'p2', 'x3']
+        assert results.row == ['con1', 'con2', 'obj']
+        var_idx = np.array([True,True,False,False,True])
+        theta_idx = np.array([False,False,True,True,False])
+
+        np.testing.assert_array_almost_equal(results.gradient_f[var_idx], np.array(df_dx))
+        np.testing.assert_array_almost_equal(results.gradient_f[theta_idx], np.array(df_dp))
+        np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, var_idx], np.array(dc_dx))
+        np.testing.assert_array_almost_equal(results.gradient_c.toarray()[:, theta_idx], np.array(dc_dp))
+        np.testing.assert_array_almost_equal(results.dsdp.toarray()[var_idx,:], np.array(dx_dp))
+        np.testing.assert_array_almost_equal(results.dsdp.toarray()[theta_idx,:], np.array([[1,0],[0,1]]))
+        assert results.propagation_c == pytest.approx(np.sum(sigma_c))
+        assert results.propagation_f == pytest.approx(sigma_f)
+
     def test_propagate_uncertainty_error(self):
         '''
         It tests a TypeError when the modle_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
