@@ -76,38 +76,38 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
     tuple
         results object containing the all information including
         
-        - results.obj : float
+        - results.obj: float
             Real number. Objective function value for the given obj_function 
-        - results.theta : dict 
+        - results.theta: dict 
             Size Ntheta python dictionary. Estimated parameters
-        - results.theta_names : list
+        - results.theta_names: list
             Size Ntheta list. Names of parameters
-        - results.cov : numpy.ndarray
+        - results.cov: numpy.ndarray
             Ntheta by Ntheta matrix. Covariance of theta
         - results.gradient_f: numpy.ndarray
             Length Nvar array. Gradient vector of the objective function with 
             respect to the (decision variables, parameters) at the optimal 
             solution
-        - results.gradient_c : scipy.sparse.csr.csr_matrix
+        - results.gradient_c: scipy.sparse.csr.csr_matrix
             Ncon by Nvar size sparse matrix. Gradient vector of the constraints 
             with respect to the (decision variables, parameters) at the optimal 
             solution.
-        - results.dsdp : scipy.sparse.csr.csr_matrix
+        - results.dsdp: scipy.sparse.csr.csr_matrix
             Ntheta by Nvar size sparse matrix. Gradient vector of the 
             (decision variables, parameters) with respect to paramerters 
             (=theta_name). number of rows = len(theta_name), 
             number of columns= len(col)
-        - results.propagation_c : numpy.ndarray
+        - results.propagation_c: numpy.ndarray
             Length Ncon array. Error propagation in the constraints, 
             dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
-        - results.propagation_f : numpy.float64
+        - results.propagation_f: numpy.float64
             Real number. Error propagation in the objective function, 
             df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-        - results.col : list
+        - results.col: list
             Size Nvar. List of variable names. Note that variables names 
             includes both decision variable and uncertain parameter names. 
             The order can be mixed.
-        - results.row : list
+        - results.row: list
             Size Ncon+1. List of constraints and objective function names
 
     Raises
@@ -201,26 +201,26 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names,
             Length Nvar array. Gradient vector of the objective function with 
             respect to the (decision variables, parameters) at the optimal 
             solution
-        - results.gradient_c : scipy.sparse.csr.csr_matrix
+        - results.gradient_c: scipy.sparse.csr.csr_matrix
             Ncon by Nvar size sparse matrix. Gradient vector of the constraints 
             with respect to the (decision variables, parameters) at the optimal 
             solution.
-        - results.dsdp : scipy.sparse.csr.csr_matrix
+        - results.dsdp: scipy.sparse.csr.csr_matrix
             Ntheta by Nvar size sparse matrix. Gradient vector of the 
             (decision variables, parameters) with respect to paramerters 
             (=theta_name). number of rows = len(theta_name), 
             number of columns= len(col)
-        - results.propagation_c : numpy.ndarray
+        - results.propagation_c: numpy.ndarray
             Length Ncon array. Error propagation in the constraints, 
             dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
-        - results.propagation_f : numpy.float64
+        - results.propagation_f: numpy.float64
             Real number. Error propagation in the objective function, 
             df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-        - results.col : list
+        - results.col: list
             Size Nvar. List of variable names. Note that variables names 
             includes both decision variable and uncertain parameter names. 
             The order can be mixed.
-        - results.row : list
+        - results.row: list
             Size Ncon+1. List of constraints and objective function names
 
     Raises
@@ -355,9 +355,9 @@ def clean_variable_name(theta_names):
     -------
         It returns the following variables
         
-        - theta_names_out : list of strings
+        - theta_names_out: list of strings
             List of Var names after removing  all ' and spaces
-        - var_dic : dict
+        - var_dic: dict
             Dictionary with keys converted theta_names and values origianl 
             theta_names 
     """   
