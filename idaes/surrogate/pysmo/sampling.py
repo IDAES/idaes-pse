@@ -11,8 +11,6 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
-__Author__ = "Oluwamayowa Amusat"
-
 from __future__ import division, print_function
 from six import string_types
 import random
@@ -21,6 +19,8 @@ import numpy as np
 import pandas as pd
 import warnings
 import itertools
+
+__Author__ = "Oluwamayowa Amusat"
 
 
 class FeatureScaling:

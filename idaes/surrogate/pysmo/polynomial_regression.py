@@ -11,8 +11,6 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
-__Author__ = "Oluwamayowa Amusat"
-
 # Imports from the python standard library
 from __future__ import division
 #from builtins import int, str
@@ -32,6 +30,9 @@ from scipy.special import comb as comb
 from six import string_types
 # Imports from IDAES namespace
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
+
+
+__Author__ = "Oluwamayowa Amusat"
 
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
