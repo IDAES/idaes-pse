@@ -33,76 +33,88 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
                                    theta_names, obj_function=None, tee=False, 
                                    diagnostic_mode=False, 
                                    solver_options=None):
-    """
-    This function calculates error propagation of the objective function and 
+    """This function calculates error propagation of the objective function and 
     constraints. The parmest uses 'model_function' to estimate uncertain 
     parameters. The uncertain parameters in 'model_uncertain' are fixed with 
     the estimated values. The function 'quantify_propagate_uncertainty' 
     calculates error propagation of objective function and constraints 
     in the 'model_uncertain'. 
-
+    
     The following terms are used to define the output dimensions:
     Ncon   = number of constraints
     Nvar   = number of variables (Nx + Ntheta)
     Nx     = the number of decision (primal) variables
     Ntheta = number of uncertain parameters.
 
-    Args:
-        model_function(function) : A python Function that generates an instance 
-        of the Pyomo model using 'data' as the input argument
-        model_uncertain(function or Pyomo ConcreteModel) : Function is a python 
-        Function that generates an instance of the Pyomo model
-        data(pandas DataFrame, list of dictionary, or list of json file names) : 
+    Parameters
+    ----------
+    model_function : function
+        A python Function that generates an instance of the Pyomo model using 
+        'data' as the input argument
+    model_uncertain : function or Pyomo ConcreteModel
+        Function is a python/ Function that generates an instance of the 
+        Pyomo model
+    data : pandas DataFrame, list of dictionary, or list of json file names
         Data that is used to build an instance of the Pyomo model and build the 
         objective function
-        theta_names(list of strings): List of Var names to estimate
-        obj_function(function, optional) : Function used to formulate parameter 
-        estimation objective, generally sum of squared error between 
-        measurements and model variables.    
-        tee(bool, optional) : Indicates that ef solver output should be teed
-        diagnostic_mode(bool, optional) : If True, print diagnostics from the 
-        solver
-        solver_options(dict, optional) : Provides options to the solver (also 
-        the name of an attribute)
-    
-    Returns:
-        tuple   : results object containing the all information including:
-            - results.obj(float) : Real number. Objective function value for 
-            the given obj_function 
-            - results.theta(dict) : Size Ntheta python dictionary. Estimated 
-            parameters
-            - results.theta_names(list) : Size Ntheta list. Names of parameters
-            - results.cov(numpy.ndarray) : Ntheta by Ntheta matrix. Covariance 
-            of theta
-            - results.gradient_f(numpy.ndarray) : Length Nvar array. Gradient 
-            vector of the objective function with respect to the (decision 
-            variables, parameters) at the optimal solution
-            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar 
-            size sparse matrix. Gradient vector of the constraints with respect 
-            to the (decision variables, parameters) at the optimal solution.
-            - results.dsdp(scipy.sparse.csr.csr_matrix) : Ntheta by Nvar size 
-            sparse matrix. Gradient vector of the (decision variables, 
-            parameters) with respect to paramerters (=theta_name). number of 
-            rows = len(theta_name), number of columns= len(col)
-            - results.propagation_c(numpy.ndarray) : Length Ncon array. Error 
-            propagation in the constraints, 
-            dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
-            - results.propagation_f(numpy.float64) : Real number. Error 
-            propagation in the objective function, 
-            df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            - results.col(list) : Size Nvar. List of variable names. Note that
-            variables names includes both decision variable and uncertain 
-            parameter names. The order can be mixed.
-            - results.row(list) : Size Ncon+1. List of constraints and objective 
-            function names
-    
-    Raises:
-        TypeError:  When tee entry is not Boolean
-        TypeError:  When diagnostic_mode entry is not Boolean
-        TypeError:  When solver_options entry is not None and a Dictionary
-        Warnings:   When an element of theta_names includes a space
-    
-    """
+    theta_names : list of strings
+        List of Var names to estimate
+    obj_function : function, optional
+        Function used to formulate parameter estimation objective, generally 
+        sum of squared error between measurements and model variables, 
+        by default None
+    tee : bool, optional
+        Indicates that ef solver output should be teed, by default False
+    diagnostic_mode : bool, optional
+        If True, print diagnostics from the solver, by default False
+    solver_options : dict, optional
+        Provides options to the solver (also the name of an attribute), 
+        by default None
+
+    Returns
+    -------
+    tuple
+        :results object containing the all information including:
+        - results.obj(float) : Real number. Objective function value for 
+        the given obj_function 
+        - results.theta(dict) : Size Ntheta python dictionary. Estimated 
+        parameters
+        - results.theta_names(list) : Size Ntheta list. Names of parameters
+        - results.cov(numpy.ndarray) : Ntheta by Ntheta matrix. Covariance 
+        of theta
+        - results.gradient_f(numpy.ndarray) : Length Nvar array. Gradient 
+        vector of the objective function with respect to the (decision 
+        variables, parameters) at the optimal solution
+        - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar 
+        size sparse matrix. Gradient vector of the constraints with respect 
+        to the (decision variables, parameters) at the optimal solution.
+        - results.dsdp(scipy.sparse.csr.csr_matrix) : Ntheta by Nvar size 
+        sparse matrix. Gradient vector of the (decision variables, 
+        parameters) with respect to paramerters (=theta_name). number of 
+        rows = len(theta_name), number of columns= len(col)
+        - results.propagation_c(numpy.ndarray) : Length Ncon array. Error 
+        propagation in the constraints, 
+        dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+        - results.propagation_f(numpy.float64) : Real number. Error 
+        propagation in the objective function, 
+        df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+        - results.col(list) : Size Nvar. List of variable names. Note that
+        variables names includes both decision variable and uncertain 
+        parameter names. The order can be mixed.
+        - results.row(list) : Size Ncon+1. List of constraints and objective 
+        function names
+
+    Raises
+    ------
+    TypeError
+        When tee entry is not Boolean
+    TypeError
+        When diagnostic_mode entry is not Boolean
+    TypeError
+        When solver_options entry is not None and a Dictionary
+    Warnings
+        When an element of theta_names includes a space
+    """    
 
     if not isinstance(tee, bool):
         raise TypeError('tee  must be boolean.')
@@ -144,8 +156,8 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
 
 def propagate_uncertainty(model_uncertain, theta, cov, theta_names,
                           tee=False, solver_options=None):
-    """
-    This function calculates gradient vector, expectation, and variance of 
+    
+    """This function calculates gradient vector, expectation, and variance of 
     the objective function and constraints  of the model for given estimated 
     optimal parameters and covariance matrix of parameters. 
     It calculates error propagation of the objective function and constraints 
@@ -156,50 +168,55 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names,
     Nvar   = number of variables (Nx + Ntheta)
     Nx     = the number of decision (primal) variables
     Np = number of uncertain parameters.
-
-    Args:
-        model_uncertain(function or Pyomo ConcreteModel) 
-            : Function is a python Function that generates an instance of 
-              the Pyomo model
-        theta(dict)                    
-            : Size Ntheta python dictionary. Estimated parameters
-        cov(numpy.ndarray)             
-            : Ntheta by Ntheta matrix. Covariance matrix of parameters
-        theta_names(list of strings)   
-            : Size Ntheta. List of estimated l theta names
-        tee(bool, optional)            
-            : Indicates that ef solver output should be teed
-        solver_options(dict, optional) 
-            : Provides options to the solver (also the name of an attribute)
-
-     Returns:
-         tuple   : results object containing the all information including
-            - results.gradient_f(numpy.ndarray) : Length Nvar array. Gradient 
-            vector of the objective function with respect to the (decision 
-            variables, parameters) at the optimal solution
-            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar 
-            size sparse matrix. Gradient vector of the constraints with respect 
-            to the (decision variables, parameters) at the optimal solution.
-            - results.dsdp(scipy.sparse.csr.csr_matrix) : Ntheta by Nvar size 
-            sparse matrix. Gradient vector of the (decision variables, 
-            parameters) with respect to paramerters (=theta_name). number of 
-            rows = len(theta_name), number of columns= len(col)
-            - results.propagation_c(numpy.ndarray) : Length Ncon array. Error 
-            propagation in the constraints, 
-            dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
-            - results.propagation_f(numpy.float64) : Real number. Error 
-            propagation in the objective function, 
-            df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            - results.col(list) : Size Nvar. List of variable names. Note that
-            variables names includes both decision variable and uncertain 
-            parameter names. The order can be mixed.
-            - results.row(list) : Size Ncon+1. List of constraints and objective 
-            function names
     
-    Raises:
-        Exception: if model_uncertain is neither 'ConcreteModel' nor 'function'.
-    """
+    Parameters
+    ----------
+    model_uncertain : function or Pyomo ConcreteModel
+        Function is a python/ Function that generates an instance of the 
+        Pyomo model
+    theta : dict
+        Size Ntheta python dictionary. Estimated parameters
+    cov : numpy.ndarray
+        Ntheta by Ntheta matrix. Covariance matrix of parameters
+    theta_names : list of strings
+        Size Ntheta. List of estimated l theta names
+    tee : bool, optional
+        Indicates that ef solver output should be teed, by default False
+    solver_options : dict, optional
+        Provides options to the solver (also the name of an attribute), 
+        by default None
 
+    Returns
+    -------
+    tuple
+        :results object containing the all information including:
+        - results.gradient_f(numpy.ndarray) : Length Nvar array. Gradient 
+        vector of the objective function with respect to the (decision 
+        variables, parameters) at the optimal solution
+        - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar 
+        size sparse matrix. Gradient vector of the constraints with respect 
+        to the (decision variables, parameters) at the optimal solution.
+        - results.dsdp(scipy.sparse.csr.csr_matrix) : Ntheta by Nvar size 
+        sparse matrix. Gradient vector of the (decision variables, 
+        parameters) with respect to paramerters (=theta_name). number of 
+        rows = len(theta_name), number of columns= len(col)
+        - results.propagation_c(numpy.ndarray) : Length Ncon array. Error 
+        propagation in the constraints, 
+        dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+        - results.propagation_f(numpy.float64) : Real number. Error 
+        propagation in the objective function, 
+        df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+        - results.col(list) : Size Nvar. List of variable names. Note that
+        variables names includes both decision variable and uncertain 
+        parameter names. The order can be mixed.
+        - results.row(list) : Size Ncon+1. List of constraints and objective 
+        function names
+
+    Raises
+    ------
+    Exception
+        if model_uncertain is neither 'ConcreteModel' nor 'function'.
+    """    
     # define Pyomo model
     try:
         if isinstance(model_uncertain, Block):
@@ -314,24 +331,23 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names,
 
 
 def clean_variable_name(theta_names):
-    """
-    This function removes all ' and spaces in theta_names. 
-    Note: The  current theta_est(calc_cov=True) of parmest in 
-          Pyomo doesn't allow ' and spaces in the variable names.
-       
-    Args:
-        theta_names(list of strings) : List of Var names
-    
-    Returns:
-            : It returns the following variables:
-            
-            - theta_names_out(list of strings) 
-                : List of Var names after removing  all ' and spaces
-            - var_dic(dict)                    
-                : Dictionary with keys converted theta_names 
-                  and values origianl theta_names 
-    """
+    """This function removes all ' and spaces in theta_names. Note that 
+    the current theta_est(calc_cov=True) of parmest in Pyomo doesn't allow ' and 
+    spaces in the variable names.
 
+    Parameters
+    ----------
+    theta_names : list of strings
+        List of Var names
+
+    Returns
+    -------
+        : It returns the following variables:
+        - theta_names_out(list of strings) : List of Var names after removing  
+        all ' and spaces
+        - var_dic(dict): Dictionary with keys converted theta_names and values 
+        origianl theta_names 
+    """   
     # Variable names cannot have "'" for parmest_class.theta_est(calc_cov=True)
     # Save original variables name in to var_dic
     # Remove all "'" and " " in theta_names
