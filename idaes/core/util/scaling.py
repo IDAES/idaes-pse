@@ -529,7 +529,7 @@ def get_jacobian(m, scaled=True):
 
 def jacobian_cond(m, scaled=True, ord=None):
     """
-    Get the condion number of the scaled or unscaled Jacobian matirx of a model.
+    Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
     Args:
         m: calculate the condition number of the Jacobian from this model.
