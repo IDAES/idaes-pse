@@ -238,6 +238,7 @@ def test_unit_coversion():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         p, unit = da.unit_convert(p_psi, "MYPRESSURE", "atm")
+        assert len(w) > 0
         for wa in w:
             if (issubclass(wa.category, UserWarning) and str(wa.message) ==
                 "In unit conversion, from unit 'MYPRESSURE'"
