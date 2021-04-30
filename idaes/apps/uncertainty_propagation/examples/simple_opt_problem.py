@@ -285,7 +285,7 @@ np.testing.assert_array_almost_equal(results.dsdp.toarray()[var_idx,:], np.array
 np.testing.assert_array_almost_equal(results.dsdp.toarray()[theta_idx,:], np.array([[1,0],[0,1]]))
 
 # Check the uncertainty propagation results for the constrains matches
-assert results.propagation_c == pytest.approx(np.sum(sigma_c))
+np.testing.assert_array_almost_equal(results.propagation_c,np.sum(sigma_c))
 
 # Check the uncertainty propagation results for the objective matches
 assert results.propagation_f == pytest.approx(sigma_f)
