@@ -144,12 +144,13 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
 ..
 
-    .. note:: If you are not able to successfully run the ``idaes get-extensions`` command
-              due to network security settings or another reason, you can download binary
-              release files from https://github.com/IDAES/idaes-ext/releases, and extract
-              them in the directory indicated by the ``idaes bin-directory`` command. You
-              will need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files appropriate
-              for you operating system.
+    .. note:: If you are not able to successfully run the ``idaes get-extensions``
+              command due to network security settings or another reason, you can
+              download binary release files from
+              https://github.com/IDAES/idaes-ext/releases, and extract them in the
+              directory indicated by the ``idaes bin-directory`` command. You will
+              need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files
+              appropriate for your operating system.
 
 ..
 
