@@ -48,64 +48,53 @@ def quantify_propagate_uncertainty(model_function, model_uncertain, data,
     Ntheta = number of uncertain parameters.
 
     Args:
-        model_function(function)                                                  
-            : A python Function that generates an instance of the Pyomo model 
-              using 'data' as the input argument
-        model_uncertain(function or Pyomo ConcreteModel)                          
-            : Function is a python Function that generates an instance 
-              of the Pyomo model
-        data(pandas DataFrame, list of dictionaries, or list of json file names)  
-            : Data that is used to build an instance of the Pyomo model and 
-              build the objective function
-        theta_names(list of strings)                                              
-            : List of Var names to estimate
-        obj_function(function, optional)                                          
-            : Function used to formulate parameter estimation objective, 
-              generally sum of squared error between measurements and model 
-              variables.    
-        tee(bool, optional)                                                       
-            : Indicates that ef solver output should be teed
-        diagnostic_mode(bool, optional)                                           
-            : If True, print diagnostics from the solver
-        solver_options(dict, optional)                                            
-            : Provides options to the solver (also the name of an attribute)
+        model_function(function) : A python Function that generates an instance 
+        of the Pyomo model using 'data' as the input argument
+        model_uncertain(function or Pyomo ConcreteModel) : Function is a python 
+        Function that generates an instance of the Pyomo model
+        data(pandas DataFrame, list of dictionary, or list of json file names) : 
+        Data that is used to build an instance of the Pyomo model and build the 
+        objective function
+        theta_names(list of strings): List of Var names to estimate
+        obj_function(function, optional) : Function used to formulate parameter 
+        estimation objective, generally sum of squared error between 
+        measurements and model variables.    
+        tee(bool, optional) : Indicates that ef solver output should be teed
+        diagnostic_mode(bool, optional) : If True, print diagnostics from the 
+        solver
+        solver_options(dict, optional) : Provides options to the solver (also 
+        the name of an attribute)
     
     Returns:
         tuple   : results object containing the all information including:
-            - results.obj(float)                              
-                : Real number. Objective function value 
-                  for the given obj_function 
-            - results.theta(dict)                             
-                : Size Ntheta python dictionary.  Estimated parameters
-            - results.theta_names(list)                       
-                : Size Ntheta list. Names of parameters
-            - results.cov(numpy.ndarray)                      
-                : Ntheta by Ntheta matrix. Covariance of theta
-            - results.gradient_f(numpy.ndarray)               
-                : Length Nvar array. Gradient vector of the objective 
-                  function with respect to the (decision variables, parameters) 
-                  at the optimal solution
-            - results.gradient_c(scipy.sparse.csr.csr_matrix) 
-                : Ncon by Nvar size sparse matrix. Gradient vector of 
-                  the constraints with respect to 
-                  the (decision variables, parameters) at the optimal solution.
-            - results.dsdp(scipy.sparse.csr.csr_matrix)       
-                : Ntheta by Nvar size sparse matrix. Gradient vector of 
-                  the (decision variables, parameters) with respect to 
-                  paramerters (=theta_name). number of rows = len(theta_name), 
-                  number of columns= len(col)
-            - results.propagation_c(numpy.ndarray)            
-                : Length Ncon array. Error propagation in the constraints , 
-                  dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
-            - results.propagation_f(numpy.float64)            
-                : Real number. Error propagation in the objective function, 
-                  df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            - results.col(list)                               
-                : Size Nvar. List of variable names
-                  Note. variables names includes both decision variable and
-                  uncertain parameter names. The order can be mixed.
-            - results.row(list)                               
-                : Size Ncon+1. List of constraints and objective function names
+            - results.obj(float) : Real number. Objective function value for 
+            the given obj_function 
+            - results.theta(dict) : Size Ntheta python dictionary. Estimated 
+            parameters
+            - results.theta_names(list) : Size Ntheta list. Names of parameters
+            - results.cov(numpy.ndarray) : Ntheta by Ntheta matrix. Covariance 
+            of theta
+            - results.gradient_f(numpy.ndarray) : Length Nvar array. Gradient 
+            vector of the objective function with respect to the (decision 
+            variables, parameters) at the optimal solution
+            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar 
+            size sparse matrix. Gradient vector of the constraints with respect 
+            to the (decision variables, parameters) at the optimal solution.
+            - results.dsdp(scipy.sparse.csr.csr_matrix) : Ntheta by Nvar size 
+            sparse matrix. Gradient vector of the (decision variables, 
+            parameters) with respect to paramerters (=theta_name). number of 
+            rows = len(theta_name), number of columns= len(col)
+            - results.propagation_c(numpy.ndarray) : Length Ncon array. Error 
+            propagation in the constraints, 
+            dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+            - results.propagation_f(numpy.float64) : Real number. Error 
+            propagation in the objective function, 
+            df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.col(list) : Size Nvar. List of variable names. Note that
+            variables names includes both decision variable and uncertain 
+            parameter names. The order can be mixed.
+            - results.row(list) : Size Ncon+1. List of constraints and objective 
+            function names
     
     Raises:
         TypeError:  When tee entry is not Boolean
@@ -185,36 +174,30 @@ def propagate_uncertainty(model_uncertain, theta, cov, theta_names,
 
      Returns:
          tuple   : results object containing the all information including
-            - results.gradient_f(numpy.ndarray)               
-                : Length Nvar + Np array. Gradient vector of the objective 
-                  function with respect to the (decision variables, parameters) 
-                  at the optimal solution
-            - results.gradient_c(scipy.sparse.csr.csr_matrix) 
-                : Ncon by (Nvar + Np) size sparse matrix. Gradient vector of 
-                  the constraints with respect to 
-                  the (decision variables, parameters) at the optimal solution.
-            - results.dsdp(scipy.sparse.csr.csr_matrix)       
-                : (Nx + Np) by Np size sparse matrix. A Jacobian matrix of 
-                  the (decision variables, parameters) with respect to 
-                  paramerters (=theta_name). number of rows = len(theta_name), 
-                  number of columns= len(col)
-            - results.propagation_c(numpy.ndarray)            
-                : Length Ncon array. Error propagation in the constraints , 
-                  dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
-            - results.propagation_f(numpy.float64)            
-                : Real number. Error propagation in the objective function, 
-                  df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
-            - results.col(list)                               
-                : Size Nvar. List of variable names
-                  Note. variables names includes both decision variable and
-                  uncertain parameter names. The order can be mixed.  
-            - results.row(list)                               
-                : Size Ncon+1. List of constraints and objective function names. 
-                  The final element is the objective function name.
+            - results.gradient_f(numpy.ndarray) : Length Nvar array. Gradient 
+            vector of the objective function with respect to the (decision 
+            variables, parameters) at the optimal solution
+            - results.gradient_c(scipy.sparse.csr.csr_matrix) : Ncon by Nvar 
+            size sparse matrix. Gradient vector of the constraints with respect 
+            to the (decision variables, parameters) at the optimal solution.
+            - results.dsdp(scipy.sparse.csr.csr_matrix) : Ntheta by Nvar size 
+            sparse matrix. Gradient vector of the (decision variables, 
+            parameters) with respect to paramerters (=theta_name). number of 
+            rows = len(theta_name), number of columns= len(col)
+            - results.propagation_c(numpy.ndarray) : Length Ncon array. Error 
+            propagation in the constraints, 
+            dc/dp*cov_p*dc/dp + (dc/dx*dx/dp)*cov_p*(dc/dx*dx/dp)
+            - results.propagation_f(numpy.float64) : Real number. Error 
+            propagation in the objective function, 
+            df/dp*cov_p*df/dp + (df/dx*dx/dp)*cov_p*(df/dx*dx/dp)
+            - results.col(list) : Size Nvar. List of variable names. Note that
+            variables names includes both decision variable and uncertain 
+            parameter names. The order can be mixed.
+            - results.row(list) : Size Ncon+1. List of constraints and objective 
+            function names
     
     Raises:
-        Exception: When model_uncertain is 
-                   neither 'ConcreteModel' nor 'function'.
+        Exception: if model_uncertain is neither 'ConcreteModel' nor 'function'.
     """
 
     # define Pyomo model
