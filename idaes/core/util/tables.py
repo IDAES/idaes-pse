@@ -238,9 +238,9 @@ def create_stream_table_dataframe(
                     if k not in full_keys:
                         full_keys.append(k)
                 else:
-                    stream_attributes[key][k + " " + str(i)] = value(disp_dict[k][i])
-                    if k + " " + str(i) not in full_keys:
-                        full_keys.append(k + " " + str(i))
+                    stream_attributes[key][f"{k} {i}"] = value(disp_dict[k][i])
+                    if f"{k} {i}" not in full_keys:
+                        full_keys.append(f"{k} {i}")
 
     # Check for missing rows in any stream, and fill with "-" if needed
     for k, v in stream_attributes.items():
