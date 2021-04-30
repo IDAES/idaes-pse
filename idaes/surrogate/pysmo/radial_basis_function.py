@@ -11,6 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+__Author__ = "Oluwamayowa Amusat"
+
 # Imports from the python standard library
 from __future__ import division, print_function
 from builtins import int, str
