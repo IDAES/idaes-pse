@@ -441,7 +441,10 @@ def constraint_autoscale_large_jac(
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     imitates Ipopt's default constraint scaling.  This scales constraints down
-    to avoid extremely large values in the Jacobian
+    to avoid extremely large values in the Jacobian.  This function also returns
+    the unscaled and scaled Jacobian matrixes and the Pynumero NLP which can be
+    used to identify the constraints and variables corresponding to the rows and
+    comlumns.
 
     Args:
         m: model to scale
@@ -453,6 +456,9 @@ def constraint_autoscale_large_jac(
             scaled too much.
         no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
             anything
+
+    Returns:
+        unscaled Jacobian CSR from, scaled Jacobian CSR from, Pynumero NLP
     """
     # Pynumero requires an objective, but I don't, so let's see if we have one
     n_obj = 0
@@ -503,14 +509,16 @@ def constraint_autoscale_large_jac(
 
 def get_jacobian(m, scaled=True):
     """
-    Get the Jacobian matrix at the current model values.
+    Get the Jacobian matrix at the current model values. This function also
+    returns the Pynumero NLP which can be used to identify the constraints and
+    variables corresponding to the rows and comlumns.
 
     Args:
         m: model to get Jacobian from
         scaled: if True return scaled Jacobian, else get unscaled
 
     Returns:
-        (Jacobian matrix in Scipy CSR format, Pynumero nlp)
+        Jacobian matrix in Scipy CSR format, Pynumero nlp
     """
     jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
     if scaled:
@@ -521,15 +529,15 @@ def get_jacobian(m, scaled=True):
 
 def jacobian_cond(m, scaled=True, ord=None):
     """
-    Get the Jacobian matrix at the current model values.
+    Get the condion number of the scaled or unscaled Jacobian matirx of a model.
 
     Args:
-        m: model to get Jacobian from
+        m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
 
     Returns:
-        Jacobian matrix in Scipy CSR format
+        (float) Condition number
     """
     jac, nlp = get_jacobian(m, scaled=scaled)
     jac_inv = spla.inv(jac)
