@@ -80,6 +80,8 @@ kwargs = dict(
     extras_require={
         "dev": [  # Developer extra packages
             "alabaster>=0.7.7",
+            # for adding copyright header to source files
+            "addheader>=0.2.2",
             # temporarily hold coverage version due to avoid bug in coveralls
             # -alee 12/20/2019
             "coverage==4.5.4",
@@ -96,7 +98,7 @@ kwargs = dict(
             # note: 4/22/2020, removed the version requirement here
             "sphinx-rtd-theme",
             "sphinxcontrib-napoleon>=0.5.0",
-            "sphinx-argparse"
+            "sphinx-argparse",
         ]
     },
     package_data={
