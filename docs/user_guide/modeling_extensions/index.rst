@@ -14,6 +14,7 @@ provided below.
     
     matopt/index
     caprese/index
+    uncertainty_propagation/index
     diagnostics/index
 
 .. rubric:: ALAMOPY: ALAMO Python
@@ -70,6 +71,11 @@ Estimation (MHE).
 .. image:: /images/logocappresse-01.png
     :width: 500px
     :align: center
+
+.. rubric:: Uncertainty Propagation Toolbox
+
+:ref:`uncertainty_propagation<user_guide/modeling_extensions/uncertainty_propagation/index:Uncertainty Propagation Toolbox>`
+is a module for quantifying and propagating parametric uncertainty through an optimization or simulation problem based on an IDAES model.
 
 .. rubric:: Degeneracy Hunter
 
