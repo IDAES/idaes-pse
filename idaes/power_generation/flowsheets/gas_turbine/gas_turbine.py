@@ -245,16 +245,6 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     """
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     #
-    # Solver config
-    #
-    # Use idaes config, because these will apply to all ipopt solvers created
-    use_idaes_solver_configuration_deafults()
-    idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
-    # due to a lot of component mole fractions being on their lower bound of 0
-    # bound push result in much longer solve times, so set it low.
-    idaes.cfg.ipopt["options"]["bound_push"] = 1e-10
-    solver = pyo.SolverFactory('ipopt')
-    #
     # Model, flowsheet and properties
     #
     m = pyo.ConcreteModel()
@@ -459,6 +449,7 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     #
     # Initialization
     #
+    solver = pyo.SolverFactory('ipopt')
     if initialize:
         # feeds
         m.fs.feed_air1.initialize()
@@ -548,7 +539,6 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
         # product blocks
         iutil.copy_port_values(m.fs.g08)
         m.fs.exhaust_1.initialize()
-
         # Solve
         solver.solve(m, tee=True)
     return m, solver
@@ -647,6 +637,17 @@ def run_series(m, solver):
 
 
 if __name__ == "__main__":
+    #
+    # Solver config
+    #
+    # Use idaes config, because these will apply to all ipopt solvers created
+    use_idaes_solver_configuration_deafults()
+    idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
+    # due to a lot of component mole fractions being on their lower bound of 0
+    # bound push result in much longer solve times, so set it low.
+    idaes.cfg.ipopt["options"]["bound_push"] = 1e-10
+
+
     comps = { # components present
         "CH4", "C2H6", "C2H4", "CO", "H2S", "H2", "O2", "H2O", "CO2", "N2",
         "Ar", "SO2"}
