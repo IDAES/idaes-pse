@@ -558,7 +558,7 @@ class FlowsheetSerializer:
             "source": {"id": source_id, "port": source_port},
             "target": {"id": dest_id, "port": dest_port},
             "router": {"name": "orthogonal", "padding": padding},
-            "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}},
+            "connector": {"name": "jumpover", "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
             "labels": [
                 # This label MUST be first or the show/hide will fail
