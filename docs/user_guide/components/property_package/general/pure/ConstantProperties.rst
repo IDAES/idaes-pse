@@ -13,7 +13,7 @@ Introduction to Chemical Engineering Thermodynamics, 8th Edition
 J.M. Smith, Hendrick Van Ness, Michael Abbott, and Mark Swihart, 2018, McGraw-Hill
 
 Ideal Liquid Molar Heat Capacity (Constant Pressure and Temperature)
-----------------------------------------------------
+--------------------------------------------------------------------
 
 The ideal liquid molar heat capacity is defined as follows:
 
