@@ -224,7 +224,7 @@ def performance_curves(m, flow_scale=0.896):
 
 
 def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.896):
-    """ Generate and initialize the gas turbine flowsheet. This method returns
+    """Generate and initialize the gas turbine flowsheet. This method returns
     a model and solver. The flow_scale argument can be used to scale the turnine
     up or down with the same relative performace.
 
