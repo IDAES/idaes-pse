@@ -156,6 +156,7 @@ Must be True if dynamic = True,
                 slicer = block[:].component(member_list[s].local_name)[...]
 
             r = Reference(slicer)
+            setattr(blk, "_"+s+"_"+name+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -310,6 +311,7 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
+            setattr(blk, "_"+s+"_"+name+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -465,6 +467,7 @@ Must be True if dynamic = True,
                             .format(blk.name))
 
             r = Reference(slicer)
+            setattr(blk, "_"+s+"_"+name+"_ref", r)
 
             # Add Reference to Port
             p.add(r, s)
@@ -522,8 +525,9 @@ Must be True if dynamic = True,
                 state_1[rep_time].default_material_balance_type()
             )
 
-        phase_list = state_1[rep_time].params.phase_list
-        component_list = state_1[rep_time].params.component_list
+        phase_list = state_1.phase_list
+        component_list = state_1.component_list
+        pc_set = state_1.phase_component_set
 
         if balance_type == MaterialBalanceType.componentPhase:
             # TODO : Should we include an optional phase equilibrium term here
@@ -531,8 +535,7 @@ Must be True if dynamic = True,
 
             @self.Constraint(
                 self.flowsheet().config.time,
-                phase_list,
-                component_list,
+                pc_set,
                 doc="State material balances",
             )
             def state_material_balances(b, t, p, j):
@@ -550,10 +553,10 @@ Must be True if dynamic = True,
             def state_material_balances(b, t, j):
                 return sum(
                     state_1[t].get_material_flow_terms(p, j)
-                    for p in phase_list
+                    for p in phase_list if (p, j) in pc_set
                 ) == sum(
                     state_2[t].get_material_flow_terms(p, j)
-                    for p in phase_list
+                    for p in phase_list if (p, j) in pc_set
                 )
 
         elif balance_type == MaterialBalanceType.total:
@@ -564,17 +567,9 @@ Must be True if dynamic = True,
             )
             def state_material_balances(b, t):
                 return sum(
-                    sum(
-                        state_1[t].get_material_flow_terms(p, j)
-                        for j in component_list
-                    )
-                    for p in phase_list
+                    state_1[t].get_material_flow_terms(p, j) for p, j in pc_set
                 ) == sum(
-                    sum(
-                        state_2[t].get_material_flow_terms(p, j)
-                        for j in component_list
-                    )
-                    for p in phase_list
+                    state_2[t].get_material_flow_terms(p, j) for p, j in pc_set
                 )
 
         elif balance_type == MaterialBalanceType.elementTotal:

@@ -22,6 +22,7 @@ from typing import Dict, List, Tuple
 
 # third-party
 import pandas as pd
+import numpy as np
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -259,6 +260,17 @@ class FlowsheetSerializer:
         # Note we're only using the keys from self.ports, {port: parentcomponent}
         return set(self.ports) - used_ports
 
+    def _make_valid_json(self, df):
+        """
+        Replacing NaN, Infinity, and Negative Infinity with strings to make valid JSON for front end consumption
+        Args:
+            df: The Pandas dataframe to replace NaN, Infinity, and Negative Infinity with strings
+        Return:
+            The dataframe that now has valid JSON
+        """
+        df = df.replace(np.nan, "NaN").replace(np.inf, "Inf").replace(np.NINF, "-Inf")
+        return df
+
     def _add_unit_model_with_ports(self, unit):
         unit_name = unit.getname()
         if unit.parent_block() == self.flowsheet:
@@ -280,6 +292,7 @@ class FlowsheetSerializer:
                 stream_df = stream_df.reset_index().rename(
                     columns={"index": "Variable"}
                 )
+                stream_df = self._make_valid_json(stream_df)
             self._serialized_contents[unit_name]["stream_contents"] = stream_df
 
             performance_df = pd.DataFrame()
@@ -289,9 +302,8 @@ class FlowsheetSerializer:
                 performance_df = pd.DataFrame(
                     performance_contents["vars"].items(), columns=["Variable", "Value"]
                 )
-                performance_df["Value"] = performance_df["Value"].map(
-                    lambda v: value(v)
-                )
+                performance_df["Value"] = performance_df["Value"].map(value)
+                performance_df = self._make_valid_json(performance_df)
             self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
         elif unit in self._known_endpoints:
@@ -391,7 +403,7 @@ class FlowsheetSerializer:
                 # Change the index of the pandas dataframe to not be the variables
             .reset_index().rename(columns={"index": "Variable"})
             .reset_index().rename(columns={"index": ""})
-            .round(self._sig_figs)
+            .applymap(lambda x: round(x, self._sig_figs) if isinstance(x, (int, float)) else x)
         )
         
         # Change NaNs to None for JSON
@@ -419,7 +431,7 @@ class FlowsheetSerializer:
             if unit_name in self._serialized_contents:
                 for pfx in "performance", "stream":
                     content_type = pfx + "_contents"
-                    c = self._serialized_contents[unit_name][content_type].round(self._sig_figs).to_dict("index")
+                    c = self._serialized_contents[unit_name][content_type].applymap(lambda x: round(x, self._sig_figs) if isinstance(x, (int, float)) else x).to_dict("index")
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 

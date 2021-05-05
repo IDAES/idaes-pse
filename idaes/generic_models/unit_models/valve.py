@@ -168,7 +168,7 @@ variables, expressions, or constraints required can also be added by the callbac
 
     def initialize(
         self,
-        state_args={},
+        state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg={},
