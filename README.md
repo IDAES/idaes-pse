@@ -9,7 +9,30 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 ![Tests](https://github.com/IDAES/idaes-pse/workflows/Tests/badge.svg?branch=main)
 ![Integration](https://github.com/IDAES/idaes-pse/workflows/Integration/badge.svg?branch=main)
 [![codecov](https://codecov.io/gh/IDAES/idaes-pse/branch/main/graph/badge.svg?token=1lNQNbSB29)](https://codecov.io/gh/IDAES/idaes-pse)
+[![Documentation Status](https://readthedocs.org/projects/idaes-pse/badge/?version=latest)](https://idaes-pse.readthedocs.io/en/latest/?badge=latest)
 <!-- END Status badges -->
+
+## Quickstart
+
+While not required, we encourage the installation of [Anaconda](https://www.anaconda.com/products/individual#Downloads) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and using the `conda` command to create a separate python environment in which to install the IDAES Toolkit.
+
+Use conda to create a new "idaes-pse" (could be any name you like) environment then activate that environment:
+```bash
+conda create --name idaes-pse python=3
+conda activate idaes-pse
+```
+
+Now, in that "idaes-pse" environment, install the IDAES Toolkit using either `pip install` or `conda install` (but not both):
+
+```bash
+pip install idaes-pse
+```
+
+OR to install with `conda`:
+
+```bash
+conda install -c idaes-pse -c conda-forge idaes-pse
+```
 
 ## System requirements
 
@@ -34,21 +57,6 @@ for Python 3. The following sub-versions are supported:
 
 Note that Python 3.5 is *not* supported.
 
-## Contributing
-
-**By contributing to this repository, you are agreeing to all the terms set out
-in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
-
-## Quickstart
-
-To install with `pip`:
-
-```bash
-pip install idaes_pse
-```
-
-To install with Anaconda's `conda`: **coming soon**
-
 ## Getting Started
 For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/stable/).
 
@@ -62,7 +70,6 @@ python build.py
 
 To view the documentation you just built, open the file
 `docs/build/index.html` in a web browser.
-
 
 ## Running tests
 
@@ -98,6 +105,10 @@ For more details on the examples, please refer to the
 ## Contacts and more information
 
 General, background and overview information is available at the [IDAES main website](https://www.idaes.org).
-Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
+Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can ask questions by starting a [discussion](https://github.com/IDAES/idaes-pse/discussions), [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
 For further enquiries, send an email to: <idaes-support@idaes.org>
 
+## Contributing
+
+**By contributing to this repository, you are agreeing to all the terms set out
+in the LICENSE.md and COPYRIGHT.md files in this directory.**
