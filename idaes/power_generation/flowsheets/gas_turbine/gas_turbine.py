@@ -48,6 +48,7 @@ def tag_model(m):
     Returns:
         (dict) tags, (dict) tag_format
     """
+    assert m.name == "Gas Turbine Model"
     tags = {} # dict of with tag keys and expressions for their values
     tag_format = {} # format string for the tags
     def new_tag(name, expr, format): # funcion to keep it more compact
@@ -247,7 +248,7 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     #
     # Model, flowsheet and properties
     #
-    m = pyo.ConcreteModel()
+    m = pyo.ConcreteModel("Gas Turbine Model")
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
     m.fs.gas_combustion = GenericReactionParameterBlock(
