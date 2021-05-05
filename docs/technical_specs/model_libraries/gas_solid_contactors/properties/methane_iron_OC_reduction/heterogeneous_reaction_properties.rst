@@ -2,10 +2,10 @@ Heterogeneous reaction properties
 =================================
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionThermoParameterBlock
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionThermoParameterData
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionThermoStateBlock
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionThermoStateBlockData
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionParameterBlock
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionParameterData
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionStateBlock
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions;HeteroReactionStateBlockData
 
 .. currentmodule:: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions
 

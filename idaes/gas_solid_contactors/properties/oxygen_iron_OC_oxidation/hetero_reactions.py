@@ -33,7 +33,6 @@ from pyomo.environ import (Constraint,
                            value,
                            Var)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.opt import SolverFactory
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 
@@ -47,6 +46,7 @@ from idaes.core import (declare_process_block_class,
                         VaporPhase,
                         SolidPhase)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import get_solver
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -96,31 +96,8 @@ class ReactionParameterData(ReactionParameterBlock):
 
         self._reaction_block_class = ReactionBlock
 
-        # Create Phase objects
-        self.Vap = VaporPhase()
-        self.Sol = SolidPhase()
-
-        # Create Component objects
-        self.N2 = Component()
-        self.O2 = Component()
-        self.CO2 = Component()
-        self.H2O = Component()
-        self.Fe2O3 = Component()
-        self.Fe3O4 = Component()
-        self.Al2O3 = Component()
-
-        # Component list subsets
-        self.gas_component_list = Set(initialize=['O2', 'N2', 'CO2', 'H2O'])
-        self.sol_component_list = Set(initialize=['Fe2O3', 'Fe3O4', 'Al2O3'])
-
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
-
-        # Gas Constant
-        self.gas_const = Param(within=PositiveReals,
-                               mutable=False,
-                               default=8.314459848e-3,
-                               doc='Gas Constant [kJ/mol.K]')
 
         # Reaction Stoichiometry
         self.rate_reaction_stoichiometry = {("R1", "Vap", "O2"): -1,
@@ -130,13 +107,6 @@ class ReactionParameterData(ReactionParameterBlock):
                                             ("R1", "Sol", "Fe2O3"): 6,
                                             ("R1", "Sol", "Fe3O4"): -4,
                                             ("R1", "Sol", "Al2O3"): 0}
-
-        # Reaction stoichiometric coefficient
-        self.rxn_stoich_coeff = Param(self.rate_reaction_idx,
-                                      default=4,
-                                      mutable=True,
-                                      doc='Reaction stoichiometric'
-                                      'coefficient [-]')
 
         # Standard Heat of Reaction - kJ/mol_rxn
         dh_rxn_dict = {"R1": -469.4432}
@@ -212,8 +182,7 @@ class ReactionParameterData(ReactionParameterBlock):
                                'length': 'm',
                                'mass': 'kg',
                                'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'kJ'})
+                               'temperature': 'K'})
 
 
 class _ReactionBlock(ReactionBlockBase):
@@ -262,7 +231,7 @@ class _ReactionBlock(ReactionBlockBase):
         Dflag = {}  # Solid density flag
 
         for k in blk.keys():
-            for j in blk[k]._params.gas_component_list:
+            for j in blk[k].gas_state_ref._params.component_list:
                 if blk[k].gas_state_ref.dens_mol_comp[j].fixed is True:
                     Cflag[k, j] = True
                 else:
@@ -275,10 +244,6 @@ class _ReactionBlock(ReactionBlockBase):
                 Dflag[k] = False
                 blk[k].solid_state_ref.dens_mass_skeletal.fix(
                         blk[k].solid_state_ref.dens_mass_skeletal.value)
-
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
 
         # Initialise values
         for k in blk.keys():
@@ -310,6 +275,8 @@ class _ReactionBlock(ReactionBlockBase):
                 blk[k])
 
         if free_vars > 0:
+            # Create solver
+            opt = get_solver(solver, optarg)
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
@@ -324,7 +291,7 @@ class _ReactionBlock(ReactionBlockBase):
         revert_state_vars(blk[k].config.solid_state_block, state_var_flags)
 
         for k in blk.keys():
-            for j in blk[k]._params.gas_component_list:
+            for j in blk[k].gas_state_ref._params.component_list:
                 if Cflag[k, j] is False:
                     blk[k].gas_state_ref.dens_mol_comp[j].unfix()
             if Dflag[k] is False:
@@ -415,7 +382,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                 return 1e6 * self.k_rxn[j] == \
                         1e6 * (self._params.k0_rxn[j] *
                                exp(-self._params.energy_activation[j] /
-                                   (self._params.gas_const *
+                                   (self.gas_state_ref._params.gas_const *
                                     self.solid_state_ref.temperature)))
             else:
                 return Constraint.Skip
@@ -483,7 +450,9 @@ class ReactionBlockData(ReactionBlockDataBase):
                 b.solid_state_ref.dens_mass_skeletal *
                 (b._params.a_vol/(
                     b.solid_state_ref._params.mw_comp['Fe3O4'])) *
-                3*b._params.rxn_stoich_coeff[r]*b.k_rxn[r] *
+                3 *
+                -b._params.rate_reaction_stoichiometry['R1', 'Sol', 'Fe3O4'] *
+                b.k_rxn[r] *
                 (((b.gas_state_ref.dens_mol_comp['O2']**2 +
                   b._params.eps**2)**0.5) **
                  b._params.rxn_order[r]) *

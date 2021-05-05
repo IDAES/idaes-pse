@@ -2,10 +2,10 @@ Gas properties
 ==============
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseThermoParameterBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseThermoParameterData
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseThermoStateBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseThermoStateBlockData
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseParameterBlock
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseParameterData
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseStateBlock
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties;GasPhaseStateBlockData
 
 .. currentmodule:: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.gas_properties
 

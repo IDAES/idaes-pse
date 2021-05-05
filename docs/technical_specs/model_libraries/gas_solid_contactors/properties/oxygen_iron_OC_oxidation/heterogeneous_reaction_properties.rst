@@ -2,10 +2,10 @@ Heterogeneous reaction properties
 =================================
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionThermoParameterBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionThermoParameterData
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionThermoStateBlock
-   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionThermoStateBlockData
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionParameterBlock
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionParameterData
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionStateBlock
+   pair: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions;HeteroReactionStateBlockData
 
 .. currentmodule:: idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation.hetero_reactions
 

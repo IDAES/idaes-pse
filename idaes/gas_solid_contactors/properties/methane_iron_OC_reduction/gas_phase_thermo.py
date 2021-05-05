@@ -62,7 +62,7 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("GasPhaseThermoParameterBlock")
+@declare_process_block_class("GasPhaseParameterBlock")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -77,7 +77,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class = GasPhaseThermoStateBlock
+        self._state_block_class = GasPhaseStateBlock
 
         # Create Phase object
         self.Vap = VaporPhase()
@@ -234,19 +234,17 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'length': pyunits.m,
                                'mass': pyunits.kg,
                                'amount': pyunits.mol,
-                               'temperature': pyunits.K,
-                               'energy': pyunits.kJ,
-                               'holdup': pyunits.mol})
+                               'temperature': pyunits.K})
         # def add_default_units(self, u): u (dict): Key=property, Value=units
         # def add_properties(self, p): p (dict): Key=property, Value=PropertyMetadata or equiv. dict
         # def get_derived_units(self, units):
         # obj.get_derived_units("power") = pyunits.kJ * pyunits.s ** -1
 
 
-class _GasPhaseThermoStateBlock(StateBlock):
+class _GasPhaseStateBlock(StateBlock):
     """
-    This Class contains methods which should be applied to Property Blocks as a
-    whole, rather than individual elements of indexed Property Blocks.
+    This Class contains methods which should be applied to State Blocks as a
+    whole, rather than individual elements of indexed State Blocks.
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
@@ -269,7 +267,7 @@ class _GasPhaseThermoStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
@@ -301,9 +299,6 @@ class _GasPhaseThermoStateBlock(StateBlock):
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
-
-        # Create solver
-        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialise values
@@ -378,6 +373,8 @@ class _GasPhaseThermoStateBlock(StateBlock):
                 blk[k])
 
         if free_vars > 0:
+            # Create solver
+            opt = get_solver(solver, optarg)
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
@@ -418,9 +415,9 @@ class _GasPhaseThermoStateBlock(StateBlock):
         init_log.info_high('States released.')
 
 
-@declare_process_block_class("GasPhaseThermoStateBlock",
-                             block_class=_GasPhaseThermoStateBlock)
-class GasPhaseThermoStateBlockData(StateBlockData):
+@declare_process_block_class("GasPhaseStateBlock",
+                             block_class=_GasPhaseStateBlock)
+class GasPhaseStateBlockData(StateBlockData):
     """
     Property package for gas phase properties of methane combustion in CLC FR
     """
@@ -429,7 +426,7 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(GasPhaseThermoStateBlockData, self).build()
+        super(GasPhaseStateBlockData, self).build()
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights

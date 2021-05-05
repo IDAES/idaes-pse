@@ -28,7 +28,6 @@ from pyomo.environ import (Constraint,
                            value,
                            Var)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -44,6 +43,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
@@ -57,7 +57,7 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("SolidPhaseThermoParameterBlock")
+@declare_process_block_class("SolidPhaseParameterBlock")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -72,7 +72,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class = SolidPhaseThermoStateBlock
+        self._state_block_class = SolidPhaseStateBlock
 
         # Create Phase object
         self.Sol = SolidPhase()
@@ -204,15 +204,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'length': 'm',
                                'mass': 'kg',
                                'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'kJ',
-                               'holdup': 'kg'})
+                               'temperature': 'K'})
 
 
-class _SolidPhaseThermoStateBlock(StateBlock):
+class _SolidPhaseStateBlock(StateBlock):
     """
-    This Class contains methods which should be applied to Property Blocks as a
-    whole, rather than individual elements of indexed Property Blocks.
+    This Class contains methods which should be applied to State Blocks as a
+    whole, rather than individual elements of indexed State Blocks.
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
@@ -268,10 +266,6 @@ class _SolidPhaseThermoStateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
-
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
@@ -309,6 +303,8 @@ class _SolidPhaseThermoStateBlock(StateBlock):
                 blk[k])
 
         if free_vars > 0:
+            # Create solver
+            opt = get_solver(solver, optarg)
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
@@ -349,9 +345,9 @@ class _SolidPhaseThermoStateBlock(StateBlock):
         init_log.info_high('States released.')
 
 
-@declare_process_block_class("SolidPhaseThermoStateBlock",
-                             block_class=_SolidPhaseThermoStateBlock)
-class SolidPhaseThermoStateBlockData(StateBlockData):
+@declare_process_block_class("SolidPhaseStateBlock",
+                             block_class=_SolidPhaseStateBlock)
+class SolidPhaseStateBlockData(StateBlockData):
     """
     Property package for gas phase properties of methane combustion in CLC FR
     """
@@ -360,7 +356,7 @@ class SolidPhaseThermoStateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(SolidPhaseThermoStateBlockData, self).build()
+        super(SolidPhaseStateBlockData, self).build()
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights

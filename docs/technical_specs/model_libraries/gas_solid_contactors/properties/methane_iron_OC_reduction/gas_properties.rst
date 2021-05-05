@@ -2,10 +2,10 @@ Gas properties
 ==============
 
 .. index::
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseThermoParameterBlock
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseThermoParameterData
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseThermoStateBlock
-   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseThermoStateBlockData
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseParameterBlock
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseParameterData
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseStateBlock
+   pair: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties;GasPhaseStateBlockData
 
 .. currentmodule:: idaes.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_properties
 
