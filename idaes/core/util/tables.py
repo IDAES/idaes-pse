@@ -82,7 +82,7 @@ def stream_states_dict(streams, time_point=0):
     """
     stream_dict = OrderedDict()
 
-    def _stream_dict_add(sb, n, i=None):
+    def _stream_dict_add(sb, n, i=None, stream_dict=stream_dict):
         """add a line to the stream table"""
         if i is None:
             key = n
