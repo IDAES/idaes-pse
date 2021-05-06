@@ -58,7 +58,6 @@ kwargs = dict(
         "jupyter",
         "lxml",
         "matplotlib",
-        "mock",
         "nbconvert",
         "nbformat",
         "numpy",
