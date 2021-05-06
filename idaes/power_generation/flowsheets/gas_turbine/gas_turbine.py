@@ -58,7 +58,6 @@ def tag_model(m):
     # Create a dict with Arc name keys and state block values
     stream_states = tables.stream_states_dict(
         tables.arcs_to_stream_dict(m.fs, descend_into=False))
-    print(stream_states.keys())
     for i, s in stream_states.items(): # create the tags for steam quantities
         new_tag(f"{i}_Fvol", expr=s.flow_vol, format="{:.1f} m^3/s")
         new_tag(f"{i}_Fmol", expr=s.flow_mol/1000, format="{:.3f} kmol/s")
