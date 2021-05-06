@@ -69,49 +69,62 @@ The state block supports the following state variables:
    
 **Methods**:
 
-* Sum of component fractions
+Sum of component fractions:
+
 .. math:: 1 = \sum_j{y_{j}}
 
-* Molecular weight of gas mixture
+Molecular weight of gas mixture:
+
 .. math:: mw = \sum_j{y_{j}mw_{j}}
 
-* Molar density
+Molar density:
+
 .. math:: C_{g} = 100 \frac{P}{RT}
 
-* Component molar density
+Component molar density:
+
 .. math:: C_{g,j} = y_{j}C_{g}
 
-* Mass density
+Mass density:
+
 .. math:: \rho_{mass} = mwC_{g}
 
-* Mixture dynamic viscosity, see reference [2] for parameters
+Mixture dynamic viscosity, see reference [2] for parameters:
+
 .. math:: \mu_{vap} = \sum_i{\frac{y_{i}\mu_{i}}{\sum_j{y_{j}{\left(\frac{mw_{j}}{mw_{i}}\right)}^{0.5}}}}
 .. math:: \mu_{i} = \frac{\mu_{param,j,1}T^{\mu_{param,j,2}}}{1 + \frac{\mu_{param,j,3}}{T} + \frac{\mu_{param,j,4}}{T^2}}
 
-* Thermal conductivity, see reference [2] for parameters
+Thermal conductivity, see reference [2] for parameters:
+
 .. math:: k_{vap} = \sum_i{\frac{y_{i}k_{i}}{\sum_j{y_{j}A_{j,i}}}}
 .. math:: k_{i} = \frac{k_{param,j,1}T^{k_{param,j,2}}}{1 + \frac{k_{param,j,3}}{T} + \frac{k_{param,j,4}}{T^2}}
 .. math:: A_{j,i} = \frac{{\left(1 +  {\left( \frac{k_{j}}{k_{i}} \right)}^{0.5}  {\left( \frac{mw_{j}}{mw_{i}} \right)}^{0.25}  \right)}^{2}} {{{8{\left(1 + {\left(\frac{mw_{j}}{mw_{i}}\right)}  \right)}}}^{0.5}}
 
-* Diffusion of component in a multicomponent gas mixture, see reference [3] for parameters
+Diffusion of component in a multicomponent gas mixture, see reference [3] for parameters:
+
 .. math:: D_{vap,j} = \frac{1 - y_{j}} {\sum_{j,j ≠ i}{\frac{y_{i}}{D_{j,i}}}}
 .. math:: D_{j,i} = \frac{{0.00143} T^{1.75} {\left( \frac{1}{mw_{j}} + \frac{1}{mw_{i}} \right)}^{0.5} } {{P {\left( {V_{param,j}^{\frac{1}{3}}} {V_{param,i}^{\frac{1}{3}}}\right)} }^{2}} 
 
-* Molar heat capacity of component, see reference [1]
+Molar heat capacity of component, see reference [1]:
+
 .. math:: c_{p,mol,j} = CP_{j,1} + CP_{j,2}\bar{T} + CP_{j,3}\bar{T}^2 + CP_{j,4}\bar{T}^3 + \frac{CP_{j,5}}{\bar{T}^2}
 .. math:: \bar{T} = 10^{-3}T
 
-* Molar heat capacity of gas mixture
+Molar heat capacity of gas mixture:
+
 .. math:: c_{p,mol} = \sum_j{c_{p,mol,j}y_{j}}
 
-* Mass heat capacity of gas mixture
+Mass heat capacity of gas mixture:
+
 .. math:: c_{p,mass} = \frac{c_{p,mol}}{mw}
 
-* Molar enthalpy of component, see reference [1]
+Molar enthalpy of component, see reference [1]:
+
 .. math:: H_{mol,j} = P_{j,1} + P_{j,2}\bar{T} + P_{j,3}\bar{T}^2 + P_{j,4}\bar{T}^3 + \frac{P_{j,5}}{\bar{T}^2}
 .. math:: \bar{T} = 10^{-3}T
 
-* Molar enthalpy of gas mixture
+Molar enthalpy of gas mixture:
+
 .. math:: H_{mole} = \sum_j{H_{mol,j}y_{j}}
 
 

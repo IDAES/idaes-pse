@@ -65,27 +65,34 @@ The state block supports the following state variables:
 
 **Methods**:
 
-* Sum of component fractions
+Sum of component fractions:
+
 .. math:: 1 = \sum_j{x_{j}}
 
-* Skeletal density of oxygen carrier
+Skeletal density of oxygen carrier:
+
 .. math:: \rho_{skeletal} = \frac{1} {\sum_j{\frac{x_{j}}{\rho_{skeletal,j}}}}
 
-* Particle density of oxygen carrier
+Particle density of oxygen carrier:
+
 .. math:: \rho_{particle} = {\left(1 - \phi \right)} \rho_{skeletal}
 
-* Molar heat capacity of component, see reference [1]
+Molar heat capacity of component, see reference [1]:
+
 .. math:: c_{p,mol,j} = CP_{j,1} + CP_{j,2}\bar{T} + CP_{j,3}\bar{T}^2 + CP_{j,4}\bar{T}^3 + \frac{CP_{j,5}}{\bar{T}^2}
 .. math:: \bar{T} = 10^{-3}T
 
-* Mass heat capacity of oxygen carrier
+Mass heat capacity of oxygen carrier:
+
 .. math:: c_{p,mass} = \sum_j{\frac{c_{p,mol,j}x_{j}}{mw_{j}}}
 
-* Molar enthalpy of component, see reference [1]
+Molar enthalpy of component, see reference [1]:
+
 .. math:: H_{mol,j} = P_{j,1} + P_{j,2}\bar{T} + P_{j,3}\bar{T}^2 + P_{j,4}\bar{T}^3 + \frac{P_{j,5}}{\bar{T}^2}
 .. math:: \bar{T} = 10^{-3}T
 
-* Mass enthalpy of oxygen carrier
+Mass enthalpy of oxygen carrier:
+
 .. math:: H_{mass} = \sum_j{\frac{H_{mol,j}x_{j}}{mw_{j}}}
 
 

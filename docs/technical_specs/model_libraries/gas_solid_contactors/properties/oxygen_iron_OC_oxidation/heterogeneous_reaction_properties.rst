@@ -55,10 +55,12 @@ Reaction scheme modeled is O2 + 4Fe3O4 => 6Fe2O3.
       
 **Methods**:
 
-* Rate constant
+Rate constant:
+
 .. math:: k = k_{0}exp{\left( \frac{-E}{R T} \right)}
 
-* Reaction rate
+Reaction rate:
+
 .. math:: rate_{rxn} = x_{Fe3O4}{\left( 1 - \phi \right)}\rho_{skeletal} \frac{a_{vol}}{mw_{Fe3O4}} \frac{{3} {k} b_{i,Fe3O4} {C_{g, O2}}^{n_{i}}}{\rho_{sol,mol} r_{g}} {\left(1 - X\right)}^{\frac{2}{3}}
 
 **References**:

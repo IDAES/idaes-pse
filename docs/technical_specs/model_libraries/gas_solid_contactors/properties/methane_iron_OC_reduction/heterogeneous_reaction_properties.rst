@@ -55,10 +55,12 @@ Reaction scheme modeled is CH4 + 12Fe2O3 => 8Fe3O4 + CO2 + 2H2O
       
 **Methods**:
 
-* Rate constant
+Rate constant:
+
 .. math:: k = k_{0}exp{\left( \frac{-E}{R T} \right)}
 
-* Reaction rate
+Reaction rate:
+
 .. math:: rate_{rxn} = x_{Fe2O3}{\left( 1 - \phi \right)}\rho_{skeletal} \frac{a_{vol}}{mw_{Fe2O3}} \frac{{3} {k} b_{i,Fe2O3} {C_{g, CH4}}^{n_{i}}}{\rho_{sol,mol} r_{g}} {\left(1 - X\right)}^{\frac{2}{3}}
 
 **References**:
