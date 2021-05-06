@@ -58,24 +58,24 @@ class Versioned:
     #: PIP command
     PIP = "pip"
 
-    def __init__(self, obj: Union[ModuleType, str], package: str = None):
+    def __init__(self, module: Union[ModuleType, str], package: str = None):
         """Constructor.
 
         Args:
-            obj: Imported package or package name.
-            package: Package name, overrides 'obj'
+            module: Imported module or module namespace.
+            package: Package name, overrides 'module' if present
         """
         if package:
             self._name = package
             self._mod = None
         else:
-            if hasattr(obj, "__package__"):
-                mod = obj
+            if hasattr(module, "__package__"):
+                mod = module
             else:
                 try:
-                    mod = importlib.import_module(obj)
+                    mod = importlib.import_module(module)
                 except ModuleNotFoundError as err:
-                    raise ModuleImportError(f"Could not import module '{obj}': {err}")
+                    raise ModuleImportError(f"Could not import module '{module}': {err}")
             self._mod = mod
             self._name = mod.__package__
         try:
