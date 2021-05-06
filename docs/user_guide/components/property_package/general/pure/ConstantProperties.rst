@@ -17,9 +17,15 @@ Ideal Liquid Molar Heat Capacity (Constant Pressure)
 
 The ideal liquid molar heat capacity is defined as follows:
 
-.. math:: c_{\text{p liq}} = cp_mol_liq_comp_coeff
+.. math:: c_{\text{p liq}} = C_1
 
-Units are defined based on the user's input.
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Units", "Description"
+
+   ":math:`C_1`", "cp_mol_ig_comp_coeff", "Units are defined based on the user's input", ""
+
 
 Ideal Liquid Molar Enthalpy
 ---------------------------
@@ -54,9 +60,14 @@ Liquid Molar Density
 
 The liquid molar density is defined as follows:
 
-.. math:: \rho_{liq} = dens_mol_liq_comp_coeff
+.. math:: \rho_{liq} = C_1
 
-Units are defined based on the user's input.
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Units", "Description"
+
+   ":math:`C_1`", "dens_mol_liq_comp_coeff", "Units are defined based on the user's input", ""
 
 
 Ideal Gas Molar Heat Capacity (Constant Pressure)
@@ -64,9 +75,14 @@ Ideal Gas Molar Heat Capacity (Constant Pressure)
 
 The ideal gas molar heat capacity is defined as follows:
 
-.. math:: c_{\text{p ig}} = cp_mol_ig_comp_coeff
+.. math:: c_{\text{p ig}} = C_1
 
-Units are defined based on the user's input.
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Units", "Description"
+
+   ":math:`C_1`", "cp_mol_ig_comp_coeff", "Units are defined based on the user's input", ""
 
 
 Ideal Gas Molar Enthalpy
