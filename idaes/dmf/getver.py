@@ -58,21 +58,26 @@ class Versioned:
     #: PIP command
     PIP = "pip"
 
-    def __init__(self, obj: Union[ModuleType, str]):
+    def __init__(self, obj: Union[ModuleType, str], package: str = None):
         """Constructor.
 
         Args:
             obj: Imported package or package name.
+            package: Package name, overrides 'obj'
         """
-        if hasattr(obj, "__package__"):
-            mod = obj
+        if package:
+            self._name = package
+            self._mod = None
         else:
-            try:
-                mod = importlib.import_module(obj)
-            except ModuleNotFoundError as err:
-                raise ModuleImportError(f"Could not import module '{obj}': {err}")
-        self._mod = mod
-        self._name = mod.__package__
+            if hasattr(obj, "__package__"):
+                mod = obj
+            else:
+                try:
+                    mod = importlib.import_module(obj)
+                except ModuleNotFoundError as err:
+                    raise ModuleImportError(f"Could not import module '{obj}': {err}")
+            self._mod = mod
+            self._name = mod.__package__
         try:
             self._version = self._get_version()
         except PipError:
@@ -182,6 +187,8 @@ class Versioned:
         return git_hash
 
     def _get_module_path(self) -> Path:
+        if self._mod is None:  # package name, use pkg_resources
+            return Path(pkg_resources.get_distribution(self._name).module_path)
         paths = getattr(self._mod, "__path__", [])
         if paths:
             return Path(paths[0])
@@ -191,18 +198,21 @@ class Versioned:
         raise ModuleImportError(f"Cannot get path for module: {self._mod}")
 
 
-def get_version_info(module: Union[ModuleType, str]) -> VersionInfo:
+def get_version_info(module: Union[ModuleType, str] = None, package: str = None) -> VersionInfo:
     """Get version info for a module.
 
     This is simply syntactic sugar around the `Versioned` object.
 
     Args:
         module: The same as accepted by the :class:`Versioned` constructor.
+        package: If you have a package name instead of a module, use this instead (ignore 'module' if given)
 
     Returns:
         The same as :meth:`Versioned.get_info()` for the given module.
     """
-    vv = Versioned(module)
+    if package and module:
+        _log.warning("Since 'package' argument is given to get_version_info(), 'module' argument will be ignored")
+    vv = Versioned(module, package=package)
     return vv.get_info()
 
 
@@ -214,5 +224,8 @@ if __name__ == "__main__":
     prs.add_argument("module")
     args = prs.parse_args()
     _log.setLevel(logging.DEBUG)
-    info = get_version_info(args.module)
+    try:
+        info = get_version_info(args.module)
+    except ModuleImportError:
+        info = get_version_info(package = args.module)
     print(f"{args.module}: version={info.version} hash={info.git_hash}")
