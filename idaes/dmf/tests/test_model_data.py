@@ -238,12 +238,16 @@ def test_unit_coversion():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         p, unit = da.unit_convert(p_psi, "MYPRESSURE", "atm")
-        assert len(w) == 1
-        assert issubclass(w[-1].category, UserWarning)
-        assert (
-            str(w[-1].message) == "In unit conversion, from unit 'MYPRESSURE'"
-            " is not defined. No conversion."
-        )
+        assert len(w) > 0
+        found = False
+        for wa in w:
+            if (issubclass(wa.category, UserWarning) and str(wa.message) ==
+                "In unit conversion, from unit 'MYPRESSURE'"
+                " is not defined. No conversion."):
+                found = True
+                break
+        if not found:
+            raise Exception("Expected warning about undefined unit not found.")
 
     assert p_psi[0] == pytest.approx(14.7, rel=1e-1)
     assert unit == "MYPRESSURE"
