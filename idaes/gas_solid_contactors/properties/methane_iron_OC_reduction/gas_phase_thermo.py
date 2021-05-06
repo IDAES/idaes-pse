@@ -87,19 +87,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.CO2 = Component()
         self.H2O = Component()
 
-        # Thermodynamic reference state
-        self.pressure_ref = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=1.01325,
-                                  doc='Reference pressure [bar]',
-                                  units=pyunits.bar)
-        self.temperature_ref = Param(within=PositiveReals,
-                                     mutable=True,
-                                     default=298.15,
-                                     doc='Thermodynamic Reference'
-                                     'Temperature [K]',
-                                     units=pyunits.K)
-
         # Gas Constant
         self.gas_const = Param(within=PositiveReals,
                                default=8.314459848e-3,
@@ -501,7 +488,7 @@ class GasPhaseStateBlockData(StateBlockData):
             raise
 
     def _dens_mol_comp(self):
-        # Mixture heat capacities
+        # Component molar densities
         self.dens_mol_comp = Var(self._params.component_list,
                                  domain=Reals,
                                  initialize=1.0,
