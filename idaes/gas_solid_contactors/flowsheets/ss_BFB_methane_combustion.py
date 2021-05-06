@@ -37,9 +37,9 @@ from idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
 
 # Import property packages
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseThermoParameterBlock
+    gas_phase_thermo import GasPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
+    solid_phase_thermo import SolidPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
@@ -57,8 +57,8 @@ def main():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo-physical and reaction properties
-    m.fs.gas_properties = GasPhaseThermoParameterBlock()
-    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+    m.fs.gas_properties = GasPhaseParameterBlock()
+    m.fs.solid_properties = SolidPhaseParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
             default={"solid_property_package": m.fs.solid_properties,
