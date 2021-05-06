@@ -1,4 +1,25 @@
 --index-url https://pypi.python.org/simple/
 
-# dev dependencies are specified in setup.py
---editable .[dev]
+# Developer extra packages
+alabaster>=0.7.7
+# temporarily hold coverage version due to avoid bug in coveralls
+# -alee 12/20/2019
+coverage==4.5.4
+flake8
+jsonschema
+jupyter_contrib_nbextensions
+mock
+pylint
+pytest-cov
+python-coveralls
+snowballstemmer==1.2.1
+# Newer sphinx needed for proper type hint support in docstrings
+sphinx>=3.0.0
+# note: 4/22/2020, removed the version requirement here
+sphinx-rtd-theme
+sphinxcontrib-napoleon>=0.5.0
+sphinx-argparse
+
+# this will install IDAES in editable mode using the dependencies defined under the `prerelease` tag of `extras_require` in `setup.py`
+# to customize this (e.g. to install a local clone of the Pyomo git repository), install IDAES without the `prerelease` tag and then install the dependencies separately
+--editable .[prerelease]

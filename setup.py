@@ -86,27 +86,6 @@ kwargs = dict(
     # Only installed if [<key>] is added to package name
     extras_require={
         "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
-        "dev": DEPENDENCIES_FOR_PRERELEASE_VERSION + [
-            # Developer extra packages
-            "alabaster>=0.7.7",
-            # temporarily hold coverage version due to avoid bug in coveralls
-            # -alee 12/20/2019
-            "coverage==4.5.4",
-            "flake8",
-            "jsonschema",
-            "jupyter_contrib_nbextensions",
-            "mock",
-            "pylint",
-            "pytest-cov",
-            "python-coveralls",
-            "snowballstemmer==1.2.1",
-            # Newer sphinx needed for proper type hint support in docstrings
-            "sphinx>=3.0.0",
-            # note: 4/22/2020, removed the version requirement here
-            "sphinx-rtd-theme",
-            "sphinxcontrib-napoleon>=0.5.0",
-            "sphinx-argparse"
-        ]
     },
     package_data={
         # If any package contains these files, include them:

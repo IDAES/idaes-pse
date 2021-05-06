@@ -1,4 +1,0 @@
---index-url https://pypi.python.org/simple/
-
-# all dependencies are specified in setup.py
---editable .[prerelease]
