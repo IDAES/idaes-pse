@@ -25,7 +25,7 @@ __author__ = "John Eslick, Andrew Lee"
 
 
 def arcs_to_stream_dict(
-    blk, additional=None, descend_into=True, sort=False, prepend=None, s={}):
+    blk, additional=None, descend_into=True, sort=False, prepend=None, s=None):
     """
     Creates a stream dictionary from the Arcs in a model, using the Arc names as
     keys. This can be used to automate the creation of the streams dictionary
@@ -81,8 +81,7 @@ def stream_states_dict(streams, time_point=0):
         A pandas DataFrame containing the stream table data.
     """
     stream_dict = OrderedDict()
-
-    def _stream_dict_add(sb, n, i=None, stream_dict=stream_dict):
+    def _stream_dict_add(sb, n, i=None):
         """add a line to the stream table"""
         if i is None:
             key = n
