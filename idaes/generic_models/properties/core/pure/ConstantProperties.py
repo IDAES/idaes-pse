@@ -22,6 +22,7 @@ from idaes.core.util.misc import set_param_from_config
 # Heat capacities, enthalpies and entropies
 class Constant(object):
     
+    # Ideal liquid properties methods
     class cp_mol_liq_comp(object):
 
         @staticmethod
@@ -37,7 +38,6 @@ class Constant(object):
             # Specific heat capacity
             cp = cobj.cp_mol_liq_comp_coeff
             return cp
-
 
     class enth_mol_liq_comp(object):
 
@@ -58,19 +58,15 @@ class Constant(object):
         def return_expression(b, cobj, T):
             # Specific enthalpy
             units = b.params.get_metadata().derived_units
-            T = pyunits.convert(T, to_units=units["temperature"])
-            Tr = pyunits.convert(b.params.temperature_ref, to_units=units["temperature"])
+            Tr = b.params.temperature_ref
 
             h_form = (cobj.enth_mol_form_liq_comp_ref if
                     b.params.config.include_enthalpy_of_formation
                     else 0*units["energy_mole"])
 
-            h = (pyunits.convert(
-                    (cobj.cp_mol_liq_comp_coeff)*(T-Tr), units["energy_mole"]) +
-                h_form)
+            h = cobj.cp_mol_liq_comp_coeff*(T-Tr) + h_form
 
             return h
-
 
     class entr_mol_liq_comp(object):
 
@@ -90,16 +86,11 @@ class Constant(object):
         def return_expression(b, cobj, T):
             # Specific entropy
             units = b.params.get_metadata().derived_units
-            T = pyunits.convert(T, to_units=units["temperature"])
-            Tr = pyunits.convert(b.params.temperature_ref, to_units=units["temperature"])
+            Tr = b.params.temperature_ref
 
-            s = (pyunits.convert(
-                    cobj.cp_mol_liq_comp_coeff*log(T/Tr),
-                    units["entropy_mole"]) +
-                cobj.entr_mol_form_liq_comp_ref)
+            s = cobj.cp_mol_liq_comp_coeff*log(T/Tr) + cobj.entr_mol_form_liq_comp_ref
 
             return s
-
 
     class dens_mol_liq_comp(object):
 
@@ -116,3 +107,74 @@ class Constant(object):
             # Molar density
             rho = cobj.dens_mol_liq_comp_coeff
             return rho
+    
+
+    # Ideal gas properties methods
+    class cp_mol_ig_comp(object):
+
+        @staticmethod
+        def build_parameters(cobj):
+            units = cobj.parent_block().get_metadata().derived_units
+            cobj.cp_mol_ig_comp_coeff = Var(
+                doc="Parameter for ideal gas molar heat capacity",
+                units=units["heat_capacity_mole"])
+            set_param_from_config(cobj, param="cp_mol_ig_comp_coeff")
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            # Specific heat capacity
+            cp = cobj.cp_mol_ig_comp_coeff
+            return cp
+
+    class enth_mol_ig_comp(object):
+
+        @staticmethod
+        def build_parameters(cobj):
+            if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+                Constant.cp_mol_ig_comp.build_parameters(cobj)
+
+            if cobj.parent_block().config.include_enthalpy_of_formation:
+                units = cobj.parent_block().get_metadata().derived_units
+
+                cobj.enth_mol_form_ig_comp_ref = Var(
+                        doc="Ideal gas molar heat of formation @ Tref",
+                        units=units["energy_mole"])
+                set_param_from_config(cobj, param="enth_mol_form_ig_comp_ref")
+
+        @staticmethod
+        def return_expression(b, cobj, T):
+            # Specific enthalpy
+            units = b.params.get_metadata().derived_units
+            Tr = b.params.temperature_ref
+
+            h_form = (cobj.enth_mol_form_ig_comp_ref if
+                    b.params.config.include_enthalpy_of_formation
+                    else 0*units["energy_mole"])
+
+            h = cobj.cp_mol_ig_comp_coeff*(T-Tr) + h_form
+
+            return h
+
+    class entr_mol_ig_comp(object):
+
+        @staticmethod
+        def build_parameters(cobj):
+            if not hasattr(cobj, "cp_mol_ig_comp_coeff"):
+                Constant.cp_mol_ig_comp.build_parameters(cobj)
+
+            units = cobj.parent_block().get_metadata().derived_units
+
+            cobj.entr_mol_form_ig_comp_ref = Var(
+                    doc="Ideal gas molar entropy of formation @ Tref",
+                    units=units["entropy_mole"])
+            set_param_from_config(cobj, param="entr_mol_form_ig_comp_ref")
+           
+        @staticmethod
+        def return_expression(b, cobj, T):
+            # Specific entropy
+            units = b.params.get_metadata().derived_units
+            Tr = b.params.temperature_ref
+
+            s = cobj.cp_mol_ig_comp_coeff*log(T/Tr) + cobj.entr_mol_form_ig_comp_ref
+
+            return s
