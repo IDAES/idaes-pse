@@ -7,12 +7,10 @@ import importlib
 import json
 import logging
 from pathlib import Path
+import pkg_resources
 import subprocess
 from types import ModuleType
 from typing import Union
-
-# ext
-import git
 
 _log = logging.getLogger(__name__)
 
@@ -75,9 +73,12 @@ class Versioned:
                 raise ModuleImportError(f"Could not import module '{obj}': {err}")
         self._mod = mod
         self._name = mod.__package__
-        self._version = self._get_version()
+        try:
+            self._version = self._get_version()
+        except PipError:
+            raise GetVersionError(f"Could not get version for '{self._name}' from pip command '{self.PIP}'")
         if self._version is None:
-            raise PipError(f"Could not get version from pip for '{self._name}'")
+            raise GetVersionError(f"Could not get version for '{self._name}'")
         self._hash = None
 
     def get_info(self) -> VersionInfo:
@@ -130,27 +131,37 @@ class Versioned:
     # -- Protected methods -- #
 
     def _get_version(self):
-        status, output = subprocess.getstatusoutput(f"{self.PIP} list")
-        if status != 0:
-            raise PipError(f"Shell command '{self.PIP} list' failed")
         version = None
-        for s in output.split("\n"):
-            if s.startswith(self._name):
-                version = s.split()[1]
-                break
+        try:
+            version = pkg_resources.get_distribution(self._name).version
+        except Exception as err:
+            _log.warning(f"Could not get version from pkg_resources.get_distribution; trying pip ({self.PIP}). "
+                         f"Error message was: {err}")
+            status, output = subprocess.getstatusoutput(f"{self.PIP} list")
+            if status != 0:
+                raise PipError(f"Shell command '{self.PIP} list' failed")
+            for s in output.split("\n"):
+                if s.startswith(self._name):
+                    version = s.split()[1]
+                    break
+            if version is None:
+                raise PipError("Could not find version in pip output")
         return version
 
     def _get_git_hash(self):
         module_path = self._get_module_path()
         repo, git_hash = None, None
-        try:
-            repo = git.Repo(module_path, search_parent_directories=True)
-        except git.InvalidGitRepositoryError:
-            pass
+        # (1) try .git in module directory
+        _log.debug(f"Looking for .git/ORIG_HEAD in module path '{module_path.parent}'")
+        for git_head in module_path.parent.glob(r"**/.git/ORIG_HEAD"):
+            _log.debug(f"Found ORIG_HEAD at {git_head}")
+            repo = git_head.parent
+            git_hash = git_head.open().read().strip()
+            break
         if repo:
-            _log.info(f"Get Git hash from repository rooted at: {repo.working_dir}")
-            git_hash = repo.head.commit.hexsha
+            _log.info(f"Get Git hash from repository rooted at: {repo.parent}")
         else:
+            # (2) try installed dir
             _log.info(
                 f"Get Git hash from installed module ({module_path}) dist-info directory"
             )
@@ -195,32 +206,13 @@ def get_version_info(module: Union[ModuleType, str]) -> VersionInfo:
     return vv.get_info()
 
 
-# if __name__ == "__main__":
-#     import sys
-#
-#     if len(sys.argv) != 2:
-#         print(f"usage: getver.py <module>")
-#         sys.exit(1)
-#
-#     module_name = sys.argv[1].strip()
-#
-#     hnd = logging.StreamHandler()
-#     hnd.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s - %(message)s"))
-#     _log.addHandler(hnd)
-#     _log.setLevel(logging.DEBUG)
-#
-#     if False:
-#         try:
-#             vp = Versioned(module_name)
-#         except RuntimeError as err:
-#             _log.error(err)
-#             print(f"Error getting version/hash: {err}")
-#             sys.exit(2)
-#
-#         info = vp.get_info()
-#     else:
-#         info = get_version_info(module_name)
-#
-#     print(f"{module_name} version={info.version} hash={info.git_hash}")
-#
-#     sys.exit(0)
+# If run from command-line, provide hash of a module
+if __name__ == "__main__":
+    import argparse
+    logging.basicConfig()
+    prs = argparse.ArgumentParser()
+    prs.add_argument("module")
+    args = prs.parse_args()
+    _log.setLevel(logging.DEBUG)
+    info = get_version_info(args.module)
+    print(f"{args.module}: version={info.version} hash={info.git_hash}")

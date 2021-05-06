@@ -5,15 +5,22 @@ Tests for idaes.dmf.getver module
 import idaes
 from idaes import dmf
 from idaes.dmf import getver
+import uuid
 
 import pytest
 
 
 @pytest.fixture
 def garbage():
-    import uuid
-
     return uuid.uuid4().hex
+
+
+@pytest.fixture
+def make_pip_garbage():
+    garbage = uuid.uuid4().hex
+    orig, getver.Versioned.PIP = getver.Versioned.PIP, garbage
+    yield garbage
+    getver.Versioned.PIP = orig
 
 
 @pytest.mark.unit
@@ -67,14 +74,9 @@ def test_bad_import(garbage):
 
 
 @pytest.mark.unit
-def test_bad_pip(garbage):
-    orig, getver.Versioned.PIP = getver.Versioned.PIP, garbage
-    with pytest.raises(getver.PipError):
-        getver.Versioned("traitlets")
-    getver.Versioned.PIP = "echo"
-    with pytest.raises(getver.PipError):
-        getver.Versioned("traitlets")
-    getver.Versioned.PIP = orig
+def test_bad_pip(make_pip_garbage):
+    ver = getver.Versioned("traitlets")
+    assert ver is not None
 
 
 @pytest.mark.unit
