@@ -142,4 +142,3 @@ if __name__ == "__main__":
     m = main()
     stream_table = m.fs.MB._get_stream_table_contents()
     print(stream_table)
-    m.fs.MB.results_plot()

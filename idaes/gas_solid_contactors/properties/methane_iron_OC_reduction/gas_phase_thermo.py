@@ -32,7 +32,6 @@ from pyomo.environ import (Constraint,
                            Var,
                            units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -222,10 +221,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'mass': pyunits.kg,
                                'amount': pyunits.mol,
                                'temperature': pyunits.K})
-        # def add_default_units(self, u): u (dict): Key=property, Value=units
-        # def add_properties(self, p): p (dict): Key=property, Value=PropertyMetadata or equiv. dict
-        # def get_derived_units(self, units):
-        # obj.get_derived_units("power") = pyunits.kJ * pyunits.s ** -1
 
 
 class _GasPhaseStateBlock(StateBlock):

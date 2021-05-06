@@ -27,11 +27,11 @@ Chem. Eng. Sci. 62 (2007) 533–549.
 from pyomo.environ import (Constraint,
                            exp,
                            Param,
-                           PositiveReals,
                            Reals,
                            Set,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -41,10 +41,7 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         ReactionParameterBlock,
                         ReactionBlockDataBase,
-                        ReactionBlockBase,
-                        Component,
-                        VaporPhase,
-                        SolidPhase)
+                        ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util import get_solver
 from idaes.core.util.initialization import (fix_state_vars,
@@ -112,7 +109,8 @@ class ReactionParameterData(ReactionParameterBlock):
         dh_rxn_dict = {"R1": -469.4432}
         self.dh_rxn = Param(self.rate_reaction_idx,
                             initialize=dh_rxn_dict,
-                            doc="Heat of reaction [kJ/mol]")
+                            doc="Heat of reaction [kJ/mol]",
+                            units=pyunits.kJ/pyunits.mol)
 
         # Smoothing factor
         self.eps = Param(mutable=True,
@@ -131,26 +129,30 @@ class ReactionParameterData(ReactionParameterBlock):
         self.grain_radius = Var(domain=Reals,
                                 initialize=2.6e-7,
                                 doc='Representative particle grain'
-                                'radius within OC particle [m]')
+                                'radius within OC particle [m]',
+                                units=pyunits.m)
         self.grain_radius.fix()
 
         # Molar density OC particle
         self.dens_mol_sol = Var(domain=Reals,
                                 initialize=22472,
-                                doc='Molar density of OC particle [mol/m^3]')
+                                doc='Molar density of OC particle [mol/m^3]',
+                                units=pyunits.mol/pyunits.m**3)
         self.dens_mol_sol.fix()
 
         # Available volume for reaction - from EPAT report (1-ep)'
         self.a_vol = Var(domain=Reals,
                          initialize=0.28,
-                         doc='Available reaction vol. per vol. of OC')
+                         doc='Available reaction vol. per vol. of OC',
+                         units=pyunits.m**3/pyunits.m**3)
         self.a_vol.fix()
 
         # Activation Energy
         self.energy_activation = Var(self.rate_reaction_idx,
                                      domain=Reals,
                                      initialize=1.4e1,
-                                     doc='Activation energy [kJ/mol]')
+                                     doc='Activation energy [kJ/mol]',
+                                     units=pyunits.kJ/pyunits.mol)
         self.energy_activation.fix()
 
         # Reaction order
@@ -178,11 +180,12 @@ class ReactionParameterData(ReactionParameterBlock):
                 'reaction_rate': {'method': "_reaction_rate",
                                   'units': 'mol_rxn/m3.s'}
                 })
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'kg',
-                               'amount': 'mol',
-                               'temperature': 'K'})
+
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.kg,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 class _ReactionBlock(ReactionBlockBase):
@@ -441,7 +444,8 @@ class ReactionBlockData(ReactionBlockDataBase):
         self.reaction_rate = Var(self._params.rate_reaction_idx,
                                  domain=Reals,
                                  initialize=0,
-                                 doc="Gen. rate of reaction [mol_rxn/m3.s]")
+                                 doc="Gen. rate of reaction [mol_rxn/m3.s]",
+                                 units=pyunits.mol/pyunits.m**3/pyunits.s)
 
         def rate_rule(b, r):
             return b.reaction_rate[r]*1e4 == b._params._scale_factor_rxn*1e4*(
