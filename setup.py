@@ -48,7 +48,6 @@ kwargs = dict(
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
-        "gitpython",  # dmf/getver
         "jupyter",
         "lxml",
         "matplotlib",
