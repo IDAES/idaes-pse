@@ -57,15 +57,18 @@ def tag_model(m):
     # Create a dict with Arc name keys and state block values
     stream_states = tables.stream_states_dict(
         tables.arcs_to_stream_dict(m.fs, descend_into=False))
-    for i, s in stream_states.items(): # create the tags for steam quantities
-        print(i)
-        new_tag(f"{i}_Fvol", expr=s.flow_vol, format="{:.1f} m^3/s")
-        new_tag(f"{i}_Fmol", expr=s.flow_mol/1000, format="{:.3f} kmol/s")
-        new_tag(f"{i}_F", expr=s.flow_mass, format="{:.3f} kg/s")
-        new_tag(f"{i}_P", expr=s.pressure/1000, format="{:.3f} kPa")
-        new_tag(f"{i}_T", expr=s.temperature, format="{:.2f} K")
-        for c in s.mole_frac_comp:
-            new_tag(f"{i}_y{c}", expr=s.mole_frac_comp[c]*100, format="{:.3f}%")
+    try:
+        for i, s in stream_states.items(): # create the tags for steam quantities
+            print(i)
+            new_tag(f"{i}_Fvol", expr=s.flow_vol, format="{:.1f} m^3/s")
+            new_tag(f"{i}_Fmol", expr=s.flow_mol/1000, format="{:.3f} kmol/s")
+            new_tag(f"{i}_F", expr=s.flow_mass, format="{:.3f} kg/s")
+            new_tag(f"{i}_P", expr=s.pressure/1000, format="{:.3f} kPa")
+            new_tag(f"{i}_T", expr=s.temperature, format="{:.2f} K")
+            for c in s.mole_frac_comp:
+                new_tag(f"{i}_y{c}", expr=s.mole_frac_comp[c]*100, format="{:.3f}%")
+    except:
+        print(stream_states)
     # Tags for non-stream things
     new_tag(
         "cmp1_power",
