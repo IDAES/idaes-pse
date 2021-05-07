@@ -26,19 +26,19 @@ from idaes.core import FlowsheetBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.util.testing import (get_default_solver,
+                                     initialization_tester)
 
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     gas_phase_thermo import GasPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     solid_phase_thermo import SolidPhaseParameterBlock
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     hetero_reactions import HeteroReactionParameterBlock
 
 
 # Get default solver for testing
-solver = get_solver()
+solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -72,11 +72,11 @@ def rxn_prop():
     # solid particle porosity, density and component fractions)
     m.fs.gas_state_block.dens_mol.fix(10)
     m.fs.gas_state_block.dens_mol_comp.fix(10)
-    m.fs.solid_state_block.particle_porosity.fix(0.27)
-    m.fs.solid_state_block.mass_frac_comp["Fe2O3"].fix(0.45)
-    m.fs.solid_state_block.mass_frac_comp["Fe3O4"].fix(1e-9)
-    m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.55)
-    m.fs.solid_state_block.dens_mass_skeletal.fix(1)
+    m.fs.solid_state_block.particle_porosity.fix(0.23)
+    m.fs.solid_state_block.mass_frac_comp["Fe2O3"].fix(0.244)
+    m.fs.solid_state_block.mass_frac_comp["Fe3O4"].fix(0.202)
+    m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.554)
+    m.fs.solid_state_block.dens_mass_skeletal.fix(3125)
     m.fs.solid_state_block.temperature.fix(1183.15)  # K
 
     return m
