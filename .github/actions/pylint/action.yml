@@ -8,17 +8,21 @@ runs:
       shell: bash
       run: |
         PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
+        echo "::group::Output of `pip install` commands"
         $PIP_INSTALL --upgrade pip setuptools wheel
         # TODO the pylint version will have to be pinned
         # TODO installing idaes is necessary in our case because we import some idaes code in pylint plugins
         $PIP_INSTALL -r requirements-dev.txt
+        echo "::endgroup::"
         # don't think we need to install the extensions, though
     - name: Run pylint (errors only)
       # use custom options for bash since the default causes the step to fail immediately for any non-zero return code of intermediate commands
       shell: bash --noprofile --norc {0}
       run: |
+        echo "::group::Real-time pylint log"
         pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter idaes/
         pylint_exit_status=$?
+        echo "::endgroup::"
 
         # render report
         base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
