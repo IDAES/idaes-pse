@@ -23,7 +23,6 @@ from pyomo.environ import (ConcreteModel,
                            log,
                            Set,
                            units as pyunits,
-                           value,
                            Var)
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -367,26 +366,13 @@ class TestStateBlockSymmetric(object):
 
         assert isinstance(model.state[1].Liq_vol_mol_solvent, Expression)
         assert len(model.state[1].Liq_vol_mol_solvent) == 1
-        assert model.state[1].Liq_vol_mol_solvent.expr == (
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"]/42 +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]/42) /
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]))
+        assert model.state[1].Liq_vol_mol_solvent.expr == 1/42
 
         assert isinstance(model.state[1].Liq_relative_permittivity_solvent,
                           Expression)
         assert len(model.state[1].Liq_relative_permittivity_solvent) == 1
         assert model.state[1].Liq_relative_permittivity_solvent.expr == (
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] *
-             model.params.get_component("H2O").relative_permittivity_liq_comp *
-             model.params.get_component("H2O").mw +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
-             model.params.get_component("C6H12").relative_permittivity_liq_comp *
-             model.params.get_component("C6H12").mw) /
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] *
-             model.params.get_component("H2O").mw +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
-             model.params.get_component("C6H12").mw))
+            model.params.get_component("H2O").relative_permittivity_liq_comp)
 
         assert isinstance(model.state[1].Liq_A_DH, Expression)
         assert len(model.state[1].Liq_A_DH) == 1
@@ -395,7 +381,7 @@ class TestStateBlockSymmetric(object):
             (1/3)*(2*Constants.pi*Constants.avogadro_number /
                    model.state[1].Liq_vol_mol_solvent)**0.5 *
             (Constants.elemental_charge**2 /
-             (model.state[1].Liq_relative_permittivity_solvent *
+             (4*Constants.pi*model.state[1].Liq_relative_permittivity_solvent *
               Constants.vacuum_electric_permittivity *
               Constants.boltzmann_constant *
               model.state[1].temperature))**(3/2))

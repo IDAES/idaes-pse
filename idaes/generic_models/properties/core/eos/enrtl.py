@@ -196,26 +196,36 @@ class ENRTL(EoSBase):
         # Long-range terms
         # Average molar volume of solvent
         def rule_vol_mol_solvent(b):  # Eqn 77
-            return (sum(b.mole_frac_phase_comp_true[pname, s] /
-                        get_method(b, "dens_mol_liq_comp", s)(
-                            b, cobj(b, s), b.temperature)
-                        for s in molecular_set) /
-                    sum(b.mole_frac_phase_comp_true[pname, s]
-                        for s in molecular_set))
+            if len(b.params.solvent_set) == 1:
+                s = b.params.solvent_set.first()
+                return 1/get_method(b, "dens_mol_liq_comp", s)(
+                    b, cobj(b, s), b.temperature)
+            else:
+                return (sum(b.mole_frac_phase_comp_true[pname, s] /
+                            get_method(b, "dens_mol_liq_comp", s)(
+                                b, cobj(b, s), b.temperature)
+                            for s in b.params.solvent_set) /
+                        sum(b.mole_frac_phase_comp_true[pname, s]
+                            for s in b.params.solvent_set))
         b.add_component(pname+"_vol_mol_solvent",
                         Expression(rule=rule_vol_mol_solvent,
                                    doc="Mean molar volume of solvent"))
 
         # Mean relative permitivity of solvent
         def rule_eps_solvent(b):  # Eqn 78
-            return (sum(b.mole_frac_phase_comp_true[pname, s] *
-                        get_method(b, "relative_permittivity_liq_comp", s)(
-                            b, cobj(b, s), b.temperature) *
-                        b.params.get_component(s).mw
-                        for s in b.params.solvent_set) /
-                    sum(b.mole_frac_phase_comp_true[pname, s] *
-                        b.params.get_component(s).mw
-                        for s in b.params.solvent_set))
+            if len(b.params.solvent_set) == 1:
+                s = b.params.solvent_set.first()
+                return get_method(b, "relative_permittivity_liq_comp", s)(
+                            b, cobj(b, s), b.temperature)
+            else:
+                return (sum(b.mole_frac_phase_comp_true[pname, s] *
+                            get_method(b, "relative_permittivity_liq_comp", s)(
+                                b, cobj(b, s), b.temperature) *
+                            b.params.get_component(s).mw
+                            for s in b.params.solvent_set) /
+                        sum(b.mole_frac_phase_comp_true[pname, s] *
+                            b.params.get_component(s).mw
+                            for s in b.params.solvent_set))
         b.add_component(pname+"_relative_permittivity_solvent",
                         Expression(
                             rule=rule_eps_solvent,
