@@ -1839,6 +1839,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 sf = iscale.min_scaling_factor(
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
                      for p in phase_list])
+                if hasattr(self, "work"):
+                    sf = min(sf, iscale.get_scaling_factor(
+                        self.work[t], default=1, warning=True))
+                if hasattr(self, "heat"):
+                    sf = min(sf, iscale.get_scaling_factor(
+                        self.heat[t], default=1, warning=True))
                 iscale.constraint_scaling_transform(c, sf)
 
         if hasattr(self, "energy_holdup_calculation"):

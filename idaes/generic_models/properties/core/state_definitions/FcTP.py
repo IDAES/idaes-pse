@@ -313,8 +313,9 @@ def define_default_scaling_factors(b):
 
 def calculate_scaling_factors(b):
     sf_flow = iscale.get_scaling_factor(b.flow_mol, default=1, warning=True)
-    sf_mf = iscale.get_scaling_factor(
-        b.mole_frac_phase_comp, default=1e3, warning=True)
+    sf_mf = {}
+    for i, v in b.mole_frac_phase_comp.items():
+        sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
 
     for j in b.component_list:
         sf_j = iscale.get_scaling_factor(
@@ -341,7 +342,7 @@ def calculate_scaling_factors(b):
             iscale.constraint_scaling_transform(
                 b.component_flow_balances[j], sf_fc)
 
-        iscale.constraint_scaling_transform(b.sum_mole_frac, sf_mf)
+        iscale.constraint_scaling_transform(b.sum_mole_frac, min(sf_mf.values()))
 
         for p in b.phase_list:
             sf_p = iscale.get_scaling_factor(
@@ -360,7 +361,7 @@ def calculate_scaling_factors(b):
             sf_p = iscale.get_scaling_factor(
                 b.flow_mol_phase[p], default=1, warning=True)
             iscale.constraint_scaling_transform(
-                b.sum_mole_frac[p], sf_mf)
+                b.sum_mole_frac[p], min(sf_mf[p,:].values()))
             iscale.constraint_scaling_transform(
                 b.phase_fraction_constraint[p], sf_p)
 

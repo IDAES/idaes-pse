@@ -29,6 +29,7 @@ __author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 
 from math import log10
 import scipy.sparse.linalg as spla
+import scipy.linalg as la
 
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
@@ -477,7 +478,7 @@ def constraint_autoscale_large_jac(
     # Create a scaled Jacobian to account for variable scaling, for now ignore
     # constraint scaling
     jac_scaled = jac.copy()
-    for i in range(len(clist)):
+    for i, c in enumerate(clist):
         for j in jac_scaled[i].indices:
             v = vlist[j]
             if ignore_variable_scaling:
@@ -486,8 +487,7 @@ def constraint_autoscale_large_jac(
                 sv = get_scaling_factor(v, default=1)
             jac_scaled[i,j] = jac_scaled[i,j]/sv
     # calculate constraint scale factors
-    for i in range(len(clist)):
-        c = clist[i]
+    for i, c in enumerate(clist):
         sc = get_scaling_factor(c, default=1)
         if not no_scale:
             if (ignore_constraint_scaling or get_scaling_factor(c) is None):
@@ -527,7 +527,19 @@ def get_jacobian(m, scaled=True):
         return jac, nlp
 
 
-def jacobian_cond(m, scaled=True, ord=None):
+def extreme_jacobian_entries(m, scaled=True, large=1e4, small=1e-4, zero=1e-10):
+    jac, nlp = get_jacobian(m, scaled)
+    clist = nlp.get_pyomo_constraints()
+    vlist = nlp.get_pyomo_variables()
+    el = []
+    for i, c in enumerate(clist):
+        for j, v in enumerate(vlist):
+            if (jac[i, j] <= small and jac[i, j] > zero) or jac[i,j] >= large:
+                el.append((jac[i, j], c, v))
+    return el
+
+
+def jacobian_cond(m, scaled=True, ord=None, pinv=False):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
@@ -540,8 +552,16 @@ def jacobian_cond(m, scaled=True, ord=None):
         (float) Condition number
     """
     jac, nlp = get_jacobian(m, scaled=scaled)
-    jac_inv = spla.inv(jac)
-    return spla.norm(jac, ord)*spla.norm(jac_inv, ord)
+    jac = jac.tocsc()
+    if jac.shape[0] != jac.shape[1] and not pinv:
+        _log.warning("Nonsquare Jacobian using pseudo inverse")
+        pinv = True
+    if not pinv:
+        jac_inv = spla.inv(jac)
+        return spla.norm(jac, ord)*spla.norm(jac_inv, ord)
+    else:
+        jac_inv = la.pinv(jac.toarray())
+        return spla.norm(jac, ord)*la.norm(jac_inv, ord)
 
 
 class CacheVars(object):

@@ -252,6 +252,15 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     m = pyo.ConcreteModel("Gas Turbine Model")
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
+    m.fs.gas_prop_params.set_default_scaling("mole_frac_comp", 10)
+    m.fs.gas_prop_params.set_default_scaling("mole_frac_phase_comp", 10)
+    low_conc = {"Ar":100, "H2S":100, "SO2":100, "H2":100, "CO":100, "C2H4":100}
+    for c, s in low_conc.items():
+        m.fs.gas_prop_params.set_default_scaling(
+            "mole_frac_comp", s, index=c)
+        m.fs.gas_prop_params.set_default_scaling(
+            "mole_frac_phase_comp", s, index=("Vap", c))
+
     m.fs.gas_combustion = GenericReactionParameterBlock(
         default=get_rxn(m.fs.gas_prop_params, rxns))
     # Variable for mole-fraction of O2 in the flue gas.  To initialize the model
@@ -400,6 +409,11 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     #
     # Set some scaling
     #
+    iscale.set_scaling_factor(m.fs.valve01.control_volume.work, 1e-8)
+    iscale.set_scaling_factor(m.fs.valve02.control_volume.work, 1e-8)
+    iscale.set_scaling_factor(m.fs.valve03.control_volume.work, 1e-8)
+    iscale.set_scaling_factor(m.fs.vsv.control_volume.work, 1e-8)
+    iscale.set_scaling_factor(m.fs.cmp1.control_volume.work, 1e-8)
     iscale.set_scaling_factor(m.fs.gts1.control_volume.work, 1e-8)
     iscale.set_scaling_factor(m.fs.gts2.control_volume.work, 1e-8)
     iscale.set_scaling_factor(m.fs.gts3.control_volume.work, 1e-8)
@@ -415,6 +429,65 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
         m.fs.gts2.control_volume.properties_out[0].flow_mol, 1e-5)
     iscale.set_scaling_factor(
         m.fs.gts3.control_volume.properties_out[0].flow_mol, 1e-5)
+    for i, v in m.fs.cmb1.control_volume.rate_reaction_extent.items():
+        if i[1] == "ch4_cmb":
+            iscale.set_scaling_factor(v, 1e-3)
+        else:
+            iscale.set_scaling_factor(v, 1)
+    for i, v in m.fs.cmb1.control_volume.rate_reaction_generation.items():
+        if i[2] in low_conc:
+            iscale.set_scaling_factor(v, 10)
+        else:
+            iscale.set_scaling_factor(v, 1e-3)
+    for v in m.fs.cmp1.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for v in m.fs.gts1.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for v in m.fs.gts2.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for v in m.fs.gts3.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for v in m.fs.valve01.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for v in m.fs.valve02.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for v in m.fs.valve03.deltaP.values():
+        iscale.set_scaling_factor(v, 1e-6)
+    for c in m.fs.o2_flow.values():
+        iscale.constraint_scaling_transform(c, 10)
+    for c in m.fs.gt_power_eqn.values():
+        iscale.constraint_scaling_transform(c, 1e-8)
+    for c in m.fs.cmb1.pressure_drop_eqn.values():
+        iscale.constraint_scaling_transform(c, 1e-5)
+    for c in m.fs.mx1.enthalpy_mixing_equations.values():
+        iscale.constraint_scaling_transform(c, 1e-8)
+    for c in m.fs.mx2.enthalpy_mixing_equations.values():
+        iscale.constraint_scaling_transform(c, 1e-8)
+    for c in m.fs.mx3.enthalpy_mixing_equations.values():
+        iscale.constraint_scaling_transform(c, 1e-8)
+    for c in m.fs.inject1.enthalpy_mixing_equations.values():
+        iscale.constraint_scaling_transform(c, 1e-8)
+    for c in m.fs.gts1.performance_curve.head_isen_eqn.values():
+        iscale.constraint_scaling_transform(c, 1e-5)
+    for c in m.fs.gts1.performance_curve.eff_isen_eqn.values():
+        iscale.constraint_scaling_transform(c, 2)
+    for c in m.fs.gts2.performance_curve.head_isen_eqn.values():
+        iscale.constraint_scaling_transform(c, 1e-5)
+    for c in m.fs.gts2.performance_curve.eff_isen_eqn.values():
+        iscale.constraint_scaling_transform(c, 2)
+    for c in m.fs.gts3.performance_curve.head_isen_eqn.values():
+        iscale.constraint_scaling_transform(c, 1e-5)
+    for c in m.fs.gts3.performance_curve.eff_isen_eqn.values():
+        iscale.constraint_scaling_transform(c, 2)
+    for c in m.fs.inject1.mxpress_eqn.values():
+        iscale.constraint_scaling_transform(c, 1e-5)
+    #
+    # Calculate scaling factors/scaling transform of constraints
+    #
+    iscale.calculate_scaling_factors(m)
+    for c in m.fs.cmb1.control_volume.enthalpy_balances.values():
+        iscale.constraint_scaling_transform(c, 1e-8)
+
     #
     # Set basic model inputs for initialization
     #
@@ -444,10 +517,6 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     m.fs.feed_fuel1.pressure.fix(3.10264e6)
     for i, v in ng_comp.items():
         m.fs.feed_fuel1.mole_frac_comp[:,i].fix(v)
-    #
-    # Calculate scaling factors/scaling transform of constraints
-    #
-    iscale.calculate_scaling_factors(m)
     #
     # Initialization
     #
@@ -695,5 +764,16 @@ if __name__ == "__main__":
         air_comp=air_comp,
         ng_comp=ng_comp)
     run_full_load(m, solver)
+    #iscale.constraint_autoscale_large_jac(m)
+    print("Extreme Jacobian entries:")
+    for i in iscale.extreme_jacobian_entries(m, large=1000):
+        print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
+    print("Unscaled constraints:")
+    for c in iscale.unscaled_constraints_generator(m):
+        print(f"    {c}")
+    print("Badly scaled variables:")
+    for v, sv in iscale.badly_scaled_var_generator(m, large=1e2, zero=1e-14):
+        print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
+    print(f"Jacobian Condition Number: {iscale.jacobian_cond(m):.2e}")
     write_pfd_results("gas_turbine_results.svg", m.tags, m.tag_format)
-    run_series(m, solver)
+    #run_series(m, solver)
