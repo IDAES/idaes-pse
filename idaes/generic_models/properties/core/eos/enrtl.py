@@ -236,7 +236,7 @@ class ENRTL(EoSBase):
             # Note: Where the paper refers to the dielectric constant, it
             # actually means the electric permittivity of the solvent
             # eps = eps_r*eps_0 (units F/m)
-            # Note that paper is misisng a required 4*pi term
+            # Note that paper is missing a required 4*pi term
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
                                 pyunits.m**3/pyunits.mol)
             eps = getattr(b, pname+"_relative_permittivity_solvent")
