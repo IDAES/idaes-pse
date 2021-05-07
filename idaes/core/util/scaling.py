@@ -25,9 +25,10 @@ The expressions can be evaluated with variable scaling factors in place of
 variables to calculate additional scaling factors.
 """
 
-__author__ = "John Eslick, Tim Bartholomew"
+__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 
 from math import log10
+import scipy.sparse.linalg as spla
 
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
@@ -39,7 +40,6 @@ from pyomo.common.collections import ComponentMap
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 import idaes.logger as idaeslog
 
-__author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 _log = idaeslog.getLogger(__name__)
 
 
@@ -437,11 +437,14 @@ def constraint_autoscale_large_jac(
     ignore_variable_scaling=False,
     max_grad=100,
     min_scale=1e-6,
-    no_scale = False
+    no_scale=False
 ):
     """Automatically scale constraints based on the Jacobian.  This function
     imitates Ipopt's default constraint scaling.  This scales constraints down
-    to avoid extremely large values in the Jacobian
+    to avoid extremely large values in the Jacobian.  This function also returns
+    the unscaled and scaled Jacobian matrixes and the Pynumero NLP which can be
+    used to identify the constraints and variables corresponding to the rows and
+    comlumns.
 
     Args:
         m: model to scale
@@ -453,6 +456,9 @@ def constraint_autoscale_large_jac(
             scaled too much.
         no_scale: just calculate the Jacobian and scaled Jacobian, don't scale
             anything
+
+    Returns:
+        unscaled Jacobian CSR from, scaled Jacobian CSR from, Pynumero NLP
     """
     # Pynumero requires an objective, but I don't, so let's see if we have one
     n_obj = 0
@@ -499,6 +505,43 @@ def constraint_autoscale_large_jac(
     if n_obj == 0:
         delattr(m, dummy_objective_name)
     return jac, jac_scaled, nlp
+
+
+def get_jacobian(m, scaled=True):
+    """
+    Get the Jacobian matrix at the current model values. This function also
+    returns the Pynumero NLP which can be used to identify the constraints and
+    variables corresponding to the rows and comlumns.
+
+    Args:
+        m: model to get Jacobian from
+        scaled: if True return scaled Jacobian, else get unscaled
+
+    Returns:
+        Jacobian matrix in Scipy CSR format, Pynumero nlp
+    """
+    jac, jac_scaled, nlp = constraint_autoscale_large_jac(m, no_scale=True)
+    if scaled:
+        return jac_scaled, nlp
+    else:
+        return jac, nlp
+
+
+def jacobian_cond(m, scaled=True, ord=None):
+    """
+    Get the condition number of the scaled or unscaled Jacobian matrix of a model.
+
+    Args:
+        m: calculate the condition number of the Jacobian from this model.
+        scaled: if True use scaled Jacobian, else use unscaled
+        ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+
+    Returns:
+        (float) Condition number
+    """
+    jac, nlp = get_jacobian(m, scaled=scaled)
+    jac_inv = spla.inv(jac)
+    return spla.norm(jac, ord)*spla.norm(jac_inv, ord)
 
 
 class CacheVars(object):
