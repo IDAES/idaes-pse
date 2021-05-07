@@ -8,7 +8,7 @@ runs:
       shell: bash
       run: |
         PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
-        echo "::group::Output of `pip install` commands"
+        echo "::group::Output of pip install commands"
         $PIP_INSTALL --upgrade pip setuptools wheel
         # TODO the pylint version will have to be pinned
         # TODO installing idaes is necessary in our case because we import some idaes code in pylint plugins
