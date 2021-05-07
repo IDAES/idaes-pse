@@ -17,19 +17,10 @@ import pytest
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness
-from idaes.generic_models.properties.swco2 import \
-    swco2_available as prop_available
 import pyomo.environ as pyo
-
-if pyo.SolverFactory('ipopt').available():
-    solver = pyo.SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicMix(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -39,7 +30,6 @@ class TestBasicMix(PropertyTestHarness):
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicLV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -49,7 +39,6 @@ class TestBasicLV(PropertyTestHarness):
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicL(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock
@@ -59,7 +48,6 @@ class TestBasicL(PropertyTestHarness):
 
 
 @pytest.mark.unit
-@pytest.mark.skipif(not prop_available(), reason="Property lib not available")
 class TestBasicV(PropertyTestHarness):
     def configure(self):
         self.prop_pack = swco2.SWCO2ParameterBlock

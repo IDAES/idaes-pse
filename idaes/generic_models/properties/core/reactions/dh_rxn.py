@@ -46,4 +46,10 @@ class constant_dh_rxn():
 
     @staticmethod
     def calculate_scaling_factors(b, rblock):
-        return 1/abs(value(rblock.dh_rxn_ref))
+        v = abs(value(rblock.dh_rxn_ref))
+
+        # Need to make sure dh_rxn is not 0 to avoid division by 0
+        if v != 0:
+            return 1/abs(value(rblock.dh_rxn_ref))
+        else:
+            return 1

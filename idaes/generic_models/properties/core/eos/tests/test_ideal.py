@@ -256,7 +256,7 @@ def test_fug_phase_comp_vap(m):
 @pytest.mark.unit
 def test_fug_phase_comp_invalid_phase(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_phase_comp(m_sol.props[1], "Sol", "foo")
+        Ideal.fug_phase_comp(m_sol.props[1], "Sol", "a")
 
 
 @pytest.mark.unit
@@ -281,7 +281,7 @@ def test_fug_phase_comp_vap_eq(m):
 @pytest.mark.unit
 def test_fug_phase_comp_invalid_phase_eq(m_sol):
     with pytest.raises(PropertyNotSupportedError):
-        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "foo", ("Vap", "Liq"))
+        Ideal.fug_phase_comp_eq(m_sol.props[1], "Sol", "a", ("Vap", "Liq"))
 
 
 @pytest.mark.unit

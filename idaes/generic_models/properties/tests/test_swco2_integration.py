@@ -14,21 +14,16 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory, units as pyunits
+from pyomo.environ import ConcreteModel, value, units as pyunits
 import idaes.generic_models.properties.swco2 as swco2
 from idaes.generic_models.unit_models import Compressor
 from idaes.core import FlowsheetBlock
 import idaes
+from idaes.core.util import get_solver
 
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
+solver = get_solver()
 
 
-@pytest.mark.skipif(not swco2.swco2_available(),
-                    reason="Library not available")
 class TestIntegration(object):
     @pytest.fixture(scope="class")
     def compressor_model(self):
@@ -38,8 +33,6 @@ class TestIntegration(object):
         m.fs.unit = Compressor(default={"property_package": m.fs.properties})
         return m
 
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit
     def test_verify(self, compressor_model):
         model = compressor_model

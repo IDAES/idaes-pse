@@ -6,7 +6,8 @@ unit operation for MEA-based post-combustion carbon capture for both absorption
 and stripping processes. The contactor model uses an enhancement factor model
 that is superior to the Hatta number approximation and more accurate over a wide
 range of operating conditions. The vapor and liquid streams flow in a
-counter-current arrangement as shown in Figure 1(A).
+counter-current arrangement as shown in Figure 1(A). For more information on the Column model
+see `Akula et al. (2021) <https://doi.org/10.1021/acs.iecr.0c05035>`_.
 
 
 .. figure:: ./column_1.svg
@@ -138,10 +139,10 @@ PackedColumnData Class
 References
 ------------
 
-1. Akula, P., Eslick, J., Bhattacharyya, D., & Miller, D. C. (submitted),
-   "Model Development, Validation, and Optimization of a MEA-Based
-   Post-Combustion CO2 Capture Process Under Part-Load and Variable Capture Operation",
-   Industrial & Engineering Chemistry Research.
+1. Akula, P., J. Eslick, D. Bhattacharyya and D. C. Miller (2021).
+   "Model Development, Validation, and Optimization of an MEA-Based
+   Post-Combustion CO2 Capture Process under Part-Load and Variable Capture Operations."
+   Industrial & Engineering Chemistry Research. https://doi.org/10.1021/acs.iecr.0c05035
 2. Eslick, J. C., Akula, P. T., Bhattacharyya, D., & Miller, D. C. (2018).
    Simultaneous parameter estimation in reactive-solvent-based processes.
    In Computer Aided Chemical Engineering (Vol. 44, pp. 901-906). Elsevier.

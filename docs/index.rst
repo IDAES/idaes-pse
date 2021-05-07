@@ -49,6 +49,7 @@ Contents
     tutorials_examples
     technical_specs/index
     related_packages/index
+    faq
     license
     copyright
 

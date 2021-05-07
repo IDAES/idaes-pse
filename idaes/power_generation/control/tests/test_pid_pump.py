@@ -15,11 +15,9 @@ from idaes.generic_models.properties import iapws95
 from idaes.core.util.dyn_utils import (
     copy_values_at_time,
     copy_non_time_indexed_values)
+from idaes.core.util import get_solver
 
 import pytest
-
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
 
 
 def set_scaling_factors(m):
@@ -164,12 +162,7 @@ def get_model(dynamic=False):
         m.fs.valve.valve_opening.unfix()
         dof = degrees_of_freedom(m)
         assert dof == 0
-        solver = pyo.SolverFactory("ipopt")
-        solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 100,
-        }
+        solver = get_solver()
         solver.solve(m, tee=True)
 
     else:
@@ -180,12 +173,8 @@ def get_model(dynamic=False):
 
 
 def run_dynamic(m):
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {
-            "tol": 1e-7,
-            "linear_solver": "ma27",
-            "max_iter": 50,
-    }
+    solver = get_solver()
+
     # add step change
     for t in m.fs.time:
         if t >= 50:
@@ -199,9 +188,6 @@ def run_dynamic(m):
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_pid():
     m = main()
     assert 0.5000 == pytest.approx(

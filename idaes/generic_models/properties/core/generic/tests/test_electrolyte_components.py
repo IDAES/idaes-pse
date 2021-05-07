@@ -25,7 +25,7 @@ from idaes.core import AqueousPhase, VaporPhase
 from idaes.core.components import *
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
 from idaes.core import FlowsheetBlock
@@ -63,7 +63,7 @@ class TestApparentSpeciesBasis():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -188,7 +188,7 @@ class TestTrueSpeciesBasis():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -316,7 +316,7 @@ class TestNonAqueousComponents():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -449,7 +449,7 @@ class TestPhasesPartialComponents():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,

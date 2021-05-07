@@ -41,6 +41,7 @@ import idaes.core.util.scaling as iscale
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util import get_solver
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa)"
 __version__ = "2.0.0"
@@ -313,7 +314,7 @@ see property package for documentation.}"""))
             self.control_volume.energy_accumulation[0, :].fix(0)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg={}):
         '''
         Downcomer initialization routine.
 
@@ -324,9 +325,9 @@ see property package for documentation.}"""))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -334,8 +335,8 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting initialization...")
 

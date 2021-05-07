@@ -47,7 +47,7 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
 _log = idaeslog.getLogger(__name__)
@@ -436,8 +436,8 @@ class HeatExchangerData(UnitModelBlockData):
         state_args_1=None,
         state_args_2=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg={},
         duty=None,
     ):
         """
@@ -451,9 +451,9 @@ class HeatExchangerData(UnitModelBlockData):
                 initialization for the cold side (see documentation of the specific
                 property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             duty : an initial guess for the amount of heat transfered. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
@@ -469,8 +469,9 @@ class HeatExchangerData(UnitModelBlockData):
         hot_side = getattr(self, self.config.hot_side_name)
         cold_side = getattr(self, self.config.cold_side_name)
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
+
         flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )

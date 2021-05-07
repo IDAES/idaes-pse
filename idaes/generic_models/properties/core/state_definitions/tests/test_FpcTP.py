@@ -33,7 +33,7 @@ from idaes.core import (MaterialFlowBasis,
                         declare_process_block_class)
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -57,7 +57,7 @@ class TestInvalidBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -89,7 +89,7 @@ class TestInvalidBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -120,7 +120,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -243,7 +243,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -375,8 +375,8 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -500,8 +500,8 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -634,9 +634,9 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos},
-                    "p3": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS},
+                    "p3": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -760,9 +760,9 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos},
-                    "p3": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS},
+                    "p3": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -893,8 +893,8 @@ class TestCommon(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "a": {"equation_of_state": dummy_eos},
-                    "b": {"equation_of_state": dummy_eos}},
+                    "a": {"equation_of_state": DummyEoS},
+                    "b": {"equation_of_state": DummyEoS}},
                 "state_definition": FpcTP,
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,

@@ -3,6 +3,7 @@ import idaes.core as idaes_core
 from idaes.power_generation.unit_models.helm import HelmIsentropicTurbine
 import idaes.core.util.convergence.convergence_base as cb
 from idaes.generic_models.properties import iapws95
+from idaes.core.util import get_solver
 from pyomo.environ import units as pyunits
 import idaes
 
@@ -73,13 +74,12 @@ class HelmIsentropicTurbineConvergenceEvaluation(cb.ConvergenceEvaluation):
 
     def get_solver(self):
         """
-        Returns an ipopt solver object with the desired options for
+        Returns a solver object with the desired options for
         convergence evaluation (and initialization)
 
         Returns
         -------
            Pyomo solver
         """
-        opt = pyo.SolverFactory('ipopt')
-        opt.options = {'tol': 1e-6, 'max_iter': 25}
+        opt = get_solver(options={"max_iter": 25})
         return opt

@@ -18,7 +18,7 @@ from VLE data to compute the activity coefficients.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
+from pyomo.environ import ConcreteModel, TerminationCondition, \
     SolverStatus, value
 from pyomo.util.check_units import assert_units_consistent
 
@@ -26,15 +26,10 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import get_solver
 
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
-else:
-    solver = None
+solver = get_solver()
+
 # -----------------------------------------------------------------------------
 # Create a flowsheet for test
 m = ConcreteModel()
@@ -135,7 +130,6 @@ def test_setInputs_inlet_state_block():
     assert degrees_of_freedom(m.fs.state_block_ideal_v) == 0
 
 
-@pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.unit
 def test_solve():
     # vapor-liquid

@@ -20,10 +20,7 @@ have n_outlets - 1 specified split fractions or outlet flows.
 This model is psuedo-steady-state when used in dynamic mode.
 """
 
-from pandas import DataFrame
-
-from pyomo.environ import Constraint, Set, SolverFactory, Var, value
-from pyomo.network import Port
+from pyomo.environ import SolverFactory, Var, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import (
@@ -34,7 +31,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
@@ -263,15 +260,15 @@ from 1 to num_outlets).}""",
             self.outlet_ports[p] = getattr(self, p)
 
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver="ipopt"):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver=None):
         """
         Initialization routine for splitter
 
         Keyword Arguments:
             outlvl: sets output level of initialization routine
-            optarg: solver options dictionary object (default=None)
+            optarg: solver options dictionary object (default={})
             solver: str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             If hold_states is True, returns a dict containing flags for which
@@ -279,9 +276,9 @@ from 1 to num_outlets).}""",
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # sp is what to save to make sure state after init is same as the start
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)

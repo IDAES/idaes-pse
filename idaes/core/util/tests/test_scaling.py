@@ -99,7 +99,7 @@ def test_map_scaling_factor(caplog):
     assert sc.map_scaling_factor(m.x.values(), warning=True) == 1
     logrec = caplog.records[0]
     assert logrec.levelno == logging.WARNING
-    assert "missing scaling factor" in logrec.message
+    assert "scaling factor" in logrec.message
 
     assert sc.map_scaling_factor(m.x.values(), func=max) == 13
     assert sc.map_scaling_factor(m.x.values(), default=20) == 11
@@ -252,7 +252,7 @@ def test_set_get_unset(caplog):
     for i in [0, 1]: # two calls should be two log records
         logrec = caplog.records[i]
         assert logrec.levelno == logging.WARNING
-        assert "missing scaling factor" in logrec.message
+        assert "scaling factor" in logrec.message
 
     # This one is a bit of a mystery, what do you really expect if you provide
     # a default and ask for an exception.  I'll guess if you provide a default,
@@ -264,7 +264,7 @@ def test_set_get_unset(caplog):
         sc.get_scaling_factor(m.z[1], exception=True)
     logrec = caplog.records[0]
     assert logrec.levelno == logging.ERROR
-    assert "missing scaling factor" in logrec.message
+    assert "scaling factor" in logrec.message
 
     # Okay it's pretty well tested, but make sure it works for constraints and
     # expressions

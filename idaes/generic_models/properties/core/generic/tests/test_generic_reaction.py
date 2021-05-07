@@ -24,7 +24,7 @@ from pyomo.environ import (
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
         GenericReactionParameterBlock, ConcentrationForm)
@@ -76,8 +76,8 @@ class TestGenericReactionParameterBlock(object):
         m.params = GenericParameterBlock(default={
                 "components": {"c1": {}, "c2": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -413,8 +413,8 @@ class TestGenericReactionBlock(object):
         m.params = GenericParameterBlock(default={
                 "components": {"c1": {}, "c2": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,

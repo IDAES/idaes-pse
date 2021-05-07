@@ -31,11 +31,11 @@ from idaes.core.util.model_statistics import degrees_of_freedom, \
     number_variables, number_total_constraints, number_unused_variables
 from idaes.core.util.testing import \
     PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.mark.unit
@@ -311,7 +311,7 @@ class TestBTXIdeal():
                       pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-15899.596, rel=1e-4) ==
+        assert (pytest.approx(-15897.86, rel=1e-4) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
     @pytest.mark.initialize

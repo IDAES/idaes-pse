@@ -134,6 +134,7 @@ def define_state(b):
         rule=rule_phase_frac,
         doc='Phase fractions')
 
+    # Add electrolye state vars if required
     if b.params._electrolyte:
         define_electrolyte_state(b)
 

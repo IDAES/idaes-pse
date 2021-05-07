@@ -24,14 +24,15 @@ from pyomo.environ import ConcreteModel, value, TerminationCondition
 # Import IDAES Libraries
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import initialization_tester, get_default_solver
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_prop \
     import LiquidParameterBlock
 from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.phe \
     import PHE
 
 
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestPlateHeatExchanger:

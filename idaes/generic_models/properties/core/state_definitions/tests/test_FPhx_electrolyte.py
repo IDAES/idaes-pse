@@ -31,7 +31,7 @@ from idaes.core import AqueousPhase, VaporPhase
 from idaes.core.components import *
 
 from idaes.generic_models.properties.core.state_definitions import FPhx
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
@@ -47,7 +47,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock, StateIndex)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 def dummy_method(b, *args, **kwargs):
@@ -87,7 +87,7 @@ class TestApparentSpeciesBasisNoInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -212,7 +212,7 @@ class TestApparentSpeciesBasisNoInherent():
 
         assert degrees_of_freedom(m.fs) == 0
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
@@ -242,12 +242,8 @@ class TestApparentSpeciesBasisNoInherent():
 
 
 # -----------------------------------------------------------------------------
-def dens_mol_h20(*args, **kwargs):
+def dens_mol_H2O(*args, **kwargs):
     return 55e3
-
-
-def dens_mol_other(*args, **kwargs):
-    return 0
 
 
 class TestApparentSpeciesBasisInherent():
@@ -255,53 +251,50 @@ class TestApparentSpeciesBasisInherent():
         # Specifying components
         "components": {
             'H2O': {"type": Solvent,
-                    "dens_mol_liq_comp": dens_mol_h20,
+                    "dens_mol_liq_comp": dens_mol_H2O,
                     "parameter_data": {
                         "mw": (18E-3, pyunits.kg/pyunits.mol)}},
             'KHCO3': {"type": Apparent,
                       "dissociation_species": {"K+": 1, "HCO3-": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
             'K2CO3': {"type": Apparent,
                       "dissociation_species": {"K+": 2, "CO3--": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (138.2E-3, pyunits.kg/pyunits.mol)}},
             'KOH': {"type": Apparent,
                     "dissociation_species": {"K+": 1, "OH-": 1},
-                    "dens_mol_liq_comp": dens_mol_other,
                     "parameter_data": {
                         "mw": (56.1E-3, pyunits.kg/pyunits.mol)}},
             'H+': {"type": Cation,
-                    "charge": +1,
-                    "dens_mol_liq_comp": dens_mol_other,
-                    "parameter_data": {
-                        "mw": (1E-3, pyunits.kg/pyunits.mol)}},
+                   "charge": +1,
+                   "dens_mol_liq_comp": dens_mol_H2O,
+                   "parameter_data": {
+                       "mw": (1E-3, pyunits.kg/pyunits.mol)}},
             'K+': {"type": Cation,
-                    "charge": +1,
-                    "dens_mol_liq_comp": dens_mol_other,
-                    "parameter_data": {
-                        "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
+                   "charge": +1,
+                   "dens_mol_liq_comp": dens_mol_H2O,
+                   "parameter_data": {
+                       "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
             'OH-': {"type": Anion,
                     "charge": -1,
-                    "dens_mol_liq_comp": dens_mol_other,
+                    "dens_mol_liq_comp": dens_mol_H2O,
                     "parameter_data": {
                           "mw": (17E-3, pyunits.kg/pyunits.mol)}},
             'HCO3-': {"type": Anion,
                       "charge": -1,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_H2O,
                       "parameter_data": {
                             "mw": (61E-3, pyunits.kg/pyunits.mol)}},
             'CO3--': {"type": Anion,
                       "charge": -2,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_H2O,
                       "parameter_data": {
                             "mw": (60E-3, pyunits.kg/pyunits.mol)}}},
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -323,7 +316,7 @@ class TestApparentSpeciesBasisInherent():
         "temperature_ref": (298.15, pyunits.K),
 
         "inherent_reactions": {
-            "h2o_si": {"stoichiometry": {("Liq", "H2O"): -1,
+            "H2O_si": {"stoichiometry": {("Liq", "H2O"): -1,
                                          ("Liq", "H+"): 1,
                                          ("Liq", "OH-"): 1},
                        "heat_of_reaction": constant_dh_rxn,
@@ -445,7 +438,7 @@ class TestApparentSpeciesBasisInherent():
         assert isinstance(m.fs.state[1].params.inherent_reaction_idx, Set)
         assert len(m.fs.state[1].params.inherent_reaction_idx) == 2
         for i in m.fs.state[1].params.inherent_reaction_idx:
-            assert i in ["h2o_si", "co3_hco3"]
+            assert i in ["H2O_si", "co3_hco3"]
 
         assert isinstance(m.fs.state[1].apparent_inherent_reaction_extent, Var)
         assert len(m.fs.state[1].apparent_inherent_reaction_extent) == 2
@@ -468,7 +461,7 @@ class TestApparentSpeciesBasisInherent():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -575,7 +568,7 @@ class TestTrueSpeciesBasisNoInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -688,53 +681,50 @@ class TestTrueSpeciesBasisInherent():
         # Specifying components
         "components": {
             'H2O': {"type": Solvent,
-                    "dens_mol_liq_comp": dens_mol_h20,
+                    "dens_mol_liq_comp": dens_mol_H2O,
                     "parameter_data": {
                         "mw": (18E-3, pyunits.kg/pyunits.mol)}},
             'KHCO3': {"type": Apparent,
                       "dissociation_species": {"K+": 1, "HCO3-": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (100.1E-3, pyunits.kg/pyunits.mol)}},
             'K2CO3': {"type": Apparent,
                       "dissociation_species": {"K+": 2, "CO3--": 1},
-                      "dens_mol_liq_comp": dens_mol_other,
                       "parameter_data": {
                           "mw": (138.2E-3, pyunits.kg/pyunits.mol)}},
             'KOH': {"type": Apparent,
                     "dissociation_species": {"K+": 1, "OH-": 1},
-                    "dens_mol_liq_comp": dens_mol_other,
                     "parameter_data": {
                         "mw": (56.1E-3, pyunits.kg/pyunits.mol)}},
             'H+': {"type": Cation,
                    "charge": +1,
-                   "dens_mol_liq_comp": dens_mol_other,
+                   "dens_mol_liq_comp": dens_mol_H2O,
                    "parameter_data": {
                        "mw": (1E-3, pyunits.kg/pyunits.mol)}},
             'K+': {"type": Cation,
                    "charge": +1,
-                   "dens_mol_liq_comp": dens_mol_other,
+                   "dens_mol_liq_comp": dens_mol_H2O,
                    "parameter_data": {
                        "mw": (39.1E-3, pyunits.kg/pyunits.mol)}},
             'OH-': {"type": Anion,
                     "charge": -1,
-                    "dens_mol_liq_comp": dens_mol_other,
+                    "dens_mol_liq_comp": dens_mol_H2O,
                     "parameter_data": {
                         "mw": (17E-3, pyunits.kg/pyunits.mol)}},
             'HCO3-': {"type": Anion,
                       "charge": -1,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_H2O,
                       "parameter_data": {
                           "mw": (61E-3, pyunits.kg/pyunits.mol)}},
             'CO3--': {"type": Anion,
                       "charge": -2,
-                      "dens_mol_liq_comp": dens_mol_other,
+                      "dens_mol_liq_comp": dens_mol_H2O,
                       "parameter_data": {
                           "mw": (60E-3, pyunits.kg/pyunits.mol)}}},
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -756,7 +746,7 @@ class TestTrueSpeciesBasisInherent():
         "temperature_ref": (298.15, pyunits.K),
 
         "inherent_reactions": {
-            "h2o_si": {"stoichiometry": {("Liq", "H2O"): -1,
+            "H2O_si": {"stoichiometry": {("Liq", "H2O"): -1,
                                          ("Liq", "H+"): 1,
                                          ("Liq", "OH-"): 1},
                        "heat_of_reaction": constant_dh_rxn,
@@ -882,7 +872,7 @@ class TestTrueSpeciesBasisInherent():
         assert isinstance(m.fs.state[1].params.inherent_reaction_idx, Set)
         assert len(m.fs.state[1].params.inherent_reaction_idx) == 2
         for i in m.fs.state[1].params.inherent_reaction_idx:
-            assert i in ["h2o_si", "co3_hco3"]
+            assert i in ["H2O_si", "co3_hco3"]
 
         assert not hasattr(m.fs.state[1], "apparent_inherent_reaction_extent")
 
@@ -906,7 +896,7 @@ class TestTrueSpeciesBasisInherent():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution

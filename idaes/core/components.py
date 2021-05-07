@@ -16,7 +16,7 @@ IDAES Component objects
 @author: alee
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
@@ -68,8 +68,16 @@ class ComponentData(ProcessBlockData):
         description="Method to calculate liquid component molar entropies"))
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
+
+    CONFIG.declare("has_vapor_pressure", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Flag indicating whether component has a vapor pressure"))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure"))
+    CONFIG.declare("relative_permittivity_liq_comp", ConfigValue(
+        description=
+        "Method to use to calculate liquid phase relative permittivity"))
 
     CONFIG.declare("phase_equilibrium_form", ConfigValue(
         domain=dict,
@@ -90,7 +98,7 @@ class ComponentData(ProcessBlockData):
             "component_lists needs to be populated."))
 
     def build(self):
-        super(ComponentData, self).build()
+        super().build()
 
         # If the component_list does not exist, add reference to new Component
         # The IF is mostly for backwards compatability, to allow for old-style
@@ -282,6 +290,11 @@ class IonData(SoluteData):
 
     # Remove valid_phase_types argument, as ions are aqueous phase only
     CONFIG.__delitem__("valid_phase_types")
+    # Set as not having a vapor pressure
+    has_psat = CONFIG.get("has_vapor_pressure")
+    has_psat.set_value(False)
+    has_psat.set_default_value(False)
+    has_psat.set_domain(In([False]))
 
     CONFIG.declare("charge", ConfigValue(
             domain=int,

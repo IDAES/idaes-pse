@@ -53,7 +53,7 @@ from idaes.power_generation.unit_models.helm import \
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.helm import HelmMixer as Mixer
-from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util import get_solver, copy_port_values as _set_port
 
 _log = idaeslog.getLogger(__name__)
 
@@ -195,7 +195,7 @@ class FWHCondensing0DData(CondenserData):
         constraint deactivated; then it activates the constraint and calculates
         a steam inlet flow rate.
         """
-        solver = kwargs.get("solver", "ipopt")
+        solver = kwargs.get("solver", None)
         optarg = kwargs.get("oparg", {})
         outlvl = kwargs.get("outlvl", idaeslog.NOTSET)
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -225,8 +225,8 @@ class FWHCondensing0DData(CondenserData):
         self.shell_volume_eqn.activate()
         self.pressure_change_total_eqn.activate()
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
@@ -410,9 +410,9 @@ class FWH0DDynamicData(UnitModelBlockData):
         if config.has_drain_cooling:
             _set_port(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
-        # Solve all together
-        opt = SolverFactory(kwargs.get("solver", "ipopt"))
-        opt.options = kwargs.get("oparg", {})
+
+        # Create solver
+        opt = get_solver(kwargs.get("solver"), kwargs.get("oparg", {}))
 
         assert degrees_of_freedom(self) == 0
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:

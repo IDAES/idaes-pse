@@ -225,6 +225,8 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         self.directory = None  # silence warning about initialization outside constructor
         super().__init__(*args, **kwargs)
+        # Server should return text/javascript MIME type for served JS files (issue 259)
+        self.extensions_map[".js"] = "text/javascript"
 
     # === GET ===
 

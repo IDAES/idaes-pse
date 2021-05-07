@@ -27,16 +27,10 @@ import pyomo.environ as pyo
 from idaes.generic_models.properties import iapws95
 from idaes.generic_models.properties import swco2
 from idaes.core import FlowsheetBlock
-
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
-prop2_available = swco2.swco2_available()
+from idaes.core.util import get_solver
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_PP_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -125,7 +119,7 @@ def test_PP_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -214,9 +208,6 @@ def test_PP_costing():
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_power_plant_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -290,7 +281,7 @@ def test_power_plant_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -342,8 +333,6 @@ def test_power_plant_costing():
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_sCO2_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -491,7 +480,7 @@ def test_sCO2_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -524,8 +513,6 @@ def test_sCO2_costing():
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_ASU_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -541,7 +528,7 @@ def test_ASU_costing():
     get_ASU_cost(m.fs.ASU, m.fs.ASU.O2_flow)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \

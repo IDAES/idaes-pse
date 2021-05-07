@@ -21,7 +21,7 @@ import copy
 
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList, In
 
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.power_generation.unit_models.helm import (
@@ -38,8 +38,6 @@ from idaes.power_generation.unit_models.helm import HelmValve as SteamValve
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as copy_port
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
-from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -631,9 +629,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
     def initialize(
         self,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
+        solver=None,
         flow_iterate=2,
-        optarg={"tol": 1e-6, "max_iter": 35},
+        optarg={},
         copy_disconneted_flow=True,
         copy_disconneted_pressure=True,
         calculate_outlet_cf=False,
@@ -645,7 +643,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         Args:
             outlvl: logging level default is NOTSET, which inherits from the
                 parent logger
-            solver: the NL solver, default is "ipopt"
+            solver: the NL solver
             flow_iterate: If not calculating flow coefficients, this is the
                 number of times to update the flow and repeat initialization
                 (1 to 5 where 1 does not update the flow guess)
@@ -676,13 +674,16 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         for it_count in range(flow_iterate):
-            self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_split.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize valves
             for i in self.inlet_stage_idx:
                 u = self.throttle_valve[i]
-                copy_port(u.inlet, getattr(self.inlet_split, "outlet_{}".format(i)))
-                u.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+                copy_port(u.inlet, getattr(
+                    self.inlet_split, "outlet_{}".format(i)))
+                u.initialize(
+                    outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize turbine
             for i in self.inlet_stage_idx:
@@ -703,7 +704,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                     self.inlet_stage[i].outlet,
                 )
                 getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
-            self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_mix.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
             for i in self.inlet_stage_idx:
                 getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
             self.inlet_mix.use_equal_pressure_constraint()

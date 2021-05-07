@@ -37,7 +37,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver as default_solver
+from idaes.core.util import get_solver as default_solver
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)

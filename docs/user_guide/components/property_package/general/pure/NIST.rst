@@ -41,7 +41,7 @@ Ideal Gas Molar Enthalpy
 
 The correlation for the ideal gas molar enthalpy is derived from the correlation for the molar heat capacity and is given below:
 
-.. math:: \frac{h_{\text{ig}} - h_{\text{ig ref}}}{1000} = A \times (t-t_{ref}) + \frac{B}{2} \times (t^2 - t_{ref}^2) + \frac{C}{3} \times (t^3 - t_{ref}^3) + \frac{D}{4} \times (t^4 - t_{ref}^4) + E \times (\frac{1}{t} - \frac{1}{t_{ref}}) + F - H
+.. math:: \frac{h_{\text{ig}} - h_{\text{ig ref}}}{1000} = A \times t + \frac{B}{2} \times t^2 + \frac{C}{3} \times t^3 + \frac{D}{4} \times t^4 + E \times \frac{1}{t} + F - H
 
 Units are :math:`\text{J/mol}`.
 

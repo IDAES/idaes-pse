@@ -78,7 +78,7 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
                 "enth_mol": 4000
                 }
 
-        m.fs.pc.initialize(state_args=init_state, outlvl=0)
+        m.fs.pc.initialize(state_args=init_state)
 
         # Create a solver for initialization
         opt = self.get_solver()
@@ -91,7 +91,6 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
         """
         Returns an ipopt solver object with the desired options for
         convergence evaluation (and initialization)
-
         Returns
         -------
            Pyomo solver

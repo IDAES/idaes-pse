@@ -28,12 +28,23 @@ class fugacity():
 
     @staticmethod
     def calculate_scaling_factors(b, phase1, phase2, comp):
-        sf_1 = iscale.get_scaling_factor(
-            b.fug_phase_comp[phase1, comp], default=1, warning=True)
-        sf_2 = iscale.get_scaling_factor(
-            b.fug_phase_comp[phase2, comp], default=1, warning=True)
+        with b.lock_attribute_creation_context():
+            if hasattr(b, "fug_phase_comp_eq"):
+                sf_1 = iscale.get_scaling_factor(
+                    b.fug_phase_comp[phase1, comp], default=1, warning=True)
+                sf_2 = iscale.get_scaling_factor(
+                    b.fug_phase_comp[phase2, comp], default=1, warning=True)
 
-        return min(sf_1, sf_2)
+                return min(sf_1, sf_2)
+            elif hasattr(b, "fug_phase_comp"):
+                sf_1 = iscale.get_scaling_factor(
+                    b.fug_phase_comp[phase1, comp], default=1, warning=True)
+                sf_2 = iscale.get_scaling_factor(
+                    b.fug_phase_comp[phase2, comp], default=1, warning=True)
+
+                return min(sf_1, sf_2)
+            else:
+                return 1
 
 
 class log_fugacity():

@@ -236,6 +236,15 @@ class GenericReactionParameterData(ReactionParameterBlock):
         # Alias associated property package to keep line length down
         ppack = self.config.property_package
 
+        if not hasattr(ppack, "_electrolyte") or not ppack._electrolyte:
+            pc_set = ppack._phase_component_set
+        elif ppack.config.state_components.name == "true":
+            pc_set = ppack.true_phase_component_set
+        elif ppack.config.state_components.name == "apparent":
+            pc_set = ppack.apparent_phase_component_set
+        else:
+            raise BurntToast()
+
         # Construct rate reaction attributes if required
         if len(self.config.rate_reactions) > 0:
             # Construct rate reaction index
@@ -245,7 +254,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct rate reaction stoichiometry dict
             self.rate_reaction_stoichiometry = {}
             for r, rxn in self.config.rate_reactions.items():
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     self.rate_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
@@ -283,7 +292,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
             # Construct equilibrium reaction stoichiometry dict
             self.equilibrium_reaction_stoichiometry = {}
             for r, rxn in self.config.equilibrium_reactions.items():
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     self.equilibrium_reaction_stoichiometry[(r, p, j)] = 0
 
                 if rxn.stoichiometry is None:
@@ -339,7 +348,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 r_config = self.config.rate_reactions[r]
 
                 order_init = {}
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     if "reaction_order" in r_config.parameter_data:
                         try:
                             order_init[p, j] = r_config.parameter_data[
@@ -360,7 +369,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                             order_init[p, j] = 0
 
                 rblock.reaction_order = Var(
-                        ppack._phase_component_set,
+                        pc_set,
                         initialize=order_init,
                         doc="Reaction order",
                         units=None)
@@ -378,7 +387,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                 r_config = self.config.equilibrium_reactions[r]
 
                 order_init = {}
-                for p, j in ppack._phase_component_set:
+                for p, j in pc_set:
                     if "reaction_order" in r_config.parameter_data:
                         try:
                             order_init[p, j] = r_config.parameter_data[
@@ -401,7 +410,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
                             order_init[p, j] = 0
 
                 rblock.reaction_order = Var(
-                        ppack._phase_component_set,
+                        pc_set,
                         initialize=order_init,
                         doc="Reaction order",
                         units=None)
@@ -412,6 +421,20 @@ class GenericReactionParameterData(ReactionParameterBlock):
                             rblock, self.config.equilibrium_reactions[r])
                     except AttributeError:
                         pass
+                    except KeyError as err:
+                        # This likely arises from mismatched true and apparent
+                        # species sets. Reaction packages must use the same
+                        # basis as the associated thermo properties
+                        # Raise an exception to inform the user
+                        raise PropertyPackageError(
+                            "{} KeyError encountered whilst constructing "
+                            "reaction parameters. This may be due to "
+                            "mismatched state_components between the "
+                            "Reaction Package and the associated Physical "
+                            "Property Package - Reaction Packages must use the"
+                            "same basis (true or apparent species) as the "
+                            "Physical Property Package.".format(self.name),
+                            err)
 
         # As a safety check, make sure all Vars in reaction blocks are fixed
         for v in self.component_objects(Var, descend_into=True):

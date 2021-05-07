@@ -224,6 +224,7 @@ def create_stream_table_dataframe(
     """
     stream_attributes = OrderedDict()
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
+    full_keys = []  # List of all rows in dataframe to fill in missing data
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
         if true_state:
@@ -234,8 +235,19 @@ def create_stream_table_dataframe(
             for i in disp_dict[k]:
                 if i is None:
                     stream_attributes[key][k] = value(disp_dict[k][i])
+                    if k not in full_keys:
+                        full_keys.append(k)
                 else:
-                    stream_attributes[key][k + " " + str(i)] = value(disp_dict[k][i])
+                    stream_attributes[key][f"{k} {i}"] = value(disp_dict[k][i])
+                    if f"{k} {i}" not in full_keys:
+                        full_keys.append(f"{k} {i}")
+
+    # Check for missing rows in any stream, and fill with "-" if needed
+    for k, v in stream_attributes.items():
+        for r in full_keys:
+            if r not in v.keys():
+                # Missing row, fill with placeholder
+                v[r] = "-"
 
     return DataFrame.from_dict(stream_attributes, orient=orient)
 

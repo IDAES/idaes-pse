@@ -36,7 +36,7 @@ from idaes.core import (ControlVolume0DBlock,
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.constants import Constants as const
-import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 
@@ -345,7 +345,7 @@ mixed phase not supported'''))
             self.control_volume.energy_accumulation[0, :].fix(0)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg={}):
         '''
         WaterPipe initialization routine.
 
@@ -356,9 +356,9 @@ mixed phase not supported'''))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -366,8 +366,8 @@ mixed phase not supported'''))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         flags = blk.control_volume.initialize(
             outlvl=outlvl+1,

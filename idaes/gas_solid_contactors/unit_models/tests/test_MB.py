@@ -36,7 +36,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables,
                                               unused_variables_set)
 from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 # Import MBR unit model
 from idaes.gas_solid_contactors.unit_models.moving_bed import MBR
@@ -51,7 +51,7 @@ from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------

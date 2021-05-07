@@ -56,6 +56,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -1128,8 +1129,7 @@ constructed,
         blk.side_2.model_check()
 
     def initialize(blk, state_args_1={}, state_args_2={},
-                   outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6,
-                                                     'max_iter': 100}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -1145,15 +1145,9 @@ constructed,
                            (see documentation of the specific property package)
                            (default = {}).
             outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -1162,8 +1156,8 @@ constructed,
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks

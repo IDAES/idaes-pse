@@ -62,6 +62,7 @@ from idaes.core.util.initialization import (fix_state_vars,
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 
@@ -226,7 +227,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
     def initialize(blk, state_args={}, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver="ipopt", optarg={"tol": 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -246,9 +247,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                          flow_mol_comp, temperature, pressure.
 
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = "ipopt")
+                     initialization (default = None, use default solve)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -292,13 +293,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        if optarg is None:
-            sopt = {"tol": 1e-8}
-        else:
-            sopt = optarg
-
-        opt = SolverFactory("ipopt")
-        opt.options = sopt
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints

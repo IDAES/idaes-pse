@@ -1069,6 +1069,7 @@ documentation for supported schemes,
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
         # Set solver options
+        # TODO: Work out why using default solver here doubles test run time
         opt = SolverFactory(solver)
         opt.options = optarg
 

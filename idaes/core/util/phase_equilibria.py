@@ -27,6 +27,7 @@ from pyomo.environ import (ConcreteModel,
                            Expression,
                            units as pyunits)
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 from pyomo.opt import TerminationCondition, SolverStatus
 
 import idaes.logger as idaeslog
@@ -126,7 +127,7 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
     model.props[1].calculate_scaling_factors()
     model.props.initialize(optarg=solver_op, outlvl=print_level)
 
-    solver = SolverFactory('ipopt')
+    solver = get_solver()
 
     # Create an array of compositions with N number of points
     x_d = np.linspace(x, 1 - x - xs, num_points)

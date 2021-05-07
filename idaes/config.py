@@ -19,7 +19,7 @@ import importlib
 
 _log = logging.getLogger(__name__)
 # Default release version if no options provided for get-extensions
-default_binary_release = "2.4.1"
+default_binary_release = "2.4.2"
 # Where to download releases from get-extensions
 release_base_url = "https://github.com/IDAES/idaes-ext/releases/download"
 # Where to get release checksums
@@ -62,6 +62,7 @@ orig_environ = {
 default_config = """
 {
     "use_idaes_solvers":true,
+    "default_solver":"ipopt",
     "logger_capture_solver":true,
     "logger_tags":[
         "framework",
@@ -82,9 +83,10 @@ default_config = """
         "reactions",
         "ui"
     ],
-    "ipopt-idaes":{
+    "ipopt":{
         "options":{
-            "nlp_scaling_method":"gradient-based"
+            "nlp_scaling_method":"gradient-based",
+            "tol":1e-6
         }
     },
     "logging":{
@@ -147,7 +149,7 @@ def _new_idaes_config_block():
     the idaes configuration system to function improperly.
     """
     global cfg
-    cfg = pyomo.common.config.ConfigBlock("idaes", implicit=False)
+    cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
     cfg.declare(
         "logging",
         pyomo.common.config.ConfigBlock(
@@ -159,30 +161,50 @@ def _new_idaes_config_block():
     )
 
     cfg.declare(
-        "ipopt-idaes",
+        "ipopt",
         pyomo.common.config.ConfigBlock(
             implicit=False,
-            description="Default config for 'ipopt-idaes' solver",
+            description="Default config for 'ipopt' solver",
             doc="Default config for 'ipopt-iades' solver"
         ),
     )
 
-    cfg["ipopt-idaes"].declare(
+    cfg["ipopt"].declare(
         "options",
         pyomo.common.config.ConfigBlock(
             implicit=True,
-            description="Default solver options for 'ipopt-idaes'",
-            doc="Default solver options for 'ipopt-idaes' solver"
+            description="Default solver options for 'ipopt'",
+            doc="Default solver options for 'ipopt' solver"
         ),
     )
 
-    cfg["ipopt-idaes"]["options"].declare(
+    cfg["ipopt"]["options"].declare(
         "nlp_scaling_method",
         pyomo.common.config.ConfigValue(
             domain=str,
             default="gradient-based",
             description="Ipopt NLP scaling method",
             doc="Ipopt NLP scaling method"
+        ),
+    )
+
+    cfg["ipopt"]["options"].declare(
+        "tol",
+        pyomo.common.config.ConfigValue(
+            domain=float,
+            default=1e-6,
+            description="Ipopt tol option",
+            doc="Ipopt tol option"
+        ),
+    )
+
+    cfg.declare(
+        "default_solver",
+        pyomo.common.config.ConfigValue(
+            default="ipopt",
+            domain=str,
+            description="Default solver.  See Pyomo's SolverFactory for detauls.",
+            doc="Default solver.  See Pyomo's SolverFactory for detauls.",
         ),
     )
 

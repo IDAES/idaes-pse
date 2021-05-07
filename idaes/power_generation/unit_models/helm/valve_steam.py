@@ -14,7 +14,7 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.balance import BalanceBlockData
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.generic_models.properties.helmholtz.helmholtz as hltz
 from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr
@@ -228,8 +228,8 @@ ValveFunctionType.custom}""",
     def initialize(
         self,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg={},
     ):
         """
         For simplicity this initialization requires you to set values for the
@@ -238,9 +238,10 @@ ValveFunctionType.custom}""",
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        # Set solver options
-        solver = pyo.SolverFactory(solver)
-        solver.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
+
         # Store original specification so initialization doesn't change the model
         # This will only resore the values of varaibles that were originally fixed
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
@@ -263,8 +264,8 @@ ValveFunctionType.custom}""",
                 self.inlet.flow_mol[t].unfix()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = solver.solve(self, tee=slc.tee)
-            
+            res = opt.solve(self, tee=slc.tee)
+
         from_json(self, sd=istate, wts=sp)
 
 

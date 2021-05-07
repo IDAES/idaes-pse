@@ -14,20 +14,11 @@
 __author__ = "John Eslick"
 
 import pytest
-from pyomo.environ import ConcreteModel, value, SolverFactory
+from pyomo.environ import ConcreteModel, value
 import idaes.generic_models.properties.swco2 as swco2
-from idaes.generic_models.properties.swco2 import swco2_available
 import idaes
 
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6}
-else:
-    solver = None
 
-
-@pytest.mark.skipif(not swco2_available(),
-                    reason="Span-Wagner lib not available")
 class TestSWCO2(object):
 
     @pytest.fixture(scope="class")

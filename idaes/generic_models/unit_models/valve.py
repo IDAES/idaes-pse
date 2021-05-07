@@ -168,10 +168,10 @@ variables, expressions, or constraints required can also be added by the callbac
 
     def initialize(
         self,
-        state_args={},
+        state_args=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg={},
     ):
         """
         Initialize the valve based on a deltaP guess.
@@ -184,21 +184,12 @@ variables, expressions, or constraints required can also be added by the callbac
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
-        # storage settings what's fixed/free what's active/inactive and values
-        # only for orginally fixed things.
-        sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
-        istate = to_json(self, return_dict=True, wts=sp)
-
-        self.deltaP[:].unfix()
-        self.ratioP[:].unfix()
-
-        # fix inlet and free outlet
         for t in self.flowsheet().config.time:
-            for k, v in self.inlet.vars.items():
-                v[t].fix()
-            for k, v in self.outlet.vars.items():
-                v[t].unfix()
-            # to calculate outlet pressure
+            if (self.deltaP[t].fixed or self.ratioP[t].fixed or
+                self.outlet.pressure[t].fixed):
+                continue
+            # Generally for the valve initialization pressure drop won't be
+            # fixed, so if there is no good guess on deltaP try to out one in
             Pout = self.outlet.pressure[t]
             Pin = self.inlet.pressure[t]
             if self.deltaP[t].value is not None:
@@ -215,23 +206,10 @@ variables, expressions, or constraints required can also be added by the callbac
             self.deltaP[t] = pyo.value(Pout - Pin)
             self.ratioP[t] = pyo.value(Pout / Pin)
 
-        # Make sure the initialization problem has no degrees of freedom
-        # This shouldn't happen here unless there is a bug in this
-        dof = degrees_of_freedom(self)
-        try:
-            assert dof == 0
-        except:
-            init_log.exception("degrees_of_freedom = {}".format(dof))
-            raise
-
         # one bad thing about reusing this is that the log messages aren't
         # really compatible with being nested inside another initialization
         super().initialize(
-            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg
-        )
-
-        # reload original spec
-        from_json(self, sd=istate, wts=sp)
+            state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg)
 
     def calculate_scaling_factors(self):
         """

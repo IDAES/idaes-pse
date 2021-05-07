@@ -28,9 +28,6 @@ import idaes.power_generation.flowsheets.\
 from idaes.core.util.model_statistics import (degrees_of_freedom)
 from idaes.generic_models.properties import iapws95
 
-solver_available = SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
-
 
 @pytest.fixture(scope="module")
 def boiler():
@@ -42,9 +39,6 @@ def boiler():
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_init(boiler):
     # initialize each unit at the time
     blr.initialize(boiler)
@@ -59,9 +53,6 @@ def test_unit_consistency(boiler):
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_boiler(boiler):
     # unfix inlets to build arcs at the flowsheet level
     boiler.fs.ATMP1.outlet.enth_mol[0].fix(62710.01)
@@ -75,9 +66,6 @@ def test_boiler(boiler):
 
 
 @pytest.mark.integration
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_power_plant():
     # SCPC.main imports and solves the SCPC Power Plant Flowsheet
     m, results = SCPC.main()

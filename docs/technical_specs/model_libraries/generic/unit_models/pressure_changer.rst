@@ -92,6 +92,132 @@ If compressor is True, :math:`W_{fluid,t} = W_{mechanical,t} \times \eta_t`
 
 If compressor is False, :math:`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
 
+Performance Curves
+------------------
+Isentropic pressure changers support optional performance curve constraints.
+The exact form of these constraints is left to the user, but generally the
+constraints take the form of one or two equations which provide a correlation
+between head, efficiency, or pressure ratio and mass or volumetric flow.
+Additional variables such as compressor or turbine speed can be added if needed.
+
+Performance curves should be added to the ``performance_curve`` sub-block rather
+than adding them elsewhere because it allows them to be integrated into the
+unit model initialization. It also provides standardization for users and
+provides a convenient way to turn the performance equations on and off by
+activating and deactivating the block.
+
+Usually there are one or two performance curve constraints. Either directly or
+indirectly, these curves specify an efficiency and pressure drop, so in adding
+performance curves the efficiency and/or pressure drop should be freed as
+appropriate.
+
+Performance equations generally are in a simple form (e.g. efficiency = f(flow)),
+where no special initialization is needed. Performance curves also are specific
+to a particular property package selection and pressure changer, which allows
+the performance curve equations to be written in a well-scaled way since units
+of measure and magnitudes are known.
+
+To add performance curves to an isentropic pressure changer, simply supply the
+``"support_isentropic_performance_curves": True`` options in the pressure
+changer config dict.  This will create a ``performance_curve`` sub-block of
+the pressure changer model. By default this block will have the expressions
+``head`` and ``heat_isentropic`` for convenience, as these quantities often
+appear in performance curves.
+
+Two examples are provided below that demonstrate two ways to add performance
+curves. The first does not use a callback the second does.
+
+.. testcode::
+
+  from pyomo.environ import ConcreteModel, SolverFactory, units, value
+  from idaes.core import FlowsheetBlock
+  from idaes.generic_models.unit_models.pressure_changer import Turbine
+  from idaes.generic_models.properties import iapws95
+  import pytest
+
+  solver = SolverFactory('ipopt')
+  m = ConcreteModel()
+  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs.properties = iapws95.Iapws95ParameterBlock()
+  m.fs.unit = Turbine(default={
+      "property_package": m.fs.properties,
+      "support_isentropic_performance_curves":True})
+
+  # Add performance curves
+  @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
+  def pc_isen_eff_eqn(b, t):
+      # main pressure changer block parent of performance_curve
+      prnt = b.parent_block()
+      return prnt.efficiency_isentropic[t] == 0.9
+  @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
+  def pc_isen_head_eqn(b, t):
+      # divide both sides by 1000 for scaling
+      return b.head_isentropic[t]/1000 == -75530.8/1000*units.J/units.kg
+
+  # set inputs
+  m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+  Tin = 500  # K
+  Pin = 1000000  # Pa
+  Pout = 700000  # Pa
+  hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
+  m.fs.unit.inlet.enth_mol[0].fix(hin)
+  m.fs.unit.inlet.pressure[0].fix(Pin)
+
+  m.fs.unit.initialize()
+  solver.solve(m, tee=False)
+
+  assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
+  assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+The next example shows how to use a callback to add performance curves.
+
+.. testcode::
+
+  from pyomo.environ import ConcreteModel, SolverFactory, units, value
+  from idaes.core import FlowsheetBlock
+  from idaes.generic_models.unit_models.pressure_changer import Turbine
+  from idaes.generic_models.properties import iapws95
+  import pytest
+
+  solver = SolverFactory('ipopt')
+  m = ConcreteModel()
+  m.fs = FlowsheetBlock(default={"dynamic": False})
+  m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+  def perf_callback(blk):
+      # This callback adds constraints to the performance_cruve block. blk is the
+      # performance_curve block, but we also want to use quantities from the main
+      # pressure changer model, which is the parent block.
+      prnt = blk.parent_block()
+      # this is the pressure changer model block
+      @blk.Constraint(m.fs.config.time)
+      def pc_isen_eff_eqn(b, t):
+          return prnt.efficiency_isentropic[t] == 0.9
+      @blk.Constraint(m.fs.config.time)
+      def pc_isen_head_eqn(b, t):
+          return b.head_isentropic[t]/1000 == -75530.8/1000*units.J/units.kg
+
+  m.fs.unit = Turbine(default={
+      "property_package": m.fs.properties,
+      "support_isentropic_performance_curves":True,
+      "isentropic_performance_curves": {"build_callback": perf_callback}})
+
+  # set inputs
+  m.fs.unit.inlet.flow_mol[0].fix(1000)  # mol/s
+  Tin = 500  # K
+  Pin = 1000000  # Pa
+  Pout = 700000  # Pa
+  hin = iapws95.htpx(Tin*units.K, Pin*units.Pa)
+  m.fs.unit.inlet.enth_mol[0].fix(hin)
+  m.fs.unit.inlet.pressure[0].fix(Pin)
+
+  m.fs.unit.initialize()
+  solver.solve(m, tee=False)
+
+  assert value(m.fs.unit.efficiency_isentropic[0]) == pytest.approx(0.9, rel=1e-3)
+  assert value(m.fs.unit.deltaP[0]) == pytest.approx(-3e5, rel=1e-3)
+
+
 PressureChanger Class
 ----------------------
 

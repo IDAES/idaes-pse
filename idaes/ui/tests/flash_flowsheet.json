@@ -30,7 +30,7 @@
             "stream_contents":{
                "0":{
                   "Variable":"flow_mol",
-                  "Inlet":1.0,
+                  "Inlet": "-Inf",
                   "Vapor Outlet":0.5,
                   "Liquid Outlet":0.5
                },
@@ -48,13 +48,13 @@
                },
                "3":{
                   "Variable":"temperature",
-                  "Inlet":368.0,
+                  "Inlet": "Inf",
                   "Vapor Outlet":298.15,
                   "Liquid Outlet":298.15
                },
                "4":{
                   "Variable":"pressure",
-                  "Inlet":101325.0,
+                  "Inlet": "NaN",
                   "Vapor Outlet":101325.0,
                   "Liquid Outlet":101325.0
                }
@@ -375,7 +375,7 @@
             "padding":10
          },
          "connector":{
-            "name":"normal",
+            "name": "jumpover",
             "attrs":{
                "line":{
                   "stroke":"#5c9adb"
@@ -429,7 +429,7 @@
             "padding":10
          },
          "connector":{
-            "name":"normal",
+            "name": "jumpover",
             "attrs":{
                "line":{
                   "stroke":"#5c9adb"
@@ -483,7 +483,7 @@
             "padding":10
          },
          "connector":{
-            "name":"normal",
+            "name": "jumpover",
             "attrs":{
                "line":{
                   "stroke":"#5c9adb"
