@@ -16,4 +16,4 @@ runs:
     - name: Run pylint (errors only)
       shell: bash
       run: |
-        pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_transform.MultiReporter idaes/
+        pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter idaes/
