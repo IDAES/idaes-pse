@@ -960,7 +960,8 @@ class PolynomialRegression:
                 scv_input_data = sorted_comparison_vector[:, :-2]
                 sorted_comparison_vector_unique = scv_input_data[
                     np.all(np.any((scv_input_data - self.regression_data[:, None]), axis=2), axis=0)]
-                adaptive_samples = sorted_comparison_vector_unique[-self.no_adaptive_samples:, :]
+                # PYLINT-WHY: this is a false positive as pylint still considers None to be a possible value for self.no_adaptive_samples
+                adaptive_samples = sorted_comparison_vector_unique[-self.no_adaptive_samples:, :]  # pylint: disable=invalid-unary-operand-type
                 self.regression_data = np.concatenate((self.regression_data, adaptive_samples), axis=0)
                 self.number_of_samples = self.regression_data.shape[0]  # Never forget to update
                 print("\n", self.no_adaptive_samples,

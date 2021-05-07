@@ -7,6 +7,13 @@
 git+https://github.com/PyUtilib/pyutilib
 git+https://github.com/IDAES/pyomo.git@IDAES
 
+# pylint and its dependency astroid can vary quite significantly
+# in both behavior (default config, inference functionality) and performance (runtime)
+# even between non-major versions, so it's safer to pin their versions here
+# and do targeted upgrades when or if necessary
+pylint==2.6.0
+astroid==2.4.2
+
 # Install abstract dependencies from `setup.py`
 -e .
 -e .[dev]

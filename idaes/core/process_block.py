@@ -145,7 +145,7 @@ class ProcessBlock(Block):
                decorator.
 
         """
-        return cls._orig_name
+        return cls._orig_name  # pylint: disable=no-member
 
     @classmethod
     def base_class_module(cls):
@@ -158,7 +158,7 @@ class ProcessBlock(Block):
               was *not* wrapped by the `declare_process_block_class` decorator.
 
         """
-        return cls._orig_module
+        return cls._orig_module  # pylint: disable=no-member
 
 
 def declare_process_block_class(name, block_class=ProcessBlock, doc=""):

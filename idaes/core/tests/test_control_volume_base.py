@@ -39,7 +39,7 @@ def test_material_balance_type():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        MaterialBalanceType.foo
+        MaterialBalanceType.foo  # pylint: disable=no-member
 
 
 @pytest.mark.unit
@@ -48,7 +48,7 @@ def test_energy_balance_type():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        EnergyBalanceType.foo
+        EnergyBalanceType.foo  # pylint: disable=no-member
 
 
 @pytest.mark.unit
@@ -57,7 +57,7 @@ def test_momentum_balance_type():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        MomentumBalanceType.foo
+        MomentumBalanceType.foo  # pylint: disable=no-member
 
 @pytest.mark.unit
 def testflow_direction():
@@ -65,7 +65,7 @@ def testflow_direction():
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
-        FlowDirection.foo
+        FlowDirection.foo  # pylint: disable=no-member
 
 
 # -----------------------------------------------------------------------------

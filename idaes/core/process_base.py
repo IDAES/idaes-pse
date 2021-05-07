@@ -268,6 +268,9 @@ class ProcessBlockData(_BlockData):
                           f"Activated Blocks: {nb}")
 
         if performance is not None:
+            # PYLINT-WHY: pylint has no way of knowing that performance is supposed to be dict-like
+            # pylint: disable=unsubscriptable-object
+            # PYLINT-TODO: alternatively, have the function return an empty dict and test with `if performance:`
             ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Unit Performance")
             ostream.write("\n"*2)

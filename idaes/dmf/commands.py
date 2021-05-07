@@ -521,7 +521,7 @@ def _import_jupyternb(path):
     Returns:
           (Resource) DMF Resource representing the notebook.
     """
-    r = resource.Resource(type_=resourceResourceTypes.notebook)
+    r = resource.Resource(type_=resource.ResourceTypes.notebook)
     filename = os.path.splitext(os.path.split(path)[1])[0]
     # XXX: add notebook 'metadata' as FilePath metadata attr
     r.v["datafiles"].append({"desc": filename, "path": path})
@@ -539,7 +539,7 @@ def _import_python(path):
     Returns:
           (Resource) DMF Resource representing the notebook.
     """
-    r = resource.Resource(type_=resourceResourceTypes.code)
+    r = resource.Resource(type_=resource.ResourceTypes.code)
     filename = os.path.splitext(os.path.split(path)[1])[0]
     r.v["codes"].append({"name": filename, "language": "python", "type": "module"})
     r.v["datafiles"].append({"desc": filename, "path": path})
@@ -556,7 +556,7 @@ def _import_file(path):
     Returns:
           (Resource) DMF Resource representing the notebook.
     """
-    r = resource.Resource(type_=resourceResourceTypes.data)
+    r = resource.Resource(type_=resource.ResourceTypes.data)
     filename = os.path.split(path)[1]
     r.v["datafiles"].append({"desc": filename, "path": path})
     r.v["desc"] = filename
