@@ -12,6 +12,7 @@
 ##############################################################################
 import sys
 import os
+from unittest.mock import patch
 
 sys.path.append(os.path.abspath('..'))  # current folder is ~/tests\
 from idaes.surrogate.pysmo.radial_basis_function import (
@@ -21,7 +22,6 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import distance
 import pytest
-from mock import patch
 
 
 class TestFeatureScaling:

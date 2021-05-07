@@ -12,13 +12,13 @@
 ##############################################################################
 import sys
 import os
+from unittest.mock import patch
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 import numpy as np
 import pandas as pd
 from scipy import sparse
 import pytest
 from pytest import approx
-from mock import patch
 from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty,clean_variable_name
 from pyomo.opt import SolverFactory
 from pyomo.environ import *

@@ -11,6 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import sys, os
+from unittest.mock import patch
 
 sys.path.append(os.path.abspath('..'))  # current folder is ~/tests
 from idaes.surrogate.pysmo.polynomial_regression import (
@@ -19,7 +20,6 @@ from idaes.surrogate.pysmo.polynomial_regression import (
 import numpy as np
 import pandas as pd
 import pytest
-from mock import patch
 
 
 class TestFeatureScaling:
