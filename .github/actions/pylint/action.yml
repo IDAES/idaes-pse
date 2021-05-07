@@ -21,7 +21,7 @@ runs:
         pylint_exit_status=$?
 
         # render report
-        base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/main/$GITHUB_SHA"
+        base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/tree/$GITHUB_SHA"
         pylint_output_path=pylint.json
         echo "::group::Rendered pylint report"
         python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
