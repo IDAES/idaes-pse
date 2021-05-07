@@ -54,6 +54,7 @@ class ENRTL(EoSBase):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
+    @staticmethod
     def build_parameters(b):
         # Build additional indexing sets
         pblock = b.parent_block()
@@ -91,6 +92,7 @@ class ENRTL(EoSBase):
         else:
             DefaultTauRule.build_parameters(b)
 
+    @staticmethod
     def common(b, pobj):
         pname = pobj.local_name
 

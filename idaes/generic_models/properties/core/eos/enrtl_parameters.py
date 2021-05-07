@@ -25,6 +25,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 class ConstantAlpha(object):
+    @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()
 
@@ -81,6 +82,7 @@ class ConstantAlpha(object):
                 doc='Symmetric non-randomness parameters',
                 units=pyunits.dimensionless))
 
+    @staticmethod
     def return_expression(b, pobj, i, j, T):
         if (i, j) in pobj.alpha:
             return pobj.alpha[i, j]
@@ -94,6 +96,7 @@ class ConstantAlpha(object):
 
 
 class ConstantTau(object):
+    @staticmethod
     def build_parameters(b):
         param_block = b.parent_block()
 
@@ -129,6 +132,7 @@ class ConstantTau(object):
                 doc='Binary interaction energy parameters',
                 units=pyunits.dimensionless))
 
+    @staticmethod
     def return_expression(b, pobj, i, j, T):
         if (i, j) in pobj.tau:
             return pobj.tau[i, j]
