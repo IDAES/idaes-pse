@@ -10,6 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
 from __future__ import division, print_function
 from six import string_types
 import random
@@ -18,6 +19,8 @@ import numpy as np
 import pandas as pd
 import warnings
 import itertools
+
+__author__ = "Oluwamayowa Amusat"
 
 
 class FeatureScaling:
