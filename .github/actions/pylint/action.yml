@@ -17,9 +17,13 @@ runs:
       shell: bash
       run: |
         pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter idaes/
-    - name: Create report
-      shell: bash
-      run: |
+        pylint_exit_status=$?
+
+        # render report
         base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/main/$GITHUB_SHA"
         pylint_output_path=pylint.json
+        echo "::group::Rendered pylint report"
         python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
+        echo "::endgroup::"
+
+        exit "$pylint_exit_status"
