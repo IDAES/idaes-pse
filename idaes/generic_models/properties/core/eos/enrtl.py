@@ -19,6 +19,9 @@ Reference:
 
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
+
+Note that "charge number" in the paper referes to the absolute value of the
+ionic charge.
 """
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
@@ -149,7 +152,7 @@ class ENRTL(EoSBase):
                 return Expression.Skip
             elif j in b.params.cation_set or j in b.params.anion_set:
                 return (b.mole_frac_phase_comp_true[pname, j] *
-                        cobj(b, j).config.charge)
+                        abs(cobj(b, j).config.charge))
             else:
                 return b.mole_frac_phase_comp_true[pname, j]
 
@@ -163,7 +166,7 @@ class ENRTL(EoSBase):
             if (pname, j) not in b.params.true_phase_component_set:
                 return Expression.Skip
             elif j in b.params.cation_set or j in b.params.anion_set:
-                return (x[j]*cobj(b, j).config.charge)
+                return (x[j]*abs(cobj(b, j).config.charge))
             else:
                 return 0
 
@@ -193,26 +196,36 @@ class ENRTL(EoSBase):
         # Long-range terms
         # Average molar volume of solvent
         def rule_vol_mol_solvent(b):  # Eqn 77
-            return (sum(b.mole_frac_phase_comp_true[pname, s] /
-                        get_method(b, "dens_mol_liq_comp", s)(
-                            b, cobj(b, s), b.temperature)
-                        for s in molecular_set) /
-                    sum(b.mole_frac_phase_comp_true[pname, s]
-                        for s in molecular_set))
+            if len(b.params.solvent_set) == 1:
+                s = b.params.solvent_set.first()
+                return 1/get_method(b, "dens_mol_liq_comp", s)(
+                    b, cobj(b, s), b.temperature)
+            else:
+                return (sum(b.mole_frac_phase_comp_true[pname, s] /
+                            get_method(b, "dens_mol_liq_comp", s)(
+                                b, cobj(b, s), b.temperature)
+                            for s in b.params.solvent_set) /
+                        sum(b.mole_frac_phase_comp_true[pname, s]
+                            for s in b.params.solvent_set))
         b.add_component(pname+"_vol_mol_solvent",
                         Expression(rule=rule_vol_mol_solvent,
                                    doc="Mean molar volume of solvent"))
 
         # Mean relative permitivity of solvent
         def rule_eps_solvent(b):  # Eqn 78
-            return (sum(b.mole_frac_phase_comp_true[pname, s] *
-                        get_method(b, "relative_permittivity_liq_comp", s)(
-                            b, cobj(b, s), b.temperature) *
-                        b.params.get_component(s).mw
-                        for s in molecular_set) /
-                    sum(b.mole_frac_phase_comp_true[pname, s] *
-                        b.params.get_component(s).mw
-                        for s in molecular_set))
+            if len(b.params.solvent_set) == 1:
+                s = b.params.solvent_set.first()
+                return get_method(b, "relative_permittivity_liq_comp", s)(
+                            b, cobj(b, s), b.temperature)
+            else:
+                return (sum(b.mole_frac_phase_comp_true[pname, s] *
+                            get_method(b, "relative_permittivity_liq_comp", s)(
+                                b, cobj(b, s), b.temperature) *
+                            b.params.get_component(s).mw
+                            for s in b.params.solvent_set) /
+                        sum(b.mole_frac_phase_comp_true[pname, s] *
+                            b.params.get_component(s).mw
+                            for s in b.params.solvent_set))
         b.add_component(pname+"_relative_permittivity_solvent",
                         Expression(
                             rule=rule_eps_solvent,
@@ -221,14 +234,16 @@ class ENRTL(EoSBase):
         # Debye-Huckel parameter
         def rule_A_DH(b):  # Eqn 61
             # Note: Where the paper refers to the dielectric constant, it
-            # actually means the electric permittivity of the solver
+            # actually means the electric permittivity of the solvent
             # eps = eps_r*eps_0 (units F/m)
+            # Note that paper is misisng a required 4*pi term
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
                                 pyunits.m**3/pyunits.mol)
             eps = getattr(b, pname+"_relative_permittivity_solvent")
             eps0 = Constants.vacuum_electric_permittivity
             return ((1/3)*(2*Constants.pi*Constants.avogadro_number/v)**0.5 *
                     (Constants.elemental_charge**2/(
+                        4*Constants.pi *
                         eps*eps0*Constants.boltzmann_constant *
                         b.temperature))**(3/2)
                     )
@@ -240,20 +255,20 @@ class ENRTL(EoSBase):
         # Long-range (PDH) contribution to activity coefficient
         def rule_log_gamma_pdh(b, j):
             A = getattr(b, pname+"_A_DH")
-            I = getattr(b, pname+"_ionic_strength")
+            Ix = getattr(b, pname+"_ionic_strength")
             I0 = getattr(b, pname+"_ionic_strength_ref")
             rho = ClosestApproach
             if j in molecular_set:
                 # Eqn 69
                 # Note typo in original paper. Correct power for I is (3/2)
-                return (2*A*I**(3/2)/(1+rho*I**(1/2)))
+                return (2*A*Ix**(3/2)/(1+rho*Ix**(1/2)))
             elif j in b.params.ion_set:
                 # Eqn 70
-                z = cobj(b, j).config.charge
+                z = abs(cobj(b, j).config.charge)
                 return (-A*((2*z**2/rho) *
-                            log((1+rho*I**0.5)/(1+rho*I0**0.5)) +
-                            (z**2*I**0.5 - 2*I**(3/2)) / (1+rho*I**0.5) -
-                            (2*I*I0**-0.5) / (1+rho*I0**0.5) *
+                            log((1+rho*Ix**0.5)/(1+rho*I0**0.5)) +
+                            (z**2*Ix**0.5 - 2*Ix**(3/2)) / (1+rho*Ix**0.5) -
+                            (2*Ix*I0**-0.5) / (1+rho*I0**0.5) *
                             ref_state.ndIdn(b, pname, j)))
             else:
                 raise BurntToast(
@@ -354,33 +369,43 @@ class ENRTL(EoSBase):
                 return sum(
                     Y[k] * _G_appr(b, pobj, (i+", "+k), j,  b.temperature)
                     for k in b.params.anion_set)
-            elif (j in b.params.cation_set and i in molecular_set):
+            elif (i in molecular_set and j in b.params.cation_set):
                 # Eqn 40
                 return sum(
-                    Y[k] * _G_appr(b, pobj, (j+", "+k), i, b.temperature)
+                    Y[k] * _G_appr(b, pobj, i, (j+", "+k), b.temperature)
                     for k in b.params.anion_set)
             elif (i in b.params.anion_set and j in molecular_set):
                 # Eqn 39
                 return sum(
                     Y[k] * _G_appr(b, pobj, (k+", "+i), j, b.temperature)
                     for k in b.params.cation_set)
-            elif (j in b.params.anion_set and i in molecular_set):
+            elif (i in molecular_set and j in b.params.anion_set):
                 # Eqn 41
                 return sum(
-                    Y[k] * _G_appr(b, pobj, (k+", "+j), i, b.temperature)
+                    Y[k] * _G_appr(b, pobj, i, (k+", "+j), b.temperature)
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
                 # Eqn 42
-                return sum(Y[k] * _G_appr(
-                    b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                    for k in b.params.cation_set
-                    if i != k)
+                if len(b.params.cation_set) > 1:
+                    return sum(Y[k] * _G_appr(
+                        b, pobj, (i+", "+j), (k+", "+j), b.temperature)
+                        for k in b.params.cation_set
+                        if i != k)
+                else:
+                    # This term does not exist for single cation systems
+                    # However, need a valid result to calculate tau
+                    return 1
             elif (i in b.params.anion_set and j in b.params.cation_set):
                 # Eqn 43
-                return sum(Y[k] * _G_appr(
-                    b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                    for k in b.params.anion_set
-                    if i != k)
+                if len(b.params.anion_set) > 1:
+                    return sum(Y[k] * _G_appr(
+                        b, pobj, (j+", "+i), (j+", "+k), b.temperature)
+                        for k in b.params.anion_set
+                        if i != k)
+                else:
+                    # This term does not exist for single anion systems
+                    # However, need a valid result to calculate tau
+                    return 1
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
                   (i in b.params.anion_set and j in b.params.anion_set)):
                 # No like-ion interactions
@@ -411,8 +436,12 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
-                # Eqn 44
-                return -log(G[i, j])/alpha[i, j]
+                if G[i, j].expr != 1:
+                    # Eqn 44
+                    return -log(G[i, j])/alpha[i, j]
+                else:
+                    # Catch for cases of single cation/anion systems
+                    return 0
 
         b.add_component(pname+"_tau",
                         Expression(b.params.true_species_set,
@@ -462,9 +491,29 @@ class ENRTL(EoSBase):
                 rule=rule_log_gamma_lc,
                 doc="Local contribution contribution to activity coefficient"))
 
+        # Overall log gamma
+        def rule_log_gamma(b, j):
+            pdh = getattr(b, pname+"_log_gamma_pdh")
+            lc = getattr(b, pname+"_log_gamma_lc")
+            return pdh[j] + lc[j]
+
+        b.add_component(
+            pname+"_log_gamma",
+            Expression(
+                b.params.true_species_set,
+                rule=rule_log_gamma,
+                doc="Log of activity coefficient"))
+
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass
+
+    @staticmethod
+    def log_act_coeff(b, p, j):
+        # Overall log gamma
+        pdh = getattr(p, +"_log_gamma_pdh")
+        lc = getattr(p, +"_log_gamma_lc")
+        return pdh[j] + lc[j]
 
     @staticmethod
     def dens_mol_phase(b, p):
@@ -495,6 +544,7 @@ def log_gamma_lc(b, pname, s, X, G, tau):
     if s in b.params.cation_set:
         c = s
         Z = b.params.get_component(c).config.charge
+
         # Eqn 26
         return Z*(
             sum((X[m]*G[c, m] /
@@ -502,8 +552,6 @@ def log_gamma_lc(b, pname, s, X, G, tau):
                 (tau[c, m] -
                  (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
                   sum(X[i]*G[i, m] for i in aqu_species)))
-                # Needed to eliminate term for the symmetric reference state
-                if X[m] != 0 else 0
                 for m in molecular_set) +
             sum(X[i]*G[i, c]*tau[i, c]
                 for i in (aqu_species-b.params.cation_set)) /
@@ -520,7 +568,8 @@ def log_gamma_lc(b, pname, s, X, G, tau):
                 for a in b.params.anion_set))
     elif s in b.params.anion_set:
         a = s
-        Z = b.params.get_component(a).config.charge
+        Z = abs(b.params.get_component(a).config.charge)
+
         # Eqn 27
         return Z*(
             sum((X[m]*G[a, m] /
@@ -528,8 +577,6 @@ def log_gamma_lc(b, pname, s, X, G, tau):
                 (tau[a, m] -
                  (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
                   sum(X[i]*G[i, m] for i in aqu_species)))
-                # Needed to eliminate term for the symmetric reference state
-                if X[m] != 0 else 0
                 for m in molecular_set) +
             sum(X[i]*G[i, a]*tau[i, a]
                 for i in (aqu_species-b.params.anion_set)) /
@@ -547,8 +594,8 @@ def log_gamma_lc(b, pname, s, X, G, tau):
     else:
         m = s
         # Eqn 25
-        return (sum(X[m]*G[i, m]*tau[i, m] for i in aqu_species) /
-                sum(X[m]*G[i, m] for i in aqu_species) +
+        return (sum(X[i]*G[i, m]*tau[i, m] for i in aqu_species) /
+                sum(X[i]*G[i, m] for i in aqu_species) +
                 sum((X[mp]*G[m, mp] /
                      sum(X[i]*G[i, mp] for i in aqu_species)) *
                     (tau[m, mp] -
