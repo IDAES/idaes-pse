@@ -1,1 +1,1 @@
-from .fsvis import visualize
+from .fsvis import visualize, VisualizeResult

@@ -45,6 +45,9 @@ extensions = [
     'sphinx.ext.doctest',
 ]
 
+# Put type hints in the description, not signature
+autodoc_typehints = "description"
+
 # Avoid duplicating heading labels across parallely constructed documentation
 autosectionlabel_prefix_document = True
 
