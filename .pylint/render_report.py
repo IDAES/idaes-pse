@@ -66,7 +66,6 @@ class RecordsByModule:
             )
 
 
-
 class RecordRenderer:
     def __call__(self, records: Iterable[PylintRecord]) -> Iterable[str]:
         yield from []
@@ -83,9 +82,9 @@ class MarkdownChecklistRenderer(RecordRenderer):
 
     def render_record_group(self, record_group: RecordsByModule) -> Iterable[str]:
         group_header = f'[`{record_group.module}`]({record_group.url})'
-        yield f'- {group_header}'
+        yield f'\n#### {group_header}'
         for rec in record_group:
-            yield f'  - [ ] {self.render_record(rec)}'
+            yield f'- [ ] {self.render_record(rec)}'
 
     def __call__(self, records: Iterable[PylintRecord]) -> Iterable[str]:
         for record_group in RecordsByModule.from_records(records):
