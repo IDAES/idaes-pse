@@ -221,6 +221,10 @@ Bl_eq = 0.0788309
 Av_eq = 1.9805792
 Bv_eq = 0.0788309
 
+Hl = -212.211
+Hv = -779.305
+Ul = Hl - 8.314*300*(Zl-1)
+Uv = Hv - 8.314*300*(Zv-1)
 
 # Set path to root finder .so file
 _so = os.path.join(bin_directory, "cubic_roots.so")
@@ -454,6 +458,41 @@ def test_dens_mol_phase_invalid_phase(m_sol):
 
 
 @pytest.mark.unit
+def test_energy_internal_mol_phase(m):
+    for j in m.params.component_list:
+        m.params.config.include_enthalpy_of_formation = False
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+
+    m.props[1].energy_internal_mol_phase_comp = Var(
+        m.params.phase_list, m.params.component_list, initialize=1)
+
+    assert pytest.approx(Uv, rel=1e-4) == value(
+        Cubic.energy_internal_mol_phase(m.props[1], "Vap"))
+    assert pytest.approx(Ul, rel=1e-4) == value(
+        Cubic.energy_internal_mol_phase(m.props[1], "Liq"))
+
+
+@pytest.mark.unit
+def test_energy_internal_mol_phase_comp(m):
+    for j in m.params.component_list:
+        m.params.config.include_enthalpy_of_formation = False
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+
+        assert pytest.approx(Ul, rel=1e-4) == value(
+            Cubic.energy_internal_mol_phase_comp(m.props[1], "Liq", j))
+        assert pytest.approx(Uv, rel=1e-4) == value(
+            Cubic.energy_internal_mol_phase_comp(m.props[1], "Vap", j))
+
+
+@pytest.mark.unit
+def test_energy_internal_mol_phase_invalid_phase(m_sol):
+    with pytest.raises(PropertyNotSupportedError):
+        Cubic.energy_internal_mol_phase_comp(m_sol.props[1], "Sol", "foo")
+
+
+@pytest.mark.unit
 def test_enth_mol_phase(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
@@ -464,9 +503,9 @@ def test_enth_mol_phase(m):
                                          initialize=1)
 
     assert pytest.approx(value(
-        Cubic.enth_mol_phase(m.props[1], "Vap")), rel=1e-5) == -779.31
+        Cubic.enth_mol_phase(m.props[1], "Vap")), rel=1e-5) == Hv
     assert pytest.approx(value(
-        Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == -212.211
+        Cubic.enth_mol_phase(m.props[1], "Liq")), rel=1e-5) == Hl
 
 
 @pytest.mark.unit
@@ -475,9 +514,9 @@ def test_enth_mol_phase_comp(m):
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
         m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
 
-        assert pytest.approx(-212.211, rel=1e-5) == value(
+        assert pytest.approx(Hl, rel=1e-5) == value(
             Cubic.enth_mol_phase_comp(m.props[1], "Liq", j))
-        assert pytest.approx(-779.305, rel=1e-5) == value(
+        assert pytest.approx(Hv, rel=1e-5) == value(
             Cubic.enth_mol_phase_comp(m.props[1], "Vap", j))
 
 

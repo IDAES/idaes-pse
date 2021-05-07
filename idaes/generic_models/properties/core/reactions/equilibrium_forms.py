@@ -53,6 +53,10 @@ class power_law_equil():
 
         return b.k_eq[r_idx] == e
 
+    @staticmethod
+    def calculate_scaling_factors(b, sf_keq):
+        return sf_keq
+
 
 # ----------------------------------------------------------------------------
 class log_power_law_equil():
@@ -109,3 +113,7 @@ class log_power_law_equil():
             expr = b.k_eq[r_idx]
 
         return safe_log(expr, eps=rblock.eps) == e
+
+    @staticmethod
+    def calculate_scaling_factors(b, sf_keq):
+        return 1
