@@ -68,8 +68,7 @@ from idaes.generic_models.unit_models.pressure_changer import \
 from idaes.generic_models.unit_models.separator import SplittingType
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
-from idaes.power_generation.properties.natural_gas_PR import \
-    get_NG_properties, rxn_configuration
+from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
 from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
     build_SOFC_ROM, initialize_SOFC_ROM
 
@@ -78,21 +77,22 @@ import logging
 
 def build_power_island(m):
     # create property packages - 3 property packages and 1 reaction
-    NG_config = get_NG_properties(
+    NG_config = get_prop(
         components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
                     'N2', 'O2', 'Ar'])
     m.fs.NG_props = GenericParameterBlock(default=NG_config)
 
-    syn_config = get_NG_properties(
+    syn_config = get_prop(
         components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"])
     m.fs.syn_props = GenericParameterBlock(default=syn_config)
 
-    air_config = get_NG_properties(
+    air_config = get_prop(
         components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
     m.fs.air_props = GenericParameterBlock(default=air_config)
 
     m.fs.rxn_props = GenericReactionParameterBlock(
-        default={"property_package": m.fs.syn_props, **rxn_configuration})
+        default=get_rxn(
+            m.fs.syn_props, reactions=["h2_cmb", "co_cmb", "ch4_cmb"]))
 
     # build anode side units
     m.fs.anode_mix = Mixer(
@@ -1442,4 +1442,3 @@ def main():
     # pfd_result("NGFC_results.svg", m, df)
 
     return m
-
