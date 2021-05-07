@@ -35,7 +35,7 @@ export class StreamTable {
             let column_header = columns[col]
             if (column_header !== "") {
                 if (column_header === "Variable") {
-                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true});
+                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, pinned: 'left',});
                 }
                 // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
                 else {
