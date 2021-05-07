@@ -14,7 +14,8 @@ runs:
         $PIP_INSTALL -r requirements-dev.txt
         # don't think we need to install the extensions, though
     - name: Run pylint (errors only)
-      shell: bash
+      # use custom options for bash since the default causes the step to fail immediately for any non-zero return code of intermediate commands
+      shell: bash --noprofile --norc {0}
       run: |
         pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter idaes/
         pylint_exit_status=$?
