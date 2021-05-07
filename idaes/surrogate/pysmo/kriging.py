@@ -11,6 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+__author__ = "Oluwamayowa Amusat"
+
 # Imports from the python standard library
 import os.path
 import pprint
