@@ -20,7 +20,7 @@ Reference:
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
 Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 
-Noe that "charge number" in the paper referes to the absolute value of the
+Note that "charge number" in the paper referes to the absolute value of the
 ionic charge.
 """
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
