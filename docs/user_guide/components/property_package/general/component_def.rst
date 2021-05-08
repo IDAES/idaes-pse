@@ -68,6 +68,7 @@ As a starting point for users, the IDAES Generic Property Package Framework cont
 .. toctree::
     :maxdepth: 1
 
+    pure/ConstantProperties
     pure/NIST
     pure/Perrys
     pure/RPP3
