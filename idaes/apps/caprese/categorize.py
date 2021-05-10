@@ -23,7 +23,7 @@ from pyomo.dae import DerivativeVar
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.util.slices import slice_component_along_sets
 from pyomo.core.expr.visitor import identify_variables
-from pyomo.contrib.matching.interface import IncidenceGraphInterface
+from pyomo.contrib.incidence_analysis.interface import IncidenceGraphInterface
 
 import idaes.apps.caprese.nmpc_var as nmpc_var
 from idaes.apps.caprese.common.config import (
