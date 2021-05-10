@@ -488,7 +488,7 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     #
     iscale.calculate_scaling_factors(m)
     for c in m.fs.cmb1.control_volume.enthalpy_balances.values():
-        iscale.constraint_scaling_transform(c, 1e-8)
+        iscale.constraint_scaling_transform(c, 1e-6)
 
     #
     # Set basic model inputs for initialization
