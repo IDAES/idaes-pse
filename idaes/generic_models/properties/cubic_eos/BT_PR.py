@@ -46,8 +46,10 @@ class BTParameterData(CubicParameterData):
         self.cubic_type = CubicEoS.PR
 
         # Add Component objects
-        self.benzene = Component()
-        self.toluene = Component()
+        self.benzene = Component(default={
+            "elemental_composition": {"C": 6, "H": 6}})
+        self.toluene = Component(default={
+            "elemental_composition": {"C": 7, "H": 8}})
 
         # List of phase equilibrium index
         self.phase_equilibrium_idx = Set(initialize=[1, 2])
