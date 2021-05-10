@@ -12,6 +12,7 @@
 ##############################################################################
 import copy
 import json
+import numpy as np
 from pathlib import Path
 
 import pytest
@@ -140,9 +141,9 @@ def flash_flowsheet():
                                                  "state_vars": "FTPz"})
     # Flash unit
     m.fs.flash = Flash(default={"property_package": m.fs.properties})
-    m.fs.flash.inlet.flow_mol.fix(1)
-    m.fs.flash.inlet.temperature.fix(368)
-    m.fs.flash.inlet.pressure.fix(101325)
+    m.fs.flash.inlet.flow_mol.fix(np.NINF)
+    m.fs.flash.inlet.temperature.fix(np.inf)
+    m.fs.flash.inlet.pressure.fix(np.nan)
     m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
     m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
     m.fs.flash.heat_duty.fix(0)
@@ -276,6 +277,7 @@ def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
     assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
 
 
+@pytest.mark.component
 def test_boiler_demo(serialized_boiler_flowsheet_json):
     import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
     m, solver = blr.main()

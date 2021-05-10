@@ -49,7 +49,8 @@ class TestComponent():
         assert m.comp.config.valid_phase_types is None
         assert m.comp.config.elemental_composition is None
         assert not m.comp.config._component_list_exists
-        assert m.config.henry_components is None
+        assert m.comp.config.henry_component is None
+        assert m.comp.config.has_vapor_pressure
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
@@ -427,6 +428,9 @@ class TestIon():
         assert "valid_phase_types" not in m.comp.config
         assert m.comp.config.charge is None
         assert not m.comp.config._component_list_exists
+        assert not m.comp.config.has_vapor_pressure
+        with pytest.raises(ValueError):
+            m.comp.config.has_vapor_pressure = True
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
@@ -483,6 +487,9 @@ class TestAnion():
         assert "valid_phase_types" not in m.comp.config
         assert m.comp.config.charge == -1
         assert not m.comp.config._component_list_exists
+        assert not m.comp.config.has_vapor_pressure
+        with pytest.raises(ValueError):
+            m.comp.config.has_vapor_pressure = True
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):
@@ -554,6 +561,9 @@ class TestCation():
         assert "valid_phase_types" not in m.comp.config
         assert m.comp.config.charge == +1
         assert not m.comp.config._component_list_exists
+        assert not m.comp.config.has_vapor_pressure
+        with pytest.raises(ValueError):
+            m.comp.config.has_vapor_pressure = True
 
     @pytest.mark.unit
     def test_populate_component_list(self, m):

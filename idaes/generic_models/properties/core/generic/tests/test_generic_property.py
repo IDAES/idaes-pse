@@ -18,16 +18,16 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import (Block, ConcreteModel, Param,
+from pyomo.environ import (value, Block, ConcreteModel, Param,
                            Set, Var, units as pyunits)
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData,
         GenericStateBlock)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.core import (declare_process_block_class, Component,
-                        Phase, LiquidPhase, VaporPhase)
+                        Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
 from idaes.core.phases import PhaseType as PT
 from idaes.core.util.exceptions import (ConfigurationError)
 import idaes.logger as idaeslog
@@ -37,6 +37,10 @@ import idaes.logger as idaeslog
 # Dummy method to avoid errors when setting metadata dict
 def set_metadata(b):
     pass
+
+
+def calculate_scaling_factors(b):
+    b.scaling_check = True
 
 
 # Dummy build_parameter methods for tests
@@ -67,8 +71,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -97,8 +101,8 @@ class TestGenericParameterBlock(object):
             assert p in ["p1", "p2"]
         assert isinstance(m.params.get_phase("p1"), LiquidPhase)
         assert isinstance(m.params.get_phase("p2"), Phase)
-        assert m.params.p1.config.equation_of_state == dummy_eos
-        assert m.params.p2.config.equation_of_state == dummy_eos
+        assert m.params.p1.config.equation_of_state == DummyEoS
+        assert m.params.p2.config.equation_of_state == DummyEoS
 
         assert isinstance(m.params._phase_component_set, Set)
         assert len(m.params._phase_component_set) == 5
@@ -113,6 +117,11 @@ class TestGenericParameterBlock(object):
 
         assert m.params.state_block_class is GenericStateBlock
 
+        assert len(m.params.config.inherent_reactions) == 0
+        assert m.params.config.reaction_basis == MaterialFlowBasis.molar
+
+        assert not m.params.has_inherent_reactions
+
     @pytest.mark.unit
     def test_invalid_unit(self):
         m = ConcreteModel()
@@ -126,8 +135,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -151,8 +160,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -252,9 +261,9 @@ class TestGenericParameterBlock(object):
                                                 PT.vaporPhase]}},
                 "phases": {
                     "p1": {"type": LiquidPhase,
-                           "equation_of_state": dummy_eos},
+                           "equation_of_state": DummyEoS},
                     "p2": {"type": VaporPhase,
-                           "equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -425,8 +434,8 @@ class TestGenericParameterBlock(object):
                 "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
                 "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
             "phases": {
-                "p1": {"equation_of_state": dummy_eos},
-                "p2": {"equation_of_state": dummy_eos}},
+                "p1": {"equation_of_state": DummyEoS},
+                "p2": {"equation_of_state": DummyEoS}},
             "state_definition": modules[__name__],
             "pressure_ref": 1e5,
             "temperature_ref": 300,
@@ -562,8 +571,8 @@ class TestGenericParameterBlock(object):
                     "b": {},
                     "c": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -604,8 +613,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -629,8 +638,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -650,8 +659,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -669,8 +678,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -695,8 +704,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -721,8 +730,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -744,12 +753,210 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
                     "base_units": base_units})
+
+    @pytest.mark.unit
+    def test_inherent_reactions(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p1", "a"): -3,
+                                             ("p1", "b"): 4},
+                           "heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+        assert m.params.has_inherent_reactions
+
+        assert isinstance(m.params.inherent_reaction_idx, Set)
+        assert len(m.params.inherent_reaction_idx) == 1
+        assert m.params.inherent_reaction_idx == ["e1"]
+
+        assert hasattr(m.params, "inherent_reaction_stoichiometry")
+        assert len(m.params.inherent_reaction_stoichiometry) == 5
+        assert m.params.inherent_reaction_stoichiometry == {
+            ("e1", "p1", "a"): -3, ("e1", "p1", "b"): 4,
+            ("e1", "p2", "a"): 0, ("e1", "p2", "b"): 0, ("e1", "p2", "c"): 0}
+
+        assert isinstance(m.params.reaction_e1, Block)
+        assert isinstance(m.params.reaction_e1.reaction_order, Var)
+        assert len(m.params.reaction_e1.reaction_order) == 5
+        for i in m.params.reaction_e1.reaction_order:
+            order = {("p1", "a"): -3, ("p1", "b"): 4,
+                     ("p2", "a"): 0, ("p2", "b"): 0, ("p2", "c"): 0}
+            assert m.params.reaction_e1.reaction_order[i] == order[i]
+
+    @pytest.mark.unit
+    def test_inherent_reactions_no_stoichiometry(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params inherent reaction e1 was not "
+                           "provided with a stoichiometry configuration "
+                           "argument."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+    @pytest.mark.unit
+    def test_inherent_reactions_invalid_phase_stoichiometry(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params stoichiometry for inherent "
+                           "reaction e1 included unrecognised phase p7."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p7", "a"): -3,
+                                             ("p1", "b"): 4},
+                           "heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+    @pytest.mark.unit
+    def test_inherent_reactions_invalid_component_stoichiometry(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params stoichiometry for inherent "
+                           "reaction e1 included unrecognised component c7."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p1", "c7"): -3,
+                                             ("p1", "b"): 4},
+                           "heat_of_reaction": "foo",
+                           "equilibrium_form": "foo"}}})
+
+    @pytest.mark.unit
+    def test_inherent_reactions_no_form(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params inherent reaction e1 was not "
+                           "provided with a equilibrium_form configuration "
+                           "argument."):
+            m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units,
+                "inherent_reactions": {
+                    "e1": {"stoichiometry": {("p1", "a"): -3,
+                                             ("p1", "b"): 4}}}})
+
+    @pytest.mark.unit
+    def test_default_scaling(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": base_units})
+
+        dsf = m.params.default_scaling_factor
+
+        assert dsf[("temperature", None)] == 1e-2
+        assert dsf[("pressure", None)] == 1e-5
+        assert dsf[("dens_mol_phase", None)] == 1e-2
+        assert dsf[("enth_mol", None)] == 1e-4
+        assert dsf[("entr_mol", None)] == 1e-2
+        assert dsf[("fug_phase_comp", None)] == 1e-4
+        assert dsf[("fug_coeff_phase_comp", None)] == 1
+        assert dsf[("gibbs_mol", None)] == 1e-4
+        assert dsf[("mole_frac_comp", None)] == 1e3
+        assert dsf[("mole_frac_phase_comp", None)] == 1e3
+        assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_phase", None)] == 1e3
+
+    @pytest.mark.unit
+    def test_default_scaling_convert(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "components": {"a": {}, "b": {}, "c": {}},
+                "phases": {
+                    "p1": {"type": LiquidPhase,
+                           "component_list": ["a", "b"],
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
+                "state_definition": modules[__name__],
+                "pressure_ref": 1e5,
+                "temperature_ref": 300,
+                "base_units": {"time": pyunits.minutes,
+                               "length": pyunits.foot,
+                               "mass": pyunits.pound,
+                               "amount": pyunits.mol,
+                               "temperature": pyunits.degR}})
+
+        dsf = m.params.default_scaling_factor
+
+        assert dsf[("temperature", None)] == 1e-2
+        assert dsf[("pressure", None)] == 1e-8
+        assert dsf[("dens_mol_phase", None)] == 1
+        assert dsf[("enth_mol", None)] == 1e-9
+        assert dsf[("entr_mol", None)] == 1e-7
+        assert dsf[("fug_phase_comp", None)] == 1e-7
+        assert dsf[("fug_coeff_phase_comp", None)] == 1
+        assert dsf[("gibbs_mol", None)] == 1e-9
+        assert dsf[("mole_frac_comp", None)] == 1e3
+        assert dsf[("mole_frac_phase_comp", None)] == 1e3
+        assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_phase", None)] == 1e3
 
 
 # -----------------------------------------------------------------------------
@@ -765,8 +972,8 @@ class TestGenericStateBlock(object):
         m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -776,6 +983,7 @@ class TestGenericStateBlock(object):
                                              default={"defined_state": False})
 
         # Add necessary variables to state block
+        m.props[1].flow_mol = Var(bounds=(0, 3000))
         m.props[1].pressure = Var(bounds=(1000, 3000))
         m.props[1].temperature = Var(bounds=(100, 200))
         m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
@@ -793,3 +1001,73 @@ class TestGenericStateBlock(object):
         assert frame.props[1].state_defined
         assert isinstance(frame.props[1].dummy_var, Var)
         assert frame.props[1].eos_common == 2
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, frame):
+        frame.props[1].calculate_scaling_factors()
+
+        assert frame.props[1].scaling_check
+
+        assert len(frame.props[1].scaling_factor) == 8
+        assert frame.props[1].scaling_factor[
+            frame.props[1].temperature] == 0.01
+        assert frame.props[1].scaling_factor[
+            frame.props[1].pressure] == 1e-5
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p1", "a"]] == 1000
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p1", "b"]] == 1000
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p1", "c"]] == 1000
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p2", "a"]] == 1000
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p2", "b"]] == 1000
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["p2", "c"]] == 1000
+
+    @pytest.mark.unit
+    def test_flows(self, frame):
+
+        # Need to set the material flow basis for this test
+        def set_flow_basis():
+            return MaterialFlowBasis.molar
+        frame.props[1].get_material_flow_basis = set_flow_basis
+
+        frame.props[1].flow_mol.fix(100)
+        frame.props[1].phase_frac['p1'].fix(0.75)
+        frame.props[1].phase_frac['p2'].fix(0.25)
+        frame.props[1].mole_frac_phase_comp['p1', 'a'].fix(0.1)
+        frame.props[1].mole_frac_phase_comp['p1', 'b'].fix(0.2)
+        frame.props[1].mole_frac_phase_comp['p1', 'c'].fix(0.7)
+        frame.props[1].mole_frac_phase_comp['p2', 'c'].fix(0.1)
+        frame.props[1].mole_frac_phase_comp['p2', 'b'].fix(0.2)
+        frame.props[1].mole_frac_phase_comp['p2', 'a'].fix(0.7)
+        frame.props[1].params.get_component('a').mw = 2
+        frame.props[1].params.get_component('b').mw = 3
+        frame.props[1].params.get_component('c').mw = 4
+
+        assert value(frame.props[1].flow_vol) == pytest.approx(
+            100/55e3, rel=1e-4)
+        assert value(frame.props[1].flow_vol_phase['p1']) == \
+            pytest.approx(100/55e3*0.75, rel=1e-4)
+        assert value(frame.props[1].flow_vol_phase['p2']) == \
+            pytest.approx(100/55e3*0.25, rel=1e-4)
+        assert value(frame.props[1].flow_mol_comp['a']) == \
+            pytest.approx(100*0.1*0.75 + 100*0.7*0.25, rel=1e-4)
+        assert value(frame.props[1].flow_mol_comp['b']) == \
+            pytest.approx(100*0.2*0.75 + 100*0.2*0.25, rel=1e-4)
+        assert value(frame.props[1].flow_mol_comp['c']) == \
+            pytest.approx(100*0.1*0.25 + 100*0.7*0.75, rel=1e-4)
+        assert value(frame.props[1].mw_phase['p1']) == \
+            pytest.approx(2*0.1 + 3*0.2 + 4*0.7, rel=1e-4)
+        assert value(frame.props[1].mw) == \
+            pytest.approx(0.75*(2*0.1 + 3*0.2 + 4*0.7) +
+                          0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
+        assert value(frame.props[1].flow_mass) == \
+            pytest.approx(100*0.75*(2*0.1 + 3*0.2 + 4*0.7) +
+                          100*0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
+        assert value(frame.props[1].flow_mass_phase["p1"]) == \
+            pytest.approx(100*0.75*(2*0.1 + 3*0.2 + 4*0.7), rel=1e-4)
+        assert value(frame.props[1].flow_mass_phase["p2"]) == \
+            pytest.approx(100*0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)

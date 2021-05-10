@@ -36,7 +36,7 @@ from idaes.core.phases import PhaseType as PT
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
@@ -51,7 +51,7 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------

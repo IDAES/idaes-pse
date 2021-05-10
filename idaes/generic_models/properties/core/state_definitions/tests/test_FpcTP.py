@@ -24,15 +24,16 @@ from pyomo.environ import (ConcreteModel, Constraint,
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
+# Need define_default_scaling_factors, even though it is not used directly
 from idaes.generic_models.properties.core.state_definitions.FpcTP import \
-    define_state, set_metadata
+    FpcTP, define_state, set_metadata, define_default_scaling_factors
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         declare_process_block_class)
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -48,13 +49,15 @@ def test_set_metadata():
 
 
 class TestInvalidBounds(object):
+
+    @pytest.mark.unit
     def test_bad_name(self):
         m = ConcreteModel()
 
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -75,6 +78,7 @@ class TestInvalidBounds(object):
             m.props = m.params.build_state_block(
                 [1], default={"defined_state": True})
 
+    @pytest.mark.unit
     def test_mole_frac(self, caplog):
         m = ConcreteModel()
 
@@ -85,7 +89,7 @@ class TestInvalidBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -116,7 +120,7 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -239,7 +243,7 @@ class Test1PhaseDefinedStateTrueWithBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -371,8 +375,8 @@ class Test2PhaseDefinedStateFalseNoBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -496,8 +500,8 @@ class Test2PhaseDefinedStateTrueWithBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -630,9 +634,9 @@ class Test3PhaseDefinedStateFalseNoBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos},
-                    "p3": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS},
+                    "p3": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -756,9 +760,9 @@ class Test3PhaseDefinedStateTrueWithBounds(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos},
-                    "p3": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS},
+                    "p3": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -889,9 +893,9 @@ class TestCommon(object):
         m.params = DummyParameterBlock(default={
                 "components": {"c1": {}, "c2": {}, "c3": {}},
                 "phases": {
-                    "a": {"equation_of_state": dummy_eos},
-                    "b": {"equation_of_state": dummy_eos}},
-                "state_definition": modules[__name__],
+                    "a": {"equation_of_state": DummyEoS},
+                    "b": {"equation_of_state": DummyEoS}},
+                "state_definition": FpcTP,
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
                 "state_bounds": {
@@ -912,8 +916,6 @@ class TestCommon(object):
         # Add necessary variables that would be built by other methods
         m.props[1].dens_mol_phase = Var(m.params.phase_list, initialize=1)
         m.props[1].enth_mol_phase = Var(m.params.phase_list, initialize=1)
-
-        define_state(m.props[1])
 
         return m
 
@@ -951,6 +953,60 @@ class TestCommon(object):
 
         assert isinstance(frame.props[1].mole_frac_phase_comp_eq, Constraint)
         assert len(frame.props[1].mole_frac_phase_comp_eq) == 6
+
+    @pytest.mark.unit
+    def test_calculate_scaling_factors(self, frame):
+        frame.props[1].calculate_scaling_factors()
+
+        assert len(frame.props[1].scaling_factor) == 25
+        assert frame.props[1].scaling_factor[frame.props[1].flow_mol] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase["a"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase["b"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_comp["c1"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_comp["c2"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_comp["c3"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["a", "c1"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["a", "c2"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["a", "c3"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["b", "c1"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["b", "c2"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].flow_mol_phase_comp["b", "c3"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].dens_mol_phase["a"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].dens_mol_phase["b"]] == 1e-2
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_comp["c1"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_comp["c2"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_comp["c3"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["a", "c1"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["a", "c2"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["a", "c3"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["b", "c1"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["b", "c2"]] == 1e3
+        assert frame.props[1].scaling_factor[
+            frame.props[1].mole_frac_phase_comp["b", "c3"]] == 1e3
+        assert frame.props[1].scaling_factor[frame.props[1].pressure] == 1e-5
+        assert frame.props[1].scaling_factor[
+            frame.props[1].temperature] == 1e-2
 
     # Test General Methods
     @pytest.mark.unit

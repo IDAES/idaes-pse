@@ -20,9 +20,10 @@ Author: Chinedu Okoli
 
 import time
 
-from pyomo.environ import ConcreteModel, SolverFactory, value
+from pyomo.environ import ConcreteModel, value
 
 from idaes.core import FlowsheetBlock
+from idaes.core.util import get_solver
 
 # Import IDAES logger
 import idaes.logger as idaeslog
@@ -118,7 +119,7 @@ def main():
     t_initialize = time.time()  # Initialization time
 
     # Create a solver
-    solver = SolverFactory('ipopt')
+    solver = get_solver()
     solver.solve(m.fs.MB, tee=True)
 
     t_simulation = time.time()  # Simulation time

@@ -59,6 +59,22 @@ def _create_testing_dir():
     _create_data_dir()
     config.create_dir(testing_directory)
 
+try:
+    _create_data_dir()
+except FileNotFoundError:
+    pass # the standard place for this doesn't exist, shouldn't be a show stopper
+
+try:
+    _create_bin_dir()
+except FileNotFoundError:
+    pass # the standard place for this doesn't exist, shouldn't be a show stopper
+
+try:
+    _create_testing_dir()
+except FileNotFoundError:
+    pass # the standard place for this doesn't exist, shouldn't be a show stopper
+
+
 reconfig = cfg.reconfig
 read_config = cfg.read_config
 cfg = _config
