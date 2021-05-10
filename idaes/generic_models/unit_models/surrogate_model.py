@@ -25,8 +25,8 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError,
                                         BalanceTypeNotSupportedError)
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
-import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 
 __author__ = "Jaffer Ghouse"
@@ -41,6 +41,7 @@ class SurrogateModelData(ProcessBlockData):
     This is the class for a surrogate unit model. This will provide a user
     with a generic skeleton to add a surrogate unit model.
     """
+
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
@@ -51,9 +52,7 @@ class SurrogateModelData(ProcessBlockData):
 
     def build(self):
         """
-        General build method for UnitModelBlockData. This method calls a number
-        of sub-methods which automate the construction of expected attributes
-        of unit models.
+        General build method for SurrogateModelBlockData.
 
         Inheriting models should call `super().build`.
 
@@ -64,15 +63,8 @@ class SurrogateModelData(ProcessBlockData):
             None
         """
         super(SurrogateModelData, self).build()
-        # # Add inlet port
-        # self._add_ports(name="Inlet", members=self.config.inputs,
-        #                 doc="Inlet port for the surrogate model.")
-        #
-        # # Add outlet port
-        # self._add_ports(name="Outlet", members=self.config.outputs,
-        #                 doc="Outlet port for the surrogate model.")
 
-    def _add_ports(self, name=None, member_list=None, doc=None):
+    def add_ports(self, name=None, member_list=None, doc=None):
         """
         This is a method to build Port objects in a surrogate model and
         populate this with appropriate port members as specified.
@@ -123,22 +115,16 @@ class SurrogateModelData(ProcessBlockData):
                 "names (inet and outlet). Please contact the unit model "
                 "developer to develop a unit specific stream table.")
 
-    def initialize(self, state_args=None, outlvl=idaeslog.NOTSET,
+    def initialize(self, custom_initialize = None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
-        This is a general purpose initialization routine for simple unit
-        models. This method assumes a single ControlVolume block called
-        controlVolume, and first initializes this and then attempts to solve
-        the entire unit.
-
-        More complex models should overload this method with their own
-        initialization routines,
+        This is a simple initialization routine for surrogate
+        models. If the user, does not provide a custom callback function, this
+        method will check for degrees of freedom and if zero, will attempt
+        to solve the model as is.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                           package(s) to provide an initial state for
-                           initialization (see documentation of the specific
-                           property package) (default = {}).
+            custom_initialize : custom call back for intialization
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
@@ -154,38 +140,18 @@ class SurrogateModelData(ProcessBlockData):
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        # ---------------------------------------------------------------------
-        # Initialize control volume block
-        flags = self.control_volume.initialize(
-            outlvl=outlvl,
-            optarg=optarg,
-            solver=solver,
-            state_args=state_args,
-        )
+        if custom_initialize is not None:
+            custom_initialize
+        else:
+            if degrees_of_freedom(self) == 0:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = opt.solve(self, tee=slc.tee)
+                init_log.info_high("Initialization completed {}.".
+                    format(idaeslog.condition(res)))
+            else:
+                raise ConfigurationError(
+                    "Degrees of freedom is not 0 during initialization. "
+                    "Fix/unfix appropriate number of variables to result "
+                    "in 0 degrees of freedom or provide a custom callback "
+                    "function for initialization.")
 
-        init_log.info_high('Initialization Step 1 Complete.')
-
-        # ---------------------------------------------------------------------
-        # Solve unit
-
-        # if costing block exists, deactivate
-        if hasattr(self, "costing"):
-            self.costing.deactivate()
-
-        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            results = opt.solve(self, tee=slc.tee)
-
-        init_log.info_high(
-            "Initialization Step 2 {}.".format(idaeslog.condition(results))
-        )
-
-        # if costing block exists, activate and initialize
-        if hasattr(self, "costing"):
-            self.costing.activate()
-            idaes.core.util.unit_costing.initialize(self.costing)
-        # ---------------------------------------------------------------------
-        # Release Inlet state
-        self.control_volume.release_state(flags, outlvl)
-
-        init_log.info('Initialization Complete: {}'
-                      .format(idaeslog.condition(results)))
