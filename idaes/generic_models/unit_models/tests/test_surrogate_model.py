@@ -21,16 +21,12 @@ from pyomo.environ import (ConcreteModel,
                            units,
                            value,
                            Var,
-                           Constraint)
+                           Constraint, SolverFactory)
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.generic_models.unit_models.surrogate_model import SurrogateModel
-from idaes.generic_models.properties.examples.saponification_thermo import (
-    SaponificationParameterBlock)
-from idaes.generic_models.properties.examples.saponification_reactions import (
-    SaponificationReactionParameterBlock)
+from idaes.generic_models.unit_models import SurrogateModel
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
@@ -48,27 +44,80 @@ __author__ = "Jaffer Ghouse"
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_default_solver()
-
-
 # -----------------------------------------------------------------------------
+
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
-m.fs.bfb_surrogate = SurrogateModel()
-m.fs.bfb_surrogate.x_1 = Var(initialize=0.5)
-m.fs.bfb_surrogate.x_2 = Var(initialize=0.5)
-m.fs.bfb_surrogate.y_1 = Var(initialize=0.5)
-m.fs.bfb_surrogate.y_2 = Var(initialize=0.5)
-m.fs.bfb_surrogate.c1 = Constraint(
-    expr=m.fs.bfb_surrogate.y_1 == m.fs.bfb_surrogate.x_1)
-m.fs.bfb_surrogate.c2 = Constraint(
-    expr=m.fs.bfb_surrogate.y_2 == m.fs.bfb_surrogate.x_2)
 
-inlet_dict = {"input_1": m.fs.bfb_surrogate.x_1,
-              "input_2": m.fs.bfb_surrogate.x_2}
-outlet_dict = {"output_1": m.fs.bfb_surrogate.y_1,
-               "output_2": m.fs.bfb_surrogate.y_2}
+m.fs.surrogate = SurrogateModel()
+m.fs.surrogate.x_1 = Var(initialize=0.5)
+m.fs.surrogate.x_2 = Var(initialize=0.5)
+m.fs.surrogate.y_1 = Var(initialize=0.5)
+m.fs.surrogate.y_2 = Var(initialize=0.5)
+m.fs.surrogate.c1 = Constraint(
+    expr=m.fs.surrogate.y_1 == m.fs.surrogate.x_1)
+m.fs.surrogate.c2 = Constraint(
+    expr=m.fs.surrogate.y_2 == m.fs.surrogate.x_2**2)
 
-m.fs.bfb_surrogate._add_ports(name="inlet",
-                              member_list=inlet_dict)
-m.fs.bfb_surrogate._add_ports(name="outlet",
-                              member_list=outlet_dict)
+inlet_dict = {"x_1": m.fs.surrogate.x_1,
+            "x_2": m.fs.surrogate.x_2}
+outlet_dict = {"y_1": m.fs.surrogate.y_1,
+            "y_2": m.fs.surrogate.y_2}
+
+m.fs.surrogate.add_ports(name="inlet",
+                            member_list=inlet_dict)
+m.fs.surrogate.add_ports(name="outlet",
+                            member_list=outlet_dict)
+
+def my_initialize():
+    m.fs.surrogate.c2.deactivate()
+    m.fs.surrogate.x_1.fix(1)
+    m.fs.surrogate.x_2.fix(2)
+
+    opt = SolverFactory("ipopt")
+
+    res = opt.solve(m)
+    m.fs.surrogate.c2.activate()
+    res = opt.solve(m)
+
+
+def test_ports():
+    assert hasattr(m.fs.surrogate, "inlet")
+    assert hasattr(m.fs.surrogate.inlet, "x_1")
+    assert hasattr(m.fs.surrogate.inlet, "x_2")
+
+    assert hasattr(m.fs.surrogate, "outlet")
+    assert hasattr(m.fs.surrogate.outlet, "y_1")
+    assert hasattr(m.fs.surrogate.outlet, "y_2")
+
+def test_build():
+    assert hasattr(m.fs.surrogate, "x_1")
+    assert hasattr(m.fs.surrogate, "x_2")
+
+    assert hasattr(m.fs.surrogate, "c1")
+    assert hasattr(m.fs.surrogate, "c2")
+
+    assert hasattr(m.fs.surrogate, "y_1")
+    assert hasattr(m.fs.surrogate, "y_2")
+
+def test_default_initialize():
+    m.fs.surrogate.x_1.fix()
+    m.fs.surrogate.x_2.fix()
+
+    assert degrees_of_freedom(m) == 0
+
+    m.fs.surrogate.initialize()
+
+    assert value(m.fs.surrogate.x_1) == pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.surrogate.x_2) == pytest.approx(0.5, abs=1e-3)
+
+    assert value(m.fs.surrogate.y_1) == pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.surrogate.y_2) == pytest.approx(0.25, abs=1e-3)
+
+def test_custom_initialize():
+    m.fs.surrogate.initialize(custom_initialize=my_initialize())
+    assert value(m.fs.surrogate.x_1) == pytest.approx(1, abs=1e-3)
+    assert value(m.fs.surrogate.x_2) == pytest.approx(2, abs=1e-3)
+
+    assert value(m.fs.surrogate.y_1) == pytest.approx(1, abs=1e-3)
+    assert value(m.fs.surrogate.y_2) == pytest.approx(4, abs=1e-3)
