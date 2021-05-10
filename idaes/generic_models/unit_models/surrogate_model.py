@@ -18,15 +18,10 @@ from pyomo.environ import Reference, SolverFactory
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
-from idaes.core.process_base import (declare_process_block_class,
-                           ProcessBlockData,
-                           useDefault)
-from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
-                                        PropertyPackageError,
-                                        BalanceTypeNotSupportedError)
+from idaes.core.process_base import declare_process_block_class, \
+    ProcessBlockData
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.logger as idaeslog
 
 __author__ = "Jaffer Ghouse"
@@ -67,7 +62,8 @@ class SurrogateModelData(ProcessBlockData):
     def add_ports(self, name=None, member_list=None, doc=None):
         """
         This is a method to build Port objects in a surrogate model and
-        populate this with appropriate port members as specified.
+        populate this with appropriate port members as specified. User can add
+        as many inlet and outlet ports as required.
 
         Keyword Args:
             name : name to use for Port object.
@@ -77,13 +73,12 @@ class SurrogateModelData(ProcessBlockData):
         Returns:
             A Pyomo Port object and associated components.
         """
-        # Validate that members is a dict
+        # Validate that member_list is a dict
         if not isinstance(member_list, dict):
-            raise ConfigurationError("{} block object provided to add_port "
-                                     "method is not an instance of a "
-                                     "StateBlock object. IDAES port objects "
-                                     "should only be associated with "
-                                     "StateBlocks.".format(self.name))
+            raise ConfigurationError(
+                "member_list should be a dictionary "
+                "with the keys being the name assigned(strings) and "
+                "values being the variable objects declared in the model.")
 
         # Create empty Port
         p = Port(noruleinit=True, doc=doc)
@@ -99,32 +94,16 @@ class SurrogateModelData(ProcessBlockData):
             # Add Reference to Port
             p.add(Reference(local_name), k)
 
-    def _get_stream_table_contents(self, time_point=0):
-        """
-        Assume unit has standard configuration of 1 inlet and 1 outlet.
-
-        Developers should overload this as appropriate.
-        """
-        try:
-            return create_stream_table_dataframe({"Inlet": self.inlet,
-                                                  "Outlet": self.outlet},
-                                                 time_point=time_point)
-        except AttributeError:
-            raise ConfigurationError(
-                "Unit model {self.name} does not have the standard Port "
-                "names (inet and outlet). Please contact the unit model "
-                "developer to develop a unit specific stream table.")
-
-    def initialize(self, custom_initialize = None, outlvl=idaeslog.NOTSET,
+    def initialize(self, custom_initialize=None, outlvl=idaeslog.NOTSET,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This is a simple initialization routine for surrogate
-        models. If the user, does not provide a custom callback function, this
+        models. If the user does not provide a custom callback function, this
         method will check for degrees of freedom and if zero, will attempt
         to solve the model as is.
 
         Keyword Arguments:
-            custom_initialize : custom call back for intialization
+            custom_initialize : user callback for intialization
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
@@ -147,11 +126,11 @@ class SurrogateModelData(ProcessBlockData):
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                     res = opt.solve(self, tee=slc.tee)
                 init_log.info_high("Initialization completed {}.".
-                    format(idaeslog.condition(res)))
+                                   format(idaeslog.condition(res)))
             else:
                 raise ConfigurationError(
                     "Degrees of freedom is not 0 during initialization. "
                     "Fix/unfix appropriate number of variables to result "
-                    "in 0 degrees of freedom or provide a custom callback "
+                    "in 0 degrees of freedom or provide a callback "
                     "function for initialization.")
 
