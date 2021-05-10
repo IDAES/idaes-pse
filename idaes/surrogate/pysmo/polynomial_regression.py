@@ -31,6 +31,9 @@ from six import string_types
 # Imports from IDAES namespace
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
 
+
+__author__ = "Oluwamayowa Amusat"
+
 """
 The purpose of this file is to perform polynomial regression in Pyomo.
 This will be done in two stages. First, a sampling plan will
