@@ -399,6 +399,22 @@ def unscaled_constraints_generator(blk, descend_into=True):
             get_constraint_transform_applied_scaling_factor(c) is None:
             yield c
 
+def constraints_with_scale_factor_generator(blk, descend_into=True):
+    """Generator for constraints scaled by a sclaing factor, may or not have
+    been transformed.
+
+    Args:
+        block
+
+    Yields:
+        constraint with a scale factor, scale factor
+    """
+    for c in blk.component_data_objects(
+        pyo.Constraint, active=True, descend_into=descend_into):
+        s = get_scaling_factor(c)
+        if s is not None:
+            yield c, s
+
 
 def badly_scaled_var_generator(
     blk, large=1e4, small=1e-3, zero=1e-10, descend_into=True, include_fixed=False):
@@ -527,19 +543,34 @@ def get_jacobian(m, scaled=True):
         return jac, nlp
 
 
-def extreme_jacobian_entries(m, scaled=True, large=1e4, small=1e-4, zero=1e-10):
-    jac, nlp = get_jacobian(m, scaled)
+def extreme_jacobian_entries(
+        m=None, scaled=True, large=1e4, small=1e-4, zero=1e-10, jac=None, nlp=None):
+    """
+    Show very large and very small Jacobian entries.
+
+    Args:
+        m: model
+        scaled: if true use scaled Jacobian
+        large: >= to this value is consdered large
+        small: <= to this and >= zero is consdered small
+
+    Returns:
+        (list of tuples), Jacobian entry, Constraint, Variable
+    """
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(m, scaled)
     clist = nlp.get_pyomo_constraints()
     vlist = nlp.get_pyomo_variables()
     el = []
     for i, c in enumerate(clist):
         for j, v in enumerate(vlist):
-            if (jac[i, j] <= small and jac[i, j] > zero) or jac[i,j] >= large:
-                el.append((jac[i, j], c, v))
+            if (abs(jac[i, j]) <= small and abs(jac[i, j] > zero)) \
+                or abs(jac[i,j]) >= large:
+                el.append((abs(jac[i, j]), c, v))
     return el
 
 
-def jacobian_cond(m, scaled=True, ord=None, pinv=False):
+def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
@@ -547,11 +578,13 @@ def jacobian_cond(m, scaled=True, ord=None, pinv=False):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+        jac: (optional) perviously calculated jacobian
 
     Returns:
         (float) Condition number
     """
-    jac, nlp = get_jacobian(m, scaled=scaled)
+    if jac is None:
+        jac, nlp = get_jacobian(m, scaled)
     jac = jac.tocsc()
     if jac.shape[0] != jac.shape[1] and not pinv:
         _log.warning("Nonsquare Jacobian using pseudo inverse")

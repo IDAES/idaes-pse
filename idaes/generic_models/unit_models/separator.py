@@ -1615,6 +1615,12 @@ objects linked the mixed state and all outlet states,
             mb_type = self.mixed_state[t_ref].default_material_balance_type()
         super().calculate_scaling_factors()
 
+        if hasattr(self, "temperature_equality_eqn"):
+            for (t, i), c in self.temperature_equality_eqn.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].temperature, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
         if hasattr(self, "pressure_equality_eqn"):
             for (t, i), c in self.pressure_equality_eqn.items():
                 s = iscale.get_scaling_factor(

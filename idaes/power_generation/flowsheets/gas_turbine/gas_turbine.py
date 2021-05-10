@@ -254,7 +254,7 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
     m.fs.gas_prop_params.set_default_scaling("mole_frac_comp", 10)
     m.fs.gas_prop_params.set_default_scaling("mole_frac_phase_comp", 10)
-    low_conc = {"Ar":100, "H2S":100, "SO2":100, "H2":100, "CO":100, "C2H4":100}
+    low_conc = {"Ar":100, "H2S":100, "SO2":1000, "H2":1000, "CO":1000, "C2H4":100}
     for c, s in low_conc.items():
         m.fs.gas_prop_params.set_default_scaling(
             "mole_frac_comp", s, index=c)
@@ -431,9 +431,11 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
         m.fs.gts3.control_volume.properties_out[0].flow_mol, 1e-5)
     for i, v in m.fs.cmb1.control_volume.rate_reaction_extent.items():
         if i[1] == "ch4_cmb":
-            iscale.set_scaling_factor(v, 1e-3)
+            iscale.set_scaling_factor(v, 1e-2)
         else:
             iscale.set_scaling_factor(v, 1)
+    for i, c in m.fs.cmb1.reaction_extent.items():
+            iscale.constraint_scaling_transform(c, 1e-2)
     for i, v in m.fs.cmb1.control_volume.rate_reaction_generation.items():
         if i[2] in low_conc:
             iscale.set_scaling_factor(v, 10)
@@ -765,15 +767,19 @@ if __name__ == "__main__":
         ng_comp=ng_comp)
     run_full_load(m, solver)
     #iscale.constraint_autoscale_large_jac(m)
+    jac, nlp = iscale.get_jacobian(m, scaled=True)
     print("Extreme Jacobian entries:")
-    for i in iscale.extreme_jacobian_entries(m, large=1000):
+    for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
         print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
     print("Unscaled constraints:")
     for c in iscale.unscaled_constraints_generator(m):
         print(f"    {c}")
+    print("Scaled constraints by factor:")
+    for c, s in iscale.constraints_with_scale_factor_generator(m):
+        print(f"    {c}, {s}")
     print("Badly scaled variables:")
-    for v, sv in iscale.badly_scaled_var_generator(m, large=1e2, zero=1e-14):
+    for v, sv in iscale.badly_scaled_var_generator(m, large=1e2, small=1e-2, zero=1e-12):
         print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
-    print(f"Jacobian Condition Number: {iscale.jacobian_cond(m):.2e}")
+    print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
     write_pfd_results("gas_turbine_results.svg", m.tags, m.tag_format)
     #run_series(m, solver)
