@@ -260,7 +260,7 @@ class TestStateBlock(object):
         for p in model.params.phase_list:
             assert model.props[1].get_energy_density_terms(p) == (
                 model.props[1].dens_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
+                model.props[1].energy_internal_mol_phase[p])
 
     @pytest.mark.unit
     def test_default_material_balance_type(self, model):

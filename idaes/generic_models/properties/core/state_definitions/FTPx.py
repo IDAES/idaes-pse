@@ -214,17 +214,44 @@ def define_state(b):
 
     def get_enthalpy_flow_terms_FTPx(p):
         """Create enthalpy flow terms."""
-        return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+        # enth_mol_phase probably does not exist when this is created
+        # Use try/except to build flow term if not present
+        try:
+            eflow = b._enthalpy_flow_term
+        except AttributeError:
+            def rule_eflow(b, p):
+                return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+            eflow = b._enthalpy_flow_term = Expression(
+                b.phase_list, rule=rule_eflow)
+        return eflow[p]
     b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
 
     def get_material_density_terms_FTPx(p, j):
         """Create material density terms."""
-        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+        # dens_mol_phase probably does not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            mdens = b._material_density_term
+        except AttributeError:
+            def rule_mdens(b, p, j):
+                return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+            mdens = b._material_density_term = Expression(
+                b.phase_component_set, rule=rule_mdens)
+        return mdens[p, j]
     b.get_material_density_terms = get_material_density_terms_FTPx
 
     def get_energy_density_terms_FTPx(p):
         """Create energy density terms."""
-        return b.dens_mol_phase[p] * b.enth_mol_phase[p]
+        # Density and energy terms probably do not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            edens = b._energy_density_term
+        except AttributeError:
+            def rule_edens(b, p):
+                return b.dens_mol_phase[p] * b.energy_internal_mol_phase[p]
+            edens = b._energy_density_term = Expression(
+                b.phase_list, rule=rule_edens)
+        return edens[p]
     b.get_energy_density_terms = get_energy_density_terms_FTPx
 
     def default_material_balance_type_FTPx():
