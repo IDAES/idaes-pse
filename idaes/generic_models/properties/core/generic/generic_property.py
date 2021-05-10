@@ -1522,6 +1522,24 @@ class GenericStateBlockData(StateBlockData):
                                                      default=1)
                     iscale.set_scaling_factor(v, sf_rho*sf_h)
 
+        if self.is_property_constructed("_material_density_term"):
+            for (p, j), v in self._enthalpy_flow_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[p],
+                                                       default=1)
+                    sf_x = iscale.get_scaling_factor(
+                        self.mole_frac_phase_comp[p, j], default=1)
+                    iscale.set_scaling_factor(v, sf_rho*sf_x)
+
+        if self.is_property_constructed("_energy_density_term"):
+            for k, v in self._enthalpy_flow_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
+                                                       default=1)
+                    sf_u = iscale.get_scaling_factor(
+                        self.energy_internal_mol_phase[k], default=1)
+                    iscale.set_scaling_factor(v, sf_rho*sf_u)
+
         # Phase equilibrium constraint
         if hasattr(self, "equilibrium_constraint"):
             pe_form_config = self.params.config.phase_equilibrium_state
@@ -1550,8 +1568,11 @@ class GenericStateBlockData(StateBlockData):
                             self, rblock)
                     iscale.set_scaling_factor(self.k_eq[r], sf_keq)
 
+                sf_const = carg["equilibrium_form"].calculate_scaling_factors(
+                    self, sf_keq)
+
                 iscale.constraint_scaling_transform(
-                    self.inherent_equilibrium_constraint[r], sf_keq)
+                    self.inherent_equilibrium_constraint[r], sf_const)
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
