@@ -11,6 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+
+
 # Imports from the python standard library
 from __future__ import division, print_function
 from builtins import int, str
@@ -30,7 +32,7 @@ from six import string_types
 # Imports from IDAES namespace
 from idaes.surrogate.pysmo.sampling import FeatureScaling as fs
 
-
+__author__ = "Oluwamayowa Amusat"
 
 """
 The purpose of this file is to perform radial basis functions in Pyomo.
