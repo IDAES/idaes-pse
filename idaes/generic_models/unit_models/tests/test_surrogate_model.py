@@ -15,28 +15,11 @@ Generic template for a surrogate unit model.
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           units,
-                           value,
-                           Var,
-                           Constraint, SolverFactory)
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+from pyomo.environ import ConcreteModel, Constraint, Var, value, SolverFactory
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import SurrogateModel
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              number_variables,
-                                              number_total_constraints,
-                                              number_unused_variables)
-from idaes.core.util.testing import (get_default_solver,
-                                     PhysicalParameterTestBlock,
-                                     ReactionParameterTestBlock,
-                                     initialization_tester)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import get_default_solver
 
 __author__ = "Jaffer Ghouse"
 
@@ -60,14 +43,13 @@ m.fs.surrogate.c2 = Constraint(
     expr=m.fs.surrogate.y_2 == m.fs.surrogate.x_2**2)
 
 inlet_dict = {"x_1": m.fs.surrogate.x_1,
-            "x_2": m.fs.surrogate.x_2}
+              "x_2": m.fs.surrogate.x_2}
 outlet_dict = {"y_1": m.fs.surrogate.y_1,
-            "y_2": m.fs.surrogate.y_2}
+               "y_2": m.fs.surrogate.y_2}
 
-m.fs.surrogate.add_ports(name="inlet",
-                            member_list=inlet_dict)
-m.fs.surrogate.add_ports(name="outlet",
-                            member_list=outlet_dict)
+m.fs.surrogate.add_ports(name="inlet", member_list=inlet_dict)
+m.fs.surrogate.add_ports(name="outlet", member_list=outlet_dict)
+
 
 def my_initialize():
     m.fs.surrogate.c2.deactivate()
@@ -76,9 +58,9 @@ def my_initialize():
 
     opt = SolverFactory("ipopt")
 
-    res = opt.solve(m)
+    opt.solve(m)
     m.fs.surrogate.c2.activate()
-    res = opt.solve(m)
+    opt.solve(m)
 
 
 def test_ports():
@@ -90,6 +72,7 @@ def test_ports():
     assert hasattr(m.fs.surrogate.outlet, "y_1")
     assert hasattr(m.fs.surrogate.outlet, "y_2")
 
+
 def test_build():
     assert hasattr(m.fs.surrogate, "x_1")
     assert hasattr(m.fs.surrogate, "x_2")
@@ -99,6 +82,7 @@ def test_build():
 
     assert hasattr(m.fs.surrogate, "y_1")
     assert hasattr(m.fs.surrogate, "y_2")
+
 
 def test_default_initialize():
     m.fs.surrogate.x_1.fix()
@@ -113,6 +97,7 @@ def test_default_initialize():
 
     assert value(m.fs.surrogate.y_1) == pytest.approx(0.5, abs=1e-3)
     assert value(m.fs.surrogate.y_2) == pytest.approx(0.25, abs=1e-3)
+
 
 def test_custom_initialize():
     m.fs.surrogate.initialize(custom_initialize=my_initialize())
