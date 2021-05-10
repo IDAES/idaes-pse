@@ -1186,12 +1186,14 @@ constructed,
         t2_flags = {}
         for t in blk.flowsheet().time:
             p1_flags[t] = blk.side_1.properties_out[t].pressure.fixed
-            if not blk.side_1.properties_out[t].pressure.fixed:
+            if not blk.side_1.properties_out[t].pressure.fixed \
+                    and blk.config.has_pressure_change:
                 blk.side_1.properties_out[t].pressure.fix(
                         value(blk.side_1.properties_in[t].pressure))
 
             p2_flags[t] = blk.side_2.properties_out[t].pressure.fixed
-            if not blk.side_2.properties_out[t].pressure.fixed:
+            if not blk.side_2.properties_out[t].pressure.fixed \
+                    and blk.config.has_pressure_change:
                 blk.side_2.properties_out[t].pressure.fix(
                         value(blk.side_2.properties_in[t].pressure))
 
@@ -1209,8 +1211,9 @@ constructed,
         blk.heat_transfer_correlation.deactivate()
         blk.LMTD.deactivate()
         blk.energy_balance.deactivate()
-        blk.deltaP_tube_eqn.deactivate()
-        blk.deltaP_shell_eqn.deactivate()
+        if blk.config.has_pressure_change:
+            blk.deltaP_tube_eqn.deactivate()
+            blk.deltaP_shell_eqn.deactivate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -1229,8 +1232,10 @@ constructed,
         blk.heat_transfer_correlation.activate()
         blk.LMTD.activate()
         blk.energy_balance.activate()
-        blk.deltaP_tube_eqn.activate()
-        blk.deltaP_shell_eqn.activate()
+
+        if blk.config.has_pressure_change:
+            blk.deltaP_tube_eqn.activate()
+            blk.deltaP_shell_eqn.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)

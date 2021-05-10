@@ -161,12 +161,12 @@ from 1 to num_outlets).}""",
         @self.Constraint(time, self.outlet_list, doc="Pressure constraint")
         def pressure_eqn(b, t, o):
             o_block = getattr(self, "{}_state".format(o))
-            return self.mixed_state[t].pressure == o_block[t].pressure
+            return self.mixed_state[t].pressure*1e-6 == o_block[t].pressure*1e-6
 
         @self.Constraint(time, self.outlet_list, doc="Enthalpy constraint")
         def enthalpy_eqn(b, t, o):
             o_block = getattr(self, "{}_state".format(o))
-            return self.mixed_state[t].enth_mol == o_block[t].enth_mol
+            return self.mixed_state[t].enth_mol*1e-4 == o_block[t].enth_mol*1e-4
 
         @self.Constraint(time, self.outlet_list, doc="Flow constraint")
         def flow_eqn(b, t, o):
