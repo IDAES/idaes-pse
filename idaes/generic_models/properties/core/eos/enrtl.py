@@ -15,6 +15,9 @@ Methods for eNRTL activity coefficient method.
 
 Only applicable to liquid/electrolyte phases
 
+Many thanks to C.-C. Chen for his assistance and suggestions on testing and
+validating the model.
+
 Reference:
 
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
@@ -354,8 +357,11 @@ class ENRTL(EoSBase):
             Y = getattr(b, pname+"_Y")
 
             def _G_appr(b, pobj, i, j, T):  # Eqn 23
-                return exp(-alpha_rule(b, pobj, i, j, T) *
-                           tau_rule(b, pobj, i, j, T))
+                if i != j:
+                    return exp(-alpha_rule(b, pobj, i, j, T) *
+                               tau_rule(b, pobj, i, j, T))
+                else:
+                    return 1
 
             if ((pname, i) not in b.params.true_phase_component_set or
                     (pname, j) not in b.params.true_phase_component_set):
@@ -389,8 +395,7 @@ class ENRTL(EoSBase):
                 if len(b.params.cation_set) > 1:
                     return sum(Y[k] * _G_appr(
                         b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                        for k in b.params.cation_set
-                        if i != k)
+                        for k in b.params.cation_set)
                 else:
                     # This term does not exist for single cation systems
                     # However, need a valid result to calculate tau
@@ -400,8 +405,7 @@ class ENRTL(EoSBase):
                 if len(b.params.anion_set) > 1:
                     return sum(Y[k] * _G_appr(
                         b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                        for k in b.params.anion_set
-                        if i != k)
+                        for k in b.params.anion_set)
                 else:
                     # This term does not exist for single anion systems
                     # However, need a valid result to calculate tau
