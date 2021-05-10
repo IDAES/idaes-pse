@@ -39,6 +39,7 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis)
 from idaes.core.components import Component, __all_components__
 from idaes.core.phases import Phase, AqueousPhase, __all_phases__
+from idaes.core import LiquidPhase, VaporPhase
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -1544,7 +1545,13 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_T)
             for i, v in self._mole_frac_tbub.items():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, sf_mf[i])
+                    if self.params.config.phases[i[0]]["type"] is VaporPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] is VaporPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    iscale.set_scaling_factor(v, sf_mf[p, i[2]])
             self.params.config.bubble_dew_method.scale_temperature_bubble(self)
 
         if hasattr(self, "_mole_frac_tdew"):
@@ -1553,7 +1560,13 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_T)
             for i, v in self._mole_frac_tdew.items():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, sf_mf[i])
+                    if self.params.config.phases[i[0]]["type"] is LiquidPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] is LiquidPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    iscale.set_scaling_factor(v, sf_mf[p, i[2]])
             self.params.config.bubble_dew_method.scale_temperature_dew(self)
 
         if hasattr(self, "_mole_frac_pbub"):
