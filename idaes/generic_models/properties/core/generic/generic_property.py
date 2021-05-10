@@ -1551,7 +1551,12 @@ class GenericStateBlockData(StateBlockData):
                         p = i[1]
                     else:
                         p = i[0]
-                    iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                    try:
+                        iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                    except:
+                        # component i[2] is no in the vapor phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        iscale.set_scaling_factor(v, 1)
             self.params.config.bubble_dew_method.scale_temperature_bubble(self)
 
         if hasattr(self, "_mole_frac_tdew"):
@@ -1566,7 +1571,12 @@ class GenericStateBlockData(StateBlockData):
                         p = i[1]
                     else:
                         p = i[0]
-                    iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                    try:
+                        iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                    except:
+                        # component i[2] is no in the liquid phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        iscale.set_scaling_factor(v, 1)
             self.params.config.bubble_dew_method.scale_temperature_dew(self)
 
         if hasattr(self, "_mole_frac_pbub"):

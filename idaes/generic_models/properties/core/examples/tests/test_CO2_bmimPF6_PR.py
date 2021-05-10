@@ -197,7 +197,7 @@ class TestStateBlock(object):
             model.fs.props[1]._t1_Vap_Liq] == 1e-2
 
         assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1000
+            model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._mole_frac_tbub[
                 "Vap", "Liq", "carbon_dioxide"]] == 1000
