@@ -534,7 +534,8 @@ class TestStateBlockSymmetric(object):
                 pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_pdh["Na+"] +
                       model.state[1].Liq_log_gamma_lc["Na+"]) ==
-                pytest.approx(model.state[1].Liq_log_gamma["Na+"], abs=1e-10))
+                pytest.approx(
+                    value(model.state[1].Liq_log_gamma["Na+"]), abs=1e-10))
 
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
@@ -553,4 +554,5 @@ class TestStateBlockSymmetric(object):
                 pytest.approx(0, abs=1e-10))
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"] +
                       model.state[1].Liq_log_gamma_lc["Cl-"]) ==
-                pytest.approx(model.state[1].Liq_log_gamma["Cl-"], abs=1e-10))
+                pytest.approx(
+                    value(model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10))

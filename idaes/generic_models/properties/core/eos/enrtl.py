@@ -16,7 +16,7 @@ Methods for eNRTL activity coefficient method.
 Only applicable to liquid/electrolyte phases
 
 Many thanks to C.-C. Chen for his assistance and suggestions on testing and
-validating the model.
+verifying the model.
 
 Reference:
 
@@ -44,11 +44,6 @@ _log = idaeslog.getLogger(__name__)
 
 DefaultAlphaRule = ConstantAlpha
 DefaultTauRule = ConstantTau
-# TODO: Whilst the basic framework for supporting different reference states is
-# in place, it is likely that the unsymmetric reference state will need
-# x, X and I0 calcuated for each species individually (the symmetric
-# reference state only needs these to be calcuated once). Thi has not been
-# implemented in the current version
 DefaultRefState = Symmetric
 
 # Closest appraoch parameter - implemented as a global constant for now
@@ -440,7 +435,7 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
-                if G[i, j].expr != 1:
+                if str(G[i, j].expr) != "1.0":
                     # Eqn 44
                     return -log(G[i, j])/alpha[i, j]
                 else:

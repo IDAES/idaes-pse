@@ -28,7 +28,7 @@ May 2021
 Author: Andrew Lee
 """
 import pytest
-from math import exp, log
+from math import exp
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -500,7 +500,8 @@ class Test_tau_0(object):
             assert pytest.approx(0.2336366, rel=1e-6) == value(
                 model.state[1].Liq_log_gamma_pdh["Cl-"])
 
-            print(value(model.state[1].Liq_log_gamma["Na+"]),
+            print(x,
+                  value(model.state[1].Liq_log_gamma["Na+"]),
                   value(model.state[1].Liq_log_gamma["Cl-"]))
             # ln_pm = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
             #                    model.state[1].Liq_log_gamma["Cl-"]))
