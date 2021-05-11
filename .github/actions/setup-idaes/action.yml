@@ -24,7 +24,7 @@ runs:
         echo '::group::Output of "pip show pyomo idaes-pse"'
         pip show pyomo idaes-pse
         echo '::endgroup::'
-        idaes --version
+        # idaes --version
     - name: Install extensions
       shell: bash
       run: |
