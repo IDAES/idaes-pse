@@ -121,16 +121,15 @@ class SurrogateModelData(ProcessBlockData):
 
         if custom_initialize is not None:
             custom_initialize
+
+        if degrees_of_freedom(self) == 0:
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(self, tee=slc.tee)
+            init_log.info_high("Initialization completed {}.".
+                               format(idaeslog.condition(res)))
         else:
-            if degrees_of_freedom(self) == 0:
-                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    res = opt.solve(self, tee=slc.tee)
-                init_log.info_high("Initialization completed {}.".
-                                   format(idaeslog.condition(res)))
-            else:
-                raise ConfigurationError(
-                    "Degrees of freedom is not 0 during initialization. "
-                    "Fix/unfix appropriate number of variables to result "
-                    "in 0 degrees of freedom or provide a callback "
-                    "function for initialization.")
+            raise ConfigurationError(
+                "Degrees of freedom is not 0 during initialization. "
+                "Fix/unfix appropriate number of variables to result "
+                "in 0 degrees of freedom for initialization.")
 
