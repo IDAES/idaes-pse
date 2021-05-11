@@ -349,7 +349,58 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
-    # TODO: Need to add functions to calculate cp
+    # TODO: Need to add functions to calculate cp and cv
+
+
+    @staticmethod
+    def energy_internal_mol_phase(blk, p):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        B = getattr(blk, cname+"_B")[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        # Departure function for U is similar to H minus the RT(Z-1) term
+        return (((blk.temperature*dadT - am) *
+                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                          eps=1e-6)) / (bm*EoS_p) +
+                sum(blk.mole_frac_phase_comp[p, j] *
+                    EoSBase.energy_internal_mol_ig_comp_pure(blk, j)
+                    for j in blk.components_in_phase(p)))
+
+    @staticmethod
+    def energy_internal_mol_phase_comp(blk, p, j):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        B = getattr(blk, cname+"_B")[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        # Departure function for U is similar to H minus the RT(Z-1) term
+        return (((blk.temperature*dadT - am) *
+                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                          eps=1e-6)) / (bm*EoS_p) +
+                EoSBase.energy_internal_mol_ig_comp_pure(blk, j))
 
     @staticmethod
     def enth_mol_phase(blk, p):
