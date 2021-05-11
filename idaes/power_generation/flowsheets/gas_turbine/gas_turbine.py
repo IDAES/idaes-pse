@@ -419,6 +419,8 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     #
     # Set some scaling
     #
+    for i in ["air05", "air07", "air09"]:
+        iscale.set_scaling_factor(m.fs.splt1.split_fraction[0.0, i], 100)
     iscale.set_scaling_factor(m.fs.valve01.control_volume.work, 1e-8)
     iscale.set_scaling_factor(m.fs.valve02.control_volume.work, 1e-8)
     iscale.set_scaling_factor(m.fs.valve03.control_volume.work, 1e-8)
