@@ -22,8 +22,8 @@ from pyomo.environ import (ConcreteModel,
                            exp,
                            log,
                            Set,
-                           Var,
-                           units as pyunits)
+                           units as pyunits,
+                           Var)
 from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (AqueousPhase,
@@ -35,7 +35,7 @@ from idaes.core import (AqueousPhase,
 from idaes.core.util.constants import Constants
 from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.generic.generic_property import (
-        GenericParameterBlock)
+        GenericParameterBlock, StateIndex)
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.pure.electrolyte import \
     relative_permittivity_constant
@@ -84,6 +84,7 @@ configuration = {
                    "amount": pyunits.mol,
                    "temperature": pyunits.K},
     "state_definition": FTPx,
+    "state_components": StateIndex.true,
     "pressure_ref": 1e5,
     "temperature_ref": 300}
 
@@ -306,11 +307,11 @@ class TestStateBlockSymmetric(object):
                     str(model.state[1].Liq_X[j]._expr) ==
                     str(model.state[1].mole_frac_phase_comp_true["Liq", j]))
             else:
-                # _X should be mutiplied by charge
+                # _X should be mutiplied by |charge|
                 assert (
                     str(model.state[1].Liq_X[j]._expr) ==
                     str(model.state[1].mole_frac_phase_comp_true["Liq", j] *
-                        model.params.get_component(j).config.charge))
+                        abs(model.params.get_component(j).config.charge)))
 
         assert isinstance(model.state[1].Liq_X_ref, Expression)
         assert len(model.state[1].Liq_X_ref) == 6
@@ -319,11 +320,11 @@ class TestStateBlockSymmetric(object):
                 # _X should be mole_frac_phase_comp_true
                 assert model.state[1].Liq_X_ref[j]._expr == 0
             else:
-                # _X should be mutiplied by charge
+                # _X should be mutiplied by |charge|
                 assert (
                     str(model.state[1].Liq_X_ref[j]._expr) ==
                     str(model.state[1].Liq_x_ref[j] *
-                        model.params.get_component(j).config.charge))
+                        abs(model.params.get_component(j).config.charge)))
 
         assert isinstance(model.state[1].Liq_Y, Expression)
         assert len(model.state[1].Liq_Y) == 4
@@ -365,26 +366,13 @@ class TestStateBlockSymmetric(object):
 
         assert isinstance(model.state[1].Liq_vol_mol_solvent, Expression)
         assert len(model.state[1].Liq_vol_mol_solvent) == 1
-        assert model.state[1].Liq_vol_mol_solvent.expr == (
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"]/42 +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]/42) /
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"]))
+        assert model.state[1].Liq_vol_mol_solvent.expr == 1/42
 
         assert isinstance(model.state[1].Liq_relative_permittivity_solvent,
                           Expression)
         assert len(model.state[1].Liq_relative_permittivity_solvent) == 1
         assert model.state[1].Liq_relative_permittivity_solvent.expr == (
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] *
-             model.params.get_component("H2O").relative_permittivity_liq_comp *
-             model.params.get_component("H2O").mw +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
-             model.params.get_component("C6H12").relative_permittivity_liq_comp *
-             model.params.get_component("C6H12").mw) /
-            (model.state[1].mole_frac_phase_comp_true["Liq", "H2O"] *
-             model.params.get_component("H2O").mw +
-             model.state[1].mole_frac_phase_comp_true["Liq", "C6H12"] *
-             model.params.get_component("C6H12").mw))
+            model.params.get_component("H2O").relative_permittivity_liq_comp)
 
         assert isinstance(model.state[1].Liq_A_DH, Expression)
         assert len(model.state[1].Liq_A_DH) == 1
@@ -393,7 +381,7 @@ class TestStateBlockSymmetric(object):
             (1/3)*(2*Constants.pi*Constants.avogadro_number /
                    model.state[1].Liq_vol_mol_solvent)**0.5 *
             (Constants.elemental_charge**2 /
-             (model.state[1].Liq_relative_permittivity_solvent *
+             (4*Constants.pi*model.state[1].Liq_relative_permittivity_solvent *
               Constants.vacuum_electric_permittivity *
               Constants.boltzmann_constant *
               model.state[1].temperature))**(3/2))
@@ -478,6 +466,13 @@ class TestStateBlockSymmetric(object):
                 assert model.state[1].Liq_log_gamma_lc[k].expr == (
                     model.state[1].Liq_log_gamma_lc_I[k] -
                     model.state[1].Liq_log_gamma_lc_I0[k])
+
+        assert isinstance(model.state[1].Liq_log_gamma, Expression)
+        assert len(model.state[1].Liq_log_gamma) == 6
+        for k, v in model.state[1].Liq_log_gamma.items():
+            assert model.state[1].Liq_log_gamma[k].expr == (
+                model.state[1].Liq_log_gamma_pdh[k] +
+                model.state[1].Liq_log_gamma_lc[k])
 
     @pytest.mark.unit
     def test_alpha(self, model):

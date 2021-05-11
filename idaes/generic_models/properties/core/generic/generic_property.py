@@ -869,10 +869,18 @@ class GenericParameterData(PhysicalParameterBlock):
              'cp_mol': {'method': '_cp_mol'},
              'cp_mol_phase': {'method': '_cp_mol_phase'},
              'cp_mol_phase_comp': {'method': '_cp_mol_phase_comp'},
+             'cv_mol': {'method': '_cv_mol'},
+             'cv_mol_phase': {'method': '_cv_mol_phase'},
+             'cv_mol_phase_comp': {'method': '_cv_mol_phase_comp'},
              'dens_mass': {'method': '_dens_mass'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
              'dens_mol_phase': {'method': '_dens_mol_phase'},
+             'energy_internal_mol': {'method': '_energy_internal_mol'},
+             'energy_internal_mol_phase': {
+                 'method': '_energy_internal_mol_phase'},
+             'energy_internal_mol_phase_comp': {
+                 'method': '_energy_internal_mol_phase_comp'},
              'enth_mol': {'method': '_enth_mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
@@ -1504,6 +1512,34 @@ class GenericStateBlockData(StateBlockData):
             pobj = self.params.get_phase(p)
             pobj.config.equation_of_state.calculate_scaling_factors(self, pobj)
 
+        # Flow and density terms
+        if self.is_property_constructed("_enthalpy_flow_term"):
+            for k, v in self._enthalpy_flow_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
+                                                       default=1)
+                    sf_h = iscale.get_scaling_factor(self.enth_mol_phase[k],
+                                                     default=1)
+                    iscale.set_scaling_factor(v, sf_rho*sf_h)
+
+        if self.is_property_constructed("_material_density_term"):
+            for (p, j), v in self._material_density_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[p],
+                                                       default=1)
+                    sf_x = iscale.get_scaling_factor(
+                        self.mole_frac_phase_comp[p, j], default=1)
+                    iscale.set_scaling_factor(v, sf_rho*sf_x)
+
+        if self.is_property_constructed("_energy_density_term"):
+            for k, v in self._enthalpy_flow_term.items():
+                if iscale.get_scaling_factor(v) is None:
+                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
+                                                       default=1)
+                    sf_u = iscale.get_scaling_factor(
+                        self.energy_internal_mol_phase[k], default=1)
+                    iscale.set_scaling_factor(v, sf_rho*sf_u)
+
         # Phase equilibrium constraint
         if hasattr(self, "equilibrium_constraint"):
             pe_form_config = self.params.config.phase_equilibrium_state
@@ -1532,8 +1568,11 @@ class GenericStateBlockData(StateBlockData):
                             self, rblock)
                     iscale.set_scaling_factor(self.k_eq[r], sf_keq)
 
+                sf_const = carg["equilibrium_form"].calculate_scaling_factors(
+                    self, sf_keq)
+
                 iscale.constraint_scaling_transform(
-                    self.inherent_equilibrium_constraint[r], sf_keq)
+                    self.inherent_equilibrium_constraint[r], sf_const)
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
@@ -1817,6 +1856,40 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.cp_mol_phase_comp)
             raise
 
+    def _cv_mol(self):
+        try:
+            def rule_cv_mol(b):
+                return sum(b.cv_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.cv_mol = Expression(rule=rule_cv_mol,
+                                     doc="Mixture molar heat capacity")
+        except AttributeError:
+            self.del_component(self.cv_mol)
+            raise
+
+    def _cv_mol_phase(self):
+        try:
+            def rule_cv_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cv_mol_phase(b, p)
+            self.cv_mol_phase = Expression(self.params.phase_list,
+                                           rule=rule_cv_mol_phase)
+        except AttributeError:
+            self.del_component(self.cv_mol_phase)
+            raise
+
+    def _cv_mol_phase_comp(self):
+        try:
+            def rule_cv_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.cv_mol_phase_comp(b, p, j)
+            self.cv_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_cv_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.cv_mol_phase_comp)
+            raise
+
     def _dens_mass(self):
         try:
             def rule_dens_mass(b):
@@ -1865,6 +1938,109 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_dens_mol_phase)
         except AttributeError:
             self.del_component(self.dens_mol_phase)
+            raise
+
+    def _energy_internal_mol(self):
+        try:
+            def rule_energy_internal_mol(b):
+                return sum(b.energy_internal_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.energy_internal_mol = Expression(
+                rule=rule_energy_internal_mol,
+                doc="Mixture molar internal energy")
+        except AttributeError:
+            self.del_component(self.energy_internal_mol)
+            raise
+
+    def _energy_internal_mol_phase(self):
+        try:
+            def rule_energy_internal_mol_phase(b, p):
+                eos = b.params.get_phase(p).config.equation_of_state
+                return eos.energy_internal_mol_phase(b, p)
+            self.energy_internal_mol_phase = Expression(
+                self.params.phase_list, rule=rule_energy_internal_mol_phase)
+        except AttributeError:
+            self.del_component(self.energy_internal_mol_phase)
+            raise
+
+    def _energy_internal_mol_phase_comp(self):
+        try:
+            def rule_energy_internal_mol_phase_comp(b, p, j):
+                eos = b.params.get_phase(p).config.equation_of_state
+                return eos.energy_internal_mol_phase_comp(b, p, j)
+            self.energy_internal_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_energy_internal_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.energy_internal_mol_phase_comp)
+            raise
+
+    def _enth_mol(self):
+        try:
+            def rule_enth_mol(b):
+                return sum(b.enth_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.enth_mol = Expression(rule=rule_enth_mol,
+                                       doc="Mixture molar enthalpy")
+        except AttributeError:
+            self.del_component(self.enth_mol)
+            raise
+
+    def _enth_mol_phase(self):
+        try:
+            def rule_enth_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.enth_mol_phase(b, p)
+            self.enth_mol_phase = Expression(self.params.phase_list,
+                                             rule=rule_enth_mol_phase)
+        except AttributeError:
+            self.del_component(self.enth_mol_phase)
+            raise
+
+    def _enth_mol_phase_comp(self):
+        try:
+            def rule_enth_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
+            self.enth_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_enth_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.enth_mol_phase_comp)
+            raise
+
+    def _entr_mol(self):
+        try:
+            def rule_entr_mol(b):
+                return sum(b.entr_mol_phase[p]*b.phase_frac[p]
+                           for p in b.params.phase_list)
+            self.entr_mol = Expression(rule=rule_entr_mol,
+                                       doc="Mixture molar entropy")
+        except AttributeError:
+            self.del_component(self.entr_mol)
+            raise
+
+    def _entr_mol_phase(self):
+        try:
+            def rule_entr_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.entr_mol_phase(b, p)
+            self.entr_mol_phase = Expression(self.params.phase_list,
+                                             rule=rule_entr_mol_phase)
+        except AttributeError:
+            self.del_component(self.entr_mol_phase)
+            raise
+
+    def _entr_mol_phase_comp(self):
+        try:
+            def rule_entr_mol_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.entr_mol_phase_comp(b, p, j)
+            self.entr_mol_phase_comp = Expression(
+                self.params._phase_component_set,
+                rule=rule_entr_mol_phase_comp)
+        except AttributeError:
+            self.del_component(self.entr_mol_phase_comp)
             raise
 
     def _flow_mass(self):
@@ -2067,74 +2243,6 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_flow_vol_phase)
         except AttributeError:
             self.del_component(self.flow_vol_phase)
-            raise
-
-    def _enth_mol(self):
-        try:
-            def rule_enth_mol(b):
-                return sum(b.enth_mol_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.enth_mol = Expression(rule=rule_enth_mol,
-                                       doc="Mixture molar enthalpy")
-        except AttributeError:
-            self.del_component(self.enth_mol)
-            raise
-
-    def _enth_mol_phase(self):
-        try:
-            def rule_enth_mol_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.enth_mol_phase(b, p)
-            self.enth_mol_phase = Expression(self.params.phase_list,
-                                             rule=rule_enth_mol_phase)
-        except AttributeError:
-            self.del_component(self.enth_mol_phase)
-            raise
-
-    def _enth_mol_phase_comp(self):
-        try:
-            def rule_enth_mol_phase_comp(b, p, j):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.enth_mol_phase_comp(b, p, j)
-            self.enth_mol_phase_comp = Expression(
-                self.params._phase_component_set,
-                rule=rule_enth_mol_phase_comp)
-        except AttributeError:
-            self.del_component(self.enth_mol_phase_comp)
-            raise
-
-    def _entr_mol(self):
-        try:
-            def rule_entr_mol(b):
-                return sum(b.entr_mol_phase[p]*b.phase_frac[p]
-                           for p in b.params.phase_list)
-            self.entr_mol = Expression(rule=rule_entr_mol,
-                                       doc="Mixture molar entropy")
-        except AttributeError:
-            self.del_component(self.entr_mol)
-            raise
-
-    def _entr_mol_phase(self):
-        try:
-            def rule_entr_mol_phase(b, p):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.entr_mol_phase(b, p)
-            self.entr_mol_phase = Expression(self.params.phase_list,
-                                             rule=rule_entr_mol_phase)
-        except AttributeError:
-            self.del_component(self.entr_mol_phase)
-            raise
-
-    def _entr_mol_phase_comp(self):
-        try:
-            def rule_entr_mol_phase_comp(b, p, j):
-                p_config = b.params.get_phase(p).config
-                return p_config.equation_of_state.entr_mol_phase_comp(b, p, j)
-            self.entr_mol_phase_comp = Expression(
-                self.params._phase_component_set,
-                rule=rule_entr_mol_phase_comp)
-        except AttributeError:
-            self.del_component(self.entr_mol_phase_comp)
             raise
 
     def _fug_phase_comp(self):
