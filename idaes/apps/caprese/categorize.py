@@ -207,23 +207,15 @@ def categorize_dae_variables_and_constraints(
         dummy_obj = True
         model._temp_dummy_obj = Objective(expr=0)
 
-    # TODO: This constructs a constraint Jacobian for the entire model,
-    # which is not necessary as we only use the submatrix at t1. We could
-    # probably save time by putting our vars and cons on a dummy block
-    # as references, then constructing an IncidenceGraphInterface with
-    # that block.
-    igraph = IncidenceGraphInterface(model)
-
+    igraph = IncidenceGraphInterface()
     variables = [var[t1] for var in dae_vars]
     constraints = [con[t1] for con in dae_cons]
 
     # Filter out fixed vars and inactive constraints.
     # We could do this check earlier (before constructing igraph)
     # by just checking var.fixed and con.active...
-    present_vars = [var for var in variables if
-            var in igraph.nlp._vardata_to_idx]
-    present_cons = [con for con in constraints if
-            con in igraph.nlp._condata_to_idx]
+    present_vars = [var for var in variables if not var.fixed]
+    present_cons = [con for con in constraints if con.active]
 
     var_block_map, con_block_map = igraph.block_triangularize(
             present_vars,
@@ -272,7 +264,7 @@ def categorize_dae_variables_and_constraints(
     unused_vars = []
     for vardata in variables:
         var = dae_map[vardata]
-        if vardata not in igraph.nlp._vardata_to_idx:
+        if vardata not in var_block_map:
             unused_vars.append(var)
         elif vardata not in not_alg_set:
             alg_vars.append(var)
@@ -281,7 +273,7 @@ def categorize_dae_variables_and_constraints(
     unused_cons = []
     for condata in constraints:
         con = dae_map[condata]
-        if condata not in igraph.nlp._condata_to_idx:
+        if condata not in con_block_map:
             unused_cons.append(con)
         elif condata not in not_alg_set:
             alg_cons.append(con)
