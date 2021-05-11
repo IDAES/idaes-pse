@@ -268,7 +268,7 @@ class TestBTXIdeal():
                 value(btx_ftpz.fs.unit.vapor_outlet.pressure[0]))
 
         # Unit level
-        assert (pytest.approx(-15901.107, rel=1e-4) ==
+        assert (pytest.approx(-15901.107, rel=1e-5) ==
                 value(btx_ftpz.fs.unit.heat_duty[0]))
 
         # Using the FcTP state variables

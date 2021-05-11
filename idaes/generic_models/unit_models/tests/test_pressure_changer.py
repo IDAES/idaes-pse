@@ -807,6 +807,7 @@ class Test_costing(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
         m.fs.unit.deltaP.fix(500000)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        iscale.set_scaling_factor(m.fs.unit.control_volume.work[0], 1e-5)
         iscale.calculate_scaling_factors(m)
 
         assert degrees_of_freedom(m) == 0
@@ -815,14 +816,17 @@ class Test_costing(object):
 
         m.fs.unit.initialize()
 
+        assert value(m.fs.unit.control_volume.work[0]) == \
+            pytest.approx(101429, rel=1e-5)
+
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334598.679, rel=1e-3)
+            pytest.approx(334648, rel=1e-5)
 
         assert_units_consistent(m.fs.unit)
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334598.679, rel=1e-3)
+            pytest.approx(334648, rel=1e-5)
 
     @pytest.mark.component
     def test_turbine(self):
