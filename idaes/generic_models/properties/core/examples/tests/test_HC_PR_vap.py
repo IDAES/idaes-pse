@@ -32,7 +32,7 @@ from idaes.core import (MaterialBalanceType,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -46,7 +46,7 @@ from idaes.generic_models.properties.core.examples.HC_PR_vap \
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -260,7 +260,7 @@ class TestStateBlock(object):
         for p in model.params.phase_list:
             assert model.props[1].get_energy_density_terms(p) == (
                 model.props[1].dens_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
+                model.props[1].energy_internal_mol_phase[p])
 
     @pytest.mark.unit
     def test_default_material_balance_type(self, model):

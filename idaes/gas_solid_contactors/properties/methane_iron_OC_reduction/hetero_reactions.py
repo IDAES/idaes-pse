@@ -56,6 +56,7 @@ from idaes.core.util.config import (is_state_block,
                                     is_physical_parameter_block,
                                     is_reaction_parameter_block)
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -220,22 +221,15 @@ class _ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
     def initialize(blk, outlvl=idaeslog.NOTSET,
-                   optarg={'tol': 1e-8}, solver='ipopt'):
+                   optarg={}, solver=None):
         '''
         Initialisation routine for reaction package.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-                 * 0 = Use default idaes.init logger setting
-                 * 1 = Maximum output
-                 * 2 = Include solver output
-                 * 3 = Return solver state for each step in subroutines
-                 * 4 = Return solver state for each step in routine
-                 * 5 = Final initialization status and exceptions
-                 * 6 = No output
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
-                     initialization (default = "ipopt")
+                     initialization (default = None, use default solver)
         Returns:
             None
         '''
@@ -274,9 +268,8 @@ class _ReactionBlock(ReactionBlockBase):
                 blk[k].solid_state_ref.dens_mass_skeletal.fix(
                         blk[k].solid_state_ref.dens_mass_skeletal.value)
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # Initialise values
         for k in blk.keys():
