@@ -73,7 +73,7 @@ def scale_arc_constraints(blk):
             constraint_scaling_transform(c, sf)
 
 
-def map_scaling_factor(iter, default=1, warning=False, func=min):
+def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and call func
     on the result.  This could be use, for example, to get the minimum or
     maximum scaling factor of a set of components.
@@ -91,13 +91,14 @@ def map_scaling_factor(iter, default=1, warning=False, func=min):
     """
     return func(
         map(
-            lambda x: get_scaling_factor(x, default=default, warning=warning),
+            lambda x: get_scaling_factor(
+                x, default=default, warning=warning, hint=hint),
             iter
         )
     )
 
 
-def min_scaling_factor(iter, default=1, warning=True):
+def min_scaling_factor(iter, default=1, warning=True, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and get the
     minimum scaling factor.
 
@@ -185,7 +186,7 @@ def set_scaling_factor(c, v, data_objects=True):
             suf[cdat] = v
 
 
-def get_scaling_factor(c, default=None, warning=False, exception=False):
+def get_scaling_factor(c, default=None, warning=False, exception=False, hint=None):
     """Get a component scale factor.
 
     Args:
@@ -195,6 +196,8 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
                  (default=False)
         exception: whether to riase an Exception if a scaling factor is not
                    found (default=False)
+        hint: (str) a string to add to the warning or exception message to help
+            loacate the source.
 
     Returns:
         scaling factor (float)
@@ -202,19 +205,22 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     try:
         sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
+        if hint is None:
+            h = ""
+        else:
+            h = f", {hint}"
         if warning:
-            if isinstance(c, pyo.Component):
-                _log.warning(f"Accessing missing scaling factor for {c}")
+            if hasattr(c, "is_component_type") and c.is_component_type():
+                _log.warning(f"Missing scaling factor for {c}{h}")
             else:
-                _log.warning(f"Trying to get scaling factor for unnamed expr")
+                _log.warning(f"Trying to get scaling factor for unnamed expr {h}")
         if exception and default is None:
-            if isinstance(c, pyo.Component):
-                _log.error(f"Accessing missing scaling factor for {c}")
+            if hasattr(c, "is_component_type") and c.is_component_type():
+                _log.error(f"Missing scaling factor for {c}{h}")
             else:
-                _log.error(f"Trying to get scaling factor for unnamed expr")
+                _log.error(f"Trying to get scaling factor for unnamed expr{h}")
             raise
         sf = default
-
     return sf
 
 
@@ -489,8 +495,9 @@ def constraint_autoscale_large_jac(
     nlp = PyomoNLP(m)
     jac = nlp.evaluate_jacobian().tocsr()
     # Get lists of varibles and constraints to translate Jacobian indexes
-    clist = nlp.get_pyomo_constraints()
-    vlist = nlp.get_pyomo_variables()
+    # save them on the NLP for later, since genrating them seems to take a while
+    nlp.clist = clist = nlp.get_pyomo_constraints()
+    nlp.vlist = vlist = nlp.get_pyomo_variables()
     # Create a scaled Jacobian to account for variable scaling, for now ignore
     # constraint scaling
     jac_scaled = jac.copy()
@@ -559,11 +566,9 @@ def extreme_jacobian_entries(
     """
     if jac is None or nlp is None:
         jac, nlp = get_jacobian(m, scaled)
-    clist = nlp.get_pyomo_constraints()
-    vlist = nlp.get_pyomo_variables()
     el = []
-    for i, c in enumerate(clist):
-        for j, v in enumerate(vlist):
+    for i, c in enumerate(nlp.clist):
+        for j, v in enumerate(nlp.vlist):
             if (abs(jac[i, j]) <= small and abs(jac[i, j] > zero)) \
                 or abs(jac[i,j]) >= large:
                 el.append((abs(jac[i, j]), c, v))

@@ -1491,7 +1491,7 @@ class GenericStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        # Sclae state variables and associated constraints
+        # Scale state variables and associated constraints
         self.params.config.state_definition.calculate_scaling_factors(self)
 
         sf_T = iscale.get_scaling_factor(
@@ -1518,28 +1518,34 @@ class GenericStateBlockData(StateBlockData):
         if self.is_property_constructed("_enthalpy_flow_term"):
             for k, v in self._enthalpy_flow_term.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
-                                                       default=1)
-                    sf_h = iscale.get_scaling_factor(self.enth_mol_phase[k],
-                                                     default=1)
-                    iscale.set_scaling_factor(v, sf_rho*sf_h)
+                    sf_flow_phase = iscale.get_scaling_factor(
+                        self.flow_mol_phase[k],
+                        default=1,
+                        warning=True,
+                        hint="for _enthalpy_flow_term")
+                    sf_h = iscale.get_scaling_factor(
+                        self.enth_mol_phase[k],
+                        default=1,
+                        warning=True,
+                        hint="for _enthalpy_flow_term")
+                    iscale.set_scaling_factor(v, sf_flow_phase*sf_h)
 
         if self.is_property_constructed("_material_density_term"):
             for (p, j), v in self._material_density_term.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[p],
-                                                       default=1)
+                    sf_rho = iscale.get_scaling_factor(
+                        self.dens_mol_phase[p], default=1, warning=True)
                     sf_x = iscale.get_scaling_factor(
-                        self.mole_frac_phase_comp[p, j], default=1)
+                        self.mole_frac_phase_comp[p, j], default=1, warning=True)
                     iscale.set_scaling_factor(v, sf_rho*sf_x)
 
         if self.is_property_constructed("_energy_density_term"):
             for k, v in self._enthalpy_flow_term.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
-                                                       default=1)
+                    sf_rho = iscale.get_scaling_factor(
+                        self.dens_mol_phase[k], default=1, warning=True)
                     sf_u = iscale.get_scaling_factor(
-                        self.energy_internal_mol_phase[k], default=1)
+                        self.energy_internal_mol_phase[k], default=1, warning=True)
                     iscale.set_scaling_factor(v, sf_rho*sf_u)
 
         # Phase equilibrium constraint

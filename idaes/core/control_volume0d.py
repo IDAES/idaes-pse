@@ -1171,7 +1171,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             return sum(accumulation_term(b, t, p) for p in phase_list) == (
                 sum(b.properties_in[t].get_enthalpy_flow_terms(p)
                     for p in phase_list) -
-                sum(self.properties_out[t].get_enthalpy_flow_terms(p)
+                sum(b.properties_out[t].get_enthalpy_flow_terms(p)
                     for p in phase_list) +
                 heat_term(b, t) +
                 work_term(b, t) +
@@ -1838,7 +1838,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for t, c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
-                     for p in phase_list])
+                     for p in phase_list], hint="enthalpy_flow_terms")
                 if hasattr(self, "work"):
                     sf = min(sf, iscale.get_scaling_factor(
                         self.work[t], default=1, warning=True))

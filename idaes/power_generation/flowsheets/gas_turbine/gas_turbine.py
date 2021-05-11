@@ -254,12 +254,22 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
     m.fs.gas_prop_params.set_default_scaling("mole_frac_comp", 10)
     m.fs.gas_prop_params.set_default_scaling("mole_frac_phase_comp", 10)
-    low_conc = {"Ar":100, "H2S":100, "SO2":1000, "H2":1000, "CO":1000, "C2H4":100}
-    for c, s in low_conc.items():
+    _mf_scale = {
+        "Ar":100,
+        "O2":100,
+        "H2S":1000,
+        "SO2":1000,
+        "H2":1000,
+        "CO":1000,
+        "C2H4":1000,
+        "CO2":1000}
+    for c, s in _mf_scale.items():
         m.fs.gas_prop_params.set_default_scaling(
             "mole_frac_comp", s, index=c)
         m.fs.gas_prop_params.set_default_scaling(
             "mole_frac_phase_comp", s, index=("Vap", c))
+    m.fs.gas_prop_params.set_default_scaling(
+        "enth_mol_phase", 1e-3, index="Vap")
 
     m.fs.gas_combustion = GenericReactionParameterBlock(
         default=get_rxn(m.fs.gas_prop_params, rxns))
@@ -437,10 +447,10 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     for i, c in m.fs.cmb1.reaction_extent.items():
             iscale.constraint_scaling_transform(c, 1e-2)
     for i, v in m.fs.cmb1.control_volume.rate_reaction_generation.items():
-        if i[2] in low_conc:
-            iscale.set_scaling_factor(v, 10)
+        if i[2] in ["O2", "CO2", "CH4", "H2O"]:
+            iscale.set_scaling_factor(v, 0.001)
         else:
-            iscale.set_scaling_factor(v, 1e-3)
+            iscale.set_scaling_factor(v, 0.1)
     for v in m.fs.cmp1.deltaP.values():
         iscale.set_scaling_factor(v, 1e-6)
     for v in m.fs.gts1.deltaP.values():
@@ -459,8 +469,6 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
         iscale.constraint_scaling_transform(c, 10)
     for c in m.fs.gt_power_eqn.values():
         iscale.constraint_scaling_transform(c, 1e-8)
-    for c in m.fs.cmb1.pressure_drop_eqn.values():
-        iscale.constraint_scaling_transform(c, 1e-5)
     for c in m.fs.mx1.enthalpy_mixing_equations.values():
         iscale.constraint_scaling_transform(c, 1e-8)
     for c in m.fs.mx2.enthalpy_mixing_equations.values():
@@ -487,9 +495,6 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     # Calculate scaling factors/scaling transform of constraints
     #
     iscale.calculate_scaling_factors(m)
-    for c in m.fs.cmb1.control_volume.enthalpy_balances.values():
-        iscale.constraint_scaling_transform(c, 1e-6)
-
     #
     # Set basic model inputs for initialization
     #
