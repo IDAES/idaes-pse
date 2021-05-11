@@ -44,14 +44,16 @@ m.fs.surrogate.c2 = Constraint(
 
 inlet_dict = {"x_1": m.fs.surrogate.x_1,
               "x_2": m.fs.surrogate.x_2}
-outlet_dict = {"y_1": m.fs.surrogate.y_1,
-               "y_2": m.fs.surrogate.y_2}
+outlet_1_dict = {"y_1": m.fs.surrogate.y_1}
+outlet_2_dict = {"y_2": m.fs.surrogate.y_2}
 
 m.fs.surrogate.add_ports(name="inlet", member_list=inlet_dict)
-m.fs.surrogate.add_ports(name="outlet", member_list=outlet_dict)
+m.fs.surrogate.add_ports(name="outlet_1", member_list=outlet_1_dict)
+m.fs.surrogate.add_ports(name="outlet_2", member_list=outlet_2_dict)
 
 
 def my_initialize():
+    # Callback for user provided initialization sequence
     m.fs.surrogate.c2.deactivate()
     m.fs.surrogate.x_1.fix(1)
     m.fs.surrogate.x_2.fix(2)
@@ -64,16 +66,22 @@ def my_initialize():
 
 
 def test_ports():
+    # Check inlet port and port members
     assert hasattr(m.fs.surrogate, "inlet")
     assert hasattr(m.fs.surrogate.inlet, "x_1")
     assert hasattr(m.fs.surrogate.inlet, "x_2")
 
-    assert hasattr(m.fs.surrogate, "outlet")
-    assert hasattr(m.fs.surrogate.outlet, "y_1")
-    assert hasattr(m.fs.surrogate.outlet, "y_2")
+    # Check outlet port and port members
+    assert hasattr(m.fs.surrogate, "outlet_1")
+    assert hasattr(m.fs.surrogate, "outlet_2")
+    assert hasattr(m.fs.surrogate.outlet_1, "y_1")
+    assert not hasattr(m.fs.surrogate.outlet_1, "y_2")
+    assert hasattr(m.fs.surrogate.outlet_2, "y_2")
+    assert not hasattr(m.fs.surrogate.outlet_2, "y_1")
 
 
 def test_build():
+    # Check build of model
     assert hasattr(m.fs.surrogate, "x_1")
     assert hasattr(m.fs.surrogate, "x_2")
 
@@ -85,6 +93,7 @@ def test_build():
 
 
 def test_default_initialize():
+    # Check default initialize method
     m.fs.surrogate.x_1.fix()
     m.fs.surrogate.x_2.fix()
 
@@ -100,6 +109,7 @@ def test_default_initialize():
 
 
 def test_custom_initialize():
+    # Check custom initialize method as a callback from user
     m.fs.surrogate.initialize(custom_initialize=my_initialize())
     assert value(m.fs.surrogate.x_1) == pytest.approx(1, abs=1e-3)
     assert value(m.fs.surrogate.x_2) == pytest.approx(2, abs=1e-3)
