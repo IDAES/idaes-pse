@@ -811,10 +811,13 @@ class Test_costing(object):
         iscale.calculate_scaling_factors(m)
 
         assert degrees_of_freedom(m) == 0
-
         m.fs.unit.get_costing(mover_type="compressor")
-
         m.fs.unit.initialize()
+        results = solver.solve(m)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
         assert value(m.fs.unit.control_volume.work[0]) == \
             pytest.approx(101410.4, rel=1e-5)
