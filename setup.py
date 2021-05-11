@@ -35,8 +35,7 @@ def rglob(path, glob):
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
     "pyutilib @ https://github.com/PyUtilib/pyutilib/archive/master.zip",
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.0.idaes.2021.05.05.zip",
-    "pysp @ https://github.com/Pyomo/pysp/archive/master.zip",
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.0.idaes.2021.05.09.zip",
 ]
 
 
