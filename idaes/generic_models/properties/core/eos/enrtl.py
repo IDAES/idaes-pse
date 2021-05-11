@@ -55,6 +55,7 @@ class ENRTL(EoSBase):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
+    @staticmethod
     def build_parameters(b):
         # Build additional indexing sets
         pblock = b.parent_block()
@@ -92,6 +93,7 @@ class ENRTL(EoSBase):
         else:
             DefaultTauRule.build_parameters(b)
 
+    @staticmethod
     def common(b, pobj):
         pname = pobj.local_name
 
@@ -117,7 +119,7 @@ class ENRTL(EoSBase):
         if (pobj.config.equation_of_state_options is not None and
                 "reference_state" in pobj.config.equation_of_state_options):
             ref_state = pobj.config.equation_of_state_options[
-                "reference_state"].return_expression
+                "reference_state"]
         else:
             ref_state = DefaultRefState
 
@@ -166,7 +168,7 @@ class ENRTL(EoSBase):
             elif j in b.params.cation_set or j in b.params.anion_set:
                 return (x[j]*abs(cobj(b, j).config.charge))
             else:
-                return 0
+                return x[j]
 
         b.add_component(
             pname+"_X_ref",
