@@ -34,6 +34,7 @@ export class StreamTable {
             // only add the columns that don't have an empty column header
             let column_header = columns[col]
             if (column_header !== "") {
+                // If the column_header is Variable then we don't want the column to be right-aligned and we want the column to be pinned to the left so when the user scrolls the column scrolls with them
                 if (column_header === "Variable") {
                     column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, pinned: 'left',});
                 }
