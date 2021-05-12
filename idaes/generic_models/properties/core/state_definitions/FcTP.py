@@ -25,6 +25,8 @@ from idaes.generic_models.properties.core.state_definitions.FTPx import (
     state_initialization)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -112,12 +114,21 @@ def define_state(b):
         doc='Phase mole fractions',
         units=None)
 
+    def flow_mol_phase_comp_rule(b, p, j):
+        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+    b.flow_mol_phase_comp = Expression(b.phase_component_set,
+                                       rule=flow_mol_phase_comp_rule)
+
     b.phase_frac = Var(
         b.phase_list,
         initialize=1/len(b.phase_list),
         bounds=(0, None),
         doc='Phase fractions',
         units=None)
+
+    # Add electrolye state vars if required
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
 
     # Add supporting constraints
     def rule_mole_frac_comp(b, j):
@@ -198,51 +209,78 @@ def define_state(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FTPx(p, j):
+    def get_material_flow_terms_FcTP(p, j):
         """Create material flow terms for control volume."""
-        return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-    b.get_material_flow_terms = get_material_flow_terms_FTPx
+        return b.flow_mol_phase_comp[p, j]
+    b.get_material_flow_terms = get_material_flow_terms_FcTP
 
-    def get_enthalpy_flow_terms_FTPx(p):
+    def get_enthalpy_flow_terms_FcTP(p):
         """Create enthalpy flow terms."""
-        return b.flow_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
+        # enth_mol_phase probably does not exist when this is created
+        # Use try/except to build flow term if not present
+        try:
+            eflow = b._enthalpy_flow_term
+        except AttributeError:
+            def rule_eflow(b, p):
+                return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+            eflow = b._enthalpy_flow_term = Expression(
+                b.phase_list, rule=rule_eflow)
+        return eflow[p]
+    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FcTP
 
-    def get_material_density_terms_FTPx(p, j):
+    def get_material_density_terms_FcTP(p, j):
         """Create material density terms."""
-        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
-    b.get_material_density_terms = get_material_density_terms_FTPx
+        # dens_mol_phase probably does not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            mdens = b._material_density_term
+        except AttributeError:
+            def rule_mdens(b, p, j):
+                return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+            mdens = b._material_density_term = Expression(
+                b.phase_component_set, rule=rule_mdens)
+        return mdens[p, j]
+    b.get_material_density_terms = get_material_density_terms_FcTP
 
-    def get_energy_density_terms_FTPx(p):
+    def get_energy_density_terms_FcTP(p):
         """Create energy density terms."""
-        return b.dens_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_energy_density_terms = get_energy_density_terms_FTPx
+        # Density and energy terms probably do not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            edens = b._energy_density_term
+        except AttributeError:
+            def rule_edens(b, p):
+                return b.dens_mol_phase[p] * b.energy_internal_mol_phase[p]
+            edens = b._energy_density_term = Expression(
+                b.phase_list, rule=rule_edens)
+        return edens[p]
+    b.get_energy_density_terms = get_energy_density_terms_FcTP
 
-    def default_material_balance_type_FTPx():
+    def default_material_balance_type_FcTP():
         return MaterialBalanceType.componentTotal
-    b.default_material_balance_type = default_material_balance_type_FTPx
+    b.default_material_balance_type = default_material_balance_type_FcTP
 
-    def default_energy_balance_type_FTPx():
+    def default_energy_balance_type_FcTP():
         return EnergyBalanceType.enthalpyTotal
-    b.default_energy_balance_type = default_energy_balance_type_FTPx
+    b.default_energy_balance_type = default_energy_balance_type_FcTP
 
-    def get_material_flow_basis_FTPx():
+    def get_material_flow_basis_FcTP():
         return MaterialFlowBasis.molar
-    b.get_material_flow_basis = get_material_flow_basis_FTPx
+    b.get_material_flow_basis = get_material_flow_basis_FcTP
 
-    def define_state_vars_FTPx():
+    def define_state_vars_FcTP():
         """Define state vars."""
         return {"flow_mol_comp": b.flow_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
-    b.define_state_vars = define_state_vars_FTPx
+    b.define_state_vars = define_state_vars_FcTP
 
-    def define_display_vars_FTPx():
+    def define_display_vars_FcTP():
         """Define display vars."""
         return {"Molar Flowrate": b.flow_mol_comp,
                 "Temperature": b.temperature,
                 "Pressure": b.pressure}
-    b.define_display_vars = define_display_vars_FTPx
+    b.define_display_vars = define_display_vars_FcTP
 
 
 def define_default_scaling_factors(b):
@@ -353,8 +391,10 @@ def calculate_scaling_factors(b):
             iscale.constraint_scaling_transform(
                 b.phase_fraction_constraint[p], sf_p)
 
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
 
-# Inherit state_initialization from FTPX form, as the process is the same
+# Inherit state_initialization from FTPx form, as the process is the same
 
 
 do_not_initialize = []

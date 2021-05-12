@@ -22,6 +22,8 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config
+from .electrolyte_states import \
+    define_electrolyte_state, calculate_electrolyte_scaling
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
@@ -132,6 +134,10 @@ def define_state(b):
         rule=rule_phase_frac,
         doc='Phase fractions')
 
+    # Add electrolye state vars if required
+    if b.params._electrolyte:
+        define_electrolyte_state(b)
+
     # -------------------------------------------------------------------------
     # General Methods
     def get_material_flow_terms_FpcTP(p, j):
@@ -141,17 +147,44 @@ def define_state(b):
 
     def get_enthalpy_flow_terms_FpcTP(p):
         """Create enthalpy flow terms."""
-        return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+        # enth_mol_phase probably does not exist when this is created
+        # Use try/except to build flow term if not present
+        try:
+            eflow = b._enthalpy_flow_term
+        except AttributeError:
+            def rule_eflow(b, p):
+                return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+            eflow = b._enthalpy_flow_term = Expression(
+                b.phase_list, rule=rule_eflow)
+        return eflow[p]
     b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FpcTP
 
     def get_material_density_terms_FpcTP(p, j):
         """Create material density terms."""
-        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+        # dens_mol_phase probably does not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            mdens = b._material_density_term
+        except AttributeError:
+            def rule_mdens(b, p, j):
+                return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+            mdens = b._material_density_term = Expression(
+                b.phase_component_set, rule=rule_mdens)
+        return mdens[p, j]
     b.get_material_density_terms = get_material_density_terms_FpcTP
 
     def get_energy_density_terms_FpcTP(p):
         """Create energy density terms."""
-        return b.dens_mol_phase[p] * b.enth_mol_phase[p]
+        # Density and energy terms probably do not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            edens = b._energy_density_term
+        except AttributeError:
+            def rule_edens(b, p):
+                return b.dens_mol_phase[p] * b.energy_internal_mol_phase[p]
+            edens = b._energy_density_term = Expression(
+                b.phase_list, rule=rule_edens)
+        return edens[p]
     b.get_energy_density_terms = get_energy_density_terms_FpcTP
 
     def default_material_balance_type_FpcTP():
@@ -248,6 +281,9 @@ def calculate_scaling_factors(b):
             p, j], default=1, warning=True)
         iscale.constraint_scaling_transform(
             b.mole_frac_phase_comp_eq[p, j], sf)
+
+    if b.params._electrolyte:
+        calculate_electrolyte_scaling(b)
 
 
 do_not_initialize = []

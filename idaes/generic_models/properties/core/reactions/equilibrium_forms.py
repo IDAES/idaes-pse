@@ -13,6 +13,8 @@
 """
 Methods for defining equibilibrium reactions
 """
+from pyomo.environ import Param, units as pyunits
+
 from idaes.core.util.math import safe_log
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
@@ -51,13 +53,19 @@ class power_law_equil():
 
         return b.k_eq[r_idx] == e
 
+    @staticmethod
+    def calculate_scaling_factors(b, sf_keq):
+        return sf_keq
+
 
 # ----------------------------------------------------------------------------
 class log_power_law_equil():
 
     @staticmethod
     def build_parameters(rblock, config):
-        pass
+        rblock.eps = Param(default=EPS,
+                           mutable=True,
+                           doc="Smoothing factor for safe log function")
 
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
@@ -73,9 +81,39 @@ class log_power_law_equil():
             o = rblock.reaction_order[p, j]
 
             if e is None and o != 0:
-                e = o*safe_log(get_concentration_term(b, r_idx)[p, j], eps=EPS)
+                # Need to strip units from concentration term (if applicable)
+                c = get_concentration_term(b, r_idx)[p, j]
+                u = pyunits.get_units(c)
+                if u is not None:
+                    # Has units, so divide conc by units
+                    expr = c/u
+                else:
+                    # Units is None, so just use conc
+                    expr = c
+                e = o*safe_log(expr, eps=rblock.eps)
             elif e is not None and o != 0:
-                e = e + o*safe_log(
-                    get_concentration_term(b, r_idx)[p, j], eps=EPS)
+                # Need to strip units from concentration term (if applicable)
+                c = get_concentration_term(b, r_idx)[p, j]
+                u = pyunits.get_units(c)
+                if u is not None:
+                    # Has units, so divide conc by units
+                    expr = c/u
+                else:
+                    # Units is None, so just use conc
+                    expr = c
+                e = e + o*safe_log(expr, eps=rblock.eps)
 
-        return safe_log(b.k_eq[r_idx], eps=EPS) == e
+        # Need to check units on k_eq as well
+        u = pyunits.get_units(b.k_eq[r_idx])
+        if u is not None:
+            # Has units, so divide k_eq by units
+            expr = b.k_eq[r_idx]/u
+        else:
+            # Units is None, so just use k_eq
+            expr = b.k_eq[r_idx]
+
+        return safe_log(expr, eps=rblock.eps) == e
+
+    @staticmethod
+    def calculate_scaling_factors(b, sf_keq):
+        return 1

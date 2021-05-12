@@ -57,10 +57,11 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import (solve_indexed_blocks,
                                             fix_state_vars,
                                             revert_state_vars)
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_equalities)
 from idaes.core.util.math import safe_log
+from idaes.core.util import get_solver
 from idaes import bin_directory
 from idaes.core.util.constants import Constants as const
 import idaes.logger as idaeslog
@@ -173,6 +174,11 @@ conditions, and thus corresponding constraints  should be included,
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase_comp': {'method': '_mole_frac_phase',
                                       'units': 'no unit'},
+             'energy_internal_mol_phase': {
+                 'method': '_energy_internal_mol_phase',
+                 'units': 'J/mol'},
+             'energy_internal_mol': {'method': '_energy_internal_mol',
+                                     'units': 'J/mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase',
                                 'units': 'J/mol'},
              'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
@@ -210,7 +216,7 @@ class _CubicStateBlock(StateBlock):
 
     def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+                   solver=None, optarg={}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -225,7 +231,7 @@ class _CubicStateBlock(StateBlock):
                          * pressure
                          * temperature
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed and
@@ -234,7 +240,7 @@ class _CubicStateBlock(StateBlock):
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
             solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -271,14 +277,9 @@ class _CubicStateBlock(StateBlock):
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
-        # Set solver options
-        if optarg is None:
-            sopt = {'tol': 1e-8}
-        else:
-            sopt = optarg
 
-        opt = SolverFactory('ipopt')
-        opt.options = sopt
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
@@ -791,6 +792,33 @@ class CubicStateBlockData(StateBlockData):
         self.eq_dens_mass_phase = Constraint(self.params.phase_list,
                                              rule=rule_dens_mass_phase)
 
+    def _energy_internal_mol_phase(self):
+        self.energy_internal_mol_phase = Var(
+            self.params.phase_list,
+            doc='Phase molar specific internal energies [J/mol]',
+            units=pyunits.J/pyunits.mol)
+
+        def rule_energy_internal_mol_phase(b, p):
+            if p == "Vap":
+                return (b.energy_internal_mol_phase[p] ==
+                        b._energy_internal_mol_vap())
+            else:
+                return (b.energy_internal_mol_phase[p] ==
+                        b._energy_internal_mol_liq())
+        self.eq_energy_internal_mol_phase = Constraint(
+            self.params.phase_list, rule=rule_energy_internal_mol_phase)
+
+    def _energy_internal_mol(self):
+        self.energy_internal_mol = Var(
+            doc='Mixture molar specific internal energy [J/mol]',
+            units=pyunits.J/pyunits.mol)
+
+        def rule_energy_internal_mol(b):
+            return b.energy_internal_mol*b.flow_mol == sum(
+                    b.flow_mol_phase[p]*b.energy_internal_mol_phase[p]
+                    for p in b.params.phase_list)
+        self.eq_energy_internal_mol = Constraint(rule=rule_energy_internal_mol)
+
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
             self.params.phase_list,
@@ -946,7 +974,8 @@ class CubicStateBlockData(StateBlockData):
         if not self.is_property_constructed("energy_density_terms"):
             try:
                 def rule_energy_density_terms(b, p):
-                    return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+                    return (self.dens_mol_phase[p] *
+                            self.energy_internal_mol_phase[p])
                 self.energy_density_terms = Expression(
                     self.params.phase_list,
                     rule=rule_energy_density_terms
@@ -1098,6 +1127,9 @@ class CubicStateBlockData(StateBlockData):
     def _fug_coeff_liq(b, j):
         return b._fug_coeff_cubic("Liq", j)
 
+    def _energy_internal_mol_liq(b):
+        return b._energy_internal_mol_cubic("Liq")
+
     def _enth_mol_liq(b):
         return b._enth_mol_cubic("Liq")
 
@@ -1233,6 +1265,9 @@ class CubicStateBlockData(StateBlockData):
 
     def _fug_coeff_vap(b, j):
         return b._fug_coeff_cubic("Vap", j)
+
+    def _energy_internal_mol_vap(b):
+        return b._energy_internal_mol_cubic("Vap")
 
     def _enth_mol_vap(b):
         return b._enth_mol_cubic("Vap")
@@ -1578,6 +1613,45 @@ class CubicStateBlockData(StateBlockData):
                           (2*b._compress_fact_eq[p] +
                            b._B_eq[p]*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
                 (b._B_eq[p]*b.EoS_p) + log(b.mole_frac_phase_comp[p, j]))
+
+    def _energy_internal_mol_cubic(b, p):
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        return (((b.temperature*b.dadT[p] - b.am[p]) *
+                 safe_log((2*b.compress_fact_phase[p] +
+                           b.B[p]*(b.EoS_u+b.EoS_p)) /
+                          (2*b.compress_fact_phase[p] +
+                           b.B[p]*(b.EoS_u-b.EoS_p)), eps=1e-6)) /
+                (b.bm[p]*b.EoS_p) + b._energy_internal_mol_ig(p))
+
+    def _energy_internal_mol_ig(b, p):
+        dU_form = {}
+        for j in b.params.component_list:
+            ele_comp = b.params.get_component(j).config.elemental_composition
+            if ele_comp is None:
+                raise ConfigurationError(
+                    "{} calculation of internal energy requires elemental "
+                    "composition of all species. Please set this using the "
+                    "elemental_composition argument in the component "
+                    "declaration ({}).".format(b.name, j))
+
+            delta_n = 0
+            for e, s in ele_comp.items():
+                # Check for any element which is vapor at standard state
+                if e in ["He", "Ne", "Ar", "Kr", "Xe", "Ra"]:
+                    delta_n += -s
+                elif e in ["F", "Cl", "H", "N", "O"]:
+                    delta_n += -s/2  # These are diatomic at standard state
+
+            if p == "Vap":
+                delta_n += 1  # One mole of gaseous compound is formed
+            dU_form[j] = delta_n*const.gas_constant*b.params.temperature_ref
+
+        return sum(b.mole_frac_phase_comp[p, j] *
+                   (b._enth_mol_comp_ig(j) -
+                    const.gas_constant *
+                    (b.temperature-b.params.temperature_ref) +
+                    b.params.enth_mol_form_ref[j] + dU_form[j])
+                   for j in b.params.component_list)
 
     def _enth_mol_cubic(b, p):
         # Derived from equation on pg. 120 in Properties of Gases and Liquids
