@@ -46,7 +46,6 @@ def test_ipopt_idaes_config():
     isolve.use_idaes_solver_configuration_deafults(False)
     solver = pyo.SolverFactory('ipopt')
     assert "nlp_scaling_method" not in solver.options
-    isolve.use_idaes_solver_configuration_deafults()
 
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
