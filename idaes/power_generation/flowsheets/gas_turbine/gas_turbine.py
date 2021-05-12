@@ -225,7 +225,15 @@ def performance_curves(m, flow_scale=0.896):
             -1373.6*f**3 + 31759*f**2 - 188528*f + 500520)
 
 
-def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.896):
+def main(
+    comps,
+    rxns,
+    phases,
+    air_comp,
+    ng_comp,
+    m=None,
+    initialize=True,
+    flow_scale=0.896):
     """Generate and initialize the gas turbine flowsheet. This method returns
     a model and solver. The flow_scale argument can be used to scale the turnine
     up or down with the same relative performace.
@@ -237,6 +245,7 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
         phases: (list) phases potentially present
         air_comp: (dict) mole-fraction air composition
         ng_comp: (dict) mole-fraction natural gas composition
+        m: (ConcreteModel) model to add flowsheet too.  If None create a new one.
         initialize: (bool) If true initialize the flowsheet
         flow_scale: (float) flow scale multiplier to scale the performace curves
             up or down. Original nominal volumetric flow/new nominal volumetric
@@ -249,7 +258,8 @@ def main(comps, rxns, phases, air_comp, ng_comp, initialize=True, flow_scale=0.8
     #
     # Model, flowsheet and properties
     #
-    m = pyo.ConcreteModel("Gas Turbine Model")
+    if m is None:
+        m = pyo.ConcreteModel("Gas Turbine Model")
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
     m.fs.gas_prop_params.set_default_scaling("mole_frac_comp", 10)

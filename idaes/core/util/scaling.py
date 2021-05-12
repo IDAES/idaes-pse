@@ -222,7 +222,7 @@ def get_scaling_factor(c, default=None, warning=False, exception=False, hint=Non
             if hasattr(c, "is_component_type") and c.is_component_type():
                 _log.error(f"Missing scaling factor for {c}{h}")
             else:
-                _log.error(f"Trying to get scaling factor for unnamed expr{h}")
+                _log.error(f"Trying to get scaling factor for unnamed expr {h}")
             raise
         sf = default
     return sf
