@@ -535,7 +535,7 @@ should be constructed in this reaction block,
             raise PropertyNotSupportedError(
                     '{} {} is not supported by reaction package (property is '
                     'not listed in get_supported_properties).'
-                    .format(self.name, attr, attr))
+                    .format(self.name, attr))
 
         # Get method name from get_supported_properties
         try:
