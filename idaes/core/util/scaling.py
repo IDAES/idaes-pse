@@ -85,6 +85,8 @@ def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
         warning: Log a warning for missing scaling factors
         func: The function to call on the resulting iterable of scaling factors.
             The default is min().
+        hint: Paired with warning=True, this is a string to indicate where the
+            missing scaling factor was being accessed, to easier diagnose issues.
 
     Returns:
         The result of func on the set of scaling factors
@@ -108,6 +110,8 @@ def min_scaling_factor(iter, default=1, warning=True, hint=None):
             None, this will raise an exception when scaling factors are missing.
             The default is default=1.
         warning: Log a warning for missing scaling factors
+        hint: Paired with warning=True, this is a string to indicate where the
+            missing scaling factor was being accessed, to easier diagnose issues.
 
     Returns:
         Minimum scaling factor of the components in iter
