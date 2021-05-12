@@ -15,9 +15,6 @@ import pytest
 import idaes
 import idaes.core.solvers as isolve
 
-isolve.use_idaes_solver_configuration_deafults()
-
-
 @pytest.mark.unit
 def test_ipopt_idaes_available():
     """
@@ -36,6 +33,7 @@ def test_ipopt_idaes_config():
     """
     Test that the default solver options are set
     """
+    isolve.use_idaes_solver_configuration_deafults()
     orig = idaes.cfg["ipopt"]["options"]["nlp_scaling_method"]
     idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = "gradient-based"
     solver = pyo.SolverFactory('ipopt')
