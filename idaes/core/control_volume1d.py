@@ -1634,7 +1634,7 @@ argument)."""))
                         'model_check method to the associated '
                         'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, hold_state=True):
         '''
         Initialization routine for 1D control volume.
@@ -1662,6 +1662,9 @@ argument)."""))
             states were fixed during initialization else the release state is
             triggered.
         '''
+        if optarg is None:
+            optarg = {}
+
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(
             blk.name, outlvl, tag="control_volume")

@@ -6,7 +6,10 @@ class SolverWrapper(object):
     _use_idaes_config = False
 
     def __init__(self, name, register=True):
+        if name is None:
+            name = 'default'
         self.name = name
+        self.registered = register
         if name == 'default':
             self.solver = None
             doc = "IDAES Configured Default Solver"
@@ -25,7 +28,8 @@ class SolverWrapper(object):
         else:
             name = self.name
             solver = self.solver
-        if name in idaes.cfg and (self._use_idaes_config or name == "default"):
+        if name in idaes.cfg and \
+            (self._use_idaes_config or name == "default" or not self.registered):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
                     kwargs[k] = v

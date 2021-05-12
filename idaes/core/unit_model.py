@@ -14,7 +14,7 @@
 Base class for unit models
 """
 
-from pyomo.environ import Reference, SolverFactory
+from pyomo.environ import Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
@@ -606,7 +606,7 @@ Must be True if dynamic = True,
                     f"developer to develop a unit specific stream table.")
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
@@ -629,6 +629,9 @@ Must be True if dynamic = True,
         Returns:
             None
         '''
+        if optarg is None:
+            optarg = {}
+
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
@@ -653,6 +656,7 @@ Must be True if dynamic = True,
         if hasattr(blk, "costing"):
             blk.costing.deactivate()
 
+        print(opt.options)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
