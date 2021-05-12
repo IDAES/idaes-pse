@@ -656,7 +656,6 @@ Must be True if dynamic = True,
         if hasattr(blk, "costing"):
             blk.costing.deactivate()
 
-        print(opt.options)
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             results = opt.solve(blk, tee=slc.tee)
 
