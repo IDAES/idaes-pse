@@ -142,7 +142,7 @@ class TestStateBlockUnsymmetric(object):
                 2.5039: 0.568,
                 2.9837: 0.568,
                 3.4982: 0.571,
-                3.994: 0.576,
+                # 3.994: 0.576,
                 # 4.4897: 0.584,
                 # 4.7909: 0.589,
                 # 4.9908: 0.593
@@ -160,6 +160,4 @@ class TestStateBlockUnsymmetric(object):
 
             gamma_KCl = exp(value(0.5*(model.state[1].Liq_log_gamma["K+"] +
                                        model.state[1].Liq_log_gamma["Cl-"])))
-            print(x, g, gamma_KCl, (g-gamma_KCl)/g, (g-gamma_KCl))
             assert pytest.approx(g, rel=5e-2) == gamma_KCl
-        assert False

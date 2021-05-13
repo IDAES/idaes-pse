@@ -731,6 +731,86 @@ class TestUnsymmetric_0KCl(object):
             assert value(v) == pytest.approx(0, abs=1e-5)
 
 
+class TestUnsymmetric_0NaCl(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        config = dict(configuration)
+        eos_opt = config["phases"]["Liq"]["equation_of_state_options"] = {}
+        eos_opt["reference_state"] = Unsymmetric
+
+        m = ConcreteModel()
+        m.params = GenericParameterBlock(default=config)
+        
+        # Set parameters to those used in 1982 paper
+        m.params.Liq.tau["H2O", "K+, Cl-"].set_value(8.064)
+        m.params.Liq.tau["K+, Cl-", "H2O"].set_value(-4.107)
+
+        m.state = m.params.build_state_block([1])
+
+        # Need to set a value of T for checking expressions later
+        m.state[1].temperature.set_value(298)
+
+        return m
+
+    @pytest.mark.unit
+    def test_parameters(self, model):
+        assert model.params.Liq.tau["H2O", "K+, Cl-"].value == 8.064
+        assert model.params.Liq.tau["K+, Cl-", "H2O"].value == -4.107
+
+    @pytest.mark.unit
+    def test_log_gamma(self, model):
+        # start with pure water
+        # Using 0 results in division by zero errors
+        for k in model.state[1].mole_frac_phase_comp:
+            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
+
+        # Data from [2] - Form {molality: gamma_KCl}
+        # Ignoring final points due to large error (stll <7%)
+        data = {0.001: 0.965,
+                0.002: 0.951,
+                0.005: 0.927,
+                0.01: 0.901,
+                0.0201: 0.869,
+                0.05: 0.816,
+                0.0982: 0.768,
+                0.1983: 0.717,
+                0.3049: 0.687,
+                0.3999: 0.665,
+                0.5001: 0.649,
+                0.6032: 0.636,
+                0.7003: 0.626,
+                0.7996: 0.617,
+                0.8968: 0.61,
+                0.9926: 0.604,
+                1.1899: 0.594,
+                1.3844: 0.586,
+                1.5817: 0.58,
+                1.7923: 0.576,
+                1.9895: 0.573,
+                2.5039: 0.568,
+                2.9837: 0.568,
+                3.4982: 0.571,
+                # 3.994: 0.576,
+                # 4.4897: 0.584,
+                # 4.7909: 0.589,
+                # 4.9908: 0.593
+                }
+
+        for x, g in data.items():
+            w = 1000/18
+
+            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+                w/(w+2*x))
+            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
+                x/(w+2*x))
+            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
+                x/(w+2*x))
+
+            gamma_KCl = exp(value(0.5*(model.state[1].Liq_log_gamma["K+"] +
+                                       model.state[1].Liq_log_gamma["Cl-"])))
+            assert pytest.approx(g, rel=5e-2) == gamma_KCl
+
+
 class TestUnsymmetric_Mixed(object):
     @pytest.fixture(scope="class")
     def model(self):
@@ -816,12 +896,14 @@ class TestUnsymmetric_Mixed(object):
             # Calculate mean activity coefficients for salts
             lg_NaCl = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
                                  model.state[1].Liq_log_gamma["Cl-"]))
+            lg_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
+                                model.state[1].Liq_log_gamma["Cl-"]))
             lgm_NaCl = 0.5*(lgm_Na + lgm_Cl)
             lgm_KCl = 0.5*(lgm_K + lgm_Cl)
-            print(x, g[0], lgm_NaCl, g[1], lgm_KCl, lg_NaCl)
-            model.state[1].mole_frac_phase_comp.display()
-            print(value(model.state[1].Liq_log_gamma["Na+"]),
-                  value(model.state[1].Liq_log_gamma["Cl-"]))
+            print(x, g[0], lgm_NaCl, g[1], lgm_KCl, lg_NaCl, lg_KCl)
+            # model.state[1].mole_frac_phase_comp.display()
+            # print(value(model.state[1].Liq_log_gamma["Na+"]),
+            #       value(model.state[1].Liq_log_gamma["Cl-"]))
         assert False
 
 
