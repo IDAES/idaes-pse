@@ -318,7 +318,8 @@ class TestStateBlockSymmetric(object):
         for j in model.state[1].Liq_X_ref:
             if j in ["H2O", "C6H12"]:
                 # _X should be mole_frac_phase_comp_true
-                assert model.state[1].Liq_X_ref[j]._expr == 0
+                assert str(model.state[1].Liq_X_ref[j].expr) == str(
+                    model.state[1].Liq_x_ref[j])
             else:
                 # _X should be mutiplied by |charge|
                 assert (

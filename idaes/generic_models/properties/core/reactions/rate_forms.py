@@ -31,9 +31,9 @@ class power_law_rate():
         for p, j in b.phase_component_set:
             o = rblock.reaction_order[p, j]
 
-            if e is None and o != 0:
+            if e is None and o.value != 0:
                 e = get_concentration_term(b, r_idx)[p, j]**o
-            elif e is not None and o != 0:
+            elif e is not None and o.value != 0:
                 e = e*get_concentration_term(b, r_idx)[p, j]**o
 
         return b.k_rxn[r_idx]*e
