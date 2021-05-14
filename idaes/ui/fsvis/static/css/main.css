@@ -252,7 +252,6 @@ input:checked + .slider:before {
 /* JointJS styling and overrides */
 .joint-dialog.joint-lightbox .fg {
   background-color: #FFFFFF;
-  /*padding: 10px;*/
 }
 
 .joint-lightbox {
