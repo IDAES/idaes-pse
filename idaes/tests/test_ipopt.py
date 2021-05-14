@@ -43,7 +43,7 @@ def test_ipopt_idaes_config():
         assert solver.options["tol"] == 1
         idaes.cfg.ipopt.options.tol = 1
         solver = pyo.SolverFactory('ipopt')
-        solver = pyo.SolverFactory('ipopt', options={"tol":1})
+        assert solver.options["tol"] == 1
     # back to the original config, don't use idaes default option settings
     solver = pyo.SolverFactory('ipopt')
     assert "nlp_scaling_method" not in solver.options
