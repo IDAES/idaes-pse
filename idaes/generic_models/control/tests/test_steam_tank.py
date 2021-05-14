@@ -54,7 +54,7 @@ def _valve_pressure_flow_cb(b):
     b.Cv.fix()
 
     b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
-    b.pressure_flow_equation_scale = lambda x : x**2
+    b.pressure_flow_equation_scale = lambda x: x**2
 
     @b.Constraint(b.flowsheet().config.time)
     def pressure_flow_equation(b2, t):
@@ -63,7 +63,7 @@ def _valve_pressure_flow_cb(b):
         F = b2.control_volume.properties_in[t].flow_mol
         Cv = b2.Cv
         fun = b2.valve_function[t]
-        return F **2 == Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
+        return F ** 2 == Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
 
 
 def _add_inlet_pressure_step(m, time=1, value=6.0e5):
@@ -198,12 +198,12 @@ def create_model(
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol = 100  # initial guess on flow
     # simple initialize
-    m.fs.valve_1.initialize(outlvl=1)
+    m.fs.valve_1.initialize()
     _set_port(m.fs.tank.inlet, m.fs.valve_1.outlet)
-    m.fs.tank.initialize(outlvl=1)
+    m.fs.tank.initialize()
     _set_port(m.fs.valve_2.inlet, m.fs.tank.outlet)
-    m.fs.valve_2.initialize(outlvl=1)
-    solver.solve(m, tee=True)
+    m.fs.valve_2.initialize()
+    solver.solve(m, tee=False)
 
     # Return the model and solver
     return m, solver
@@ -217,11 +217,11 @@ def tpid(form):
     m_steady, solver = create_model()
     m_steady.fs.tank_pressure[0].fix(3e5)
     m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=False)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=False)
     m_steady.fs.valve_1.inlet.pressure.fix(5.5e5)
-    solver.solve(m_steady, tee=True)
+    solver.solve(m_steady, tee=False)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
     # Next create a model for the 0 to 5 sec time period
@@ -243,7 +243,7 @@ def tpid(form):
     # get a continuous solution across the two models
     _add_inlet_pressure_step(m_dynamic, time=4.5, value=5.5e5)
     iscale.calculate_scaling_factors(m_dynamic)
-    solver.solve(m_dynamic, tee=True)
+    solver.solve(m_dynamic, tee=False)
 
     # Now create a model for the 5 to 10 second interval and set the inital
     # conditions of the first model to the final (unsteady) state of the
@@ -276,13 +276,13 @@ def tpid(form):
     iscale.calculate_scaling_factors(m_dynamic2)
     # As a lazy form of initialization, solve the steady state problem before
     # turning on the controller.
-    solver.solve(m_dynamic2, tee=True)
+    solver.solve(m_dynamic2, tee=False)
 
     # Now turn on control and solve again.
     m_dynamic2.fs.ctrl.activate()
     m_dynamic2.fs.valve_1.valve_opening.unfix()
     m_dynamic2.fs.valve_1.valve_opening[5].fix()
-    solver.solve(m_dynamic2, tee=True)
+    solver.solve(m_dynamic2, tee=False)
 
     # Check that the model hit steady state about. The tolerance is loose
     # because I used a low nfe in an attempt to speed it up
@@ -304,11 +304,11 @@ def tpid(form):
     # the two models
     for i, t in enumerate(m_dynamic.fs.time):
         assert t == stitch_time[i]
-        assert m_dynamic.fs.valve_1.valve_opening[t] == stitch_valve[i]
+        assert m_dynamic.fs.valve_1.valve_opening[t].value == stitch_valve[i]
     for j, t in enumerate(m_dynamic2.fs.time):
         i = j + len(m_dynamic.fs.time)
         assert t == stitch_time[i]
-        assert m_dynamic2.fs.valve_1.valve_opening[t] == stitch_valve[i]
+        assert m_dynamic2.fs.valve_1.valve_opening[t].value == stitch_valve[i]
 
 
 @pytest.mark.integration
