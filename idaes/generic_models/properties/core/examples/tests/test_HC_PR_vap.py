@@ -38,7 +38,6 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 
 from idaes.generic_models.properties.core.examples.HC_PR_vap \
     import configuration_vap
@@ -47,6 +46,7 @@ from idaes.generic_models.properties.core.examples.HC_PR_vap \
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -84,11 +84,12 @@ class TestParamBlock(object):
         assert isinstance(model.params._phase_component_set, Set)
         assert len(model.params._phase_component_set) == 13
         for i in model.params._phase_component_set:
-            assert i in [("Vap", "hydrogen"), ("Vap", "methane"), ("Vap", "ethane"),
-                         ("Vap", "propane"), ("Vap", "nbutane"), ("Vap", "ibutane"),
-                         ("Vap", "ethylene"), ("Vap", "propene"), ("Vap", "butene"),
-                         ("Vap", "pentene"), ("Vap", "hexene"), ("Vap", "heptene"),
-                         ("Vap", "octene")]
+            assert i in [
+                ("Vap", "hydrogen"), ("Vap", "methane"), ("Vap", "ethane"),
+                ("Vap", "propane"), ("Vap", "nbutane"), ("Vap", "ibutane"),
+                ("Vap", "ethylene"), ("Vap", "propene"), ("Vap", "butene"),
+                ("Vap", "pentene"), ("Vap", "hexene"), ("Vap", "heptene"),
+                ("Vap", "octene")]
 
         assert model.params.config.state_definition == FTPx
 
@@ -208,7 +209,7 @@ class TestStateBlock(object):
         assert len(model.props[1].mole_frac_comp) == 13
         for i in model.props[1].mole_frac_comp:
             assert value(model.props[1].mole_frac_comp[i]) == \
-                pytest.approx(0.077, abs=1e-2)    
+                pytest.approx(0.077, abs=1e-2)
 
         # Check supporting variables
         assert isinstance(model.props[1].flow_mol_phase, Var)
@@ -235,32 +236,29 @@ class TestStateBlock(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert model.props[1].get_material_flow_terms(p, j) == (
-                    model.props[1].flow_mol_phase[p] *
-                    model.props[1].mole_frac_phase_comp[p, j])
+                assert str(model.props[1].get_material_flow_terms(p, j)) == \
+                    str(model.props[1].flow_mol_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.props[1].get_enthalpy_flow_terms(p) == (
-                model.props[1].flow_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
+            assert str(model.props[1].get_enthalpy_flow_terms(p)) == str(
+                model.props[1]._enthalpy_flow_term[p])
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
                 if j == "hydrogen":
-                    assert model.props[1].get_material_density_terms(p, j) == (
-                        model.props[1].dens_mol_phase[p] *
-                        model.props[1].mole_frac_phase_comp[p, j])
+                    assert str(
+                        model.props[1].get_material_density_terms(p, j)) == \
+                        str(model.props[1]._material_density_term[p, j])
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.props[1].get_energy_density_terms(p) == (
-                model.props[1].dens_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
+            assert str(model.props[1].get_energy_density_terms(p)) == str(
+                model.props[1]._energy_density_term[p])
 
     @pytest.mark.unit
     def test_default_material_balance_type(self, model):

@@ -15,7 +15,6 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Expression,
                            Set,
                            SolverStatus,
@@ -25,10 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)

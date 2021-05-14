@@ -16,7 +16,6 @@ Author: Andrew Lee, Alejandro Garciadiego
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -25,10 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
@@ -47,6 +43,7 @@ from idaes.generic_models.properties.core.examples.HC_PR \
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -85,16 +82,15 @@ class TestParamBlock(object):
         assert isinstance(model.params._phase_component_set, Set)
         assert len(model.params._phase_component_set) == 24
         for i in model.params._phase_component_set:
-            assert i in [("Liq", "ethane"),
-                         ("Vap", "hydrogen"), ("Vap", "methane"), ("Vap", "ethane"),
-                         ("Liq", "propane"), ("Liq", "nbutane"), ("Liq", "ibutane"),
-                         ("Vap", "propane"), ("Vap", "nbutane"), ("Vap", "ibutane"),
-                         ("Liq", "ethylene"), ("Liq", "propene"), ("Liq", "butene"),
-                         ("Vap", "ethylene"), ("Vap", "propene"), ("Vap", "butene"),
-                         ("Liq", "pentene"), ("Liq", "hexene"), ("Liq", "heptene"),
-                         ("Vap", "pentene"), ("Vap", "hexene"), ("Vap", "heptene"),
-                         ("Liq", "octene"),
-                         ("Vap", "octene")]
+            assert i in [
+                ("Liq", "ethane"), ("Vap", "hydrogen"), ("Vap", "methane"),
+                ("Vap", "ethane"), ("Liq", "propane"), ("Liq", "nbutane"),
+                ("Liq", "ibutane"), ("Vap", "propane"), ("Vap", "nbutane"),
+                ("Vap", "ibutane"), ("Liq", "ethylene"), ("Liq", "propene"),
+                ("Liq", "butene"), ("Vap", "ethylene"), ("Vap", "propene"),
+                ("Vap", "butene"), ("Liq", "pentene"), ("Liq", "hexene"),
+                ("Liq", "heptene"), ("Vap", "pentene"), ("Vap", "hexene"),
+                ("Vap", "heptene"), ("Liq", "octene"), ("Vap", "octene")]
 
         assert model.params.config.state_definition == FTPx
 
@@ -109,10 +105,8 @@ class TestParamBlock(object):
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 11
         for i in model.params.phase_equilibrium_idx:
-            assert i in ["PE1", "PE2", "PE3",
-                        "PE4", "PE5", "PE6",
-                        "PE7", "PE8", "PE9",
-                        "PE10", "PE11"]
+            assert i in ["PE1", "PE2", "PE3", "PE4", "PE5", "PE6",
+                         "PE7", "PE8", "PE9", "PE10", "PE11"]
 
         assert model.params.phase_equilibrium_list == {
             "PE1": {"ethane": ("Vap", "Liq")},
