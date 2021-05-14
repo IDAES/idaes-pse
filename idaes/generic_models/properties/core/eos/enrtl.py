@@ -15,6 +15,9 @@ Methods for eNRTL activity coefficient method.
 
 Only applicable to liquid/electrolyte phases
 
+Many thanks to C.-C. Chen for his assistance and suggestions on testing and
+verifying the model.
+
 Reference:
 
 Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
@@ -41,11 +44,6 @@ _log = idaeslog.getLogger(__name__)
 
 DefaultAlphaRule = ConstantAlpha
 DefaultTauRule = ConstantTau
-# TODO: Whilst the basic framework for supporting different reference states is
-# in place, it is likely that the unsymmetric reference state will need
-# x, X and I0 calcuated for each species individually (the symmetric
-# reference state only needs these to be calcuated once). Thi has not been
-# implemented in the current version
 DefaultRefState = Symmetric
 
 # Closest appraoch parameter - implemented as a global constant for now
@@ -57,6 +55,7 @@ class ENRTL(EoSBase):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
+    @staticmethod
     def build_parameters(b):
         # Build additional indexing sets
         pblock = b.parent_block()
@@ -94,6 +93,7 @@ class ENRTL(EoSBase):
         else:
             DefaultTauRule.build_parameters(b)
 
+    @staticmethod
     def common(b, pobj):
         pname = pobj.local_name
 
@@ -119,7 +119,7 @@ class ENRTL(EoSBase):
         if (pobj.config.equation_of_state_options is not None and
                 "reference_state" in pobj.config.equation_of_state_options):
             ref_state = pobj.config.equation_of_state_options[
-                "reference_state"].return_expression
+                "reference_state"]
         else:
             ref_state = DefaultRefState
 
@@ -168,7 +168,7 @@ class ENRTL(EoSBase):
             elif j in b.params.cation_set or j in b.params.anion_set:
                 return (x[j]*abs(cobj(b, j).config.charge))
             else:
-                return 0
+                return x[j]
 
         b.add_component(
             pname+"_X_ref",
@@ -236,7 +236,7 @@ class ENRTL(EoSBase):
             # Note: Where the paper refers to the dielectric constant, it
             # actually means the electric permittivity of the solvent
             # eps = eps_r*eps_0 (units F/m)
-            # Note that paper is misisng a required 4*pi term
+            # Note that paper is missing a required 4*pi term
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
                                 pyunits.m**3/pyunits.mol)
             eps = getattr(b, pname+"_relative_permittivity_solvent")
@@ -354,8 +354,11 @@ class ENRTL(EoSBase):
             Y = getattr(b, pname+"_Y")
 
             def _G_appr(b, pobj, i, j, T):  # Eqn 23
-                return exp(-alpha_rule(b, pobj, i, j, T) *
-                           tau_rule(b, pobj, i, j, T))
+                if i != j:
+                    return exp(-alpha_rule(b, pobj, i, j, T) *
+                               tau_rule(b, pobj, i, j, T))
+                else:
+                    return 1
 
             if ((pname, i) not in b.params.true_phase_component_set or
                     (pname, j) not in b.params.true_phase_component_set):
@@ -389,8 +392,7 @@ class ENRTL(EoSBase):
                 if len(b.params.cation_set) > 1:
                     return sum(Y[k] * _G_appr(
                         b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                        for k in b.params.cation_set
-                        if i != k)
+                        for k in b.params.cation_set)
                 else:
                     # This term does not exist for single cation systems
                     # However, need a valid result to calculate tau
@@ -400,8 +402,7 @@ class ENRTL(EoSBase):
                 if len(b.params.anion_set) > 1:
                     return sum(Y[k] * _G_appr(
                         b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                        for k in b.params.anion_set
-                        if i != k)
+                        for k in b.params.anion_set)
                 else:
                     # This term does not exist for single anion systems
                     # However, need a valid result to calculate tau
@@ -436,7 +437,7 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
-                if G[i, j].expr != 1:
+                if str(G[i, j].expr) != "1.0":
                     # Eqn 44
                     return -log(G[i, j])/alpha[i, j]
                 else:
