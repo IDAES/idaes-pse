@@ -19,13 +19,13 @@ import logging
 import os
 import shutil
 import time
+from unittest.mock import MagicMock, patch
 import warnings
 # third party
 import pytest
 # local
 from idaes.dmf import dmfbase
 from idaes.util.system import mkdtemp
-from mock import MagicMock, patch
 
 __author__ = "Dan Gunter"
 

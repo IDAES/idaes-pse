@@ -475,7 +475,7 @@ class HelmholtzThermoExpressions(object):
 
     def v(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
-        v = ((1-x)/delta_liq + x/delta_vap)/self.param.dens_mass_crit*self.mw
+        v = ((1-x)/delta_liq + x/delta_vap)/self.param.dens_mass_crit*self.param.mw
         return v
 
     def x(self, **kwargs):

@@ -403,7 +403,7 @@ class FlowsheetSerializer:
                 # Change the index of the pandas dataframe to not be the variables
             .reset_index().rename(columns={"index": "Variable"})
             .reset_index().rename(columns={"index": ""})
-            .round(self._sig_figs)
+            .applymap(lambda x: round(x, self._sig_figs) if isinstance(x, (int, float)) else x)
         )
         
         # Change NaNs to None for JSON
@@ -431,7 +431,7 @@ class FlowsheetSerializer:
             if unit_name in self._serialized_contents:
                 for pfx in "performance", "stream":
                     content_type = pfx + "_contents"
-                    c = self._serialized_contents[unit_name][content_type].round(self._sig_figs).to_dict("index")
+                    c = self._serialized_contents[unit_name][content_type].applymap(lambda x: round(x, self._sig_figs) if isinstance(x, (int, float)) else x).to_dict("index")
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 
@@ -558,7 +558,7 @@ class FlowsheetSerializer:
             "source": {"id": source_id, "port": source_port},
             "target": {"id": dest_id, "port": dest_port},
             "router": {"name": "orthogonal", "padding": padding},
-            "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}},
+            "connector": {"name": "jumpover", "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
             "labels": [
                 # This label MUST be first or the show/hide will fail
