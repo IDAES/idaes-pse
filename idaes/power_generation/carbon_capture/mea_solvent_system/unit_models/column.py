@@ -43,6 +43,7 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection)
+from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
     HeatExchangerFlowPattern as FlowPattern
@@ -1042,11 +1043,11 @@ documentation for supported schemes,
                    vapor_phase_state_args=None,
                    liquid_phase_state_args=None,
                    state_vars_fixed=False,
-                   homotopy_steps_m=[0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1],
-                   homotopy_steps_h=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                   homotopy_steps_m=None,
+                   homotopy_steps_h=None,
                    outlvl=idaeslog.NOTSET,
-                   solver='ipopt',
-                   optarg={'tol': 1e-6}):
+                   solver=None,
+                   optarg=None):
         """
         Column initialization.
 
@@ -1059,8 +1060,9 @@ documentation for supported schemes,
                                for turning mass transfer constrainst gradually
             homotopy_steps_h : List of continuations steps between 0 and 1
                                for turning heat transfer constraints gradually
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating whcih solver to use during initialization
+                    (default = None, use IDAES default solver)
 
         """
 
@@ -1070,8 +1072,13 @@ documentation for supported schemes,
 
         # Set solver options
         # TODO: Work out why using default solver here doubles test run time
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver, optarg)
+
+        if homotopy_steps_m is None:
+            homotopy_steps_m = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1]
+
+        if homotopy_steps_h is None:
+            homotopy_steps_h = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
         dynamic_constraints = [
             "vapor_side_area",

@@ -152,7 +152,7 @@ argument)."""))
 
     def add_geometry(self,
                      length_domain=None,
-                     length_domain_set=[0.0, 1.0],
+                     length_domain_set=None,
                      flow_direction=FlowDirection.forward):
         """
         Method to create spatial domain and volume Var in ControlVolume.
@@ -187,6 +187,9 @@ argument)."""))
                         "ContinuousSet object".format(self.name))
         else:
             # Create new length domain
+            if length_domain_set is None:
+                length_domain_set = [0.0, 1.0]
+
             self.length_domain = ContinuousSet(
                                     bounds=(0.0, 1.0),
                                     initialize=length_domain_set,

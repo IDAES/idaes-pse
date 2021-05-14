@@ -194,8 +194,8 @@ see property package for documentation.}""",
 
     def initialize(
         blk,
-        state_args_in={},
-        state_args_out={},
+        state_args_in=None,
+        state_args_out=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
@@ -207,11 +207,11 @@ see property package for documentation.}""",
             state_args_in : a dict of arguments to be passed to the inlet
                             property package (to provide an initial state for
                             initialization (see documentation of the specific
-                            property package) (default = {}).
+                            property package) (default = None).
             state_args_out : a dict of arguments to be passed to the outlet
                              property package (to provide an initial state for
                              initialization (see documentation of the specific
-                             property package) (default = {}).
+                             property package) (default = None).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during

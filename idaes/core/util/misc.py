@@ -126,7 +126,7 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
-    tag_format={},
+    tag_format=None,
     tag_format_default="{:.4e}"
 ):
     """
@@ -157,6 +157,9 @@ def svg_tag(
     Returns:
         SVG String
     """
+    if tag_format is None:
+        tag_format = {}
+
     if isinstance(svg, str):  # assume this is svg content string
         pass
     elif isinstance(svg, bytes):

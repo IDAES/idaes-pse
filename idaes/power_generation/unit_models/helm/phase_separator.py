@@ -130,15 +130,15 @@ see property package for documentation.}"""))
             return b.mixed_state[t].pressure*1e-6 == \
                 b.liq_state[t].pressure*1e-6
 
-    def initialize(blk, state_args_water_steam={},
+    def initialize(blk, state_args_water_steam=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                           package(s) for the control_volume of the model to
-                           provide an initial state for initialization
+            state_args_water_steam : a dict of arguments to be passed to the
+                           property package(s) for the control_volume of the
+                           model to provide an initial state for initialization
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
