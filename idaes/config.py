@@ -221,6 +221,16 @@ def _new_idaes_config_block():
     )
 
     cfg.declare(
+        "use_idaes_solver_config",
+        pyomo.common.config.ConfigValue(
+            default=False,
+            domain=bool,
+            description="If True, use the configure IDAES solver default options.",
+            doc="If True, use the configure IDAES solver default options.",
+        ),
+    )
+
+    cfg.declare(
         "valid_logger_tags",
         pyomo.common.config.ConfigValue(
             default=set(),
