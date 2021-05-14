@@ -15,9 +15,6 @@ import pytest
 import idaes
 import idaes.core.solvers as isolve
 
-isolve.use_idaes_solver_configuration_deafults()
-
-
 @pytest.mark.unit
 def test_ipopt_idaes_available():
     """
@@ -36,17 +33,21 @@ def test_ipopt_idaes_config():
     """
     Test that the default solver options are set
     """
-    orig = idaes.cfg["ipopt"]["options"]["nlp_scaling_method"]
-    idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = "gradient-based"
-    solver = pyo.SolverFactory('ipopt')
-    assert solver.options["nlp_scaling_method"] == "gradient-based"
-    idaes.cfg["ipopt"]["options"]["nlp_scaling_method"] = orig
-    solver = pyo.SolverFactory('ipopt', options={"tol":1})
-    assert solver.options["tol"] == 1
-    isolve.use_idaes_solver_configuration_deafults(False)
+    with idaes.temporary_config_ctx():
+        # in this context use idaes default solver options
+        isolve.use_idaes_solver_configuration_deafults()
+        idaes.cfg.ipopt.options.nlp_scaling_method = "gradient-based"
+        solver = pyo.SolverFactory('ipopt')
+        assert solver.options["nlp_scaling_method"] == "gradient-based"
+        solver = pyo.SolverFactory('ipopt', options={"tol":1})
+        assert solver.options["tol"] == 1
+        idaes.cfg.ipopt.options.tol = 1
+        solver = pyo.SolverFactory('ipopt')
+        solver = pyo.SolverFactory('ipopt', options={"tol":1})
+    # back to the original config, don't use idaes default option settings
     solver = pyo.SolverFactory('ipopt')
     assert "nlp_scaling_method" not in solver.options
-    isolve.use_idaes_solver_configuration_deafults()
+    assert solver.options["tol"] != 1
 
 
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
