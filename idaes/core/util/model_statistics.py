@@ -324,7 +324,7 @@ def activated_equalities_generator(block):
     for c in block.component_data_objects(
                 Constraint, active=True, descend_into=True):
         if (c.upper is not None and c.lower is not None and
-                c.upper.value == c.lower.value):
+                value(c.upper) == value(c.lower)):
             yield c
 
 
