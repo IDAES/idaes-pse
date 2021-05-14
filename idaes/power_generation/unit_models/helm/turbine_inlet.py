@@ -124,7 +124,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
     def initialize(
         self,
-        state_args={},
+        state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
@@ -138,7 +138,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         to initializtion.
 
         Args:
-            state_args (dict): Initial state for property initialization
+            state_args (dict): Unused.
             outlvl (int): Amount of output (0 to 3) 0 is lowest
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -192,7 +192,8 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info("Initialization Complete: {}".format(
+            idaeslog.condition(res)))
         # reload original spec
         if calculate_cf:
             cf = {}

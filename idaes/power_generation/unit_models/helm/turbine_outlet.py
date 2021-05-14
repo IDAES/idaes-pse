@@ -102,7 +102,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
     def initialize(
         self,
-        state_args={},
+        state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
@@ -114,7 +114,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         then reactivates the constraints and solves.
 
         Args:
-            state_args (dict): Initial state for property initialization
+            state_args (dict): Unused.
             outlvl : sets output level of initialization routine
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -135,7 +135,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                     self.outlet.pressure[t]/self.inlet.pressure[t])
                 self.deltaP[t] = value(
                     self.outlet.pressure[t] - self.inlet.pressure[t])
-
 
         # Deactivate special constraints
         self.stodola_equation.deactivate()
@@ -162,7 +161,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
-        # Free eff_isen and activate sepcial constarints
+        # Free eff_isen and activate special constarints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         if calculate_cf:
@@ -189,7 +188,8 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
-            "Initialization Complete (Outlet Stage): {}".format(idaeslog.condition(res))
+            "Initialization Complete (Outlet Stage): {}".format(
+                idaeslog.condition(res))
         )
 
         # reload original spec

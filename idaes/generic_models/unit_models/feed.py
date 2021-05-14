@@ -135,7 +135,7 @@ see property package for documentation.}"""))
         blk.properties.initialize(outlvl=outlvl,
                                   optarg=optarg,
                                   solver=solver,
-                                  **state_args)
+                                  state_args=state_args)
 
         init_log.info('Initialization Complete.')
 

@@ -113,7 +113,7 @@ see property package for documentation.}""",
                              doc="Outlet block")
 
     def initialize(
-        blk, state_args={}, outlvl=idaeslog.NOTSET,
+        blk, state_args=None, outlvl=idaeslog.NOTSET,
         solver=None, optarg=None
     ):
         """
@@ -142,6 +142,6 @@ see property package for documentation.}""",
             optarg=optarg,
             solver=solver,
             hold_state=False,
-            **state_args
+            state_args=state_args
         )
         init_log.info("Initialization Step Complete.")

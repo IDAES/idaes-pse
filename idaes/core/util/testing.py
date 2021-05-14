@@ -200,7 +200,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
 class SBlockBase(StateBlock):
     def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None,
-                   hold_state=False, **state_args):
+                   hold_state=False, state_args=None):
         for k in blk.keys():
             blk[k].init_test = True
             blk[k].hold_state = hold_state

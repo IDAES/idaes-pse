@@ -225,7 +225,7 @@ class _ActivityCoeffStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args={}, hold_state=False,
+    def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         """

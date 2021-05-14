@@ -119,7 +119,7 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, state_args={}, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         '''

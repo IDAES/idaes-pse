@@ -958,7 +958,7 @@ class _GenericStateBlock(StateBlock):
                 "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
-    def initialize(blk, state_args={}, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
         """
