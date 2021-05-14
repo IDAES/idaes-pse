@@ -243,7 +243,6 @@ from 1 to num_outlets).}""",
             setattr(self, o + "_state", o_obj)
             self.outlet_blocks[o] = o_obj
 
-
     def add_outlet_port_objects(self):
         """
         Adds outlet Port objects if required.
@@ -259,14 +258,13 @@ from 1 to num_outlets).}""",
             self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
             self.outlet_ports[p] = getattr(self, p)
 
-
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver=None):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for splitter
 
         Keyword Arguments:
             outlvl: sets output level of initialization routine
-            optarg: solver options dictionary object (default={})
+            optarg: solver options dictionary object (default=None)
             solver: str indicating whcih solver to use during
                      initialization (default = None, use default solver)
 

@@ -198,7 +198,7 @@ see property package for documentation.}""",
         state_args_out={},
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         This method calls the initialization method of the state blocks.
@@ -213,7 +213,7 @@ see property package for documentation.}""",
                              initialization (see documentation of the specific
                              property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 

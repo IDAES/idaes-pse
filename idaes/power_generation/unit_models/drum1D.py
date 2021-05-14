@@ -1020,7 +1020,7 @@ discretizing length domain (default=3)"""))
             self.dTdt[0, :].fix(0)
 
     def initialize(blk, state_args_feedwater={}, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
         Keyword Arguments:
@@ -1036,7 +1036,7 @@ discretizing length domain (default=3)"""))
                  * 2 = return solver state for each step in subroutines
                  * 3 = include solver output infomation (tee=True)
 
-        optarg : solver options dictionary object (default={})
+        optarg : solver options dictionary object (default=None)
 
         solver : str indicating whcih solver to use during
                  initialization (default = None, use default solver)

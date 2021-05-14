@@ -345,7 +345,7 @@ mixed phase not supported'''))
             self.control_volume.energy_accumulation[0, :].fix(0)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         WaterPipe initialization routine.
 
@@ -356,7 +356,7 @@ mixed phase not supported'''))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None, use default solver)
 

@@ -815,14 +815,14 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg={},
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, hold_state=False):
         """
         Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine

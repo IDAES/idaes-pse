@@ -1518,7 +1518,7 @@ see reaction package for documentation.}"""))
     # Model initialization routine
 
     def initialize(blk, gas_phase_state_args={}, solid_phase_state_args={},
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
         Initialisation routine for Bubbling Fluidized Bed unit
 
@@ -1528,7 +1528,7 @@ see reaction package for documentation.}"""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 

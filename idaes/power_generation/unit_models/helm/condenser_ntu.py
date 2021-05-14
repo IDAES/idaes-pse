@@ -310,7 +310,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         unfix='hot_flow',
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Condenser initialization method. The initialization routine assumes
@@ -324,7 +324,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for cold side (see documentation of the specific
                 property package) (default = None).
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 

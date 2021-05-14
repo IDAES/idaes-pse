@@ -227,7 +227,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
     def initialize(blk, state_args={}, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -247,7 +247,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                          flow_mol_comp, temperature, pressure.
 
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None, use default solve)
             hold_state : flag indicating whether the initialization routine

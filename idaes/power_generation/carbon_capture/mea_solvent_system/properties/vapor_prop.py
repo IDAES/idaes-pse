@@ -281,7 +281,7 @@ class VaporStateBlockMethods(StateBlock):
     def initialize(blk, state_args=None,
                    state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
 
@@ -294,7 +294,7 @@ class VaporStateBlockMethods(StateBlock):
                        state_args dictionary are: flow_mol, temperature,
                        pressure and mole_frac_comp.
           outlvl : sets output level of initialization routine
-          optarg : solver options dictionary object (default={})
+          optarg : solver options dictionary object (default=None)
           solver : str indicating whcih solver to use during
                    initialization (default = None)
           hold_state :
@@ -386,7 +386,7 @@ class VaporStateBlockMethods(StateBlock):
             else:
                 blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialisation.
 

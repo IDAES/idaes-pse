@@ -414,7 +414,7 @@ VaneDiffuserType.custom}""",
             return b.psi_s[t] == 2 * b.ys_model[t] / (b.U2[t]**2)
 
     def initialize(self, state_args={}, outlvl=idaeslog.NOTSET, solver=None,
-                   optarg={}):
+                   optarg=None):
         """
         Initialize the inlet compressor stage model.
         This deactivates the specialized constraints,

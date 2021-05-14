@@ -32,7 +32,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
-def get_solver(solver=None, options={}):
+def get_solver(solver=None, options=None):
     """
     General method for getting a solver object which defaults to the standard
     IDAES solver (defined in the IDAES configuration).
@@ -40,7 +40,7 @@ def get_solver(solver=None, options={}):
     Args:
         solver: string name for desired solver. Default=None, use default solver
         options: dict of solver options to use, overwrites any settings
-                 provided by IDAES configuration.
+                 provided by IDAES configuration. DEfault = None.
 
     Returns:
         A Pyomo solver object
@@ -48,7 +48,10 @@ def get_solver(solver=None, options={}):
     if solver is None:
         solver = "default"
     solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
-    solver_obj.options.update(options)
+
+    if options is not None:
+        solver_obj.options.update(options)
+
     return solver_obj
 
 

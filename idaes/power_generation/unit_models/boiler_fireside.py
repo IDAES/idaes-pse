@@ -919,7 +919,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
     def initialize(blk, state_args_PA=None, state_args_SA=None,
                    outlvl=idaeslog.NOTSET, solver=None,
-                   optarg={}):
+                   optarg=None):
         '''
         Initialization routine.
         1.- initialize state blocks, using an initial guess for inlet
@@ -940,7 +940,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None, use default solver)
 

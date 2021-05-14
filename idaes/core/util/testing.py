@@ -199,13 +199,13 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
 
 class SBlockBase(StateBlock):
-    def initialize(blk, outlvl=0, optarg=None, solver=None,
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None,
                    hold_state=False, **state_args):
         for k in blk.keys():
             blk[k].init_test = True
             blk[k].hold_state = hold_state
 
-    def release_state(blk, flags=None, outlvl=0):
+    def release_state(blk, flags=None, outlvl=idaeslog.NOTSET):
         for k in blk.keys():
             blk[k].hold_state = not blk[k].hold_state
 
@@ -339,7 +339,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
 
 class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=0, optarg=None,
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, state_vars_fixed=False):
         for k in blk.keys():
             blk[k].init_test = True

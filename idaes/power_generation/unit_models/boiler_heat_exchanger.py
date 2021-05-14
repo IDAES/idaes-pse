@@ -1129,7 +1129,7 @@ constructed,
         blk.side_2.model_check()
 
     def initialize(blk, state_args_1={}, state_args_2={},
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -1145,7 +1145,7 @@ constructed,
                            (see documentation of the specific property package)
                            (default = {}).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None, use default solver)
 

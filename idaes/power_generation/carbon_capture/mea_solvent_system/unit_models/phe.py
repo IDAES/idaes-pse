@@ -714,7 +714,7 @@ class PHEData(UnitModelBlockData):
                              doc='Heat gain by cold fluid')
 
     def initialize(blk, hotside_state_args=None, coldside_state_args=None,
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Initialisation routine for PHE unit (default solver ipopt)
 
@@ -724,7 +724,7 @@ class PHEData(UnitModelBlockData):
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None)
         Returns:

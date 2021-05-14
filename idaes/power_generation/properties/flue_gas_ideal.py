@@ -336,9 +336,9 @@ class _FlueGasStateBlock(StateBlock):
             "temperature": 495.0},
         hold_state=False,
         state_vars_fixed=False,
-        outlvl=0,
+        outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={}
+        optarg=None
     ):
         """Initialisation routine for property package.
 
@@ -358,7 +358,7 @@ class _FlueGasStateBlock(StateBlock):
                          be False if this state block is used with 0D blocks.
                 - False - states have not been fixed. The state block will deal
                           with fixing/unfixing.
-            optarg: solver options dictionary object (default={})
+            optarg: solver options dictionary object (default=None)
             solver: str indicating whcih solver to use during
                      initialization (default = None, use default solver)
             hold_state: flag indicating whether the initialization routine

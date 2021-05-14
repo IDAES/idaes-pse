@@ -127,7 +127,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         state_args={},
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
         calculate_cf=False,
     ):
         """

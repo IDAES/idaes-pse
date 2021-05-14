@@ -131,7 +131,7 @@ see property package for documentation.}"""))
                 b.liq_state[t].pressure*1e-6
 
     def initialize(blk, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
 
@@ -142,7 +142,7 @@ see property package for documentation.}"""))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = None, use default solver)
 
