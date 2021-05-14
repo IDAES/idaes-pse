@@ -13,11 +13,14 @@
 """
 Tests for eNRTL methods
 
-References:
+Reference:
 
 [1] Local Composition Model for Excess Gibbs Energy of Electrolyte Systems, Pt 1.
 Chen, C.-C., Britt, H.I., Boston, J.F., Evans, L.B.,
 AIChE Journal, 1982, Vol. 28(4), pgs. 588-596
+
+[2] Song, Y. and Chen, C.-C., Symmetric Electrolyte Nonrandom Two-Liquid Activity
+Coefficient Model, Ind. Eng. Chem. Res., 2009, Vol. 48, pgs. 7788–7797
 
 Figures digitized using WebPlotDigitizer, https://apps.automeris.io/wpd/,
 May 2021
@@ -25,7 +28,7 @@ May 2021
 Author: Andrew Lee
 """
 import pytest
-from math import exp
+from math import exp, log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -58,11 +61,15 @@ configuration = {
                     relative_permittivity_constant,
                 "parameter_data": {
                     "mw": (18E-3, pyunits.kg/pyunits.mol),
-                    "relative_permittivity_liq_comp": 73.41964622627609}},
+                    "relative_permittivity_liq_comp": 73.41965}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
+        "KCl": {"type": Apparent,
+                "dissociation_species": {"K+": 1, "Cl-": 1}},
         "Na+": {"type": Cation,
                 "charge": +1},
+        "K+": {"type": Cation,
+               "charge": +1},
         "Cl-": {"type": Anion,
                 "charge": -1}},
     "phases": {
@@ -79,11 +86,15 @@ configuration = {
     "temperature_ref": 300,
     "parameter_data": {
         "Liq_tau": {
-            ("H2O", "Na+, Cl-"): 8.885,  # Table 1, [1]
-            ("Na+, Cl-", "H2O"): -4.549}}}  # Table 1, [1]
+            ("H2O", "Na+, Cl-"): 9.0234,
+            ("Na+, Cl-", "H2O"): -4.5916,
+            ("H2O", "K+, Cl-"): 8.1354,
+            ("K+, Cl-", "H2O"): -4.1341}}}
 
 
-class TestStateBlockSymmetric(object):
+class TestSymmetric_0KCl(object):
+    # Test case for having parameters for a second salt with 0 concentration
+    # Results should be the same as for the single salt case
     @pytest.fixture(scope="class")
     def model(self):
         m = ConcreteModel()
@@ -93,6 +104,10 @@ class TestStateBlockSymmetric(object):
 
         # Need to set a value of T for checking expressions later
         m.state[1].temperature.set_value(313)
+
+        # Set parameters to those used in 1982 paper
+        m.params.Liq.tau["H2O", "Na+, Cl-"].set_value(8.885)
+        m.params.Liq.tau["Na+, Cl-", "H2O"].set_value(-4.549)
 
         return m
 
@@ -389,157 +404,8 @@ class TestStateBlockSymmetric(object):
             assert pytest.approx(OFFSET, rel=0.051) == value(
                 model.state[1].Liq_log_gamma["Cl-"] - g)
 
-    @pytest.mark.unit
-    def test_pure_water(self, model):
-        # Start by setting all mole fractions to small number
-        # Using 0 results in division by zero errors
-        for k in model.state[1].mole_frac_phase_comp:
-            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
-        # Test pure water
-        model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(1)
-
-        # Check mixing expressions
-        assert value(model.state[1].Liq_X["H2O"]) == pytest.approx(1, rel=1e-8)
-        assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
-            1e-12, rel=1e-8)
-        assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
-            1e-12, rel=1e-8)
-
-        for v in model.state[1].Liq_Y.values():
-            assert value(v) == pytest.approx(1, rel=1e-8)
-
-        for k, v in model.state[1].Liq_alpha.items():
-            if k == ("H2O", "H2O"):
-                assert value(v) == 0.3
-            elif k in [("Na+", "Cl-"), ("Cl-", "Na+")]:
-                assert value(v) == 0
-            else:
-                assert value(v) == 0.2
-
-        assert value(model.state[1].Liq_G["H2O", "H2O"]) == 1
-        assert value(model.state[1].Liq_G["H2O", "Na+"]) == exp(-0.2*8.885)
-        assert value(model.state[1].Liq_G["Na+", "H2O"]) == exp(-0.2*-4.549)
-        assert value(model.state[1].Liq_G["H2O", "Cl-"]) == exp(-0.2*8.885)
-        assert value(model.state[1].Liq_G["Cl-", "H2O"]) == exp(-0.2*-4.549)
-        assert value(model.state[1].Liq_G["Na+", "Cl-"]) == 1
-        assert value(model.state[1].Liq_G["Cl-", "Na+"]) == 1
-
-        assert value(model.state[1].Liq_tau["H2O", "H2O"]) == 0
-        assert value(model.state[1].Liq_tau["H2O", "Na+"]) == pytest.approx(
-            8.885, rel=1e-8)
-        assert value(model.state[1].Liq_tau["Na+", "H2O"]) == pytest.approx(
-            -4.549, rel=1e-8)
-        assert value(model.state[1].Liq_tau["H2O", "Cl-"]) == pytest.approx(
-            8.885, rel=1e-8)
-        assert value(model.state[1].Liq_tau["Cl-", "H2O"]) == pytest.approx(
-            -4.549, rel=1e-8)
-        assert value(model.state[1].Liq_tau["Na+", "Cl-"]) == 0
-        assert value(model.state[1].Liq_tau["Cl-", "Na+"]) == 0
-
-        # Check activity coefficient contributions
-        assert (value(model.state[1].Liq_log_gamma_pdh["H2O"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_lc["H2O"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_pdh["H2O"] +
-                      model.state[1].Liq_log_gamma_lc["H2O"]) ==
-                pytest.approx(0, abs=1e-10))
-
-    @pytest.mark.unit
-    def test_pure_NaCl(self, model):
-        # Test pure NaCl
-        model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(1e-12)
-        model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(0.5)
-        model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(0.5)
-
-        # Check mixing expressions
-        assert value(model.state[1].Liq_X["H2O"]) == pytest.approx(
-            1e-12, rel=1e-8)
-        assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
-            0.5, rel=1e-8)
-        assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
-            0.5, rel=1e-8)
-        assert value(model.state[1].Liq_X["H2O"]) == pytest.approx(
-            value(model.state[1].Liq_X_ref["H2O"]), rel=1e-8)
-        assert value(model.state[1].Liq_X["Na+"]) == pytest.approx(
-            value(model.state[1].Liq_X_ref["Na+"]), rel=1e-8)
-        assert value(model.state[1].Liq_X["Cl-"]) == pytest.approx(
-            value(model.state[1].Liq_X_ref["Cl-"]), rel=1e-8)
-
-        for v in model.state[1].Liq_Y.values():
-            assert value(v) == pytest.approx(1, rel=1e-8)
-
-        for k, v in model.state[1].Liq_alpha.items():
-            if k == ("H2O", "H2O"):
-                assert value(v) == 0.3
-            elif k in [("Na+", "Cl-"), ("Cl-", "Na+")]:
-                assert value(v) == 0
-            else:
-                assert value(v) == 0.2
-
-        assert value(model.state[1].Liq_G["H2O", "H2O"]) == 1
-        assert value(model.state[1].Liq_G["H2O", "Na+"]) == exp(-0.2*8.885)
-        assert value(model.state[1].Liq_G["Na+", "H2O"]) == exp(-0.2*-4.549)
-        assert value(model.state[1].Liq_G["H2O", "Cl-"]) == exp(-0.2*8.885)
-        assert value(model.state[1].Liq_G["Cl-", "H2O"]) == exp(-0.2*-4.549)
-        assert value(model.state[1].Liq_G["Na+", "Cl-"]) == 1
-        assert value(model.state[1].Liq_G["Cl-", "Na+"]) == 1
-
-        assert value(model.state[1].Liq_tau["H2O", "H2O"]) == 0
-        assert value(model.state[1].Liq_tau["H2O", "Na+"]) == pytest.approx(
-            8.885, rel=1e-8)
-        assert value(model.state[1].Liq_tau["Na+", "H2O"]) == pytest.approx(
-            -4.549, rel=1e-8)
-        assert value(model.state[1].Liq_tau["H2O", "Cl-"]) == pytest.approx(
-            8.885, rel=1e-8)
-        assert value(model.state[1].Liq_tau["Cl-", "H2O"]) == pytest.approx(
-            -4.549, rel=1e-8)
-        assert value(model.state[1].Liq_tau["Na+", "Cl-"]) == 0
-        assert value(model.state[1].Liq_tau["Cl-", "Na+"]) == 0
-
-        assert (value(model.state[1].Liq_log_gamma_pdh["Na+"]) ==
-                pytest.approx(0, abs=1e-10))
-
-        assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_lc_I0["Na+"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_lc_I["Na+"]) ==
-                pytest.approx(value(model.state[1].Liq_log_gamma_lc_I0["Na+"]),
-                              abs=1e-12))
-        assert (value(model.state[1].Liq_log_gamma_lc["Na+"]) ==
-                pytest.approx(0, abs=1e-10))
-
-        assert (value(model.state[1].Liq_log_gamma["Na+"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_pdh["Na+"] +
-                      model.state[1].Liq_log_gamma_lc["Na+"]) ==
-                pytest.approx(
-                    value(model.state[1].Liq_log_gamma["Na+"]), abs=1e-10))
-
-        assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
-                pytest.approx(0, abs=1e-10))
-
-        assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_lc_I["Cl-"]) ==
-                pytest.approx(value(model.state[1].Liq_log_gamma_lc_I0["Cl-"]),
-                              abs=1e-12))
-        assert (value(model.state[1].Liq_log_gamma_lc["Cl-"]) ==
-                pytest.approx(0, abs=1e-10))
-
-        assert (value(model.state[1].Liq_log_gamma["Cl-"]) ==
-                pytest.approx(0, abs=1e-10))
-        assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"] +
-                      model.state[1].Liq_log_gamma_lc["Cl-"]) ==
-                pytest.approx(
-                    value(model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10))
-
-
-class TestStateBlockUnsymmetric(object):
+class TestUnsymmetric_0KCl(object):
     @pytest.fixture(scope="class")
     def model(self):
         config = dict(configuration)
@@ -553,6 +419,10 @@ class TestStateBlockUnsymmetric(object):
 
         # Need to set a value of T for checking expressions later
         m.state[1].temperature.set_value(313)
+
+        # Set parameters to those used in 1982 paper
+        m.params.Liq.tau["H2O", "Na+, Cl-"].set_value(8.885)
+        m.params.Liq.tau["Na+, Cl-", "H2O"].set_value(-4.549)
 
         return m
 
@@ -854,8 +724,185 @@ class TestStateBlockUnsymmetric(object):
 
         # Unsymmetric reference state - all ln(gammas) should be 0
         for v in model.state[1].Liq_log_gamma.values():
-            assert value(v) == pytest.approx(0, abs=1e-5)
+            assert value(v) == pytest.approx(0, abs=1.2e-5)
         for v in model.state[1].Liq_log_gamma_pdh.values():
-            assert value(v) == pytest.approx(0, abs=1e-5)
+            assert value(v) == pytest.approx(0, abs=1.2e-5)
         for v in model.state[1].Liq_log_gamma_lc.values():
             assert value(v) == pytest.approx(0, abs=1e-5)
+
+
+class TestUnsymmetric_0NaCl(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        config = dict(configuration)
+        eos_opt = config["phases"]["Liq"]["equation_of_state_options"] = {}
+        eos_opt["reference_state"] = Unsymmetric
+
+        m = ConcreteModel()
+        m.params = GenericParameterBlock(default=config)
+        
+        # Set parameters to those used in 1982 paper
+        m.params.Liq.tau["H2O", "K+, Cl-"].set_value(8.064)
+        m.params.Liq.tau["K+, Cl-", "H2O"].set_value(-4.107)
+
+        m.state = m.params.build_state_block([1])
+
+        # Need to set a value of T for checking expressions later
+        m.state[1].temperature.set_value(298)
+
+        return m
+
+    @pytest.mark.unit
+    def test_parameters(self, model):
+        assert model.params.Liq.tau["H2O", "K+, Cl-"].value == 8.064
+        assert model.params.Liq.tau["K+, Cl-", "H2O"].value == -4.107
+
+    @pytest.mark.unit
+    def test_log_gamma(self, model):
+        # start with pure water
+        # Using 0 results in division by zero errors
+        for k in model.state[1].mole_frac_phase_comp:
+            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
+
+        # Data from [2] - Form {molality: gamma_KCl}
+        # Ignoring final points due to large error (stll <7%)
+        data = {0.001: 0.965,
+                0.002: 0.951,
+                0.005: 0.927,
+                0.01: 0.901,
+                0.0201: 0.869,
+                0.05: 0.816,
+                0.0982: 0.768,
+                0.1983: 0.717,
+                0.3049: 0.687,
+                0.3999: 0.665,
+                0.5001: 0.649,
+                0.6032: 0.636,
+                0.7003: 0.626,
+                0.7996: 0.617,
+                0.8968: 0.61,
+                0.9926: 0.604,
+                1.1899: 0.594,
+                1.3844: 0.586,
+                1.5817: 0.58,
+                1.7923: 0.576,
+                1.9895: 0.573,
+                2.5039: 0.568,
+                2.9837: 0.568,
+                3.4982: 0.571,
+                # 3.994: 0.576,
+                # 4.4897: 0.584,
+                # 4.7909: 0.589,
+                # 4.9908: 0.593
+                }
+
+        for x, g in data.items():
+            w = 1000/18
+
+            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+                w/(w+2*x))
+            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
+                x/(w+2*x))
+            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
+                x/(w+2*x))
+
+            gamma_KCl = exp(value(0.5*(model.state[1].Liq_log_gamma["K+"] +
+                                       model.state[1].Liq_log_gamma["Cl-"])))
+            assert pytest.approx(g, rel=5e-2) == gamma_KCl
+
+
+class TestUnsymmetric_Mixed(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+
+        config = dict(configuration)
+        eos_opt = config["phases"]["Liq"]["equation_of_state_options"] = {}
+        eos_opt["reference_state"] = Unsymmetric
+
+        m.params = GenericParameterBlock(default=config)
+
+        m.state = m.params.build_state_block([1])
+
+        # Need to set a value of T for checking expressions later
+        m.state[1].temperature.set_value(300)
+
+        return m
+
+    @pytest.mark.unit
+    def test_log_gamma_salt(self, model):
+        # start with pure water
+        # Using 0 results in division by zero errors
+        for k in model.state[1].mole_frac_phase_comp:
+            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
+
+        # Data regressed from digitized Figs 1 and 2 [2]
+        # Form x_KCl: (ln(gamma NaCl), ln(gamma KCl))
+        data = {0.00000001: (-0.105600000912, -0.143200000791),
+                0.1: (-0.114916, -0.151286),
+                0.2: (-0.124624, -0.159724),
+                0.3: (-0.134724, -0.168514),
+                0.4: (-0.145216, -0.177656),
+                0.5: (-0.1561, -0.18715),
+                0.6: (-0.167376, -0.196996),
+                0.7: (-0.179044, -0.207194),
+                0.8: (-0.191104, -0.217744),
+                0.9: (-0.203556, -0.228646),
+                0.99999999: (-0.216399998696, -0.239899998857)}
+
+        for x, g in data.items():
+            m = 4  # molality of solution
+            w = 1000/18  # mol H2O per kg H2O
+            k = x*m  # mol K+
+            n = m-k  # mol Na+
+
+            # Set composition
+            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+                w/(w+2*m))
+            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
+                k/(w+2*m))
+            model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(
+                n/(w+2*m))
+            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
+                m/(w+2*m))
+
+            assert pytest.approx(0.06293706294, rel=1e-8) == value(
+                model.state[1].mole_frac_phase_comp["Liq", "Cl-"])
+            assert pytest.approx(0.874125874, rel=1e-8) == value(
+                model.state[1].mole_frac_phase_comp["Liq", "H2O"])
+            assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
+                0.06293706294, rel=1e-8)
+
+            # Check local contribution term
+            # THis should only depend on ionic strength, and should be constant
+            assert pytest.approx(-0.81465175, rel=1e-6) == value(
+                model.state[1].Liq_log_gamma_pdh["Na+"])
+            assert pytest.approx(-0.81465175, rel=1e-6) == value(
+                model.state[1].Liq_log_gamma_pdh["K+"])
+            assert pytest.approx(-0.81465175, rel=1e-6) == value(
+                model.state[1].Liq_log_gamma_pdh["Cl-"])
+
+            # Calculate molality scale activity coefficients.
+            lgm_Na = log(
+                value(model.state[1].mole_frac_phase_comp["Liq", "Na+"]) +
+                exp(value(model.state[1].Liq_log_gamma["Na+"])))
+            lgm_K = log(
+                value(model.state[1].mole_frac_phase_comp["Liq", "K+"]) +
+                exp(value(model.state[1].Liq_log_gamma["K+"])))
+            lgm_Cl = log(
+                value(model.state[1].mole_frac_phase_comp["Liq", "Cl-"]) +
+                exp(value(model.state[1].Liq_log_gamma["Cl-"])))
+
+            # Calculate mean activity coefficients for salts
+            lg_NaCl = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
+                                 model.state[1].Liq_log_gamma["Cl-"]))
+            lg_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
+                                model.state[1].Liq_log_gamma["Cl-"]))
+            lgm_NaCl = 0.5*(lgm_Na + lgm_Cl)
+            lgm_KCl = 0.5*(lgm_K + lgm_Cl)
+            # print(x, g[0], lgm_NaCl, g[1], lgm_KCl, lg_NaCl, lg_KCl)
+            # model.state[1].mole_frac_phase_comp.display()
+            # print(value(model.state[1].Liq_log_gamma["Na+"]),
+            #       value(model.state[1].Liq_log_gamma["Cl-"]))
+            
+            # TODO: This is WIP
