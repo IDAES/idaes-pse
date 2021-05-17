@@ -838,7 +838,7 @@ class TestUnsymmetric_Mixed(object):
 
         # Data regressed from digitized Figs 1 and 2 [2]
         # Form x_KCl: (ln(gamma NaCl), ln(gamma KCl))
-        data = {0.00000001: (-0.105600000912, -0.143200000791),
+        data = {1e-12: (-0.105600000912, -0.143200000791),
                 # 0.1: (-0.114916, -0.151286),
                 # 0.2: (-0.124624, -0.159724),
                 # 0.3: (-0.134724, -0.168514),
@@ -848,7 +848,7 @@ class TestUnsymmetric_Mixed(object):
                 # 0.7: (-0.179044, -0.207194),
                 # 0.8: (-0.191104, -0.217744),
                 # 0.9: (-0.203556, -0.228646),
-                0.99999999: (-0.216399998696, -0.239899998857)}
+                0.999999999999: (-0.216399998696, -0.239899998857)}
 
         for x, g in data.items():
             m = 4  # molality of solution
@@ -882,25 +882,14 @@ class TestUnsymmetric_Mixed(object):
             assert pytest.approx(-0.81465175, rel=1e-6) == value(
                 model.state[1].Liq_log_gamma_pdh["Cl-"])
 
-            # Calculate molality scale activity coefficients.
-            lgm_Na = log(
-                value(model.state[1].mole_frac_phase_comp["Liq", "Na+"]) +
-                exp(value(model.state[1].Liq_log_gamma["Na+"])))
-            lgm_K = log(
-                value(model.state[1].mole_frac_phase_comp["Liq", "K+"]) +
-                exp(value(model.state[1].Liq_log_gamma["K+"])))
-            lgm_Cl = log(
-                value(model.state[1].mole_frac_phase_comp["Liq", "Cl-"]) +
-                exp(value(model.state[1].Liq_log_gamma["Cl-"])))
-
             # Calculate mean activity coefficients for salts
             lg_NaCl = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
                                  model.state[1].Liq_log_gamma["Cl-"]))
             lg_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
                                 model.state[1].Liq_log_gamma["Cl-"]))
-            lgm_NaCl = 0.5*(lgm_Na + lgm_Cl)
-            lgm_KCl = 0.5*(lgm_K + lgm_Cl)
-            print(x, g[0], lg_NaCl, g[1], lg_KCl)
+            lgm_NaCl = lg_NaCl - log(1+18*(1+1)*4/1000)
+            lgm_KCl = lg_KCl - log(1+18*(1+1)*4/1000)
+            print(x, g[0], lg_NaCl, lgm_NaCl, g[1], lg_KCl, lgm_KCl)
             # model.state[1].mole_frac_phase_comp.display()
             # print(value(model.state[1].Liq_log_gamma["Na+"]),
             #       value(model.state[1].Liq_log_gamma["Cl-"]))
