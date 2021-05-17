@@ -1060,8 +1060,9 @@ documentation for supported schemes,
                                for turning mass transfer constrainst gradually
             homotopy_steps_h : List of continuations steps between 0 and 1
                                for turning heat transfer constraints gradually
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during initialization
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during initialization
                     (default = None, use IDAES default solver)
 
         """

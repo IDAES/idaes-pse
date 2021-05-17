@@ -1042,9 +1042,10 @@ discretizing length domain (default=3)"""))
                  * 2 = return solver state for each step in subroutines
                  * 3 = include solver output infomation (tee=True)
 
-        optarg : solver options dictionary object (default=None)
+        optarg : solver options dictionary object (default=None, use
+                 default solver options)
 
-        solver : str indicating whcih solver to use during
+        solver : str indicating which solver to use during
                  initialization (default = None, use default solver)
 
         Returns: None

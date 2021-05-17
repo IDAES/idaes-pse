@@ -270,7 +270,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         not eos.electrolyte_support):
                     raise ConfigurationError(
                         "{} aqueous phase {} was set to use an equation of "
-                        "state whcih does not support electrolytes: {}"
+                        "state which does not support electrolytes: {}"
                         .format(self.name, p, eos))
 
             self.add_component(str(p), ptype(default=d))
@@ -967,7 +967,8 @@ class _GenericStateBlock(StateBlock):
             state_args : a dict of initial values for the state variables
                     defined by the property package.
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the

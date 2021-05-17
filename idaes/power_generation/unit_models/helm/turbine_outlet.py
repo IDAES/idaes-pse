@@ -102,7 +102,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
     def initialize(
         self,
-        state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
@@ -114,7 +113,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         then reactivates the constraints and solves.
 
         Args:
-            state_args (dict): Unused.
             outlvl : sets output level of initialization routine
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary

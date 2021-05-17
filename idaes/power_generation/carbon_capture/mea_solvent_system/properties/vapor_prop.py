@@ -294,17 +294,20 @@ class VaporStateBlockMethods(StateBlock):
                        state_args dictionary are: flow_mol, temperature,
                        pressure and mole_frac_comp.
           outlvl : sets output level of initialization routine
-          optarg : solver options dictionary object (default=None)
-          solver : str indicating whcih solver to use during
+          optarg : solver options dictionary object (default=None, use
+                     default solver options)
+          solver : str indicating which solver to use during
                    initialization (default = None)
           hold_state :
                   flag indicating whether the initialization routine
-                  should unfix any state variables fixed during initialization (default=False).
+                  should unfix any state variables fixed during initialization
+                  (default=False).
 
                   valid options:
                     True :
                       states varaibles are not unfixed, and a dict of returned
-                      containing flags for which states were fixed during initialization.
+                      containing flags for which states were fixed during
+                      initialization.
                     False :
                       state variables are unfixed after initialization by
                       calling the relase_state method

@@ -324,7 +324,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for cold side (see documentation of the specific
                 property package) (default = None).
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 

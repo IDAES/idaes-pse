@@ -40,7 +40,8 @@ def get_solver(solver=None, options=None):
     Args:
         solver: string name for desired solver. Default=None, use default solver
         options: dict of solver options to use, overwrites any settings
-                 provided by IDAES configuration. DEfault = None.
+                 provided by IDAES configuration. Default = None, use default
+                 solver options.
 
     Returns:
         A Pyomo solver object
