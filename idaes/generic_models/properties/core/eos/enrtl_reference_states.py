@@ -35,6 +35,30 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
+class Unsymmetric(object):
+    """
+    Sub-methods for the symmetric (fused-salt) reference state
+    """
+    @staticmethod
+    def ref_state(b, pname):
+        def rule_x_ref(b, i):
+            if i in b.params.solvent_set or i in b.params.solute_set:
+                # Eqn 66
+                return (b.mole_frac_phase_comp_true[pname, i] /
+                        sum(b.mole_frac_phase_comp_true[pname, j]
+                            for j in b.params.solvent_set|b.params.solute_set))
+            else:
+                return 0
+
+        b.add_component(pname+"_x_ref",
+                        Expression(b.params.true_species_set, rule=rule_x_ref))
+
+    @staticmethod
+    def ndIdn(b, pname, i):
+        # Eqn 71
+        return 0
+
+
 class Symmetric(object):
     """
     Sub-methods for the symmetric (fused-salt) reference state

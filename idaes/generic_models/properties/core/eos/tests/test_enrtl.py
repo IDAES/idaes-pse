@@ -289,14 +289,14 @@ class TestStateBlockSymmetric(object):
         for k in model.state[1].Liq_x_ref:
             assert k in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
             if k in ["H2O", "C6H12"]:
-                assert model.state[1].Liq_x_ref[k].expr == 0
+                assert str(model.state[1].Liq_x_ref[k].expr) == str(0.0)
             else:
-                assert model.state[1].Liq_x_ref[k].expr == (
+                assert str(model.state[1].Liq_x_ref[k].expr) == str(
                     model.state[1].mole_frac_phase_comp_true["Liq", k] /
-                    (model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
-                     model.state[1].mole_frac_phase_comp_true["Liq", "H+"] +
-                     model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"] +
-                     model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]))
+                    (model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"] +
+                     model.state[1].mole_frac_phase_comp_true["Liq", "OH-"] +
+                     model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
+                     model.state[1].mole_frac_phase_comp_true["Liq", "H+"]))
 
         assert isinstance(model.state[1].Liq_X, Expression)
         assert len(model.state[1].Liq_X) == 6
@@ -318,7 +318,8 @@ class TestStateBlockSymmetric(object):
         for j in model.state[1].Liq_X_ref:
             if j in ["H2O", "C6H12"]:
                 # _X should be mole_frac_phase_comp_true
-                assert model.state[1].Liq_X_ref[j]._expr == 0
+                assert str(model.state[1].Liq_X_ref[j].expr) == str(
+                    model.state[1].Liq_x_ref[j])
             else:
                 # _X should be mutiplied by |charge|
                 assert (
@@ -342,42 +343,44 @@ class TestStateBlockSymmetric(object):
 
         assert isinstance(model.state[1].Liq_ionic_strength, Expression)
         assert len(model.state[1].Liq_ionic_strength) == 1
-        assert model.state[1].Liq_ionic_strength.expr == (
-            0.5*(model.params.get_component("Na+").config.charge**2 *
-                 model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
-                 model.params.get_component("H+").config.charge**2 *
-                 model.state[1].mole_frac_phase_comp_true["Liq", "H+"] +
-                 model.params.get_component("Cl-").config.charge**2 *
+        assert str(model.state[1].Liq_ionic_strength.expr) == str(
+            0.5*(model.params.get_component("Cl-").config.charge**2 *
                  model.state[1].mole_frac_phase_comp_true["Liq", "Cl-"] +
                  model.params.get_component("OH-").config.charge**2 *
-                 model.state[1].mole_frac_phase_comp_true["Liq", "OH-"]))
+                 model.state[1].mole_frac_phase_comp_true["Liq", "OH-"] +
+                 model.params.get_component("Na+").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "Na+"] +
+                 model.params.get_component("H+").config.charge**2 *
+                 model.state[1].mole_frac_phase_comp_true["Liq", "H+"]))
 
         assert isinstance(model.state[1].Liq_ionic_strength_ref, Expression)
         assert len(model.state[1].Liq_ionic_strength_ref) == 1
-        assert model.state[1].Liq_ionic_strength_ref.expr == (
-            0.5*(model.params.get_component("Na+").config.charge**2 *
-                 model.state[1].Liq_x_ref["Na+"] +
-                 model.params.get_component("H+").config.charge**2 *
-                 model.state[1].Liq_x_ref["H+"] +
-                 model.params.get_component("Cl-").config.charge**2 *
+        assert str(model.state[1].Liq_ionic_strength_ref.expr) == str(
+            0.5*(model.params.get_component("Cl-").config.charge**2 *
                  model.state[1].Liq_x_ref["Cl-"] +
                  model.params.get_component("OH-").config.charge**2 *
-                 model.state[1].Liq_x_ref["OH-"]))
+                 model.state[1].Liq_x_ref["OH-"] +
+                 model.params.get_component("Na+").config.charge**2 *
+                 model.state[1].Liq_x_ref["Na+"] +
+                 model.params.get_component("H+").config.charge**2 *
+                 model.state[1].Liq_x_ref["H+"]))
 
         assert isinstance(model.state[1].Liq_vol_mol_solvent, Expression)
         assert len(model.state[1].Liq_vol_mol_solvent) == 1
-        assert model.state[1].Liq_vol_mol_solvent.expr == 1/42
+        assert str(model.state[1].Liq_vol_mol_solvent.expr) == \
+            '1/(42*mol/m**3)'
 
         assert isinstance(model.state[1].Liq_relative_permittivity_solvent,
                           Expression)
         assert len(model.state[1].Liq_relative_permittivity_solvent) == 1
-        assert model.state[1].Liq_relative_permittivity_solvent.expr == (
-            model.params.get_component("H2O").relative_permittivity_liq_comp)
+        assert str(model.state[1].Liq_relative_permittivity_solvent.expr) == (
+            str(model.params.get_component(
+                "H2O").relative_permittivity_liq_comp))
 
         assert isinstance(model.state[1].Liq_A_DH, Expression)
         assert len(model.state[1].Liq_A_DH) == 1
         assert_units_equivalent(model.state[1].Liq_A_DH, pyunits.dimensionless)
-        assert model.state[1].Liq_A_DH.expr == (
+        assert str(model.state[1].Liq_A_DH.expr) == str(
             (1/3)*(2*Constants.pi*Constants.avogadro_number /
                    model.state[1].Liq_vol_mol_solvent)**0.5 *
             (Constants.elemental_charge**2 /
@@ -391,7 +394,7 @@ class TestStateBlockSymmetric(object):
         for j in model.state[1].Liq_log_gamma_pdh:
             assert j in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
             if j in ["H2O", "C6H12"]:
-                assert model.state[1].Liq_log_gamma_pdh[j].expr == (
+                assert str(model.state[1].Liq_log_gamma_pdh[j].expr) == str(
                     (2*model.state[1].Liq_A_DH *
                      model.state[1].Liq_ionic_strength**(3/2) /
                      (1+14.9*model.state[1].Liq_ionic_strength**(1/2))))
@@ -401,26 +404,26 @@ class TestStateBlockSymmetric(object):
                         return (
                             (1 - model.state[1].Liq_x_ref[k]) /
                             (model.state[1].mole_frac_phase_comp_true[
-                                "Liq", "Na+"] +
+                                "Liq", "Cl-"] +
                              model.state[1].mole_frac_phase_comp_true[
-                                 "Liq", "H+"] +
+                                 "Liq", "OH-"] +
                              model.state[1].mole_frac_phase_comp_true[
-                                 "Liq", "Cl-"] +
+                                 "Liq", "Na+"] +
                              model.state[1].mole_frac_phase_comp_true[
-                                 "Liq", "OH-"]))
+                                 "Liq", "H+"]))
                     else:
                         return (
                             -model.state[1].Liq_x_ref[k] /
                             (model.state[1].mole_frac_phase_comp_true[
-                                "Liq", "Na+"] +
+                                "Liq", "Cl-"] +
                              model.state[1].mole_frac_phase_comp_true[
-                                 "Liq", "H+"] +
+                                 "Liq", "OH-"] +
                              model.state[1].mole_frac_phase_comp_true[
-                                 "Liq", "Cl-"] +
+                                 "Liq", "Na+"] +
                              model.state[1].mole_frac_phase_comp_true[
-                                 "Liq", "OH-"]))
+                                 "Liq", "H+"]))
 
-                assert model.state[1].Liq_log_gamma_pdh[j].expr == (
+                assert str(model.state[1].Liq_log_gamma_pdh[j].expr) == str(
                     -model.state[1].Liq_A_DH * (
                         (2*model.params.get_component(j).config.charge**2 /
                          14.9) *
@@ -434,14 +437,14 @@ class TestStateBlockSymmetric(object):
                          model.state[1].Liq_ionic_strength_ref**-0.5) /
                         (1+14.9*model.state[1].Liq_ionic_strength_ref**0.5) *
                         (0.5 * (
-                            model.params.get_component("Na+").config.charge**2 *
-                            ndxdn(j, "Na+") +
-                            model.params.get_component("H+").config.charge**2 *
-                            ndxdn(j, "H+") +
                             model.params.get_component("Cl-").config.charge**2 *
                             ndxdn(j, "Cl-") +
                             model.params.get_component("OH-").config.charge**2 *
-                            ndxdn(j, "OH-")))))
+                            ndxdn(j, "OH-") +
+                            model.params.get_component("Na+").config.charge**2 *
+                            ndxdn(j, "Na+") +
+                            model.params.get_component("H+").config.charge**2 *
+                            ndxdn(j, "H+")))))
 
         assert isinstance(model.state[1].Liq_log_gamma_lc_I, Expression)
         assert len(model.state[1].Liq_log_gamma_lc_I) == 6
@@ -452,25 +455,25 @@ class TestStateBlockSymmetric(object):
         assert len(model.state[1].Liq_log_gamma_lc_I0) == 4
         for k in model.state[1].Liq_log_gamma_lc_I0:
             assert k in ["Na+", "H+", "Cl-", "OH-"]
-            assert model.state[1].Liq_log_gamma_lc_I0[k].expr != \
-                model.state[1].Liq_log_gamma_lc_I[k].expr
+            assert str(model.state[1].Liq_log_gamma_lc_I0[k].expr) != \
+                str(model.state[1].Liq_log_gamma_lc_I[k].expr)
 
         assert isinstance(model.state[1].Liq_log_gamma_lc, Expression)
         assert len(model.state[1].Liq_log_gamma_lc) == 6
         for k in model.state[1].Liq_log_gamma_lc:
             assert k in ["H2O", "C6H12", "Na+", "H+", "Cl-", "OH-"]
             if k in ["H2O", "C6H12"]:
-                assert model.state[1].Liq_log_gamma_lc[k].expr == \
-                    model.state[1].Liq_log_gamma_lc_I[k]
+                assert str(model.state[1].Liq_log_gamma_lc[k].expr) == \
+                    str(model.state[1].Liq_log_gamma_lc_I[k])
             else:
-                assert model.state[1].Liq_log_gamma_lc[k].expr == (
+                assert str(model.state[1].Liq_log_gamma_lc[k].expr) == str(
                     model.state[1].Liq_log_gamma_lc_I[k] -
                     model.state[1].Liq_log_gamma_lc_I0[k])
 
         assert isinstance(model.state[1].Liq_log_gamma, Expression)
         assert len(model.state[1].Liq_log_gamma) == 6
         for k, v in model.state[1].Liq_log_gamma.items():
-            assert model.state[1].Liq_log_gamma[k].expr == (
+            assert str(model.state[1].Liq_log_gamma[k].expr) == str(
                 model.state[1].Liq_log_gamma_pdh[k] +
                 model.state[1].Liq_log_gamma_lc[k])
 
@@ -480,121 +483,121 @@ class TestStateBlockSymmetric(object):
         assert len(model.state[1].Liq_alpha) == 28
 
         # Molecule-molecule interactions
-        assert (model.state[1].Liq_alpha["H2O", "H2O"].expr ==
+        assert str(model.state[1].Liq_alpha["H2O", "H2O"].expr) == str(
                 model.params.Liq.alpha["H2O", "H2O"])
-        assert (model.state[1].Liq_alpha["H2O", "C6H12"].expr ==
+        assert str(model.state[1].Liq_alpha["H2O", "C6H12"].expr) == str(
                 model.params.Liq.alpha["H2O", "C6H12"])
-        assert (model.state[1].Liq_alpha["C6H12", "H2O"].expr ==
+        assert str(model.state[1].Liq_alpha["C6H12", "H2O"].expr) == str(
                 model.params.Liq.alpha["H2O", "C6H12"])
-        assert (model.state[1].Liq_alpha["C6H12", "C6H12"].expr ==
+        assert str(model.state[1].Liq_alpha["C6H12", "C6H12"].expr) == str(
                 model.params.Liq.alpha["C6H12", "C6H12"])
 
         # Molecule-ion interactions
-        assert (model.state[1].Liq_alpha["H2O", "Na+"].expr ==
+        assert str(model.state[1].Liq_alpha["H2O", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["H2O", "Na+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H2O", "Na+, OH-"]))
-        assert (model.state[1].Liq_alpha["H2O", "H+"].expr ==
+        assert str(model.state[1].Liq_alpha["H2O", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["H2O", "H+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H2O", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["Na+", "H2O"].expr ==
+        assert str(model.state[1].Liq_alpha["Na+", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["H2O", "Na+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H2O", "Na+, OH-"]))
-        assert (model.state[1].Liq_alpha["H+", "H2O"].expr ==
+        assert str(model.state[1].Liq_alpha["H+", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["H2O", "H+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H2O", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["H2O", "Cl-"].expr ==
+        assert str(model.state[1].Liq_alpha["H2O", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["H2O", "Na+, Cl-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["H2O", "H+, Cl-"]))
-        assert (model.state[1].Liq_alpha["H2O", "OH-"].expr ==
+        assert str(model.state[1].Liq_alpha["H2O", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["H2O", "Na+, OH-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["H2O", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["Cl-", "H2O"].expr ==
+        assert str(model.state[1].Liq_alpha["Cl-", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["H2O", "Na+, Cl-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["H2O", "H+, Cl-"]))
-        assert (model.state[1].Liq_alpha["OH-", "H2O"].expr ==
+        assert str(model.state[1].Liq_alpha["OH-", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["H2O", "Na+, OH-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["H2O", "H+, OH-"]))
 
-        assert (model.state[1].Liq_alpha["C6H12", "Na+"].expr ==
+        assert str(model.state[1].Liq_alpha["C6H12", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["C6H12", "Na+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["C6H12", "Na+, OH-"]))
-        assert (model.state[1].Liq_alpha["C6H12", "H+"].expr ==
+        assert str(model.state[1].Liq_alpha["C6H12", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["C6H12", "H+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["C6H12", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["Na+", "C6H12"].expr ==
+        assert str(model.state[1].Liq_alpha["Na+", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["C6H12", "Na+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["C6H12", "Na+, OH-"]))
-        assert (model.state[1].Liq_alpha["H+", "C6H12"].expr ==
+        assert str(model.state[1].Liq_alpha["H+", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["C6H12", "H+, Cl-"] +
                  model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["C6H12", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["C6H12", "Cl-"].expr ==
+        assert str(model.state[1].Liq_alpha["C6H12", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["C6H12", "Na+, Cl-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["C6H12", "H+, Cl-"]))
-        assert (model.state[1].Liq_alpha["C6H12", "OH-"].expr ==
+        assert str(model.state[1].Liq_alpha["C6H12", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["C6H12", "Na+, OH-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["C6H12", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["Cl-", "C6H12"].expr ==
+        assert str(model.state[1].Liq_alpha["Cl-", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["C6H12", "Na+, Cl-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["C6H12", "H+, Cl-"]))
-        assert (model.state[1].Liq_alpha["OH-", "C6H12"].expr ==
+        assert str(model.state[1].Liq_alpha["OH-", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["C6H12", "Na+, OH-"] +
                  model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["C6H12", "H+, OH-"]))
 
         # Ion-ion interactions
-        assert (model.state[1].Liq_alpha["Na+", "Cl-"].expr ==
+        assert str(model.state[1].Liq_alpha["Na+", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"]))
-        assert (model.state[1].Liq_alpha["Na+", "OH-"].expr ==
+        assert str(model.state[1].Liq_alpha["Na+", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["Na+, OH-", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["H+", "Cl-"].expr ==
+        assert str(model.state[1].Liq_alpha["H+", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"]))
-        assert (model.state[1].Liq_alpha["H+", "OH-"].expr ==
+        assert str(model.state[1].Liq_alpha["H+", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  model.params.Liq.alpha["Na+, OH-", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["Cl-", "Na+"].expr ==
+        assert str(model.state[1].Liq_alpha["Cl-", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"]))
-        assert (model.state[1].Liq_alpha["Cl-", "H+"].expr ==
+        assert str(model.state[1].Liq_alpha["Cl-", "H+"].expr) == str(
                 (model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
-        assert (model.state[1].Liq_alpha["OH-", "Na+"].expr ==
+        assert str(model.state[1].Liq_alpha["OH-", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"]))
-        assert (model.state[1].Liq_alpha["OH-", "H+"].expr ==
+        assert str(model.state[1].Liq_alpha["OH-", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
 
@@ -614,167 +617,171 @@ class TestStateBlockSymmetric(object):
         assert len(model.state[1].Liq_G) == 28
 
         # Molecule-molecule interactions
-        assert (model.state[1].Liq_G["H2O", "H2O"].expr ==
-                exp(-model.params.Liq.alpha["H2O", "H2O"] *
-                    model.params.Liq.tau["H2O", "H2O"]))
-        assert (model.state[1].Liq_G["H2O", "C6H12"].expr ==
+        assert str(model.state[1].Liq_G["H2O", "H2O"].expr) == str(1.0)
+        assert str(model.state[1].Liq_G["H2O", "C6H12"].expr) == str(
                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
                     model.params.Liq.tau["H2O", "C6H12"]))
-        assert (model.state[1].Liq_G["C6H12", "H2O"].expr ==
+        assert str(model.state[1].Liq_G["C6H12", "H2O"].expr) == str(
                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
-                    model.params.Liq.tau["H2O", "C6H12"]))
-        assert (model.state[1].Liq_G["C6H12", "C6H12"].expr ==
-                exp(-model.params.Liq.alpha["C6H12", "C6H12"] *
-                    model.params.Liq.tau["C6H12", "C6H12"]))
+                    model.params.Liq.tau["C6H12", "H2O"]))
+        assert str(model.state[1].Liq_G["C6H12", "C6H12"].expr) == str(1.0)
 
         # Molecule-ion interactions
-        assert (model.state[1].Liq_G["H2O", "Na+"].expr ==
+        assert str(model.state[1].Liq_G["H2O", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, Cl-"] *
                      model.params.Liq.tau["H2O", "Na+, Cl-"]) +
                  model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, OH-"] *
                      model.params.Liq.tau["H2O", "Na+, OH-"])))
-        assert (model.state[1].Liq_G["H2O", "H+"].expr ==
+        assert str(model.state[1].Liq_G["H2O", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, Cl-"] *
                      model.params.Liq.tau["H2O", "H+, Cl-"]) +
                  model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, OH-"] *
                      model.params.Liq.tau["H2O", "H+, OH-"])))
-        assert (model.state[1].Liq_G["Na+", "H2O"].expr ==
+        assert str(model.state[1].Liq_G["Na+", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, Cl-"] *
-                     model.params.Liq.tau["H2O", "Na+, Cl-"]) +
+                     model.params.Liq.tau["Na+, Cl-", "H2O"]) +
                  model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, OH-"] *
-                     model.params.Liq.tau["H2O", "Na+, OH-"])))
-        assert (model.state[1].Liq_G["H+", "H2O"].expr ==
+                     model.params.Liq.tau["Na+, OH-", "H2O"])))
+        assert str(model.state[1].Liq_G["H+", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, Cl-"] *
-                     model.params.Liq.tau["H2O", "H+, Cl-"]) +
+                     model.params.Liq.tau["H+, Cl-", "H2O"]) +
                  model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, OH-"] *
-                     model.params.Liq.tau["H2O", "H+, OH-"])))
-        assert (model.state[1].Liq_G["H2O", "Cl-"].expr ==
+                     model.params.Liq.tau["H+, OH-", "H2O"])))
+        assert str(model.state[1].Liq_G["H2O", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, Cl-"] *
                      model.params.Liq.tau["H2O", "Na+, Cl-"]) +
                  model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, Cl-"] *
                      model.params.Liq.tau["H2O", "H+, Cl-"])))
-        assert (model.state[1].Liq_G["H2O", "OH-"].expr ==
+        assert str(model.state[1].Liq_G["H2O", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, OH-"] *
                      model.params.Liq.tau["H2O", "Na+, OH-"]) +
                  model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, OH-"] *
                      model.params.Liq.tau["H2O", "H+, OH-"])))
-        assert (model.state[1].Liq_G["Cl-", "H2O"].expr ==
+        assert str(model.state[1].Liq_G["Cl-", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, Cl-"] *
-                     model.params.Liq.tau["H2O", "Na+, Cl-"]) +
+                     model.params.Liq.tau["Na+, Cl-", "H2O"]) +
                  model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, Cl-"] *
-                     model.params.Liq.tau["H2O", "H+, Cl-"])))
-        assert (model.state[1].Liq_G["OH-", "H2O"].expr ==
+                     model.params.Liq.tau["H+, Cl-", "H2O"])))
+        assert str(model.state[1].Liq_G["OH-", "H2O"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["H2O", "Na+, OH-"] *
-                     model.params.Liq.tau["H2O", "Na+, OH-"]) +
+                     model.params.Liq.tau["Na+, OH-", "H2O"]) +
                  model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["H2O", "H+, OH-"] *
-                     model.params.Liq.tau["H2O", "H+, OH-"])))
+                     model.params.Liq.tau["H+, OH-", "H2O"])))
 
-        assert (model.state[1].Liq_G["C6H12", "Na+"].expr ==
+        assert str(model.state[1].Liq_G["C6H12", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, Cl-"] *
                      model.params.Liq.tau["C6H12", "Na+, Cl-"]) +
                  model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, OH-"] *
                      model.params.Liq.tau["C6H12", "Na+, OH-"])))
-        assert (model.state[1].Liq_G["C6H12", "H+"].expr ==
+        assert str(model.state[1].Liq_G["C6H12", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["C6H12", "H+, Cl-"] *
                      model.params.Liq.tau["C6H12", "H+, Cl-"]) +
                  model.state[1].Liq_Y["OH-"] *
-                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
-                     model.params.Liq.tau["H2O", "C6H12"])))
-        assert (model.state[1].Liq_G["Na+", "C6H12"].expr ==
+                 exp(-model.params.Liq.alpha["C6H12", "H+, OH-"] *
+                     model.params.Liq.tau["C6H12", "H+, OH-"])))
+        assert str(model.state[1].Liq_G["Na+", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, Cl-"] *
-                     model.params.Liq.tau["C6H12", "Na+, Cl-"]) +
+                     model.params.Liq.tau["Na+, Cl-", "C6H12"]) +
                  model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, OH-"] *
-                     model.params.Liq.tau["C6H12", "Na+, OH-"])))
-        assert (model.state[1].Liq_G["H+", "C6H12"].expr ==
+                     model.params.Liq.tau["Na+, OH-", "C6H12"])))
+        assert str(model.state[1].Liq_G["H+", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["C6H12", "H+, Cl-"] *
-                     model.params.Liq.tau["C6H12", "H+, Cl-"]) +
+                     model.params.Liq.tau["H+, Cl-", "C6H12"]) +
                  model.state[1].Liq_Y["OH-"] *
-                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
-                     model.params.Liq.tau["H2O", "C6H12"])))
-        assert (model.state[1].Liq_G["C6H12", "Cl-"].expr ==
+                 exp(-model.params.Liq.alpha["C6H12", "H+, OH-"] *
+                     model.params.Liq.tau["H+, OH-", "C6H12"])))
+        assert str(model.state[1].Liq_G["C6H12", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, Cl-"] *
                      model.params.Liq.tau["C6H12", "Na+, Cl-"]) +
                  model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["C6H12", "H+, Cl-"] *
                      model.params.Liq.tau["C6H12", "H+, Cl-"])))
-        assert (model.state[1].Liq_G["C6H12", "OH-"].expr ==
+        assert str(model.state[1].Liq_G["C6H12", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, OH-"] *
                      model.params.Liq.tau["C6H12", "Na+, OH-"]) +
                  model.state[1].Liq_Y["H+"] *
-                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
-                     model.params.Liq.tau["H2O", "C6H12"])))
-        assert (model.state[1].Liq_G["Cl-", "C6H12"].expr ==
+                 exp(-model.params.Liq.alpha["C6H12", "H+, OH-"] *
+                     model.params.Liq.tau["C6H12", "H+, OH-"])))
+        assert str(model.state[1].Liq_G["Cl-", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, Cl-"] *
-                     model.params.Liq.tau["C6H12", "Na+, Cl-"]) +
+                     model.params.Liq.tau["Na+, Cl-", "C6H12"]) +
                  model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["C6H12", "H+, Cl-"] *
-                     model.params.Liq.tau["C6H12", "H+, Cl-"])))
-        assert (model.state[1].Liq_G["OH-", "C6H12"].expr ==
+                     model.params.Liq.tau["H+, Cl-", "C6H12"])))
+        assert str(model.state[1].Liq_G["OH-", "C6H12"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["C6H12", "Na+, OH-"] *
-                     model.params.Liq.tau["C6H12", "Na+, OH-"]) +
+                     model.params.Liq.tau["Na+, OH-", "C6H12"]) +
                  model.state[1].Liq_Y["H+"] *
-                 exp(-model.params.Liq.alpha["H2O", "C6H12"] *
-                     model.params.Liq.tau["H2O", "C6H12"])))
+                 exp(-model.params.Liq.alpha["C6H12", "H+, OH-"] *
+                     model.params.Liq.tau["H+, OH-", "C6H12"])))
 
         # Ion-ion interactions
-        assert (model.state[1].Liq_G["Na+", "Cl-"].expr ==
-                (model.state[1].Liq_Y["H+"] *
+        assert str(model.state[1].Liq_G["Na+", "Cl-"].expr) == str(
+                (model.state[1].Liq_Y["Na+"] +
+                 model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"] *
                      model.params.Liq.tau["Na+, Cl-", "H+, Cl-"])))
-        assert (model.state[1].Liq_G["Na+", "OH-"].expr ==
-                (model.state[1].Liq_Y["H+"] *
+        assert str(model.state[1].Liq_G["Na+", "OH-"].expr) == str(
+                (model.state[1].Liq_Y["Na+"] +
+                 model.state[1].Liq_Y["H+"] *
                  exp(-model.params.Liq.alpha["Na+, OH-", "H+, OH-"] *
                      model.params.Liq.tau["Na+, OH-", "H+, OH-"])))
-        assert (model.state[1].Liq_G["H+", "Cl-"].expr ==
+        assert str(model.state[1].Liq_G["H+", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"] *
-                     model.params.Liq.tau["Na+, Cl-", "H+, Cl-"])))
-        assert (model.state[1].Liq_G["H+", "OH-"].expr ==
+                     model.params.Liq.tau["H+, Cl-", "Na+, Cl-"]) +
+                 model.state[1].Liq_Y["H+"]))
+        assert str(model.state[1].Liq_G["H+", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
                  exp(-model.params.Liq.alpha["Na+, OH-", "H+, OH-"] *
-                     model.params.Liq.tau["Na+, OH-", "H+, OH-"])))
-        assert (model.state[1].Liq_G["Cl-", "Na+"].expr ==
-                (model.state[1].Liq_Y["OH-"] *
+                     model.params.Liq.tau["H+, OH-", "Na+, OH-"]) +
+                 model.state[1].Liq_Y["H+"]))
+        assert str(model.state[1].Liq_G["Cl-", "Na+"].expr) == str(
+                (model.state[1].Liq_Y["Cl-"] +
+                 model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"] *
                      model.params.Liq.tau["Na+, Cl-", "Na+, OH-"])))
-        assert (model.state[1].Liq_G["Cl-", "H+"].expr ==
-                (model.state[1].Liq_Y["OH-"] *
+        assert str(model.state[1].Liq_G["Cl-", "H+"].expr) == str(
+                (model.state[1].Liq_Y["Cl-"] +
+                 model.state[1].Liq_Y["OH-"] *
                  exp(-model.params.Liq.alpha["H+, Cl-", "H+, OH-"] *
                      model.params.Liq.tau["H+, Cl-", "H+, OH-"])))
-        assert (model.state[1].Liq_G["OH-", "Na+"].expr ==
+        assert str(model.state[1].Liq_G["OH-", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"] *
-                     model.params.Liq.tau["Na+, Cl-", "Na+, OH-"])))
-        assert (model.state[1].Liq_G["OH-", "H+"].expr ==
+                     model.params.Liq.tau["Na+, OH-", "Na+, Cl-"]) +
+                 model.state[1].Liq_Y["OH-"]))
+        assert str(model.state[1].Liq_G["OH-", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
                  exp(-model.params.Liq.alpha["H+, Cl-", "H+, OH-"] *
-                     model.params.Liq.tau["H+, Cl-", "H+, OH-"])))
+                     model.params.Liq.tau["H+, OH-", "H+, Cl-"]) +
+                 model.state[1].Liq_Y["OH-"]))
 
         # Like species interactions
         assert ("Na+", "Na+") not in model.state[1].Liq_G
@@ -792,19 +799,19 @@ class TestStateBlockSymmetric(object):
         assert len(model.state[1].Liq_tau) == 28
 
         # Molecule-molecule interactions
-        assert (model.state[1].Liq_tau["H2O", "H2O"].expr ==
+        assert str(model.state[1].Liq_tau["H2O", "H2O"].expr) == str(
                 model.params.Liq.tau["H2O", "H2O"])
-        assert (model.state[1].Liq_tau["H2O", "C6H12"].expr ==
+        assert str(model.state[1].Liq_tau["H2O", "C6H12"].expr) == str(
                 model.params.Liq.tau["H2O", "C6H12"])
-        assert (model.state[1].Liq_tau["C6H12", "H2O"].expr ==
-                model.params.Liq.tau["H2O", "C6H12"])
-        assert (model.state[1].Liq_tau["C6H12", "C6H12"].expr ==
+        assert str(model.state[1].Liq_tau["C6H12", "H2O"].expr) == str(
+                model.params.Liq.tau["C6H12", "H2O"])
+        assert str(model.state[1].Liq_tau["C6H12", "C6H12"].expr) == str(
                 model.params.Liq.tau["C6H12", "C6H12"])
 
         for i, j in model.state[1].Liq_tau:
             if (i, j) not in [("H2O", "H2O"), ("H2O", "C6H12"),
                               ("C6H12", "H2O"), ("C6H12", "C6H12")]:
-                assert (model.state[1].Liq_tau[i, j].expr ==
+                assert str(model.state[1].Liq_tau[i, j].expr) == str(
                         -log(model.state[1].Liq_G[i, j]) /
                         model.state[1].Liq_alpha[i, j])
 
