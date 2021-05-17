@@ -67,18 +67,22 @@ Linux
 1. The IPOPT solver depends on the GNU FORTRAN, GOMP, Blas, and Lapack libraries,
    If these libraries are not already installed on your Linux system, you or your
    system administrator can use the sample commands below to install them. If you
-   have a Linux distribution that is not listed, IPOPT should still work, but 
+   have a Linux distribution that is not listed, IPOPT should still work, but
    the commands to install the required libraries may differ. If these libraries
    are already installed, you can skip this and proceed with the next step.
 
    .. note:: Depending on your distribution, you may need to prepend ``sudo`` to
             these commands or switch to the "root" user.
 
-   apt-get (Current Ubuntu based distributions)::
+   Ubuntu 18.04 and 19.10 and distributions based on them::
 
       sudo apt-get install libgfortran4 libgomp1 liblapack3 libblas3
 
-   yum (Current RedHat based distributions, including CentOS)::
+   Ubuntu 20.04 and distributions based on it ::
+
+      sudo apt-get install libgfortran5 libgomp1 liblapack3 libblas3
+
+   Current RedHat based distributions, including CentOS::
 
       yum install lapack blas libgfortran libgomp
 
@@ -125,18 +129,30 @@ Powershell Prompt.  Regardless of OS and shell, the following steps are the same
 
       pip install idaes-pse==1.7
 
-  c. To get the latest development main branch::
+  c. To get the latest version from the GitHub main branch::
 
-      pip install git+https://github.com/idaes/idaes-pse
+      pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
 
   d. To get a specific fork or branch, for example myfork (of idaes-pse) and mybranch::
 
-      pip install git+https://github.com/myfork/idaes-pse@mybranch
+      pip install 'idaes-pse[prerelease] @ https://github.com/myfork/idaes-pse/archive/mybranch.zip'
+
+  e. For developers: follow the :ref:`advanced user installation<advanced_user_guide/advanced_install/index:Advanced User Installation>`.
 
 2. Run the :doc:`idaes get-extensions command<../user_guide/commands/get_extensions>`
    to install the compiled binaries::
 
     idaes get-extensions
+
+..
+
+    .. note:: If you are not able to successfully run the ``idaes get-extensions``
+              command due to network security settings or another reason, you can
+              download binary release files from
+              https://github.com/IDAES/idaes-ext/releases, and extract them in the
+              directory indicated by the ``idaes bin-directory`` command. You will
+              need both the ``idaes-lib-*`` and ``idaes-solvers-*`` files
+              appropriate for your operating system.
 
 ..
 

@@ -17,7 +17,6 @@ import pytest
 import numpy as np
 
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -26,10 +25,7 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 
 from idaes.core.flowsheet_model import FlowsheetBlock
 
@@ -87,7 +83,7 @@ class TestParamBlock(object):
             "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
             "temperature": (273.15, 323.15, 1000, pyunits.K),
             "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-            "mole_frac_comp": {"H2O": (0,0.5,1),"CO2": (0,0.5,1)}}
+            "mole_frac_comp": {"H2O": (0, 0.5, 1),"CO2": (0, 0.5, 1)}}
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): SmoothVLE}
