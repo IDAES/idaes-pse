@@ -298,11 +298,11 @@ def __set_constraint_transform_applied_scaling_factor(c, v):
         None
     """
     try:
-        c.parent_block().constaint_transformed_scaling_factor[c] = v
+        c.parent_block().constraint_transformed_scaling_factor[c] = v
     except AttributeError:
-        c.parent_block().constaint_transformed_scaling_factor = pyo.Suffix(
+        c.parent_block().constraint_transformed_scaling_factor = pyo.Suffix(
             direction=pyo.Suffix.LOCAL)
-        c.parent_block().constaint_transformed_scaling_factor[c] = v
+        c.parent_block().constraint_transformed_scaling_factor[c] = v
 
 
 def get_constraint_transform_applied_scaling_factor(c, default=None):
@@ -318,7 +318,7 @@ def get_constraint_transform_applied_scaling_factor(c, default=None):
         default.
     """
     try:
-        sf = c.parent_block().constaint_transformed_scaling_factor.get(c, default)
+        sf = c.parent_block().constraint_transformed_scaling_factor.get(c, default)
     except AttributeError:
         sf = default # when there is no suffix
     return sf
@@ -330,7 +330,7 @@ def __unset_constraint_transform_applied_scaling_factor(c):
     transformation.
     """
     try:
-        del c.parent_block().constaint_transformed_scaling_factor[c]
+        del c.parent_block().constraint_transformed_scaling_factor[c]
     except AttributeError:
         pass # no scaling factor suffix, is fine
     except KeyError:
