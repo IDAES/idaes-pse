@@ -3,8 +3,6 @@ import idaes
 
 
 class SolverWrapper(object):
-    _use_idaes_config = False
-
     def __init__(self, name, register=True):
         self.name = name
         if name == 'default':
@@ -25,7 +23,8 @@ class SolverWrapper(object):
         else:
             name = self.name
             solver = self.solver
-        if name in idaes.cfg and (self._use_idaes_config or name == "default"):
+        if name in idaes.cfg and \
+            (idaes.cfg.use_idaes_solver_config or name == "default"):
             for k, v in idaes.cfg[name].items():
                 if k not in kwargs:
                     kwargs[k] = v
@@ -52,7 +51,7 @@ def use_idaes_solver_configuration_deafults(b=True):
     Returns:
         None
     """
-    SolverWrapper._use_idaes_config = b
+    idaes.cfg.use_idaes_solver_config = b
     if b: # This will let you explicitly state you don't want any part of this
         # so if you only do "use_idaes_solver_configuration_deafults(False)" up-
         # front you are saying I know this stuff exists and I must insist you
