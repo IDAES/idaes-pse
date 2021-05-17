@@ -1156,26 +1156,26 @@ discretizing length domain (default=3)"""))
         for t, c in self.pressure_change_contraction_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP_contraction[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.pressure_change_gravity_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP_gravity[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.pressure_change_total_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.connection_material_balance.items():
             sf = iscale.get_scaling_factor(1e-4, default=1)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.connection_enthalpy_balance.items():
             sf = iscale.get_scaling_factor(1e-4, default=1)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.connection_pressure_balance.items():
             sf = iscale.get_scaling_factor(1e-6, default=1)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

@@ -276,4 +276,4 @@ ValveFunctionType.custom}""",
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)
             s = s ** 2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

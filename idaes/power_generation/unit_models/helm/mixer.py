@@ -445,16 +445,16 @@ between flow and pressure driven simulations.}""",
         super().calculate_scaling_factors()
         for t, c in self.mass_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.energy_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].enth_mol)
             s *= iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "minimum_pressure_constraint"):
             for t, c in self.minimum_pressure_constraint.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)

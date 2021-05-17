@@ -207,8 +207,8 @@ class HelmIsentropicCompressorData(BalanceBlockData):
         for t, c in self.eq_pressure_ratio.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.eq_work.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.work[t])
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

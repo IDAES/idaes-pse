@@ -211,4 +211,4 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         for t, c in self.inlet_flow_constraint.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

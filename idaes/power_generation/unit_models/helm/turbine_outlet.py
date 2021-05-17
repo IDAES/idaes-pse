@@ -208,4 +208,4 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                 self.control_volume.properties_in[t].flow_mol,
                 default=1,
                 warning=True)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

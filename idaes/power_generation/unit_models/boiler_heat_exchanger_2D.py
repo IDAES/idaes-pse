@@ -2614,9 +2614,9 @@ tube side flows from 1 to 0"""))
         for i, c in self.heat_tube_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.tube_heat[i], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for i, c in self.heat_shell_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.shell_heat[i], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

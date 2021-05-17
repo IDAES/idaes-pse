@@ -1779,28 +1779,28 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if hasattr(self, "material_holdup_calculation"):
             for (t, p, j), c in self.material_holdup_calculation.items():
                 sf = iscale.get_scaling_factor(self.material_holdup[t, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "rate_reaction_stoichiometry_constraint"):
             for (t, p, j), c in \
                     self.rate_reaction_stoichiometry_constraint.items():
                 sf = iscale.get_scaling_factor(
                         self.rate_reaction_generation[t, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
             for (t, p, j), c in \
                     self.equilibrium_reaction_stoichiometry_constraint.items():
                 sf = iscale.get_scaling_factor(
                         self.equilibrium_reaction_generation[t, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "inherent_reaction_stoichiometry_constraint"):
             for (t, p, j), c in \
                     self.inherent_reaction_stoichiometry_constraint.items():
                 sf = iscale.get_scaling_factor(
                         self.inherent_reaction_generation[t, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "material_balances"):
             mb_type = self._constructed_material_balance_type
@@ -1810,13 +1810,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.properties_in[t].get_material_flow_terms(p, j),
                         default=1,
                         warning=True)
-                    iscale.constraint_scaling_transform(c, sf)
+                    iscale.constraint_scaling_transform(c, sf, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self.properties_in[t].get_material_flow_terms(p, j)
                          for p in phase_list if (p, j) in phase_component_set])
-                    iscale.constraint_scaling_transform(c, sf)
+                    iscale.constraint_scaling_transform(c, sf, overwrite=False)
             else:
                 # There are some other material balance types but they create
                 # constraints with different names.
@@ -1827,52 +1827,52 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 sf = iscale.min_scaling_factor(
                     [self.elemental_flow_out[t, p, e]
                      for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "elemental_holdup_calculation"):
             for (t, e), c in self.elemental_holdup_calculation.items():
                 sf = iscale.get_scaling_factor(self.element_holdup[t, e])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "enthalpy_balances"):
             for t, c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
                      for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "energy_holdup_calculation"):
             for (t, p), c in self.energy_holdup_calculation.items():
                 sf = iscale.get_scaling_factor(self.energy_holdup[t, p])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "pressure_balance"):
             for t, c in self.pressure_balance.items():
                 sf = iscale.get_scaling_factor(
                     self.properties_in[t].pressure, default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "sum_of_phase_fractions"):
             for t, c in self.sum_of_phase_fractions.items():
                 sf = iscale.min_scaling_factor(
                     [self.phase_fraction[t, p] for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # Scaling for discretization equations
         if hasattr(self, "material_accumulation_disc_eq"):
             for (t, p, j), c in self.material_accumulation_disc_eq.items():
                 sf = iscale.get_scaling_factor(
                     self.material_accumulation[t, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "energy_accumulation_disc_eq"):
             for (t, p), c in self.energy_accumulation_disc_eq.items():
                 sf = iscale.get_scaling_factor(
                     self.energy_accumulation[t, p])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "element_accumulation_disc_eq"):
             for (t, e), c in self.element_accumulation_disc_eq.items():
                 sf = iscale.get_scaling_factor(
                     self.element_accumulation[t, e])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

@@ -732,9 +732,12 @@ thickness of the tube""",
         super().calculate_scaling_factors()
 
         for i, c in self.shell_heat_transfer_eq.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.shell.heat[i], default=1, warning=True))
+            iscale.constraint_scaling_transform(
+                c, iscale.get_scaling_factor(
+                    self.shell.heat[i], default=1, warning=True),
+                overwrite=False)
 
         for i, c in self.tube_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.tube.heat[i], default=1, warning=True))
+                    self.tube.heat[i], default=1, warning=True),
+                overwrite=False)

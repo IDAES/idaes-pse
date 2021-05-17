@@ -990,7 +990,7 @@ objects linked to all inlet states and the mixed state,
                 for (t, p, j), c in self.material_mixing_equations.items():
                     flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
                     s = iscale.get_scaling_factor(flow_term, default=1)
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, j), c in self.material_mixing_equations.items():
                     for i, p in enumerate(self.mixed_state.phase_list):
@@ -1000,7 +1000,7 @@ objects linked to all inlet states and the mixed state,
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
                             s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.total:
                 pc_set = self.mixed_state.phase_component_set
                 for t, c in self.material_mixing_equations.items():
@@ -1011,4 +1011,4 @@ objects linked to all inlet states and the mixed state,
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
                             s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
