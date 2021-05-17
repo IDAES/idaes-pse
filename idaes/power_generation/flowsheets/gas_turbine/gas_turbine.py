@@ -31,7 +31,7 @@ import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
 import idaes.core.plugins
 from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
-from idaes.core.solvers import use_idaes_solver_configuration_deafults
+from idaes.core.solvers import use_idaes_solver_configuration_defaults
 
 
 def tag_model(m):
@@ -731,7 +731,7 @@ if __name__ == "__main__":
     # Solver config
     #
     # Use idaes config, because these will apply to all ipopt solvers created
-    use_idaes_solver_configuration_deafults()
+    use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
     # due to a lot of component mole fractions being on their lower bound of 0
     # bound push result in much longer solve times, so set it low.
