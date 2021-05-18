@@ -289,13 +289,15 @@ def test_fix_state_vars_basic(model):
 
 @pytest.mark.unit
 def test_fix_state_vars_None_value(model):
-    with pytest.raises(UnitsError):
-        model.fs.sb.pressure.value = None
+    model.fs.sb.pressure.value = None
+
+    with pytest.raises(ConfigurationError):
+        fix_state_vars(model.fs.sb)
 
 
 @pytest.mark.unit
 def test_fix_state_vars_guesses(model):
-    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # Note that flow_mol_phase_comp is labled as component_flow
     # in define_state_vars
     state_args = {"component_flow_phase": {("p1", "c1"): 1,
                                            ("p1", "c2"): 2,
