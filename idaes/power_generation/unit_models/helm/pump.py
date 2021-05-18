@@ -138,7 +138,7 @@ class HelmPumpData(BalanceBlockData):
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         For simplicity this initialization requires you to set values for the

@@ -84,7 +84,7 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
 
 def create_model(
     steady_state=True,
-    time_set=[0, 3],
+    time_set=None,
     time_units=pyo.units.s,
     nfe=5,
     calc_integ=True,
@@ -117,6 +117,9 @@ def create_model(
         fs_cfg = {
             "dynamic": True, "time_set": time_set, "time_units": time_units}
         model_name = "Steam Tank, Dynamic"
+
+    if time_set is None:
+        time_set = [0, 3]
 
     m = pyo.ConcreteModel(name=model_name)
     m.fs = FlowsheetBlock(default=fs_cfg)

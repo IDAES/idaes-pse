@@ -171,7 +171,7 @@ variables, expressions, or constraints required can also be added by the callbac
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Initialize the valve based on a deltaP guess.

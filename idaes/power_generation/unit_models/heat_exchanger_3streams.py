@@ -468,7 +468,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
     def initialize(blk, state_args_1=None, state_args_2=None,
                    state_args_3=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -489,8 +489,9 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:

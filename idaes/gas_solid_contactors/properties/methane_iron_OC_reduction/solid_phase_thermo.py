@@ -215,7 +215,7 @@ class _SolidPhaseThermoStateBlock(StateBlock):
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -228,8 +228,9 @@ class _SolidPhaseThermoStateBlock(StateBlock):
                          Keys for the state_args dictionary are:
                          flow_mass, temperature, and mass_frac_comp
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
@@ -322,7 +323,7 @@ class _SolidPhaseThermoStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to relase state variables fixed during initialization.
         Keyword Arguments:
