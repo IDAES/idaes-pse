@@ -124,10 +124,10 @@ def test_power_law_rate_with_order():
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 4
-    assert m.rparams.reaction_r1.reaction_order["p1", "c1"] == 1
-    assert m.rparams.reaction_r1.reaction_order["p1", "c2"] == 2
-    assert m.rparams.reaction_r1.reaction_order["p2", "c1"] == 3
-    assert m.rparams.reaction_r1.reaction_order["p2", "c2"] == 4
+    assert m.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
+    assert m.rparams.reaction_r1.reaction_order["p1", "c2"].value == 2
+    assert m.rparams.reaction_r1.reaction_order["p2", "c1"].value == 3
+    assert m.rparams.reaction_r1.reaction_order["p2", "c2"].value == 4
 
     # Check reaction form
     rform = power_law_rate.return_expression(
