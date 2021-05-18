@@ -466,7 +466,7 @@ class LiquidStateBlockMethods(StateBlock):
     def initialize(blk, state_args=None,
                    state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
 
@@ -479,17 +479,20 @@ class LiquidStateBlockMethods(StateBlock):
                        state_args dictionary are: flow_mol, temperature,
                        pressure and mole_frac_comp.
           outlvl : sets output level of initialization routine
-          optarg : solver options dictionary object (default={})
-          solver : str indicating whcih solver to use during
+          optarg : solver options dictionary object (default=None, use
+                     default solver options)
+          solver : str indicating which solver to use during
                    initialization (default = None)
           hold_state :
                   flag indicating whether the initialization routine
-                  should unfix any state variables fixed during initialization (default=False).
+                  should unfix any state variables fixed during initialization
+                  (default=False).
 
                   valid options:
                     True :
                       states varaibles are not unfixed, and a dict of returned
-                      containing flags for which states were fixed during initialization.
+                      containing flags for which states were fixed during
+                      initialization.
                     False :
                       state variables are unfixed after initialization by
                       calling the relase_state method
@@ -587,7 +590,7 @@ class LiquidStateBlockMethods(StateBlock):
             else:
                 blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialisation.
 

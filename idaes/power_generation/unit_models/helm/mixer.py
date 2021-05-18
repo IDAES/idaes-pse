@@ -388,14 +388,15 @@ between flow and pressure driven simulations.}""",
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver=None):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:

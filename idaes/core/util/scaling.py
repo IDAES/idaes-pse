@@ -121,7 +121,7 @@ def min_scaling_factor(iter, default=1, warning=True, hint=None):
 
 def propagate_indexed_component_scaling_factors(
     blk,
-    typ=(pyo.Var, pyo.Constraint, pyo.Expression),
+    typ=None,
     overwrite=False,
     descend_into=True):
     """Use the parent component scaling factor to set all component data object
@@ -134,6 +134,9 @@ def propagate_indexed_component_scaling_factors(
             overwrittten (default=False)
         descend_into: descend into child blocks (default=True)
     """
+    if typ is None:
+        typ = (pyo.Var, pyo.Constraint, pyo.Expression)
+
     for c in blk.component_objects(typ, descend_into=descend_into):
         if get_scaling_factor(c) is not None and c.is_indexed():
             for cdat in c.values():
@@ -631,7 +634,7 @@ class FlattenedScalingAssignment(object):
     variable-constraint assignment can be constructed, especially when
     the variables and constraints are all indexed by some common set(s).
     """
-    def __init__(self, scaling_factor, varconlist=[], nominal_index=()):
+    def __init__(self, scaling_factor, varconlist=None, nominal_index=()):
         """
         Args:
             scaling_factor: A Pyomo scaling_factor Suffix that will hold all
@@ -644,6 +647,9 @@ class FlattenedScalingAssignment(object):
                            when a calculation needs to be performed using
                            data objects.
         """
+        if varconlist is None:
+            varconlist = []
+
         self.scaling_factor = scaling_factor
         self.nominal_index = nominal_index
         if nominal_index is None or nominal_index == ():
