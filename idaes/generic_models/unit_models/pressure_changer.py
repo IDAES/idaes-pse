@@ -427,7 +427,9 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        self.control_volume.work.fix(0)
+        @self.Constraint(self.flowsheet().config.time)
+        def zero_work_equation(b, t):
+            return self.control_volume.work[t] == 0
 
     def add_isentropic(self):
         """
@@ -1096,6 +1098,15 @@ see property package for documentation.}""",
 
         if hasattr(self, "isentropic_energy_balance"):
             for t, c in self.isentropic_energy_balance.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "zero_work_equation"):
+            for t, c in self.zero_work_equation.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(
