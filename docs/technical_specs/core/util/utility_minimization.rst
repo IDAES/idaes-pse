@@ -25,4 +25,4 @@ to extract the heat exchanger and utility data.
 We can just run the function utilizing the data class previously obtained to print
 composite curves with ``heat_ex_data``:
 
-.. autofunction:: idaes.core.util.utility_minimization.build_txy_diagrams
+.. autofunction:: idaes.core.util.utility_minimization.generate_curves
