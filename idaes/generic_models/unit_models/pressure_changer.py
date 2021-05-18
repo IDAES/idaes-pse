@@ -646,7 +646,7 @@ see property package for documentation.}""",
         routine=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -661,8 +661,9 @@ see property package for documentation.}""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -719,7 +720,7 @@ see property package for documentation.}""",
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = None)
 
         Returns:
@@ -813,7 +814,7 @@ see property package for documentation.}""",
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
             optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = None)
 
         Returns:

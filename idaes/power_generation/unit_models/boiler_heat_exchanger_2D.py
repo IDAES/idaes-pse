@@ -2324,7 +2324,7 @@ tube side flows from 1 to 0"""))
 
     def initialize(blk, shell_state_args=None, tube_state_args=None,
                    outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         HeatExchangerCrossFlow1D initialisation routine
 
@@ -2340,8 +2340,9 @@ tube side flows from 1 to 0"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -2356,11 +2357,11 @@ tube side flows from 1 to 0"""))
         # ---------------------------------------------------------------------
         # Initialize shell block
 
-        flags_tube = blk.tube.initialize(outlvl=0,
+        flags_tube = blk.tube.initialize(outlvl=outlvl,
                                          optarg=optarg,
                                          solver=solver,
                                          state_args=tube_state_args)
-        flags_shell = blk.shell.initialize(outlvl=0,
+        flags_shell = blk.shell.initialize(outlvl=outlvl,
                                            optarg=optarg,
                                            solver=solver,
                                            state_args=shell_state_args)

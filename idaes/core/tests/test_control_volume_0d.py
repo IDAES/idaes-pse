@@ -2373,7 +2373,7 @@ def test_initialize():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    f = m.fs.cv.initialize(state_args={})
+    f = m.fs.cv.initialize()
 
     for t in m.fs.time:
         assert m.fs.cv.properties_in[t].init_test is True
