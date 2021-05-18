@@ -99,7 +99,7 @@ class GenericValve(object):
         else:
             assert number_variables(valve_model) == 11
 
-        assert number_total_constraints(valve_model) == 5
+        assert number_total_constraints(valve_model) == 6
         assert number_unused_variables(valve_model) == 0
 
     @pytest.mark.component
