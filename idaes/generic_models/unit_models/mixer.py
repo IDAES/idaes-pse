@@ -985,6 +985,15 @@ objects linked to all inlet states and the mixed state,
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            t_ref = self.flowsheet().config.time.first()
+            mb_type = self.mixed_state[t_ref].default_material_balance_type()
+
+        if hasattr(self, "pressure_equality_constraints"):
+            for (t, i), c in self.pressure_equality_constraints.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "material_mixing_equations"):
             if mb_type == MaterialBalanceType.componentPhase:

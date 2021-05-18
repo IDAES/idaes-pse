@@ -14,7 +14,7 @@
 Base class for unit models
 """
 
-from pyomo.environ import Reference, SolverFactory
+from pyomo.environ import Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
@@ -630,6 +630,9 @@ Must be True if dynamic = True,
         Returns:
             None
         '''
+        if optarg is None:
+            optarg = {}
+
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")

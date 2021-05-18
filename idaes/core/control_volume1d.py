@@ -1666,6 +1666,9 @@ argument)."""))
             states were fixed during initialization else the release state is
             triggered.
         '''
+        if optarg is None:
+            optarg = {}
+
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(
             blk.name, outlvl, tag="control_volume")

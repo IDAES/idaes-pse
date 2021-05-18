@@ -427,16 +427,9 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        # Isothermal constraint
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="For isothermal condition: Equate inlet and outlet enthalpy",
-        )
-        def adiabatic(b, t):
-            return (
-                b.control_volume.properties_in[t].enth_mol
-                == b.control_volume.properties_out[t].enth_mol
-            )
+        @self.Constraint(self.flowsheet().config.time)
+        def zero_work_equation(b, t):
+            return self.control_volume.work[t] == 0
 
     def add_isentropic(self):
         """
@@ -1086,15 +1079,6 @@ see property package for documentation.}""",
                         default=1,
                         warning=True))
 
-        if hasattr(self, "adiabatic"):
-            for t, c in self.adiabatic.items():
-                iscale.constraint_scaling_transform(
-                    c,
-                    iscale.get_scaling_factor(
-                        self.control_volume.properties_in[t].enth_mol,
-                        default=1,
-                        warning=True))
-
         if hasattr(self, "isentropic_pressure"):
             for t, c in self.isentropic_pressure.items():
                 iscale.constraint_scaling_transform(
@@ -1121,6 +1105,38 @@ see property package for documentation.}""",
                         self.control_volume.work[t],
                         default=1,
                         warning=True))
+
+        if hasattr(self, "zero_work_equation"):
+            for t, c in self.zero_work_equation.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
+                        warning=True))
+
+        if hasattr(self, "state_material_balances"):
+            cvol = self.control_volume
+            phase_list = cvol.properties_in.phase_list
+            phase_component_set = cvol.properties_in.phase_component_set
+            mb_type = cvol._constructed_material_balance_type
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, p, j), c in self.state_material_balances.items():
+                    sf = iscale.get_scaling_factor(
+                        cvol.properties_in[t].get_material_flow_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, j), c in self.state_material_balances.items():
+                    sf = iscale.min_scaling_factor(
+                        [cvol.properties_in[t].get_material_flow_terms(p, j)
+                         for p in phase_list if (p, j) in phase_component_set])
+                    iscale.constraint_scaling_transform(c, sf)
+            else:
+                # There are some other material balance types but they create
+                # constraints with different names.
+                _log.warning(f"Unknown material balance type {mb_type}")
 
         if hasattr(self, "costing"):
             # import costing scaling factors

@@ -88,7 +88,8 @@ def create_model(
     time_units=pyo.units.s,
     nfe=5,
     calc_integ=True,
-    form=PIDForm.standard
+    form=PIDForm.standard,
+    tee=False
 ):
     """ Create a test model and solver
 
@@ -196,35 +197,42 @@ def create_model(
     m.fs.ctrl.setpoint.fix(3e5)
 
     # Initialize the model
-    solver = get_solver()
+    solver = get_solver(options={"max_iter":50})
 
     for t in m.fs.time:
-        m.fs.valve_1.inlet.flow_mol = 100  # initial guess on flow
+        m.fs.valve_1.inlet.flow_mol[t] = 100  # initial guess on flow
     # simple initialize
     m.fs.valve_1.initialize()
     _set_port(m.fs.tank.inlet, m.fs.valve_1.outlet)
     m.fs.tank.initialize()
     _set_port(m.fs.valve_2.inlet, m.fs.tank.outlet)
+    # Can't specify both flow and outlet pressure so free the outlet pressure
+    # for initialization and refix it after.  Inlet flow gets fixed in init
+    op = {}
+    for t in m.fs.time:
+        op[t] = pyo.value(m.fs.valve_2.outlet.pressure[t])
+        m.fs.valve_2.outlet.pressure[t].unfix()
     m.fs.valve_2.initialize()
-    solver.solve(m, tee=False)
-
+    for t in m.fs.time:
+        m.fs.valve_2.outlet.pressure[t].fix(op[t])
+    solver.solve(m, tee=tee)
     # Return the model and solver
     return m, solver
 
 
-def tpid(form):
+def tpid(form, tee=False):
     """This test is pretty course-grained, but it should cover everything"""
 
     # First calculate the two steady states that should be achieved in the test
     # don't worry these steady state problems solve super fast
-    m_steady, solver = create_model()
+    m_steady, solver = create_model(tee=tee)
     m_steady.fs.tank_pressure[0].fix(3e5)
     m_steady.fs.valve_1.valve_opening[0].unfix()
-    solver.solve(m_steady, tee=False)
+    solver.solve(m_steady, tee=tee)
     s1_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
-    solver.solve(m_steady, tee=False)
+    solver.solve(m_steady, tee=tee)
     m_steady.fs.valve_1.inlet.pressure.fix(5.5e5)
-    solver.solve(m_steady, tee=False)
+    solver.solve(m_steady, tee=tee)
     s2_valve = pyo.value(m_steady.fs.valve_1.valve_opening[0])
 
     # Next create a model for the 0 to 5 sec time period
@@ -234,8 +242,8 @@ def tpid(form):
         nfe=10,
         calc_integ=True,
         form=form,
+        tee=tee
     )
-
     # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
     m_dynamic.fs.ctrl.activate()
@@ -246,7 +254,7 @@ def tpid(form):
     # get a continuous solution across the two models
     _add_inlet_pressure_step(m_dynamic, time=4.5, value=5.5e5)
     iscale.calculate_scaling_factors(m_dynamic)
-    solver.solve(m_dynamic, tee=False)
+    solver.solve(m_dynamic, tee=tee)
 
     # Now create a model for the 5 to 10 second interval and set the inital
     # conditions of the first model to the final (unsteady) state of the
@@ -279,13 +287,13 @@ def tpid(form):
     iscale.calculate_scaling_factors(m_dynamic2)
     # As a lazy form of initialization, solve the steady state problem before
     # turning on the controller.
-    solver.solve(m_dynamic2, tee=False)
+    solver.solve(m_dynamic2, tee=tee)
 
     # Now turn on control and solve again.
     m_dynamic2.fs.ctrl.activate()
     m_dynamic2.fs.valve_1.valve_opening.unfix()
     m_dynamic2.fs.valve_1.valve_opening[5].fix()
-    solver.solve(m_dynamic2, tee=False)
+    solver.solve(m_dynamic2, tee=tee)
 
     # Check that the model hit steady state about. The tolerance is loose
     # because I used a low nfe in an attempt to speed it up
@@ -312,6 +320,8 @@ def tpid(form):
         i = j + len(m_dynamic.fs.time)
         assert t == stitch_time[i]
         assert m_dynamic2.fs.valve_1.valve_opening[t].value == stitch_valve[i]
+    return m_dynamic, m_dynamic2, solver
+
 
 
 @pytest.mark.integration
@@ -324,3 +334,6 @@ def test_pid_velocity():
 def test_pid_standard():
     """This test is pretty course-grained, but it should cover everything"""
     tpid(PIDForm.standard)
+
+if __name__ == '__main__':
+    m, m2, solver = tpid(PIDForm.velocity, tee=True)

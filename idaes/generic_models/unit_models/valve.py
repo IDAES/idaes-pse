@@ -247,7 +247,7 @@ variables, expressions, or constraints required can also be added by the callbac
         # Calculate and set the pressure-flow relation scale.
         if hasattr(self, "pressure_flow_equation"):
             for t, c in self.pressure_flow_equation.items():
-                iscale.set_scaling_factor(
+                iscale.constraint_scaling_transform(
                     c,
                     ff(iscale.get_scaling_factor(
                         self.flow_var[t],

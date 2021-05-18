@@ -35,7 +35,7 @@ def test_ipopt_idaes_config():
     """
     with idaes.temporary_config_ctx():
         # in this context use idaes default solver options
-        isolve.use_idaes_solver_configuration_deafults()
+        isolve.use_idaes_solver_configuration_defaults()
         idaes.cfg.ipopt.options.nlp_scaling_method = "toast-based"
         solver = pyo.SolverFactory('ipopt')
         assert solver.options["nlp_scaling_method"] == "toast-based"
