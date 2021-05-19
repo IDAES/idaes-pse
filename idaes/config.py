@@ -357,10 +357,9 @@ def read_config(val, cfg):
 
 def write_config(path, cfg=None):
     if cfg is None:
-        cfg = _new_idaes_config_block
-    else:
-        with open(path, 'w') as f:
-            json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
+        cfg = _new_idaes_config_block()
+    with open(path, 'w') as f:
+        json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
 
 
 def reconfig(cfg):
