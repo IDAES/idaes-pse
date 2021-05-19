@@ -1061,24 +1061,24 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         for t, c in self.eq_surr_waterwall_heat.items():
             sf = iscale.get_scaling_factor(
                  self.waterwall_heat[t], default=1e-7, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set platen heat constraint scaling factor
         if self.config.has_platen_superheater is True:
             for t, c in self.eq_surr_platen_heat.items():
                 sf = iscale.get_scaling_factor(
                      self.platen_heat[t], default=1e-7, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set roof heat constraint scaling factor
         if self.config.has_roof_superheater is True:
             for t, c in self.eq_surr_roof_heat.items():
                 sf = iscale.get_scaling_factor(
                      self.roof_heat[t], default=1e-6, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set flue gas temperature constraint scaling factor
         for t, c in self.flue_gas_temp_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.platen_heat[t], default=1e-7, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

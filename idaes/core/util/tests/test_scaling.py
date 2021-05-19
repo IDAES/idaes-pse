@@ -411,6 +411,14 @@ class TestSingleConstraintScalingTransform():
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+
+        # Check overwrite protection
+        sc.constraint_scaling_transform(model.c2, 5, overwrite=False)
+        assert model.c2.lower.value == pytest.approx(1)
+        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
+        assert model.c2.upper.value == pytest.approx(1)
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+
         sc.constraint_scaling_transform_undo(model.c2)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is None
         assert model.c2.lower.value == pytest.approx(1e3)

@@ -1562,7 +1562,7 @@ class GenericStateBlockData(StateBlockData):
                             self, k[0], k[1], k[2])
 
                 iscale.constraint_scaling_transform(
-                    self.equilibrium_constraint[k], sf_fug)
+                    self.equilibrium_constraint[k], sf_fug, overwrite=False)
 
         # Inherent reactions
         if hasattr(self, "k_eq"):
@@ -1581,7 +1581,9 @@ class GenericStateBlockData(StateBlockData):
                     self, sf_keq)
 
                 iscale.constraint_scaling_transform(
-                    self.inherent_equilibrium_constraint[r], sf_const)
+                    self.inherent_equilibrium_constraint[r],
+                    sf_const,
+                    overwrite=False)
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
@@ -1599,11 +1601,12 @@ class GenericStateBlockData(StateBlockData):
                         p = i[0]
                     try:
                         iscale.set_scaling_factor(v, sf_mf[p, i[2]])
-                    except:
+                    except KeyError:
                         # component i[2] is no in the vapor phase, so this
                         # variable is likely unused and scale doesn't matter
                         iscale.set_scaling_factor(v, 1)
-            self.params.config.bubble_dew_method.scale_temperature_bubble(self)
+            self.params.config.bubble_dew_method.scale_temperature_bubble(
+                self, overwrite=False)
 
         if hasattr(self, "_mole_frac_tdew"):
             for v in self.temperature_dew.values():
@@ -1619,11 +1622,12 @@ class GenericStateBlockData(StateBlockData):
                         p = i[0]
                     try:
                         iscale.set_scaling_factor(v, sf_mf[p, i[2]])
-                    except:
+                    except KeyError:
                         # component i[2] is no in the liquid phase, so this
                         # variable is likely unused and scale doesn't matter
                         iscale.set_scaling_factor(v, 1)
-            self.params.config.bubble_dew_method.scale_temperature_dew(self)
+            self.params.config.bubble_dew_method.scale_temperature_dew(
+                self, overwrite=False)
 
         if hasattr(self, "_mole_frac_pbub"):
             for v in self.pressure_bubble.values():
@@ -1632,7 +1636,8 @@ class GenericStateBlockData(StateBlockData):
             for i, v in self._mole_frac_pbub.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_mf[i])
-            self.params.config.bubble_dew_method.scale_pressure_bubble(self)
+            self.params.config.bubble_dew_method.scale_pressure_bubble(
+                self, overwrite=False)
 
         if hasattr(self, "_mole_frac_pdew"):
             for v in self.pressure_dew.values():
@@ -1641,7 +1646,8 @@ class GenericStateBlockData(StateBlockData):
             for i, v in self._mole_frac_pdew.items():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_mf[i])
-            self.params.config.bubble_dew_method.scale_pressure_dew(self)
+            self.params.config.bubble_dew_method.scale_pressure_dew(
+                self, overwrite=False)
 
     def components_in_phase(self, phase):
         """

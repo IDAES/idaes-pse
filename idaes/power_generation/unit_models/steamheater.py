@@ -698,20 +698,20 @@ see property package for documentation.}"""))
         for t, c in self.Reynolds_number_eqn.items():
             s = iscale.get_scaling_factor(
                 self.N_Re[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s*1e5)
+            iscale.constraint_scaling_transform(c, s*1e5, overwrite=False)
         for t, c in self.heat_flux_conv_eqn.items():
             s = iscale.get_scaling_factor(
                 self.heat_flux_conv[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.hconv_eqn.items():
             s = iscale.get_scaling_factor(
                 self.hconv[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
                 self.diameter_in, default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.pressure_change_eqn.items():
             s = iscale.get_scaling_factor(
                 self.deltaP[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
                 self.diameter_in, default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
