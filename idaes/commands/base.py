@@ -22,7 +22,7 @@ import logging
 # separate command logging from normal IDAES logging
 _log = logging.getLogger("idaes.commands")
 _h = logging.StreamHandler()
-_h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+_h.setFormatter(logging.Formatter("%(levelname)-7s %(name)s: %(message)s"))
 _log.addHandler(_h)
 _log.propagate = False
 
@@ -103,6 +103,10 @@ def copyright():
 """
     )
 
+@command_base.command(help="Show how long it takes to imoprt command modules")
+def import_time(name="import-time"):
+    from idaes.commands import _command_import_total_time
+    click.echo(f"Time: {_command_import_total_time}")
 
 if __name__ == "__main__":
     command_base()
