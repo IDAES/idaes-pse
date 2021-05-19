@@ -740,7 +740,7 @@ class TestUnsymmetric_0NaCl(object):
 
         m = ConcreteModel()
         m.params = GenericParameterBlock(default=config)
-        
+
         # Set parameters to those used in 1982 paper
         m.params.Liq.tau["H2O", "K+, Cl-"].set_value(8.064)
         m.params.Liq.tau["K+, Cl-", "H2O"].set_value(-4.107)
@@ -825,30 +825,68 @@ class TestUnsymmetric_Mixed(object):
         m.state = m.params.build_state_block([1])
 
         # Need to set a value of T for checking expressions later
-        m.state[1].temperature.set_value(300)
+        m.state[1].temperature.set_value(298.15)
 
         return m
 
     @pytest.mark.unit
-    def test_log_gamma_salt(self, model):
+    def test_binary_parameters(self, model):
+        # Make sure binary parameters are correct
+        assert model.params.Liq.tau["H2O", "Na+, Cl-"].value == 9.0234
+        assert model.params.Liq.tau["Na+, Cl-", "H2O"].value == -4.5916
+        assert model.params.Liq.tau["H2O", "K+, Cl-"].value == 8.1354
+        assert model.params.Liq.tau["K+, Cl-", "H2O"].value == -4.1341
+
+    @pytest.mark.unit
+    def test_log_gamma_NaCl(self, model):
         # start with pure water
         # Using 0 results in division by zero errors
         for k in model.state[1].mole_frac_phase_comp:
             model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
-        # Data regressed from digitized Figs 1 and 2 [2]
-        # Form x_KCl: (ln(gamma NaCl), ln(gamma KCl))
-        data = {1e-12: (-0.105600000912, -0.143200000791),
-                # 0.1: (-0.114916, -0.151286),
-                # 0.2: (-0.124624, -0.159724),
-                # 0.3: (-0.134724, -0.168514),
-                # 0.4: (-0.145216, -0.177656),
-                # 0.5: (-0.1561, -0.18715),
-                # 0.6: (-0.167376, -0.196996),
-                # 0.7: (-0.179044, -0.207194),
-                # 0.8: (-0.191104, -0.217744),
-                # 0.9: (-0.203556, -0.228646),
-                0.999999999999: (-0.216399998696, -0.239899998857)}
+        # Data regressed from digitized Figs 1 [2]
+        # Form x_KCl: ln(gamma NaCl)
+        data = {0.0751258278145695: -0.113328198570951,
+                0.0976953642384106: -0.114607787343188,
+                0.120623147272153: -0.11695157101671,
+                0.142834437086092: -0.119035007793955,
+                0.164568064753495: -0.121020719322441,
+                0.187973509933774: -0.123402355074649,
+                0.211378955114054: -0.125424751806415,
+                0.232276674025018: -0.127697473900636,
+                0.2560403658152: -0.129986897040709,
+                0.279923473142016: -0.132425202153624,
+                0.302493009565857: -0.134818431889228,
+                0.324226637233259: -0.137175357072171,
+                0.347632082413539: -0.139533043556349,
+                0.368529801324503: -0.141913537356703,
+                0.390741091138442: -0.144253573434263,
+                0.413668874172185: -0.14674789536397,
+                0.435402501839587: -0.149056922010853,
+                0.457972038263429: -0.15155792345259,
+                0.48054157468727: -0.154058924894327,
+                0.501558709134868: -0.15629235614116,
+                0.520330831493745: -0.158378332401811,
+                0.541562913907284: -0.160888304509771,
+                0.564132450331125: -0.163197711807272,
+                0.586701986754966: -0.166034003001421,
+                0.609510354252076: -0.168453001424376,
+                0.63100515084621: -0.170915878894129,
+                0.653932933879953: -0.173605216292076,
+                0.674950068327551: -0.176119196107253,
+                0.697041942604856: -0.17853786825825,
+                0.720447387785136: -0.18123084449484,
+                0.7413451066961: -0.183934653413591,
+                0.758732008830022: -0.186191407214401,
+                0.778125091979396: -0.188585585404461,
+                0.801769368232944: -0.19140868071053,
+                0.823264164827078: -0.193922878040346,
+                0.838310522442972: -0.195941468265935,
+                0.890805592347314: -0.202460414614303,
+                0.910198675496688: -0.20481148412191,
+                0.932409965310627: -0.207521023191923,
+                0.950322295805739: -0.209499862617294
+                }
 
         for x, g in data.items():
             m = 4  # molality of solution
@@ -873,26 +911,11 @@ class TestUnsymmetric_Mixed(object):
             assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
                 0.06293706294, rel=1e-8)
 
-            # Check local contribution term
-            # This should only depend on ionic strength, and should be constant
-            assert pytest.approx(-0.81465175, rel=1e-6) == value(
-                model.state[1].Liq_log_gamma_pdh["Na+"])
-            assert pytest.approx(-0.81465175, rel=1e-6) == value(
-                model.state[1].Liq_log_gamma_pdh["K+"])
-            assert pytest.approx(-0.81465175, rel=1e-6) == value(
-                model.state[1].Liq_log_gamma_pdh["Cl-"])
+            # Calculate mean activity coefficients for NaCl
+            lng_NaCl = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
+                                  model.state[1].Liq_log_gamma["Cl-"]))
+            lng_m_NaCl = lng_NaCl - log(1+18*(1+1)*(4*(1-x))/1000)
 
-            # Calculate mean activity coefficients for salts
-            lg_NaCl = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
-                                 model.state[1].Liq_log_gamma["Cl-"]))
-            lg_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
-                                model.state[1].Liq_log_gamma["Cl-"]))
-            lgm_NaCl = lg_NaCl - log(1+18*(1+1)*4/1000)
-            lgm_KCl = lg_KCl - log(1+18*(1+1)*4/1000)
-            print(x, g[0], lg_NaCl, lgm_NaCl, g[1], lg_KCl, lgm_KCl)
-            # model.state[1].mole_frac_phase_comp.display()
-            # print(value(model.state[1].Liq_log_gamma["Na+"]),
-            #       value(model.state[1].Liq_log_gamma["Cl-"]))
-            
-            # TODO: This is WIP
+            print(x, g, lng_NaCl, lng_m_NaCl)
+            # assert lng_NaCl == pytest.approx(g, rel=3e-2)
         assert False
