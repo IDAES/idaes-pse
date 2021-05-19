@@ -134,7 +134,6 @@ class TestPressureChanger(object):
                 "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
         iscale.calculate_scaling_factors(m)
 
-        assert isinstance(m.fs.unit.adiabatic, Constraint)
 
     @pytest.mark.unit
     def test_isentropic_comp_phase_balances(self):
@@ -808,22 +807,29 @@ class Test_costing(object):
         m.fs.unit.inlet.pressure[0].fix(101325)
         m.fs.unit.deltaP.fix(500000)
         m.fs.unit.efficiency_isentropic.fix(0.9)
+        iscale.set_scaling_factor(m.fs.unit.control_volume.work[0], 1e-5)
         iscale.calculate_scaling_factors(m)
 
         assert degrees_of_freedom(m) == 0
-
         m.fs.unit.get_costing(mover_type="compressor")
-
         m.fs.unit.initialize()
+        results = solver.solve(m)
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert value(m.fs.unit.control_volume.work[0]) == \
+            pytest.approx(101410.4, rel=1e-5)
 
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334598.679, abs=1e-3)
+            pytest.approx(334598, rel=1e-5)
 
         assert_units_consistent(m.fs.unit)
 
         solver.solve(m, tee=True)
         assert m.fs.unit.costing.purchase_cost.value == \
-            pytest.approx(334598.679, abs=1e-3)
+            pytest.approx(334598, rel=1e-5)
 
     @pytest.mark.component
     def test_turbine(self):

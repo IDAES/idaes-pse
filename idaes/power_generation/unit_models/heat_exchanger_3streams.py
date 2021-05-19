@@ -468,7 +468,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
     def initialize(blk, state_args_1=None, state_args_2=None,
                    state_args_3=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -489,8 +489,9 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -542,14 +543,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         for t, c in self.heat_duty_side_1_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_1[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_2_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_2[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_3_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_3[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

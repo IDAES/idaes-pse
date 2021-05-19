@@ -310,7 +310,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         unfix='hot_flow',
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Condenser initialization method. The initialization routine assumes
@@ -324,7 +324,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for cold side (see documentation of the specific
                 property package) (default = None).
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
@@ -434,13 +435,13 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         for t, c in self.heat_transfer_equation.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.saturation_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.hot_side.properties_out[t].enth_mol)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

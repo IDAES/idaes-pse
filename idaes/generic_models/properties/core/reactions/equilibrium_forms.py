@@ -46,12 +46,16 @@ class power_law_equil():
         for p, j in pc_set:
             o = rblock.reaction_order[p, j]
 
-            if e is None and o != 0:
+            if e is None and o.value != 0:
                 e = get_concentration_term(b, r_idx)[p, j]**o
-            elif e is not None and o != 0:
+            elif e is not None and o.value != 0:
                 e = e*get_concentration_term(b, r_idx)[p, j]**o
 
         return b.k_eq[r_idx] == e
+
+    @staticmethod
+    def calculate_scaling_factors(b, sf_keq):
+        return sf_keq
 
 
 # ----------------------------------------------------------------------------
@@ -76,7 +80,7 @@ class log_power_law_equil():
         for p, j in pc_set:
             o = rblock.reaction_order[p, j]
 
-            if e is None and o != 0:
+            if e is None and o.value != 0:
                 # Need to strip units from concentration term (if applicable)
                 c = get_concentration_term(b, r_idx)[p, j]
                 u = pyunits.get_units(c)
@@ -87,7 +91,7 @@ class log_power_law_equil():
                     # Units is None, so just use conc
                     expr = c
                 e = o*safe_log(expr, eps=rblock.eps)
-            elif e is not None and o != 0:
+            elif e is not None and o.value != 0:
                 # Need to strip units from concentration term (if applicable)
                 c = get_concentration_term(b, r_idx)[p, j]
                 u = pyunits.get_units(c)
@@ -109,3 +113,7 @@ class log_power_law_equil():
             expr = b.k_eq[r_idx]
 
         return safe_log(expr, eps=rblock.eps) == e
+
+    @staticmethod
+    def calculate_scaling_factors(b, sf_keq):
+        return 1

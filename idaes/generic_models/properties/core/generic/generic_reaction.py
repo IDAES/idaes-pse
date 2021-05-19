@@ -569,7 +569,12 @@ class GenericReactionBlockData(ReactionBlockDataBase):
                 if iscale.get_scaling_factor(v) is None:
                     sf = iscale.get_scaling_factor(
                         self.k_eq[r], default=1, warning=True)
-                    iscale.constraint_scaling_transform(v, sf)
+
+                sf_const = carg["equilibrium_form"].calculate_scaling_factors(
+                    self, sf)
+
+                iscale.constraint_scaling_transform(
+                    v, sf_const, overwrite=False)
 
         # Unlock attribute creation when done
         self._lock_attribute_creation = False
