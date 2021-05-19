@@ -10,7 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""Commandline Utilities for Managing the IDAES Data Directory"""
+"""Commandline Utilities for Managing the IDAES Config files"""
 
 __author__ = "John Eslick"
 
@@ -95,7 +95,6 @@ def config_set(
         try:
             c = c[k]
         except KeyError:
-            print(type(c))
             if isinstance(c, pyomo.common.config.ConfigBlock):
                 c[k] = pyomo.common.config.ConfigBlock(implicit=True)
             else:
