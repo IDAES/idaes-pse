@@ -48,7 +48,6 @@ def tag_model(m):
     Returns:
         (dict) tags, (dict) tag_format
     """
-    assert m.name == "Gas Turbine Model"
     tags = {} # dict of with tag keys and expressions for their values
     tag_format = {} # format string for the tags
     def new_tag(name, expr, format):
