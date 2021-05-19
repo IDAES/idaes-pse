@@ -280,7 +280,7 @@ def calculate_scaling_factors(b):
         sf = iscale.get_scaling_factor(b.flow_mol_phase_comp[
             p, j], default=1, warning=True)
         iscale.constraint_scaling_transform(
-            b.mole_frac_phase_comp_eq[p, j], sf)
+            b.mole_frac_phase_comp_eq[p, j], sf, overwrite=False)
 
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)

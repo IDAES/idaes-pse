@@ -340,7 +340,7 @@ def __unset_constraint_transform_applied_scaling_factor(c):
         pass # no scaling factor is fine
 
 
-def constraint_scaling_transform(c, s):
+def constraint_scaling_transform(c, s, overwrite=True):
     """This transforms a constraint by the argument s.  The scaling factor
     applies to original constraint (e.g. if one where to call this twice in a row
     for a constraint with a scaling factor of 2, the original constraint would
@@ -349,13 +349,23 @@ def constraint_scaling_transform(c, s):
     Args:
         c: Pyomo constraint
         s: scale factor applied to the constraint as originally written
+        overwrite: overwrite existing scaling factors if present (default=True)
 
     Returns:
         None
     """
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
-    st = get_constraint_transform_applied_scaling_factor(c, default=1)
+    st = get_constraint_transform_applied_scaling_factor(c, default=None)
+
+    if not overwrite and st is not None:
+        # Existing scaling factor and overwrite False, do nothing
+        return
+
+    if st is None:
+        # If no existing scaling factor, use value of 1
+        st = 1
+
     v = s/st
     c.set_value(
         (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))

@@ -1029,26 +1029,26 @@ constructed,
         for t, c in self.energy_holdup_slag_eqn.items():
             s = iscale.get_scaling_factor(
                 self.energy_holdup_slag[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.friction_factor_darcy_eqn.items():
             s = iscale.get_scaling_factor(self.N_Re[t], default=1,
                                           warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.volume_eqn.items():
             s = iscale.get_scaling_factor(
                 self.volume[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.heat_flux_conv_eqn.items():
             s = iscale.get_scaling_factor(
                 self.heat_flux_conv[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
                 self.tube_diameter, default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s/10.0)
+            iscale.constraint_scaling_transform(c, s/10.0, overwrite=False)
         for t, c in self.energy_holdup_slag_eqn.items():
             s = iscale.get_scaling_factor(
                 self.energy_holdup_slag[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.energy_holdup_metal_eqn.items():
             s = iscale.get_scaling_factor(
                 self.energy_holdup_metal[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

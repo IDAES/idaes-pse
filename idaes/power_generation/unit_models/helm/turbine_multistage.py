@@ -821,4 +821,5 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             power_scale = iscale.get_scaling_factor(
                 self.power[t], default=1, warning=True)
             # Set power equation scale factor
-            iscale.constraint_scaling_transform(c, power_scale)
+            iscale.constraint_scaling_transform(
+                c, power_scale, overwrite=False)
