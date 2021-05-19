@@ -152,7 +152,7 @@ argument)."""))
 
     def add_geometry(self,
                      length_domain=None,
-                     length_domain_set=[0.0, 1.0],
+                     length_domain_set=None,
                      flow_direction=FlowDirection.forward):
         """
         Method to create spatial domain and volume Var in ControlVolume.
@@ -187,6 +187,9 @@ argument)."""))
                         "ContinuousSet object".format(self.name))
         else:
             # Create new length domain
+            if length_domain_set is None:
+                length_domain_set = [0.0, 1.0]
+
             self.length_domain = ContinuousSet(
                                     bounds=(0.0, 1.0),
                                     initialize=length_domain_set,
@@ -1634,7 +1637,7 @@ argument)."""))
                         'model_check method to the associated '
                         'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, hold_state=True):
         '''
         Initialization routine for 1D control volume.
@@ -1645,8 +1648,9 @@ argument)."""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
@@ -1662,6 +1666,9 @@ argument)."""))
             states were fixed during initialization else the release state is
             triggered.
         '''
+        if optarg is None:
+            optarg = {}
+
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(
             blk.name, outlvl, tag="control_volume")

@@ -1171,7 +1171,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             return sum(accumulation_term(b, t, p) for p in phase_list) == (
                 sum(b.properties_in[t].get_enthalpy_flow_terms(p)
                     for p in phase_list) -
-                sum(self.properties_out[t].get_enthalpy_flow_terms(p)
+                sum(b.properties_out[t].get_enthalpy_flow_terms(p)
                     for p in phase_list) +
                 heat_term(b, t) +
                 work_term(b, t) +
@@ -1317,7 +1317,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              'model_check method to the associated '
                              'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, hold_state=True):
         '''
         Initialization routine for 0D control volume.
@@ -1328,7 +1328,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output log level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None)
             hold_state : flag indicating whether the initialization routine
@@ -1838,7 +1839,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for t, c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self.properties_in[t].get_enthalpy_flow_terms(p)
-                     for p in phase_list])
+                     for p in phase_list], hint="enthalpy_flow_terms")
+                if hasattr(self, "work"):
+                    sf = min(sf, iscale.get_scaling_factor(
+                        self.work[t], default=1, warning=True))
+                if hasattr(self, "heat"):
+                    sf = min(sf, iscale.get_scaling_factor(
+                        self.heat[t], default=1, warning=True))
                 iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "energy_holdup_calculation"):

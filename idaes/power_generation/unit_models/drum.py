@@ -417,13 +417,18 @@ see property package for documentation.}"""))
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
 
-    def initialize(blk, state_args_feedwater={}, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+    def initialize(blk, state_args_feedwater=None, state_args_water_steam=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
+            state_args_feedwater : a dict of arguments to be passed to the
+                           property package(s) for the control_volume of the
+                           model to provide an initial state for initialization
+                           (see documentation of the specific property package)
+                           (default = None).
+            state_args_steam : a dict of arguments to be passed to the property
                            package(s) for the control_volume of the model to
                            provide an initial state for initialization
                            (see documentation of the specific property package)
@@ -435,8 +440,9 @@ see property package for documentation.}"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:

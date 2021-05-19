@@ -560,7 +560,7 @@ see property package for documentation.}"""))
                         "while building ports for the reboiler. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args=None, solver=None, optarg={},
+    def initialize(self, state_args=None, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")

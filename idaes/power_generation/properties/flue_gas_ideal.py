@@ -323,22 +323,12 @@ class _FlueGasStateBlock(StateBlock):
 
     def initialize(
         self,
-        state_args={
-            "flow_mol_comp": {
-                "N2": 1.0,
-                "CO2": 1.0,
-                "NO": 1.0,
-                "O2": 1.0,
-                "H2O": 1.0,
-                "SO2": 1.0
-            },
-            "pressure": 1e5,
-            "temperature": 495.0},
+        state_args=None,
         hold_state=False,
         state_vars_fixed=False,
-        outlvl=0,
+        outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={}
+        optarg=None
     ):
         """Initialisation routine for property package.
 
@@ -358,8 +348,9 @@ class _FlueGasStateBlock(StateBlock):
                          be False if this state block is used with 0D blocks.
                 - False - states have not been fixed. The state block will deal
                           with fixing/unfixing.
-            optarg: solver options dictionary object (default={})
-            solver: str indicating whcih solver to use during
+            optarg: solver options dictionary object (default=None, use
+                    default solver options)
+            solver: str indicating which solver to use during
                      initialization (default = None, use default solver)
             hold_state: flag indicating whether the initialization routine
                 should unfix any state variables fixed during initialization
@@ -376,10 +367,20 @@ class _FlueGasStateBlock(StateBlock):
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         solve_log = idaeslog.getSolveLogger(
-            self.name,outlvl, tag="properties")
+            self.name, outlvl, tag="properties")
 
         # Create solver
         opt = get_solver(solver, optarg)
+
+        if state_args is None:
+            state_args = {"flow_mol_comp": {"N2": 1.0,
+                                            "CO2": 1.0,
+                                            "NO": 1.0,
+                                            "O2": 1.0,
+                                            "H2O": 1.0,
+                                            "SO2": 1.0},
+                          "pressure": 1e5,
+                          "temperature": 495.0}
 
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)
