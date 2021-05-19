@@ -326,9 +326,6 @@ def _new_idaes_config_block():
             description="Solver output captured by logger?",
         ),
     )
-    #d = json.loads(default_config)
-    #cfg.set_value(d)
-    logging.config.dictConfig(cfg["logging"].value())
     return cfg
 
 
@@ -360,9 +357,7 @@ def read_config(val, cfg):
 
 def write_config(path, cfg=None):
     if cfg is None:
-        _cd = json.loads(default_config)
-        with open(path, 'w') as f:
-            json.dump(_cd, f, indent=4)
+        cfg = _new_idaes_config_block
     else:
         with open(path, 'w') as f:
             json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
