@@ -75,7 +75,7 @@ class IdealBubbleDew():
                                          rule=rule_mole_frac_bubble_temp)
 
     @staticmethod
-    def scale_temperature_bubble(b):
+    def scale_temperature_bubble(b, overwrite=True):
         sf_P = iscale.get_scaling_factor(
             b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(
@@ -99,9 +99,13 @@ class IdealBubbleDew():
                     sf = sf_mf
 
                 iscale.constraint_scaling_transform(
-                    b.eq_temperature_bubble[pp[0], pp[1]], sf_P)
+                    b.eq_temperature_bubble[pp[0], pp[1]],
+                    sf_P,
+                    overwrite=overwrite)
                 iscale.constraint_scaling_transform(
-                    b.eq_mole_frac_tbub[pp[0], pp[1], j], sf)
+                    b.eq_mole_frac_tbub[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew temperature methods
@@ -162,7 +166,7 @@ class IdealBubbleDew():
                                          rule=rule_mole_frac_dew_temp)
 
     @staticmethod
-    def scale_temperature_dew(b):
+    def scale_temperature_dew(b, overwrite=True):
         sf_P = iscale.get_scaling_factor(
             b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(
@@ -187,7 +191,9 @@ class IdealBubbleDew():
 
                 # b.eq_temperature_dew is well-scaled by default
                 iscale.constraint_scaling_transform(
-                    b.eq_mole_frac_tdew[pp[0], pp[1], j], sf)
+                    b.eq_mole_frac_tdew[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Bubble pressure methods
@@ -248,7 +254,7 @@ class IdealBubbleDew():
                                          rule=rule_mole_frac_bubble_press)
 
     @staticmethod
-    def scale_pressure_bubble(b):
+    def scale_pressure_bubble(b, overwrite=True):
         sf_P = iscale.get_scaling_factor(
             b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(
@@ -272,9 +278,13 @@ class IdealBubbleDew():
                     sf = sf_mf
 
                 iscale.constraint_scaling_transform(
-                    b.eq_pressure_bubble[pp[0], pp[1]], sf_P)
+                    b.eq_pressure_bubble[pp[0], pp[1]],
+                    sf_P,
+                    overwrite=overwrite)
                 iscale.constraint_scaling_transform(
-                    b.eq_mole_frac_pbub[pp[0], pp[1], j], sf)
+                    b.eq_mole_frac_pbub[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew pressure methods
@@ -334,7 +344,7 @@ class IdealBubbleDew():
                                          rule=rule_mole_frac_dew_press)
 
     @staticmethod
-    def scale_pressure_dew(b):
+    def scale_pressure_dew(b, overwrite=True):
         sf_P = iscale.get_scaling_factor(
             b.pressure, default=1e-5, warning=True)
         sf_mf = iscale.get_scaling_factor(
@@ -359,7 +369,9 @@ class IdealBubbleDew():
 
                 # b.eq_pressure_dew is well-scaled by default
                 iscale.constraint_scaling_transform(
-                    b.eq_mole_frac_pdew[pp[0], pp[1], j], sf)
+                    b.eq_mole_frac_pdew[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
 
 class LogBubbleDew():
@@ -423,7 +435,7 @@ class LogBubbleDew():
                                          rule=rule_mole_frac_bubble_temp)
 
     @staticmethod
-    def scale_temperature_bubble(b):
+    def scale_temperature_bubble(b, overwrite=True):
         sf_mf = iscale.get_scaling_factor(
             b.mole_frac_comp, default=1e3, warning=True)
 
@@ -440,7 +452,7 @@ class LogBubbleDew():
 
             # Assume b.eq_temperature_bubble is well-scaled
             iscale.constraint_scaling_transform(
-                b.eq_mole_frac_tbub[pp[0], pp[1]], sf_mf)
+                b.eq_mole_frac_tbub[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew temperature methods
@@ -501,7 +513,7 @@ class LogBubbleDew():
                                          rule=rule_mole_frac_dew_temp)
 
     @staticmethod
-    def scale_temperature_dew(b):
+    def scale_temperature_dew(b, overwrite=True):
         sf_mf = iscale.get_scaling_factor(
             b.mole_frac_comp, default=1e3, warning=True)
 
@@ -518,7 +530,7 @@ class LogBubbleDew():
 
             # Assume b.eq_temperature_dew is well-scaled
             iscale.constraint_scaling_transform(
-                b.eq_mole_frac_tdew[pp[0], pp[1]], sf_mf)
+                b.eq_mole_frac_tdew[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Bubble pressure methods
@@ -579,7 +591,7 @@ class LogBubbleDew():
                                          rule=rule_mole_frac_bubble_press)
 
     @staticmethod
-    def scale_pressure_bubble(b):
+    def scale_pressure_bubble(b, overwrite=True):
         sf_mf = iscale.get_scaling_factor(
             b.mole_frac_comp, default=1e3, warning=True)
 
@@ -596,7 +608,7 @@ class LogBubbleDew():
 
             # Assume b.eq_pressure_bubble is well-scaled
             iscale.constraint_scaling_transform(
-                b.eq_mole_frac_pbub[pp[0], pp[1]], sf_mf)
+                b.eq_mole_frac_pbub[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew pressure methods
@@ -657,7 +669,7 @@ class LogBubbleDew():
                                          rule=rule_mole_frac_dew_press)
 
     @staticmethod
-    def scale_pressure_dew(b):
+    def scale_pressure_dew(b, overwrite=True):
         sf_mf = iscale.get_scaling_factor(
             b.mole_frac_comp, default=1e3, warning=True)
 
@@ -674,7 +686,7 @@ class LogBubbleDew():
 
             # Assume b.eq_pressure_dew is well-scaled
             iscale.constraint_scaling_transform(
-                b.eq_mole_frac_pdew[pp[0], pp[1]], sf_mf)
+                b.eq_mole_frac_pdew[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
 
 def _valid_VL_component_list(blk, pp):

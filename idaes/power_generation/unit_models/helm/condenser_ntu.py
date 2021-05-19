@@ -435,13 +435,13 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         for t, c in self.heat_transfer_equation.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.saturation_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.hot_side.properties_out[t].enth_mol)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

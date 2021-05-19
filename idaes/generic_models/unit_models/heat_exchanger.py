@@ -605,16 +605,18 @@ class HeatExchangerData(UnitModelBlockData):
         sf_a = iscale.get_scaling_factor(self.area, default=1, warning=True)
 
         for t, c in self.heat_transfer_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.delta_temperature_in_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t])
+            iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
 
         for t, c in self.delta_temperature_out_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT2[t])
+            iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
         if hasattr(self, "costing"):
             # import costing scaling factors

@@ -573,7 +573,8 @@ class GenericReactionBlockData(ReactionBlockDataBase):
                 sf_const = carg["equilibrium_form"].calculate_scaling_factors(
                     self, sf)
 
-                iscale.constraint_scaling_transform(v, sf_const)
+                iscale.constraint_scaling_transform(
+                    v, sf_const, overwrite=False)
 
         # Unlock attribute creation when done
         self._lock_attribute_creation = False
