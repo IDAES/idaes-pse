@@ -1059,7 +1059,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].pressure,
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "fluid_work_calculation"):
             for t, c in self.fluid_work_calculation.items():
@@ -1068,7 +1069,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.deltaP[t],
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "actual_work"):
             for t, c in self.actual_work.items():
@@ -1077,7 +1079,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.work[t],
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "isentropic_pressure"):
             for t, c in self.isentropic_pressure.items():
@@ -1086,7 +1089,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].pressure,
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "isentropic"):
             for t, c in self.isentropic.items():
@@ -1095,7 +1099,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].entr_mol,
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "isentropic_energy_balance"):
             for t, c in self.isentropic_energy_balance.items():
@@ -1104,7 +1109,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.work[t],
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "zero_work_equation"):
             for t, c in self.zero_work_equation.items():

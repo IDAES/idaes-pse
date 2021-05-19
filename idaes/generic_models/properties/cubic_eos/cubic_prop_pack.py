@@ -1729,21 +1729,25 @@ class CubicStateBlockData(StateBlockData):
         if self.is_property_constructed("_teq"):
             iscale.set_scaling_factor(self._teq, sf_T)
         if self.is_property_constructed("_teq_constraint"):
-            iscale.constraint_scaling_transform(self._teq_constraint, sf_T)
+            iscale.constraint_scaling_transform(
+                self._teq_constraint, sf_T, overwrite=False)
 
         if self.is_property_constructed("_t1"):
             iscale.set_scaling_factor(self._t1, sf_T)
         if self.is_property_constructed("_t1_constraint"):
-            iscale.constraint_scaling_transform(self._t1_constraint, sf_T)
+            iscale.constraint_scaling_transform(
+                self._t1_constraint, sf_T, overwrite=False)
 
         if self.is_property_constructed("_mole_frac_pdew"):
             iscale.set_scaling_factor(self._mole_frac_pdew, 1e3)
-            iscale.constraint_scaling_transform(self._sum_mole_frac_pdew, 1e3)
+            iscale.constraint_scaling_transform(
+                self._sum_mole_frac_pdew, 1e3, overwrite=False)
 
         if self.is_property_constructed("total_flow_balance"):
             s = iscale.get_scaling_factor(
                 self.flow_mol, default=1, warning=True)
-            iscale.constraint_scaling_transform(self.total_flow_balance, s)
+            iscale.constraint_scaling_transform(
+                self.total_flow_balance, s, overwrite=False)
 
         if self.is_property_constructed("component_flow_balances"):
             for i, c in self.component_flow_balances.items():
@@ -1751,48 +1755,50 @@ class CubicStateBlockData(StateBlockData):
                     s = iscale.get_scaling_factor(
                         self.mole_frac_comp[i], default=1, warning=True)
                     s *= sf_flow
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
                 else:
                     s = iscale.get_scaling_factor(
                         self.mole_frac_comp[i], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if self.is_property_constructed("dens_mol_phase"):
             for c in self.eq_dens_mol_phase.values():
-                iscale.constraint_scaling_transform(c, sf_P)
+                iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
 
         if self.is_property_constructed("dens_mass_phase"):
             for p, c in self.eq_dens_mass_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.dens_mass_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("enth_mol_phase"):
             for p, c in self.eq_enth_mol_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.enth_mol_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("enth_mol"):
             sf = iscale.get_scaling_factor(
                 self.enth_mol, default=1, warning=True)
             sf *= sf_flow
-            iscale.constraint_scaling_transform(self.eq_enth_mol, sf)
+            iscale.constraint_scaling_transform(
+                self.eq_enth_mol, sf, overwrite=False)
 
         if self.is_property_constructed("entr_mol_phase"):
             for p, c in self.eq_entr_mol_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.entr_mol_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("entr_mol"):
             sf = iscale.get_scaling_factor(
                 self.entr_mol, default=1, warning=True)
             sf *= sf_flow
-            iscale.constraint_scaling_transform(self.eq_entr_mol, sf)
+            iscale.constraint_scaling_transform(
+                self.eq_entr_mol, sf, overwrite=False)
 
         if self.is_property_constructed("gibbs_mol_phase"):
             for p, c in self.eq_gibbs_mol_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.gibbs_mol_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

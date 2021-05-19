@@ -828,40 +828,50 @@ class FlueGasStateBlockData(StateBlockData):
             iscale.constraint_scaling_transform(
                 self.heat_cap_correlation,
                 iscale.get_scaling_factor(self.cp_mol) *
-                iscale.get_scaling_factor(self.flow_mol)
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
             )
         if self.is_property_constructed("enthalpy_correlation"):
             for p, c in self.enthalpy_correlation.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enth_mol) *
-                    iscale.get_scaling_factor(self.flow_mol)
+                    iscale.get_scaling_factor(self.flow_mol),
+                    overwrite=False
                 )
         if self.is_property_constructed("entropy_correlation"):
             iscale.constraint_scaling_transform(
                 self.entropy_correlation,
-                iscale.get_scaling_factor(self.entr_mol)*
-                iscale.get_scaling_factor(self.flow_mol)
+                iscale.get_scaling_factor(self.entr_mol) *
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
             )
         if self.is_property_constructed("vapor_pressure_correlation"):
             iscale.constraint_scaling_transform(
                 self.vapor_pressure_correlation,
                 log(iscale.get_scaling_factor(self.pressure_sat)) *
-                iscale.get_scaling_factor(self.flow_mol)
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
             )
         if self.is_property_constructed("therm_cond_con"):
             for i, c in self.therm_cond_con.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.therm_cond_comp[i]))
+                    c,
+                    iscale.get_scaling_factor(self.therm_cond_comp[i]),
+                    overwrite=False)
         if self.is_property_constructed("therm_mix_con"):
             iscale.constraint_scaling_transform(
                 self.therm_mix_con,
-                iscale.get_scaling_factor(self.therm_cond))
+                iscale.get_scaling_factor(self.therm_cond),
+                overwrite=False)
         if self.is_property_constructed("visc_d_con"):
             for i, c in self.visc_d_con.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.visc_d_comp[i]))
+                    c,
+                    iscale.get_scaling_factor(self.visc_d_comp[i]),
+                    overwrite=False)
         if self.is_property_constructed("visc_d_mix_con"):
             iscale.constraint_scaling_transform(
                 self.visc_d_mix_con,
-                iscale.get_scaling_factor(self.visc_d))
+                iscale.get_scaling_factor(self.visc_d),
+                overwrite=False)

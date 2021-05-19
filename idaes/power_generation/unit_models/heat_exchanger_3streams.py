@@ -543,14 +543,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         for t, c in self.heat_duty_side_1_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_1[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_2_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_2[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_3_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_3[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
