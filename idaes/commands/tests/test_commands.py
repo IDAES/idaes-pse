@@ -659,7 +659,6 @@ def test_conf_set(runner):
         assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1))
         assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1.options))
         assert idaes.cfg.ipopt_l1.options.max_iter == 100
-
         if os.path.exists(fname):
             os.remove(fname)
 
