@@ -585,10 +585,11 @@ def extreme_jacobian_entries(
         jac, nlp = get_jacobian(m, scaled)
     el = []
     for i, c in enumerate(nlp.clist):
-        for j, v in enumerate(nlp.vlist):
-            if (abs(jac[i, j]) <= small and abs(jac[i, j] > zero)) \
-                or abs(jac[i,j]) >= large:
-                el.append((abs(jac[i, j]), c, v))
+        for j in jac[i].indices:
+            v = nlp.vlist[j]
+            e = abs(jac[i, j])
+            if (e <= small and e > zero) or e >= large:
+                el.append((e, c, v))
     return el
 
 
@@ -600,6 +601,7 @@ def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+        pinv: Use pseudoinverse, works for non-square matrixes
         jac: (optional) perviously calculated jacobian
 
     Returns:
