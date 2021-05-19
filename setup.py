@@ -34,8 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyutilib @ https://github.com/PyUtilib/pyutilib/archive/master.zip",
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.0.idaes.2021.05.17.zip",
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.0.idaes.2021.05.19.zip",
 ]
 
 
@@ -64,7 +63,6 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyutilib>=6.0.0",
         "pyomo>=5.7.3",
         "pytest",
         "pyyaml",
