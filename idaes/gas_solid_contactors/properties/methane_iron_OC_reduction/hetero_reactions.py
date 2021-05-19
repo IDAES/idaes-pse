@@ -221,14 +221,15 @@ class _ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
     def initialize(blk, outlvl=idaeslog.NOTSET,
-                   optarg={}, solver=None):
+                   optarg=None, solver=None):
         '''
         Initialisation routine for reaction package.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
         Returns:
             None

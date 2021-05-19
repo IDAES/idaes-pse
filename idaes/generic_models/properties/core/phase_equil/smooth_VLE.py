@@ -98,12 +98,12 @@ def calculate_scaling_factors(b, phase_pair):
         _t1 = getattr(b, "_t1"+suffix)
         _t1_cons = getattr(b, "_t1_constraint"+suffix)
         iscale.set_scaling_factor(_t1, sf_T)
-        iscale.constraint_scaling_transform(_t1_cons, sf_T)
+        iscale.constraint_scaling_transform(_t1_cons, sf_T, overwrite=False)
     except AttributeError:
         pass
 
     _teq_cons = getattr(b, "_teq_constraint"+suffix)
-    iscale.constraint_scaling_transform(_teq_cons, sf_T)
+    iscale.constraint_scaling_transform(_teq_cons, sf_T, overwrite=False)
 
 
 def phase_equil_initialization(b, phase_pair):

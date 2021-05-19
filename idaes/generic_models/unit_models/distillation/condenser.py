@@ -693,7 +693,7 @@ see property package for documentation.}"""))
                         "while building ports for the condenser. Only total "
                         "mixture enthalpy or enthalpy by phase are supported.")
 
-    def initialize(self, state_args=None, solver=None, optarg={},
+    def initialize(self, state_args=None, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
