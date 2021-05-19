@@ -259,7 +259,7 @@ def main(
     #
     if m is None:
         m = pyo.ConcreteModel("Gas Turbine Model")
-    if not hasattr(m, "fs")
+    if not hasattr(m, "fs"):
         m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.gas_prop_params = GenericParameterBlock(default=get_prop(comps, phases))
     m.fs.gas_prop_params.set_default_scaling("mole_frac_comp", 10)
