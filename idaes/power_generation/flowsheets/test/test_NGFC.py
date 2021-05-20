@@ -127,7 +127,7 @@ def test_ROM(m):
 @pytest.mark.integration
 def test_json_load(m):
     fname = os.path.join(os.path.join(os.path.dirname(this_file_dir()),
-                                      "NGFC"), "NGFC_flowsheet_init.gz")
+                                      "NGFC"), "NGFC_flowsheet_init.json.gz")
 
     ms.from_json(m, fname=fname)
 
