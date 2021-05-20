@@ -14,7 +14,7 @@
 __author__ = "John Eslick"
 
 """Transformation to replace variables with other variables."""
-from pyomo.core.base.plugin import TransformationFactory
+from pyomo.core.base.transformation import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
 from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
