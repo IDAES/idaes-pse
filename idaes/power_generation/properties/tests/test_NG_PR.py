@@ -89,7 +89,7 @@ class TestNaturalGasProps(object):
             m.fs.state[1].temperature.fix(300)
             m.fs.state[1].pressure.fix(10**(0.5*logP))
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             m.fs.state[1].temperature.unfix()
 
@@ -120,7 +120,7 @@ class TestNaturalGasProps(object):
             m.fs.state[1].temperature.fix(T)
             m.fs.state[1].pressure.fix(1e5)
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             results = solver.solve(m)
 

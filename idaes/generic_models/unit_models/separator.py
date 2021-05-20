@@ -53,6 +53,7 @@ from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import VarLikeExpression
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 __author__ = "Andrew Lee"
 
@@ -978,7 +979,7 @@ objects linked the mixed state and all outlet states,
                                 return self.eps
 
                         elif (
-                            self.config.split_basis == 
+                            self.config.split_basis ==
                                 SplittingType.phaseComponentFlow
                         ):
 
@@ -1324,19 +1325,17 @@ objects linked the mixed state and all outlet states,
                 )
 
     def initialize(
-        blk, outlvl=idaeslog.NOTSET, optarg={}, state_args=None,
-        solver=None, hold_state=False
+        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
     ):
         """
         Initialization routine for separator
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
-            state_args: unused, but retained for consistency with other
-                        initialization methods
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - False. **Valid values:**
@@ -1606,6 +1605,54 @@ objects linked the mixed state and all outlet states,
             mblock = blk.config.mixed_state_block
 
         mblock.release_state(flags, outlvl=outlvl)
+
+    def calculate_scaling_factors(self):
+        mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            t_ref = self.flowsheet().config.time.first()
+            mb_type = self.mixed_state[t_ref].default_material_balance_type()
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "temperature_equality_eqn"):
+            for (t, i), c in self.temperature_equality_eqn.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].temperature, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "pressure_equality_eqn"):
+            for (t, i), c in self.pressure_equality_eqn.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "material_splitting_eqn"):
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, o, p, j), c in self.material_splitting_eqn.items():
+                    flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
+                    s = iscale.get_scaling_factor(flow_term, default=1)
+                    iscale.constraint_scaling_transform(c, s)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, o, j), c in self.material_splitting_eqn.items():
+                    for i, p in enumerate(self.mixed_state.phase_list):
+                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
+                    iscale.constraint_scaling_transform(c, s)
+            elif mb_type == MaterialBalanceType.total:
+                pc_set = self.mixed_state.phase_component_set
+                for (t, o), c in self.material_splitting_eqn.items():
+                    for i, (p, j) in enumerate(pc_set):
+                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
+                    iscale.constraint_scaling_transform(c, s)
+
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):
