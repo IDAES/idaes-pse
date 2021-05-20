@@ -388,14 +388,15 @@ between flow and pressure driven simulations.}""",
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver=None):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -445,16 +446,16 @@ between flow and pressure driven simulations.}""",
         super().calculate_scaling_factors()
         for t, c in self.mass_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.energy_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].enth_mol)
             s *= iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "minimum_pressure_constraint"):
             for t, c in self.minimum_pressure_constraint.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)

@@ -332,7 +332,7 @@ class TestSplitConstruction(object):
         for t in build.fs.time:
             for o in build.fs.sep.outlet_idx:
                 for p in build.fs.sep.config.property_package.phase_list:
-                    assert build.fs.sep.split_fraction[t, o, p] == 0.5
+                    assert build.fs.sep.split_fraction[t, o, p].value == 0.5
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
@@ -352,7 +352,7 @@ class TestSplitConstruction(object):
         for t in build.fs.time:
             for o in build.fs.sep.outlet_idx:
                 for j in build.fs.sep.config.property_package.component_list:
-                    assert build.fs.sep.split_fraction[t, o, j] == 0.5
+                    assert build.fs.sep.split_fraction[t, o, j].value == 0.5
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 2
@@ -373,7 +373,8 @@ class TestSplitConstruction(object):
             for o in build.fs.sep.outlet_idx:
                 for p in build.fs.sep.config.property_package.phase_list:
                     for j in build.fs.sep.config.property_package.component_list:
-                        assert build.fs.sep.split_fraction[t, o, p, j] == 0.5
+                        assert 0.5 == \
+                            build.fs.sep.split_fraction[t, o, p, j].value
 
         assert isinstance(build.fs.sep.sum_split_frac, Constraint)
         assert len(build.fs.sep.sum_split_frac) == 4

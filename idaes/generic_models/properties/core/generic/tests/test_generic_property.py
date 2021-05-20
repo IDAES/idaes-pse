@@ -798,7 +798,7 @@ class TestGenericParameterBlock(object):
         for i in m.params.reaction_e1.reaction_order:
             order = {("p1", "a"): -3, ("p1", "b"): 4,
                      ("p2", "a"): 0, ("p2", "b"): 0, ("p2", "c"): 0}
-            assert m.params.reaction_e1.reaction_order[i] == order[i]
+            assert m.params.reaction_e1.reaction_order[i].value == order[i]
 
     @pytest.mark.unit
     def test_inherent_reactions_no_stoichiometry(self):

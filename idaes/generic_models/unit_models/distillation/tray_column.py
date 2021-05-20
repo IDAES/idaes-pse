@@ -364,7 +364,7 @@ see property package for documentation.}"""))
                         value(source.vars[v][i])
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
-                   state_args_vap=None, solver=None, optarg={},
+                   state_args_vap=None, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -375,21 +375,21 @@ see property package for documentation.}"""))
         solverobj = get_solver(solver, optarg)
 
         feed_flags = self.feed_tray.initialize(
-            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
+            solver=solver, optarg=optarg, outlvl=outlvl)
 
         self.propagate_stream_state(
             source=self.feed_tray.vap_out,
             destination=self.condenser.inlet)
 
         self.condenser.initialize(
-            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
+            solver=solver, optarg=optarg, outlvl=outlvl)
 
         self.propagate_stream_state(
             source=self.feed_tray.liq_out,
             destination=self.reboiler.inlet)
 
         self.reboiler.initialize(
-            solver=None, optarg={}, outlvl=idaeslog.NOTSET)
+            solver=solver, optarg=optarg, outlvl=outlvl)
 
         # initialize the rectification section
         for i in self._rectification_index:
@@ -403,20 +403,20 @@ see property package for documentation.}"""))
                 rect_liq_flags = self.rectification_section[i]. \
                     initialize(hold_state_liq=True,
                                hold_state_vap=False,
-                               solver=None,
-                               optarg={},
-                               outlvl=idaeslog.NOTSET)
+                               solver=solver,
+                               optarg=optarg,
+                               outlvl=outlvl)
             elif i == len(self._rectification_index):
                 rect_vap_flags = \
                     self.rectification_section[i]. \
                     initialize(hold_state_liq=False,
                                hold_state_vap=True,
-                               solver=None,
-                               optarg={},
-                               outlvl=idaeslog.NOTSET)
+                               solver=solver,
+                               optarg=optarg,
+                               outlvl=outlvl)
             else:
                 self.rectification_section[i].initialize(
-                    solver=None, optarg={}, outlvl=idaeslog.NOTSET)
+                    solver=solver, optarg=optarg, outlvl=outlvl)
 
         # initialize the stripping section
         for i in self._stripping_index:
@@ -430,19 +430,19 @@ see property package for documentation.}"""))
                 strip_liq_flags = self.stripping_section[i]. \
                     initialize(hold_state_liq=True,
                                hold_state_vap=False,
-                               solver=None,
-                               optarg={},
-                               outlvl=idaeslog.NOTSET)
+                               solver=solver,
+                               optarg=optarg,
+                               outlvl=outlvl)
             elif i == self.config.number_of_trays:
                 strip_vap_flags = self.stripping_section[i]. \
                     initialize(hold_state_liq=False,
                                hold_state_vap=True,
-                               solver=None,
-                               optarg={},
-                               outlvl=idaeslog.NOTSET)
+                               solver=solver,
+                               optarg=optarg,
+                               outlvl=outlvl)
             else:
                 self.stripping_section[i].initialize(
-                    solver=None, optarg={}, outlvl=idaeslog.NOTSET)
+                    solver=None, optarg=optarg, outlvl=outlvl)
 
         # For initialization purposes and to enable solving individual sections
         # creating a temp block. Note that this temp block is a reference to

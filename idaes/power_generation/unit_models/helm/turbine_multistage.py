@@ -631,7 +631,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         flow_iterate=2,
-        optarg={},
+        optarg=None,
         copy_disconneted_flow=True,
         copy_disconneted_pressure=True,
         calculate_outlet_cf=False,
@@ -647,7 +647,7 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             flow_iterate: If not calculating flow coefficients, this is the
                 number of times to update the flow and repeat initialization
                 (1 to 5 where 1 does not update the flow guess)
-            optarg: solver arguments, default is {"tol": 1e-6, "max_iter": 35}
+            optarg: solver arguments, default is None
             copy_disconneted_flow: Copy the flow through the disconnected stages
                 default is True
             copy_disconneted_pressure: Copy the pressure through the disconnected
@@ -821,4 +821,5 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             power_scale = iscale.get_scaling_factor(
                 self.power[t], default=1, warning=True)
             # Set power equation scale factor
-            iscale.constraint_scaling_transform(c, power_scale)
+            iscale.constraint_scaling_transform(
+                c, power_scale, overwrite=False)

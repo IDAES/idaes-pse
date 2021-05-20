@@ -389,7 +389,7 @@ def _may_have_subcomponents(o):
         if hasattr(o.component_objects, "__call__"):
             return True
 
-def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
+def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
     """
     Writes a component state to the save dictionary under a key given by the
     components name.
@@ -405,6 +405,11 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
     Returns:
         None
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = []
+
     # Get list of attributes to save, also returns ff, which is a filter
     # function and only used in reading stuff back in.
     alist, ff = wts.get_class_attr_list(o)
@@ -439,7 +444,7 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
                               count=count, suffixes=suffixes)
 
 
-def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
+def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
     """
     Iterate through the component data and write to the sd dictionary. The keys
     for the data items are added to the dictionary. If the component has
@@ -457,6 +462,11 @@ def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
     Returns:
         None
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = []
+
     if wts.include_suffix and isinstance(o, Suffix):
         # make special provision for writing suffixes.
         for key in o:
@@ -533,7 +543,7 @@ def component_data_to_dict(o, wts):
             _write_component(sd=cdict, o=o2, wts=wts)
     return edict
 
-def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
+def to_json(o, fname=None, human_read=False, wts=None, metadata=None, gz=None,
             return_dict=False, return_json_string=False):
     """
     Save the state of a model to a Python dictionary, and optionally dump it
@@ -571,6 +581,8 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
             gz = fname.endswith(".gz")
         else:
             gz = False
+    if metadata is None:
+        metadata = {}
 
     suffixes = []
     lookup = {}
@@ -615,10 +627,15 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
     else:
         return None
 
-def _read_component(sd, o, wts, lookup={}, suffixes={}, root_name=None):
+def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     """
     Read a component dictionary into a model
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = {}
+
     alist, ff = wts.get_class_attr_list(o)
     if alist is None: return
     if root_name is None:
@@ -658,7 +675,7 @@ def _read_component(sd, o, wts, lookup={}, suffixes={}, root_name=None):
         _read_component_data(odict["data"], o, wts,
                              lookup=lookup, suffixes=suffixes)
 
-def _read_component_data(sd, o, wts, lookup={}, suffixes={}):
+def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
     """
     Read a Pyomo component's data in from a dict.
 
@@ -672,6 +689,11 @@ def _read_component_data(sd, o, wts, lookup={}, suffixes={}):
     Returns:
         None
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = {}
+
     alist = [] # list of attributes to read
     c = 0 # counter of data items in component
     try:
