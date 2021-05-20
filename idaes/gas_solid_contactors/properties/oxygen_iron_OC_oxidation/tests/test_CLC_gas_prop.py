@@ -17,10 +17,14 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import (
+        ConcreteModel,
+        Constraint,
+        TerminationCondition,
+        SolverStatus,
+        Var,
+        units as pyunits,
+        )
 
 from idaes.core import FlowsheetBlock
 
@@ -111,3 +115,88 @@ def test_solution(gas_prop):
             gas_prop.fs.unit.cp_mol.value)
     assert (pytest.approx(1, abs=1e-2) ==
             gas_prop.fs.unit.enth_mol.value)
+# -----------------------------------------------------------------------------
+
+
+def make_model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = GasPhaseParameterBlock()
+    m.fs.state = m.fs.properties.build_state_block(
+            default={
+                "parameters": m.fs.properties,
+                "defined_state": True,
+                })
+
+    m.fs.state.flow_mol.set_value(1.0*pyunits.mol/pyunits.s)
+    m.fs.state.temperature.set_value(450.0*pyunits.K)
+    m.fs.state.pressure.set_value(1.60*pyunits.bar)
+    m.fs.state.mole_frac_comp["CO2"].set_value(0.0004)
+    m.fs.state.mole_frac_comp["H2O"].set_value(0.0093)
+    m.fs.state.mole_frac_comp["O2"].set_value(0.2095)
+    m.fs.state.mole_frac_comp["N2"].set_value(0.7808)
+
+    return m
+
+
+def test_state_vars():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = GasPhaseParameterBlock()
+    m.fs.state = m.fs.properties.build_state_block()
+
+    assert isinstance(m.fs.state.flow_mol, Var)
+    assert isinstance(m.fs.state.temperature, Var)
+    assert isinstance(m.fs.state.pressure, Var)
+    assert isinstance(m.fs.state.mole_frac_comp, Var)
+
+    assert isinstance(m.fs.state.sum_component_eqn, Constraint)
+
+    assert len(list(m.component_data_objects(Var))) == 7
+    assert len(list(m.component_data_objects(Constraint))) == 1
+
+    for name, var in m.fs.state.define_state_vars().items():
+        # State vars should be included in the metadata with no method
+        assert name in m.fs.properties._metadata._properties
+        assert m.fs.properties._metadata._properties[name]["method"] is None
+
+
+def test_indexed_state_block():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = GasPhaseParameterBlock()
+    m.fs.state = m.fs.properties.build_state_block([1,2,3])
+
+    assert len(list(m.component_data_objects(Var))) == 21
+    assert len(list(m.component_data_objects(Constraint))) == 3
+
+    for i, state in m.fs.state.items():
+        assert isinstance(state.flow_mol, Var)
+        assert isinstance(state.temperature, Var)
+        assert isinstance(state.pressure, Var)
+        assert isinstance(state.mole_frac_comp, Var)
+
+        assert isinstance(state.sum_component_eqn, Constraint)
+
+        for name, var in state.define_state_vars().items():
+            # State vars should be included in the metadata with no method
+            assert name in m.fs.properties._metadata._properties
+            assert m.fs.properties._metadata._properties[name]["method"] is None
+
+
+if __name__ == "__main__":
+    test_state_vars()
+    m = make_model()
+    print(degrees_of_freedom(m))
+    for var in m.component_data_objects(Var):
+        print(var.name, var.fixed)
+
+    for con in m.component_data_objects(Constraint, active=True):
+        print(con.name)
+
+    # At this point, the model is very uninteresting. We have only queried
+    # variables that have "method": None. This means that no constraints
+    # have been added to the state block.
+    import pdb; pdb.set_trace()
