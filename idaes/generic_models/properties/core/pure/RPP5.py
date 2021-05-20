@@ -76,7 +76,7 @@ class enth_mol_ig_comp():
 
     @staticmethod
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_a0"):
             cp_mol_ig_comp.build_parameters(cobj)
 
         if cobj.parent_block().config.include_enthalpy_of_formation:
@@ -110,7 +110,7 @@ class entr_mol_ig_comp():
 
     @staticmethod
     def build_parameters(cobj):
-        if not hasattr(cobj, "cp_mol_ig_comp_coeff_A"):
+        if not hasattr(cobj, "cp_mol_ig_comp_coeff_a0"):
             cp_mol_ig_comp.build_parameters(cobj)
 
         units = cobj.parent_block().get_metadata().derived_units

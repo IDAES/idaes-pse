@@ -23,6 +23,10 @@ _log = idaeslog.getLogger(__name__)
 _release_base_url = idaes.config.release_base_url
 
 
+class UnsupportedPlatformError(RuntimeError):
+    pass
+
+
 def _hash(fname):
     with open(fname, 'rb') as f:
         fh = hashlib.sha256()
@@ -46,12 +50,17 @@ def _get_file_downloader(insecure, cacert):
 def _get_platform(fd, platform, arch):
     if platform == "auto":
         platform = arch[0]
-        if platform == "linux":
-            linux_dist = fd.get_os_version().replace(".", "")
-            if linux_dist in idaes.config.known_binary_platform:
-                platform = linux_dist
+    if platform == "linux":
+        linux_dist = fd.get_os_version().replace(".", "")
+        _log.debug(f"Detected Linux distribution: {linux_dist}")
+        if linux_dist in idaes.config.known_binary_platform:
+            platform = linux_dist
+        else:
+            raise UnsupportedPlatformError(
+                f"Detected platform {linux_dist} is not recognized as "
+                "supported platform.")
     if platform not in idaes.config.known_binary_platform:
-        raise Exception("Unknow platform {}".format(platform))
+        raise UnsupportedPlatformError(f"Unknown platform: {platform}.")
     if platform in idaes.config.binary_platform_map:
         platform = idaes.config.binary_platform_map[platform]
     _log.debug(f"Downloading binaries for {platform}")

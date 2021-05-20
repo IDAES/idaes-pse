@@ -31,8 +31,8 @@ from idaes.core import AqueousPhase, VaporPhase
 from idaes.core.components import *
 
 from idaes.generic_models.properties.core.state_definitions import FcPh
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
 from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
@@ -87,7 +87,7 @@ class TestApparentSpeciesBasisNoInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -293,7 +293,7 @@ class TestApparentSpeciesBasisInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -566,7 +566,7 @@ class TestTrueSpeciesBasisNoInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -722,7 +722,7 @@ class TestTrueSpeciesBasisInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 

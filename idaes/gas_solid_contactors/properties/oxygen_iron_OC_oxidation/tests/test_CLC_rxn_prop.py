@@ -18,6 +18,8 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import (ConcreteModel,
+                           TerminationCondition,
+                           SolverStatus,
                            Var)
 
 from idaes.core import FlowsheetBlock
@@ -28,9 +30,9 @@ from idaes.core.util.testing import (get_default_solver,
                                      initialization_tester)
 
 from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
-    gas_phase_thermo import GasPhaseThermoParameterBlock
+    gas_phase_thermo import GasPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
+    solid_phase_thermo import SolidPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     hetero_reactions import HeteroReactionParameterBlock
 
@@ -46,12 +48,12 @@ def rxn_prop():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo props and reaction props
-    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+    m.fs.solid_properties = SolidPhaseParameterBlock()
     m.fs.solid_state_block = m.fs.solid_properties.build_state_block(
         default={"parameters": m.fs.solid_properties,
                  "defined_state": True})
 
-    m.fs.gas_properties = GasPhaseThermoParameterBlock()
+    m.fs.gas_properties = GasPhaseParameterBlock()
     m.fs.gas_state_block = m.fs.gas_properties.build_state_block(
         default={"parameters": m.fs.gas_properties,
                  "defined_state": True})
@@ -70,11 +72,12 @@ def rxn_prop():
     # solid particle porosity, density and component fractions)
     m.fs.gas_state_block.dens_mol.fix(10)
     m.fs.gas_state_block.dens_mol_comp.fix(10)
-    m.fs.solid_state_block.particle_porosity.fix(0.27)
+    m.fs.solid_state_block.particle_porosity.fix(0.23)
     m.fs.solid_state_block.mass_frac_comp["Fe2O3"].fix(0.244)
     m.fs.solid_state_block.mass_frac_comp["Fe3O4"].fix(0.202)
     m.fs.solid_state_block.mass_frac_comp["Al2O3"].fix(0.554)
-    m.fs.solid_state_block.dens_mass_skeletal.fix(1)
+    m.fs.solid_state_block.dens_mass_skeletal.fix(3125)
+    m.fs.solid_state_block.temperature.fix(1183.15)  # K
 
     return m
 
@@ -98,3 +101,32 @@ def test_setInputs_reaction_block(rxn_prop):
 def test_initialize(rxn_prop):
     initialization_tester(
             rxn_prop)
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_solve(rxn_prop):
+
+    assert hasattr(rxn_prop.fs.unit, "k_rxn")
+    assert hasattr(rxn_prop.fs.unit, "OC_conv")
+    assert hasattr(rxn_prop.fs.unit, "reaction_rate")
+
+    results = solver.solve(rxn_prop.fs.unit)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_solution(rxn_prop):
+    assert (pytest.approx(1, abs=1e-2) ==
+            rxn_prop.fs.unit.k_rxn['R1'].value)
+    assert (pytest.approx(0, abs=1e-2) ==
+            rxn_prop.fs.unit.OC_conv.value)
+    assert (pytest.approx(0, abs=1e-2) ==
+            rxn_prop.fs.unit.reaction_rate['R1'].value)

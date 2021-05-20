@@ -371,6 +371,11 @@ class GenericParameterData(PhysicalParameterBlock):
                 Set(initialize=apparent_species,
                     ordered=True,
                     doc="Set of apparent components in mixture"))
+            self.add_component(
+                "ion_set",
+                Set(initialize=self.anion_set | self.cation_set,
+                    ordered=True,
+                    doc="Master set of all ions in mixture"))
 
         # Validate phase-component lists, and build _phase_component_set
         if not self._electrolyte:
@@ -421,10 +426,12 @@ class GenericParameterData(PhysicalParameterBlock):
                         if self.get_component(j)._is_phase_valid(pobj):
                             # If component says phase is valid, add to set
                             pc_set_appr.append((p, j))
-                        if not isinstance(pobj, AqueousPhase):
-                            # Also need to add apparent species
-                            if (p, j) not in pc_set_true:
-                                pc_set_true.append((p, j))
+
+                            if not isinstance(pobj, AqueousPhase):
+                                # Also need to add apparent species
+                                if (p, j) not in pc_set_true:
+                                    pc_set_true.append((p, j))
+
                 else:
                     # Validate that component names are valid and add to pc_set
                     for j in pc_list:
