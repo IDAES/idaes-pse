@@ -133,7 +133,7 @@ class GenericValve(object):
     @pytest.mark.component
     def test_solution(self, valve_model):
         # calculated Cv to yeild this solution
-        assert (pytest.approx(1000, abs=1e-2) ==
+        assert (pytest.approx(1000, rel=1e-3) ==
                 value(valve_model.fs.valve.outlet.flow_mol[0]))
 
 class TestLinearValve(GenericValve):

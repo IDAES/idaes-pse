@@ -15,7 +15,6 @@ Author: Andrew Lee, Alejandro Garciadiego
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -24,10 +23,7 @@ from pyomo.environ import (ConcreteModel,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
@@ -40,12 +36,13 @@ from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 
 from idaes.generic_models.properties.core.examples.ASU_PR \
-    import configuration, configuration_Dowling_2015
+    import configuration_Dowling_2015
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 3rd edition and Dowling 2015
@@ -56,7 +53,8 @@ class TestParamBlock(object):
     @pytest.mark.unit
     def test_build(self):
         model = ConcreteModel()
-        model.params = GenericParameterBlock(default=configuration_Dowling_2015)
+        model.params = GenericParameterBlock(
+            default=configuration_Dowling_2015)
 
         assert isinstance(model.params.phase_list, Set)
         assert len(model.params.phase_list) == 2
@@ -76,8 +74,9 @@ class TestParamBlock(object):
         assert isinstance(model.params._phase_component_set, Set)
         assert len(model.params._phase_component_set) == 6
         for i in model.params._phase_component_set:
-            assert i in [("Liq", "nitrogen"), ("Liq", "argon"), ("Liq", "oxygen"),
-                         ("Vap", "nitrogen"), ("Vap", "argon"), ("Vap", "oxygen")]
+            assert i in [
+                ("Liq", "nitrogen"), ("Liq", "argon"), ("Liq", "oxygen"),
+                ("Vap", "nitrogen"), ("Vap", "argon"), ("Vap", "oxygen")]
 
         assert model.params.config.state_definition == FTPx
 
