@@ -78,7 +78,7 @@ class TestParamBlock(object):
         assert model.param.config.state_definition == FTPx
 
         assertStructuredAlmostEqual(
-            model.params.config.state_bounds,
+            model.param.config.state_bounds,
             { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
               "temperature": (10, 300, 500, pyunits.K),
               "pressure": (5e-4, 1e5, 1e10, pyunits.Pa) },
