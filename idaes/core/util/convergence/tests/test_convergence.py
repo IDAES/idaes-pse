@@ -15,6 +15,7 @@ Tests for the convergence testing module
 
 Author: Carl Laird
 """
+import io
 import json
 import pytest
 import os
@@ -122,13 +123,13 @@ def test_convergence_evaluation_stats_from_to():
     with open(fname1) as FILE:
         baseline = json.load(FILE)
 
-    buf = StringIO()
+    buf = io.StringIO()
     s2.to_json(buf)
     test = json.loads(buf.getvalue())
     assertStructuredAlmostEqual(baseline, test, abstol=1e-8)
 
     s3 = cb.Stats(from_json=fname1)
-    buf = StringIO()
+    buf = io.StringIO()
     s3.to_json(buf)
     test = json.loads(buf.getvalue())
     assertStructuredAlmostEqual(baseline, test, abstol=1e-8)
