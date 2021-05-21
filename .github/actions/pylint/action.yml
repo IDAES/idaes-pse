@@ -19,8 +19,9 @@ runs:
       # use custom options for bash since the default causes the step to fail immediately for any non-zero return code of intermediate commands
       shell: bash --noprofile --norc {0}
       run: |
+        pylint_target_dir="idaes/"
         echo "::group::Real-time pylint log"
-        pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter idaes/
+        pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
         pylint_exit_status=$?
         echo "::endgroup::"
 
@@ -29,6 +30,13 @@ runs:
         pylint_output_path=pylint.json
         echo "::group::Rendered pylint report"
         python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
+        echo "::endgroup::"
+
+        # show PYLINT-TODO left in the codebase
+        todo_sentinel="PYLINT-TODO"
+
+        echo "::group::Show pylint \"$todo_sentinel\" sentinel comments in the codebase"
+        rg --type=py "$todo_sentinel" "$pylint_target_dir" || echo "No \"$todo_sentinel\" comments found in $pylint_target_dir"
         echo "::endgroup::"
 
         exit "$pylint_exit_status"
