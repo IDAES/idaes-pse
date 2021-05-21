@@ -18,7 +18,7 @@ import xml.dom.minidom
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
-from pyomo.core.base.plugin import ModelComponentFactory
+from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods

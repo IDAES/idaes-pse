@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
@@ -93,10 +94,14 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FTPx
 
-        assert model.params.config.state_bounds == {
-            "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
-            "temperature": (273.15, 300, 1500, pyunits.K),
-            "pressure": (5e4, 1e5, 1e7, pyunits.Pa)}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+              "temperature": (273.15, 300, 1500, pyunits.K),
+              "pressure": (5e4, 1e5, 1e7, pyunits.Pa) },
+            item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.pressure_ref.value == 101325
         assert model.params.temperature_ref.value == 298.15
