@@ -211,6 +211,9 @@ def SNDdt(textFile, DataToWrite, Combination=False, PlotData=False):
             textFile.write("delta('%s', '%d') = %.13f ;\n" % ("SND", i, x[0]))
             textFile.write("tau('%s','%d') = %.13f ;\n" % ("SND", i, x[1]))
         else:
+            pass  # required by pylint so that the block directive applies
+            # PYLINT-TODO-FIX use correct number of args in format strings
+            # pylint: disable=too-few-format-args
             textFile.write("itt('%s','%d') = %.13f ;\n" % (i, itt_val))
             textFile.write("delta('%s', '%d') = %.13f ;\n" % (i, x[0]))
             textFile.write("tau('%s','%d') = %.13f ;\n" % (i, x[1]))

@@ -239,7 +239,8 @@ def viewMultResults(lstFile, numTerms=0):
     """
     View mutliple results from a lst file 
     """
-    # PYLINT-TODO: this seems to be a genuine error, as this function doesn't exist in the Plotting module
+    # PYLINT-TODO-FIX the multSSECombo function doesn't seem exist in the Plotting module
+    # pylint: disable=no-member
     Plotting.multSSECombo(lstFile, numTerms)
 
 

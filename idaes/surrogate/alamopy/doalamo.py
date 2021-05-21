@@ -458,10 +458,11 @@ def getTrainingData(xdata, zdata, data, debug):
         data["opts"]["noutputs"] = 1
     else:
         data["opts"]["noutputs"] = np.shape(zdata)[1]
+    # PYLINT-TODO-FIX use almerror correctly instead of calling it directly
     if np.shape(zdata)[0] != data["opts"]["ndata"]:
-        almerror("p1")
+        almerror("p1")  # pylint: disable=not-callable
     elif np.shape(xdata)[0] != data["opts"]["ndata"]:
-        almerror("p1")
+        almerror("p1")  # pylint: disable=not-callable
     zdata = np.asarray(zdata)
     return xdata, zdata
 
@@ -631,6 +632,8 @@ def addBasisConstraints(groups_constraints):
     format: group-id output_id constraint_type integer_parameter
     """
 
+    # PYLINT-TODO-FIX "group_constraints" and "basis_constraints" are undefined
+    # pylint: disable=undefined-variable
     global group_constraints, basis_constraints
     print("Adding basis selection constraint", group_constraints)
 
@@ -798,6 +801,8 @@ def parseKwargs(data, debug, kwargs):
             else:
                 if arg not in (["xlabels", "zlabels", "xval", "zval"]):
                     sys.stdout.write("Problem with option : " + arg)
+                    # PYLINT-TODO-FIX use almerror correctly insted of calling it directly
+                    # pylint: disable=not-callable
                     almerror("p3")
 
 
@@ -993,6 +998,8 @@ def readTraceFile(vargs, data, debug):
         from sympy.parsing.sympy_parser import parse_expr
         from sympy import symbols, lambdify
     except Exception:
+        # PYLINT-TODO-FIX "writethis" is not defined
+        # pylint: disable=undefined-variable
         writethis("Cannot import sympy")
 
     lf2 = lf.split("\n")
@@ -1210,6 +1217,8 @@ def _construct_mock(data):
          * x1^6 + 1.0000000000008837375276 * x1*x2"
     data["results"]["nbas"] = "15"
 
+    # PYLINT-TODO-FIX "debug" is undefined
+    # pylint: disable=undefined-variable
     if debug["expandoutput"]:
         data["results"]["ssrval"] = 0
         data["results"]["R2val"] = 0
