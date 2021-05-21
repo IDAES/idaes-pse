@@ -408,7 +408,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                     material_factor_reciprocal_pumps[Mat_factor]
                 self.FT = 1
             else:
-                raise ValueError('{} - pump type not supported. '
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - pump type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for '
                                  'supported options.'.format(self.name,
                                                              pump_type))
@@ -435,7 +436,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             + 0.26986*log(PB)
                             + 0.06718*log(PB)**2)
                 else:
-                    raise ValueError('{} - pump type not supported. '
+                    # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                    raise ValueError('{} - pump type not supported. '  # pylint: disable=E1305
                                      'Please see documentation for '
                                      'supported options.'.format(self.name,
                                                                  pump_type))
@@ -503,7 +505,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
         # (costing not needed)
         elif (self.parent_block().config.
               thermodynamic_assumption.name) == 'isothermal':
-            raise ValueError('{} - pressure changers with isothermal '
+            # PYLINT-TODO-FIX fix exception message with correct number of arguments
+            raise ValueError('{} - pressure changers with isothermal '  # pylint: disable=E1305
                              'assumption are too simple to be costed. '.
                              format(self.name, mover_type))
         # if config.compressor is = True
@@ -571,7 +574,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         properties_in[0].flow_vol*60  # 1ft3/s*60s/min = ft3/m
                 # end volumetric flow units
                 else:
-                    raise ValueError('{} - volumetric flowrate units '
+                    # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                    raise ValueError('{} - volumetric flowrate units '  # pylint: disable=E1305
                                      'not supported. '
                                      'Please see documentation for list of '
                                      'supported units.'.format(self.name,
@@ -658,7 +662,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
             else:
-                raise ValueError('{} - mover type not supported. '
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - mover type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported mover types.'.format(self.name,
                                                                  mover_type))
@@ -855,14 +860,16 @@ def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
                     309.9*(D/pyunits.foot)**0.63316 *
                     (L/pyunits.foot)**0.80161)
             else:
-                raise ValueError('{} - L_D_range option not supported. '
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - L_D_range option not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported options.'.format(self.name,
                                                              L_D_range))
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     else:
-        raise ValueError('{} - vessel alignment type not supported. '
+        # PYLINT-TODO-FIX fix exception message with correct number of arguments
+        raise ValueError('{} - vessel alignment type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported options.'.format(self.name,
                                                              alignment))
@@ -1002,7 +1009,8 @@ def fired_heater_costing(self,
             return self.base_cost_per_unit ==\
                 0.367*(Q/pyunits.BTU*pyunits.hr)**0.77
         else:
-            raise ValueError('{} - fired heater type not supported. '
+            # PYLINT-TODO-FIX fix exception message with correct number of arguments
+            raise ValueError('{} - fired heater type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported FH types.'.format(self.name,
                                                               fired_type))

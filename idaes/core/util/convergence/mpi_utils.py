@@ -134,6 +134,9 @@ class ParallelTaskManager:
         comm = self._mpi_interface.comm
         global_data_list = comm.allgather(local_data)
 
+        # PYLINT-TODO-FIX fix the error due to the
+        # non-existing global_data_list_of_lists variable
+        # pylint: disable=undefined-variable
         return self._stack_global_data(global_data_list_of_lists)
 
     def gather_global_data(self, local_data):
