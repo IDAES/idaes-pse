@@ -1245,7 +1245,10 @@ class PolynomialRegression:
                     )
                 ]
                 adaptive_samples = sorted_comparison_vector_unique[
+                    # PYLINT-WHY: pylint considers self.no_adaptive_samples to be None here
+                    # pylint: disable=invalid-unary-operand-type
                     -self.no_adaptive_samples :, :
+                    # pylint: enable=invalid-unary-operand-type
                 ]
                 self.regression_data = np.concatenate(
                     (self.regression_data, adaptive_samples), axis=0
