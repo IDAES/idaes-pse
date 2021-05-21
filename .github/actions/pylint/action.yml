@@ -34,10 +34,11 @@ runs:
 
         # show PYLINT-TODO left in the codebase
         todo_sentinel="PYLINT-TODO"
-        grep_opts="--recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab"
+        # use a bash array to save options containing quotes to a variable, then use the double-quoted array expansion "${arr[@]}"
+        grep_opts=( --recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab )
 
         echo "::group::Show pylint \"$todo_sentinel\" sentinel comments in the codebase"
-        grep "$todo_sentinel" $grep_opts "$pylint_target_dir" || echo "No \"$todo_sentinel\" comments found in $pylint_target_dir"
+        grep "$todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$todo_sentinel\" comments found in $pylint_target_dir"
         echo "::endgroup::"
 
         exit "$pylint_exit_status"
