@@ -44,11 +44,11 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -221,7 +221,7 @@ class _SolidPhaseStateBlock(StateBlock):
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+                   solver="ipopt", optarg={"tol": 1e-8}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -234,10 +234,9 @@ class _SolidPhaseStateBlock(StateBlock):
                          Keys for the state_args dictionary are:
                          flow_mass, temperature, and mass_frac_comp
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None, use
-                     default solver options)
-            solver : str indicating which solver to use during
-                     initialization (default = None, use default solver)
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating whcih solver to use during
+                     initialization (default = "ipopt")
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -328,7 +327,7 @@ class _SolidPhaseStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(blk, flags, outlvl=0):
         """
         Method to relase state variables fixed during initialization.
         Keyword Arguments:
