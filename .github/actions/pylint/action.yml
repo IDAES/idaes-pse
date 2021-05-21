@@ -34,9 +34,10 @@ runs:
 
         # show PYLINT-TODO left in the codebase
         todo_sentinel="PYLINT-TODO"
+        grep_opts="--color=always --after-context=2 --line-number --initial-tab"
 
         echo "::group::Show pylint \"$todo_sentinel\" sentinel comments in the codebase"
-        rg --type=py "$todo_sentinel" "$pylint_target_dir" || echo "No \"$todo_sentinel\" comments found in $pylint_target_dir"
+        grep "$todo_sentinel" $pylint_target_dir/**.py $grep_opts || echo "No \"$todo_sentinel\" comments found in $pylint_target_dir"
         echo "::endgroup::"
 
         exit "$pylint_exit_status"
