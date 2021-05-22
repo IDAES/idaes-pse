@@ -20,7 +20,7 @@ from pyomo.environ import (
         ComponentUID,
         )
 from pyomo.util.slices import slice_component_along_sets
-from pyutilib.misc.config import ConfigDict, ConfigValue
+from pyomo.common.config import ConfigDict, ConfigValue
 
 from idaes.apps.caprese.dynamic_block import (
         DynamicBlock,
