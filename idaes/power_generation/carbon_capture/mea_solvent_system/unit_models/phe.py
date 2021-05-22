@@ -44,6 +44,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Paul Akula"
@@ -51,6 +52,7 @@ __author__ = "Paul Akula"
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
 
 @declare_process_block_class("PHE")
 class PHEData(UnitModelBlockData):
@@ -712,7 +714,7 @@ class PHEData(UnitModelBlockData):
                              doc='Heat gain by cold fluid')
 
     def initialize(blk, hotside_state_args=None, coldside_state_args=None,
-                   outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Initialisation routine for PHE unit (default solver ipopt)
 
@@ -722,9 +724,10 @@ class PHEData(UnitModelBlockData):
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None)
         Returns:
             None
         '''
@@ -732,9 +735,8 @@ class PHEData(UnitModelBlockData):
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag='unit')
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         hotside_state_args = {
             'flow_mol': value(blk.hot_inlet.flow_mol[0]),

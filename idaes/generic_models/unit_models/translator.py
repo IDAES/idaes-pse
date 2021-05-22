@@ -22,6 +22,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Andrew Lee"
@@ -193,11 +194,11 @@ see property package for documentation.}""",
 
     def initialize(
         blk,
-        state_args_in={},
-        state_args_out={},
+        state_args_in=None,
+        state_args_out=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg=None,
     ):
         """
         This method calls the initialization method of the state blocks.
@@ -206,24 +207,25 @@ see property package for documentation.}""",
             state_args_in : a dict of arguments to be passed to the inlet
                             property package (to provide an initial state for
                             initialization (see documentation of the specific
-                            property package) (default = {}).
+                            property package) (default = None).
             state_args_out : a dict of arguments to be passed to the outlet
                              property package (to provide an initial state for
                              initialization (see documentation of the specific
-                             property package) (default = {}).
+                             property package) (default = None).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
+
         # ---------------------------------------------------------------------
         # Initialize state block
         flags = blk.properties_in.initialize(

@@ -20,10 +20,7 @@ have n_outlets - 1 specified split fractions or outlet flows.
 This model is psuedo-steady-state when used in dynamic mode.
 """
 
-from pandas import DataFrame
-
-from pyomo.environ import Constraint, Set, SolverFactory, Var, value
-from pyomo.network import Port
+from pyomo.environ import SolverFactory, Var, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import (
@@ -34,7 +31,7 @@ from idaes.core import (
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
@@ -246,7 +243,6 @@ from 1 to num_outlets).}""",
             setattr(self, o + "_state", o_obj)
             self.outlet_blocks[o] = o_obj
 
-
     def add_outlet_port_objects(self):
         """
         Adds outlet Port objects if required.
@@ -262,16 +258,16 @@ from 1 to num_outlets).}""",
             self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
             self.outlet_ports[p] = getattr(self, p)
 
-
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver="ipopt"):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for splitter
 
         Keyword Arguments:
             outlvl: sets output level of initialization routine
-            optarg: solver options dictionary object (default=None)
-            solver: str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg: solver options dictionary object (default=None, use
+                    default solver options)
+            solver: str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             If hold_states is True, returns a dict containing flags for which
@@ -279,9 +275,9 @@ from 1 to num_outlets).}""",
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # sp is what to save to make sure state after init is same as the start
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
@@ -332,12 +328,12 @@ from 1 to num_outlets).}""",
         for (t, i), c in self.pressure_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for (t, i), c in self.enthalpy_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].enth_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for (t, i), c in self.flow_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

@@ -29,12 +29,12 @@ from idaes.core import (MaterialBalanceType,
 from idaes.generic_models.properties.examples.saponification_thermo import (
     SaponificationParameterBlock, SaponificationStateBlock)
 
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestParamBlock(object):
@@ -136,14 +136,15 @@ class TestStateBlock(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert model.props[1].get_material_flow_terms(p, j) == (
-                        model.props[1].flow_vol *
-                        model.props[1].conc_mol_comp[j])
+                assert str(
+                    model.props[1].get_material_flow_terms(p, j)) == str(
+                    model.props[1].flow_vol *
+                    model.props[1].conc_mol_comp[j])
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.props[1].get_enthalpy_flow_terms(p) == (
+            assert str(model.props[1].get_enthalpy_flow_terms(p)) == str(
                     model.props[1].flow_vol*model.props[1].params.dens_mol *
                     model.props[1].params.cp_mol*(
                             model.props[1].temperature -
@@ -153,13 +154,14 @@ class TestStateBlock(object):
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert model.props[1].get_material_density_terms(p, j) == (
-                        model.props[1].conc_mol_comp[j])
+                assert str(
+                    model.props[1].get_material_density_terms(p, j)) == str(
+                    model.props[1].conc_mol_comp[j])
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.props[1].get_energy_density_terms(p) == (
+            assert str(model.props[1].get_energy_density_terms(p)) == str(
                     model.props[1].params.dens_mol *
                     model.props[1].params.cp_mol*(
                             model.props[1].temperature -

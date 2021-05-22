@@ -23,7 +23,7 @@ from pyomo.common.config import In
 from pyomo.environ import Var, sqrt, SolverFactory, value, Param, units as pyunits
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
 from idaes.core import declare_process_block_class
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.core.util.scaling as iscale
 
@@ -102,10 +102,9 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
     def initialize(
         self,
-        state_args={},
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg=None,
         calculate_cf=True,
     ):
         """
@@ -114,7 +113,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         then reactivates the constraints and solves.
 
         Args:
-            state_args (dict): Initial state for property initialization
             outlvl : sets output level of initialization routine
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -135,7 +133,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                     self.outlet.pressure[t]/self.inlet.pressure[t])
                 self.deltaP[t] = value(
                     self.outlet.pressure[t] - self.inlet.pressure[t])
-
 
         # Deactivate special constraints
         self.stodola_equation.deactivate()
@@ -162,7 +159,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
-        # Free eff_isen and activate sepcial constarints
+        # Free eff_isen and activate special constarints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         if calculate_cf:
@@ -182,13 +179,15 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
         self.stodola_equation.activate()
         self.efficiency_correlation.activate()
-        slvr = SolverFactory(solver)
-        slvr.options = optarg
+
+        # Create solver
+        slvr = get_solver(solver, optarg)
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
-            "Initialization Complete (Outlet Stage): {}".format(idaeslog.condition(res))
+            "Initialization Complete (Outlet Stage): {}".format(
+                idaeslog.condition(res))
         )
 
         # reload original spec
@@ -207,4 +206,4 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                 self.control_volume.properties_in[t].flow_mol,
                 default=1,
                 warning=True)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

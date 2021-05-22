@@ -538,13 +538,13 @@ def test_get_extensions(runner):
 
 @pytest.mark.unit
 def test_print_extensions_version(runner):
-    result = runner.invoke(extensions.ver_extensions, [])
+    result = runner.invoke(extensions.get_extensions, ["--show-current-version"])
     assert result.exit_code == 0
 
 
 @pytest.mark.unit
 def test_print_extensions_version(runner):
-    result = runner.invoke(extensions.get_extensions_platforms, [])
+    result = runner.invoke(extensions.get_extensions, ["--show-platforms"])
     assert result.exit_code == 0
 
 #################

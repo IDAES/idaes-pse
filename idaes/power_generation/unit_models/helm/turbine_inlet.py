@@ -19,11 +19,10 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, Param, sqrt, value, SolverFactory, units as pyunits
+from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
-from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -125,10 +124,9 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
 
     def initialize(
         self,
-        state_args={},
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg=None,
         calculate_cf=False,
     ):
         """
@@ -139,7 +137,6 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         to initializtion.
 
         Args:
-            state_args (dict): Initial state for property initialization
             outlvl (int): Amount of output (0 to 3) 0 is lowest
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -188,11 +185,13 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                     )/Pin
                 )
 
-        slvr = SolverFactory(solver)
-        slvr.options = optarg
+        # Create solver
+        slvr = get_solver(solver, optarg)
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info("Initialization Complete: {}".format(
+            idaeslog.condition(res)))
         # reload original spec
         if calculate_cf:
             cf = {}
@@ -211,4 +210,4 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         for t, c in self.inlet_flow_constraint.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

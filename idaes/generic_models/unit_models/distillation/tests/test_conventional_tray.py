@@ -18,23 +18,22 @@ Author: Jaffer Ghouse
 import pytest
 from pyomo.environ import (ConcreteModel, TerminationCondition,
                            SolverStatus, value)
+from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-                        MomentumBalanceType)
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.distillation import Tray
 from idaes.generic_models.properties.activity_coeff_models.\
     BTX_activity_coeff_VLE import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables, \
-    fixed_variables_set, activated_constraints_set
+    number_variables, number_total_constraints, number_unused_variables
 from idaes.core.util.testing import \
     PhysicalParameterTestBlock, initialization_tester
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.mark.unit
@@ -68,6 +67,23 @@ class TestBTXIdeal():
         m.fs.unit = Tray(default={"property_package": m.fs.properties,
                                   "has_heat_transfer": True,
                                   "has_pressure_change": True})
+
+        # Fix the tray inputs (FTPz)
+        m.fs.unit.liq_in.flow_mol.fix(1)
+        m.fs.unit.liq_in.temperature.fix(369)
+        m.fs.unit.liq_in.pressure.fix(101325)
+        m.fs.unit.liq_in.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.liq_in.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.vap_in.flow_mol.fix(1)
+        m.fs.unit.vap_in.temperature.fix(372)
+        m.fs.unit.vap_in.pressure.fix(101325)
+        m.fs.unit.vap_in.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.vap_in.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.heat_duty.fix(0)
+
         return m
 
     @pytest.fixture(scope="class")
@@ -83,9 +99,23 @@ class TestBTXIdeal():
         m.fs.unit = Tray(default={"property_package": m.fs.properties,
                                   "has_heat_transfer": True,
                                   "has_pressure_change": True})
+
+        # Fix the tray inputs (FcTP)
+        m.fs.unit.liq_in.flow_mol_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.liq_in.flow_mol_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.liq_in.temperature.fix(369)
+        m.fs.unit.liq_in.pressure.fix(101325)
+
+        m.fs.unit.vap_in.flow_mol_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.vap_in.flow_mol_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.vap_in.temperature.fix(372)
+        m.fs.unit.vap_in.pressure.fix(101325)
+
+        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.heat_duty.fix(0)
+
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, btx_ftpz, btx_fctp):
         # General build
@@ -192,52 +222,25 @@ class TestBTXIdeal():
 
     @pytest.mark.unit
     def test_dof(self, btx_ftpz, btx_fctp):
-
-        # Fix the tray inputs (FTPz)
-        btx_ftpz.fs.unit.liq_in.flow_mol.fix(1)
-        btx_ftpz.fs.unit.liq_in.temperature.fix(369)
-        btx_ftpz.fs.unit.liq_in.pressure.fix(101325)
-        btx_ftpz.fs.unit.liq_in.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx_ftpz.fs.unit.liq_in.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx_ftpz.fs.unit.vap_in.flow_mol.fix(1)
-        btx_ftpz.fs.unit.vap_in.temperature.fix(372)
-        btx_ftpz.fs.unit.vap_in.pressure.fix(101325)
-        btx_ftpz.fs.unit.vap_in.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx_ftpz.fs.unit.vap_in.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx_ftpz.fs.unit.deltaP.fix(0)
-        btx_ftpz.fs.unit.heat_duty.fix(0)
-
         assert degrees_of_freedom(btx_ftpz.fs.unit) == 0
-
-        # Fix the tray inputs (FcTP)
-        btx_fctp.fs.unit.liq_in.flow_mol_comp[0, "benzene"].fix(0.5)
-        btx_fctp.fs.unit.liq_in.flow_mol_comp[0, "toluene"].fix(0.5)
-        btx_fctp.fs.unit.liq_in.temperature.fix(369)
-        btx_fctp.fs.unit.liq_in.pressure.fix(101325)
-
-        btx_fctp.fs.unit.vap_in.flow_mol_comp[0, "benzene"].fix(0.5)
-        btx_fctp.fs.unit.vap_in.flow_mol_comp[0, "toluene"].fix(0.5)
-        btx_fctp.fs.unit.vap_in.temperature.fix(372)
-        btx_fctp.fs.unit.vap_in.pressure.fix(101325)
-
-        btx_fctp.fs.unit.deltaP.fix(0)
-        btx_fctp.fs.unit.heat_duty.fix(0)
-
         assert degrees_of_freedom(btx_fctp.fs.unit) == 0
 
-    @pytest.mark.initialization
-    @pytest.mark.solver
+    @pytest.mark.component
+    def test_units_FTPz(self, btx_ftpz, btx_fctp):
+        assert_units_consistent(btx_ftpz)
+
+    @pytest.mark.component
+    def test_units_FcTP(self, btx_fctp):
+        assert_units_consistent(btx_fctp)
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
         initialization_tester(btx_fctp)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, btx_ftpz, btx_fctp):
 
         results = solver.solve(btx_ftpz)
@@ -254,10 +257,8 @@ class TestBTXIdeal():
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
 
         # liq_out port

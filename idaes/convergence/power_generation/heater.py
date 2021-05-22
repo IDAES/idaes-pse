@@ -7,22 +7,22 @@ from idaes.power_generation.unit_models.helm import HelmValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
-from idaes.core.util import copy_port_values as _set_port
-from idaes.core.util.plot import stitch_dynamic
+from idaes.core.util import copy_port_values as _set_port, get_solver
+
 
 def create_model_steady_state(f=100, p=5e5, h=5e4):
     """ Create a steady state heater model.
     """
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
-    m.fs = FlowsheetBlock(default={"dynamic":False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation":iapws95.PhaseType.MIX})
+        default={"phase_presentation": iapws95.PhaseType.MIX})
     m.fs.heater = Heater(default={
-        "has_holdup":False,
-        "has_pressure_change":True,
-        "material_balance_type":MaterialBalanceType.componentTotal,
-        "property_package":m.fs.prop_water})
+        "has_holdup": False,
+        "has_pressure_change": True,
+        "material_balance_type": MaterialBalanceType.componentTotal,
+        "property_package": m.fs.prop_water})
 
     m.fs.heater.inlet.enth_mol.fix(50000)
     m.fs.heater.inlet.pressure.fix(5e5)
@@ -32,22 +32,19 @@ def create_model_steady_state(f=100, p=5e5, h=5e4):
 
     m.fs.heater.initialize()
 
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'tol': 1e-6,
-                      'linear_solver': "ma27",
-                      'max_iter': 25}
+    solver = get_solver(options={"max_iter": 25})
     return m, solver
 
 
 def create_model_dynamic(
-    p_in=5e5,
-    p_out=101325,
-    h=5e4,
-    time_set=[0,5],
-    nfe=10,
-    dae_transform='dae.collocation',
-    dae_scheme='LAGRANGE-RADAU'
-    ):
+        p_in=5e5,
+        p_out=101325,
+        h=5e4,
+        time_set=None,
+        nfe=10,
+        dae_transform='dae.collocation',
+        dae_scheme='LAGRANGE-RADAU'
+        ):
     """ Create a test dynamic heater model and solver.  For dynamic testing
     a valve is added to the heater outlet to set up pressure driven flow.
 
@@ -57,6 +54,9 @@ def create_model_dynamic(
     Returns:
         (tuple): (ConcreteModel, Solver)
     """
+    if time_set is None:
+        time_set = [0,5]
+
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
     m.fs = FlowsheetBlock(default={"dynamic":True, "time_set":time_set})
     # Create a property parameter block
@@ -106,10 +106,7 @@ def create_model_dynamic(
     m.fs.heater.control_volume.volume.fix(2.0)
 
     # Initialize the model
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'tol': 1e-6,
-                      'linear_solver': "ma27",
-                      'max_iter': 25}
+    solver = get_solver(options={"max_iter": 25})
     for t in m.fs.time:
         m.fs.pipe.inlet.flow_mol = 250 # initial guess on flow
     # simple initialize

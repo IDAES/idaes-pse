@@ -84,6 +84,7 @@ from pyomo.environ import (SolverFactory,
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.network import Port
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 from pyomo.network import Arc
 
 from idaes.power_generation.unit_models.helm.phase_separator import \
@@ -1018,13 +1019,18 @@ discretizing length domain (default=3)"""))
             self.control_volume.energy_accumulation[0, :].fix(0)
             self.dTdt[0, :].fix(0)
 
-    def initialize(blk, state_args_feedwater={}, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver='ipopt',
-                   optarg={'tol': 1e-6}):
+    def initialize(blk, state_args_feedwater=None, state_args_water_steam=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
         Keyword Arguments:
-        state_args : a dict of arguments to be passed to the property
+        state_args_feedwater : a dict of arguments to be passed to the property
+        package(s) for the control_volume of the model to
+        provide an initial state for initialization
+        (see documentation of the specific property package)
+        (default = None).
+
+        state_args_steam : a dict of arguments to be passed to the property
         package(s) for the control_volume of the model to
         provide an initial state for initialization
         (see documentation of the specific property package)
@@ -1036,18 +1042,19 @@ discretizing length domain (default=3)"""))
                  * 2 = return solver state for each step in subroutines
                  * 3 = include solver output infomation (tee=True)
 
-        optarg : solver options dictionary object (default={'tol': 1e-6})
+        optarg : solver options dictionary object (default=None, use
+                 default solver options)
 
-        solver : str indicating whcih solver to use during
-                 initialization (default = 'ipopt')
+        solver : str indicating which solver to use during
+                 initialization (default = None, use default solver)
 
         Returns: None
         '''
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting Initialization...")
         # fix FeedWater Inlet
@@ -1156,26 +1163,26 @@ discretizing length domain (default=3)"""))
         for t, c in self.pressure_change_contraction_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP_contraction[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.pressure_change_gravity_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP_gravity[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.pressure_change_total_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.deltaP[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.connection_material_balance.items():
             sf = iscale.get_scaling_factor(1e-4, default=1)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.connection_enthalpy_balance.items():
             sf = iscale.get_scaling_factor(1e-4, default=1)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.connection_pressure_balance.items():
             sf = iscale.get_scaling_factor(1e-6, default=1)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

@@ -27,7 +27,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from pyomo.environ import SolverFactory, value
+from pyomo.environ import value
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 
 __author__ = "Boiler Subsystem Team (J. Ma, M. Zamarripa, A. Lee)"
@@ -130,42 +130,33 @@ see property package for documentation.}"""))
             return b.mixed_state[t].pressure*1e-6 == \
                 b.liq_state[t].pressure*1e-6
 
-    def initialize(blk, state_args_water_steam={},
-                   outlvl=0, solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, state_args_water_steam=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                           package(s) for the control_volume of the model to
-                           provide an initial state for initialization
+            state_args_water_steam : a dict of arguments to be passed to the
+                           property package(s) for the control_volume of the
+                           model to provide an initial state for initialization
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
         '''
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-
-        opt = SolverFactory(solver)
-        opt.options = optarg
 
         init_log.info_low("Starting initialization...")
         # fix FeedWater Inlet
         flags_fw = fix_state_vars(blk.mixed_state,
                                   state_args_water_steam)
-        blk.mixed_state.initialize()
+        blk.mixed_state.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
         # initialize outlet states
         for t in blk.flowsheet().config.time:
             blk.vap_state[t].flow_mol = value(blk.mixed_state[t].

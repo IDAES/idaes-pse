@@ -14,13 +14,9 @@
 General purpose mixer block for IDAES models
 """
 from pyomo.environ import (
-    Constraint,
     Param,
     PositiveReals,
-    Reals,
-    RangeSet,
     SolverFactory,
-    Var,
     value
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -29,24 +25,19 @@ from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,
-    MaterialBalanceType,
 )
 from idaes.core.util.config import (
     is_physical_parameter_block,
-    is_state_block,
     list_of_strings,
 )
-from idaes.core.util.exceptions import (
-    BurntToast,
-    ConfigurationError,
-    PropertyNotSupportedError,
-)
+from idaes.core.util.exceptions import ConfigurationError
+
 from idaes.core.util.math import smooth_min
-from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.generic_models.unit_models import MomentumMixingType
 from idaes.core.util import from_json, to_json, StoreSpec
 
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -397,15 +388,16 @@ between flow and pressure driven simulations.}""",
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver="ipopt"):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
-        Initialization routine for mixer (default solver ipopt)
+        Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -413,9 +405,8 @@ between flow and pressure driven simulations.}""",
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # This shouldn't require too much initializtion, just fixing inlets
         # and solving should always work.
@@ -455,16 +446,16 @@ between flow and pressure driven simulations.}""",
         super().calculate_scaling_factors()
         for t, c in self.mass_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.energy_balance.items():
             s = iscale.get_scaling_factor(self.mixed_state[t].enth_mol)
             s *= iscale.get_scaling_factor(self.mixed_state[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "minimum_pressure_constraint"):
             for t, c in self.minimum_pressure_constraint.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
         if hasattr(self, "pressure_equality_constraints"):
             for (t, i), c in self.pressure_equality_constraints.items():
                 s = iscale.get_scaling_factor(self.mixed_state[t].pressure)
-                iscale.constraint_scaling_transform(c, s)
+                iscale.constraint_scaling_transform(c, s, overwrite=False)

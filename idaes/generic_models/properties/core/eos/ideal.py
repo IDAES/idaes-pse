@@ -15,7 +15,7 @@ Methods for ideal equations of state.
 
 Currently only supports liquid and vapor phases
 """
-from pyomo.environ import log
+from pyomo.environ import Expression, log
 
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.generic_models.properties.core.generic.utility import (
@@ -51,6 +51,38 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
+    def cp_mol_phase(b, p):
+        return sum(b.get_mole_frac()[p, j]*b.cp_mol_phase_comp[p, j]
+                   for j in b.components_in_phase(p))
+
+    @staticmethod
+    def cp_mol_phase_comp(b, p, j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return get_method(b, "cp_mol_ig_comp", j)(
+                b, cobj(b, j), b.temperature)
+        elif pobj.is_liquid_phase():
+            return get_method(b, "cp_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+    @staticmethod
+    def cv_mol_phase(b, p):
+        return sum(b.get_mole_frac()[p, j]*b.cv_mol_phase_comp[p, j]
+                   for j in b.components_in_phase(p))
+
+    @staticmethod
+    def cv_mol_phase_comp(b, p, j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return EoSBase.cv_mol_ig_comp_pure(b, j)
+        elif pobj.is_liquid_phase():
+            return EoSBase.cv_mol_ls_comp_pure(b, j)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+    @staticmethod
     def dens_mass_phase(b, p):
         return b.dens_mol_phase[p]*b.mw_phase[p]
 
@@ -68,19 +100,18 @@ class Ideal(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
-    def cp_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.cp_mol_phase_comp[p, j]
+    def energy_internal_mol_phase(b, p):
+        return sum(b.get_mole_frac()[p, j] *
+                   b.energy_internal_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
-    def cp_mol_phase_comp(b, p, j):
+    def energy_internal_mol_phase_comp(b, p, j):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
-            return get_method(b, "cp_mol_ig_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return EoSBase.energy_internal_mol_ig_comp_pure(b, j)
         elif pobj.is_liquid_phase():
-            return get_method(b, "cp_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return EoSBase.energy_internal_mol_ls_comp_pure(b, j)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -133,12 +164,16 @@ class Ideal(EoSBase):
     @staticmethod
     def log_fug_phase_comp_eq(b, p, j, pp):
         pobj = b.params.get_phase(p)
+
         if pobj.is_vapor_phase():
             return log(b.get_mole_frac()[p, j]) + log(b.pressure)
         elif pobj.is_liquid_phase():
-            return (log(b.get_mole_frac()[p, j]) +
-                    log(get_method(b, "pressure_sat_comp", j)(
-                        b, cobj(b, j), b.temperature)))
+            if cobj(b, j).config.has_vapor_pressure:
+                return (log(b.get_mole_frac()[p, j]) +
+                        log(get_method(b, "pressure_sat_comp", j)(
+                            b, cobj(b, j), b.temperature)))
+            else:
+                return Expression.Skip
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -204,11 +239,15 @@ def _invalid_phase_msg(name, phase):
 
 def _fug_phase_comp(b, p, j, T):
     pobj = b.params.get_phase(p)
+
     if pobj.is_vapor_phase():
         return b.get_mole_frac()[p, j] * b.pressure
     elif pobj.is_liquid_phase():
-        return (b.get_mole_frac()[p, j] *
-                get_method(b, "pressure_sat_comp", j)(
-                    b, cobj(b, j), T))
+        if cobj(b, j).config.has_vapor_pressure:
+            return (b.get_mole_frac()[p, j] *
+                    get_method(b, "pressure_sat_comp", j)(
+                        b, cobj(b, j), T))
+        else:
+            return Expression.Skip
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))

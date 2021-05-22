@@ -19,13 +19,8 @@ from pyomo.environ import (ConcreteModel,
                            TerminationCondition,
                            SolverStatus,
                            units,
-                           value,
-                           Var,
-                           Reference)
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                           value)
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import Valve, ValveFunctionType
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -34,7 +29,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      ReactionParameterTestBlock,
                                      initialization_tester)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from pyomo.util.check_units import (assert_units_consistent,
                                     assert_units_equivalent)
 
@@ -43,8 +38,8 @@ import idaes.core.util.scaling as iscale
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
-solver.options["nlp_scaling_method"] = "user-scaling"
+solver = get_solver(options={"nlp_scaling_method": "user-scaling"})
+
 
 class GenericValve(object):
     @pytest.fixture(scope="class")
@@ -138,7 +133,7 @@ class GenericValve(object):
     @pytest.mark.component
     def test_solution(self, valve_model):
         # calculated Cv to yeild this solution
-        assert (pytest.approx(1000, abs=1e-2) ==
+        assert (pytest.approx(1000, rel=1e-3) ==
                 value(valve_model.fs.valve.outlet.flow_mol[0]))
 
 class TestLinearValve(GenericValve):

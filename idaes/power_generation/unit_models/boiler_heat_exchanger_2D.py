@@ -42,6 +42,7 @@ from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.constants import Constants as const
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Jinliang Ma, Q. M. Le, M. Zamarripa "
@@ -2323,7 +2324,7 @@ tube side flows from 1 to 0"""))
 
     def initialize(blk, shell_state_args=None, tube_state_args=None,
                    outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg=None):
         """
         HeatExchangerCrossFlow1D initialisation routine
 
@@ -2339,9 +2340,10 @@ tube side flows from 1 to 0"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -2349,17 +2351,17 @@ tube side flows from 1 to 0"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize shell block
 
-        flags_tube = blk.tube.initialize(outlvl=0,
+        flags_tube = blk.tube.initialize(outlvl=outlvl,
                                          optarg=optarg,
                                          solver=solver,
                                          state_args=tube_state_args)
-        flags_shell = blk.shell.initialize(outlvl=0,
+        flags_shell = blk.shell.initialize(outlvl=outlvl,
                                            optarg=optarg,
                                            solver=solver,
                                            state_args=shell_state_args)
@@ -2613,9 +2615,9 @@ tube side flows from 1 to 0"""))
         for i, c in self.heat_tube_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.tube_heat[i], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for i, c in self.heat_shell_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.shell_heat[i], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

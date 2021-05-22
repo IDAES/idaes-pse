@@ -17,7 +17,6 @@ import pytest
 import numpy as np
 
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -25,11 +24,9 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 
 from idaes.core.flowsheet_model import FlowsheetBlock
 
@@ -38,7 +35,7 @@ from idaes.generic_models.unit_models import Flash
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
@@ -52,7 +49,7 @@ from idaes.generic_models.properties.core.examples.CO2_H2O_Ideal_VLE import (
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 class TestParamBlock(object):
@@ -83,11 +80,15 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FTPx
 
-        assert model.params.config.state_bounds == {
-            "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
-            "temperature": (273.15, 323.15, 1000, pyunits.K),
-            "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-            "mole_frac_comp": {"H2O": (0,0.5,1),"CO2": (0,0.5,1)}}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            { "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
+              "temperature": (273.15, 323.15, 1000, pyunits.K),
+              "pressure": (5e4, 108900, 1e7, pyunits.Pa),
+              "mole_frac_comp": {"H2O": (0, 0.5, 1),"CO2": (0, 0.5, 1)} },
+             item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): SmoothVLE}

@@ -15,7 +15,6 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Expression,
                            Set,
                            SolverStatus,
@@ -24,15 +23,13 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from idaes.core import LiquidPhase, VaporPhase
 
@@ -52,7 +49,7 @@ import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 config_dict = {
     "components": {
@@ -165,11 +162,15 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FcPh
 
-        assert model.params.config.state_bounds == {
-            "flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
-            "enth_mol": (1e4, 5e4, 2e5, pyunits.J/pyunits.mol),
-            "temperature": (273.15, 300, 450, pyunits.K),
-            "pressure": (5e4, 1e5, 1e6, pyunits.Pa)}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            { "flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
+              "enth_mol": (1e4, 5e4, 2e5, pyunits.J/pyunits.mol),
+              "temperature": (273.15, 300, 450, pyunits.K),
+              "pressure": (5e4, 1e5, 1e6, pyunits.Pa) },
+            item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): SmoothVLE}

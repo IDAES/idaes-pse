@@ -31,7 +31,7 @@ from idaes.core import AqueousPhase, VaporPhase
 from idaes.core.components import *
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.eos.enrtl import ENRTL
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
@@ -47,7 +47,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock, StateIndex)
 
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 # -----------------------------------------------------------------------------
@@ -79,7 +79,7 @@ class TestApparentSpeciesBasisNoInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -203,7 +203,7 @@ class TestApparentSpeciesBasisNoInherent():
 
         assert degrees_of_freedom(m.fs) == 0
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs, tee=True)
 
         # Check for optimal solution
@@ -285,7 +285,7 @@ class TestApparentSpeciesBasisInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -450,7 +450,7 @@ class TestApparentSpeciesBasisInherent():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -553,7 +553,7 @@ class TestTrueSpeciesBasisNoInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}},
                     'Vap': {"type": VaporPhase,
@@ -708,7 +708,7 @@ class TestTrueSpeciesBasisInherent():
 
         # Specifying phases
         "phases":  {'Liq': {"type": AqueousPhase,
-                            "equation_of_state": ENRTL,
+                            "equation_of_state": DummyEoS,
                             "equation_of_state_options": {
                                 "pH_range": "basic"}}},
 
@@ -878,7 +878,7 @@ class TestTrueSpeciesBasisInherent():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -1160,7 +1160,7 @@ class TestApparentSpeciesBasisInherentIdeal():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution
@@ -1453,7 +1453,7 @@ class TestTrueSpeciesBasisInherentIdeal():
 
         m.fs.state.initialize()
 
-        solver = get_default_solver()
+        solver = get_solver()
         res = solver.solve(m.fs)
 
         # Check for optimal solution

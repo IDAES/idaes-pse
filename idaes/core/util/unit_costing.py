@@ -1171,7 +1171,8 @@ def calculate_scaling_factors(self):
         sf_a = iscale.get_scaling_factor(self.base_cost_per_unit,
                                          default=1e-4,
                                          warning=True)
-        iscale.constraint_scaling_transform(self.base_cost_per_unit_eq, sf_a)
+        iscale.constraint_scaling_transform(
+            self.base_cost_per_unit_eq, sf_a, overwrite=False)
     except AttributeError:
         pass
     # scaling purchase cost (both var/eqn exist in all costing methods)
@@ -1179,5 +1180,5 @@ def calculate_scaling_factors(self):
                                                 default=1e-4,
                                                 warning=True)
 
-    iscale.constraint_scaling_transform(self.cp_cost_eq,
-                                        s_purchase_cost)
+    iscale.constraint_scaling_transform(
+        self.cp_cost_eq, s_purchase_cost, overwrite=False)

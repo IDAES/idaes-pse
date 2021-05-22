@@ -119,9 +119,9 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, state_args={}, state_vars_fixed=False,
-                   hold_state=False, outlvl=0,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+    def initialize(blk, state_args=None, state_vars_fixed=False,
+                   hold_state=False, outlvl=idaeslog.NOTSET,
+                   solver=None, optarg=None):
         '''
         Initialization routine for property package.
 
@@ -147,9 +147,10 @@ class _StateBlock(StateBlock):
                                        about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).

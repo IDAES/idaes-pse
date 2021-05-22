@@ -18,7 +18,7 @@ import xml.dom.minidom
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
-from pyomo.core.base.plugin import ModelComponentFactory
+from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
@@ -32,12 +32,28 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
-def get_default_solver():
+def get_solver(solver=None, options=None):
     """
-    Tries to set-up the default solver for testing, and returns None if not
-    available
+    General method for getting a solver object which defaults to the standard
+    IDAES solver (defined in the IDAES configuration).
+
+    Args:
+        solver: string name for desired solver. Default=None, use default solver
+        options: dict of solver options to use, overwrites any settings
+                 provided by IDAES configuration. Default = None, use default
+                 solver options.
+
+    Returns:
+        A Pyomo solver object
     """
-    return idaes.core.solvers.SolverWrapper("default", register=False)()
+    if solver is None:
+        solver = "default"
+    solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
+
+    if options is not None:
+        solver_obj.options.update(options)
+
+    return solver_obj
 
 
 # Author: Andrew Lee
@@ -111,7 +127,7 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
-    tag_format={},
+    tag_format=None,
     tag_format_default="{:.4e}"
 ):
     """
@@ -142,6 +158,9 @@ def svg_tag(
     Returns:
         SVG String
     """
+    if tag_format is None:
+        tag_format = {}
+
     if isinstance(svg, str):  # assume this is svg content string
         pass
     elif isinstance(svg, bytes):

@@ -46,16 +46,16 @@ from idaes.power_generation.flowsheets.NGFC.NGFC_flowsheet import (
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util import model_serializer as ms
 
 solver_available = pyo.SolverFactory('ipopt').available()
-solver = get_default_solver()
+solver = get_solver()
 
 
 @pytest.fixture(scope="module")
 def m():
-    m = pyo.ConcreteModel()
+    m = pyo.ConcreteModel(name='NGFC without carbon capture')
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     build_power_island(m)
@@ -126,16 +126,20 @@ def test_ROM(m):
 
 @pytest.mark.integration
 def test_json_load(m):
-    fname = os.path.join(this_file_dir(), 'NGFC_flowsheet_init.json')
+    fname = os.path.join(os.path.join(os.path.dirname(this_file_dir()),
+                                      "NGFC"), "NGFC_flowsheet_init.json.gz")
+
     ms.from_json(m, fname=fname)
 
     assert (pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) ==
             pytest.approx(1670.093, 1e-5))
     assert (pyo.value(m.fs.reformer_recuperator.area) ==
-            pytest.approx(4512.56, 1e-5))
+            pytest.approx(4512.56, 1e-3))
     assert (pyo.value(m.fs.anode.heat_duty[0]) ==
             pytest.approx(-672918626, 1e-5))
     assert (pyo.value(m.fs.CO2_emissions) ==
             pytest.approx(291.169, 1e-5))
     assert (pyo.value(m.fs.net_power) ==
             pytest.approx(659.879, 1e-5))
+
+

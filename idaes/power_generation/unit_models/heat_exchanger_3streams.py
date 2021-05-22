@@ -28,6 +28,7 @@ from idaes.core import (ControlVolume0DBlock,
 
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -467,7 +468,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
     def initialize(blk, state_args_1=None, state_args_2=None,
                    state_args_3=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg=None):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -488,17 +489,19 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
         '''
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks
@@ -540,14 +543,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         for t, c in self.heat_duty_side_1_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_1[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_2_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_2[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_3_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_3[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

@@ -36,7 +36,7 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Reals, value,
+from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
                            TransformationFactory, Constraint,
                            TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -60,6 +60,7 @@ from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Chinedu Okoli", "Anca Ostace"
 
@@ -799,21 +800,25 @@ see reaction package for documentation.}"""))
     # =========================================================================
     # Model initialization routine
 
-    def initialize(blk, gas_phase_state_args={}, solid_phase_state_args={},
-                   outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialisation routine for MB unit (default solver ipopt).
+        Initialisation routine for MB unit.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
+            gas_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            solid_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -823,9 +828,8 @@ see reaction package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names

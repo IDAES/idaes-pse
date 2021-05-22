@@ -129,8 +129,8 @@ see property package for documentation.}""",
         self.add_port(name="inlet", block=self.properties, doc="Inlet Port")
 
     def initialize(
-        blk, state_args={}, outlvl=idaeslog.NOTSET,
-        solver="ipopt", optarg={"tol": 1e-6}
+        blk, state_args=None, outlvl=idaeslog.NOTSET,
+        solver=None, optarg=None
     ):
         """
         This method calls the initialization method of the state block.
@@ -139,11 +139,12 @@ see property package for documentation.}""",
             state_args : a dict of arguments to be passed to the property
                            package(s) to provide an initial state for
                            initialization (see documentation of the specific
-                           property package) (default = {}).
+                           property package) (default = None).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None,
+                     use default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -155,7 +156,7 @@ see property package for documentation.}""",
             outlvl=outlvl,
             optarg=optarg,
             solver=solver,
-            **state_args
+            state_args=state_args
         )
         init_log.info("Initialization Complete.")
 

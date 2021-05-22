@@ -33,7 +33,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
                                               number_unused_variables)
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 from pyomo.environ import (ConcreteModel,
                            Block,
@@ -45,7 +45,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------

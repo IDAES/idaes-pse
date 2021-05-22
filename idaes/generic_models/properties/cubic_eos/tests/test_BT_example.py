@@ -19,15 +19,13 @@ from idaes.generic_models.properties.cubic_eos import BT_PR
 
 from pyomo.environ import (ConcreteModel,
                            Objective,
-                           SolverFactory,
                            TerminationCondition,
                            value)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.generic_models.properties.tests.test_harness import \
     PropertyTestHarness
-from idaes.core.util import get_default_solver
+from idaes.core.util import get_solver
 
 
 # Set module level pyest marker
@@ -37,7 +35,7 @@ prop_available = cubic_roots_available()
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -113,12 +111,11 @@ class TestBTExample(object):
             m.fs.state.temperature.fix(300)
             m.fs.state.pressure.fix(10**(0.5*logP))
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             m.fs.state.temperature.unfix()
             m.fs.obj.activate()
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m, tee=True)
 
             assert results.solver.termination_condition == \
@@ -144,9 +141,8 @@ class TestBTExample(object):
             m.fs.state.temperature.fix(T)
             m.fs.state.pressure.fix(1e5)
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
-            solver = SolverFactory('ipopt')
             results = solver.solve(m)
 
             assert results.solver.termination_condition == \
@@ -154,7 +150,7 @@ class TestBTExample(object):
 
             while m.fs.state.pressure.value <= 1e6:
                 m.fs.state.pressure.value = m.fs.state.pressure.value + 1e5
-                solver = SolverFactory('ipopt')
+
                 results = solver.solve(m)
                 assert results.solver.termination_condition == \
                     TerminationCondition.optimal
@@ -182,9 +178,8 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
-        solver = SolverFactory('ipopt')
         solver.solve(m)
 
         assert pytest.approx(value(m.fs.state._teq), abs=1e-1) == 365
@@ -249,9 +244,8 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
-        solver = SolverFactory('ipopt')
         solver.solve(m)
 
         assert pytest.approx(value(m.fs.state._teq), 1e-5) == 431.47
@@ -316,9 +310,8 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
-        solver = SolverFactory('ipopt')
         solver.solve(m)
 
         assert pytest.approx(value(m.fs.state._teq), 1e-5) == 371.4
@@ -383,9 +376,8 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
-        solver = SolverFactory('ipopt')
         solver.solve(m)
 
         assert pytest.approx(value(m.fs.state._teq), 1e-5) == 436.93
@@ -450,9 +442,8 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
-        solver = SolverFactory('ipopt')
         solver.solve(m)
 
         assert pytest.approx(value(m.fs.state._teq), 1e-5) == 368
@@ -517,9 +508,8 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
-        solver = SolverFactory('ipopt')
         solver.solve(m)
 
         assert pytest.approx(value(m.fs.state._teq), 1e-5) == 376
