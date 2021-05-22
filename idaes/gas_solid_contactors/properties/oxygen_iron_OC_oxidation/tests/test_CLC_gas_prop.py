@@ -26,14 +26,14 @@ from idaes.core import FlowsheetBlock
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util.testing import initialization_tester
-from idaes.core.util import get_solver
+from idaes.core.util.testing import (get_default_solver,
+                                     initialization_tester)
 
-from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.gas_solid_contactors.properties.oxygen_iron_OC_oxidation. \
     gas_phase_thermo import GasPhaseParameterBlock
 
 # Get default solver for testing
-solver = get_solver()
+solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -51,9 +51,10 @@ def gas_prop():
     m.fs.unit.flow_mol.fix(1)
     m.fs.unit.temperature.fix(450)
     m.fs.unit.pressure.fix(1.60)
-    m.fs.unit.mole_frac_comp["CO2"].fix(0.4772)
-    m.fs.unit.mole_frac_comp["H2O"].fix(0.0646)
-    m.fs.unit.mole_frac_comp["CH4"].fix(0.4582)
+    m.fs.unit.mole_frac_comp["CO2"].fix(0.0004)
+    m.fs.unit.mole_frac_comp["H2O"].fix(0.0093)
+    m.fs.unit.mole_frac_comp["O2"].fix(0.2095)
+    m.fs.unit.mole_frac_comp["N2"].fix(0.7808)
 
     return m
 

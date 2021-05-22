@@ -11,11 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Property package for the reaction of CH4 with an iron-based OC.
-Overall reducer reactions for Methane combustion:
-(1) CH4 + 12Fe2O3 => 8Fe3O4 + CO2 + 2H2O
+Reaction property package for the oxidation of an iron-based OC.
+Overall reactions:
+(1) O2 + 4Fe3O4 => 6Fe2O3
 
-Parameters and equations written in this model were primarily derived from:
+Equations written in this model were primarily derived from:
 A. Abad, J. Adánez, F. García-Labiano, L.F. de Diego, P. Gayán, J. Celaya,
 Mapping of the range of operational conditions for cu-, Fe-, and Ni-based
 oxygen carriers in chemical-looping combustion,
@@ -43,6 +43,7 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import get_solver
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -52,7 +53,6 @@ from idaes.core.util.config import (is_state_block,
                                     is_physical_parameter_block,
                                     is_reaction_parameter_block)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -96,6 +96,22 @@ class ReactionParameterData(ReactionParameterBlock):
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 
+        # Reaction Stoichiometry
+        self.rate_reaction_stoichiometry = {("R1", "Vap", "O2"): -1,
+                                            ("R1", "Vap", "N2"): 0,
+                                            ("R1", "Vap", "CO2"): 0,
+                                            ("R1", "Vap", "H2O"): 0,
+                                            ("R1", "Sol", "Fe2O3"): 6,
+                                            ("R1", "Sol", "Fe3O4"): -4,
+                                            ("R1", "Sol", "Al2O3"): 0}
+
+        # Standard Heat of Reaction - kJ/mol_rxn
+        dh_rxn_dict = {"R1": -469.4432}
+        self.dh_rxn = Param(self.rate_reaction_idx,
+                            initialize=dh_rxn_dict,
+                            doc="Heat of reaction [kJ/mol]",
+                            units=pyunits.kJ/pyunits.mol)
+
         # Smoothing factor
         self.eps = Param(mutable=True,
                          default=1e-8,
@@ -105,21 +121,6 @@ class ReactionParameterData(ReactionParameterBlock):
                                        default=1,
                                        doc='Scale Factor for reaction eqn.'
                                        'Used to help initialization routine')
-
-        # Reaction Stoichiometry
-        self.rate_reaction_stoichiometry = {("R1", "Vap", "CH4"): -1,
-                                            ("R1", "Vap", "CO2"): 1,
-                                            ("R1", "Vap", "H2O"): 2,
-                                            ("R1", "Sol", "Fe2O3"): -12,
-                                            ("R1", "Sol", "Fe3O4"): 8,
-                                            ("R1", "Sol", "Al2O3"): 0}
-
-        # Standard Heat of Reaction - kJ/mol_rxn
-        dh_rxn_dict = {"R1": 136.5843}
-        self.dh_rxn = Param(self.rate_reaction_idx,
-                            initialize=dh_rxn_dict,
-                            doc="Heat of reaction [kJ/mol]",
-                            units=pyunits.kJ/pyunits.mol)
 
     # -------------------------------------------------------------------------
         """ Reaction properties that can be estimated"""
@@ -134,7 +135,7 @@ class ReactionParameterData(ReactionParameterBlock):
 
         # Molar density OC particle
         self.dens_mol_sol = Var(domain=Reals,
-                                initialize=32811,
+                                initialize=22472,
                                 doc='Molar density of OC particle [mol/m^3]',
                                 units=pyunits.mol/pyunits.m**3)
         self.dens_mol_sol.fix()
@@ -149,7 +150,7 @@ class ReactionParameterData(ReactionParameterBlock):
         # Activation Energy
         self.energy_activation = Var(self.rate_reaction_idx,
                                      domain=Reals,
-                                     initialize=4.9e1,
+                                     initialize=1.4e1,
                                      doc='Activation energy [kJ/mol]',
                                      units=pyunits.kJ/pyunits.mol)
         self.energy_activation.fix()
@@ -157,14 +158,14 @@ class ReactionParameterData(ReactionParameterBlock):
         # Reaction order
         self.rxn_order = Var(self.rate_reaction_idx,
                              domain=Reals,
-                             initialize=1.3,
+                             initialize=1.0,
                              doc='Reaction order in gas species [-]')
         self.rxn_order.fix()
 
         # Pre-exponential factor
         self.k0_rxn = Var(self.rate_reaction_idx,
                           domain=Reals,
-                          initialize=8e-4,
+                          initialize=3.1e-4,
                           doc='Pre-exponential factor'
                           '[mol^(1-N_reaction)m^(3*N_reaction -2)/s]')
         self.k0_rxn.fix()
@@ -193,16 +194,22 @@ class _ReactionBlock(ReactionBlockBase):
     whole, rather than individual elements of indexed Reaction Blocks.
     """
     def initialize(blk, outlvl=idaeslog.NOTSET,
-                   optarg=None, solver=None):
+                   optarg={'tol': 1e-8}, solver='ipopt'):
         '''
         Initialisation routine for reaction package.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None, use
-                     default solver options)
-            solver : str indicating which solver to use during
-                     initialization (default = None, use default solver)
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating whcih solver to use during
+                     initialization (default = "ipopt")
         Returns:
             None
         '''
@@ -399,15 +406,15 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def OC_conv_eqn(b):
             return 1e6 * b.OC_conv * \
-                   (b.solid_state_ref.mass_frac_comp['Fe3O4'] +
-                    (b.solid_state_ref._params.mw_comp['Fe3O4'] /
-                        b.solid_state_ref._params.mw_comp['Fe2O3']) *
+                   (b.solid_state_ref.mass_frac_comp['Fe2O3'] +
+                    (b.solid_state_ref._params.mw_comp['Fe2O3'] /
+                        b.solid_state_ref._params.mw_comp['Fe3O4']) *
                     (b._params.rate_reaction_stoichiometry
-                       ['R1', 'Sol', 'Fe3O4']
+                       ['R1', 'Sol', 'Fe2O3']
                        / -b._params.rate_reaction_stoichiometry
-                       ['R1', 'Sol', 'Fe2O3']) *
-                    b.solid_state_ref.mass_frac_comp['Fe2O3']) == \
-                   1e6 * b.solid_state_ref.mass_frac_comp['Fe3O4']
+                       ['R1', 'Sol', 'Fe3O4']) *
+                    b.solid_state_ref.mass_frac_comp['Fe3O4']) == \
+                   1e6 * b.solid_state_ref.mass_frac_comp['Fe2O3']
         try:
             # Try to build constraint
             self.OC_conv_eqn = Constraint(rule=OC_conv_eqn)
@@ -442,20 +449,20 @@ class ReactionBlockData(ReactionBlockDataBase):
 
         def rate_rule(b, r):
             return b.reaction_rate[r]*1e4 == b._params._scale_factor_rxn*1e4*(
-                b.solid_state_ref.mass_frac_comp['Fe2O3'] *
+                b.solid_state_ref.mass_frac_comp['Fe3O4'] *
                 (1 - b.solid_state_ref.particle_porosity) *
                 b.solid_state_ref.dens_mass_skeletal *
-                (b._params.a_vol /
-                 (b.solid_state_ref._params.mw_comp['Fe2O3'])) *
+                (b._params.a_vol/(
+                    b.solid_state_ref._params.mw_comp['Fe3O4'])) *
                 3 *
-                -b._params.rate_reaction_stoichiometry['R1', 'Sol', 'Fe2O3'] *
+                -b._params.rate_reaction_stoichiometry['R1', 'Sol', 'Fe3O4'] *
                 b.k_rxn[r] *
-                (((b.gas_state_ref.dens_mol_comp['CH4']**2 +
+                (((b.gas_state_ref.dens_mol_comp['O2']**2 +
                   b._params.eps**2)**0.5) **
                  b._params.rxn_order[r]) *
                 b.OC_conv_temp/(b._params.dens_mol_sol *
                                 b._params.grain_radius) /
-                (-b._params.rate_reaction_stoichiometry['R1', 'Sol', 'Fe2O3']))
+                (-b._params.rate_reaction_stoichiometry['R1', 'Sol', 'Fe3O4']))
         try:
             # Try to build constraint
             self.gen_rate_expression = Constraint(
