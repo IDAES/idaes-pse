@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import Component
 
@@ -79,11 +80,15 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FTPx
 
-        assert model.params.config.state_bounds == {
-            "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
-            "temperature": (273.15, 323.15, 1000, pyunits.K),
-            "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-            "mole_frac_comp": {"H2O": (0, 0.5, 1),"CO2": (0, 0.5, 1)}}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            { "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
+              "temperature": (273.15, 323.15, 1000, pyunits.K),
+              "pressure": (5e4, 108900, 1e7, pyunits.Pa),
+              "mole_frac_comp": {"H2O": (0, 0.5, 1),"CO2": (0, 0.5, 1)} },
+             item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): SmoothVLE}

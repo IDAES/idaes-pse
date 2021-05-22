@@ -1411,7 +1411,7 @@ def main():
     solver = pyo.SolverFactory("ipopt")
     solver.options = {'bound_push': 1e-16}
 
-    if os.path.exists('NGFC_flowsheet_init.json'):
+    if os.path.exists('NGFC_flowsheet_init.json.gz'):
         build_power_island(m)
         build_reformer(m)
         connect_reformer_to_power_island(m)
@@ -1419,7 +1419,7 @@ def main():
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
         scale_flowsheet(m)
-        ms.from_json(m, fname='NGFC_flowsheet_init.json')
+        ms.from_json(m, fname='NGFC_flowsheet_init.json.gz')
 
     else:
         build_power_island(m)
@@ -1434,7 +1434,7 @@ def main():
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
         solver.solve(m, tee=True)
-        ms.to_json(m, fname='NGFC_flowsheet_init.json')
+        ms.to_json(m, fname='NGFC_flowsheet_init.json.gz')
 
     # uncomment to report results
     # make_stream_dict(m)
