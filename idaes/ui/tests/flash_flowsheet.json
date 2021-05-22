@@ -375,7 +375,7 @@
             "padding":10
          },
          "connector":{
-            "name":"normal",
+            "name": "jumpover",
             "attrs":{
                "line":{
                   "stroke":"#5c9adb"
@@ -429,7 +429,7 @@
             "padding":10
          },
          "connector":{
-            "name":"normal",
+            "name": "jumpover",
             "attrs":{
                "line":{
                   "stroke":"#5c9adb"
@@ -483,7 +483,7 @@
             "padding":10
          },
          "connector":{
-            "name":"normal",
+            "name": "jumpover",
             "attrs":{
                "line":{
                   "stroke":"#5c9adb"

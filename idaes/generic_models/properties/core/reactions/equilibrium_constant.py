@@ -176,5 +176,5 @@ class gibbs_energy():
         R = pyunits.convert(c.gas_constant, to_units=units["gas_constant"])
 
         keq_val = value(exp(-rblock.dh_rxn_ref/(R*rblock.T_eq_ref) +
-                            rblock.ds_rxn_ref/R))
+                            rblock.ds_rxn_ref/R) * rblock._keq_units)
         return 1/keq_val

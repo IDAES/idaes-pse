@@ -644,7 +644,7 @@ see property package for documentation.}"""))
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, hold_state_liq=False,
-                   hold_state_vap=False, solver=None, optarg={},
+                   hold_state_vap=False, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         # TODO:

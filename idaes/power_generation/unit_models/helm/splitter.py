@@ -243,7 +243,6 @@ from 1 to num_outlets).}""",
             setattr(self, o + "_state", o_obj)
             self.outlet_blocks[o] = o_obj
 
-
     def add_outlet_port_objects(self):
         """
         Adds outlet Port objects if required.
@@ -259,15 +258,15 @@ from 1 to num_outlets).}""",
             self.add_port(name=p, block=self.outlet_blocks[p], doc="Outlet")
             self.outlet_ports[p] = getattr(self, p)
 
-
-    def initialize(self, outlvl=idaeslog.NOTSET, optarg={}, solver=None):
+    def initialize(self, outlvl=idaeslog.NOTSET, optarg=None, solver=None):
         """
         Initialization routine for splitter
 
         Keyword Arguments:
             outlvl: sets output level of initialization routine
-            optarg: solver options dictionary object (default={})
-            solver: str indicating whcih solver to use during
+            optarg: solver options dictionary object (default=None, use
+                    default solver options)
+            solver: str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -329,12 +328,12 @@ from 1 to num_outlets).}""",
         for (t, i), c in self.pressure_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for (t, i), c in self.enthalpy_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].enth_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for (t, i), c in self.flow_eqn.items():
             o_block = getattr(self, "{}_state".format(i))
             s = iscale.get_scaling_factor(o_block[t].flow_mol)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

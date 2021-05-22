@@ -25,6 +25,7 @@ from pyomo.environ import (Block,
                            Var,
                            TransformationFactory)
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.common.collections import ComponentSet
 
 from idaes.core.util.model_statistics import *
 
@@ -254,41 +255,47 @@ def test_variables_near_bounds_set(m):
     tset = variables_near_bounds_set(m)
     assert len(tset) == 6
     for i in tset:
-        assert i in [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
-                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        assert i in ComponentSet(
+            [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
+             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
     m.b2["a"].v1.value = 1.001
     tset = variables_near_bounds_set(m)
     assert len(tset) == 5
     for i in tset:
-        assert i in [m.b2["b"].v1, m.b2["a"].v2["a"],
-                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        assert i in ComponentSet(
+            [m.b2["b"].v1, m.b2["a"].v2["a"],
+             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
     tset = variables_near_bounds_set(m, tol=1e-3)
     assert len(tset) == 6
     for i in tset:
-        assert i in [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
-                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        assert i in ComponentSet(
+            [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
+             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
     m.b2["a"].v1.setlb(None)
     tset = variables_near_bounds_set(m)
     assert len(tset) == 5
     for i in tset:
-        assert i in [m.b2["b"].v1, m.b2["a"].v2["a"],
-                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        assert i in ComponentSet(
+            [m.b2["b"].v1, m.b2["a"].v2["a"],
+             m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
     m.b2["a"].v2["a"].setub(None)
     tset = variables_near_bounds_set(m)
     assert len(tset) == 4
     for i in tset:
-        assert i in [m.b2["b"].v1, m.b2["a"].v2["b"],
-                     m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+        assert i in ComponentSet(
+            [m.b2["b"].v1, m.b2["a"].v2["b"],
+             m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
     m.b2["a"].v2["b"].value = None
     tset = variables_near_bounds_set(m)
     assert len(tset) == 3
     for i in tset:
-        assert i in [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["b"]]
+        assert i in ComponentSet(
+            [m.b2["b"].v1, m.b2["b"].v2["a"], m.b2["b"].v2["b"]])
 
 
 @pytest.mark.unit

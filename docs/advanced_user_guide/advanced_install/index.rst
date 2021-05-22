@@ -93,26 +93,16 @@ Now that conda and pip are installed, and you are in the "idaes" conda environme
 
 .. code-block:: sh
 
-    pip install .
+    pip install -r requirements-dev.txt
     idaes get-extensions
 
 .. warning::
     The IDAES binary extensions are not yet supported on Mac/OSX
 
 .. note::
-   There are a few options for installing the requirements.
-
-    1) ``pip install .`` - basic install using what is in setup.py
-
-    2) ``pip install .[dev]`` - basic install as above and also installs the Sphinx doc tools for building the documentation locally
-
-    3) ``pip install -r requirements.txt`` - same as # 1 but installs our "development" Pyomo and PyUtilib
-
-    4) ``pip install -r requirements-dev.txt`` -  same as # 3 with the Sphinx doc tools
-
-    Also note that these pip installs would override any package within the conda environment, 
-    so if you would like a specific package (e.g. git clone Pyomo), you should look at the 
-    requirements files and only install the packages you need.
+    This ``pip install`` command would override any package within the conda environment, 
+    so if you would like to use a specific version of a package (e.g. a local clone of the Pyomo git repository), you should look at the 
+    ``requirements-dev.txt`` file and use it as a reference to either install the individual packages manually, or create a separate requirements file customized to your development use case.
 
 You can test that everything is installed properly by running the tests with
 Pytest_:
