@@ -357,36 +357,25 @@ class ParameterSweeper(object):
             raise StopIteration
 
         else:
-            for name, var in states.items():
-                if var.is_indexed():
-                    for idx, obj in var.items():
-                        val = state_var_values[name][idx][i]
-                        obj.set_value(val)
-                else:
-                    val = state_var_values[name][i]
-                    var.set_value(val)
+            for name, values in state_var_values.items():
+                var = block.find_component(name)
+                var.set_value(state_var_values[name][i])
 
             target = ComponentMap()
             for name, values in target_values.items():
                 var = block.find_component(name)
-                if var.is_indexed():
-                    for idx, data in var.items():
-                        target[data] = target_values[name][idx][i]
-                else:
-                    target[var] = target_values[name][i]
+                target[var] = target_values[name][i]
 
             return block, target
 
     def __enter__(self):
         # Store initial values of state vars
+        block = self.state_block
+
         initial_state_values = {}
-        for name, var in self.states.items():
-            if var.is_indexed():
-                initial_state_values[name] = {
-                        idx: data.value for idx, data in var.items()
-                        }
-            else:
-                initial_state_values[name] = var.value
+        for name in self.state_values:
+            var = block.find_component(name)
+            initial_state_values[name] = var.value
         self.initial_state_values = initial_state_values
 
         return self
@@ -394,13 +383,11 @@ class ParameterSweeper(object):
     def __exit__(self, ex_type, ex_val, ex_bt):
         # Re-load initial values into state vars
         states = self.states
+        block = self.state_block
         values = self.initial_state_values
-        for name, var in states.items():
-            if var.is_indexed():
-                for idx, data in var.items():
-                    data.set_value(values[name][idx])
-            else:
-                var.set_value(values[name])
+        for name, val in self.initial_state_values.items():
+            var = block.find_component(name)
+            var.set_value(val)
 
 
 class TestProperties(TestCase):
@@ -432,12 +419,10 @@ class TestProperties(TestCase):
                 "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scenario,
                 "temperature": [300.0*pyunits.K]*n_scenario,
                 "pressure": [1.0*pyunits.bar]*n_scenario,
-                "mole_frac_comp": {
-                    "O2":  [1.0, 0.5, 0.25, 0.0, 0.0, 0.0, 0.0],
-                    "N2":  [0.0, 0.5, 0.25, 1.0, 0.0, 0.0, 0.0],
-                    "H2O": [0.0, 0.0, 0.25, 0.0, 1.0, 0.0, 0.5],
-                    "CO2": [0.0, 0.0, 0.25, 0.0, 0.0, 1.0, 0.5],
-                    },
+                "mole_frac_comp[O2]":  [1.0, 0.5, 0.25, 0.0, 0.0, 0.0, 0.0],
+                "mole_frac_comp[N2]":  [0.0, 0.5, 0.25, 1.0, 0.0, 0.0, 0.0],
+                "mole_frac_comp[H2O]": [0.0, 0.0, 0.25, 0.0, 1.0, 0.0, 0.5],
+                "mole_frac_comp[CO2]": [0.0, 0.0, 0.25, 0.0, 0.0, 1.0, 0.5],
                 }
         target_values = {
                 "mw": [
@@ -453,6 +438,7 @@ class TestProperties(TestCase):
 
         # Construct mw and all prerequisites
         m.fs.state.mw
+
         sweeper = ParameterSweeper(
                 m.fs.state,
                 state_var_values,
