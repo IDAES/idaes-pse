@@ -368,11 +368,10 @@ class ParameterSweeper(object):
 
             target = ComponentMap()
             for name, values in target_values.items():
-                var = getattr(block, name)
+                var = block.find_component(name)
                 if var.is_indexed():
-                    target[var] = {
-                            idx: target_values[name][idx][i] for idx in var
-                            }
+                    for idx, data in var.items():
+                        target[data] = target_values[name][idx][i]
                 else:
                     target[var] = target_values[name][i]
 
@@ -464,13 +463,8 @@ class TestProperties(TestCase):
             for block, target in scenarios:
                 _solve_strongly_connected_components(block)
                 for var, val in target.items():
-                    if var.is_indexed():
-                        for idx, data in var.items():
-                            val = value(pyunits.convert(val, var.get_units()))
-                            assert data.value == pytest.approx(val, abs=1e-8)
-                    else:
-                        val = value(pyunits.convert(val, var.get_units()))
-                        assert var.value == pytest.approx(val, abs=1e-8)
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(val, abs=1e-8)
 
 
 if __name__ == "__main__":
