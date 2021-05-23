@@ -512,6 +512,119 @@ class TestProperties(TestCase):
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(val, abs=1e-3)
 
+    def test_dens_mol_comp(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 5
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [1200.0*pyunits.K]*n_scen,
+                "pressure": [1.0*pyunits.bar]*n_scen,
+                "mole_frac_comp[O2]":  [1.0, 0.0, 0.0, 0.0, 0.25],
+                "mole_frac_comp[N2]":  [0.0, 1.0, 0.0, 0.0, 0.25],
+                "mole_frac_comp[H2O]": [0.0, 0.0, 1.0, 0.0, 0.25],
+                "mole_frac_comp[CO2]": [0.0, 0.0, 0.0, 1.0, 0.25],
+                }
+
+        target_values = {
+                "dens_mol": [10.023*pyunits.mol/pyunits.m**3]*n_scen,
+                "dens_mol_comp[O2]": [
+                    10.023*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    ],
+                "dens_mol_comp[N2]": [
+                    0.0*pyunits.mol/pyunits.m**3,
+                    10.023*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    ],
+                "dens_mol_comp[H2O]": [
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    10.023*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    ],
+                "dens_mol_comp[CO2]": [
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    0.0*pyunits.mol/pyunits.m**3,
+                    10.023*pyunits.mol/pyunits.m**3,
+                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    ],
+                }
+
+        # Construct dens_mol_comp and all prerequisites
+        state.dens_mol_comp
+
+        with ParamSweeper(state, state_values, target_values, n_scen)\
+                as subsystems:
+            for block, target in subsystems:
+                _solve_strongly_connected_components(block)
+                assert number_large_residuals(block, tol=1e-8) == 0
+                for var, val in target.items():
+                    #val = value(pyunits.convert(val, var.get_units()))
+                    # ^ Problem converting units when value is zero
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+    def test_visc_d(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 8
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    300.0*pyunits.K,
+                    600.0*pyunits.K,
+                    900.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    ],
+                "pressure": [1.0*pyunits.bar]*n_scen,
+                "mole_frac_comp[O2]":  [
+                    1.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[N2]":  [
+                    0.0, 1.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[H2O]": [
+                    0.0, 0.0, 1.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[CO2]": [
+                    0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25, 0.25],
+                }
+
+        target_values = {"visc_d": [
+            # These values were copied after a solve.
+            # TODO: Cross-reference with another source.
+            5.534440949133228e-05*pyunits.Pa*pyunits.s,
+            4.67667824296429e-05*pyunits.Pa*pyunits.s,
+            4.6232771210527155e-05*pyunits.Pa*pyunits.s,
+            4.512867970060493e-05*pyunits.Pa*pyunits.s,
+            1.6181534595116313e-05*pyunits.Pa*pyunits.s,
+            2.866222939903063e-05*pyunits.Pa*pyunits.s,
+            3.909320395131273e-05*pyunits.Pa*pyunits.s,
+            4.838841106600266e-05*pyunits.Pa*pyunits.s,
+            ]}
+
+        # Construct visc_d and all prerequisites
+        state.visc_d
+
+        with ParamSweeper(state, state_values, target_values, n_scen)\
+                as subsystems:
+            for block, target in subsystems:
+                _solve_strongly_connected_components(block)
+                assert number_large_residuals(block, tol=1e-8) == 0
+                for var, val in target.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
 
 if __name__ == "__main__":
     test_state_vars()
@@ -521,3 +634,5 @@ if __name__ == "__main__":
     test = TestProperties()
     test.test_mw()
     test.test_dens_mol()
+    test.test_dens_mol_comp()
+    test.test_visc_d()
