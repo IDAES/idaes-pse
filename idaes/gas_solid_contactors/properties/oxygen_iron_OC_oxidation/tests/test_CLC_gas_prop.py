@@ -34,7 +34,11 @@ from pyomo.common.unittest import TestCase
 
 from idaes.core import FlowsheetBlock
 
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom,
+        number_large_residuals,
+        large_residuals_set,
+        )
 
 from idaes.core.util.testing import (get_default_solver,
                                      initialization_tester)
@@ -319,7 +323,7 @@ def _solve_strongly_connected_components(block):
             _temp.other_vars[:].unfix()
 
 
-class ParameterSweeper(object):
+class ParamSweeper(object):
 
     def __init__(self, state_block, state_values, target_values, n_scenario):
         self.state_block = state_block
@@ -411,11 +415,12 @@ class TestProperties(TestCase):
 
     def test_mw(self):
         m = self._make_model()
+        state = m.fs.state
 
         # Define a somewhat arbitrary set of values we'd like to use to
         # test molecular weight.
         n_scenario = 7
-        state_var_values = {
+        state_values = {
                 "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scenario,
                 "temperature": [300.0*pyunits.K]*n_scenario,
                 "pressure": [1.0*pyunits.bar]*n_scenario,
@@ -437,20 +442,75 @@ class TestProperties(TestCase):
                 }
 
         # Construct mw and all prerequisites
-        m.fs.state.mw
+        state.mw
 
-        sweeper = ParameterSweeper(
-                m.fs.state,
-                state_var_values,
-                target_values,
-                n_scenario,
-                )
-        with sweeper as scenarios:
-            for block, target in scenarios:
+        with ParamSweeper(state, state_values, target_values, n_scenario)\
+                as subsystems:
+            for block, target in subsystems:
                 _solve_strongly_connected_components(block)
+                assert number_large_residuals(block, tol=1e-8) == 0
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(val, abs=1e-8)
+
+    def test_dens_mol(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 8
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [
+                    200.0*pyunits.K,
+                    300.0*pyunits.K,
+                    600.0*pyunits.K,
+                    900.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    ],
+                "pressure": [
+                    1.0*pyunits.bar,
+                    1.0*pyunits.bar,
+                    1.0*pyunits.bar,
+                    1.0*pyunits.bar,
+                    1.0*pyunits.bar,
+                    0.5*pyunits.bar,
+                    1.5*pyunits.bar,
+                    2.0*pyunits.bar,
+                    ],
+                "mole_frac_comp[O2]":  [0.25]*n_scen,
+                "mole_frac_comp[N2]":  [0.25]*n_scen,
+                "mole_frac_comp[H2O]": [0.25]*n_scen,
+                "mole_frac_comp[CO2]": [0.25]*n_scen,
+                }
+
+        target_values = {
+                "dens_mol": [
+                    # Calculated by P*1e5/(T*8.314462618)
+                    60.136*pyunits.mol/pyunits.m**3,
+                    40.091*pyunits.mol/pyunits.m**3,
+                    20.045*pyunits.mol/pyunits.m**3,
+                    13.364*pyunits.mol/pyunits.m**3,
+                    10.023*pyunits.mol/pyunits.m**3,
+                    5.011*pyunits.mol/pyunits.m**3,
+                    15.034*pyunits.mol/pyunits.m**3,
+                    20.045*pyunits.mol/pyunits.m**3,
+                    ]
+                }
+
+        # Construct dens_mol and all prerequisites
+        state.dens_mol
+
+        with ParamSweeper(state, state_values, target_values, n_scen)\
+                as subsystems:
+            for block, target in subsystems:
+                _solve_strongly_connected_components(block)
+                assert number_large_residuals(block, tol=1e-8) == 0
+                for var, val in target.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(val, abs=1e-3)
 
 
 if __name__ == "__main__":
@@ -460,3 +520,4 @@ if __name__ == "__main__":
     test_property_construction_unordered()
     test = TestProperties()
     test.test_mw()
+    test.test_dens_mol()
