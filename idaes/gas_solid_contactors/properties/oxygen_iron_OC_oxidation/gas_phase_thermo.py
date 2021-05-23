@@ -509,8 +509,12 @@ class GasPhaseStateBlockData(StateBlockData):
                             units=pyunits.mol/pyunits.m**3)
 
         def ideal_gas(b):
-            return (b.dens_mol*b._params.gas_const*b.temperature*1e-2 ==
-                    b.pressure)
+            return (
+                    b.dens_mol*
+                    b._params.gas_const*(1e3*pyunits.J/pyunits.kJ)
+                    *b.temperature ==
+                    b.pressure*(1e5*pyunits.Pa/pyunits.bar)
+                    )
         try:
             # Try to build constraint
             self.ideal_gas = Constraint(rule=ideal_gas)
