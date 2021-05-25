@@ -203,6 +203,11 @@ class TestStateBlock(object):
 
         model.props[1].calculate_scaling_factors()
 
+        # Fix state
+        model.props[1].flow_mol_comp.fix(0.5)
+        model.props[1].enth_mol.fix(47297)
+        model.props[1].pressure.fix(101325)
+
         return model
 
     @pytest.mark.unit
@@ -211,17 +216,17 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].flow_mol, Expression)
         assert isinstance(model.props[1].flow_mol_comp, Var)
         for j in model.params.component_list:
-            assert value(model.props[1].flow_mol_comp[j]) == 100
+            assert value(model.props[1].flow_mol_comp[j]) == 0.5
             assert model.props[1].flow_mol_comp[j].ub == 1000
             assert model.props[1].flow_mol_comp[j].lb == 0
 
         assert isinstance(model.props[1].pressure, Var)
-        assert value(model.props[1].pressure) == 1e5
+        assert value(model.props[1].pressure) == 101325
         assert model.props[1].pressure.ub == 1e6
         assert model.props[1].pressure.lb == 5e4
 
         assert isinstance(model.props[1].enth_mol, Var)
-        assert value(model.props[1].enth_mol) == 5e4
+        assert value(model.props[1].enth_mol) == 47297
         assert model.props[1].enth_mol.ub == 2e5
         assert model.props[1].enth_mol.lb == 1e4
 
@@ -324,14 +329,9 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_dof(self, model):
-        # Fix state
-        model.props[1].flow_mol_comp.fix(0.5)
-        model.props[1].enth_mol.fix(47297)
-        model.props[1].pressure.fix(101325)
-
         assert degrees_of_freedom(model.props[1]) == 0
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -351,7 +351,7 @@ class TestStateBlock(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
 
@@ -360,7 +360,7 @@ class TestStateBlock(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \

@@ -28,6 +28,7 @@ _local_config_file = "idaes.conf"
 
 # Create the general IDAES configuration block, with default config
 cfg = config._new_idaes_config_block()
+config.reconfig(cfg)
 # read global config and overwrite provided config options
 config.read_config(_global_config_file, cfg=cfg)
 # read local config and overwrite provided config options
