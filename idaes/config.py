@@ -27,9 +27,11 @@ release_checksum_url = \
     "https://raw.githubusercontent.com/IDAES/idaes-ext/main/releases/sha256sum_{}.txt"
 # Map some platform names to others for get-extensions
 binary_platform_map = {
-    "rhel6": "centos6",
     "rhel7": "centos7",
     "rhel8": "centos8",
+    "ubuntu1810": "ubuntu1804",
+    "ubuntu1904": "ubuntu1804",
+    "ubuntu1910": "ubuntu1804",
     "linux": "centos7",
 }
 # Set of known platforms with available binaries and descriptions of them
@@ -37,14 +39,16 @@ known_binary_platform = {
     "auto":"Auto-select windows, darwin or linux",
     "windows":"Microsoft Windows (built on verion 1909)",
     "darwin": "OSX (currently not available)",
-    "linux": "Linux (maps to {})".format(binary_platform_map["linux"]),
-    "centos6": "CentOS 6",
+    "linux": f"Linux (auto select distribution or fall back on "
+        f"{binary_platform_map['linux']})",
     "centos7": "CentOS 7",
     "centos8": "CentOS 8",
     "rhel6": "Red Hat Enterprise Linux 6",
     "rhel7": "Red Hat Enterprise Linux 7",
     "rhel8": "Red Hat Enterprise Linux 8",
     "ubuntu1804": "Ubuntu 18.04",
+    "ubuntu1810": "Ubuntu 18.10",
+    "ubuntu1904": "Ubuntu 19.04",
     "ubuntu1910": "Ubuntu 19.10",
     "ubuntu2004": "Ubuntu 20.04",
 }
