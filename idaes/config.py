@@ -56,81 +56,6 @@ orig_environ = {
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
 
-# Default configuration json string.  Store the default config like this because
-# it provides a nice example of how to write a config file and test to make sure
-# they get read properly.
-default_config = """
-{
-    "use_idaes_solvers":true,
-    "default_solver":"ipopt",
-    "logger_capture_solver":true,
-    "logger_tags":[
-        "framework",
-        "model",
-        "flowsheet",
-        "unit",
-        "control_volume",
-        "properties",
-        "reactions"
-    ],
-    "valid_logger_tags":[
-        "framework",
-        "model",
-        "flowsheet",
-        "unit",
-        "control_volume",
-        "properties",
-        "reactions",
-        "ui"
-    ],
-    "ipopt":{
-        "options":{
-            "nlp_scaling_method":"gradient-based",
-            "tol":1e-6
-        }
-    },
-    "logging":{
-        "version":1,
-        "disable_existing_loggers":false,
-        "formatters":{
-            "default_format":{
-                "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S"
-            }
-        },
-        "handlers":{
-            "console":{
-                "class": "logging.StreamHandler",
-                "formatter": "default_format",
-                "stream": "ext://sys.stdout"
-            }
-        },
-        "loggers":{
-            "idaes":{
-                "level": "INFO",
-                "propagate": true,
-                "handlers": ["console"]
-            },
-            "idaes.solve":{
-                "propagate": false,
-                "level": "INFO",
-                "handlers": ["console"]
-            },
-            "idaes.init":{
-                "propagate": false,
-                "level": "INFO",
-                "handlers": ["console"]
-            },
-            "idaes.model":{
-                "propagate":false,
-                "level": "INFO",
-                "handlers": ["console"]
-            }
-        }
-    }
-}
-"""
-
 class ConfigBlockJSONEncoder(json.JSONEncoder):
     """ This class handles non-serializable objects that may appear in the IDAES
     ConfigBlock. For now this is only set objects.
@@ -206,12 +131,15 @@ def _new_idaes_config_block():
                 },
                 "idaes.solve":{
                     "propagate": False,
+                    "handlers": ["console"]
                 },
                 "idaes.init":{
                     "propagate": False,
+                    "handlers": ["console"]
                 },
                 "idaes.model":{
                     "propagate":False,
+                    "handlers": ["console"]
                 }}))
     cfg.declare(
         "ipopt",
