@@ -17,7 +17,7 @@ import threading
 from collections.abc import Iterable
 
 from contextlib import contextmanager
-from pyutilib.misc import capture_output
+from pyomo.common.tee import capture_output
 
 
 # Throw the standard levels in here, just let you access it all in one place
