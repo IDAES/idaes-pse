@@ -12,8 +12,8 @@
 ##############################################################################
 """
 This package provides the necessary constraints for gas phase properties for
-the CLC of methane
-Components - Methane (CH4), Carbon Dioxide (CO2), Water (H2O)
+the oxidation of a chemical looping oxygen carrier.
+Components - Oxygen (O2), Nitrogen (N2), Carbon Dioxide (CO2), Water (H2O)
 
 Equations written in this model were derived from:
 (1) B.E. Poling, J.M. Prausnitz, J.P. O'connell, The Properties of Gases and
@@ -32,6 +32,7 @@ from pyomo.environ import (Constraint,
                            Var,
                            units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+# from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -47,11 +48,11 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import (
     degrees_of_freedom,
     number_unfixed_variables_in_activated_equalities)
 import idaes.logger as idaeslog
-from idaes.core.util import get_solver
 
 # Some more information about this module
 __author__ = "Chinedu Okoli"
@@ -65,9 +66,8 @@ _log = idaeslog.getLogger(__name__)
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
-
     Contains parameters and indexing sets associated with properties for
-    methane CLC.
+    oxidation of oxygen carrier with oxygen.
     """
 
     def build(self):
@@ -82,7 +82,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Vap = VaporPhase()
 
         # Create Component objects
-        self.CH4 = Component()
+        self.N2 = Component()
+        self.O2 = Component()
         self.CO2 = Component()
         self.H2O = Component()
 
@@ -92,11 +93,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                doc='Gas Constant [kJ/mol.K]',
                                units=pyunits.kJ/pyunits.mol/pyunits.K)
 
-    # -------------------------------------------------------------------------
-        """ Pure gas component properties"""
-
         # Mol. weights of gas - units = kg/mol. ref: NIST webbook
-        mw_comp_dict = {'CH4': 0.016, 'CO2': 0.044, 'H2O': 0.018}
+        mw_comp_dict = {'O2': 0.032, 'N2': 0.028, 'CO2': 0.044, 'H2O': 0.018}
         self.mw_comp = Param(
                 self.component_list,
                 mutable=False,
@@ -105,7 +103,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 units=pyunits.kg/pyunits.mol)
 
         # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
-        enth_mol_form_comp_dict = {'CH4': -74.8731, 'CO2': -393.5224,
+        enth_mol_form_comp_dict = {'O2': 0, 'N2': 0, 'CO2': -393.5224,
                                    'H2O': -241.8264}
         self.enth_mol_form_comp = Param(
                 self.component_list,
@@ -123,14 +121,22 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # H_comp = H - H(298.15) = A*T + B*T^2/2 + C*T^3/3 +
         # D*T^4/4 - E/T + F - H where T = Temp (K)/1000 and H_comp = (kJ/mol)
         cp_param_dict = {
-                        ('CH4', 1): -0.7030290,
-                        ('CH4', 2): 108.4773000,
-                        ('CH4', 3): -42.5215700,
-                        ('CH4', 4): 5.8627880,
-                        ('CH4', 5): 0.6785650,
-                        ('CH4', 6): -76.8437600,
-                        ('CH4', 7): 158.7163000,
-                        ('CH4', 8): -74.8731000,
+                        ('O2', 1): 30.03235,
+                        ('O2', 2): 8.772972,
+                        ('O2', 3): -3.988133,
+                        ('O2', 4): 0.788313,
+                        ('O2', 5): -0.741599,
+                        ('O2', 6): -11.32468,
+                        ('O2', 7): 236.1663,
+                        ('O2', 8): 0.0000,
+                        ('N2', 1): 19.50583,
+                        ('N2', 2): 19.88705,
+                        ('N2', 3): -8.598535,
+                        ('N2', 4): 1.369784,
+                        ('N2', 5): 0.527601,
+                        ('N2', 6): -4.935202,
+                        ('N2', 7): 212.3900,
+                        ('N2', 8): 0.0000,
                         ('CO2', 1): 24.9973500,
                         ('CO2', 2): 55.1869600,
                         ('CO2', 3): -33.6913700,
@@ -156,8 +162,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Viscosity constants:
         # Reference: Perry and Green Handbook; McGraw Hill, 2008
-        visc_d_param_dict = {('CH4', 1): 5.2546e-7, ('CH4', 2): 0.59006,
-                             ('CH4', 3): 105.67, ('CH4', 4): 0,
+        visc_d_param_dict = {('O2', 1): 1.101e-6, ('O2', 2): 0.5634,
+                             ('O2', 3): 96.3, ('O2', 4): 0,
+                             ('N2', 1): 6.5592e-7, ('N2', 2): 0.6081,
+                             ('N2', 3): 54.714, ('N2', 4): 0,
                              ('CO2', 1): 2.148e-6, ('CO2', 2): 0.46,
                              ('CO2', 3): 290, ('CO2', 4): 0,
                              ('H2O', 1): 1.7096e-8, ('H2O', 2): 1.1146,
@@ -170,8 +178,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Thermal conductivity constants:
         # Reference: Perry and Green Handbook; McGraw Hill, 2008
-        therm_cond_param_dict = {('CH4', 1): 8.3983e-6, ('CH4', 2): 1.4268,
-                                 ('CH4', 3): -49.654, ('CH4', 4): 0,
+        therm_cond_param_dict = {('N2', 1): 3.3143e-4, ('N2', 2): 0.7722,
+                                 ('N2', 3): 16.323, ('N2', 4): 0,
+                                 ('O2', 1): 4.4994e-4, ('O2', 2): 0.7456,
+                                 ('O2', 3): 56.699, ('O2', 4): 0,
                                  ('CO2', 1): 3.69, ('CO2', 2): -0.3838,
                                  ('CO2', 3): 964, ('CO2', 4): 1.86e6,
                                  ('H2O', 1): 6.204e-6, ('H2O', 2): 1.3973,
@@ -184,11 +194,15 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Component diffusion volumes:
         # Ref: (1) Prop gas & liquids (2) Fuller et al. IECR, 58(5), 19, 1966
-        diff_vol_param_dict = {'CH4': 24.42, 'CO2': 26.9, 'H2O': 13.1}
+        diff_vol_param_dict = {'O2': 16.6, 'N2': 17.9,
+                               'CO2': 26.9, 'H2O': 13.1}
         self.diff_vol_param = Param(self.component_list,
                                     mutable=True,
                                     initialize=diff_vol_param_dict,
                                     doc="Component diffusion volumes")
+
+        self._eps = Param(initialize=1e-8,
+                          doc="Smooth abs reformulation parameter")
 
     @classmethod
     def define_metadata(cls, obj):
@@ -221,6 +235,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                'mass': pyunits.kg,
                                'amount': pyunits.mol,
                                'temperature': pyunits.K})
+        # def add_default_units(self, u): u (dict): Key=property, Value=units
+        # def add_properties(self, p): p (dict): Key=property, Value=PropertyMetadata or equiv. dict
+        # def get_derived_units(self, units):
+        # obj.get_derived_units("power") = pyunits.kJ * pyunits.s ** -1
 
 
 class _GasPhaseStateBlock(StateBlock):
@@ -230,7 +248,7 @@ class _GasPhaseStateBlock(StateBlock):
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+                   solver="ipopt", optarg={"tol": 1e-8}):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -243,14 +261,13 @@ class _GasPhaseStateBlock(StateBlock):
                          Keys for the state_args dictionary are:
                          flow_mol, temperature, pressure and mole_frac_comp
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None, use
-                     default solver options)
+            optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
-                     initialization (default = None, use default solver)
+                     initialization (default = "ipopt")
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states variables are not unfixed, and
+                         - True - states varaibles are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
@@ -373,7 +390,7 @@ class _GasPhaseStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
+    def release_state(blk, flags, outlvl=0):
         """
         Method to relase state variables fixed during initialization.
         Keyword Arguments:
@@ -484,7 +501,7 @@ class GasPhaseStateBlockData(StateBlockData):
             raise
 
     def _dens_mol_comp(self):
-        # Component molar densities
+        # Mixture heat capacities
         self.dens_mol_comp = Var(self._params.component_list,
                                  domain=Reals,
                                  initialize=1.0,
