@@ -43,7 +43,6 @@ known_binary_platform = {
         f"{binary_platform_map['linux']})",
     "centos7": "CentOS 7",
     "centos8": "CentOS 8",
-    "rhel6": "Red Hat Enterprise Linux 6",
     "rhel7": "Red Hat Enterprise Linux 7",
     "rhel8": "Red Hat Enterprise Linux 8",
     "ubuntu1804": "Ubuntu 18.04",
