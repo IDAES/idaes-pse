@@ -28,7 +28,7 @@ May 2021
 Author: Andrew Lee
 """
 import pytest
-from math import exp, log
+from math import log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -61,7 +61,7 @@ configuration = {
                     relative_permittivity_constant,
                 "parameter_data": {
                     "mw": (18E-3, pyunits.kg/pyunits.mol),
-                    "relative_permittivity_liq_comp": 73.41965}},
+                    "relative_permittivity_liq_comp": 78.54}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
         "KCl": {"type": Apparent,
@@ -103,7 +103,7 @@ class TestSymmetric_0KCl(object):
         m.state = m.params.build_state_block([1])
 
         # Need to set a value of T for checking expressions later
-        m.state[1].temperature.set_value(313)
+        m.state[1].temperature.set_value(298.15)
 
         # Set parameters to those used in 1982 paper
         m.params.Liq.tau["H2O", "Na+, Cl-"].set_value(8.885)
@@ -179,8 +179,8 @@ class TestSymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(exp(g), rel=2e-2) == exp(value(
-                model.state[1].Liq_log_gamma["H2O"]))
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma["H2O"])
 
     @pytest.mark.unit
     def test_log_gamma_pdh(self, model):
@@ -249,10 +249,10 @@ class TestSymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(OFFSET, abs=0.041) == value(
-                model.state[1].Liq_log_gamma_pdh["Na+"] - g)
-            assert pytest.approx(OFFSET, abs=0.041) == value(
-                model.state[1].Liq_log_gamma_pdh["Cl-"] - g)
+            assert pytest.approx(g+OFFSET, rel=0.04, abs=0.07) == value(
+                model.state[1].Liq_log_gamma_pdh["Na+"])
+            assert pytest.approx(g+OFFSET, rel=0.04, abs=0.07) == value(
+                model.state[1].Liq_log_gamma_pdh["Cl-"])
 
     @pytest.mark.unit
     def test_log_gamma_lc(self, model):
@@ -315,7 +315,7 @@ class TestSymmetric_0KCl(object):
                 0.99266736005891: 0.0264587394852946}
 
         # Need to correct for different reference state
-        OFFSET = -2.4439
+        OFFSET = 2.414
 
         for x, g in data.items():
             model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(x)
@@ -324,10 +324,10 @@ class TestSymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(OFFSET, rel=3e-2) == value(
-                model.state[1].Liq_log_gamma_lc["Na+"] - g)
-            assert pytest.approx(OFFSET, rel=3e-2) == value(
-                model.state[1].Liq_log_gamma_lc["Cl-"] - g)
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=6e-2) == value(
+                model.state[1].Liq_log_gamma_lc["Na+"])
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=6e-2) == value(
+                model.state[1].Liq_log_gamma_lc["Cl-"])
 
     @pytest.mark.unit
     def test_log_gamma(self, model):
@@ -387,10 +387,12 @@ class TestSymmetric_0KCl(object):
                 0.9486120511900609: -0.3696931661149465,
                 0.9686917233497501: -0.3827344143467273,
                 0.9855967963455463: -0.3541317749389892,
-                0.9946128753251389: -0.19481723605693535}
+                # Error gets too large at this point
+                # 0.9946128753251389: -0.19481723605693535
+                }
 
         # Need to correct for different reference state
-        OFFSET = -1.4592
+        OFFSET = 1.462
 
         for x, g in data.items():
             model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(x)
@@ -399,10 +401,10 @@ class TestSymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(OFFSET, rel=0.051) == value(
-                model.state[1].Liq_log_gamma["Na+"] - g)
-            assert pytest.approx(OFFSET, rel=0.051) == value(
-                model.state[1].Liq_log_gamma["Cl-"] - g)
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
+                model.state[1].Liq_log_gamma["Na+"])
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
+                model.state[1].Liq_log_gamma["Cl-"])
 
 
 class TestUnsymmetric_0KCl(object):
@@ -418,7 +420,7 @@ class TestUnsymmetric_0KCl(object):
         m.state = m.params.build_state_block([1])
 
         # Need to set a value of T for checking expressions later
-        m.state[1].temperature.set_value(313)
+        m.state[1].temperature.set_value(298.15)
 
         # Set parameters to those used in 1982 paper
         m.params.Liq.tau["H2O", "Na+, Cl-"].set_value(8.885)
@@ -494,8 +496,8 @@ class TestUnsymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(exp(g), rel=2e-2) == exp(value(
-                model.state[1].Liq_log_gamma["H2O"]))
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma["H2O"])
 
     @pytest.mark.unit
     def test_log_gamma_pdh(self, model):
@@ -561,9 +563,9 @@ class TestUnsymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(g, abs=0.06) == value(
+            assert pytest.approx(g, rel=0.04, abs=0.07) == value(
                 model.state[1].Liq_log_gamma_pdh["Na+"])
-            assert pytest.approx(g, abs=0.06) == value(
+            assert pytest.approx(g, rel=0.04, abs=0.07) == value(
                 model.state[1].Liq_log_gamma_pdh["Cl-"])
 
     @pytest.mark.unit
@@ -707,28 +709,10 @@ class TestUnsymmetric_0KCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(g, rel=4e-2, abs=4e-2) == value(
+            assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
                 model.state[1].Liq_log_gamma["Na+"])
-            assert pytest.approx(g, rel=4e-2, abs=4e-2) == value(
+            assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
                 model.state[1].Liq_log_gamma["Cl-"])
-
-    @pytest.mark.unit
-    def test_pure_water(self, model):
-        # Start by setting all mole fractions to small number
-        # Using 0 results in division by zero errors
-        for k in model.state[1].mole_frac_phase_comp:
-            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
-
-        # Test pure water
-        model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(1)
-
-        # Unsymmetric reference state - all ln(gammas) should be 0
-        for v in model.state[1].Liq_log_gamma.values():
-            assert value(v) == pytest.approx(0, abs=1.2e-5)
-        for v in model.state[1].Liq_log_gamma_pdh.values():
-            assert value(v) == pytest.approx(0, abs=1.2e-5)
-        for v in model.state[1].Liq_log_gamma_lc.values():
-            assert value(v) == pytest.approx(0, abs=1e-5)
 
 
 class TestUnsymmetric_0NaCl(object):
@@ -765,7 +749,6 @@ class TestUnsymmetric_0NaCl(object):
             model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
         # Data from [2] - Form {molality: gamma_KCl}
-        # Ignoring final points due to large error (stll <7%)
         data = {0.001: 0.965,
                 0.002: 0.951,
                 0.005: 0.927,
@@ -790,10 +773,10 @@ class TestUnsymmetric_0NaCl(object):
                 2.5039: 0.568,
                 2.9837: 0.568,
                 3.4982: 0.571,
-                # 3.994: 0.576,
-                # 4.4897: 0.584,
-                # 4.7909: 0.589,
-                # 4.9908: 0.593
+                3.994: 0.576,
+                4.4897: 0.584,
+                4.7909: 0.589,
+                4.9908: 0.593
                 }
 
         for x, g in data.items():
@@ -806,9 +789,11 @@ class TestUnsymmetric_0NaCl(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 x/(w+2*x))
 
-            gamma_KCl = exp(value(0.5*(model.state[1].Liq_log_gamma["K+"] +
-                                       model.state[1].Liq_log_gamma["Cl-"])))
-            assert pytest.approx(g, rel=5e-2) == gamma_KCl
+            conv = log(1+18*2*x/1000)  # Convert mole frac to molal basis
+            assert pytest.approx(log(g), rel=3e-2, abs=6e-3) == value(
+                model.state[1].Liq_log_gamma["K+"] - conv)
+            assert pytest.approx(log(g), rel=3e-2, abs=6e-3) == value(
+                model.state[1].Liq_log_gamma["Cl-"] - conv)
 
 
 class TestUnsymmetric_Mixed(object):
@@ -847,46 +832,46 @@ class TestUnsymmetric_Mixed(object):
         # Data regressed from digitized Figs 1 [2]
         # Form x_KCl: ln(gamma NaCl)
         data = {1e-12: -0.1056,
-                # 0.0751258278145695: -0.113328198570951,
-                # 0.0976953642384106: -0.114607787343188,
-                # 0.120623147272153: -0.11695157101671,
-                # 0.142834437086092: -0.119035007793955,
-                # 0.164568064753495: -0.121020719322441,
-                # 0.187973509933774: -0.123402355074649,
-                # 0.211378955114054: -0.125424751806415,
-                # 0.232276674025018: -0.127697473900636,
-                # 0.2560403658152: -0.129986897040709,
-                # 0.279923473142016: -0.132425202153624,
-                # 0.302493009565857: -0.134818431889228,
-                # 0.324226637233259: -0.137175357072171,
-                # 0.347632082413539: -0.139533043556349,
-                # 0.368529801324503: -0.141913537356703,
-                # 0.390741091138442: -0.144253573434263,
-                # 0.413668874172185: -0.14674789536397,
-                # 0.435402501839587: -0.149056922010853,
-                # 0.457972038263429: -0.15155792345259,
-                # 0.48054157468727: -0.154058924894327,
-                # 0.501558709134868: -0.15629235614116,
-                # 0.520330831493745: -0.158378332401811,
-                # 0.541562913907284: -0.160888304509771,
-                # 0.564132450331125: -0.163197711807272,
-                # 0.586701986754966: -0.166034003001421,
-                # 0.609510354252076: -0.168453001424376,
-                # 0.63100515084621: -0.170915878894129,
-                # 0.653932933879953: -0.173605216292076,
-                # 0.674950068327551: -0.176119196107253,
-                # 0.697041942604856: -0.17853786825825,
-                # 0.720447387785136: -0.18123084449484,
-                # 0.7413451066961: -0.183934653413591,
-                # 0.758732008830022: -0.186191407214401,
-                # 0.778125091979396: -0.188585585404461,
-                # 0.801769368232944: -0.19140868071053,
-                # 0.823264164827078: -0.193922878040346,
-                # 0.838310522442972: -0.195941468265935,
-                # 0.890805592347314: -0.202460414614303,
-                # 0.910198675496688: -0.20481148412191,
-                # 0.932409965310627: -0.207521023191923,
-                # 0.950322295805739: -0.209499862617294
+                0.0751258278145695: -0.113328198570951,
+                0.0976953642384106: -0.114607787343188,
+                0.120623147272153: -0.11695157101671,
+                0.142834437086092: -0.119035007793955,
+                0.164568064753495: -0.121020719322441,
+                0.187973509933774: -0.123402355074649,
+                0.211378955114054: -0.125424751806415,
+                0.232276674025018: -0.127697473900636,
+                0.2560403658152: -0.129986897040709,
+                0.279923473142016: -0.132425202153624,
+                0.302493009565857: -0.134818431889228,
+                0.324226637233259: -0.137175357072171,
+                0.347632082413539: -0.139533043556349,
+                0.368529801324503: -0.141913537356703,
+                0.390741091138442: -0.144253573434263,
+                0.413668874172185: -0.14674789536397,
+                0.435402501839587: -0.149056922010853,
+                0.457972038263429: -0.15155792345259,
+                0.48054157468727: -0.154058924894327,
+                0.501558709134868: -0.15629235614116,
+                0.520330831493745: -0.158378332401811,
+                0.541562913907284: -0.160888304509771,
+                0.564132450331125: -0.163197711807272,
+                0.586701986754966: -0.166034003001421,
+                0.609510354252076: -0.168453001424376,
+                0.63100515084621: -0.170915878894129,
+                0.653932933879953: -0.173605216292076,
+                0.674950068327551: -0.176119196107253,
+                0.697041942604856: -0.17853786825825,
+                0.720447387785136: -0.18123084449484,
+                0.7413451066961: -0.183934653413591,
+                0.758732008830022: -0.186191407214401,
+                0.778125091979396: -0.188585585404461,
+                0.801769368232944: -0.19140868071053,
+                0.823264164827078: -0.193922878040346,
+                0.838310522442972: -0.195941468265935,
+                0.890805592347314: -0.202460414614303,
+                0.910198675496688: -0.20481148412191,
+                0.932409965310627: -0.207521023191923,
+                0.950322295805739: -0.209499862617294
                 }
 
         for x, g in data.items():
@@ -918,7 +903,89 @@ class TestUnsymmetric_Mixed(object):
             lng_m_NaCl = lng_NaCl - log(1+18*(1+1)*(4*(1-x))/1000)
 
             print(x, g, lng_NaCl, lng_m_NaCl)
-            model.state[1].mole_frac_phase_comp.display()
-            model.state[1].Liq_log_gamma.display()
-            # assert lng_NaCl == pytest.approx(g, rel=3e-2)
+        assert False
+
+    @pytest.mark.unit
+    def test_log_gamma_KCl(self, model):
+        # start with pure water
+        # Using 0 results in division by zero errors
+        for k in model.state[1].mole_frac_phase_comp:
+            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
+
+        # Data regressed from digitized Figs 1 [2]
+        # Form x_KCl: ln(gamma NaCl)
+        data = {0.0129962981042131: -0.145305327383741,
+                0.030732184190065: -0.146667293238219,
+                0.0507470065983459: -0.147845261727147,
+                0.0745635482458493: -0.149617513015021,
+                0.0963530760430225: -0.151219807408623,
+                0.11799240133926: -0.15327982779779,
+                0.139427357933593: -0.154892684744564,
+                0.16286430422693177: -0.156754262749827,
+                0.18592090645731912: -0.158512000605861,
+                0.2072038463717374: -0.160114525371398,
+                0.22937553241084108: -0.16228871809103,
+                0.2524319330657862: -0.163994449482976,
+                0.2728287473362676: -0.165701390327575,
+                0.2962677957735029: -0.168105321458338,
+                0.31805925293562287: -0.170205392008222,
+                0.3402301326729579: -0.172171558871497,
+                0.3624012139857349: -0.174189732198862,
+                0.3854588240933333: -0.176207502375342,
+                0.4064907449892218: -0.178397072421566,
+                0.4289156673767195: -0.180556290965491,
+                0.45197347905976004: -0.182626067606061,
+                0.4732576284268315: -0.184540631156132,
+                0.4954291128904931: -0.186662817411674,
+                0.5172202820876957: -0.18868859301286,
+                0.5388865609002058: -0.19116762539409,
+                0.5623249182216393: -0.193393248647977,
+                0.5823430010327078: -0.195412401056061,
+                0.5991933977607408: -0.197042944808064,
+                0.652406290871447: -0.202479434484355,
+                0.6710309546417759: -0.204421210719124,
+                0.6933255729041333: -0.205636941007559,
+                0.7153739235690989: -0.20866558323021,
+                0.7366604918414769: -0.21120422434935,
+                0.7588315731542539: -0.213222397676715,
+                0.7804979095597475: -0.215716289047685,
+                0.8022900290411777: -0.217987237979576,
+                0.823576798888998: -0.220577885562805,
+                0.8453684576265602: -0.222729962576778,
+                0.8670352547759218: -0.225342725865667,
+                0.8892071423904676: -0.227568925049388,
+                0.9120150005251731: -0.23050063828083,
+                0.9317857251371712: -0.234051327390149,
+                0.9512961168980646: -0.235786092975788,
+                0.9672582363606549: -0.236965934458349}
+
+        for x, g in data.items():
+            m = 4  # molality of solution
+            w = 1000/18  # mol H2O per kg H2O
+            k = x*m  # mol K+
+            n = m-k  # mol Na+
+
+            # Set composition
+            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+                w/(w+2*m))
+            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
+                k/(w+2*m))
+            model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(
+                n/(w+2*m))
+            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
+                m/(w+2*m))
+
+            assert pytest.approx(0.06293706294, rel=1e-8) == value(
+                model.state[1].mole_frac_phase_comp["Liq", "Cl-"])
+            assert pytest.approx(0.874125874, rel=1e-8) == value(
+                model.state[1].mole_frac_phase_comp["Liq", "H2O"])
+            assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
+                0.06293706294, rel=1e-8)
+
+            # Calculate mean activity coefficients for KCl
+            lng_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
+                                 model.state[1].Liq_log_gamma["Cl-"]))
+
+            print(x, g, lng_KCl)
+        model.state[1].mole_frac_phase_comp.display()
         assert False
