@@ -873,6 +873,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'cv_mol': {'method': '_cv_mol'},
              'cv_mol_phase': {'method': '_cv_mol_phase'},
              'cv_mol_phase_comp': {'method': '_cv_mol_phase_comp'},
+             'heat_capacity_ratio': {'method': '_heat_capacity_ratio'},
              'dens_mass': {'method': '_dens_mass'},
              'dens_mass_phase': {'method': '_dens_mass_phase'},
              'dens_mol': {'method': '_dens_mol'},
@@ -1925,6 +1926,19 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_cv_mol_phase_comp)
         except AttributeError:
             self.del_component(self.cv_mol_phase_comp)
+            raise
+
+    def _heat_capacity_ratio(self):
+        try:
+            def rule_heat_capacity_ratio(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.heat_capacity_ratio(b, p)
+            self.heat_capacity_ratio = Expression(
+                self.phase_list,
+                rule=rule_heat_capacity_ratio,
+                doc="Heat capacity ratio")
+        except AttributeError:
+            self.del_component(self.heat_capacity_ratio)
             raise
 
     def _dens_mass(self):

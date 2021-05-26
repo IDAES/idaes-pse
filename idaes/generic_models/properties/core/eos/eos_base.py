@@ -68,6 +68,11 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "cv_mol_phase_comp"))
 
     @staticmethod
+    def heat_capacity_ratio(b, p):
+        return (b.cp_mol_phase[p] /
+                b.cv_mol_phase[p])
+
+    @staticmethod
     def cv_mol_ig_comp_pure(b, j):
         # Method for calculating pure component ideal gas cv from cp
         # For ideal gases, cv = cp - R
