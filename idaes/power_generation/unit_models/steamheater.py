@@ -615,7 +615,7 @@ see property package for documentation.}"""))
             self.energy_accumulation_metal[0].fix(0)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         Waterwall section initialization routine.
 
@@ -632,8 +632,9 @@ see property package for documentation.}"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -697,20 +698,20 @@ see property package for documentation.}"""))
         for t, c in self.Reynolds_number_eqn.items():
             s = iscale.get_scaling_factor(
                 self.N_Re[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s*1e5)
+            iscale.constraint_scaling_transform(c, s*1e5, overwrite=False)
         for t, c in self.heat_flux_conv_eqn.items():
             s = iscale.get_scaling_factor(
                 self.heat_flux_conv[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.hconv_eqn.items():
             s = iscale.get_scaling_factor(
                 self.hconv[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
                 self.diameter_in, default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.pressure_change_eqn.items():
             s = iscale.get_scaling_factor(
                 self.deltaP[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
                 self.diameter_in, default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
