@@ -130,7 +130,7 @@ def test_common(m):
 
 @pytest.mark.unit
 def test_compress_fact_phase_Liq(m):
-    assert Ideal.compress_fact_phase(m.props[1], "Liq") == 1
+    assert Ideal.compress_fact_phase(m.props[1], "Liq") == 0
 
 
 @pytest.mark.unit
@@ -139,9 +139,8 @@ def test_compress_fact_phase_Vap(m):
 
 
 @pytest.mark.unit
-def test_compress_fact_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.compress_fact_phase(m_sol.props[1], "Sol")
+def test_compress_fact_phase_sol(m_sol):
+    assert Ideal.compress_fact_phase(m_sol.props[1], "Sol") == 0
 
 
 @pytest.mark.unit
@@ -220,9 +219,13 @@ def test_dens_mol_phase_vap(m):
 
 
 @pytest.mark.unit
-def test_dens_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.dens_mol_phase(m_sol.props[1], "Sol")
+def test_dens_mol_phase_sol(m_sol):
+    for j in m_sol.params.component_list:
+        m_sol.params.get_component(j).config.dens_mol_sol_comp = dummy_call
+
+    assert str(Ideal.dens_mol_phase(m_sol.props[1], "Sol")) == str(
+        sum(m_sol.props[1].mole_frac_phase_comp["Sol", j]*42
+            for j in m_sol.params.component_list))
 
 
 @pytest.mark.unit
@@ -307,9 +310,12 @@ def test_enth_mol_phase_comp(m):
 
 
 @pytest.mark.unit
-def test_enth_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", "foo")
+def test_enth_mol_phase_sol(m_sol):
+    for j in m_sol.params.component_list:
+        m_sol.params.get_component(j).config.enth_mol_sol_comp = dummy_call
+
+        assert str(Ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", j)) == str(
+            42)
 
 
 @pytest.mark.unit
@@ -338,9 +344,12 @@ def test_entr_mol_phase_comp(m):
 
 
 @pytest.mark.unit
-def test_entr_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.entr_mol_phase_comp(m_sol.props[1], "Sol", "foo")
+def test_entr_mol_phase_sol(m_sol):
+    for j in m_sol.params.component_list:
+        m_sol.params.get_component(j).config.entr_mol_sol_comp = dummy_call
+
+        assert str(Ideal.entr_mol_phase_comp(m_sol.props[1], "Sol", j)) == str(
+            42)
 
 
 @pytest.mark.unit
