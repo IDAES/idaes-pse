@@ -919,7 +919,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
     def initialize(blk, state_args_PA=None, state_args_SA=None,
                    outlvl=idaeslog.NOTSET, solver=None,
-                   optarg={}):
+                   optarg=None):
         '''
         Initialization routine.
         1.- initialize state blocks, using an initial guess for inlet
@@ -940,8 +940,9 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -1060,24 +1061,24 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         for t, c in self.eq_surr_waterwall_heat.items():
             sf = iscale.get_scaling_factor(
                  self.waterwall_heat[t], default=1e-7, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set platen heat constraint scaling factor
         if self.config.has_platen_superheater is True:
             for t, c in self.eq_surr_platen_heat.items():
                 sf = iscale.get_scaling_factor(
                      self.platen_heat[t], default=1e-7, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set roof heat constraint scaling factor
         if self.config.has_roof_superheater is True:
             for t, c in self.eq_surr_roof_heat.items():
                 sf = iscale.get_scaling_factor(
                      self.roof_heat[t], default=1e-6, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set flue gas temperature constraint scaling factor
         for t, c in self.flue_gas_temp_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.platen_heat[t], default=1e-7, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

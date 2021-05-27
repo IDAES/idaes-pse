@@ -20,7 +20,7 @@
 #  This software is distributed under the 3-clause BSD License.
 #  ___________________________________________________________________________
 
-import pyutilib.th
+import pyomo.common.unittest as unittest
 import pytest
 from idaes.surrogate.pysmo.utils import NumpyEvaluator
 from pyomo.environ import ConcreteModel, Param, Var, value, sin, atan, atanh
@@ -32,7 +32,7 @@ try:
 except ImportError:
     _numpy_available = False
 
-@pyutilib.th.skipIf(not _numpy_available, "Test requires numpy")
+@unittest.skipIf(not _numpy_available, "Test requires numpy")
 class TestNumpyEvaluator:
 
     @pytest.mark.unit

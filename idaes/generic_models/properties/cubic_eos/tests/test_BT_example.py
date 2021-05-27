@@ -111,7 +111,7 @@ class TestBTExample(object):
             m.fs.state.temperature.fix(300)
             m.fs.state.pressure.fix(10**(0.5*logP))
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             m.fs.state.temperature.unfix()
             m.fs.obj.activate()
@@ -141,7 +141,7 @@ class TestBTExample(object):
             m.fs.state.temperature.fix(T)
             m.fs.state.pressure.fix(1e5)
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             results = solver.solve(m)
 
@@ -178,7 +178,7 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
         solver.solve(m)
 
@@ -244,7 +244,7 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
         solver.solve(m)
 
@@ -310,7 +310,7 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
         solver.solve(m)
 
@@ -376,7 +376,7 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
         solver.solve(m)
 
@@ -442,7 +442,7 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
         solver.solve(m)
 
@@ -508,7 +508,7 @@ class TestBTExample(object):
         m.fs.state.enth_mol_phase
         m.fs.state.entr_mol_phase
 
-        m.fs.state.initialize(outlvl=0)
+        m.fs.state.initialize()
 
         solver.solve(m)
 

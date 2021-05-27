@@ -30,7 +30,10 @@ conda activate idaes-pse
 Now, in that "idaes-pse" environment, install the IDAES Toolkit using either `pip install` or `conda install` (but not both):
 
 ```bash
-pip install idaes-pse   # or: conda install -c idaes-pse -c conda-forge idaes-pse
+# install latest stable release
+pip install idaes_pse
+# install latest version from the main branch of this repository
+pip install 'idaes-pse[prerelease] @ https://github.com/IDAES/idaes-pse/archive/main.zip'
 ```
 
 You can check the version installed with the command:

@@ -370,56 +370,62 @@ def define_default_scaling_factors(b):
 def calculate_scaling_factors(b):
     sf_flow = iscale.get_scaling_factor(
         b.flow_mol, default=1, warning=True)
-    sf_mf = iscale.get_scaling_factor(
-        b.mole_frac_phase_comp, default=1e3, warning=True)
+    sf_mf = {}
+    for i, v in b.mole_frac_phase_comp.items():
+        sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
     sf_h = iscale.get_scaling_factor(
         b.enth_mol, default=1e-4, warning=True)
 
     if b.config.defined_state is False:
-        iscale.constraint_scaling_transform(b.sum_mole_frac_out, sf_mf)
+        iscale.constraint_scaling_transform(
+            b.sum_mole_frac_out, min(sf_mf.values()), overwrite=False)
 
-    iscale.constraint_scaling_transform(b.enth_mol_eq, sf_h)
+    iscale.constraint_scaling_transform(b.enth_mol_eq, sf_h, overwrite=False)
 
     if len(b.phase_list) == 1:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j)
+                b.component_flow_balances[j], sf_j, overwrite=False)
 
         # b.phase_fraction_constraint is well scaled
 
     elif len(b.phase_list) == 2:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j*sf_flow)
+                b.component_flow_balances[j], sf_j*sf_flow, overwrite=False)
 
-        iscale.constraint_scaling_transform(b.sum_mole_frac, sf_mf)
+        iscale.constraint_scaling_transform(
+            b.sum_mole_frac, min(sf_mf.values()), overwrite=False)
 
         for p in b.phase_list:
             iscale.constraint_scaling_transform(
-                b.phase_fraction_constraint[p], sf_flow)
+                b.phase_fraction_constraint[p], sf_flow, overwrite=False)
 
     else:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j*sf_flow)
+                b.component_flow_balances[j], sf_j*sf_flow, overwrite=False)
 
         for p in b.phase_list:
             iscale.constraint_scaling_transform(
-                b.sum_mole_frac[p], sf_mf)
+                b.sum_mole_frac[p], min(sf_mf[p, :].values()), overwrite=False)
             iscale.constraint_scaling_transform(
-                b.phase_fraction_constraint[p], sf_flow)
+                b.phase_fraction_constraint[p], sf_flow, overwrite=False)
 
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)

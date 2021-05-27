@@ -67,8 +67,8 @@ import numpy as np
 import sys
 from io import StringIO
 # pyomo
-import pyutilib.services
-from pyutilib.misc import capture_output
+from pyomo.common.tempfiles import TempfileManager
+from pyomo.common.tee import capture_output
 from pyomo.core import Param, Var
 from pyomo.opt import TerminationCondition
 from pyomo.common.log import LoggingIntercept
@@ -247,8 +247,8 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
     """
     # ToDo: Check that the "solver" is, in fact, IPOPT
 
-    pyutilib.services.TempfileManager.push()
-    tempfile = pyutilib.services.TempfileManager.create_tempfile(
+    TempfileManager.push()
+    tempfile = TempfileManager.create_tempfile(
                         suffix='ipopt_out',
                         text=True)
     opts = {'output_file': tempfile,
@@ -277,7 +277,7 @@ def _run_ipopt_with_stats(model, solver, max_iter=500, max_cpu_time=120):
                 tokens = line.split()
                 time += float(tokens[8])
 
-    pyutilib.services.TempfileManager.pop(remove=True)
+    TempfileManager.pop(remove=True)
     return status_obj, solved, iters, time
 
 
