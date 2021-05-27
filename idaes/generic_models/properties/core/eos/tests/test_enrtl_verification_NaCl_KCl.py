@@ -829,7 +829,7 @@ class TestUnsymmetric_Mixed(object):
         for k in model.state[1].mole_frac_phase_comp:
             model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
-        # Data regressed from digitized Figs 1 [2]
+        # Data regressed from digitized Fig 1 [2]
         # Form x_KCl: ln(gamma NaCl)
         data = {1e-12: -0.1056,
                 0.0751258278145695: -0.113328198570951,
@@ -897,95 +897,92 @@ class TestUnsymmetric_Mixed(object):
             assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
                 0.06293706294, rel=1e-8)
 
-            # Calculate mean activity coefficients for NaCl
-            lng_NaCl = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
-                                  model.state[1].Liq_log_gamma["Cl-"]))
-            lng_m_NaCl = lng_NaCl - log(1+18*(1+1)*(4*(1-x))/1000)
-
-            print(x, g, lng_NaCl, lng_m_NaCl)
+            ln_pm = value(0.5*(model.state[1].Liq_log_gamma["Na+"] +
+                               model.state[1].Liq_log_gamma["Cl-"]))
+            print(x, g, ln_pm)
         assert False
 
-    @pytest.mark.unit
-    def test_log_gamma_KCl(self, model):
-        # start with pure water
-        # Using 0 results in division by zero errors
-        for k in model.state[1].mole_frac_phase_comp:
-            model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
+    # @pytest.mark.unit
+    # def test_log_gamma_KCl(self, model):
+    #     # start with pure water
+    #     # Using 0 results in division by zero errors
+    #     for k in model.state[1].mole_frac_phase_comp:
+    #         model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
-        # Data regressed from digitized Figs 1 [2]
-        # Form x_KCl: ln(gamma NaCl)
-        data = {0.0129962981042131: -0.145305327383741,
-                0.030732184190065: -0.146667293238219,
-                0.0507470065983459: -0.147845261727147,
-                0.0745635482458493: -0.149617513015021,
-                0.0963530760430225: -0.151219807408623,
-                0.11799240133926: -0.15327982779779,
-                0.139427357933593: -0.154892684744564,
-                0.16286430422693177: -0.156754262749827,
-                0.18592090645731912: -0.158512000605861,
-                0.2072038463717374: -0.160114525371398,
-                0.22937553241084108: -0.16228871809103,
-                0.2524319330657862: -0.163994449482976,
-                0.2728287473362676: -0.165701390327575,
-                0.2962677957735029: -0.168105321458338,
-                0.31805925293562287: -0.170205392008222,
-                0.3402301326729579: -0.172171558871497,
-                0.3624012139857349: -0.174189732198862,
-                0.3854588240933333: -0.176207502375342,
-                0.4064907449892218: -0.178397072421566,
-                0.4289156673767195: -0.180556290965491,
-                0.45197347905976004: -0.182626067606061,
-                0.4732576284268315: -0.184540631156132,
-                0.4954291128904931: -0.186662817411674,
-                0.5172202820876957: -0.18868859301286,
-                0.5388865609002058: -0.19116762539409,
-                0.5623249182216393: -0.193393248647977,
-                0.5823430010327078: -0.195412401056061,
-                0.5991933977607408: -0.197042944808064,
-                0.652406290871447: -0.202479434484355,
-                0.6710309546417759: -0.204421210719124,
-                0.6933255729041333: -0.205636941007559,
-                0.7153739235690989: -0.20866558323021,
-                0.7366604918414769: -0.21120422434935,
-                0.7588315731542539: -0.213222397676715,
-                0.7804979095597475: -0.215716289047685,
-                0.8022900290411777: -0.217987237979576,
-                0.823576798888998: -0.220577885562805,
-                0.8453684576265602: -0.222729962576778,
-                0.8670352547759218: -0.225342725865667,
-                0.8892071423904676: -0.227568925049388,
-                0.9120150005251731: -0.23050063828083,
-                0.9317857251371712: -0.234051327390149,
-                0.9512961168980646: -0.235786092975788,
-                0.9672582363606549: -0.236965934458349}
+    #     # Data regressed from digitized Fig 2 [2]
+    #     # Form x_KCl: ln(gamma NaCl)
+    #     data = {0.0129962981042131: -0.145305327383741,
+    #             0.030732184190065: -0.146667293238219,
+    #             0.0507470065983459: -0.147845261727147,
+    #             0.0745635482458493: -0.149617513015021,
+    #             0.0963530760430225: -0.151219807408623,
+    #             0.11799240133926: -0.15327982779779,
+    #             0.139427357933593: -0.154892684744564,
+    #             0.16286430422693177: -0.156754262749827,
+    #             0.18592090645731912: -0.158512000605861,
+    #             0.2072038463717374: -0.160114525371398,
+    #             0.22937553241084108: -0.16228871809103,
+    #             0.2524319330657862: -0.163994449482976,
+    #             0.2728287473362676: -0.165701390327575,
+    #             0.2962677957735029: -0.168105321458338,
+    #             0.31805925293562287: -0.170205392008222,
+    #             0.3402301326729579: -0.172171558871497,
+    #             0.3624012139857349: -0.174189732198862,
+    #             0.3854588240933333: -0.176207502375342,
+    #             0.4064907449892218: -0.178397072421566,
+    #             0.4289156673767195: -0.180556290965491,
+    #             0.45197347905976004: -0.182626067606061,
+    #             0.4732576284268315: -0.184540631156132,
+    #             0.4954291128904931: -0.186662817411674,
+    #             0.5172202820876957: -0.18868859301286,
+    #             0.5388865609002058: -0.19116762539409,
+    #             0.5623249182216393: -0.193393248647977,
+    #             0.5823430010327078: -0.195412401056061,
+    #             0.5991933977607408: -0.197042944808064,
+    #             0.652406290871447: -0.202479434484355,
+    #             0.6710309546417759: -0.204421210719124,
+    #             0.6933255729041333: -0.205636941007559,
+    #             0.7153739235690989: -0.20866558323021,
+    #             0.7366604918414769: -0.21120422434935,
+    #             0.7588315731542539: -0.213222397676715,
+    #             0.7804979095597475: -0.215716289047685,
+    #             0.8022900290411777: -0.217987237979576,
+    #             0.823576798888998: -0.220577885562805,
+    #             0.8453684576265602: -0.222729962576778,
+    #             0.8670352547759218: -0.225342725865667,
+    #             0.8892071423904676: -0.227568925049388,
+    #             0.9120150005251731: -0.23050063828083,
+    #             0.9317857251371712: -0.234051327390149,
+    #             0.9512961168980646: -0.235786092975788,
+    #             0.9672582363606549: -0.236965934458349}
 
-        for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
-            k = x*m  # mol K+
-            n = m-k  # mol Na+
+    #     for x, g in data.items():
+    #         m = 4  # molality of solution
+    #         w = 1000/18  # mol H2O per kg H2O
+    #         k = x*m  # mol K+
+    #         n = m-k  # mol Na+
 
-            # Set composition
-            model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
-                w/(w+2*m))
-            model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
-                k/(w+2*m))
-            model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(
-                n/(w+2*m))
-            model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
-                m/(w+2*m))
+    #         # Set composition
+    #         model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
+    #             w/(w+2*m))
+    #         model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
+    #             k/(w+2*m))
+    #         model.state[1].mole_frac_phase_comp["Liq", "Na+"].set_value(
+    #             n/(w+2*m))
+    #         model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
+    #             m/(w+2*m))
 
-            assert pytest.approx(0.06293706294, rel=1e-8) == value(
-                model.state[1].mole_frac_phase_comp["Liq", "Cl-"])
-            assert pytest.approx(0.874125874, rel=1e-8) == value(
-                model.state[1].mole_frac_phase_comp["Liq", "H2O"])
-            assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
-                0.06293706294, rel=1e-8)
+    #         assert pytest.approx(0.06293706294, rel=1e-8) == value(
+    #             model.state[1].mole_frac_phase_comp["Liq", "Cl-"])
+    #         assert pytest.approx(0.874125874, rel=1e-8) == value(
+    #             model.state[1].mole_frac_phase_comp["Liq", "H2O"])
+    #         assert value(model.state[1].Liq_ionic_strength) == pytest.approx(
+    #             0.06293706294, rel=1e-8)
 
-            # Calculate mean activity coefficients for KCl
-            lng_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
-                                 model.state[1].Liq_log_gamma["Cl-"]))
+    #         # Calculate mean activity coefficients for KCl
+    #         lng_KCl = value(0.5*(model.state[1].Liq_log_gamma["K+"] +
+    #                              model.state[1].Liq_log_gamma["Cl-"]))
 
-            print(x, g, lng_KCl)
-        model.state[1].mole_frac_phase_comp.display()
-        assert False
+    #         print(x, g, lng_KCl)
+    #     model.state[1].mole_frac_phase_comp.display()
+    #     assert False
