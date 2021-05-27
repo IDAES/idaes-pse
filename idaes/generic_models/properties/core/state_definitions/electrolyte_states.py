@@ -138,9 +138,10 @@ def _apparent_species_scaling(b):
         sf = iscale.get_scaling_factor(
             b.flow_mol_phase_comp_true[p, j], default=1, warning=True)
 
-        iscale.constraint_scaling_transform(b.appr_to_true_species[p, j], sf)
         iscale.constraint_scaling_transform(
-            b.true_mole_frac_constraint[p, j], sf)
+            b.appr_to_true_species[p, j], sf, overwrite=False)
+        iscale.constraint_scaling_transform(
+            b.true_mole_frac_constraint[p, j], sf, overwrite=False)
 
 
 def _true_species_state(b):

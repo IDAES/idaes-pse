@@ -39,6 +39,7 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis)
 from idaes.core.components import Component, __all_components__
 from idaes.core.phases import Phase, AqueousPhase, __all_phases__
+from idaes.core import LiquidPhase, VaporPhase
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -270,7 +271,7 @@ class GenericParameterData(PhysicalParameterBlock):
                         not eos.electrolyte_support):
                     raise ConfigurationError(
                         "{} aqueous phase {} was set to use an equation of "
-                        "state whcih does not support electrolytes: {}"
+                        "state which does not support electrolytes: {}"
                         .format(self.name, p, eos))
 
             self.add_component(str(p), ptype(default=d))
@@ -958,16 +959,17 @@ class _GenericStateBlock(StateBlock):
                 "'state_components'; this should never happen. Please contact "
                 "the IDAES developers with this bug.".format(self.name))
 
-    def initialize(blk, state_args={}, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
             state_args : a dict of initial values for the state variables
                     defined by the property package.
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed by the
@@ -1490,15 +1492,16 @@ class GenericStateBlockData(StateBlockData):
         # Get default scale factors and do calculations from base classes
         super().calculate_scaling_factors()
 
-        # Sclae state variables and associated constraints
+        # Scale state variables and associated constraints
         self.params.config.state_definition.calculate_scaling_factors(self)
 
         sf_T = iscale.get_scaling_factor(
             self.temperature, default=1, warning=True)
         sf_P = iscale.get_scaling_factor(
             self.pressure, default=1, warning=True)
-        sf_mf = iscale.get_scaling_factor(
-            self.mole_frac_phase_comp, default=1e3, warning=True)
+        sf_mf = {}
+        for i, v in self.mole_frac_phase_comp.items():
+            sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
 
         # Add scaling for components in build method
         # Phase equilibrium temperature
@@ -1516,28 +1519,34 @@ class GenericStateBlockData(StateBlockData):
         if self.is_property_constructed("_enthalpy_flow_term"):
             for k, v in self._enthalpy_flow_term.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
-                                                       default=1)
-                    sf_h = iscale.get_scaling_factor(self.enth_mol_phase[k],
-                                                     default=1)
-                    iscale.set_scaling_factor(v, sf_rho*sf_h)
+                    sf_flow_phase = iscale.get_scaling_factor(
+                        self.flow_mol_phase[k],
+                        default=1,
+                        warning=True,
+                        hint="for _enthalpy_flow_term")
+                    sf_h = iscale.get_scaling_factor(
+                        self.enth_mol_phase[k],
+                        default=1,
+                        warning=True,
+                        hint="for _enthalpy_flow_term")
+                    iscale.set_scaling_factor(v, sf_flow_phase*sf_h)
 
         if self.is_property_constructed("_material_density_term"):
             for (p, j), v in self._material_density_term.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[p],
-                                                       default=1)
+                    sf_rho = iscale.get_scaling_factor(
+                        self.dens_mol_phase[p], default=1, warning=True)
                     sf_x = iscale.get_scaling_factor(
-                        self.mole_frac_phase_comp[p, j], default=1)
+                        self.mole_frac_phase_comp[p, j], default=1, warning=True)
                     iscale.set_scaling_factor(v, sf_rho*sf_x)
 
         if self.is_property_constructed("_energy_density_term"):
             for k, v in self._enthalpy_flow_term.items():
                 if iscale.get_scaling_factor(v) is None:
-                    sf_rho = iscale.get_scaling_factor(self.dens_mol_phase[k],
-                                                       default=1)
+                    sf_rho = iscale.get_scaling_factor(
+                        self.dens_mol_phase[k], default=1, warning=True)
                     sf_u = iscale.get_scaling_factor(
-                        self.energy_internal_mol_phase[k], default=1)
+                        self.energy_internal_mol_phase[k], default=1, warning=True)
                     iscale.set_scaling_factor(v, sf_rho*sf_u)
 
         # Phase equilibrium constraint
@@ -1553,7 +1562,7 @@ class GenericStateBlockData(StateBlockData):
                             self, k[0], k[1], k[2])
 
                 iscale.constraint_scaling_transform(
-                    self.equilibrium_constraint[k], sf_fug)
+                    self.equilibrium_constraint[k], sf_fug, overwrite=False)
 
         # Inherent reactions
         if hasattr(self, "k_eq"):
@@ -1572,7 +1581,9 @@ class GenericStateBlockData(StateBlockData):
                     self, sf_keq)
 
                 iscale.constraint_scaling_transform(
-                    self.inherent_equilibrium_constraint[r], sf_const)
+                    self.inherent_equilibrium_constraint[r],
+                    sf_const,
+                    overwrite=False)
 
         # Add scaling for additional Vars and Constraints
         # Bubble and dew points
@@ -1580,37 +1591,63 @@ class GenericStateBlockData(StateBlockData):
             for v in self.temperature_bubble.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_T)
-            for v in self._mole_frac_tbub.values():
+            for i, v in self._mole_frac_tbub.items():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, sf_mf)
-            self.params.config.bubble_dew_method.scale_temperature_bubble(self)
+                    if self.params.config.phases[i[0]]["type"] is VaporPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] is VaporPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    try:
+                        iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                    except KeyError:
+                        # component i[2] is no in the vapor phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        iscale.set_scaling_factor(v, 1)
+            self.params.config.bubble_dew_method.scale_temperature_bubble(
+                self, overwrite=False)
 
         if hasattr(self, "_mole_frac_tdew"):
             for v in self.temperature_dew.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_T)
-            for v in self._mole_frac_tdew.values():
+            for i, v in self._mole_frac_tdew.items():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, sf_mf)
-            self.params.config.bubble_dew_method.scale_temperature_dew(self)
+                    if self.params.config.phases[i[0]]["type"] is LiquidPhase:
+                        p = i[0]
+                    elif self.params.config.phases[i[1]]["type"] is LiquidPhase:
+                        p = i[1]
+                    else:
+                        p = i[0]
+                    try:
+                        iscale.set_scaling_factor(v, sf_mf[p, i[2]])
+                    except KeyError:
+                        # component i[2] is no in the liquid phase, so this
+                        # variable is likely unused and scale doesn't matter
+                        iscale.set_scaling_factor(v, 1)
+            self.params.config.bubble_dew_method.scale_temperature_dew(
+                self, overwrite=False)
 
         if hasattr(self, "_mole_frac_pbub"):
             for v in self.pressure_bubble.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_P)
-            for v in self._mole_frac_pbub.values():
+            for i, v in self._mole_frac_pbub.values():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, sf_mf)
-            self.params.config.bubble_dew_method.scale_pressure_bubble(self)
+                    iscale.set_scaling_factor(v, sf_mf[i])
+            self.params.config.bubble_dew_method.scale_pressure_bubble(
+                self, overwrite=False)
 
         if hasattr(self, "_mole_frac_pdew"):
             for v in self.pressure_dew.values():
                 if iscale.get_scaling_factor(v) is None:
                     iscale.set_scaling_factor(v, sf_P)
-            for v in self._mole_frac_pdew.values():
+            for i, v in self._mole_frac_pdew.items():
                 if iscale.get_scaling_factor(v) is None:
-                    iscale.set_scaling_factor(v, sf_mf)
-            self.params.config.bubble_dew_method.scale_pressure_dew(self)
+                    iscale.set_scaling_factor(v, sf_mf[i])
+            self.params.config.bubble_dew_method.scale_pressure_dew(
+                self, overwrite=False)
 
     def components_in_phase(self, phase):
         """

@@ -56,83 +56,6 @@ orig_environ = {
     "DYLD_LIBRARY_PATH": os.environ.get("DYLD_LIBRARY_PATH", ""),
 }
 
-# Default configuration json string.  Store the default config like this because
-# it provides a nice example of how to write a config file and test to make sure
-# they get read properly.
-default_config = """
-{
-    "use_idaes_solvers":true,
-    "default_solver":"ipopt",
-    "logger_capture_solver":true,
-    "logger_tags":[
-        "framework",
-        "model",
-        "flowsheet",
-        "unit",
-        "control_volume",
-        "properties",
-        "reactions"
-    ],
-    "valid_logger_tags":[
-        "framework",
-        "model",
-        "flowsheet",
-        "unit",
-        "control_volume",
-        "properties",
-        "reactions",
-        "ui"
-    ],
-    "ipopt":{
-        "options":{
-            "nlp_scaling_method":"gradient-based",
-            "tol":1e-6
-        }
-    },
-    "logging":{
-        "version":1,
-        "disable_existing_loggers":false,
-        "formatters":{
-            "default_format":{
-                "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S"
-            }
-        },
-        "handlers":{
-            "console":{
-                "class": "logging.StreamHandler",
-                "formatter": "default_format",
-                "stream": "ext://sys.stdout"
-            }
-        },
-        "loggers":{
-            "idaes":{
-                "level": "INFO",
-                "propagate": true,
-                "handlers": ["console"]
-            },
-            "idaes.solve":{
-                "propagate": false,
-                "level": "INFO",
-                "handlers": ["console"]
-            },
-            "idaes.init":{
-                "propagate": false,
-                "level": "INFO",
-                "handlers": ["console"]
-            },
-            "idaes.model":{
-                "propagate":false,
-                "level": "INFO",
-                "handlers": ["console"]
-            }
-        }
-    }
-}
-"""
-
-cfg = None # the idaes ConfigBlock once it's created by new_idaes_config_block()
-
 class ConfigBlockJSONEncoder(json.JSONEncoder):
     """ This class handles non-serializable objects that may appear in the IDAES
     ConfigBlock. For now this is only set objects.
@@ -148,7 +71,6 @@ def _new_idaes_config_block():
     called in ``__init__.py`` for ``idaes``.  Calling it anywhere else will cause
     the idaes configuration system to function improperly.
     """
-    global cfg
     cfg = pyomo.common.config.ConfigBlock("idaes", implicit=True)
     cfg.declare(
         "logging",
@@ -159,7 +81,66 @@ def _new_idaes_config_block():
             "logging.config.dictConfig() documentation for details.",
         ),
     )
-
+    cfg["logging"].declare(
+        "version", pyomo.common.config.ConfigValue(domain=int, default=1))
+    cfg["logging"].declare(
+        "disable_existing_loggers",
+        pyomo.common.config.ConfigValue(domain=bool, default=False))
+    cfg["logging"].declare(
+        "formatters", pyomo.common.config.ConfigBlock(implicit=True))
+    cfg["logging"]["formatters"].declare(
+        "default_format", pyomo.common.config.ConfigBlock(implicit=True))
+    cfg["logging"]["formatters"]["default_format"].declare(
+        "format",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+    cfg["logging"]["formatters"]["default_format"].declare(
+        "datefmt",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="%Y-%m-%d %H:%M:%S"))
+    cfg["logging"].declare(
+        "handlers", pyomo.common.config.ConfigBlock(implicit=True))
+    cfg["logging"]["handlers"].declare(
+        "console", pyomo.common.config.ConfigBlock(implicit=True))
+    cfg["logging"]["handlers"]["console"].declare(
+        "class",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="logging.StreamHandler"))
+    cfg["logging"]["handlers"]["console"].declare(
+        "formatter",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="default_format"))
+    cfg["logging"]["handlers"]["console"].declare(
+        "stream",
+        pyomo.common.config.ConfigValue(
+            domain=str,
+            default="ext://sys.stdout"))
+    cfg["logging"].declare(
+        "loggers",
+        pyomo.common.config.ConfigValue(
+            domain=dict,
+            default={ # the period in the logger names is trouble for ConfigBlock
+                "idaes":{
+                    "level": "INFO",
+                    "propagate": True,
+                    "handlers": ["console"]
+                },
+                "idaes.solve":{
+                    "propagate": False,
+                    "handlers": ["console"]
+                },
+                "idaes.init":{
+                    "propagate": False,
+                    "handlers": ["console"]
+                },
+                "idaes.model":{
+                    "propagate":False,
+                    "handlers": ["console"]
+                }}))
     cfg.declare(
         "ipopt",
         pyomo.common.config.ConfigBlock(
@@ -224,9 +205,27 @@ def _new_idaes_config_block():
     )
 
     cfg.declare(
+        "use_idaes_solver_config",
+        pyomo.common.config.ConfigValue(
+            default=False,
+            domain=bool,
+            description="If True, use the configure IDAES solver default options.",
+            doc="If True, use the configure IDAES solver default options.",
+        ),
+    )
+
+    cfg.declare(
         "valid_logger_tags",
         pyomo.common.config.ConfigValue(
-            default=set(),
+            default=set([
+                "framework",
+                "model",
+                "flowsheet",
+                "unit",
+                "control_volume",
+                "properties",
+                "reactions",
+                "ui"]),
             domain=set,
             description="List of valid logger tags",
         ),
@@ -235,7 +234,14 @@ def _new_idaes_config_block():
     cfg.declare(
         "logger_tags",
         pyomo.common.config.ConfigValue(
-            default=set(),
+            default=set([
+                "framework",
+                "model",
+                "flowsheet",
+                "unit",
+                "control_volume",
+                "properties",
+                "reactions"]),
             domain=set,
             description="List of logger tags to allow",
         ),
@@ -248,51 +254,44 @@ def _new_idaes_config_block():
             description="Solver output captured by logger?",
         ),
     )
-    d = json.loads(default_config)
-    cfg.set_value(d)
-    logging.config.dictConfig(cfg["logging"])
     return cfg
 
 
-def read_config(read_config):
+def read_config(val, cfg):
     """Read either a JSON formatted config file or a configuration dictionary.
     Args:
-        read_config: A config file path or dict
+        val: dict, ConfigDict, or file to read
+        cfg: config block
     Returns:
         None
     """
-    global cfg
     config_file = None
-    if read_config is None:
+    if val is None:
         return
-    elif isinstance(read_config, (dict, pyomo.common.config.ConfigBlock)):
+    elif isinstance(val, (dict, pyomo.common.config.ConfigBlock)):
         pass  # don't worry this catches ConfigBlock too it seems
     else:
-        config_file = read_config
+        config_file = val
         try:
             with open(config_file, "r") as f:
-                read_config = json.load(f)
+                val = json.load(f)
         except IOError:  # don't require config file
-            _log.debug("Config file {} not found (this is okay)".format(read_config))
+            _log.debug("Config file {} not found (this is okay)".format(config_file))
             return
-    cfg.set_value(read_config)
-    logging.config.dictConfig(cfg["logging"])
+    cfg.set_value(val)
     if config_file is not None:
         _log.debug("Read config {}".format(config_file))
+    reconfig(cfg)
+
+def write_config(path, cfg=None):
+    if cfg is None:
+        cfg = _new_idaes_config_block()
+    with open(path, 'w') as f:
+        json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=4)
 
 
-def write_config(path, default=False):
-    if default:
-        _cd = json.loads(default_config)
-        with open(path, 'w') as f:
-            json.dump(_cd, f, indent=4)
-    else:
-        with open(path, 'w') as f:
-            json.dump(cfg.value(), f, cls=ConfigBlockJSONEncoder, indent=2)
-
-
-def reconfig():
-    read_config(cfg)
+def reconfig(cfg):
+    logging.config.dictConfig(cfg.logging.value())
     setup_environment(bin_directory, cfg.use_idaes_solvers)
 
 

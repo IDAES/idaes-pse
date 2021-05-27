@@ -38,7 +38,6 @@ import os
 import logging
 import pyomo.common.fileutils as futils
 import pyomo.common.download as dload
-from pyutilib.misc import import_file
 
 _install_idaes_workshop_materials_url = 'http://www.pyomo.org/s/install_idaes_workshop_materials.py'
 
@@ -76,7 +75,7 @@ def import_install_module(download_dest):
     """
     Imports the path in download_dest (install_idaes_workshop_materials.py module)
     """
-    install_module = import_file(download_dest)
+    install_module = futils.import_file(download_dest)
     print('... importing install module')
     return install_module
 
