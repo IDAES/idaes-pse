@@ -14,79 +14,14 @@ Some configuration options can be changed after importing ``idaes`` by calling
 
 Configuration files are in `JSON format <https://www.json.org/json-en.html>`_.
 The default configuration is shown below and can be used as a template to create
-new configuration files. This is the configuration used by IDAES if nothing else
-is provided.
+new configuration files. To get the IDAES default configuration the command
+``idaes config-write --file idaes.conf --default`` can be used.
 
-.. code-block:: json
+Command Line Tools
+------------------
 
-  {
-      "use_idaes_solvers":true,
-      "logger_capture_solver":true,
-      "logger_tags":[
-          "framework",
-          "model",
-          "flowsheet",
-          "unit",
-          "control_volume",
-          "properties",
-          "reactions"
-      ],
-      "valid_logger_tags":[
-          "framework",
-          "model",
-          "flowsheet",
-          "unit",
-          "control_volume",
-          "properties",
-          "reactions",
-          "ui"
-      ],
-      "ipopt":{
-          "options":{
-              "nlp_scaling_method":"gradient-based"
-          }
-      },
-      "logging":{
-          "version":1,
-          "disable_existing_loggers":false,
-          "formatters":{
-              "default_format":{
-                  "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-                  "datefmt": "%Y-%m-%d %H:%M:%S"
-              }
-          },
-          "handlers":{
-              "console":{
-                  "class": "logging.StreamHandler",
-                  "formatter": "default_format",
-                  "stream": "ext://sys.stdout"
-              }
-          },
-          "loggers":{
-              "idaes":{
-                  "level": "INFO",
-                  "propagate": true,
-                  "handlers": ["console"]
-              },
-              "idaes.solve":{
-                  "propagate": false,
-                  "level": "INFO",
-                  "handlers": ["console"]
-              },
-              "idaes.init":{
-                  "propagate": false,
-                  "level": "INFO",
-                  "handlers": ["console"]
-              },
-              "idaes.model":{
-                  "propagate":false,
-                  "level": "INFO",
-                  "handlers": ["console"]
-              }
-          }
-      }
-  }
-
+See ``idaes --help`` for information about command line configuration tools.
+These tools help manage configuration files.
 
 Global Configuration Files
 --------------------------
