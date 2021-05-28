@@ -32,12 +32,12 @@ Invocation
 ^^^^^^^^^^
 The IFV visualizes *flowsheets*. To get started with creating a flowsheet with IDAES, see the
 :ref:`Flowsheet models<user_guide/components/flowsheet/index:Flowsheet>` documentation page.
-Once you have created your flowsheet, simply call the `visualize` method on that object,
+Once you have created your flowsheet, simply call the :ref:`visualize <visualize-function>` method on that object,
 passing some parameters to give it a name and optional file for saving changes::
 
     # First, create your IDAES model, "m", which has an attribute ".fs" for the flowsheet
     # Then, invoke the `visualize` method
-    m.fs.visualize("My Flowsheet", save_as="my_flowsheet.json")
+    m.fs.visualize("My Flowsheet")
 
 The invocation of the `visualize` method will pop up a browser tab or window with the UI, displaying the
 flowsheet and, if the information is available, the stream table. In the notebook or script, you can continue
@@ -211,12 +211,13 @@ documentation for details.
 Reference
 ---------
 
-.. currentmodule:: idaes.ui.fsvis.fsvis
+.. currentmodule:: idaes.ui.fsvis
 
 .. _visualize-function:
 
 .. autofunction:: visualize
 
+.. autodata:: VisualizeResult
 
 Software notes
 ^^^^^^^^^^^^^^

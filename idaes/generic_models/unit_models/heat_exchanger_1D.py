@@ -609,7 +609,7 @@ thickness of the tube""",
         tube_state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Initialization routine for the unit.
@@ -620,8 +620,9 @@ thickness of the tube""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -732,9 +733,12 @@ thickness of the tube""",
         super().calculate_scaling_factors()
 
         for i, c in self.shell_heat_transfer_eq.items():
-            iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.shell.heat[i], default=1, warning=True))
+            iscale.constraint_scaling_transform(
+                c, iscale.get_scaling_factor(
+                    self.shell.heat[i], default=1, warning=True),
+                overwrite=False)
 
         for i, c in self.tube_heat_transfer_eq.items():
             iscale.constraint_scaling_transform(c, iscale.get_scaling_factor(
-                self.tube.heat[i], default=1, warning=True))
+                    self.tube.heat[i], default=1, warning=True),
+                overwrite=False)
