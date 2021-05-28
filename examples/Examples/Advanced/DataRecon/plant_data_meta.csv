@@ -1,0 +1,49 @@
+MS_P,,Main steam pressure,Pa
+MS_T,,Main steam temperature,K
+MS_F,,Main steam mole flow,mol/s
+POWER_GROSS,,Gross power output,W
+FG_2_RH_Fm,,Reheater flue gas inlet mass flow,kg/s
+FG_2_RH_T,,Reheater flue gas inlet temperature,K
+FG_2_RH_P,,Reheater flue gas inlet pressure,Pa
+FG_RH_2_Mix_Fm,,Reheater flue gas outlet mass flow,kg/s
+FG_RH_2_Mix_T,,Reheater flue gas oulet temperature,K
+FG_RH_2_Mix_P,,Reheater flue gas outlet pressure,Pa
+FG_2_FSH_Fm,,FSH flue gas inlet mass flow,kg/s
+FG_2_FSH_T,,FSH flue gas inlet temperature,K
+FG_2_FSH_P,,FSH flue gas inlet pressure,Pa
+FG_2_PrSH_Fm,,PrSH flue gas inlet mass flow,kg/s
+FG_2_PrSH_T,,PrSH flue gas inlet temperature,K
+FG_2_PrSH_P,,PrSH flue gas inlet pressure,Pa
+FG_PrSH_2_Mix_Fm,,PrSH flue gas outlet mass flow,kg/s
+FG_PrSH_2_Mix_T,,PrSH flue gas outlet temperature,K
+FG_PrSH_2_Mix_P,,PrSH flue gas outlet pressure,Pa
+FG_2_ECON_Fm,,Econ flue gas inlet mass flow,kg/s
+FG_2_ECON_T,,Econ flue gas inlet temperature,K
+FG_2_ECON_P,,Econ flue gas inlet pressure,Pa
+FG_2_AIRPH_Fm,,Econ flue gas outlet mass flow,kg/s
+FG_2_AIRPH_T,,Econ flue gas outlet temperature,K
+FG_2_AIRPH_P,,Econ flue gas outlet pressure,Pa
+ATMP_In_F,,Atemp steam inlet mole flow,mol/s
+ATMP_In_T,,Atemp steam inlet temperature,K
+ATMP_In_P,,Atemp steam inlet pressure,Pa
+FSH_In_F,,FSH steam inlet mole flow,mol/s
+FSH_In_T,,FSH steam inlet temperature,K
+FSH_In_P,,FSH steam inlet pressure,Pa
+PrSH_IN_F,,PrSH steam inlet mole flow,mol/s
+PrSH_IN_T,,PrSH steam inlet temperature,K
+PrSH_IN_P,,PrSH steam inlet pressure,Pa
+RHT_COLD_F,,Reheater steam inlet mole flow,mol/s
+RHT_COLD_T,,Reheat steam inlet temperature,K
+RHT_COLD_P,,Reheater steam inlet pressure,Pa
+RHT_HOT_F,,Reheater steam outlet mole flow,mol/s
+RHT_HOT_T,,Reheat steam outlet temperature,K
+RHT_HOT_P,,Reheat steam outlet pressure,Pa
+PlatenSH_IN_F,,PlatenSH steam inlet mole flow,mol/s
+PlatenSH_IN_T,,PlatenSH steam inlet temperature,K
+PlatenSH_IN_P,,PlatenSH steam inlet pressure,Pa
+BFW_F,,Econ steam inlet mole flow,mol/s
+BFW_T,,Econ steam inlet temperature,K
+BFW_P,,Econ steam inlet pressure,Pa
+ECON_OUT_F,,Econ steam outlet mole flow,mol/s
+ECON_OUT_T,,Econ steam outlet temperature,K
+ECON_OUT_P,,Econ steam outlet pressure,Pa
