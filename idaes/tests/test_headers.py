@@ -2,15 +2,12 @@
 Test that headers are on all files
 """
 # stdlib
-import logging
 from pathlib import Path
 import os
 # third-party
 from addheader.add import FileFinder, detect_files
 import pytest
 import yaml
-
-_log = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -25,19 +22,19 @@ def package_root():
 def patterns(package_root):
     """Grab glob patterns from config file.
     """
-    conf_file = package_root.parent / "addheader.cfg"
+    conf_file = package_root.parent / "addheader.yml"
     if not conf_file.exists():
         print(f"Cannot load configuration file from '{conf_file}'. Perhaps this is not development mode?")
         return None
     with open(conf_file) as f:
         conf_data = yaml.load(f)
-    _log.debug(f"Patterns for finding files with headers: {patterns}")
+    print(f"Patterns for finding files with headers: {conf_data['patterns']}")
     return conf_data["patterns"]
 
 
 def test_headers(package_root, patterns):
     if patterns is None:
-        _log.error(f"Did not get glob patterns: skipping test")
+        print(f"ERROR: Did not get glob patterns: skipping test")
     else:
         # modify patterns to match the files that should have headers
         ff = FileFinder(package_root, glob_patterns=patterns)
@@ -46,7 +43,7 @@ def test_headers(package_root, patterns):
             pfx = str(package_root.resolve())
             pfx_len = len(pfx)
             file_list = ", ".join([str(p)[pfx_len + 1:] for p in missing_header])
-            _log.error(f"Missing headers from files under '{pfx}{os.path.sep}': {file_list}")
+            print(f"Missing headers from files under '{pfx}{os.path.sep}': {file_list}")
         # uncomment to require all files to have headers
         # assert len(missing_header) == 0
         assert len(missing_header) < 30

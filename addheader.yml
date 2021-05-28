@@ -3,6 +3,6 @@ root: idaes
 text: COPYRIGHT.md
 patterns:
    - "*.py"
-   - "~__init__.py"
+   - "~__init__.py" # '~' means negate this pattern
 verbose: 1
 ...
