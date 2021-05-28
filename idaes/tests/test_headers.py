@@ -1,3 +1,24 @@
+###############################################################################
+# Copyright
+# =========
+#
+# Institute for the Design of Advanced Energy Systems Process Systems Engineering
+# Framework (IDAES PSE Framework) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021 by the
+# software owners: The Regents of the University of California, through Lawrence
+# Berkeley National Laboratory,  National Technology & Engineering Solutions of
+# Sandia, LLC, Carnegie Mellon University, West Virginia University Research
+# Corporation, et al.  All rights reserved.
+#
+# NOTICE.  This Software was developed under funding from the U.S. Department of
+# Energy and the U.S. Government consequently retains certain rights. As such, the
+# U.S. Government has been granted for itself and others acting on its behalf a
+# paid-up, nonexclusive, irrevocable, worldwide license in the Software to
+# reproduce, distribute copies to the public, prepare derivative works, and
+# perform publicly and display publicly, and to permit other to do so. Copyright
+# (C) 2018-2019 IDAES - All Rights Reserved
+#
+###############################################################################
 """
 Test that headers are on all files
 """
@@ -45,5 +66,5 @@ def test_headers(package_root, patterns):
             file_list = ", ".join([str(p)[pfx_len + 1:] for p in missing_header])
             print(f"Missing headers from files under '{pfx}{os.path.sep}': {file_list}")
         # uncomment to require all files to have headers
-        # assert len(missing_header) == 0
-        assert len(missing_header) < 30
+        assert len(missing_header) == 0
+        
