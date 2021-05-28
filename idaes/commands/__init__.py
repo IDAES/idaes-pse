@@ -10,10 +10,14 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-import pkgutil
+
+import time
+
+_command_import_start_time = time.time()
 
 from idaes.commands.base import command_base as cb
 
+import pkgutil
 # import all the commands
 for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):
     if module_name == "base":
@@ -22,3 +26,5 @@ for loader, module_name, is_pkg in pkgutil.walk_packages(__path__):
         pass
     else:
         loader.find_module(module_name).load_module(module_name)
+
+_command_import_total_time = time.time() - _command_import_start_time
