@@ -29,8 +29,9 @@ from pyomo.environ import (
         )
 from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
 from pyomo.common.collections import ComponentSet, ComponentMap
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.unittest import TestCase
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.util.subsystems import ParamSweeper
 
 from idaes.core import FlowsheetBlock
 
@@ -323,7 +324,7 @@ def _solve_strongly_connected_components(block):
             _temp.other_vars[:].unfix()
 
 
-class ParamSweeper(object):
+class _ParamSweeper(object):
 
     def __init__(self, state_block, state_values, target_values, n_scenario):
         self.state_block = state_block
@@ -429,6 +430,8 @@ class TestProperties(TestCase):
                 "mole_frac_comp[H2O]": [0.0, 0.0, 0.25, 0.0, 1.0, 0.0, 0.5],
                 "mole_frac_comp[CO2]": [0.0, 0.0, 0.25, 0.0, 0.0, 1.0, 0.5],
                 }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
         target_values = {
                 "mw": [
                     32.0*pyunits.g/pyunits.mol,
@@ -440,15 +443,31 @@ class TestProperties(TestCase):
                     31.0*pyunits.g/pyunits.mol,
                     ]
                 }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
 
         # Construct mw and all prerequisites
         state.mw
 
-        with ParamSweeper(state, state_values, target_values, n_scenario)\
-                as subsystems:
-            for block, target in subsystems:
-                _solve_strongly_connected_components(block)
-                assert number_large_residuals(block, tol=1e-8) == 0
+        param_sweeper = ParamSweeper(
+                n_scenario,
+                state_values,
+                output_values=target_values,
+                )
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Check that state block has been been solved correctly
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs have been set properly
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(val, abs=1e-8)
+
+                # Check that the state block computes the property values
+                # we expect
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(val, abs=1e-8)
@@ -485,29 +504,38 @@ class TestProperties(TestCase):
                 "mole_frac_comp[H2O]": [0.25]*n_scen,
                 "mole_frac_comp[CO2]": [0.25]*n_scen,
                 }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
 
+        u = pyunits.mol/pyunits.m**3
         target_values = {
                 "dens_mol": [
                     # Calculated by P*1e5/(T*8.314462618)
-                    60.136*pyunits.mol/pyunits.m**3,
-                    40.091*pyunits.mol/pyunits.m**3,
-                    20.045*pyunits.mol/pyunits.m**3,
-                    13.364*pyunits.mol/pyunits.m**3,
-                    10.023*pyunits.mol/pyunits.m**3,
-                    5.011*pyunits.mol/pyunits.m**3,
-                    15.034*pyunits.mol/pyunits.m**3,
-                    20.045*pyunits.mol/pyunits.m**3,
+                    60.136*u, 40.091*u, 20.045*u, 13.364*u, 10.023*u,
+                    5.011*u, 15.034*u, 20.045*u,
                     ]
                 }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
 
         # Construct dens_mol and all prerequisites
         state.dens_mol
 
-        with ParamSweeper(state, state_values, target_values, n_scen)\
-                as subsystems:
-            for block, target in subsystems:
-                _solve_strongly_connected_components(block)
-                assert number_large_residuals(block, tol=1e-8) == 0
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Check that state block equations have been convered
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs are what we expect
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(val, abs=1e-3)
+
+                # Check that state block performs the calculations we expect
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(val, abs=1e-3)
@@ -526,47 +554,47 @@ class TestProperties(TestCase):
                 "mole_frac_comp[H2O]": [0.0, 0.0, 1.0, 0.0, 0.25],
                 "mole_frac_comp[CO2]": [0.0, 0.0, 0.0, 1.0, 0.25],
                 }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
 
+        u = pyunits.mol/pyunits.m**3
         target_values = {
-                "dens_mol": [10.023*pyunits.mol/pyunits.m**3]*n_scen,
+                "dens_mol": [10.023*u]*n_scen,
                 "dens_mol_comp[O2]": [
-                    10.023*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    10.023*u, 0.0*u, 0.0*u, 0.0*u, 0.25*10.023*u,
                     ],
                 "dens_mol_comp[N2]": [
-                    0.0*pyunits.mol/pyunits.m**3,
-                    10.023*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    0.0*u, 10.023*u, 0.0*u, 0.0*u, 0.25*10.023*u,
                     ],
                 "dens_mol_comp[H2O]": [
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    10.023*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    0.0*u, 0.0*u, 10.023*u, 0.0*u, 0.25*10.023*u,
                     ],
                 "dens_mol_comp[CO2]": [
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    0.0*pyunits.mol/pyunits.m**3,
-                    10.023*pyunits.mol/pyunits.m**3,
-                    0.25*10.023*pyunits.mol/pyunits.m**3,
+                    0.0*u, 0.0*u, 0.0*u, 10.023*u, 0.25*10.023*u,
                     ],
                 }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
 
         # Construct dens_mol_comp and all prerequisites
         state.dens_mol_comp
 
-        with ParamSweeper(state, state_values, target_values, n_scen)\
-                as subsystems:
-            for block, target in subsystems:
-                _solve_strongly_connected_components(block)
-                assert number_large_residuals(block, tol=1e-8) == 0
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Make sure property equations have been converged
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs have been set properly
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    # ^ Problem converting units when value is zero
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure property values are what we expect
                 for var, val in target.items():
                     #val = value(pyunits.convert(val, var.get_units()))
                     # ^ Problem converting units when value is zero
@@ -599,6 +627,8 @@ class TestProperties(TestCase):
                 "mole_frac_comp[CO2]": [
                     0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25, 0.25],
                 }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
 
         target_values = {"visc_d": [
             # These values were copied after a solve.
@@ -612,15 +642,27 @@ class TestProperties(TestCase):
             3.909320395131273e-05*pyunits.Pa*pyunits.s,
             4.838841106600266e-05*pyunits.Pa*pyunits.s,
             ]}
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
 
         # Construct visc_d and all prerequisites
         state.visc_d
 
-        with ParamSweeper(state, state_values, target_values, n_scen)\
-                as subsystems:
-            for block, target in subsystems:
-                _solve_strongly_connected_components(block)
-                assert number_large_residuals(block, tol=1e-8) == 0
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Make sure property equations have been converged
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
                 for var, val in target.items():
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), abs=1e-3)
