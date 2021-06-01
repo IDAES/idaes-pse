@@ -1,6 +1,8 @@
+# Usage: 
+# addheader -c addheader.yml
 ---
 root: idaes
-text: COPYRIGHT.md
+text: file_header.txt
 patterns:
    - "*.py"
 verbose: 1
