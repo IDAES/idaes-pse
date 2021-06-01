@@ -17,7 +17,7 @@ Tests for rate forms
 import pytest
 
 from pyomo.environ import \
-    Block, ConcreteModel, Param, Var, units as pyunits, value
+    ConcreteModel, units as pyunits, value, SolverStatus, TerminationCondition
 
 from idaes.generic_models.properties.core.generic.generic_property import \
     GenericParameterBlock
@@ -26,11 +26,17 @@ from idaes.generic_models.properties.core.generic.generic_reaction import \
 
 # Import IDAES cores
 from idaes.core import LiquidPhase, SolidPhase, Component
+from idaes.core.util import get_solver
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
     solubility_product
+from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
+    ConstantKeq
+
+
+solver = get_solver()
 
 
 def dummy_h(b, **kwargs):
@@ -71,17 +77,98 @@ thermo_config = {
     "temperature_ref": (300, pyunits.K)}
 
 
-@pytest.fixture
+rxn_config = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "S2": {"stoichiometry": {("Liq", "A"): -1,
+                                 ("Liq", "B"): -1,
+                                 ("Sol", "C"): 1},
+               "equilibrium_constant": ConstantKeq,
+               "equilibrium_form": solubility_product,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "k_eq_ref": (0.1, None)}}}}
+
+
+@pytest.fixture(scope="module")
 def model():
     m = ConcreteModel()
 
-    # # Add a test thermo package for validation
+    # Add a test thermo package for validation
     m.pparams = GenericParameterBlock(default=thermo_config)
+    m.rparams = GenericReactionParameterBlock(default={
+        "property_package": m.pparams, **rxn_config})
 
-    m.state = m.pparams.build_state_block([0])
+    m.state = m.pparams.build_state_block(
+        [0], default={"defined_state": False})
+
+    m.rxn = m.rparams.build_reaction_block(
+        [0], default={"state_block": m.state, "has_equilibrium": True})
 
     return m
 
 
-def test_1(model):
-    assert model.state[0].temperature.fixed
+@pytest.mark.integration
+def test_saturated(model):
+    assert model.state[0].phase_component_set == [
+        ("Liq", "A"), ("Liq", "B"), ("Sol", "C")]
+
+    model.state[0].mole_frac_comp["C"].set_value(0.18)
+
+    # Set liquid phase compositions
+    for i in range(15):
+        A = 0.15+0.05*i
+        B = 0.1/A
+        C = 1-A-B
+
+        model.state[0].mole_frac_comp["A"].fix(A)
+        model.state[0].mole_frac_comp["B"].fix(B)
+
+        results = solver.solve(model)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert pytest.approx(C, rel=1e-5) == value(
+            model.state[0].mole_frac_comp["C"])
+
+
+@pytest.mark.integration
+def test_subsaturated(model):
+    # Set liquid phase compositions
+    for i in range(12):
+        A = 1-0.01*i
+        B = 1-A
+
+        model.state[0].mole_frac_comp["A"].fix(A)
+        model.state[0].mole_frac_comp["B"].fix(B)
+
+        results = solver.solve(model)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert pytest.approx(0, abs=1e-5) == value(
+            model.state[0].mole_frac_comp["C"])
+
+    for i in range(12):
+        B = 1-0.01*i
+        A = 1-B
+
+        model.state[0].mole_frac_comp["A"].fix(A)
+        model.state[0].mole_frac_comp["B"].fix(B)
+
+        results = solver.solve(model, tee=True)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert pytest.approx(0, abs=1e-5) == value(
+            model.state[0].mole_frac_comp["C"])
