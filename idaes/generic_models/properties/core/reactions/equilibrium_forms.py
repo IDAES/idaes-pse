@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Methods for defining equibilibrium reactions
+Methods for defining equilibrium reactions
 """
 from pyomo.environ import Param, units as pyunits
 
@@ -123,7 +123,7 @@ class log_power_law_equil():
 # ----------------------------------------------------------------------------
 class solubility_product():
     """
-    Complementaryity formulation for solid precipitation
+    Complementariity formulation for solid precipitation
     Thanks to Larry Biegler for the formulation
 
     Like any phase equilibrium, solid precipitation is complicated by
@@ -138,13 +138,13 @@ class solubility_product():
         * If S = 0, Q >= 0
 
     Thus, only one of S and Q can be greater than zero at any time.
-    This can be written in the for of a complementarity constraint as:
+    This can be written in the form of a complementarity constraint as:
 
         * S - MAX(0, S-Q) == 0
 
-    In this implentation, a smooth maximum approximation is used, and S is
+    In this implementation, a smooth maximum approximation is used, and S is
     assumed to be the sum of the concentration any solids formed in the
-    reaction. This alows for multiple solid products, and only applies the
+    reaction. This allows for multiple solid products, and only applies the
     solubility product if all concentrations are non-zero.
     """
 
