@@ -19,7 +19,7 @@ from pyomo.environ import ConcreteModel, Constraint, Var, value, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import CustomModel
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_solver
+from idaes.core.util import get_solver
 
 __author__ = "Jaffer Ghouse"
 
