@@ -168,7 +168,12 @@ class Ideal(EoSBase):
         if pobj.is_vapor_phase():
             return log(b.get_mole_frac()[p, j]) + log(b.pressure)
         elif pobj.is_liquid_phase():
-            if cobj(b, j).config.has_vapor_pressure:
+            if (cobj(b, j).config.henry_component is not None and
+                    p in cobj(b, j).config.henry_component):
+                # Use Henry's Law
+                return log(b.get_mole_frac()[p, j]) + log(b.henry[p, j])
+            elif cobj(b, j).config.has_vapor_pressure:
+                # Use Raoult's Law
                 return (log(b.get_mole_frac()[p, j]) +
                         log(get_method(b, "pressure_sat_comp", j)(
                             b, cobj(b, j), b.temperature)))
@@ -196,28 +201,28 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return log(1)
+        return 0
 
     @staticmethod
     def log_fug_coeff_phase_comp_Tdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return log(1)
+        return 0
 
     @staticmethod
     def log_fug_coeff_phase_comp_Pbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return log(1)
+        return 0
 
     @staticmethod
     def log_fug_coeff_phase_comp_Pdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
         if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return log(1)
+        return 0
 
     @staticmethod
     def gibbs_mol_phase(b, p):
@@ -243,7 +248,12 @@ def _fug_phase_comp(b, p, j, T):
     if pobj.is_vapor_phase():
         return b.get_mole_frac()[p, j] * b.pressure
     elif pobj.is_liquid_phase():
-        if cobj(b, j).config.has_vapor_pressure:
+        if (cobj(b, j).config.henry_component is not None and
+                p in cobj(b, j).config.henry_component):
+            # Use Henry's Law
+            return b.get_mole_frac()[p, j] * b.henry[p, j]
+        elif cobj(b, j).config.has_vapor_pressure:
+            # Use Raoult's Law
             return (b.get_mole_frac()[p, j] *
                     get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), T))

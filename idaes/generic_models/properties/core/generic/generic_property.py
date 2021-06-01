@@ -23,7 +23,6 @@ from pyomo.environ import (Block,
                            Expression,
                            Set,
                            Param,
-                           SolverFactory,
                            value,
                            Var,
                            units as pyunits)
@@ -893,6 +892,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol': {'method': '_gibbs_mol'},
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase'},
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
+             'henry': {'method': '_henry'},
              'mw': {'method': '_mw'},
              'mw_phase': {'method': '_mw_phase'},
              'pressure_bubble': {'method': '_pressure_bubble'},
@@ -1602,7 +1602,7 @@ class GenericStateBlockData(StateBlockData):
                     try:
                         iscale.set_scaling_factor(v, sf_mf[p, i[2]])
                     except KeyError:
-                        # component i[2] is no in the vapor phase, so this
+                        # component i[2] is not in the vapor phase, so this
                         # variable is likely unused and scale doesn't matter
                         iscale.set_scaling_factor(v, 1)
             self.params.config.bubble_dew_method.scale_temperature_bubble(
@@ -1623,7 +1623,7 @@ class GenericStateBlockData(StateBlockData):
                     try:
                         iscale.set_scaling_factor(v, sf_mf[p, i[2]])
                     except KeyError:
-                        # component i[2] is no in the liquid phase, so this
+                        # component i[2] is not in the liquid phase, so this
                         # variable is likely unused and scale doesn't matter
                         iscale.set_scaling_factor(v, 1)
             self.params.config.bubble_dew_method.scale_temperature_dew(
@@ -2337,6 +2337,23 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_gibbs_mol_phase_comp)
         except AttributeError:
             self.del_component(self.gibbs_mol_phase_comp)
+            raise
+
+    def _henry(self):
+        try:
+            def henry_rule(b, p, j):
+                cobj = b.params.get_component(j)
+                if (cobj.config.henry_component is not None and
+                        p in cobj.config.henry_component):
+                    return cobj.config.henry_component[p].return_expression(
+                        b, p, j)
+                else:
+                    return Expression.Skip
+            self.henry = Expression(
+                self.phase_component_set,
+                rule=henry_rule)
+        except AttributeError:
+            self.del_component(self.henry)
             raise
 
     def _mw(self):

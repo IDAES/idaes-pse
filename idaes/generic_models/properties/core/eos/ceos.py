@@ -35,7 +35,8 @@ from idaes.core.util.math import safe_log
 from .eos_base import EoSBase
 from idaes import bin_directory
 import idaes.logger as idaeslog
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import \
+    BurntToast, ConfigurationError, PropertyNotSupportedError
 
 
 # Set up logger
@@ -83,6 +84,16 @@ class Cubic(EoSBase):
 
     @staticmethod
     def common(b, pobj):
+        # TODO: determine if Henry's Law applies ot Cubic EoS systems
+        # For now, raise an exception if found
+        for j in b.component_list:
+            cobj = b.params.get_component(j)
+            if (cobj.config.henry_component is not None and
+                    pobj.local_name in cobj.config.henry_component):
+                raise PropertyNotSupportedError(
+                    "{} Cubic equations of state do not support Henry's "
+                    "components [{}, {}].".format(b.name, pobj.local_name, j))
+
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
 
