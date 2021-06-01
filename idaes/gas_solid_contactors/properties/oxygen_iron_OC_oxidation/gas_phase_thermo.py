@@ -194,6 +194,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Component diffusion volumes:
         # Ref: (1) Prop gas & liquids (2) Fuller et al. IECR, 58(5), 19, 1966
+        # TODO: What are the units of these parameters?
         diff_vol_param_dict = {'O2': 16.6, 'N2': 17.9,
                                'CO2': 26.9, 'H2O': 13.1}
         self.diff_vol_param = Param(self.component_list,
@@ -600,18 +601,21 @@ class GasPhaseStateBlockData(StateBlockData):
         # Component diffusion in a gas mixture - units of cm2/s to help scaling
         self.diffusion_comp = Var(self._params.component_list,
                                   domain=Reals,
-                                  initialize=1e-5,
+                                  initialize=1.0,
                                   doc='Component diffusion in a gas mixture'
                                   '[cm2/s]',
                                   units=pyunits.cm**2/pyunits.s)
 
         def D_bin(i, j):
             # 1e3 used to multiply MW to convert from kg/mol to kg/kmol
+            # TODO: Does this factor of 1.43e-3 have units?
             return ((1.43e-3*(self.temperature**1.75) *
-                     ((1e3 * self._params.mw_comp[i] +
-                       1e3 * self._params.mw_comp[j])
-                     / (2 * (1e3 * self._params.mw_comp[i]) *
-                        (1e3*self._params.mw_comp[j])))**0.5)
+                     ((1e3*pyunits.g/pyunits.kg * self._params.mw_comp[i] +
+                       1e3*pyunits.g/pyunits.kg * self._params.mw_comp[j])
+                     / (2 * 
+                         (1e3*pyunits.g/pyunits.kg * self._params.mw_comp[i]) *
+                         (1e3*pyunits.g/pyunits.kg * self._params.mw_comp[j])
+                       ))**0.5)
                     / ((self.pressure)
                         * ((self._params.diff_vol_param[i]**(1/3))
                             + (self._params.diff_vol_param[j]**(1/3)))**2))
