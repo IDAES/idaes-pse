@@ -784,6 +784,245 @@ class TestProperties(TestCase):
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), abs=1e-3)
 
+    def test_cp(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 8
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    300.0*pyunits.K,
+                    600.0*pyunits.K,
+                    900.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    ],
+                "pressure": [1.0*pyunits.bar]*n_scen,
+                "mole_frac_comp[O2]":  [
+                    1.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[N2]":  [
+                    0.0, 1.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[H2O]": [
+                    0.0, 0.0, 1.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[CO2]": [
+                    0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25, 0.25],
+                }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
+
+        u = pyunits.kJ/pyunits.mol/pyunits.K
+        kJkgK = pyunits.kJ/pyunits.kg/pyunits.K
+        target_values = {
+                "cp_mol_comp[O2]": [
+                    0.03566421043844448*u,
+                    0.03566421043844444*u,
+                    0.03566421043844444*u,
+                    0.03566421043844444*u,
+                    0.02408660519211111*u,
+                    0.031970683705777776*u,
+                    0.03435676292601234*u,
+                    0.03566421043844444*u,
+                    ],
+                "cp_mol_comp[N2]": [
+                    0.03372177593533332*u,
+                    0.03372177593533333*u,
+                    0.03372177593533333*u,
+                    0.03372177593533333*u,
+                    0.03059729435133333*u,
+                    0.030104019077333333*u,
+                    0.03208929344525926*u,
+                    0.03372177593533333*u,
+                    ],
+                "cp_mol_comp[H2O]": [
+                    0.0437510227322222*u,
+                    0.04375102273222223*u,
+                    0.04375102273222223*u,
+                    0.04375102273222223*u,
+                    0.03359738794555556*u,
+                    0.036317861208888885*u,
+                    0.039997715202839505*u,
+                    0.04375102273222223*u,
+                    ],
+                "cp_mol_comp[CO2]": [
+                    0.05634605443600005*u,
+                    0.056346054436000007*u,
+                    0.056346054436000007*u,
+                    0.056346054436000007*u,
+                    0.037217621149000006*u,
+                    0.047317934392*u,
+                    0.053001289534111116*u,
+                    0.056346054436000007*u,
+                    ],
+                "cp_mol": [
+                    0.03566421043844448*u,
+                    0.03372177593533333*u,
+                    0.04375102273222223*u,
+                    0.056346054436000007*u,
+                    0.0313747271595*u,
+                    0.036427624596*u,
+                    0.03986126527705556*u,
+                    0.25*(
+                        # Component values at 1200 K have been computed.
+                        0.03566421043844444*u +
+                        0.03372177593533333*u +
+                        0.04375102273222223*u +
+                        0.056346054436000007*u
+                        ),
+                    ],
+                "cp_mass": [
+                    1.1145065762013922*kJkgK,
+                    1.2043491405476134*kJkgK,
+                    2.4306123740123473*kJkgK,
+                    1.280592146272725*kJkgK,
+                    1.0286795790000056*kJkgK,
+                    1.194348347409837*kJkgK,
+                    1.3069267303952685*kJkgK,
+                    1.3892054388688537*kJkgK,
+                    ],
+                }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
+
+        # Construct cp_mass and all prerequisites.
+        # This constructs cp_mol and cp_mol_comp as well.
+        state.cp_mass
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Make sure property equations have been converged
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in target.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+    def test_enth(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 8
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    300.0*pyunits.K,
+                    600.0*pyunits.K,
+                    900.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    ],
+                "pressure": [1.0*pyunits.bar]*n_scen,
+                "mole_frac_comp[O2]":  [
+                    1.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[N2]":  [
+                    0.0, 1.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[H2O]": [
+                    0.0, 0.0, 1.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[CO2]": [
+                    0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25, 0.25],
+                }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
+
+        u = pyunits.kJ/pyunits.mol
+        target_values = {
+                "enth_mol_comp[O2]": [
+                    29.760175857866656*u,
+                    29.760175857866656*u,
+                    29.760175857866656*u,
+                    29.760175857866656*u,
+                    0.5175085434916653*u,
+                    9.248259058533336*u,
+                    19.241674269713887*u,
+                    29.760175857866656*u,
+                    ],
+                "enth_mol_comp[N2]": [
+                    28.1081423656*u,
+                    28.1081423656*u,
+                    28.1081423656*u,
+                    28.1081423656*u,
+                    -0.021818752399997976*u,
+                    8.8939164816*u,
+                    18.223311732266666*u,
+                    28.1081423656*u,
+                    ],
+                "enth_mol_comp[H2O]": [
+                    34.505905041333335*u,
+                    34.505905041333335*u,
+                    34.505905041333335*u,
+                    34.505905041333335*u,
+                    0.06267505633334736*u,
+                    10.500564354666665*u,
+                    21.939189237444452*u,
+                    34.505905041333335*u,
+                    ],
+                "enth_mol_comp[CO2]": [
+                    44.474410900800024*u,
+                    44.474410900800024*u,
+                    44.474410900800024*u,
+                    44.474410900800024*u,
+                    0.06585135367498651*u,
+                    12.906441898799983*u,
+                    28.031785067675003*u,
+                    44.474410900800024*u,
+                    ],
+                "enth_mol": [
+                    29.760175857866656*u,
+                    28.1081423656*u,
+                    34.505905041333335*u,
+                    44.474410900800024*u,
+                    0.15605405027500296*u,
+                    10.387295448399996*u,
+                    21.858990076775*u,
+                    0.25*(
+                        29.760175857866656*u +
+                        28.1081423656*u +
+                        34.505905041333335*u +
+                        44.474410900800024*u
+                        ),
+                    ],
+                }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
+
+        # Construct enth_mol and all prerequisites, including enth_mol_comp
+        state.enth_mol
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Make sure property equations have been converged
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in target.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
 
 if __name__ == "__main__":
     test_state_vars()
@@ -797,3 +1036,5 @@ if __name__ == "__main__":
     test.test_visc_d()
     test.test_diffusion_comp()
     test.test_therm_cond()
+    test.test_cp()
+    test.test_enth()
