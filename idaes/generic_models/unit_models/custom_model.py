@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Generic template for a surrogate unit model.
+Generic template for a custom unit model.
 """
 
 from pyomo.environ import Reference, SolverFactory
@@ -30,11 +30,12 @@ __author__ = "Jaffer Ghouse"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("SurrogateModel")
-class SurrogateModelData(ProcessBlockData):
+@declare_process_block_class("CustomModel")
+class CustomModelData(ProcessBlockData):
     """
-    This is the class for a surrogate unit model. This will provide a user
-    with a generic skeleton to add a surrogate unit model.
+    This is the class for a custom unit model. This will provide a user
+    with a generic skeleton to add a custom or a surrogate unit model
+    when controlvolumes are not required.
     """
 
     # Create Class ConfigBlock
@@ -43,11 +44,11 @@ class SurrogateModelData(ProcessBlockData):
         default=False,
         domain=In([False]),
         description="Dynamic model flag",
-        doc="""Surrogate model assumed to be steady-state."""))
+        doc="""Custom model assumed to be steady-state."""))
 
     def build(self):
         """
-        General build method for SurrogateModelBlockData.
+        General build method for CustomModelBlockData.
 
         Inheriting models should call `super().build`.
 
@@ -57,7 +58,7 @@ class SurrogateModelData(ProcessBlockData):
         Returns:
             None
         """
-        super(SurrogateModelData, self).build()
+        super(CustomModelData, self).build()
 
     def add_ports(self, name=None, member_list=None, doc=None):
         """
