@@ -16,4 +16,4 @@ from .feed_flash import FeedFlash
 from .statejunction import StateJunction
 from .translator import Translator
 from .valve import ValveFunctionType, Valve, ValveData
-from .surrogate_model import SurrogateModel
+from .custom_model import CustomModel
