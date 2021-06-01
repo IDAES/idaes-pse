@@ -596,6 +596,194 @@ class TestProperties(TestCase):
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), abs=1e-3)
 
+    def test_diffusion_comp(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 11
+        bar = pyunits.bar
+        K = pyunits.K
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [
+                    1200.0*K, 1200.0*K, 1200.0*K, 1200.0*K,
+                    300.0*K, 600.0*K, 900.0*K, 1200.0*K,
+                    1200.0*K, 1200.0*K, 1200.0*K,
+                    ],
+                "pressure": [
+                    1.0*bar, 1.0*bar, 1.0*bar, 1.0*bar,
+                    1.0*bar, 1.0*bar, 1.0*bar, 1.0*bar,
+                    0.5*bar, 1.5*bar, 2.0*bar,
+                    ],
+                "mole_frac_comp[O2]":  [
+                    # Note that diffusivity is not defined for a pure
+                    # component in itself (zero gradient, zero net diffusion)
+                    0.90, 0.025, 0.025, 0.025, 0.25, 0.25, 0.25, 0.25,
+                    0.25, 0.25, 0.25],
+                "mole_frac_comp[N2]":  [
+                    0.025, 0.90, 0.025, 0.025, 0.25, 0.25, 0.25, 0.25,
+                    0.25, 0.25, 0.25],
+                "mole_frac_comp[H2O]": [
+                    0.025, 0.025, 0.90, 0.025, 0.25, 0.25, 0.25, 0.25,
+                    0.25, 0.25, 0.25],
+                "mole_frac_comp[CO2]": [
+                    0.025, 0.025, 0.025, 0.90, 0.25, 0.25, 0.25, 0.25,
+                    0.25, 0.25, 0.25],
+                }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
+
+        cm = pyunits.cm
+        s = pyunits.s
+        target_values = {
+                # These values look reasonable
+                # TODO: Verify with external source.
+                "diffusion_comp[O2]": [
+                    3.11792621830951*cm**2/s,
+                    2.456227751888218*cm**2/s,
+                    3.034740091620132*cm**2/s,
+                    1.9479388404541838*cm**2/s,
+                    0.206691259894311*cm**2/s,
+                    0.6952237580376006*cm**2/s,
+                    1.4134625566198689*cm**2/s,
+                    2.3384446637321363*cm**2/s,
+                    4.676889327464272*cm**2/s,
+                    1.5589631091547582*cm**2/s,
+                    1.1692223318660684*cm**2/s,
+                    ],
+                "diffusion_comp[N2]": [
+                    2.457518754629481*cm**2/s,
+                    3.1383309495574956*cm**2/s,
+                    3.0334118458311523*cm**2/s,
+                    1.9790010245966736*cm**2/s,
+                    0.2080439152537244*cm**2/s,
+                    0.6997735302088169*cm**2/s,
+                    1.422712718932098*cm**2/s,
+                    2.353748212168125*cm**2/s,
+                    4.70749642433625*cm**2/s,
+                    1.5691654747787498*cm**2/s,
+                    1.176874106084062*cm**2/s,
+                    ],
+                "diffusion_comp[H2O]": [
+                    3.0845168350215713*cm**2/s,
+                    3.0811129521516416*cm**2/s,
+                    3.719143107603082*cm**2/s,
+                    2.5051274838003996*cm**2/s,
+                    0.24654668546150185*cm**2/s,
+                    0.8292808959890481*cm**2/s,
+                    1.6860147281349098*cm**2/s,
+                    2.7893573307023156*cm**2/s,
+                    5.578714661404631*cm**2/s,
+                    1.8595715538015434*cm**2/s,
+                    1.3946786653511578*cm**2/s,
+                    ],
+                "diffusion_comp[CO2]": [
+                    1.929322600571961*cm**2/s,
+                    1.9589681584041365*cm**2/s,
+                    2.4422863072776697*cm**2/s,
+                    2.7098612589802444*cm**2/s,
+                    0.17964011927809195*cm**2/s,
+                    0.6042349293467888*cm**2/s,
+                    1.2284727588198259*cm**2/s,
+                    2.0323959442351844*cm**2/s,
+                    4.064791888470369*cm**2/s,
+                    1.3549306294901227*cm**2/s,
+                    1.0161979721175922*cm**2/s,
+                    ],
+                }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
+
+        # Construct diffusion_comp and all prerequisites
+        state.diffusion_comp
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Make sure property equations have been converged
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in target.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+    def test_therm_cond(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 8
+        state_values = {
+                "flow_mol": [1.0*pyunits.mol/pyunits.s]*n_scen,
+                "temperature": [
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    300.0*pyunits.K,
+                    600.0*pyunits.K,
+                    900.0*pyunits.K,
+                    1200.0*pyunits.K,
+                    ],
+                "pressure": [1.0*pyunits.bar]*n_scen,
+                "mole_frac_comp[O2]":  [
+                    1.0, 0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[N2]":  [
+                    0.0, 1.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[H2O]": [
+                    0.0, 0.0, 1.0, 0.0, 0.25, 0.25, 0.25, 0.25],
+                "mole_frac_comp[CO2]": [
+                    0.0, 0.0, 0.0, 1.0, 0.25, 0.25, 0.25, 0.25],
+                }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
+
+        u = pyunits.kJ/pyunits.m/pyunits.K/pyunits.s
+        target_values = {
+                "therm_cond": [
+                    8.490673044994837e-05*u,
+                    7.803113104821915e-05*u,
+                    0.0001245121534187936*u,
+                    7.844692969560201e-05*u,
+                    2.1981943936613706e-05*u,
+                    4.567583423706824e-05*u,
+                    6.946515568649932e-05*u,
+                    9.30078254960681e-05*u,
+                    ],
+                }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
+
+        # Construct therm_cond and all prerequisites
+        state.therm_cond
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, target in param_sweeper:
+                _solve_strongly_connected_components(state)
+
+                # Make sure property equations have been converged
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in target.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
 
 if __name__ == "__main__":
     test_state_vars()
@@ -607,3 +795,5 @@ if __name__ == "__main__":
     test.test_dens_mol()
     test.test_dens_mol_comp()
     test.test_visc_d()
+    test.test_diffusion_comp()
+    test.test_therm_cond()
