@@ -1,4 +1,5 @@
 ###############################################################################
+# ** Copyright Notice **
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021 by the
@@ -13,7 +14,6 @@
 # paid-up, nonexclusive, irrevocable, worldwide license in the Software to
 # reproduce, distribute copies to the public, prepare derivative works, and
 # perform publicly and display publicly, and to permit other to do so.
-#
 ###############################################################################
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
