@@ -959,7 +959,7 @@ constructed,
             self.energy_accumulation_metal[0].fix(0)
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         Waterwall section initialization routine.
 
@@ -970,8 +970,9 @@ constructed,
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -1028,26 +1029,26 @@ constructed,
         for t, c in self.energy_holdup_slag_eqn.items():
             s = iscale.get_scaling_factor(
                 self.energy_holdup_slag[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.friction_factor_darcy_eqn.items():
             s = iscale.get_scaling_factor(self.N_Re[t], default=1,
                                           warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.volume_eqn.items():
             s = iscale.get_scaling_factor(
                 self.volume[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.heat_flux_conv_eqn.items():
             s = iscale.get_scaling_factor(
                 self.heat_flux_conv[t], default=1, warning=True)
             s *= iscale.get_scaling_factor(
                 self.tube_diameter, default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s/10.0)
+            iscale.constraint_scaling_transform(c, s/10.0, overwrite=False)
         for t, c in self.energy_holdup_slag_eqn.items():
             s = iscale.get_scaling_factor(
                 self.energy_holdup_slag[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.energy_holdup_metal_eqn.items():
             s = iscale.get_scaling_factor(
                 self.energy_holdup_metal[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
