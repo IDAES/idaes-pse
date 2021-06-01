@@ -6,4 +6,5 @@ text: file_header.txt
 patterns:
    - "*.py"
 verbose: 1
+sep-len: 80
 ...
