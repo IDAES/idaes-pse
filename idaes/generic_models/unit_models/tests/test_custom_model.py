@@ -11,28 +11,28 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Generic template for a surrogate unit model.
+Test for custom unit model.
 """
 
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var, value, SolverFactory
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import SurrogateModel
+from idaes.generic_models.unit_models import CustomModel
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util.testing import get_solver
 
 __author__ = "Jaffer Ghouse"
 
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 # -----------------------------------------------------------------------------
 
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
-m.fs.surrogate = SurrogateModel()
+m.fs.surrogate = CustomModel()
 m.fs.surrogate.x_1 = Var(initialize=0.5)
 m.fs.surrogate.x_2 = Var(initialize=0.5)
 m.fs.surrogate.y_1 = Var(initialize=0.5)
@@ -58,7 +58,7 @@ def my_initialize():
     m.fs.surrogate.x_1.fix(1)
     m.fs.surrogate.x_2.fix(2)
 
-    opt = SolverFactory("ipopt")
+    opt = solver
 
     opt.solve(m)
     m.fs.surrogate.c2.activate()
