@@ -19,6 +19,7 @@ solver binaries to be used on Windows.
 __author__ = "John Eslick"
 
 import os
+import re
 import idaes
 import click
 import subprocess
@@ -28,15 +29,19 @@ from idaes.commands import cb
     name="solver-wsl",
     context_settings={"ignore_unknown_options": True},
     help="Run a linux solver on Windows using WSL")
-@click.option("--distribution", "-d", help="Linux distribution")
-@click.option("--user", "-u", help="User")
-@click.option("--executable", "-e", help="Executable path on WSL")
+@click.option("--distribution", "-d", required=True, help="Linux distribution")
+@click.option("--user", "-u", required=True, help="User")
+@click.option("--executable", "-e", required=True, help="Executable path on WSL")
 @click.argument('args', nargs=-1)
 def solver_wsl(distribution, user, executable, args):
     al = [None]*len(args)
     for i, a in enumerate(args):
-        if a.startswith("C:\\"): # it's a windows path, convert for WSL
-            a = a.replace("\\", "/").replace("C:", "/mnt/c")
+        r = re.match(r"^([A-Z]):\\(.*$)", a)
+        if r is not None:
+            # is a Windows path (well almost certaintly)
+            p = r.group(2).replace('\\', '/')
+            l = r.group(1).lower()
+            a = f"/mnt/{l}/{p}"
         al[i] = a
     r = subprocess.run(["wsl", "-d", distribution, "-u", user, executable] + al)
     return r.returncode
