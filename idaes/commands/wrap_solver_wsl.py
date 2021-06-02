@@ -36,7 +36,7 @@ from idaes.commands import cb
 def solver_wsl(distribution, user, executable, args):
     al = [None]*len(args)
     for i, a in enumerate(args):
-        r = re.match(r"^([A-Z]):\\(.*$)", a)
+        r = re.match(r"^([A-Za-z]):\\(.*$)", a)
         if r is not None:
             # is a Windows path (well almost certaintly)
             p = r.group(2).replace('\\', '/')
