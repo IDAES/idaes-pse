@@ -144,11 +144,12 @@ class solubility_product():
 
     where S is assumed to be the sum of the flowrates any solids formed in the
     reaction. This allows for multiple solid products, and only applies the
-    solubility product if all concentrations are non-zero.
+    solubility product if all flowrates are non-zero.
 
     Note that the smooth maximum approximation requires the use of a smoothing
     factor eps, and that the value of this factor needs to be adjusted for the
-    specific problem.
+    specific problem. as an initial guideline, it is suggested that this be
+    one to two orders of magnitude smaller than the solubility product.
     """
 
     @staticmethod

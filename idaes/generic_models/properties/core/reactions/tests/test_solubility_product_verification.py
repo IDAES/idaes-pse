@@ -29,6 +29,7 @@ from idaes.core import \
     Component, EnergyBalanceType, FlowsheetBlock, LiquidPhase, SolidPhase
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 from idaes.generic_models.properties.core.state_definitions import FTPx, FpcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
@@ -45,60 +46,61 @@ def dummy_h(b, *args, **kwargs):
     return b.temperature
 
 
-class TestBasics(object):
+thermo_config = {
+    # Specifying components
+    "components": {
+        'H2O': {'type': Component,
+                'enth_mol_liq_comp': dummy_h},
+        'Na+': {"type": Component,
+                "enth_mol_liq_comp": dummy_h},
+        'Cl-': {"type": Component,
+                "enth_mol_liq_comp": dummy_h},
+        'NaCl': {"type": Component,
+                 "enth_mol_sol_comp": dummy_h}},
+    # Specifying phases
+    "phases":  {'Liq': {"type": LiquidPhase,
+                        "equation_of_state": Ideal,
+                        "component_list": ["H2O", "Na+", "Cl-"]},
+                'Sol': {"type": SolidPhase,
+                        "equation_of_state": Ideal,
+                        "component_list": ["NaCl"]}},
+    # Set base units of measurement
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    # Specifying state definition
+    "state_definition": FpcTP,
+    "state_bounds": {
+        "flow_mol_phase_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
+        "temperature": (273.15, 300, 450, pyunits.K),
+        "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+    "pressure_ref": (1e5, pyunits.Pa),
+    "temperature_ref": (300, pyunits.K)}
+
+# Solubility of NaCl in H2O is 360 g/L, or 6.16 mol/L
+# 1L of H2O is 55.56 mol, results in Ksp = 8.235e-3 on mole frac basis
+rxn_config = {
+    "base_units": {"time": pyunits.s,
+                   "length": pyunits.m,
+                   "mass": pyunits.kg,
+                   "amount": pyunits.mol,
+                   "temperature": pyunits.K},
+    "equilibrium_reactions": {
+        "S1": {"stoichiometry": {("Liq", "Na+"): 1,
+                                 ("Liq", "Cl-"): 1,
+                                 ("Sol", "NaCl"): -1},
+               "equilibrium_constant": ConstantKeq,
+               "equilibrium_form": solubility_product,
+               "concentration_form": ConcentrationForm.moleFraction,
+               "parameter_data": {
+                   "k_eq_ref": (8.235e-3, None)}}}}
+
+
+class TestSingleState(object):
     @pytest.fixture
     def model(self):
-        thermo_config = {
-            # Specifying components
-            "components": {
-                'H2O': {'type': Component,
-                        'enth_mol_liq_comp': dummy_h},
-                'Na+': {"type": Component,
-                        "enth_mol_liq_comp": dummy_h},
-                'Cl-': {"type": Component,
-                        "enth_mol_liq_comp": dummy_h},
-                'NaCl': {"type": Component,
-                         "enth_mol_sol_comp": dummy_h}},
-            # Specifying phases
-            "phases":  {'Liq': {"type": LiquidPhase,
-                                "equation_of_state": Ideal,
-                                "component_list": ["H2O", "Na+", "Cl-"]},
-                        'Sol': {"type": SolidPhase,
-                                "equation_of_state": Ideal,
-                                "component_list": ["NaCl"]}},
-            # Set base units of measurement
-            "base_units": {"time": pyunits.s,
-                           "length": pyunits.m,
-                           "mass": pyunits.kg,
-                           "amount": pyunits.mol,
-                           "temperature": pyunits.K},
-            # Specifying state definition
-            "state_definition": FpcTP,
-            "state_bounds": {
-                "flow_mol_phase_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
-                "temperature": (273.15, 300, 450, pyunits.K),
-                "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
-            "pressure_ref": (1e5, pyunits.Pa),
-            "temperature_ref": (300, pyunits.K)}
-
-        # Solubility of NaCl in H2O is 360 g/L, or 6.16 mol/L
-        # 1L of H2O is 55.56 mol, results in Ksp = 8.235e-3 on mole frac basis
-        rxn_config = {
-            "base_units": {"time": pyunits.s,
-                           "length": pyunits.m,
-                           "mass": pyunits.kg,
-                           "amount": pyunits.mol,
-                           "temperature": pyunits.K},
-            "equilibrium_reactions": {
-                "S1": {"stoichiometry": {("Liq", "Na+"): 1,
-                                         ("Liq", "Cl-"): 1,
-                                         ("Sol", "NaCl"): -1},
-                       "equilibrium_constant": ConstantKeq,
-                       "equilibrium_form": solubility_product,
-                       "concentration_form": ConcentrationForm.moleFraction,
-                       "parameter_data": {
-                           "k_eq_ref": (8.235e-3, None)}}}}
-
         m = ConcreteModel()
 
         # Add a test thermo package for validation
@@ -179,3 +181,94 @@ class TestBasics(object):
 
                     assert pytest.approx(0, abs=1e-5) == value(
                         model.state[0].flow_mol_phase_comp["Sol", "NaCl"])
+
+
+class TestUnit(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        # Add a test thermo package for validation
+        m.fs.pparams = GenericParameterBlock(default=thermo_config)
+        m.fs.rparams = GenericReactionParameterBlock(default={
+            "property_package": m.fs.pparams, **rxn_config})
+
+        m.fs.R101 = EquilibriumReactor(default={
+            "property_package": m.fs.pparams,
+            "reaction_package": m.fs.rparams,
+            "has_equilibrium_reactions": True,
+            "has_rate_reactions": False,
+            "energy_balance_type": EnergyBalanceType.none})
+
+        m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "H2O"].fix(55.56)
+        m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "Na+"].fix(1e-8)
+        m.fs.R101.inlet.flow_mol_phase_comp[0, "Liq", "Cl-"].fix(1e-8)
+        m.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(1e-8)
+        m.fs.R101.inlet.temperature[0].fix(298.15)
+        m.fs.R101.inlet.pressure[0].fix(101325)
+
+        m.fs.R101.outlet.temperature[0].fix(298.15)
+
+        # m.fs.R101.initialize()
+
+        return m
+
+    @pytest.mark.integration
+    def test_subsaturated(self, model):
+        for i in range(0, 6):
+            if i == 0:
+                i == 1e-8
+
+            model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(i)
+
+            results = solver.solve(model)
+            print(i)
+            # model.display()
+
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            assert results.solver.status == SolverStatus.ok
+
+            assert pytest.approx(0, abs=1.1e-6) == value(
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"])
+            assert pytest.approx(i, rel=1e-6, abs=1e-6) == value(
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Na+"])
+            assert pytest.approx(i, rel=1e-6, abs=1e-6) == value(
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Cl-"])
+
+    @pytest.mark.integration
+    def test_saturated(self, model):
+        model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(6.16)
+
+        results = solver.solve(model)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+        assert pytest.approx(0, abs=1.1e-3) == value(
+            model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"])
+        assert pytest.approx(6.158968, rel=1e-5) == value(
+            model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Na+"])
+        assert pytest.approx(6.158968, rel=1e-5) == value(
+            model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Cl-"])
+
+    @pytest.mark.integration
+    def test_supersaturated(self, model):
+        for i in range(7, 21):
+            model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(i)
+
+            results = solver.solve(model)
+
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            assert results.solver.status == SolverStatus.ok
+
+            assert pytest.approx(i, rel=1e-5) == value(
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Sol", "NaCl"] +
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Na+"])
+            assert pytest.approx(6.159876, rel=1e-5) == value(
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Na+"])
+            assert pytest.approx(6.159876, rel=1e-5) == value(
+                model.fs.R101.outlet.flow_mol_phase_comp[0, "Liq", "Cl-"])
