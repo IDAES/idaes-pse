@@ -142,16 +142,19 @@ class solubility_product():
 
         * S - MAX(0, S-Q) == 0
 
-    In this implementation, a smooth maximum approximation is used, and S is
-    assumed to be the sum of the concentration any solids formed in the
+    where S is assumed to be the sum of the flowrates any solids formed in the
     reaction. This allows for multiple solid products, and only applies the
     solubility product if all concentrations are non-zero.
+
+    Note that the smooth maximum approximation requires the use of a smoothing
+    factor eps, and that the value of this factor needs to be adjusted for the
+    specific problem.
     """
 
     @staticmethod
     def build_parameters(rblock, config):
         rblock.eps = Param(mutable=True,
-                           initialize=1e-3,
+                           initialize=1e-4,
                            doc="Smoothing parameter for smooth maximum")
 
     @staticmethod
@@ -183,9 +186,9 @@ class solubility_product():
                 try:
                     stoic = r_config.stoichiometry[p, j]
                     if s is None and stoic != 0:
-                        s = get_concentration_term(b, r_idx)[p, j]
+                        s = b.state_ref.flow_mol_phase_comp[p, j]
                     elif s is not None and stoic != 0:
-                        s += get_concentration_term(b, r_idx)[p, j]
+                        s += b.state_ref.flow_mol_phase_comp[p, j]
                 except KeyError:
                     pass
 
