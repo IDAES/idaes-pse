@@ -194,6 +194,8 @@ class TestUnit(object):
         m.fs.rparams = GenericReactionParameterBlock(default={
             "property_package": m.fs.pparams, **rxn_config})
 
+        # Don't include energy balances, as the test doesn't have a proper
+        # enthalpy model. Fix outlet T instead.
         m.fs.R101 = EquilibriumReactor(default={
             "property_package": m.fs.pparams,
             "reaction_package": m.fs.rparams,
@@ -210,21 +212,18 @@ class TestUnit(object):
 
         m.fs.R101.outlet.temperature[0].fix(298.15)
 
-        # m.fs.R101.initialize()
-
         return m
 
     @pytest.mark.integration
     def test_subsaturated(self, model):
         for i in range(0, 6):
+            # Values of zero cause probelms, use a small number instead
             if i == 0:
                 i == 1e-8
 
             model.fs.R101.inlet.flow_mol_phase_comp[0, "Sol", "NaCl"].fix(i)
 
             results = solver.solve(model)
-            print(i)
-            # model.display()
 
             assert results.solver.termination_condition == \
                 TerminationCondition.optimal

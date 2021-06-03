@@ -365,13 +365,9 @@ def test_solubility_no_order():
 
     m.rxn[1].k_eq = Var(["r1"], initialize=1)
 
-    solubility_product.build_parameters(
-        m.rparams.reaction_r1,
-        m.rparams.config.equilibrium_reactions["r1"])
-
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
-    assert value(m.rparams.reaction_r1.eps) == 1e-3
+    assert value(m.rparams.reaction_r1.eps) == 1e-4
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
 
@@ -387,8 +383,8 @@ def test_solubility_no_order():
     rform = solubility_product.return_expression(
         m.rxn[1], m.rparams.reaction_r1, "r1", 300)
 
-    s = (m.thermo[1].mole_frac_phase_comp["sol", "c1"] +
-         m.thermo[1].mole_frac_phase_comp["sol", "c2"])
+    s = (m.thermo[1].flow_mol_phase_comp["sol", "c1"] +
+         m.thermo[1].flow_mol_phase_comp["sol", "c2"])
     Q = (m.rxn[1].k_eq["r1"] -
          (m.thermo[1].mole_frac_phase_comp["p1", "c1"] **
           m.rparams.reaction_r1.reaction_order["p1", "c1"] *
@@ -443,13 +439,9 @@ def test_solubility_product_with_order():
 
     m.rxn[1].k_eq = Var(["r1"], initialize=1)
 
-    solubility_product.build_parameters(
-        m.rparams.reaction_r1,
-        m.rparams.config.equilibrium_reactions["r1"])
-
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.eps, Param)
-    assert value(m.rparams.reaction_r1.eps) == 1e-3
+    assert value(m.rparams.reaction_r1.eps) == 1e-4
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
     assert len(m.rparams.reaction_r1.reaction_order) == 6
     assert m.rparams.reaction_r1.reaction_order["p1", "c1"].value == 1
@@ -463,8 +455,8 @@ def test_solubility_product_with_order():
     rform = solubility_product.return_expression(
         m.rxn[1], m.rparams.reaction_r1, "r1", 300)
 
-    s = (m.thermo[1].mole_frac_phase_comp["sol", "c1"] +
-         m.thermo[1].mole_frac_phase_comp["sol", "c2"])
+    s = (m.thermo[1].flow_mol_phase_comp["sol", "c1"] +
+         m.thermo[1].flow_mol_phase_comp["sol", "c2"])
     Q = (m.rxn[1].k_eq["r1"] -
          (m.thermo[1].mole_frac_phase_comp["p1", "c1"] **
           m.rparams.reaction_r1.reaction_order["p1", "c1"] *

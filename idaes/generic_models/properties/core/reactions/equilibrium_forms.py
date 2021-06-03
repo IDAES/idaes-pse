@@ -148,8 +148,8 @@ class solubility_product():
 
     Note that the smooth maximum approximation requires the use of a smoothing
     factor eps, and that the value of this factor needs to be adjusted for the
-    specific problem. as an initial guideline, it is suggested that this be
-    one to two orders of magnitude smaller than the solubility product.
+    specific problem. as an initial guideline, it is suggested that this be at
+    least one to two orders of magnitude smaller than the solubility product.
     """
 
     @staticmethod
