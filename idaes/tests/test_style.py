@@ -64,3 +64,15 @@ def test_flake8():
         proc.wait()
         status = proc.returncode
         assert status == 0, f"Style checker '{STYLE_CHECK_CMD}' had errors for {path}"
+
+
+# @pytest.mark.xfail
+def test_function_without_a_mark():
+    assert True
+
+
+# @pytest.mark.xfail
+@pytest.mark.unit
+@pytest.mark.component
+def test_function_with_too_many_required_marks():
+    assert True
