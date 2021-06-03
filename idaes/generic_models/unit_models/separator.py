@@ -1608,33 +1608,34 @@ objects linked the mixed state and all outlet states,
 
     def calculate_scaling_factors(self):
         mb_type = self.config.material_balance_type
+        mixed_state = self.get_mixed_state_block()
         if mb_type == MaterialBalanceType.useDefault:
             t_ref = self.flowsheet().config.time.first()
-            mb_type = self.mixed_state[t_ref].default_material_balance_type()
+            mb_type = mixed_state[t_ref].default_material_balance_type()
         super().calculate_scaling_factors()
 
         if hasattr(self, "temperature_equality_eqn"):
             for (t, i), c in self.temperature_equality_eqn.items():
                 s = iscale.get_scaling_factor(
-                    self.mixed_state[t].temperature, default=1, warning=True)
+                    mixed_state[t].temperature, default=1, warning=True)
                 iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "pressure_equality_eqn"):
             for (t, i), c in self.pressure_equality_eqn.items():
                 s = iscale.get_scaling_factor(
-                    self.mixed_state[t].pressure, default=1, warning=True)
+                    mixed_state[t].pressure, default=1, warning=True)
                 iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "material_splitting_eqn"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, o, p, j), c in self.material_splitting_eqn.items():
-                    flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
+                    flow_term = mixed_state[t].get_material_flow_terms(p, j)
                     s = iscale.get_scaling_factor(flow_term, default=1)
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, o, j), c in self.material_splitting_eqn.items():
-                    for i, p in enumerate(self.mixed_state.phase_list):
-                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                    for i, p in enumerate(mixed_state.phase_list):
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
@@ -1642,10 +1643,10 @@ objects linked the mixed state and all outlet states,
                             s = _s if _s < s else s
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.total:
-                pc_set = self.mixed_state.phase_component_set
+                pc_set = mixed_state.phase_component_set
                 for (t, o), c in self.material_splitting_eqn.items():
                     for i, (p, j) in enumerate(pc_set):
-                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:

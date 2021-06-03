@@ -37,6 +37,8 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      initialization_tester)
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -70,6 +72,16 @@ def test_config():
     assert m.fs.unit.config.property_package is m.fs.properties
     assert m.fs.unit.config.energy_split_basis == \
         EnergySplittingType.equal_temperature
+
+
+# -----------------------------------------------------------------------------
+@pytest.mark.unit
+def test_calc_scale():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.unit = Flash(default={"property_package": m.fs.properties})
+    iscale.calculate_scaling_factors(m)
 
 
 # -----------------------------------------------------------------------------
