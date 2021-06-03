@@ -54,12 +54,38 @@ ALL = {"darwin", "linux", "win32"}
 ALL_NO = {"no" + tag for tag in ALL}
 
 
+@pytest.hookimpl
 def pytest_runtest_setup(item):
+    for check in [
+        _validate_required_marks,
+        _skip_for_unsupported_platforms,
+    ]:
+        check(item)
+
+
+def _skip_for_unsupported_platforms(item):
     supported_platforms = ALL.intersection(mark.name for mark in item.iter_markers())
     excluded_platforms = ALL_NO.intersection(mark.name for mark in item.iter_markers())
     plat = sys.platform
     if ((excluded_platforms and ("no" + plat) in excluded_platforms) or
         (supported_platforms and plat not in supported_platforms)):
         pytest.skip("cannot run on platform {}".format(plat))
+
+
+def _validate_required_marks(item):
+    required_marks = {'unit', 'component', 'integration'}
+    item_marks = [mark.name for mark in item.iter_markers()]
+    required_marks_on_item = set(item_marks) & required_marks
+    expected_marks_count = 1
+    required_marks_count = len(required_marks_on_item)
+    if required_marks_count != expected_marks_count:
+        if required_marks_count < expected_marks_count:
+            reason = 'Too few required marks'
+        if required_marks_count > expected_marks_count:
+            reason = 'Too many required marks'
+        extra_info = f'Expected: {expected_marks_count} of {required_marks}; found: {item_marks}'
+        msg = f'{reason} for test function "{item.name}". {extra_info}'
+        pytest.fail(msg)
+
 
 ####
