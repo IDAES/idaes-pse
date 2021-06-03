@@ -211,11 +211,18 @@ def categorize_dae_variables_and_constraints(
     variables = [var[t1] for var in dae_vars]
     constraints = [con[t1] for con in dae_cons]
 
+    present_cons = [con for con in constraints if con.active]
+    active_var_set = ComponentSet(var for con in present_cons
+            for var in identify_variables(con.expr, include_fixed=False))
+    present_vars = [var for var in variables if var in active_var_set]
+
     # Filter out fixed vars and inactive constraints.
     # We could do this check earlier (before constructing igraph)
     # by just checking var.fixed and con.active...
-    present_vars = [var for var in variables if not var.fixed]
-    present_cons = [con for con in constraints if con.active]
+    #_present_vars = [var for var in variables if not var.fixed]
+    #_present_cons = [con for con in constraints if con.active]
+    #present_vars = [var for var in variables if var in _nlp._vardata_to_idx]
+    #present_cons = [con for con in constraints if con in _nlp._condata_to_idx]
 
     var_block_map, con_block_map = igraph.block_triangularize(
             present_vars,
