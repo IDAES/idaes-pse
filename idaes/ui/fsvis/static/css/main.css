@@ -258,6 +258,23 @@ input:checked + .slider:before {
   display: flex;
 }
 
+.joint-dialog.joint-lightbox img {
+  padding: 10px;
+}
+
+.joint-dialog.joint-lightbox.joint-theme-modern .btn-close {
+  color: #2f2f2f;
+  top: 0;
+  right: 0;
+  opacity: .87;
+}
+
+.joint-dialog.joint-lightbox.joint-theme-modern .control-button,
+.joint-dialog.joint-lightbox.joint-theme-modern .control-button:hover {
+  background-color: #0b79bd;
+  color: #FFFFFF;
+}
+
 .joint-paper-scroller.joint-theme-modern {
   background-color: white;
 }
@@ -314,4 +331,8 @@ input:checked + .slider:before {
 
 .bg-light {
   background-color: white !important; /* Have to use important to override bootstrap's navbar background color */
+}
+
+.dropdown-item:active {
+  background-color: white;
 }

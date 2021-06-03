@@ -192,6 +192,17 @@ def test_cv_mol_phase_comp(m):
 
 
 @pytest.mark.unit
+def test_heat_capacity_ratio_phase(m):
+
+    m.props[1].cp_mol_phase = Var(m.params.phase_list)
+    m.props[1].cv_mol_phase = Var(m.params.phase_list)
+
+    for p in m.params.phase_list:
+        assert str(Ideal.heat_capacity_ratio_phase(m.props[1], p)) == (
+            str(m.props[1].cp_mol_phase[p] / m.props[1].cv_mol_phase[p]))
+
+
+@pytest.mark.unit
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
