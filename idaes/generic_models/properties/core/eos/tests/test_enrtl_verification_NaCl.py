@@ -414,8 +414,6 @@ class TestStateBlockSymmetric(object):
         for k, v in model.state[1].Liq_alpha.items():
             if k == ("H2O", "H2O"):
                 assert value(v) == 0.3
-            elif k in [("Na+", "Cl-"), ("Cl-", "Na+")]:
-                assert value(v) == 0
             else:
                 assert value(v) == 0.2
 
@@ -475,8 +473,6 @@ class TestStateBlockSymmetric(object):
         for k, v in model.state[1].Liq_alpha.items():
             if k == ("H2O", "H2O"):
                 assert value(v) == 0.3
-            elif k in [("Na+", "Cl-"), ("Cl-", "Na+")]:
-                assert value(v) == 0
             else:
                 assert value(v) == 0.2
 

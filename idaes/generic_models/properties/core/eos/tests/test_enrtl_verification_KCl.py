@@ -27,7 +27,7 @@ ISRN Chemical Engineering, 2012, doi:10.5402/2012/730154
 Author: Andrew Lee
 """
 import pytest
-from math import exp, log
+from math import log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,

@@ -577,29 +577,37 @@ class TestStateBlockSymmetric(object):
 
         # Ion-ion interactions
         assert str(model.state[1].Liq_alpha["Na+", "Cl-"].expr) == str(
-                (model.state[1].Liq_Y["H+"] *
+                (model.state[1].Liq_Y["Na+"] * 0.2 +
+                 model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"]))
         assert str(model.state[1].Liq_alpha["Na+", "OH-"].expr) == str(
-                (model.state[1].Liq_Y["H+"] *
+                (model.state[1].Liq_Y["Na+"] * 0.2 +
+                 model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["Na+, OH-", "H+, OH-"]))
         assert str(model.state[1].Liq_alpha["H+", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
-                 model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"]))
+                 model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"] +
+                 model.state[1].Liq_Y["H+"] * 0.2))
         assert str(model.state[1].Liq_alpha["H+", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
-                 model.params.Liq.alpha["Na+, OH-", "H+, OH-"]))
+                 model.params.Liq.alpha["Na+, OH-", "H+, OH-"] +
+                 model.state[1].Liq_Y["H+"] * 0.2))
         assert str(model.state[1].Liq_alpha["Cl-", "Na+"].expr) == str(
-                (model.state[1].Liq_Y["OH-"] *
+                (model.state[1].Liq_Y["Cl-"] * 0.2 +
+                 model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"]))
         assert str(model.state[1].Liq_alpha["Cl-", "H+"].expr) == str(
-                (model.state[1].Liq_Y["OH-"] *
+                (model.state[1].Liq_Y["Cl-"] * 0.2 +
+                 model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
         assert str(model.state[1].Liq_alpha["OH-", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
-                 model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"]))
+                 model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"] +
+                 model.state[1].Liq_Y["OH-"] * 0.2))
         assert str(model.state[1].Liq_alpha["OH-", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
-                 model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
+                 model.params.Liq.alpha["H+, Cl-", "H+, OH-"] +
+                 model.state[1].Liq_Y["OH-"] * 0.2))
 
         # Like species interactions
         assert ("Na+", "Na+") not in model.state[1].Liq_alpha
