@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo>=6.0",
+    "pyomo>=6.0.1",
 ]
 
 
