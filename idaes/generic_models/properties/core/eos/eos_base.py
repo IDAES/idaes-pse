@@ -83,11 +83,16 @@ class EoSBase():
             b, cobj(b, j), b.temperature) - R)
 
     @staticmethod
-    def cv_mol_ls_comp_pure(b, j):
+    def cv_mol_ls_comp_pure(b, p, j):
         # Method for calculating pure component liquid and solid cv from cp
         # For ideal (incompressible) liquids and solids, cv = cp
-        return get_method(b, "cp_mol_liq_comp", j)(
-            b, cobj(b, j), b.temperature)
+        pobj = b.params.get_phase(p)
+        if pobj.is_liquid_phase():
+            return get_method(b, "cp_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature)
+        elif pobj.is_solid_phase():
+            return get_method(b, "cp_mol_sol_comp", j)(
+                b, cobj(b, j), b.temperature)
 
     @staticmethod
     def dens_mass_phase(b, p):
@@ -143,7 +148,13 @@ class EoSBase():
             dU_form)
 
     @staticmethod
-    def energy_internal_mol_ls_comp_pure(b, j):
+    def energy_internal_mol_ls_comp_pure(b, p, j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_liquid_phase():
+            mthd = get_method(b, "enth_mol_liq_comp", j)
+        elif pobj.is_solid_phase():
+            mthd = get_method(b, "enth_mol_sol_comp", j)
+
         # Method for calculating pure component U from H for liquids & solids
         units = b.params.get_metadata().derived_units
         R = pyunits.convert(const.gas_constant,
@@ -170,13 +181,10 @@ class EoSBase():
             dU_form = delta_n*R*b.params.temperature_ref
 
             # For ideal (incompressible) liquids and solids, U = H + dU_form
-            return (get_method(b, "enth_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature) +
-                dU_form)
+            return (mthd(b, cobj(b, j), b.temperature) + dU_form)
         else:
             # If not including heat of formation, U = H
-            return get_method(b, "enth_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return mthd(b, cobj(b, j), b.temperature)
 
     @staticmethod
     def enth_mol_phase(b, p):
