@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 IDAES Component objects
 
@@ -54,18 +54,27 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("dens_mol_sol_comp", ConfigValue(
+        description="Method to use to calculate solid phase molar density"))
+
     CONFIG.declare("cp_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component specific heats"))
+    CONFIG.declare("cp_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component specific heats"))
     CONFIG.declare("cp_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component specific heats"
         ))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies"))
+    CONFIG.declare("enth_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component molar enthalpies"))
     CONFIG.declare("enth_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar enthalpies"
         ))
     CONFIG.declare("entr_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar entropies"))
+    CONFIG.declare("entr_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component molar entropies"))
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
 
