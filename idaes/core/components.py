@@ -54,18 +54,27 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("dens_mol_sol_comp", ConfigValue(
+        description="Method to use to calculate solid phase molar density"))
+
     CONFIG.declare("cp_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component specific heats"))
+    CONFIG.declare("cp_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component specific heats"))
     CONFIG.declare("cp_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component specific heats"
         ))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies"))
+    CONFIG.declare("enth_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component molar enthalpies"))
     CONFIG.declare("enth_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar enthalpies"
         ))
     CONFIG.declare("entr_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar entropies"))
+    CONFIG.declare("entr_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component molar entropies"))
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
 
