@@ -183,7 +183,7 @@ Logging Solver Output
 
 The solver output can be captured and directed to a logger using the
 ``idaes.logger.solver_log(logger, level)`` context manager, which uses
-``pyutilib.misc.capture_output()`` to temporarily redirect
+``pyomo.common.tee.capture_output()`` to temporarily redirect
 ``sys.stdout`` and ``sys.stderr`` to a string buffer.  The ``logger``
 argument is the logger to log to, and the ``level`` argument is the
 level at which records are sent to the logger. The output is logged by a

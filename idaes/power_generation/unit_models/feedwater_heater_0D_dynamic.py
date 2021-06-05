@@ -441,9 +441,9 @@ class FWH0DDynamicData(UnitModelBlockData):
             for t, c in self.mixer_pressure_constraint.items():
                 sf = iscale.get_scaling_factor(
                     self.steam_state[t].pressure, default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
         if hasattr(self, "pressure_change_total_eqn"):
             for t, c in self.pressure_change_total_eqn.items():
                 sf = iscale.get_scaling_factor(
                     self.steam_state[t].pressure, default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
