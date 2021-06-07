@@ -27,7 +27,9 @@ from pyomo.environ import (
         value,
         units as pyunits,
         )
-from pyomo.contrib.incidence_analysis import IncidenceGraphInterface
+from pyomo.contrib.incidence_analysis import (
+        solve_strongly_connected_components,
+        )
 from pyomo.common.collections import ComponentSet, ComponentMap
 from pyomo.common.unittest import TestCase
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
@@ -292,38 +294,6 @@ def _create_subsystem_block(variables, constraints):
     return block
 
 
-def _solve_strongly_connected_components(block):
-    variables = [var for var in block.component_data_objects(Var)
-            if not var.fixed]
-    constraints = [con for con in block.component_data_objects(Constraint)
-            if con.active]
-    assert len(variables) == len(constraints)
-    igraph = IncidenceGraphInterface()
-    var_block_map, con_block_map = igraph.block_triangularize(
-            variables=variables,
-            constraints=constraints,
-            )
-    blocks = set(var_block_map.values())
-    n_blocks = len(blocks)
-    var_blocks = [[] for b in range(n_blocks)]
-    con_blocks = [[] for b in range(n_blocks)]
-    for var, b in var_block_map.items():
-        var_blocks[b].append(var)
-    for con, b in con_block_map.items():
-        con_blocks[b].append(con)
-    for b_vars, b_cons in zip(var_blocks, con_blocks):
-        assert len(b_vars) == len(b_cons)
-        if len(b_vars) == 1:
-            var = b_vars[0]
-            con = b_cons[0]
-            calculate_variable_from_constraint(var, con)
-        else:
-            _temp = _create_subsystem_block(b_vars, b_cons)
-            _temp.other_vars[:].fix()
-            solver.solve(_temp)
-            _temp.other_vars[:].unfix()
-
-
 class TestProperties(TestCase):
     """
     The purpose of these tests is to ensure that the property package's
@@ -385,7 +355,7 @@ class TestProperties(TestCase):
                 )
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Check that state block has been been solved correctly
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -454,7 +424,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Check that state block equations have been convered
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -512,7 +482,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Make sure property equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -581,7 +551,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Make sure property equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -701,7 +671,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Make sure property equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -769,7 +739,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Make sure property equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -895,7 +865,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Make sure property equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
@@ -1008,7 +978,7 @@ class TestProperties(TestCase):
                 output_values=target_values)
         with param_sweeper:
             for inputs, target in param_sweeper:
-                _solve_strongly_connected_components(state)
+                solve_strongly_connected_components(state)
 
                 # Make sure property equations have been converged
                 assert number_large_residuals(state, tol=1e-8) == 0
