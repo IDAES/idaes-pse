@@ -456,12 +456,14 @@ objects linked the mixed state and all outlet states,
         """
         # Sanity check to make sure method is not called when arg missing
         if self.config.mixed_state_block is None:
-            raise BurntToast(
-                "{} get_mixed_state_block method called when "
-                "mixed_state_block argument is None. This should "
-                "not happen.".format(self.name)
-            )
-
+            try:
+                return self.mixed_state
+            except AttributeError:
+                raise BurntToast(
+                    f"{self.name} get_mixed_state_block method called when the "
+                    "mixed_state_block argument is None, and no mixed_state "
+                    "block is contained in seperator. This should not happen."
+                )
         # Check that the user-provided StateBlock uses the same prop pack
         if (
             self.config.mixed_state_block[
