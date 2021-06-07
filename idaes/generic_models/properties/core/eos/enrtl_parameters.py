@@ -86,6 +86,8 @@ class ConstantAlpha(object):
             return pobj.alpha[i, j]
         elif (j, i) in pobj.alpha:
             return pobj.alpha[j, i]
+        elif i == j:
+            return 0.2
         else:
             raise BurntToast(
                 "{} alpha rule encountered unexpected index {}. Please contact"
@@ -134,6 +136,8 @@ class ConstantTau(object):
             return pobj.tau[i, j]
         elif (j, i) in pobj.tau:
             return pobj.tau[j, i]
+        elif i == j:
+            return 0
         else:
             raise BurntToast(
                 "{} tau rule encountered unexpected index {}. Please contact"

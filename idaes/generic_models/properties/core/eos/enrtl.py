@@ -324,16 +324,20 @@ class ENRTL(EoSBase):
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
                 # Eqn 34
-                return sum(Y[k]*alpha_rule(
-                               b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                           for k in b.params.cation_set
-                           if i != k)
+                if len(b.params.cation_set) > 1:
+                    return sum(Y[k]*alpha_rule(
+                        b, pobj, (i+", "+j), (k+", "+j), b.temperature)
+                               for k in b.params.cation_set)
+                else:
+                    return 0.2
             elif (i in b.params.anion_set and j in b.params.cation_set):
                 # Eqn 35
-                return sum(Y[k]*alpha_rule(
-                               b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                           for k in b.params.anion_set
-                           if i != k)
+                if len(b.params.anion_set) > 1:
+                    return sum(Y[k]*alpha_rule(
+                        b, pobj, (j+", "+i), (j+", "+k), b.temperature)
+                               for k in b.params.anion_set)
+                else:
+                    return 0.2
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
                   (i in b.params.anion_set and j in b.params.anion_set)):
                 # No like-ion interactions
@@ -437,12 +441,8 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
-                if str(G[i, j].expr) != "1.0":
-                    # Eqn 44
-                    return -log(G[i, j])/alpha[i, j]
-                else:
-                    # Catch for cases of single cation/anion systems
-                    return 0
+                # Eqn 44
+                return -log(G[i, j])/alpha[i, j]
 
         b.add_component(pname+"_tau",
                         Expression(b.params.true_species_set,
