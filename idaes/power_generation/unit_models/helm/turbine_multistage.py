@@ -313,19 +313,24 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 default=s_sfg_default,
                 initialize=hp_splt_cfg
             )
+        else:
+            self.hp_split = {}
         if config.ip_split_locations:
             self.ip_split = HelmSplitter(
                 config.ip_split_locations,
                 default=s_sfg_default,
                 initialize=ip_splt_cfg
             )
+        else:
+            self.ip_split = {}
         if config.lp_split_locations:
             self.lp_split = HelmSplitter(
                 config.lp_split_locations,
                 default=s_sfg_default,
                 initialize=lp_splt_cfg
             )
-
+        else:
+            self.lp_split = {}
         # Done with unit models.  Adding Arcs (streams).
         # ------------------------------------------------
 
