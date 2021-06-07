@@ -784,9 +784,8 @@ class TestUnsymmetric_0NaCl(object):
                 4.9908: 0.593
                 }
 
+        w = 1000/18
         for x, g in data.items():
-            w = 1000/18
-
             model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(
                 w/(w+2*x))
             model.state[1].mole_frac_phase_comp["Liq", "K+"].set_value(
@@ -881,9 +880,10 @@ class TestUnsymmetric_Mixed_tau0(object):
                 0.950322295805739: -0.209499862617294
                 }
 
+        m = 4  # molality of solution
+        w = 1000/18  # mol H2O per kg H2O
+
         for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
             k = x*m  # mol K+
             n = m-k  # mol Na+
 
@@ -911,7 +911,7 @@ class TestUnsymmetric_Mixed_tau0(object):
 
             # Convert to log base 10 and molal basis
             # Eqn 28 [1] - note that m=4 appears to be based on total salt
-            log_m = ln_pm/log(10) - log(1+18*2*4/1000, 10)
+            log_m = ln_pm/log(10) - log((w+2*m)/w, 10)
             assert pytest.approx(g, rel=1e-3, abs=1e-3) == log_m
 
     @pytest.mark.unit
@@ -970,9 +970,10 @@ class TestUnsymmetric_Mixed_tau0(object):
                 0.9512961168980646: -0.235786092975788,
                 0.9672582363606549: -0.236965934458349}
 
+        m = 4  # molality of solution
+        w = 1000/18  # mol H2O per kg H2O
+
         for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
             k = x*m  # mol K+
             n = m-k  # mol Na+
 
@@ -999,7 +1000,7 @@ class TestUnsymmetric_Mixed_tau0(object):
 
             # Convert to log base 10 and molal basis
             # Eqn 28 [1] - note that m=4 appears to be based on total salt
-            log_m = ln_pm/log(10) - log(1+18*2*4/1000, 10)
+            log_m = ln_pm/log(10) - log((w+2*m)/w, 10)
             assert pytest.approx(g, rel=1e-3, abs=2e-3) == log_m
 
 
@@ -1081,9 +1082,10 @@ class TestUnsymmetric_Mixed_tau1(object):
                 0.928588668138337: -0.103674011615205,
                 0.970384105960265: -0.103439435672056}
 
+        m = 4  # molality of solution
+        w = 1000/18  # mol H2O per kg H2O
+
         for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
             k = x*m  # mol K+
             n = m-k  # mol Na+
 
@@ -1111,7 +1113,7 @@ class TestUnsymmetric_Mixed_tau1(object):
 
             # Convert to log base 10 and molal basis
             # Eqn 28 [1] - note that m=4 appears to be based on total salt
-            log_m = ln_pm/log(10) - log(1+18*2*4/1000, 10)
+            log_m = ln_pm/log(10) - log((w+2*m)/w, 10)
             assert pytest.approx(g, rel=2e-3, abs=3e-3) == log_m
 
     @pytest.mark.unit
@@ -1164,9 +1166,10 @@ class TestUnsymmetric_Mixed_tau1(object):
                 0.887216065761407: -0.246375105438809,
                 0.907960876125072: -0.245146074008875}
 
+        m = 4  # molality of solution
+        w = 1000/18  # mol H2O per kg H2O
+
         for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
             k = x*m  # mol K+
             n = m-k  # mol Na+
 
@@ -1193,7 +1196,7 @@ class TestUnsymmetric_Mixed_tau1(object):
 
             # Convert to log base 10 and molal basis
             # Eqn 28 [1] - note that m=4 appears to be based on total salt
-            log_m = ln_pm/log(10) - log(1+18*2*4/1000, 10)
+            log_m = ln_pm/log(10) - log((w+2*m)/w, 10)
             assert pytest.approx(g, rel=1e-3, abs=2e-3) == log_m
 
 
@@ -1289,9 +1292,10 @@ class TestUnsymmetric_Mixed_tau2(object):
                 0.958681383370125: -0.353057099420361,
                 0.974563649742458: -0.356916585242283}
 
+        m = 4  # molality of solution
+        w = 1000/18  # mol H2O per kg H2O
+
         for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
             k = x*m  # mol K+
             n = m-k  # mol Na+
 
@@ -1319,7 +1323,7 @@ class TestUnsymmetric_Mixed_tau2(object):
 
             # Convert to log base 10 and molal basis
             # Eqn 28 [1] - note that m=4 appears to be based on total salt
-            log_m = ln_pm/log(10) - log(1+18*2*4/1000, 10)
+            log_m = ln_pm/log(10) - log((w+2*m)/w, 10)
 
             assert pytest.approx(g, rel=2e-2, abs=1e-3) == log_m
 
@@ -1381,9 +1385,10 @@ class TestUnsymmetric_Mixed_tau2(object):
                 0.93420217470475: -0.226670834208517,
                 0.951932781853182: -0.230439358932042}
 
+        m = 4  # molality of solution
+        w = 1000/18  # mol H2O per kg H2O
+
         for x, g in data.items():
-            m = 4  # molality of solution
-            w = 1000/18  # mol H2O per kg H2O
             k = x*m  # mol K+
             n = m-k  # mol Na+
 
@@ -1410,5 +1415,5 @@ class TestUnsymmetric_Mixed_tau2(object):
 
             # Convert to log base 10 and molal basis
             # Eqn 28 [1] - note that m=4 appears to be based on total salt
-            log_m = ln_pm/log(10) - log(1+18*2*4/1000, 10)
+            log_m = ln_pm/log(10) - log((w+2*m)/w, 10)
             assert pytest.approx(g, rel=1e-3, abs=2.5e-3) == log_m
