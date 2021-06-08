@@ -43,6 +43,18 @@ class Ideal(EoSBase):
         pass
 
     @staticmethod
+    def act_phase_comp(b, p, j):
+        return b.get_mole_frac()[p, j]
+
+    @staticmethod
+    def log_act_phase_comp(b, p, j):
+        return log(b.get_mole_frac()[p, j])
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        return 1
+
+    @staticmethod
     def compress_fact_phase(b, p):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():

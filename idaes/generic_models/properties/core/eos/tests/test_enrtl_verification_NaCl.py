@@ -25,7 +25,7 @@ May 2021
 Author: Andrew Lee
 """
 import pytest
-from math import exp
+from math import exp, log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -515,6 +515,9 @@ class TestStateBlockSymmetric(object):
                       model.state[1].Liq_log_gamma_lc["Na+"]) ==
                 pytest.approx(
                     value(model.state[1].Liq_log_gamma["Na+"]), abs=1e-10))
+        assert pytest.approx(value(
+            model.state[1].Liq_log_gamma["Na+"]), abs=1e-10) == log(
+            value(model.state[1].act_coeff_phase_comp["Liq", "Na+"]))
 
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
@@ -535,6 +538,9 @@ class TestStateBlockSymmetric(object):
                       model.state[1].Liq_log_gamma_lc["Cl-"]) ==
                 pytest.approx(
                     value(model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10))
+        assert pytest.approx(value(
+            model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10) == log(
+            value(model.state[1].act_coeff_phase_comp["Liq", "Cl-"]))
 
 
 class TestStateBlockUnsymmetric(object):

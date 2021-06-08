@@ -859,6 +859,9 @@ class GenericParameterData(PhysicalParameterBlock):
              'phase_frac': {'method': None},
              'temperature': {'method': None},
              'pressure': {'method': None},
+             'act_phase_comp': {'method': '_act_phase_comp'},
+             'log_act_phase_comp': {'method': '_log_act_phase_comp'},
+             'act_coeff_phase_comp': {'method': '_act_coeff_phase_comp'},
              'compress_fact_phase': {'method': '_compress_fact_phase'},
              'conc_mol_comp': {'method': '_conc_mol_comp'},
              'conc_mol_phase_comp': {'method': '_conc_mol_phase_comp'},
@@ -1797,6 +1800,46 @@ class GenericStateBlockData(StateBlockData):
 
     # -------------------------------------------------------------------------
     # Property Methods
+    def _act_phase_comp(self):
+        try:
+            def rule_act_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.act_phase_comp(b, p, j)
+            self.act_phase_comp = Expression(
+                    self.phase_component_set,
+                    doc="Component activity in each phase",
+                    rule=rule_act_phase_comp)
+        except AttributeError:
+            self.del_component(self.act_phase_comp)
+            raise
+
+    def _log_act_phase_comp(self):
+        try:
+            def rule_log_act_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.log_act_phase_comp(b, p, j)
+            self.log_act_phase_comp = Expression(
+                    self.phase_component_set,
+                    doc="Natural log of component activity in each phase",
+                    rule=rule_log_act_phase_comp)
+        except AttributeError:
+            self.del_component(self.log_act_phase_comp)
+            raise
+
+    def _act_coeff_phase_comp(self):
+        try:
+            def rule_act_coeff_phase_comp(b, p, j):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.act_coeff_phase_comp(
+                    b, p, j)
+            self.act_coeff_phase_comp = Expression(
+                    self.phase_component_set,
+                    doc="Component activity coefficient in each phase",
+                    rule=rule_act_coeff_phase_comp)
+        except AttributeError:
+            self.del_component(self.act_coeff_phase_comp)
+            raise
+
     def _compress_fact_phase(self):
         try:
             def rule_Z_phase(b, p):

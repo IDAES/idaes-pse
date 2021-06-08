@@ -510,11 +510,18 @@ class ENRTL(Ideal):
         pass
 
     @staticmethod
-    def log_act_coeff(b, p, j):
-        # Overall log gamma
-        pdh = getattr(p, +"_log_gamma_pdh")
-        lc = getattr(p, +"_log_gamma_lc")
-        return pdh[j] + lc[j]
+    def act_phase_comp(b, p, j):
+        return b.mole_frac_phase_comp[p, j]*b.act_coeff_phase_comp[p, j]
+
+    @staticmethod
+    def log_act_phase_comp(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return log(b.mole_frac_phase_comp[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return exp(ln_gamma[j])
 
     @staticmethod
     def dens_mol_phase(b, p):
