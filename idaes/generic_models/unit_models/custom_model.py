@@ -121,7 +121,7 @@ class CustomModelData(ProcessBlockData):
         opt = get_solver(solver=solver, options=optarg)
 
         if custom_initialize is not None:
-            custom_initialize
+            custom_initialize()
 
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
