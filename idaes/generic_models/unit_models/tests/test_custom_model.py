@@ -15,7 +15,8 @@ Test for custom unit model.
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Var, value, SolverFactory
+from pyomo.environ import ConcreteModel, Constraint, Var, value, \
+    SolverStatus, TerminationCondition
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import CustomModel
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -26,7 +27,7 @@ __author__ = "Jaffer Ghouse"
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_solver()
+opt = get_solver()
 # -----------------------------------------------------------------------------
 
 m = ConcreteModel()
@@ -58,11 +59,14 @@ def my_initialize():
     m.fs.surrogate.x_1.fix(1)
     m.fs.surrogate.x_2.fix(2)
 
-    opt = solver
-
     opt.solve(m)
     m.fs.surrogate.c2.activate()
-    opt.solve(m)
+
+    results = opt.solve(m)
+
+    assert results.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
 
 
 def test_ports():
@@ -94,12 +98,21 @@ def test_build():
 
 def test_default_initialize():
     # Check default initialize method
+
+    m.fs.surrogate.initialize()
+
     m.fs.surrogate.x_1.fix()
     m.fs.surrogate.x_2.fix()
 
     assert degrees_of_freedom(m) == 0
 
     m.fs.surrogate.initialize()
+
+    results = opt.solve(m)
+
+    assert results.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
 
     assert value(m.fs.surrogate.x_1) == pytest.approx(0.5, abs=1e-3)
     assert value(m.fs.surrogate.x_2) == pytest.approx(0.5, abs=1e-3)
@@ -111,6 +124,13 @@ def test_default_initialize():
 def test_custom_initialize():
     # Check custom initialize method as a callback from user
     m.fs.surrogate.initialize(custom_initialize=my_initialize())
+
+    results = opt.solve(m)
+
+    assert results.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
     assert value(m.fs.surrogate.x_1) == pytest.approx(1, abs=1e-3)
     assert value(m.fs.surrogate.x_2) == pytest.approx(2, abs=1e-3)
 

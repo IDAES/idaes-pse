@@ -14,7 +14,7 @@
 Generic template for a custom unit model.
 """
 
-from pyomo.environ import Reference, SolverFactory
+from pyomo.environ import Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
@@ -22,6 +22,7 @@ from idaes.core.process_base import declare_process_block_class, \
     ProcessBlockData
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import get_solver
 import idaes.logger as idaeslog
 
 __author__ = "Jaffer Ghouse"
@@ -58,9 +59,9 @@ class CustomModelData(ProcessBlockData):
         Returns:
             None
         """
-        super(CustomModelData, self).build()
+        super().build()
 
-    def add_ports(self, name=None, member_list=None, doc=None):
+    def add_ports(self, name=None, member_dict=None, doc=None):
         """
         This is a method to build Port objects in a surrogate model and
         populate this with appropriate port members as specified. User can add
@@ -74,10 +75,10 @@ class CustomModelData(ProcessBlockData):
         Returns:
             A Pyomo Port object and associated components.
         """
-        # Validate that member_list is a dict
-        if not isinstance(member_list, dict):
+        # Validate that member_dict is a dict
+        if not isinstance(member_dict, dict):
             raise ConfigurationError(
-                "member_list should be a dictionary "
+                "member_dict should be a dictionary "
                 "with the keys being the name assigned(strings) and "
                 "values being the variable objects declared in the model.")
 
@@ -86,17 +87,17 @@ class CustomModelData(ProcessBlockData):
         setattr(self, name, p)
 
         # Create References for port members
-        for k in member_list.keys():
-            if not member_list[k].is_indexed():
-                local_name = member_list[k]
+        for k in member_dict.keys():
+            if not member_dict[k].is_indexed():
+                local_name = member_dict[k]
             else:
-                local_name = member_list[k]
+                local_name = member_dict[k]
 
             # Add Reference to Port
             p.add(Reference(local_name), k)
 
     def initialize(self, custom_initialize=None, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+                   solver=None, optarg=None):
         '''
         This is a simple initialization routine for surrogate
         models. If the user does not provide a custom callback function, this
@@ -117,8 +118,7 @@ class CustomModelData(ProcessBlockData):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver=solver, options=optarg)
 
         if custom_initialize is not None:
             custom_initialize
