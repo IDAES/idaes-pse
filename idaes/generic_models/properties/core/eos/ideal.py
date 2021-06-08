@@ -125,8 +125,24 @@ class Ideal(EoSBase):
 
     @staticmethod
     def enth_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.enth_mol_phase_comp[p, j]
-                   for j in b.components_in_phase(p))
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return sum(b.get_mole_frac()[p, j]*b.enth_mol_phase_comp[p, j]
+                       for j in b.components_in_phase(p))
+        elif pobj.is_liquid_phase():
+            return (sum(b.get_mole_frac()[p, j] *
+                        get_method(b, "enth_mol_liq_comp", j)(
+                            b, cobj(b, j), b.temperature)
+                        for j in b.components_in_phase(p)) +
+                    (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
+        elif pobj.is_solid_phase():
+            return (sum(b.get_mole_frac()[p, j] *
+                        get_method(b, "enth_mol_sol_comp", j)(
+                            b, cobj(b, j), b.temperature)
+                        for j in b.components_in_phase(p)) +
+                    (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
     def enth_mol_phase_comp(b, p, j):
@@ -135,11 +151,13 @@ class Ideal(EoSBase):
             return get_method(b, "enth_mol_ig_comp", j)(
                 b, cobj(b, j), b.temperature)
         elif pobj.is_liquid_phase():
-            return get_method(b, "enth_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return (get_method(b, "enth_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature) +
+                (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
         elif pobj.is_solid_phase():
-            return get_method(b, "enth_mol_sol_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return (get_method(b, "enth_mol_sol_comp", j)(
+                b, cobj(b, j), b.temperature) +
+                (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

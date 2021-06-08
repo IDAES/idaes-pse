@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, log, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Var, units as pyunits
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -32,6 +32,10 @@ from idaes.core.util.constants import Constants as const
 # Dummy method for property method calls
 def dummy_call(b, j, T):
     return 42
+
+
+def dummy_call2(b, j, T):
+    return 7
 
 
 # Dummy method to avoid errors when setting metadata dict
@@ -300,14 +304,20 @@ def test_energy_internal_mol_phase_comp_with_h_form(m):
 
 @pytest.mark.unit
 def test_enth_mol_phase(m):
-    m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
-                                         m.params.component_list)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+        m.params.get_component(j).config.dens_mol_liq_comp = dummy_call2
 
-    for p in m.params.phase_list:
-        assert str(Ideal.enth_mol_phase(m.props[1], p)) == str(
-            sum(m.props[1].mole_frac_phase_comp[p, j] *
-                m.props[1].enth_mol_phase_comp[p, j]
-                for j in m.params.component_list))
+    assert str(Ideal.enth_mol_phase(m.props[1], "Vap")) == (
+        'props[1].mole_frac_phase_comp[Vap,a]*42.0 + '
+        'props[1].mole_frac_phase_comp[Vap,b]*42.0 + '
+        'props[1].mole_frac_phase_comp[Vap,c]*42.0')
+    assert str(Ideal.enth_mol_phase(m.props[1], "Liq")) == str(
+        sum(m.props[1].mole_frac_phase_comp["Liq", j] * 42
+            for j in m.params.component_list) +
+        (m.props[1].pressure - m.params.pressure_ref) /
+        m.props[1].dens_mol_phase["Liq"])
 
 
 @pytest.mark.unit
@@ -315,8 +325,12 @@ def test_enth_mol_phase_comp(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
         m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+        m.params.get_component(j).config.dens_mol_liq_comp = dummy_call2
 
-        assert str(Ideal.enth_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
+    for j in m.params.component_list:
+        assert str(Ideal.enth_mol_phase_comp(m.props[1], "Liq", j)) == str(
+            42 + (m.props[1].pressure - m.params.pressure_ref) /
+            m.props[1].dens_mol_phase["Liq"])
         assert str(Ideal.enth_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
 
 
@@ -324,9 +338,13 @@ def test_enth_mol_phase_comp(m):
 def test_enth_mol_phase_sol(m_sol):
     for j in m_sol.params.component_list:
         m_sol.params.get_component(j).config.enth_mol_sol_comp = dummy_call
+        m_sol.params.get_component(j).config.dens_mol_liq_comp = dummy_call2
+        m_sol.params.get_component(j).config.dens_mol_sol_comp = dummy_call2
 
+    for j in m_sol.params.component_list:
         assert str(Ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", j)) == str(
-            42)
+            42 + (m_sol.props[1].pressure - m_sol.params.pressure_ref) /
+            m_sol.props[1].dens_mol_phase["Sol"])
 
 
 @pytest.mark.unit

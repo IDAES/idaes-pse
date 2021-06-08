@@ -28,7 +28,7 @@ ionic charge.
 """
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
-from .eos_base import EoSBase
+from .ideal import Ideal
 from .enrtl_reference_states import Symmetric
 from .enrtl_parameters import ConstantAlpha, ConstantTau
 from idaes.generic_models.properties.core.generic.utility import (
@@ -51,7 +51,7 @@ DefaultRefState = Symmetric
 ClosestApproach = 14.9
 
 
-class ENRTL(EoSBase):
+class ENRTL(Ideal):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 

@@ -23,7 +23,6 @@ from pyomo.environ import (Block,
                            Expression,
                            Set,
                            Param,
-                           SolverFactory,
                            value,
                            Var,
                            units as pyunits)
