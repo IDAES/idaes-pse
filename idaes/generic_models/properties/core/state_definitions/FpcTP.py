@@ -119,8 +119,19 @@ def define_state(b):
             units=None)
 
     def rule_mole_frac_phase_comp(b, p, j):
-        return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
-            b.flow_mol_phase_comp[p, j]
+        # Calcualting mole frac phase comp is degenerate if there is only one
+        # component in phase.
+        # Count components
+        comp_count = 0
+        for p1, j1 in b.phase_component_set:
+            if p1 == p:
+                comp_count += 1
+
+        if comp_count > 1:
+            return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
+                b.flow_mol_phase_comp[p, j]
+        else:
+            return b.mole_frac_phase_comp[p, j] == 1
     b.mole_frac_phase_comp_eq = Constraint(
         b.phase_component_set, rule=rule_mole_frac_phase_comp)
 

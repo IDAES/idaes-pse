@@ -60,6 +60,174 @@ def model():
     return m
 
 
+class TestConstantKeq(object):
+    @pytest.mark.unit
+    def test_ConstantKeq_mole_frac(self, model):
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": 1}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, None)
+
+    @pytest.mark.unit
+    def test_ConstantKeq_molarity(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.molarity
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": 1}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, pyunits.mol/pyunits.m**3)
+
+    @pytest.mark.unit
+    def test_ConstantKeq_molarity_convert(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.molarity
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": (1e-3, pyunits.kmol/pyunits.m**3)}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, pyunits.mol/pyunits.m**3)
+
+    @pytest.mark.unit
+    def test_ConstantKeq_molality(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.molality
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": 1}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, pyunits.mol/pyunits.kg)
+
+    @pytest.mark.unit
+    def test_ConstantKeq_molality_convert(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.molality
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": (1e-3, pyunits.kmol/pyunits.kg)}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, pyunits.mol/pyunits.kg)
+
+    @pytest.mark.unit
+    def test_ConstantKeq_partial_pressure(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.partialPressure
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": 1}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, pyunits.Pa)
+
+    @pytest.mark.unit
+    def test_ConstantKeq_partial_pressure_convert(self, model):
+        model.rparams.config.equilibrium_reactions.r1.concentration_form = \
+            ConcentrationForm.partialPressure
+        model.rparams.config.equilibrium_reactions.r1.parameter_data = {
+            "k_eq_ref": (1e-3, pyunits.kPa)}
+
+        ConstantKeq.build_parameters(
+            model.rparams.reaction_r1,
+            model.rparams.config.equilibrium_reactions["r1"])
+
+        # Check parameter construction
+        assert isinstance(model.rparams.reaction_r1.k_eq_ref, Var)
+        assert model.rparams.reaction_r1.k_eq_ref.value == 1
+
+        assert not hasattr(model.rparams.reaction_r1, "T_eq_ref")
+
+        # Check expression
+        rform = ConstantKeq.return_expression(
+            model.rxn[1], model.rparams.reaction_r1, "r1", 300*pyunits.K)
+
+        assert value(rform) == 1
+        assert_units_equivalent(rform, pyunits.Pa)
+
+
 class TestVanTHoff(object):
     @pytest.mark.unit
     def test_van_t_hoff_mole_frac(self, model):
