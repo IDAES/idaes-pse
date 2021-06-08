@@ -21,6 +21,7 @@ from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models import CustomModel
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Jaffer Ghouse"
 
@@ -48,9 +49,9 @@ inlet_dict = {"x_1": m.fs.surrogate.x_1,
 outlet_1_dict = {"y_1": m.fs.surrogate.y_1}
 outlet_2_dict = {"y_2": m.fs.surrogate.y_2}
 
-m.fs.surrogate.add_ports(name="inlet", member_list=inlet_dict)
-m.fs.surrogate.add_ports(name="outlet_1", member_list=outlet_1_dict)
-m.fs.surrogate.add_ports(name="outlet_2", member_list=outlet_2_dict)
+m.fs.surrogate.add_ports(name="inlet", member_dict=inlet_dict)
+m.fs.surrogate.add_ports(name="outlet_1", member_dict=outlet_1_dict)
+m.fs.surrogate.add_ports(name="outlet_2", member_dict=outlet_2_dict)
 
 
 def my_initialize():
@@ -97,9 +98,10 @@ def test_build():
 
 
 def test_default_initialize():
-    # Check default initialize method
+    # Check default initialize method raises ConfigurationError
 
-    m.fs.surrogate.initialize()
+    with pytest.raises(ConfigurationError):
+        m.fs.surrogate.initialize()
 
     m.fs.surrogate.x_1.fix()
     m.fs.surrogate.x_2.fix()
