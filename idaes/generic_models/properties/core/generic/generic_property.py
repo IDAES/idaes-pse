@@ -1828,7 +1828,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.act_phase_comp_true(b, p, j)
             self.act_phase_comp_true = Expression(
-                    self.true_phase_component_set,
+                    self.params.true_phase_component_set,
                     doc="Component activity in each phase",
                     rule=rule_act_phase_comp_true)
         except AttributeError:
@@ -1841,7 +1841,7 @@ class GenericStateBlockData(StateBlockData):
                 p_config = b.params.get_phase(p).config
                 return p_config.equation_of_state.act_phase_comp_appr(b, p, j)
             self.act_phase_comp_appr = Expression(
-                    self.apparent_phase_component_set,
+                    self.params.apparent_phase_component_set,
                     doc="Component activity in each phase",
                     rule=rule_act_phase_comp_appr)
         except AttributeError:
@@ -1868,7 +1868,7 @@ class GenericStateBlockData(StateBlockData):
                 return p_config.equation_of_state.log_act_phase_comp_true(
                     b, p, j)
             self.log_act_phase_comp_true = Expression(
-                    self.true_phase_component_set,
+                    self.params.true_phase_component_set,
                     doc="Natural log of component activity in each phase",
                     rule=rule_log_act_phase_comp_true)
         except AttributeError:
@@ -1882,7 +1882,7 @@ class GenericStateBlockData(StateBlockData):
                 return p_config.equation_of_state.log_act_phase_comp_appr(
                     b, p, j)
             self.log_act_phase_comp_appr = Expression(
-                    self.apparent_phase_component_set,
+                    self.params.apparent_phase_component_set,
                     doc="Natural log of component activity in each phase",
                     rule=rule_log_act_phase_comp_appr)
         except AttributeError:
@@ -1910,7 +1910,7 @@ class GenericStateBlockData(StateBlockData):
                 return p_config.equation_of_state.act_coeff_phase_comp_true(
                     b, p, j)
             self.act_coeff_phase_comp_true = Expression(
-                    self.true_phase_component_set,
+                    self.params.true_phase_component_set,
                     doc="Component activity coefficient in each phase",
                     rule=rule_act_coeff_phase_comp_true)
         except AttributeError:
@@ -1924,7 +1924,7 @@ class GenericStateBlockData(StateBlockData):
                 return p_config.equation_of_state.act_coeff_phase_comp_appr(
                     b, p, j)
             self.act_coeff_phase_comp_appr = Expression(
-                    self.apparent_phase_component_set,
+                    self.params.apparent_phase_component_set,
                     doc="Component activity coefficient in each phase",
                     rule=rule_act_coeff_phase_comp_appr)
         except AttributeError:
