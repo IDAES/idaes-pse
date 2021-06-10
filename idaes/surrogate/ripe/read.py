@@ -16,7 +16,7 @@
 def read(infile):
     # Arguemnts
     # infile : ripe input file to be parsed
-    import ripe
+    import ripe  # pylint: disable=import-error
     import sys
     import numpy as np
 
@@ -268,7 +268,7 @@ def read(infile):
 
 
 def readtimeseries(rd, ln, dlm, st1, st2):
-    import ripe
+    import ripe  # pylint: disable=import-error
 
     # Read time series data
     import numpy as np

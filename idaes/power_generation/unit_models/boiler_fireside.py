@@ -78,6 +78,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 

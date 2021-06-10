@@ -47,7 +47,7 @@ class MPIInterface:
         self._rank = None
 
         if self.have_mpi:
-            self._comm = MPI.COMM_WORLD
+            self._comm = MPI.COMM_WORLD  # pylint: disable=undefined-variable
             self._size = self._comm.Get_size()
             self._rank = self._comm.Get_rank()
 
@@ -134,6 +134,9 @@ class ParallelTaskManager:
         comm = self._mpi_interface.comm
         global_data_list = comm.allgather(local_data)
 
+        # PYLINT-TODO-FIX fix the error due to the
+        # non-existing global_data_list_of_lists variable
+        # pylint: disable=undefined-variable
         return self._stack_global_data(global_data_list_of_lists)
 
     def gather_global_data(self, local_data):

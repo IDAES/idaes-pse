@@ -24,6 +24,8 @@ itt_val = 0
 rtt_vals = []
 dtrdt_vals = []
 d2rd_vals = []
+# PYLINT-TODO check if fix OK: adding d2rdt_vals variable here to address the undefined-variable error on L286
+d2rdt_vals = []
 d3rd_vals = []
 d4rd_vals = []
 d5rd_Vals = []

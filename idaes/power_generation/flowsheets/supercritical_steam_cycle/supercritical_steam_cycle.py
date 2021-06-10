@@ -181,6 +181,12 @@ def create_model():
     @m.fs.condenser_mix.Constraint(m.fs.time)
     def mixer_pressure_constraint(b, t):
         return b.main_state[t].pressure == b.mixed_state[t].pressure
+    # PYLINT-TODO the name "mixer_pressure_constraint" is reused below to define other constraint functions,
+    # causing pylint to report function-redefined errors
+    # this likely does not actually cause issues at runtime,
+    # but it could be worth to check anyway if the pylint errors can be addressed
+    # e.g. by giving a unique name to each of the affected functions
+    # pylint: disable=function-redefined
 
     # The condenser model uses the physical property model with TPx state
     # variables, while the rest of the model uses PH state variables. To

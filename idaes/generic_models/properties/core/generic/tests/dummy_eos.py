@@ -22,6 +22,7 @@ class DummyEoS(EoSBase):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
+    @staticmethod
     def common(b, pobj):
         # Create dummy var to be returned by expression calls
         # This Var is used to create expressions where required.
@@ -36,45 +37,59 @@ class DummyEoS(EoSBase):
         else:
             b.eos_common = 1
 
+    @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass
 
+    @staticmethod
     def build_parameters(b):
         if not hasattr(b, "dummy_param"):
             b.dummy_param = Var(initialize=42)
 
+    @staticmethod
     def dens_mass_phase(b, p):
         return 42
 
+    @staticmethod
     def dens_mol_phase(b, p):
         return 55e3
 
+    @staticmethod
     def energy_internal_mol_phase(b, p):
         return 2e2*b.temperature
 
+    @staticmethod
     def energy_internal_mol_phase_comp(b, p, j):
         return 2e2*b.temperature
 
+    @staticmethod
     def enth_mol_phase(b, p):
         return 1e2*b.temperature
 
+    @staticmethod
     def enth_mol_phase_comp(b, p, j):
         return 1e2*b.temperature
 
+    @staticmethod
     def entr_mol_phase(b, p):
         return 42
 
+    @staticmethod
     def entr_mol_phase_comp(b, p, j):
         return 42
 
+    @staticmethod
     def fug_phase_comp(b, p, j):
         return 42
 
+    @staticmethod
     def fug_coeff_phase_comp(b, p, j):
         return 42
 
+    @staticmethod
     def gibbs_mol_phase(b, p):
         return 42
 
+    @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
         return 42
