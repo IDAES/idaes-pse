@@ -645,11 +645,14 @@ class Stats(object):
         json.dump(self.to_dict(), fp, indent=4)
 
     def to_dmf(self, dmf):
+        # PYLINT-TODO-FIX fix error due to undefined variable "stats"
         rsrc = resource.Resource(value={
             'name': 'convergence_results',
             'desc': 'statistics returned from run_convergence_evaluation',
             'creator': {'name': getpass.getuser()},
+            # pylint: disable=undefined-variable
             'data': stats.to_dict()}, type_=resource.ResourceTypes.data)
+            # pylint: enable=undefined-variable
         dmf.add(rsrc)
 
     def report(self, fp=sys.stdout):

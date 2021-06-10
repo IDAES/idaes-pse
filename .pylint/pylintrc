@@ -1,0 +1,20 @@
+[MASTER]
+init-hook="import sys; sys.path.append('.pylint')"
+load-plugins=idaes_transform
+ignore-patterns=test_.*
+
+[MESSAGES CONTROL]
+disable=no-self-argument,
+    bad-super-call,
+    assignment-from-none,
+
+[IMPORTS]
+ignored-modules=cvalsim,almsim
+
+[TYPECHECK]
+# prevents members specified here from causing E1101 (no-member)
+# the regular expression is currently matched against the name used at the call site
+# eventually pylint should be able to support using the fully qualified name instead
+# (see e.g. https://github.com/PyCQA/pylint/issues/2498)
+# here "cm" refers to matplotlib.cm
+generated-members=cm\..*,

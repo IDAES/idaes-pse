@@ -172,7 +172,9 @@ between flow and pressure driven simulations.}""",
         self._get_property_package()
 
         # Create list of inlet names
-        inlet_list = self.create_inlet_list()
+        # PYLINT-TODO: assigning the result of self.create_inlet_list() to unused local variable inlet_list
+        # causes pylint error assignment-from-no-return; check if removing assignment is OK
+        self.create_inlet_list()
 
         # Build StateBlocks
         self.add_inlet_state_blocks()

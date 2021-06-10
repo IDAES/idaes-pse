@@ -609,7 +609,7 @@ see property package for documentation.}""",
                 for t in blk.flowsheet().config.time
             ):
                 _log.warning(
-                    "{} Expander/turbine maybe set with pressure ",
+                    "{} Expander/turbine maybe set with pressure "
                     "increase.".format(blk.name),
                 )
             # Check that work is not positive

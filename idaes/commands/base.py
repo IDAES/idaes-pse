@@ -109,4 +109,6 @@ def import_time(name="import-time"):
     click.echo(f"Time: {_command_import_total_time}")
 
 if __name__ == "__main__":
+    # PYLINT-TODO-FIX fix error bypassed by directive
+    # pylint: disable=no-value-for-parameter
     command_base()

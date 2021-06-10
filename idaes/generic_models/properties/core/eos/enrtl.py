@@ -512,8 +512,8 @@ class ENRTL(EoSBase):
     @staticmethod
     def log_act_coeff(b, p, j):
         # Overall log gamma
-        pdh = getattr(p, +"_log_gamma_pdh")
-        lc = getattr(p, +"_log_gamma_lc")
+        pdh = getattr(p + "_log_gamma_pdh")
+        lc = getattr(p + "_log_gamma_lc")
         return pdh[j] + lc[j]
 
     @staticmethod
