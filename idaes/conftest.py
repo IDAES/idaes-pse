@@ -29,62 +29,71 @@ import sys
 ####
 
 ####
-# Only run the tests for your particular platform(s), if it is marked with those platform(s)
-# e.g. to mark tests for linux:
-#
-# import pytest
-# @pytest.mark.linux
-# def test_something():
-#    print("this only runs on linux")
-#
-#
-# In addition, you can use "no<platform>" to exclude
-#
-# @pytest.mark.nowin32
-# def test_something():
-#    print("this will not run on windows")
-#
-# The names of the platforms should match what is returned by `sys.platform`, in particular:
-#    Linux = 'linux'
-#    Windows = 'win32'
-#    macOS = 'darwin'
-
-
-ALL = {"darwin", "linux", "win32"}
-ALL_NO = {"no" + tag for tag in ALL}
 
 
 @pytest.hookimpl
 def pytest_runtest_setup(item):
-    for check in [
-        _validate_required_marks,
-        _skip_for_unsupported_platforms,
-    ]:
-        check(item)
+    _validate_required_markers(
+        item,
+        required_markers={"unit", "component", "integration"},
+        expected_count=1
+    )
+    _skip_for_unsupported_platforms(
+        item,
+        all_platforms={"darwin", "linux", "win32"},
+        negate_tag=(lambda tag: f'no{tag}'),
+    )
 
 
-def _skip_for_unsupported_platforms(item):
-    supported_platforms = ALL.intersection(mark.name for mark in item.iter_markers())
-    excluded_platforms = ALL_NO.intersection(mark.name for mark in item.iter_markers())
+def _skip_for_unsupported_platforms(item, all_platforms=None, negate_tag=None):
+    """
+    Only run the tests for your particular platform(s), if it is marked with those platform(s)
+    e.g. to mark tests for linux:
+
+    import pytest
+    @pytest.mark.linux
+    def test_something():
+       print("this only runs on linux")
+
+    In addition, you can use "no<platform>" to exclude
+
+    @pytest.mark.nowin32
+    def test_something():
+       print("this will not run on windows")
+
+    The names of the platforms should match what is returned by `sys.platform`, in particular:
+       Linux = 'linux'
+       Windows = 'win32'
+       macOS = 'darwin'
+    """
+
+    all_platforms = set(all_platforms or [])
+    if negate_tag is None:
+        def negate_tag(tag):
+            return f'no{tag}'
+    all_negated_platforms = {negate_tag(tag) for tag in all_platforms}
+    item_markers = {marker.name for marker in item.iter_markers()}
+    supported_platforms = all_platforms & item_markers
+    excluded_platforms = all_negated_platforms & item_markers
     plat = sys.platform
-    if ((excluded_platforms and ("no" + plat) in excluded_platforms) or
+    if ((excluded_platforms and negate_tag(plat) in excluded_platforms) or
         (supported_platforms and plat not in supported_platforms)):
         pytest.skip("cannot run on platform {}".format(plat))
 
 
-def _validate_required_marks(item):
-    required_marks = {'unit', 'component', 'integration'}
-    item_marks = [mark.name for mark in item.iter_markers()]
-    required_marks_on_item = set(item_marks) & required_marks
-    expected_marks_count = 1
-    required_marks_count = len(required_marks_on_item)
-    if required_marks_count != expected_marks_count:
-        if required_marks_count < expected_marks_count:
-            reason = 'Too few required marks'
-        if required_marks_count > expected_marks_count:
-            reason = 'Too many required marks'
-        extra_info = f'Expected: {expected_marks_count} of {required_marks}; found: {item_marks}'
-        msg = f'{reason} for test function "{item.name}". {extra_info}'
+def _validate_required_markers(item, required_markers=None, expected_count=1):
+    required_markers = set(required_markers or [])
+    item_markers = {marker.name for marker in item.iter_markers()}
+    required_markers_on_item = item_markers & required_markers
+    required_count = len(required_markers_on_item)
+    reason_to_fail = None
+    if required_count < expected_count:
+        reason_to_fail = 'Too few required markers'
+    if required_count > expected_count:
+        reason = 'Too many required markers'
+    if reason_to_fail:
+        extra_info = f'Expected: {expected_count} of {required_markers}; found: {item_markers}'
+        msg = f'{reason_to_fail} for test function "{item.name}". {extra_info}'
         pytest.fail(msg)
 
 
