@@ -43,8 +43,11 @@ class TestModelSerialize(unittest.TestCase):
         except:
             pass
 
-    def setup_model01(self):
-        model = ConcreteModel()
+    def setup_model01(self, name=None):
+        if name is not None:
+            model = ConcreteModel(name)
+        else:
+            model = ConcreteModel()
         model.b = Block([1,2,3])
         a = model.b[1].a = Var(bounds=(-100, 100), initialize=2)
         b = model.b[1].b = Var(bounds=(-100, 100), initialize=20)
@@ -88,6 +91,21 @@ class TestModelSerialize(unittest.TestCase):
         model.ipopt_zU_out = Suffix(direction=Suffix.IMPORT)
         return model
 
+    @pytest.mark.unit
+    def test01_name(self):
+        """
+        Simple test of load save json with differnt model names
+        """
+        model = self.setup_model01("m1")
+        model2 = self.setup_model01("m2")
+
+        model2.b[1].a = 0.11
+        model2.b[1].b = 0.11
+        to_json(model, fname=self.fname, human_read=True)
+        from_json(model2, fname=self.fname)
+        #make sure they are right
+        assert pytest.approx(20) == value(model2.b[1].b)
+        assert pytest.approx(2) == value(model2.b[1].a)
 
     @pytest.mark.unit
     def test01(self):
