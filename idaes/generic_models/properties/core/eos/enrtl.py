@@ -28,11 +28,13 @@ ionic charge.
 """
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
-from .eos_base import EoSBase
+from .ideal import Ideal
 from .enrtl_reference_states import Symmetric
 from .enrtl_parameters import ConstantAlpha, ConstantTau
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
+from idaes.generic_models.properties.core.generic.generic_property import \
+    StateIndex
 from idaes.core.util.constants import Constants
 from idaes.core.util.exceptions import BurntToast
 import idaes.logger as idaeslog
@@ -51,7 +53,7 @@ DefaultRefState = Symmetric
 ClosestApproach = 14.9
 
 
-class ENRTL(EoSBase):
+class ENRTL(Ideal):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
@@ -505,28 +507,85 @@ class ENRTL(EoSBase):
                 rule=rule_log_gamma,
                 doc="Log of activity coefficient"))
 
+        # Activity coefficient of apparent species
+        def rule_log_gamma_pm(b, j):
+            cobj = b.params.get_component(j)
+
+            if "dissociation_species" in cobj.config:
+                dspec = cobj.config.dissociation_species
+
+                n = 0
+                d = 0
+                for s in dspec:
+                    dobj = b.params.get_component(s)
+                    ln_g = getattr(b, pname+"_log_gamma")[s]
+                    n += abs(dobj.config.charge)*ln_g
+                    d += abs(dobj.config.charge)
+
+                return n/d
+            else:
+                return getattr(b, pname+"_log_gamma")[j]
+
+        b.add_component(
+            pname+"_log_gamma_appr",
+            Expression(
+                b.params.apparent_species_set,
+                rule=rule_log_gamma_pm,
+                doc="Log of mean activity coefficient"))
+
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass
 
     @staticmethod
-    def log_act_coeff(b, p, j):
-        # Overall log gamma
-        pdh = getattr(p + "_log_gamma_pdh")
-        lc = getattr(p + "_log_gamma_lc")
-        return pdh[j] + lc[j]
+    def act_phase_comp(b, p, j):
+        return b.mole_frac_phase_comp[p, j]*b.act_coeff_phase_comp[p, j]
 
     @staticmethod
-    def dens_mol_phase(b, p):
-        return 55e3
+    def act_phase_comp_true(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return b.mole_frac_phase_comp_true[p, j]*exp(ln_gamma[j])
 
     @staticmethod
-    def enth_mol_phase(b, p):
-        return 1e2*b.temperature
+    def act_phase_comp_appr(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return b.mole_frac_phase_comp_apparent[p, j]*exp(ln_gamma[j])
 
     @staticmethod
-    def enth_mol_phase_comp(b, p, j):
-        return 1e2*b.temperature
+    def log_act_phase_comp(b, p, j):
+        if b.params.config.state_components == StateIndex.true:
+            ln_gamma = getattr(b, p+"_log_gamma")
+        else:
+            ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return log(b.mole_frac_phase_comp[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def log_act_phase_comp_true(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return log(b.mole_frac_phase_comp_true[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def log_act_phase_comp_appr(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return log(b.mole_frac_phase_comp_apparent[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        if b.params.config.state_components == StateIndex.true:
+            ln_gamma = getattr(b, p+"_log_gamma")
+        else:
+            ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return exp(ln_gamma[j])
+
+    @staticmethod
+    def act_coeff_phase_comp_true(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return exp(ln_gamma[j])
+
+    @staticmethod
+    def act_coeff_phase_comp_appr(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return exp(ln_gamma[j])
 
 
 def log_gamma_lc(b, pname, s, X, G, tau):

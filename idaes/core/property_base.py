@@ -980,9 +980,8 @@ should be constructed in this state block,
         super().calculate_scaling_factors()
         # Get scaling factor defaults, if no scaling factor set
         for v in self.component_data_objects(
-            (Constraint, Var, Expression),
-            descend_into=False):
-            if iscale.get_scaling_factor(v) is None: # don't replace if set
+                (Constraint, Var, Expression), descend_into=False):
+            if iscale.get_scaling_factor(v) is None:  # don't replace if set
                 name = v.getname().split("[")[0]
                 index = v.index()
                 sf = self.config.parameters.get_default_scaling(name, index)

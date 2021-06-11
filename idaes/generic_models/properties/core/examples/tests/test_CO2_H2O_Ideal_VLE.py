@@ -303,7 +303,7 @@ class TestStateBlock(object):
                 / value(m.fs.flash.inlet.flow_mol[0])
             assert frac == pytest.approx(expected_sol[t][0], abs=1e-4)
             hduty = value(m.fs.flash.heat_duty[0])
-            assert hduty == pytest.approx(expected_sol[t][1], abs=1e-4)
+            assert hduty == pytest.approx(expected_sol[t][1], rel=1e-4)
 
     @pytest.mark.unit
     def test_report(self, model):
