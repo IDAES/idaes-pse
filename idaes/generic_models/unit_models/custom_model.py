@@ -84,17 +84,17 @@ class CustomModelData(ProcessBlockData):
 
         # Create empty Port
         p = Port(noruleinit=True, doc=doc)
+
+        # Add port object to model
         setattr(self, name, p)
 
-        # Create References for port members
+        # Populate port by referencing to actual variables
         for k in member_dict.keys():
             if not member_dict[k].is_indexed():
-                local_name = member_dict[k]
+                p.add(Reference(self.component(member_dict[k].local_name)), k)
             else:
-                local_name = member_dict[k]
-
-            # Add Reference to Port
-            p.add(Reference(local_name), k)
+                p.add(Reference(self.component(member_dict[k].
+                      local_name)[...]), k)
 
     def initialize(self, custom_initialize=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
