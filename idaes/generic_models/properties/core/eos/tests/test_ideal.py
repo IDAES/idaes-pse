@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for ideal equation of state methods
 
@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, log, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Var, units as pyunits
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
@@ -32,6 +32,10 @@ from idaes.core.util.constants import Constants as const
 # Dummy method for property method calls
 def dummy_call(b, j, T):
     return 42
+
+
+def dummy_call2(b, j, T):
+    return 7
 
 
 # Dummy method to avoid errors when setting metadata dict
@@ -130,7 +134,7 @@ def test_common(m):
 
 @pytest.mark.unit
 def test_compress_fact_phase_Liq(m):
-    assert Ideal.compress_fact_phase(m.props[1], "Liq") == 1
+    assert Ideal.compress_fact_phase(m.props[1], "Liq") == 0
 
 
 @pytest.mark.unit
@@ -139,9 +143,8 @@ def test_compress_fact_phase_Vap(m):
 
 
 @pytest.mark.unit
-def test_compress_fact_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.compress_fact_phase(m_sol.props[1], "Sol")
+def test_compress_fact_phase_sol(m_sol):
+    assert Ideal.compress_fact_phase(m_sol.props[1], "Sol") == 0
 
 
 @pytest.mark.unit
@@ -193,6 +196,17 @@ def test_cv_mol_phase_comp(m):
 
 
 @pytest.mark.unit
+def test_heat_capacity_ratio_phase(m):
+
+    m.props[1].cp_mol_phase = Var(m.params.phase_list)
+    m.props[1].cv_mol_phase = Var(m.params.phase_list)
+
+    for p in m.params.phase_list:
+        assert str(Ideal.heat_capacity_ratio_phase(m.props[1], p)) == (
+            str(m.props[1].cp_mol_phase[p] / m.props[1].cv_mol_phase[p]))
+
+
+@pytest.mark.unit
 def test_dens_mass_phase(m):
     m.props[1].dens_mol_phase = Var(m.params.phase_list)
     m.props[1].mw_phase = Var(m.params.phase_list)
@@ -220,9 +234,13 @@ def test_dens_mol_phase_vap(m):
 
 
 @pytest.mark.unit
-def test_dens_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.dens_mol_phase(m_sol.props[1], "Sol")
+def test_dens_mol_phase_sol(m_sol):
+    for j in m_sol.params.component_list:
+        m_sol.params.get_component(j).config.dens_mol_sol_comp = dummy_call
+
+    assert str(Ideal.dens_mol_phase(m_sol.props[1], "Sol")) == str(
+        sum(m_sol.props[1].mole_frac_phase_comp["Sol", j]*42
+            for j in m_sol.params.component_list))
 
 
 @pytest.mark.unit
@@ -286,14 +304,20 @@ def test_energy_internal_mol_phase_comp_with_h_form(m):
 
 @pytest.mark.unit
 def test_enth_mol_phase(m):
-    m.props[1].enth_mol_phase_comp = Var(m.params.phase_list,
-                                         m.params.component_list)
+    for j in m.params.component_list:
+        m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
+        m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+        m.params.get_component(j).config.dens_mol_liq_comp = dummy_call2
 
-    for p in m.params.phase_list:
-        assert str(Ideal.enth_mol_phase(m.props[1], p)) == str(
-            sum(m.props[1].mole_frac_phase_comp[p, j] *
-                m.props[1].enth_mol_phase_comp[p, j]
-                for j in m.params.component_list))
+    assert str(Ideal.enth_mol_phase(m.props[1], "Vap")) == (
+        'props[1].mole_frac_phase_comp[Vap,a]*42.0 + '
+        'props[1].mole_frac_phase_comp[Vap,b]*42.0 + '
+        'props[1].mole_frac_phase_comp[Vap,c]*42.0')
+    assert str(Ideal.enth_mol_phase(m.props[1], "Liq")) == str(
+        sum(m.props[1].mole_frac_phase_comp["Liq", j] * 42
+            for j in m.params.component_list) +
+        (m.props[1].pressure - m.params.pressure_ref) /
+        m.props[1].dens_mol_phase["Liq"])
 
 
 @pytest.mark.unit
@@ -301,15 +325,26 @@ def test_enth_mol_phase_comp(m):
     for j in m.params.component_list:
         m.params.get_component(j).config.enth_mol_liq_comp = dummy_call
         m.params.get_component(j).config.enth_mol_ig_comp = dummy_call
+        m.params.get_component(j).config.dens_mol_liq_comp = dummy_call2
 
-        assert str(Ideal.enth_mol_phase_comp(m.props[1], "Liq", j)) == str(42)
+    for j in m.params.component_list:
+        assert str(Ideal.enth_mol_phase_comp(m.props[1], "Liq", j)) == str(
+            42 + (m.props[1].pressure - m.params.pressure_ref) /
+            m.props[1].dens_mol_phase["Liq"])
         assert str(Ideal.enth_mol_phase_comp(m.props[1], "Vap", j)) == str(42)
 
 
 @pytest.mark.unit
-def test_enth_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", "foo")
+def test_enth_mol_phase_sol(m_sol):
+    for j in m_sol.params.component_list:
+        m_sol.params.get_component(j).config.enth_mol_sol_comp = dummy_call
+        m_sol.params.get_component(j).config.dens_mol_liq_comp = dummy_call2
+        m_sol.params.get_component(j).config.dens_mol_sol_comp = dummy_call2
+
+    for j in m_sol.params.component_list:
+        assert str(Ideal.enth_mol_phase_comp(m_sol.props[1], "Sol", j)) == str(
+            42 + (m_sol.props[1].pressure - m_sol.params.pressure_ref) /
+            m_sol.props[1].dens_mol_phase["Sol"])
 
 
 @pytest.mark.unit
@@ -338,9 +373,12 @@ def test_entr_mol_phase_comp(m):
 
 
 @pytest.mark.unit
-def test_entr_mol_phase_invalid_phase(m_sol):
-    with pytest.raises(PropertyNotSupportedError):
-        Ideal.entr_mol_phase_comp(m_sol.props[1], "Sol", "foo")
+def test_entr_mol_phase_sol(m_sol):
+    for j in m_sol.params.component_list:
+        m_sol.params.get_component(j).config.entr_mol_sol_comp = dummy_call
+
+        assert str(Ideal.entr_mol_phase_comp(m_sol.props[1], "Sol", j)) == str(
+            42)
 
 
 @pytest.mark.unit

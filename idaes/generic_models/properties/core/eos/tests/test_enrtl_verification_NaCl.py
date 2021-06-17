@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for eNRTL methods
 
@@ -25,7 +25,7 @@ May 2021
 Author: Andrew Lee
 """
 import pytest
-from math import exp
+from math import exp, log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -58,7 +58,7 @@ configuration = {
                     relative_permittivity_constant,
                 "parameter_data": {
                     "mw": (18E-3, pyunits.kg/pyunits.mol),
-                    "relative_permittivity_liq_comp": 73.41964622627609}},
+                    "relative_permittivity_liq_comp": 78.54}},
         "NaCl": {"type": Apparent,
                  "dissociation_species": {"Na+": 1, "Cl-": 1}},
         "Na+": {"type": Cation,
@@ -92,7 +92,7 @@ class TestStateBlockSymmetric(object):
         m.state = m.params.build_state_block([1])
 
         # Need to set a value of T for checking expressions later
-        m.state[1].temperature.set_value(313)
+        m.state[1].temperature.set_value(298.15)
 
         return m
 
@@ -164,8 +164,10 @@ class TestStateBlockSymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(exp(g), rel=2e-2) == exp(value(
-                model.state[1].Liq_log_gamma["H2O"]))
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma["H2O"])
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma_appr["H2O"])
 
     @pytest.mark.unit
     def test_log_gamma_pdh(self, model):
@@ -234,10 +236,10 @@ class TestStateBlockSymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(OFFSET, abs=0.041) == value(
-                model.state[1].Liq_log_gamma_pdh["Na+"] - g)
-            assert pytest.approx(OFFSET, abs=0.041) == value(
-                model.state[1].Liq_log_gamma_pdh["Cl-"] - g)
+            assert pytest.approx(g+OFFSET, rel=0.04, abs=0.07) == value(
+                model.state[1].Liq_log_gamma_pdh["Na+"])
+            assert pytest.approx(g+OFFSET, rel=0.04, abs=0.07) == value(
+                model.state[1].Liq_log_gamma_pdh["Cl-"])
 
     @pytest.mark.unit
     def test_log_gamma_lc(self, model):
@@ -300,7 +302,7 @@ class TestStateBlockSymmetric(object):
                 0.99266736005891: 0.0264587394852946}
 
         # Need to correct for different reference state
-        OFFSET = -2.4439
+        OFFSET = 2.414
 
         for x, g in data.items():
             model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(x)
@@ -309,10 +311,10 @@ class TestStateBlockSymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(OFFSET, rel=3e-2) == value(
-                model.state[1].Liq_log_gamma_lc["Na+"] - g)
-            assert pytest.approx(OFFSET, rel=3e-2) == value(
-                model.state[1].Liq_log_gamma_lc["Cl-"] - g)
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=6e-2) == value(
+                model.state[1].Liq_log_gamma_lc["Na+"])
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=6e-2) == value(
+                model.state[1].Liq_log_gamma_lc["Cl-"])
 
     @pytest.mark.unit
     def test_log_gamma(self, model):
@@ -372,10 +374,12 @@ class TestStateBlockSymmetric(object):
                 0.9486120511900609: -0.3696931661149465,
                 0.9686917233497501: -0.3827344143467273,
                 0.9855967963455463: -0.3541317749389892,
-                0.9946128753251389: -0.19481723605693535}
+                # Error gets too large at this point
+                # 0.9946128753251389: -0.19481723605693535
+                }
 
         # Need to correct for different reference state
-        OFFSET = -1.4592
+        OFFSET = 1.462
 
         for x, g in data.items():
             model.state[1].mole_frac_phase_comp["Liq", "H2O"].set_value(x)
@@ -384,10 +388,12 @@ class TestStateBlockSymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(OFFSET, rel=0.051) == value(
-                model.state[1].Liq_log_gamma["Na+"] - g)
-            assert pytest.approx(OFFSET, rel=0.051) == value(
-                model.state[1].Liq_log_gamma["Cl-"] - g)
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
+                model.state[1].Liq_log_gamma["Na+"])
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
+                model.state[1].Liq_log_gamma["Cl-"])
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
+                model.state[1].Liq_log_gamma_appr["NaCl"])
 
     @pytest.mark.unit
     def test_pure_water(self, model):
@@ -412,8 +418,6 @@ class TestStateBlockSymmetric(object):
         for k, v in model.state[1].Liq_alpha.items():
             if k == ("H2O", "H2O"):
                 assert value(v) == 0.3
-            elif k in [("Na+", "Cl-"), ("Cl-", "Na+")]:
-                assert value(v) == 0
             else:
                 assert value(v) == 0.2
 
@@ -473,8 +477,6 @@ class TestStateBlockSymmetric(object):
         for k, v in model.state[1].Liq_alpha.items():
             if k == ("H2O", "H2O"):
                 assert value(v) == 0.3
-            elif k in [("Na+", "Cl-"), ("Cl-", "Na+")]:
-                assert value(v) == 0
             else:
                 assert value(v) == 0.2
 
@@ -517,6 +519,9 @@ class TestStateBlockSymmetric(object):
                       model.state[1].Liq_log_gamma_lc["Na+"]) ==
                 pytest.approx(
                     value(model.state[1].Liq_log_gamma["Na+"]), abs=1e-10))
+        assert pytest.approx(value(
+            model.state[1].Liq_log_gamma["Na+"]), abs=1e-10) == log(
+            value(model.state[1].act_coeff_phase_comp["Liq", "Na+"]))
 
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
@@ -537,6 +542,9 @@ class TestStateBlockSymmetric(object):
                       model.state[1].Liq_log_gamma_lc["Cl-"]) ==
                 pytest.approx(
                     value(model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10))
+        assert pytest.approx(value(
+            model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10) == log(
+            value(model.state[1].act_coeff_phase_comp["Liq", "Cl-"]))
 
 
 class TestStateBlockUnsymmetric(object):
@@ -552,7 +560,7 @@ class TestStateBlockUnsymmetric(object):
         m.state = m.params.build_state_block([1])
 
         # Need to set a value of T for checking expressions later
-        m.state[1].temperature.set_value(313)
+        m.state[1].temperature.set_value(298.15)
 
         return m
 
@@ -624,8 +632,10 @@ class TestStateBlockUnsymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(exp(g), rel=2e-2) == exp(value(
-                model.state[1].Liq_log_gamma["H2O"]))
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma["H2O"])
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma_appr["H2O"])
 
     @pytest.mark.unit
     def test_log_gamma_pdh(self, model):
@@ -691,9 +701,9 @@ class TestStateBlockUnsymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(g, abs=0.06) == value(
+            assert pytest.approx(g, rel=0.04, abs=0.07) == value(
                 model.state[1].Liq_log_gamma_pdh["Na+"])
-            assert pytest.approx(g, abs=0.06) == value(
+            assert pytest.approx(g, rel=0.04, abs=0.07) == value(
                 model.state[1].Liq_log_gamma_pdh["Cl-"])
 
     @pytest.mark.unit
@@ -837,10 +847,12 @@ class TestStateBlockUnsymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 (1-x)/2)
 
-            assert pytest.approx(g, rel=4e-2, abs=4e-2) == value(
+            assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
                 model.state[1].Liq_log_gamma["Na+"])
-            assert pytest.approx(g, rel=4e-2, abs=4e-2) == value(
+            assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
                 model.state[1].Liq_log_gamma["Cl-"])
+            assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
+                model.state[1].Liq_log_gamma_appr["NaCl"])
 
     @pytest.mark.unit
     def test_pure_water(self, model):

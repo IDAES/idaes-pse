@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for eNRTL methods
 
@@ -577,29 +577,37 @@ class TestStateBlockSymmetric(object):
 
         # Ion-ion interactions
         assert str(model.state[1].Liq_alpha["Na+", "Cl-"].expr) == str(
-                (model.state[1].Liq_Y["H+"] *
+                (model.state[1].Liq_Y["Na+"] * 0.2 +
+                 model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"]))
         assert str(model.state[1].Liq_alpha["Na+", "OH-"].expr) == str(
-                (model.state[1].Liq_Y["H+"] *
+                (model.state[1].Liq_Y["Na+"] * 0.2 +
+                 model.state[1].Liq_Y["H+"] *
                  model.params.Liq.alpha["Na+, OH-", "H+, OH-"]))
         assert str(model.state[1].Liq_alpha["H+", "Cl-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
-                 model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"]))
+                 model.params.Liq.alpha["Na+, Cl-", "H+, Cl-"] +
+                 model.state[1].Liq_Y["H+"] * 0.2))
         assert str(model.state[1].Liq_alpha["H+", "OH-"].expr) == str(
                 (model.state[1].Liq_Y["Na+"] *
-                 model.params.Liq.alpha["Na+, OH-", "H+, OH-"]))
+                 model.params.Liq.alpha["Na+, OH-", "H+, OH-"] +
+                 model.state[1].Liq_Y["H+"] * 0.2))
         assert str(model.state[1].Liq_alpha["Cl-", "Na+"].expr) == str(
-                (model.state[1].Liq_Y["OH-"] *
+                (model.state[1].Liq_Y["Cl-"] * 0.2 +
+                 model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"]))
         assert str(model.state[1].Liq_alpha["Cl-", "H+"].expr) == str(
-                (model.state[1].Liq_Y["OH-"] *
+                (model.state[1].Liq_Y["Cl-"] * 0.2 +
+                 model.state[1].Liq_Y["OH-"] *
                  model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
         assert str(model.state[1].Liq_alpha["OH-", "Na+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
-                 model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"]))
+                 model.params.Liq.alpha["Na+, Cl-", "Na+, OH-"] +
+                 model.state[1].Liq_Y["OH-"] * 0.2))
         assert str(model.state[1].Liq_alpha["OH-", "H+"].expr) == str(
                 (model.state[1].Liq_Y["Cl-"] *
-                 model.params.Liq.alpha["H+, Cl-", "H+, OH-"]))
+                 model.params.Liq.alpha["H+, Cl-", "H+, OH-"] +
+                 model.state[1].Liq_Y["OH-"] * 0.2))
 
         # Like species interactions
         assert ("Na+", "Na+") not in model.state[1].Liq_alpha

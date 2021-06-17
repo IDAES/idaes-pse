@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for eNRTL methods
 
@@ -27,7 +27,7 @@ ISRN Chemical Engineering, 2012, doi:10.5402/2012/730154
 Author: Andrew Lee
 """
 import pytest
-from math import exp
+from math import log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -60,7 +60,7 @@ configuration = {
                     relative_permittivity_constant,
                 "parameter_data": {
                     "mw": (18E-3, pyunits.kg/pyunits.mol),
-                    "relative_permittivity_liq_comp": 73.41964622627609}},
+                    "relative_permittivity_liq_comp": 78.54}},
         "KCl": {"type": Apparent,
                 "dissociation_species": {"K+": 1, "Cl-": 1}},
         "K+": {"type": Cation,
@@ -117,7 +117,6 @@ class TestStateBlockUnsymmetric(object):
             model.state[1].mole_frac_phase_comp[k].set_value(1e-12)
 
         # Data from [2] - Form {molality: gamma_KCl}
-        # Ignoring final points due to large error (stll <7%)
         data = {0.001: 0.965,
                 0.002: 0.951,
                 0.005: 0.927,
@@ -142,10 +141,10 @@ class TestStateBlockUnsymmetric(object):
                 2.5039: 0.568,
                 2.9837: 0.568,
                 3.4982: 0.571,
-                # 3.994: 0.576,
-                # 4.4897: 0.584,
-                # 4.7909: 0.589,
-                # 4.9908: 0.593
+                3.994: 0.576,
+                4.4897: 0.584,
+                4.7909: 0.589,
+                4.9908: 0.593
                 }
 
         for x, g in data.items():
@@ -158,6 +157,8 @@ class TestStateBlockUnsymmetric(object):
             model.state[1].mole_frac_phase_comp["Liq", "Cl-"].set_value(
                 x/(w+2*x))
 
-            gamma_KCl = exp(value(0.5*(model.state[1].Liq_log_gamma["K+"] +
-                                       model.state[1].Liq_log_gamma["Cl-"])))
-            assert pytest.approx(g, rel=5e-2) == gamma_KCl
+            conv = log(1+18*2*x/1000)  # Convert mole frac to molal basis
+            assert pytest.approx(log(g), rel=3e-2, abs=6e-3) == value(
+                model.state[1].Liq_log_gamma["K+"] - conv)
+            assert pytest.approx(log(g), rel=3e-2, abs=6e-3) == value(
+                model.state[1].Liq_log_gamma["Cl-"] - conv)
