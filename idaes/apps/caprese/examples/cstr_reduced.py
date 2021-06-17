@@ -30,7 +30,7 @@ import pyomo.environ as pyo
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
-from pyomo.contrib.matching.interface import IncidenceGraphInterface
+from pyomo.contrib.incidence_analysis.interface import IncidenceGraphInterface
 from pyomo.core.expr.calculus.derivatives import reverse_ad
 
 import idaes.logger as idaeslog
@@ -144,8 +144,8 @@ def main(plot_switch=False):
     controller.initialize_to_initial_conditions()
 
     m_controller._dummy_obj = pyo.Objective(expr=0)
-    igraph = IncidenceGraphInterface(m_controller)
-    nlp = igraph.nlp
+    nlp = PyomoNLP(m_controller)
+    igraph = IncidenceGraphInterface(nlp)
     m_controller.del_component(m_controller._dummy_obj)
     diff_vars = [var[t1] for var in var_partition[VC.DIFFERENTIAL]]
     alg_vars = [var[t1] for var in var_partition[VC.ALGEBRAIC]]
