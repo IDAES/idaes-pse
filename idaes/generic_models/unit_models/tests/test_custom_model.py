@@ -86,7 +86,6 @@ class TestSurrogateDefault(object):
 
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_ports(self, surrogate_default):
         # Check inlet port and port members
@@ -103,7 +102,6 @@ class TestSurrogateDefault(object):
         assert hasattr(surrogate_default.fs.surrogate.outlet, "temperature")
         assert hasattr(surrogate_default.fs.surrogate.outlet, "pressure")
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, surrogate_default):
         # Check build of model
@@ -171,7 +169,7 @@ class TestSurrogateCustom(object):
 
     """
     @pytest.fixture(scope="class")
-    def surrogate_default(self):
+    def surrogate_custom(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -221,96 +219,96 @@ class TestSurrogateCustom(object):
 
     @pytest.mark.build
     @pytest.mark.unit
-    def test_ports(self, surrogate_default):
+    def test_ports(self, surrogate_custom):
         # Check inlet port and port members
-        assert hasattr(surrogate_default.fs.surrogate, "inlet")
-        assert len(surrogate_default.fs.surrogate.inlet.vars) == 3
-        assert hasattr(surrogate_default.fs.surrogate.inlet, "flow_mol_comp")
-        assert hasattr(surrogate_default.fs.surrogate.inlet, "temperature")
-        assert hasattr(surrogate_default.fs.surrogate.inlet, "pressure")
+        assert hasattr(surrogate_custom.fs.surrogate, "inlet")
+        assert len(surrogate_custom.fs.surrogate.inlet.vars) == 3
+        assert hasattr(surrogate_custom.fs.surrogate.inlet, "flow_mol_comp")
+        assert hasattr(surrogate_custom.fs.surrogate.inlet, "temperature")
+        assert hasattr(surrogate_custom.fs.surrogate.inlet, "pressure")
 
         # Check outlet port and port members
-        assert hasattr(surrogate_default.fs.surrogate, "outlet")
-        assert len(surrogate_default.fs.surrogate.outlet.vars) == 3
-        assert hasattr(surrogate_default.fs.surrogate.outlet, "flow_mol_comp")
-        assert hasattr(surrogate_default.fs.surrogate.outlet, "temperature")
-        assert hasattr(surrogate_default.fs.surrogate.outlet, "pressure")
+        assert hasattr(surrogate_custom.fs.surrogate, "outlet")
+        assert len(surrogate_custom.fs.surrogate.outlet.vars) == 3
+        assert hasattr(surrogate_custom.fs.surrogate.outlet, "flow_mol_comp")
+        assert hasattr(surrogate_custom.fs.surrogate.outlet, "temperature")
+        assert hasattr(surrogate_custom.fs.surrogate.outlet, "pressure")
 
     @pytest.mark.build
     @pytest.mark.unit
-    def test_build(self, surrogate_default):
+    def test_build(self, surrogate_custom):
         # Check build of model
-        assert hasattr(surrogate_default.fs.surrogate, "flow_comp_in")
-        assert hasattr(surrogate_default.fs.surrogate, "temperature_in")
-        assert hasattr(surrogate_default.fs.surrogate, "pressure_in")
+        assert hasattr(surrogate_custom.fs.surrogate, "flow_comp_in")
+        assert hasattr(surrogate_custom.fs.surrogate, "temperature_in")
+        assert hasattr(surrogate_custom.fs.surrogate, "pressure_in")
 
-        assert hasattr(surrogate_default.fs.surrogate, "eq_flow")
+        assert hasattr(surrogate_custom.fs.surrogate, "eq_flow")
 
-        assert hasattr(surrogate_default.fs.surrogate, "flow_comp_out")
-        assert hasattr(surrogate_default.fs.surrogate, "temperature_out")
-        assert hasattr(surrogate_default.fs.surrogate, "pressure_out")
+        assert hasattr(surrogate_custom.fs.surrogate, "flow_comp_out")
+        assert hasattr(surrogate_custom.fs.surrogate, "temperature_out")
+        assert hasattr(surrogate_custom.fs.surrogate, "pressure_out")
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_default_initialize(self, surrogate_default):
+    def test_custom_initialize(self, surrogate_custom):
         # Check default initialize method raises ConfigurationError
-
+        # when config argument for custom_initializer is True but a method
+        # was not set to the attribute custom_initializer
         with pytest.raises(ConfigurationError):
-            surrogate_default.fs.surrogate.initialize()
+            surrogate_custom.fs.surrogate.initialize()
 
-        surrogate_default.fs.surrogate.inlet.flow_mol_comp[0, "c1"].fix(2)
-        surrogate_default.fs.surrogate.inlet.flow_mol_comp[0, "c2"].fix(2)
-        surrogate_default.fs.surrogate.inlet.temperature.fix(325)
-        surrogate_default.fs.surrogate.inlet.pressure.fix(200)
+        surrogate_custom.fs.surrogate.inlet.flow_mol_comp[0, "c1"].fix(2)
+        surrogate_custom.fs.surrogate.inlet.flow_mol_comp[0, "c2"].fix(2)
+        surrogate_custom.fs.surrogate.inlet.temperature.fix(325)
+        surrogate_custom.fs.surrogate.inlet.pressure.fix(200)
 
-        assert degrees_of_freedom(surrogate_default) == 0
+        assert degrees_of_freedom(surrogate_custom) == 0
 
-        # surrogate_default.fs.surrogate.initialize()
+        def my_initialize():
+            # Callback for user provided initialization sequence
+            surrogate_custom.fs.surrogate.eq_temperature.deactivate()
+            surrogate_custom.fs.surrogate.eq_pressure.deactivate()
+            surrogate_custom.fs.surrogate.outlet.temperature.fix(325)
+            surrogate_custom.fs.surrogate.outlet.pressure.fix(200)
 
-#     @pytest.mark.solver
-#     @pytest.mark.skipif(solver is None, reason="Solver not available")
-#     @pytest.mark.component
-#     def test_solve(self, surrogate_default):
-#         results = solver.solve(surrogate_default)
+            if degrees_of_freedom == 0:
+                solver.solve(surrogate_custom)
 
-#         assert results.solver.termination_condition == \
-#             TerminationCondition.optimal
-#         assert results.solver.status == SolverStatus.ok
+            surrogate_custom.fs.surrogate.eq_temperature.activate()
+            surrogate_custom.fs.surrogate.eq_pressure.activate()
+            surrogate_custom.fs.surrogate.outlet.temperature.unfix()
+            surrogate_custom.fs.surrogate.outlet.pressure.unfix()
 
-#     @pytest.mark.solver
-#     @pytest.mark.skipif(solver is None, reason="Solver not available")
-#     @pytest.mark.component
-#     def test_solution(self, surrogate_default):
+        surrogate_custom.fs.surrogate.custom_initializer = my_initialize
+        surrogate_custom.fs.surrogate.initialize()
 
-#         assert value(surrogate_default.fs.surrogate.
-#                      outlet.flow_mol_comp[0, "c1"]) == \
-#             pytest.approx(2, abs=1e-3)
-#         assert value(surrogate_default.fs.surrogate.
-#                      outlet.flow_mol_comp[0, "c2"]) == \
-#             pytest.approx(2, abs=1e-3)
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solve(self, surrogate_custom):
+        results = solver.solve(surrogate_custom)
 
-#         assert value(surrogate_default.fs.surrogate.
-#                      outlet.temperature[0]) == \
-#             pytest.approx(335, abs=1e-3)
-#         assert value(surrogate_default.fs.surrogate.
-#                      outlet.pressure[0]) == \
-#             pytest.approx(190, abs=1e-3)
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
 
-# # def test_custom_initialize_error(m):
-# #     # Check custom initialize method raises an error when not provided but
-# #     # config argument is set to True
-# #     with pytest.raises(ConfigurationError):
-# #         m.fs.surrogate.initialize()
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_solution(self, surrogate_custom):
 
-    # results = opt.solve(m)
+        assert value(surrogate_custom.fs.surrogate.
+                     outlet.flow_mol_comp[0, "c1"]) == \
+            pytest.approx(2, abs=1e-3)
+        assert value(surrogate_custom.fs.surrogate.
+                     outlet.flow_mol_comp[0, "c2"]) == \
+            pytest.approx(2, abs=1e-3)
 
-    # assert results.solver.termination_condition == \
-    #     TerminationCondition.optimal
-    # assert results.solver.status == SolverStatus.ok
+        assert value(surrogate_custom.fs.surrogate.
+                     outlet.temperature[0]) == \
+            pytest.approx(335, abs=1e-3)
+        assert value(surrogate_custom.fs.surrogate.
+                     outlet.pressure[0]) == \
+            pytest.approx(190, abs=1e-3)
 
-    # assert value(m.fs.surrogate.x_1) == pytest.approx(1, abs=1e-3)
-    # assert value(m.fs.surrogate.x_2) == pytest.approx(2, abs=1e-3)
-
-    # assert value(m.fs.surrogate.y_1) == pytest.approx(1, abs=1e-3)
-    # assert value(m.fs.surrogate.y_2) == pytest.approx(4, abs=1e-3)
