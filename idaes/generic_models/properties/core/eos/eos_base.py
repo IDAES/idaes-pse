@@ -52,6 +52,42 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "build_parameters"))
 
     @staticmethod
+    def act_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "act_phase_comp"))
+
+    @staticmethod
+    def act_phase_comp_true(b, p, j):
+        raise NotImplementedError(_msg(b, "act_phase_comp_true"))
+
+    @staticmethod
+    def act_phase_comp_appr(b, p, j):
+        raise NotImplementedError(_msg(b, "act_phase_comp_appr"))
+
+    @staticmethod
+    def log_act_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "log_act_phase_comp"))
+
+    @staticmethod
+    def log_act_phase_comp_true(b, p, j):
+        raise NotImplementedError(_msg(b, "log_act_phase_comp_true"))
+
+    @staticmethod
+    def log_act_phase_comp_appr(b, p, j):
+        raise NotImplementedError(_msg(b, "log_act_phase_comp_appr"))
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "act_coeff_phase_comp"))
+
+    @staticmethod
+    def act_coeff_phase_comp_true(b, p, j):
+        raise NotImplementedError(_msg(b, "act_coeff_phase_comp_true"))
+
+    @staticmethod
+    def act_coeff_phase_comp_appr(b, p, j):
+        raise NotImplementedError(_msg(b, "act_coeff_phase_comp_appr"))
+
+    @staticmethod
     def cp_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "cp_mol_phase"))
 

@@ -44,9 +44,10 @@ _log = idaeslog.getLogger(__name__)
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['ReactionBlockData',
-           'ReactionBlock',
-           'ReactionParameterBlock']
+__all__ = [
+    'ReactionBlock',  # pylint: disable=undefined-all-variable
+    'ReactionParameterBlock'  # pylint: disable=undefined-all-variable
+]
 
 
 class _lock_attribute_creation_context(object):
@@ -196,10 +197,12 @@ class ReactionParameterBlock(ProcessBlockData,
             for i in initialize.keys():
                 initialize[i]["parameters"] = self
 
-        return self.reaction_block_class(*args,
-                                         **kwargs,
-                                         default=default,
-                                         initialize=initialize)
+        return self.reaction_block_class(  # pylint: disable=not-callable
+            *args,
+            **kwargs,
+            default=default,
+            initialize=initialize
+        )
 
     def _validate_property_parameter_units(self):
         """
@@ -532,7 +535,7 @@ should be constructed in this reaction block,
             raise PropertyNotSupportedError(
                     '{} {} is not supported by reaction package (property is '
                     'not listed in get_supported_properties).'
-                    .format(self.name, attr, attr))
+                    .format(self.name, attr))
 
         # Get method name from get_supported_properties
         try:

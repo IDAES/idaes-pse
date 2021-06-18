@@ -846,6 +846,14 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     lookup = {} # A dict to use for a lookup tables
     suffixes={} # A list of suffixes delayed to end so lookup is complete
     # Read toplevel componet (is recursive)
+    if root_name is None:
+        for k in sd:
+            if k.startswith("__") and k.endswith("__"):
+                # This is metadata or maybe some similar future addition.
+                continue
+            else:
+                root_name = k
+                break # should be one root, use it's name
     _read_component(
         sd, o, wts, lookup=lookup, suffixes=suffixes, root_name=root_name)
     read_time = time.time() # to calc time to read model state minus suffixes

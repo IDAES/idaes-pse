@@ -39,6 +39,8 @@ levelname = { # the level name of all our extra info levels is "INFO"
 
 class _TagFilter(logging.Filter):
     """Filter applied to IDAES loggers returned by this modulue."""
+
+    @staticmethod
     def filter(record):
         """Add in the custom level name and let the record through"""
         if record.levelno in levelname:
@@ -62,6 +64,7 @@ def __info_high(self, *args, **kwargs):
 
 
 def __add_methods(log, tag=None):
+    # pylint: disable=assignment-from-no-return,no-value-for-parameter
     log.addFilter(_TagFilter)
     log = logging.LoggerAdapter(log, {"tag": tag})
     log.info_high = __info_high.__get__(log)

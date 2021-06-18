@@ -172,6 +172,13 @@ def performance_curves(m, flow_scale=0.896):
     m.fs.performace_flow_scale.fix()
     fscale = m.fs.performace_flow_scale
 
+    # PYLINT-TODO the names "eff_isen_eqn" and "head_isen_eqn" are reused below to define other constraint functions,
+    # causing pylint to report function-redefined errors
+    # this likely does not actually cause issues at runtime,
+    # but it could be worth to check anyway if the pylint errors can be addressed
+    # e.g. by giving unique names to each of the affected functions
+    # pylint: disable=function-redefined
+
     # Efficiency curves for three stages
     @m.fs.gts1.performance_curve.Constraint(m.fs.config.time)
     def eff_isen_eqn(b, t):

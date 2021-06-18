@@ -25,7 +25,7 @@ May 2021
 Author: Andrew Lee
 """
 import pytest
-from math import exp
+from math import exp, log
 
 from pyomo.environ import (ConcreteModel,
                            units as pyunits,
@@ -166,6 +166,8 @@ class TestStateBlockSymmetric(object):
 
             assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
                 model.state[1].Liq_log_gamma["H2O"])
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma_appr["H2O"])
 
     @pytest.mark.unit
     def test_log_gamma_pdh(self, model):
@@ -390,6 +392,8 @@ class TestStateBlockSymmetric(object):
                 model.state[1].Liq_log_gamma["Na+"])
             assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
                 model.state[1].Liq_log_gamma["Cl-"])
+            assert pytest.approx(g-OFFSET, rel=4e-2, abs=2e-2) == value(
+                model.state[1].Liq_log_gamma_appr["NaCl"])
 
     @pytest.mark.unit
     def test_pure_water(self, model):
@@ -515,6 +519,9 @@ class TestStateBlockSymmetric(object):
                       model.state[1].Liq_log_gamma_lc["Na+"]) ==
                 pytest.approx(
                     value(model.state[1].Liq_log_gamma["Na+"]), abs=1e-10))
+        assert pytest.approx(value(
+            model.state[1].Liq_log_gamma["Na+"]), abs=1e-10) == log(
+            value(model.state[1].act_coeff_phase_comp["Liq", "Na+"]))
 
         assert (value(model.state[1].Liq_log_gamma_pdh["Cl-"]) ==
                 pytest.approx(0, abs=1e-10))
@@ -535,6 +542,9 @@ class TestStateBlockSymmetric(object):
                       model.state[1].Liq_log_gamma_lc["Cl-"]) ==
                 pytest.approx(
                     value(model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10))
+        assert pytest.approx(value(
+            model.state[1].Liq_log_gamma["Cl-"]), abs=1e-10) == log(
+            value(model.state[1].act_coeff_phase_comp["Liq", "Cl-"]))
 
 
 class TestStateBlockUnsymmetric(object):
@@ -624,6 +634,8 @@ class TestStateBlockUnsymmetric(object):
 
             assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
                 model.state[1].Liq_log_gamma["H2O"])
+            assert pytest.approx(g, rel=4.5e-2, abs=0.01) == value(
+                model.state[1].Liq_log_gamma_appr["H2O"])
 
     @pytest.mark.unit
     def test_log_gamma_pdh(self, model):
@@ -839,6 +851,8 @@ class TestStateBlockUnsymmetric(object):
                 model.state[1].Liq_log_gamma["Na+"])
             assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
                 model.state[1].Liq_log_gamma["Cl-"])
+            assert pytest.approx(g, rel=3e-2, abs=6e-2) == value(
+                model.state[1].Liq_log_gamma_appr["NaCl"])
 
     @pytest.mark.unit
     def test_pure_water(self, model):

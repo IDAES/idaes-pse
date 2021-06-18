@@ -609,7 +609,7 @@ def copy_non_time_indexed_values(
 
         if var_src is None:
             # Log a warning
-            msg = ('Warning copying values: ' + varname + 
+            msg = ('Warning copying values: ' + var_src.name + 
                    ' does not exist in source block ' + fs_src.name)
             init_log = idaeslog.getInitLogger(__name__, outlvl)
             init_log.warning(msg)
