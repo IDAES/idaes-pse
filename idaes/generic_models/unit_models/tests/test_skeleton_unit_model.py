@@ -18,7 +18,7 @@ import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var, Set, value, \
     SolverStatus, TerminationCondition
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.unit_models import CustomModel
+from idaes.generic_models.unit_models import SkeletonUnitModel
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
 from idaes.core.util.exceptions import ConfigurationError
@@ -34,7 +34,7 @@ solver = get_solver()
 
 class TestSurrogateDefault(object):
     """
-    Test for CustomModel without callback for initialization
+    Test for SkeletonUnitModel without callback for initialization
 
     """
     @pytest.fixture(scope="class")
@@ -42,8 +42,8 @@ class TestSurrogateDefault(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.surrogate = CustomModel(default={"dynamic": False,
-                                              "custom_initializer": False})
+        m.fs.surrogate = SkeletonUnitModel(default={"dynamic": False,
+                                           "custom_initializer": False})
         m.fs.surrogate.comp_list = Set(initialize=["c1", "c2"])
 
         # input vars for surrogate
@@ -75,11 +75,11 @@ class TestSurrogateDefault(object):
             m.fs.surrogate.pressure_in[0] - 10)
 
         inlet_dict = {"flow_mol_comp": m.fs.surrogate.flow_comp_in,
-                    "temperature": m.fs.surrogate.temperature_in,
-                    "pressure": m.fs.surrogate.pressure_in}
+                      "temperature": m.fs.surrogate.temperature_in,
+                      "pressure": m.fs.surrogate.pressure_in}
         outlet_dict = {"flow_mol_comp": m.fs.surrogate.flow_comp_out,
-                    "temperature": m.fs.surrogate.temperature_out,
-                    "pressure": m.fs.surrogate.pressure_out}
+                       "temperature": m.fs.surrogate.temperature_out,
+                       "pressure": m.fs.surrogate.pressure_out}
 
         m.fs.surrogate.add_ports(name="inlet", member_dict=inlet_dict)
         m.fs.surrogate.add_ports(name="outlet", member_dict=outlet_dict)
@@ -165,7 +165,7 @@ class TestSurrogateDefault(object):
 
 class TestSurrogateCustom(object):
     """
-    Test for CustomModel with callback for initialization
+    Test for SkeletonUnitModel with callback for initialization
 
     """
     @pytest.fixture(scope="class")
@@ -173,7 +173,7 @@ class TestSurrogateCustom(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.surrogate = CustomModel(default={"dynamic": False,
+        m.fs.surrogate = SkeletonUnitModel(default={"dynamic": False,
                                               "custom_initializer": True})
         m.fs.surrogate.comp_list = Set(initialize=["c1", "c2"])
 

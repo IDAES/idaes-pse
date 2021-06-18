@@ -11,14 +11,14 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Generic base template for a custom model. The basic functionality is to allow
-interfacing with other IDAES unit models that leverage the ControlVolume
+The basic functionality is to allow a user to add any model of choice that
+can interface with other IDAES unit models that leverage the ControlVolume
 blocks. This is done by letting the user create ports and populate with
-members that can connect with an IDAES unit model. Also, a default initialize
-method is provided with a flexibility to pass a callback from the user.
+members that match with state variables defined in an IDAES unit model.
+Also, a default initialize method is provided with a flexibility to pass a
+callback from the user.
 """
 
-from pyomo.environ import Reference
 from pyomo.network import Port
 from pyomo.common.config import ConfigValue, In
 
@@ -49,12 +49,12 @@ class SkeletonUnitModelData(ProcessBlockData):
         default=False,
         domain=In([False]),
         description="Dynamic model flag",
-        doc="""Model assumed to be steady-state."""))
+        doc="""Model does not handle dynamics but should be set by user."""))
     CONFIG.declare("custom_initializer", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Custom initializer",
-        doc="""Custom initiliazer provided by the user"""))
+        description="Custom initializer flag",
+        doc="""Boolean for custom initiliazer provided by the user"""))
 
     def build(self):
         """
@@ -73,14 +73,10 @@ class SkeletonUnitModelData(ProcessBlockData):
         if self.config.custom_initializer:
             self.custom_initializer = None
 
-        # TODO: Build checks for time domain and a warning if flowhseet is
-        # dynamic, let the user know that the time index has to match
-        # at ports
-
     def add_ports(self, name, member_dict, doc=None):
         """
-        This is a method to build Port objects in a surrogate model and
-        populate this with appropriate port members as specified. User can add
+        This is a method to build Port objects in the SkeletonUnitModel and
+        populate them with appropriate port members as specified. User can add
         as many inlet and outlet ports as required.
 
         Keyword Args:
@@ -118,11 +114,11 @@ class SkeletonUnitModelData(ProcessBlockData):
 
     def initialize(self, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
-        """Initialize method for the custom model. If a custom initializer is
-        provided then, this method will use that before a final solve
-        is executed after checking that degrees of freedom is zero. If no
-        custom initializer is provided, then the final solve is the only
-        solve executed after checking for zero degrees of freedom.
+        """Initialize method for the SkeletonUnitModel. If a custom initializer
+        is provided then, this method will use it. If no custom initializer is
+        provided, a final solve is executed after checking that degrees of
+        freedom is zero. This will be the only solve executed after checking
+        for zero degrees of freedom.
 
         Args:
             outlvl ([idaes logger], optional):
@@ -145,15 +141,14 @@ class SkeletonUnitModelData(ProcessBlockData):
 
         if self.config.custom_initializer:
             self._custom_initialize_method()
-
-        if degrees_of_freedom(self) == 0:
+        elif degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(self, tee=slc.tee)
-            init_log.info_high("Initialization completed {}.".
-                               format(idaeslog.condition(res)))
+            init_log.info("Initialization completed using default method {}.".
+                          format(idaeslog.condition(res)))
         else:
             raise ConfigurationError(
-                "Degrees of freedom is not zero during initialization. "
-                "Fix/unfix appropriate number of variables to result "
-                "in zero degrees of freedom for initialization.")
+                "Degrees of freedom is not zero during default "
+                "initialization. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization.")
 
