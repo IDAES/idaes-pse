@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Test for custom unit model.
+Test for skeleton unit model.
 """
 
 import pytest
@@ -32,31 +32,31 @@ solver = get_solver()
 # -----------------------------------------------------------------------------
 
 
-class TestSurrogateDefault(object):
+class TestSkeletonDefault(object):
     """
     Test for SkeletonUnitModel without callback for initialization
 
     """
     @pytest.fixture(scope="class")
-    def surrogate_default(self):
+    def skeleton_default(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.surrogate = SkeletonUnitModel(default={"dynamic": False,
+        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False,
                                            "custom_initializer": False})
-        m.fs.surrogate.comp_list = Set(initialize=["c1", "c2"])
+        m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
 
-        # input vars for surrogate
-        m.fs.surrogate.flow_comp_in = \
-            Var(m.fs.time, m.fs.surrogate.comp_list, initialize=1.0)
-        m.fs.surrogate.temperature_in = Var(m.fs.time, initialize=298.15)
-        m.fs.surrogate.pressure_in = Var(m.fs.time, initialize=101)
+        # input vars for skeleton
+        m.fs.skeleton.flow_comp_in = \
+            Var(m.fs.time, m.fs.skeleton.comp_list, initialize=1.0)
+        m.fs.skeleton.temperature_in = Var(m.fs.time, initialize=298.15)
+        m.fs.skeleton.pressure_in = Var(m.fs.time, initialize=101)
 
-        # output vars for surrogate
-        m.fs.surrogate.flow_comp_out = \
-            Var(m.fs.time, m.fs.surrogate.comp_list, initialize=1.0)
-        m.fs.surrogate.temperature_out = Var(m.fs.time, initialize=298.15)
-        m.fs.surrogate.pressure_out = Var(m.fs.time, initialize=101)
+        # output vars for skeleton
+        m.fs.skeleton.flow_comp_out = \
+            Var(m.fs.time, m.fs.skeleton.comp_list, initialize=1.0)
+        m.fs.skeleton.temperature_out = Var(m.fs.time, initialize=298.15)
+        m.fs.skeleton.pressure_out = Var(m.fs.time, initialize=101)
 
         # Surrogate model equations
         # Flow equation
@@ -64,251 +64,242 @@ class TestSurrogateDefault(object):
         def rule_flow(m, t, i):
             return m.flow_comp_out[t, i] == m.flow_comp_in[t, i]
 
-        m.fs.surrogate.eq_flow = \
-            Constraint(m.fs.time, m.fs.surrogate.comp_list, rule=rule_flow)
+        m.fs.skeleton.eq_flow = \
+            Constraint(m.fs.time, m.fs.skeleton.comp_list, rule=rule_flow)
 
-        m.fs.surrogate.eq_temperature = Constraint(
-            expr=m.fs.surrogate.temperature_out[0] ==
-            m.fs.surrogate.temperature_in[0] + 10)
-        m.fs.surrogate.eq_pressure = Constraint(
-            expr=m.fs.surrogate.pressure_out[0] ==
-            m.fs.surrogate.pressure_in[0] - 10)
+        m.fs.skeleton.eq_temperature = Constraint(
+            expr=m.fs.skeleton.temperature_out[0] ==
+            m.fs.skeleton.temperature_in[0] + 10)
+        m.fs.skeleton.eq_pressure = Constraint(
+            expr=m.fs.skeleton.pressure_out[0] ==
+            m.fs.skeleton.pressure_in[0] - 10)
 
-        inlet_dict = {"flow_mol_comp": m.fs.surrogate.flow_comp_in,
-                      "temperature": m.fs.surrogate.temperature_in,
-                      "pressure": m.fs.surrogate.pressure_in}
-        outlet_dict = {"flow_mol_comp": m.fs.surrogate.flow_comp_out,
-                       "temperature": m.fs.surrogate.temperature_out,
-                       "pressure": m.fs.surrogate.pressure_out}
+        inlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_in,
+                      "temperature": m.fs.skeleton.temperature_in,
+                      "pressure": m.fs.skeleton.pressure_in}
+        outlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_out,
+                       "temperature": m.fs.skeleton.temperature_out,
+                       "pressure": m.fs.skeleton.pressure_out}
 
-        m.fs.surrogate.add_ports(name="inlet", member_dict=inlet_dict)
-        m.fs.surrogate.add_ports(name="outlet", member_dict=outlet_dict)
+        m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
+        m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
 
         return m
 
     @pytest.mark.unit
-    def test_ports(self, surrogate_default):
+    def test_ports(self, skeleton_default):
         # Check inlet port and port members
-        assert hasattr(surrogate_default.fs.surrogate, "inlet")
-        assert len(surrogate_default.fs.surrogate.inlet.vars) == 3
-        assert hasattr(surrogate_default.fs.surrogate.inlet, "flow_mol_comp")
-        assert hasattr(surrogate_default.fs.surrogate.inlet, "temperature")
-        assert hasattr(surrogate_default.fs.surrogate.inlet, "pressure")
+        assert hasattr(skeleton_default.fs.skeleton, "inlet")
+        assert len(skeleton_default.fs.skeleton.inlet.vars) == 3
+        assert hasattr(skeleton_default.fs.skeleton.inlet, "flow_mol_comp")
+        assert hasattr(skeleton_default.fs.skeleton.inlet, "temperature")
+        assert hasattr(skeleton_default.fs.skeleton.inlet, "pressure")
 
         # Check outlet port and port members
-        assert hasattr(surrogate_default.fs.surrogate, "outlet")
-        assert len(surrogate_default.fs.surrogate.outlet.vars) == 3
-        assert hasattr(surrogate_default.fs.surrogate.outlet, "flow_mol_comp")
-        assert hasattr(surrogate_default.fs.surrogate.outlet, "temperature")
-        assert hasattr(surrogate_default.fs.surrogate.outlet, "pressure")
+        assert hasattr(skeleton_default.fs.skeleton, "outlet")
+        assert len(skeleton_default.fs.skeleton.outlet.vars) == 3
+        assert hasattr(skeleton_default.fs.skeleton.outlet, "flow_mol_comp")
+        assert hasattr(skeleton_default.fs.skeleton.outlet, "temperature")
+        assert hasattr(skeleton_default.fs.skeleton.outlet, "pressure")
 
     @pytest.mark.unit
-    def test_build(self, surrogate_default):
+    def test_build(self, skeleton_default):
         # Check build of model
-        assert hasattr(surrogate_default.fs.surrogate, "flow_comp_in")
-        assert hasattr(surrogate_default.fs.surrogate, "temperature_in")
-        assert hasattr(surrogate_default.fs.surrogate, "pressure_in")
+        assert hasattr(skeleton_default.fs.skeleton, "flow_comp_in")
+        assert hasattr(skeleton_default.fs.skeleton, "temperature_in")
+        assert hasattr(skeleton_default.fs.skeleton, "pressure_in")
 
-        assert hasattr(surrogate_default.fs.surrogate, "eq_flow")
+        assert hasattr(skeleton_default.fs.skeleton, "eq_flow")
 
-        assert hasattr(surrogate_default.fs.surrogate, "flow_comp_out")
-        assert hasattr(surrogate_default.fs.surrogate, "temperature_out")
-        assert hasattr(surrogate_default.fs.surrogate, "pressure_out")
+        assert hasattr(skeleton_default.fs.skeleton, "flow_comp_out")
+        assert hasattr(skeleton_default.fs.skeleton, "temperature_out")
+        assert hasattr(skeleton_default.fs.skeleton, "pressure_out")
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_default_initialize(self, surrogate_default):
+    def test_default_initialize(self, skeleton_default):
         # Check default initialize method raises ConfigurationError
 
         with pytest.raises(ConfigurationError):
-            surrogate_default.fs.surrogate.initialize()
+            skeleton_default.fs.skeleton.initialize()
 
-        surrogate_default.fs.surrogate.inlet.flow_mol_comp[0, "c1"].fix(2)
-        surrogate_default.fs.surrogate.inlet.flow_mol_comp[0, "c2"].fix(2)
-        surrogate_default.fs.surrogate.inlet.temperature.fix(325)
-        surrogate_default.fs.surrogate.inlet.pressure.fix(200)
+        skeleton_default.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fix(2)
+        skeleton_default.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fix(2)
+        skeleton_default.fs.skeleton.inlet.temperature.fix(325)
+        skeleton_default.fs.skeleton.inlet.pressure.fix(200)
 
-        assert degrees_of_freedom(surrogate_default) == 0
+        assert degrees_of_freedom(skeleton_default) == 0
 
-        surrogate_default.fs.surrogate.initialize()
+        skeleton_default.fs.skeleton.initialize()
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve(self, surrogate_default):
-        results = solver.solve(surrogate_default)
+    def test_solve(self, skeleton_default):
+        results = solver.solve(skeleton_default)
 
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solution(self, surrogate_default):
+    def test_solution(self, skeleton_default):
 
-        assert value(surrogate_default.fs.surrogate.
+        assert value(skeleton_default.fs.skeleton.
                      outlet.flow_mol_comp[0, "c1"]) == \
             pytest.approx(2, abs=1e-3)
-        assert value(surrogate_default.fs.surrogate.
+        assert value(skeleton_default.fs.skeleton.
                      outlet.flow_mol_comp[0, "c2"]) == \
             pytest.approx(2, abs=1e-3)
 
-        assert value(surrogate_default.fs.surrogate.
+        assert value(skeleton_default.fs.skeleton.
                      outlet.temperature[0]) == \
             pytest.approx(335, abs=1e-3)
-        assert value(surrogate_default.fs.surrogate.
+        assert value(skeleton_default.fs.skeleton.
                      outlet.pressure[0]) == \
             pytest.approx(190, abs=1e-3)
 
 
-class TestSurrogateCustom(object):
+class TestSkeletonCustom(object):
     """
     Test for SkeletonUnitModel with callback for initialization
 
     """
     @pytest.fixture(scope="class")
-    def surrogate_custom(self):
+    def skeleton_custom(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.surrogate = SkeletonUnitModel(default={"dynamic": False,
-                                              "custom_initializer": True})
-        m.fs.surrogate.comp_list = Set(initialize=["c1", "c2"])
+        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False,
+                                          "custom_initializer": True})
+        m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
 
-        # input vars for surrogate
-        m.fs.surrogate.flow_comp_in = \
-            Var(m.fs.time, m.fs.surrogate.comp_list, initialize=1.0)
-        m.fs.surrogate.temperature_in = Var(m.fs.time, initialize=298.15)
-        m.fs.surrogate.pressure_in = Var(m.fs.time, initialize=101)
+        # input vars for skeleton
+        m.fs.skeleton.flow_comp_in = \
+            Var(m.fs.time, m.fs.skeleton.comp_list, initialize=1.0)
+        m.fs.skeleton.temperature_in = Var(m.fs.time, initialize=298.15)
+        m.fs.skeleton.pressure_in = Var(m.fs.time, initialize=101)
 
-        # output vars for surrogate
-        m.fs.surrogate.flow_comp_out = \
-            Var(m.fs.time, m.fs.surrogate.comp_list, initialize=1.0)
-        m.fs.surrogate.temperature_out = Var(m.fs.time, initialize=298.15)
-        m.fs.surrogate.pressure_out = Var(m.fs.time, initialize=101)
+        # output vars for skeleton
+        m.fs.skeleton.flow_comp_out = \
+            Var(m.fs.time, m.fs.skeleton.comp_list, initialize=1.0)
+        m.fs.skeleton.temperature_out = Var(m.fs.time, initialize=298.15)
+        m.fs.skeleton.pressure_out = Var(m.fs.time, initialize=101)
 
-        # Surrogate model equations
+        # Model equations
         # Flow equation
 
         def rule_flow(m, t, i):
             return m.flow_comp_out[t, i] == m.flow_comp_in[t, i]
 
-        m.fs.surrogate.eq_flow = \
-            Constraint(m.fs.time, m.fs.surrogate.comp_list, rule=rule_flow)
+        m.fs.skeleton.eq_flow = \
+            Constraint(m.fs.time, m.fs.skeleton.comp_list, rule=rule_flow)
 
-        m.fs.surrogate.eq_temperature = Constraint(
-            expr=m.fs.surrogate.temperature_out[0] ==
-            m.fs.surrogate.temperature_in[0] + 10)
-        m.fs.surrogate.eq_pressure = Constraint(
-            expr=m.fs.surrogate.pressure_out[0] ==
-            m.fs.surrogate.pressure_in[0] - 10)
+        m.fs.skeleton.eq_temperature = Constraint(
+            expr=m.fs.skeleton.temperature_out[0] ==
+            m.fs.skeleton.temperature_in[0] + 10)
+        m.fs.skeleton.eq_pressure = Constraint(
+            expr=m.fs.skeleton.pressure_out[0] ==
+            m.fs.skeleton.pressure_in[0] - 10)
 
-        inlet_dict = {"flow_mol_comp": m.fs.surrogate.flow_comp_in,
-                    "temperature": m.fs.surrogate.temperature_in,
-                    "pressure": m.fs.surrogate.pressure_in}
-        outlet_dict = {"flow_mol_comp": m.fs.surrogate.flow_comp_out,
-                    "temperature": m.fs.surrogate.temperature_out,
-                    "pressure": m.fs.surrogate.pressure_out}
+        inlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_in,
+                      "temperature": m.fs.skeleton.temperature_in,
+                      "pressure": m.fs.skeleton.pressure_in}
+        outlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_out,
+                       "temperature": m.fs.skeleton.temperature_out,
+                       "pressure": m.fs.skeleton.pressure_out}
 
-        m.fs.surrogate.add_ports(name="inlet", member_dict=inlet_dict)
-        m.fs.surrogate.add_ports(name="outlet", member_dict=outlet_dict)
+        m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
+        m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
 
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
-    def test_ports(self, surrogate_custom):
+    def test_ports(self, skeleton_custom):
         # Check inlet port and port members
-        assert hasattr(surrogate_custom.fs.surrogate, "inlet")
-        assert len(surrogate_custom.fs.surrogate.inlet.vars) == 3
-        assert hasattr(surrogate_custom.fs.surrogate.inlet, "flow_mol_comp")
-        assert hasattr(surrogate_custom.fs.surrogate.inlet, "temperature")
-        assert hasattr(surrogate_custom.fs.surrogate.inlet, "pressure")
+        assert hasattr(skeleton_custom.fs.skeleton, "inlet")
+        assert len(skeleton_custom.fs.skeleton.inlet.vars) == 3
+        assert hasattr(skeleton_custom.fs.skeleton.inlet, "flow_mol_comp")
+        assert hasattr(skeleton_custom.fs.skeleton.inlet, "temperature")
+        assert hasattr(skeleton_custom.fs.skeleton.inlet, "pressure")
 
         # Check outlet port and port members
-        assert hasattr(surrogate_custom.fs.surrogate, "outlet")
-        assert len(surrogate_custom.fs.surrogate.outlet.vars) == 3
-        assert hasattr(surrogate_custom.fs.surrogate.outlet, "flow_mol_comp")
-        assert hasattr(surrogate_custom.fs.surrogate.outlet, "temperature")
-        assert hasattr(surrogate_custom.fs.surrogate.outlet, "pressure")
+        assert hasattr(skeleton_custom.fs.skeleton, "outlet")
+        assert len(skeleton_custom.fs.skeleton.outlet.vars) == 3
+        assert hasattr(skeleton_custom.fs.skeleton.outlet, "flow_mol_comp")
+        assert hasattr(skeleton_custom.fs.skeleton.outlet, "temperature")
+        assert hasattr(skeleton_custom.fs.skeleton.outlet, "pressure")
 
-    @pytest.mark.build
     @pytest.mark.unit
-    def test_build(self, surrogate_custom):
+    def test_build(self, skeleton_custom):
         # Check build of model
-        assert hasattr(surrogate_custom.fs.surrogate, "flow_comp_in")
-        assert hasattr(surrogate_custom.fs.surrogate, "temperature_in")
-        assert hasattr(surrogate_custom.fs.surrogate, "pressure_in")
+        assert hasattr(skeleton_custom.fs.skeleton, "flow_comp_in")
+        assert hasattr(skeleton_custom.fs.skeleton, "temperature_in")
+        assert hasattr(skeleton_custom.fs.skeleton, "pressure_in")
 
-        assert hasattr(surrogate_custom.fs.surrogate, "eq_flow")
+        assert hasattr(skeleton_custom.fs.skeleton, "eq_flow")
 
-        assert hasattr(surrogate_custom.fs.surrogate, "flow_comp_out")
-        assert hasattr(surrogate_custom.fs.surrogate, "temperature_out")
-        assert hasattr(surrogate_custom.fs.surrogate, "pressure_out")
+        assert hasattr(skeleton_custom.fs.skeleton, "flow_comp_out")
+        assert hasattr(skeleton_custom.fs.skeleton, "temperature_out")
+        assert hasattr(skeleton_custom.fs.skeleton, "pressure_out")
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_custom_initialize(self, surrogate_custom):
+    def test_custom_initialize(self, skeleton_custom):
         # Check default initialize method raises ConfigurationError
         # when config argument for custom_initializer is True but a method
         # was not set to the attribute custom_initializer
         with pytest.raises(ConfigurationError):
-            surrogate_custom.fs.surrogate.initialize()
+            skeleton_custom.fs.skeleton.initialize()
 
-        surrogate_custom.fs.surrogate.inlet.flow_mol_comp[0, "c1"].fix(2)
-        surrogate_custom.fs.surrogate.inlet.flow_mol_comp[0, "c2"].fix(2)
-        surrogate_custom.fs.surrogate.inlet.temperature.fix(325)
-        surrogate_custom.fs.surrogate.inlet.pressure.fix(200)
+        skeleton_custom.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fix(2)
+        skeleton_custom.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fix(2)
+        skeleton_custom.fs.skeleton.inlet.temperature.fix(325)
+        skeleton_custom.fs.skeleton.inlet.pressure.fix(200)
 
-        assert degrees_of_freedom(surrogate_custom) == 0
+        assert degrees_of_freedom(skeleton_custom) == 0
 
         def my_initialize():
             # Callback for user provided initialization sequence
-            surrogate_custom.fs.surrogate.eq_temperature.deactivate()
-            surrogate_custom.fs.surrogate.eq_pressure.deactivate()
-            surrogate_custom.fs.surrogate.outlet.temperature.fix(325)
-            surrogate_custom.fs.surrogate.outlet.pressure.fix(200)
+            skeleton_custom.fs.skeleton.eq_temperature.deactivate()
+            skeleton_custom.fs.skeleton.eq_pressure.deactivate()
+            skeleton_custom.fs.skeleton.outlet.temperature.fix(325)
+            skeleton_custom.fs.skeleton.outlet.pressure.fix(200)
 
             if degrees_of_freedom == 0:
-                solver.solve(surrogate_custom)
+                solver.solve(skeleton_custom)
 
-            surrogate_custom.fs.surrogate.eq_temperature.activate()
-            surrogate_custom.fs.surrogate.eq_pressure.activate()
-            surrogate_custom.fs.surrogate.outlet.temperature.unfix()
-            surrogate_custom.fs.surrogate.outlet.pressure.unfix()
+            skeleton_custom.fs.skeleton.eq_temperature.activate()
+            skeleton_custom.fs.skeleton.eq_pressure.activate()
+            skeleton_custom.fs.skeleton.outlet.temperature.unfix()
+            skeleton_custom.fs.skeleton.outlet.pressure.unfix()
 
-        surrogate_custom.fs.surrogate.custom_initializer = my_initialize
-        surrogate_custom.fs.surrogate.initialize()
+        skeleton_custom.fs.skeleton.custom_initializer = my_initialize
+        skeleton_custom.fs.skeleton.initialize()
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solve(self, surrogate_custom):
-        results = solver.solve(surrogate_custom)
+    def test_solve(self, skeleton_custom):
+        results = solver.solve(skeleton_custom)
 
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_solution(self, surrogate_custom):
+    def test_solution(self, skeleton_custom):
 
-        assert value(surrogate_custom.fs.surrogate.
+        assert value(skeleton_custom.fs.skeleton.
                      outlet.flow_mol_comp[0, "c1"]) == \
             pytest.approx(2, abs=1e-3)
-        assert value(surrogate_custom.fs.surrogate.
+        assert value(skeleton_custom.fs.skeleton.
                      outlet.flow_mol_comp[0, "c2"]) == \
             pytest.approx(2, abs=1e-3)
 
-        assert value(surrogate_custom.fs.surrogate.
+        assert value(skeleton_custom.fs.skeleton.
                      outlet.temperature[0]) == \
             pytest.approx(335, abs=1e-3)
-        assert value(surrogate_custom.fs.surrogate.
+        assert value(skeleton_custom.fs.skeleton.
                      outlet.pressure[0]) == \
             pytest.approx(190, abs=1e-3)
-
