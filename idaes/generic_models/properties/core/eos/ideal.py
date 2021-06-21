@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for ideal equations of state.
 
@@ -43,12 +43,48 @@ class Ideal(EoSBase):
         pass
 
     @staticmethod
+    def act_phase_comp(b, p, j):
+        return b.mole_frac_phase_comp[p, j]
+
+    @staticmethod
+    def act_phase_comp_true(b, p, j):
+        return b.mole_frac_phase_comp_true[p, j]
+
+    @staticmethod
+    def act_phase_comp_appr(b, p, j):
+        return b.mole_frac_phase_comp_apparent[p, j]
+
+    @staticmethod
+    def log_act_phase_comp(b, p, j):
+        return log(b.mole_frac_phase_comp[p, j])
+
+    @staticmethod
+    def log_act_phase_comp_true(b, p, j):
+        return log(b.mole_frac_phase_comp_true[p, j])
+
+    @staticmethod
+    def log_act_phase_comp_appr(b, p, j):
+        return log(b.mole_frac_phase_comp_apparent[p, j])
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        return 1
+
+    @staticmethod
+    def act_coeff_phase_comp_true(b, p, j):
+        return 1
+
+    @staticmethod
+    def act_coeff_phase_comp_appr(b, p, j):
+        return 1
+
+    @staticmethod
     def compress_fact_phase(b, p):
         pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+        if pobj.is_vapor_phase():
             return 1
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            return 0
 
     @staticmethod
     def cp_mol_phase(b, p):
@@ -64,6 +100,9 @@ class Ideal(EoSBase):
         elif pobj.is_liquid_phase():
             return get_method(b, "cp_mol_liq_comp", j)(
                 b, cobj(b, j), b.temperature)
+        elif pobj.is_solid_phase():
+            return get_method(b, "cp_mol_sol_comp", j)(
+                b, cobj(b, j), b.temperature)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -77,8 +116,8 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return EoSBase.cv_mol_ig_comp_pure(b, j)
-        elif pobj.is_liquid_phase():
-            return EoSBase.cv_mol_ls_comp_pure(b, j)
+        elif pobj.is_liquid_phase() or pobj.is_solid_phase():
+            return EoSBase.cv_mol_ls_comp_pure(b, p, j)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -96,6 +135,11 @@ class Ideal(EoSBase):
                        get_method(b, "dens_mol_liq_comp", j)(
                            b, cobj(b, j), b.temperature)
                        for j in b.components_in_phase(p))
+        elif pobj.is_solid_phase():
+            return sum(b.get_mole_frac()[p, j] *
+                       get_method(b, "dens_mol_sol_comp", j)(
+                           b, cobj(b, j), b.temperature)
+                       for j in b.components_in_phase(p))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -110,15 +154,31 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return EoSBase.energy_internal_mol_ig_comp_pure(b, j)
-        elif pobj.is_liquid_phase():
-            return EoSBase.energy_internal_mol_ls_comp_pure(b, j)
+        elif pobj.is_liquid_phase() or pobj.is_solid_phase():
+            return EoSBase.energy_internal_mol_ls_comp_pure(b, p, j)
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
     def enth_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.enth_mol_phase_comp[p, j]
-                   for j in b.components_in_phase(p))
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return sum(b.get_mole_frac()[p, j]*b.enth_mol_phase_comp[p, j]
+                       for j in b.components_in_phase(p))
+        elif pobj.is_liquid_phase():
+            return (sum(b.get_mole_frac()[p, j] *
+                        get_method(b, "enth_mol_liq_comp", j)(
+                            b, cobj(b, j), b.temperature)
+                        for j in b.components_in_phase(p)) +
+                    (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
+        elif pobj.is_solid_phase():
+            return (sum(b.get_mole_frac()[p, j] *
+                        get_method(b, "enth_mol_sol_comp", j)(
+                            b, cobj(b, j), b.temperature)
+                        for j in b.components_in_phase(p)) +
+                    (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
     def enth_mol_phase_comp(b, p, j):
@@ -127,8 +187,13 @@ class Ideal(EoSBase):
             return get_method(b, "enth_mol_ig_comp", j)(
                 b, cobj(b, j), b.temperature)
         elif pobj.is_liquid_phase():
-            return get_method(b, "enth_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return (get_method(b, "enth_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature) +
+                (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
+        elif pobj.is_solid_phase():
+            return (get_method(b, "enth_mol_sol_comp", j)(
+                b, cobj(b, j), b.temperature) +
+                (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -149,6 +214,10 @@ class Ideal(EoSBase):
         elif pobj.is_liquid_phase():
             # Assume no pressure/volume dependecy of entropy for ideal liquids
             return (get_method(b, "entr_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature))
+        elif pobj.is_solid_phase():
+            # Assume no pressure/volume dependecy of entropy for ideal solids
+            return (get_method(b, "entr_mol_sol_comp", j)(
                 b, cobj(b, j), b.temperature))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
