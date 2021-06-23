@@ -110,7 +110,7 @@ class SkeletonUnitModelData(ProcessBlockData):
                 "_custom_initializer_func attribute was not set to a method. "
                 "Set a custom method before calling the initialize method.")
         else:
-            self.custom_initializer_func()
+            self.custom_initializer_func
 
     def initialize(self, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
