@@ -133,33 +133,6 @@ class ProcessBlock(Block):
             n = _IndexedProcessBlockMeta(bname, (cls,), {})
             return n.__new__(n) #calls this __new__() again with indexed class
 
-    @classmethod
-    def base_class_name(cls):
-        """Name given by the user to the ProcessBase class.
-
-        Return:
-           (str) Name of the class.
-        Raises:
-           AttributeError, if no base class name was set, e.g. this class
-               was *not* wrapped by the `declare_process_block_class`
-               decorator.
-
-        """
-        return cls._orig_name  # pylint: disable=no-member
-
-    @classmethod
-    def base_class_module(cls):
-        """Return module of the associated ProcessBase class.
-
-        Return:
-           (str) Module of the class.
-        Raises:
-           AttributeError, if no base class module was set, e.g. this class
-              was *not* wrapped by the `declare_process_block_class` decorator.
-
-        """
-        return cls._orig_module  # pylint: disable=no-member
-
 
 def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
     """
@@ -201,7 +174,48 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
                  "_ComponentDataClass": cls,
                  "__doc__":ds})
         setattr(sys.modules[cls.__module__], name, c)
+
+        # Create accessors for original class name and module name.
+        # Avoid public attributes that could be set by the user.
+
         setattr(cls, '_orig_name', name)
+        setattr(cls, 'base_class_name', _get_base_class_name)
+
         setattr(cls, '_orig_module', cls.__module__)
+        setattr(cls, 'base_class_module', _get_base_class_module)
+
         return cls
     return proc_dec  # return decorator function
+
+
+# These two functions will be added -- without the '_get_' prefix -- as class methods
+# on classes created by the ``declare_process_block_class`` decorator, above.
+
+def _get_base_class_name(cls) -> str:
+    """Name given by the user to the class.
+
+    Returns:
+       Name of the class.
+
+    Raises:
+       AttributeError, if no base class name was set, e.g. this class
+           was *not* wrapped by the `declare_process_block_class`
+           decorator.
+
+    """
+    return cls._orig_name  # pylint: disable=no-member
+
+
+def _get_base_class_module(cls) -> str:
+    """Name of module where the class was originally created.
+
+    Returns:
+       Name of the module of the class.
+
+    Raises:
+       AttributeError, if no base class module was set, e.g. this class
+          was *not* wrapped by the `declare_process_block_class` decorator.
+
+    """
+    return cls._orig_module  # pylint: disable=no-member
+
