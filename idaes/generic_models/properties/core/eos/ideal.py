@@ -266,32 +266,77 @@ class Ideal(EoSBase):
         return 1
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Tbub(b, p, j, pp):
+    def log_fug_phase_comp_Tbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+        cobj = b.params.get_component(j)
+        if pobj.is_vapor_phase():
+            return log(b._mole_frac_tbub[pp[0], pp[1], j]) + log(b.pressure)
+        elif pobj.is_liquid_phase():
+            if (cobj.config.henry_component is not None and
+                    p in cobj.config.henry_component):
+                return (log(b.mole_frac_comp[j]) +
+                        log(cobj.config.henry_component[p].return_expression(
+                            b, p, j, b.temperature_bubble[pp])))
+            else:
+                return (log(b.mole_frac_comp[j]) +
+                        log(cobj.config.pressure_sat_comp.return_expression(
+                                b, cobj, b.temperature_bubble[pp])))
+        else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return 0
 
     @staticmethod
     def log_fug_coeff_phase_comp_Tdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+        cobj = b.params.get_component(j)
+        if pobj.is_vapor_phase():
+            return log(b.mole_frac_comp[j]) + log(b.pressure)
+        elif pobj.is_liquid_phase():
+            if (cobj.config.henry_component is not None and
+                    p in cobj.config.henry_component):
+                return (log(b._mole_frac_tdew[pp[0], pp[1], j]) +
+                        log(cobj.config.henry_component[p].return_expression(
+                            b, p, j, b.temperature_dew[pp])))
+            else:
+                return (log(b._mole_frac_tdew[pp[0], pp[1], j]) +
+                        log(cobj.config.pressure_sat_comp.return_expression(
+                                b, cobj, b.temperature_dew[pp])))
+        else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return 0
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Pbub(b, p, j, pp):
+    def log_fug_phase_comp_Pbub(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+        cobj = b.params.get_component(j)
+        if pobj.is_vapor_phase():
+            return (log(b._mole_frac_pbub[pp[0], pp[1], j]) +
+                    log(b.pressure_bubble[pp]))
+        elif pobj.is_liquid_phase():
+            if (cobj.config.henry_component is not None and
+                    p in cobj.config.henry_component):
+                return (log(b.mole_frac_comp[p, j]) +
+                        log(b.henry[p, j]))
+            else:
+                return (log(b.mole_frac_comp[p, j]) +
+                        log(b.pressure_sat_comp[j]))
+        else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return 0
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Pdew(b, p, j, pp):
+    def log_fug_phase_comp_Pdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+        cobj = b.params.get_component(j)
+        if pobj.is_vapor_phase():
+            return log(b.mole_frac_comp[p, j]) + log(b.pressure_dew[pp])
+        elif pobj.is_liquid_phase():
+            if (cobj.config.henry_component is not None and
+                    p in cobj.config.henry_component):
+                return (log(b._mole_frac_pdew[pp[0], pp[1], j]) +
+                        log(b.henry[p, j]))
+            else:
+                return (log(b._mole_frac_pdew[pp[0], pp[1], j]) +
+                        log(b.pressure_sat_comp[j]))
+        else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-        return 0
 
     @staticmethod
     def gibbs_mol_phase(b, p):

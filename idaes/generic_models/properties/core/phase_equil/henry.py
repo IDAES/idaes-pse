@@ -22,11 +22,15 @@ class ConstantH():
 
     @staticmethod
     def build_parameters(cobj, p):
+        b = cobj.parent_block()
+        units = b.get_metadata().derived_units
+
         cobj.add_component(
             "henry_ref_"+p,
             Var(initialize=cobj.config.parameter_data["henry_ref"][p],
                 doc="Henry coefficient (mole fraction basis) at reference "
-                "state for phase "+p))
+                "state for phase "+p,
+                units=units["pressure"]))
 
     @staticmethod
     def return_expression(b, p, j, T=None):
@@ -34,3 +38,7 @@ class ConstantH():
         H = getattr(cobj, "henry_ref_"+p)
 
         return H
+
+    @staticmethod
+    def dT_expression(b, p, j, T=None):
+        return 0

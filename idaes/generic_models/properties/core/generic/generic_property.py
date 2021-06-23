@@ -1059,10 +1059,17 @@ class _GenericStateBlock(StateBlock):
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
                 for pp in blk[k].params._pe_pairs:
-                    valid_comps = _valid_VL_component_list(blk[k], pp)
+                    raoult_comps, henry_comps = _valid_VL_component_list(
+                        blk[k], pp)
 
-                    if valid_comps == []:
+                    if raoult_comps == []:
                         continue
+                    if henry_comps != []:
+                        # Need to get liquid phase name
+                        if blk[k].params.get_phase(pp[0]).is_liquid_phase():
+                            l_phase = pp[0]
+                        else:
+                            l_phase = pp[1]
 
                     # Use lowest component temperature_crit as starting point
                     # Starting high and moving down generally works better,
@@ -1071,7 +1078,7 @@ class _GenericStateBlock(StateBlock):
                     # Subtract 1 to avoid potential singularities at Tcrit
                     Tbub0 = min(blk[k].params.get_component(j)
                                 .temperature_crit.value
-                                for j in valid_comps) - 1
+                                for j in raoult_comps) - 1
 
                     err = 1
                     counter = 0
@@ -1086,15 +1093,28 @@ class _GenericStateBlock(StateBlock):
                                     blk[k].params.get_component(j),
                                     Tbub0*T_units) *
                             blk[k].mole_frac_comp[j]
-                            for j in valid_comps) -
+                            for j in raoult_comps) +
+                            sum(blk[k].mole_frac_comp[j] *
+                                blk[k].params.get_component(
+                                    j).config.henry_component[
+                                        l_phase].return_expression(
+                                            blk[k], l_phase, j, Tbub0*T_units)
+                                for j in henry_comps) -
                             blk[k].pressure)
                         df = value(sum(
                                get_method(blk[k], "pressure_sat_comp", j)(
                                           blk[k],
                                           blk[k].params.get_component(j),
                                           Tbub0*T_units,
-                                          dT=True)
-                               for j in valid_comps))
+                                          dT=True) *
+                               blk[k].mole_frac_comp[j]
+                               for j in raoult_comps) +
+                                   sum(blk[k].mole_frac_comp[j] *
+                                       blk[k].params.get_component(
+                                           j).config.henry_component[
+                                               l_phase].dT_expression(
+                                            blk[k], l_phase, j, Tbub0*T_units)
+                                       for j in henry_comps))
 
                         # Limit temperature step to avoid excessive overshoot
                         if f/df < -50:
@@ -1110,7 +1130,7 @@ class _GenericStateBlock(StateBlock):
 
                     blk[k].temperature_bubble[pp].value = Tbub0
 
-                    for j in valid_comps:
+                    for j in raoult_comps:
                         blk[k]._mole_frac_tbub[pp, j].value = value(
                                 blk[k].mole_frac_comp[j] *
                                 get_method(blk[k], "pressure_sat_comp", j)(
@@ -1118,14 +1138,29 @@ class _GenericStateBlock(StateBlock):
                                            blk[k].params.get_component(j),
                                            Tbub0*T_units) /
                                 blk[k].pressure)
+                    for j in henry_comps:
+                        blk[k]._mole_frac_tbub[pp, j].value = value(
+                            blk[k].mole_frac_comp[j] *
+                            blk[k].params.get_component(
+                                j).config.henry_component[
+                                    l_phase].return_expression(
+                                        blk[k], l_phase, j, Tbub0*T_units) /
+                            blk[k].pressure)
 
             # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
                 for pp in blk[k].params._pe_pairs:
-                    valid_comps = _valid_VL_component_list(blk[k], pp)
+                    raoult_comps, henry_comps = _valid_VL_component_list(
+                        blk[k], pp)
 
-                    if valid_comps == []:
+                    if raoult_comps == []:
                         continue
+                    if henry_comps != []:
+                        # Need to get liquid phase name
+                        if blk[k].params.get_phase(pp[0]).is_liquid_phase():
+                            l_phase = pp[0]
+                        else:
+                            l_phase = pp[1]
 
                     if hasattr(blk[k], "_mole_frac_tbub"):
                         # If Tbub has been calculated above, use this as the
@@ -1138,7 +1173,7 @@ class _GenericStateBlock(StateBlock):
                         Tdew0 = min(
                             blk[k].params.get_component(j).
                             temperature_crit.value
-                            for j in valid_comps) - 1
+                            for j in raoult_comps) - 1
 
                     err = 1
                     counter = 0
@@ -1147,6 +1182,22 @@ class _GenericStateBlock(StateBlock):
                     # Tolerance only needs to be ~1e-1
                     # Iteration limit of 30
                     while err > 1e-1 and counter < 30:
+                        # Estimate fraction of Henry comps in liquid phase
+                        if henry_comps != 0:
+                            xH = value(
+                                blk[k].pressure *
+                                sum(blk[k].mole_frac_comp[j] /
+                                    blk[k].params.get_component(
+                                        j).config.henry_component[
+                                            l_phase].return_expression(
+                                                blk[k],
+                                                l_phase,
+                                                j,
+                                                Tdew0*T_units)
+                                    for j in henry_comps))
+                        else:
+                            xH = 0
+
                         f = value(
                             blk[k].pressure *
                             sum(blk[k].mole_frac_comp[j] /
@@ -1154,7 +1205,7 @@ class _GenericStateBlock(StateBlock):
                                            blk[k],
                                            blk[k].params.get_component(j),
                                            Tdew0*T_units)
-                                for j in valid_comps) - 1)
+                                for j in raoult_comps) - (1-xH))
                         df = -value(
                                 blk[k].pressure *
                                 sum(blk[k].mole_frac_comp[j] /
@@ -1167,7 +1218,7 @@ class _GenericStateBlock(StateBlock):
                                            blk[k].params.get_component(j),
                                            Tdew0*T_units,
                                            dT=True)
-                                    for j in valid_comps))
+                                    for j in raoult_comps))
 
                         # Limit temperature step to avoid excessive overshoot
                         if f/df < -50:
@@ -1183,21 +1234,35 @@ class _GenericStateBlock(StateBlock):
 
                     blk[k].temperature_dew[pp].value = Tdew0
 
-                    for j in valid_comps:
+                    for j in raoult_comps:
                         blk[k]._mole_frac_tdew[pp, j].value = value(
                                 blk[k].mole_frac_comp[j]*blk[k].pressure /
                                 get_method(blk[k], "pressure_sat_comp", j)(
                                            blk[k],
                                            blk[k].params.get_component(j),
                                            Tdew0*T_units))
+                    for j in henry_comps:
+                        blk[k]._mole_frac_tdew[pp, j].value = value(
+                            blk[k].mole_frac_comp[j]*blk[k].pressure /
+                            blk[k].params.get_component(
+                                j).config.henry_component[
+                                    l_phase].return_expression(
+                                        blk[k], l_phase, j, Tdew0*T_units))
 
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
                 for pp in blk[k].params._pe_pairs:
-                    valid_comps = _valid_VL_component_list(blk[k], pp)
+                    raoult_comps, henry_comps = _valid_VL_component_list(
+                        blk[k], pp)
 
-                    if valid_comps == []:
+                    if raoult_comps == []:
                         continue
+                    if henry_comps != []:
+                        # Need to get liquid phase name
+                        if blk[k].params.get_phase(pp[0]).is_liquid_phase():
+                            l_phase = pp[0]
+                        else:
+                            l_phase = pp[1]
 
                     blk[k].pressure_bubble[pp].value = value(
                             sum(blk[k].mole_frac_comp[j] *
@@ -1206,9 +1271,12 @@ class _GenericStateBlock(StateBlock):
                                               blk[k],
                                               j,
                                               blk[k].temperature*T_units)
-                                for j in valid_comps))
+                                for j in raoult_comps) +
+                            sum(blk[k].mole_frac_comp[j] *
+                                blk[k].henry[l_phase, j]
+                                for j in henry_comps))
 
-                    for j in valid_comps:
+                    for j in raoult_comps:
                         blk[k]._mole_frac_pbub[pp, j].value = value(
                             blk[k].mole_frac_comp[j] *
                             blk[k].params.config.pressure_sat_comp
@@ -1217,31 +1285,48 @@ class _GenericStateBlock(StateBlock):
                                           j,
                                           blk[k].temperature*T_units) /
                             blk[k].pressure_bubble)
+                    for j in henry_comps:
+                        blk[k]._mole_frac_pbub[pp, j].value = value(
+                            blk[k].mole_frac_comp[j] *
+                            blk[k].henry[l_phase, j] /
+                            blk[k].pressure_bubble)
 
             # Dew pressure initialization
             if hasattr(blk[k], "_mole_frac_pdew"):
                 for pp in blk[k].params._pe_pairs:
-                    valid_comps = _valid_VL_component_list(blk[k], pp)
+                    raoult_comps, henry_comps = _valid_VL_component_list(
+                        blk[k], pp)
 
-                    if valid_comps == []:
+                    if raoult_comps == []:
                         continue
+                    if henry_comps != []:
+                        # Need to get liquid phase name
+                        if blk[k].params.get_phase(pp[0]).is_liquid_phase():
+                            l_phase = pp[0]
+                        else:
+                            l_phase = pp[1]
 
                     blk[k].pressure_dew[pp].value = value(
-                            sum(1/(blk[k].mole_frac_comp[j] /
-                                   blk[k].params.config.pressure_sat_comp
-                                   .pressure_sat_comp(
-                                           blk[k],
-                                           j,
-                                           blk[k].temperature*T_units))
-                                for j in valid_comps))
+                            sum(blk[k].params.config.pressure_sat_comp
+                                .pressure_sat_comp(
+                                    blk[k], j, blk[k].temperature*T_units) /
+                                blk[k].mole_frac_comp[j]
+                                for j in raoult_comps) +
+                            sum(blk[k].henry[l_phase, j] /
+                                blk[k].mole_frac_comp[j]
+                                for j in henry_comps))
 
-                    for j in valid_comps:
+                    for j in raoult_comps:
                         blk[k]._mole_frac_pdew[pp, j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k].params.config.pressure_sat_comp
                             .pressure_sat_comp(blk[k],
                                                j,
                                                blk[k].temperature*T_units))
+                    for j in henry_comps:
+                        blk[k]._mole_frac_pdew[pp, j].value = value(
+                            blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
+                            blk[k].henry[l_phase, j])
 
             # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):
@@ -2576,7 +2661,8 @@ class GenericStateBlockData(StateBlockData):
 
 
 def _valid_VL_component_list(blk, pp):
-    valid_comps = []
+    raoult_comps = []
+    henry_comps = []
     # Only need to do this for V-L pairs, so check
     pparams = blk.params
     if ((pparams.get_phase(pp[0]).is_liquid_phase() and
@@ -2587,6 +2673,12 @@ def _valid_VL_component_list(blk, pp):
         for j in blk.component_list:
             if ((pp[0], j) in blk.phase_component_set and
                     (pp[1], j) in blk.phase_component_set):
-                valid_comps.append(j)
+                cobj = blk.params.get_component(j)
+                if (cobj.config.henry_component is not None and
+                        (pp[0] in cobj.config.henry_component or
+                         pp[1] in cobj.config.henry_component)):
+                    henry_comps.append(j)
+                else:
+                    raoult_comps.append(j)
 
-    return valid_comps
+    return raoult_comps, henry_comps
