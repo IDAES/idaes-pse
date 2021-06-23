@@ -274,7 +274,7 @@ class TestSkeletonCustom(object):
             skeleton_custom.fs.skeleton.outlet.temperature.unfix()
             skeleton_custom.fs.skeleton.outlet.pressure.unfix()
 
-        skeleton_custom.fs.skeleton.custom_initializer = my_initialize
+        skeleton_custom.fs.skeleton.custom_initializer_func = my_initialize
         skeleton_custom.fs.skeleton.initialize()
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")

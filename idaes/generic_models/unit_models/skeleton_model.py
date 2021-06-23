@@ -71,7 +71,7 @@ class SkeletonUnitModelData(ProcessBlockData):
         super().build()
 
         if self.config.custom_initializer:
-            self.custom_initializer = None
+            self.custom_initializer_func = None
 
     def add_ports(self, name, member_dict, doc=None):
         """
@@ -105,12 +105,12 @@ class SkeletonUnitModelData(ProcessBlockData):
             p.add(member_dict[k], name=k)
 
     def _custom_initialize_method(self):
-        if self.custom_initializer is None:
+        if self.custom_initializer_func is None:
             raise ConfigurationError(
-                "_custom_initializer attribute was not set to a method. "
+                "_custom_initializer_func attribute was not set to a method. "
                 "Set a custom method before calling the initialize method.")
         else:
-            self.custom_initializer()
+            self.custom_initializer_func()
 
     def initialize(self, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
