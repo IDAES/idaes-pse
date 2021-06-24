@@ -43,6 +43,15 @@ class SkeletonUnitModelData(ProcessBlockData):
     when controlvolumes are not required.
     """
 
+    # This is a staticmethod that will be the default callable set for the
+    # initializer flag in the config block.
+    @staticmethod
+    def _default_initializer(model, opt=None, init_log=None, solve_log=None):
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(model, tee=slc.tee)
+        init_log.info("Initialization completed using default method {}.".
+                      format(idaeslog.condition(res)))
+
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
@@ -50,10 +59,10 @@ class SkeletonUnitModelData(ProcessBlockData):
         domain=In([False]),
         description="Dynamic model flag",
         doc="""Model does not handle dynamics but should be set by user."""))
-    CONFIG.declare("custom_initializer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Custom initializer flag",
+    CONFIG.declare("initializer", ConfigValue(
+        # Note: staticmethod is unbound, extract with __func__
+        default=_default_initializer.__func__,
+        description="Initializer to be used",
         doc="""Boolean for custom initiliazer provided by the user"""))
 
     def build(self):
@@ -70,8 +79,6 @@ class SkeletonUnitModelData(ProcessBlockData):
         """
         super().build()
 
-        if self.config.custom_initializer:
-            self.custom_initializer_func = None
 
     def add_ports(self, name, member_dict, doc=None):
         """
@@ -104,21 +111,15 @@ class SkeletonUnitModelData(ProcessBlockData):
         for k in member_dict.keys():
             p.add(member_dict[k], name=k)
 
-    def _custom_initialize_method(self):
-        if self.custom_initializer_func is None:
-            raise ConfigurationError(
-                "_custom_initializer_func attribute was not set to a method. "
-                "Set a custom method before calling the initialize method.")
-        else:
-            self.custom_initializer_func
 
     def initialize(self, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
-        """Initialize method for the SkeletonUnitModel. If a custom initializer
-        is provided then, this method will use it. If no custom initializer is
-        provided, a final solve is executed after checking that degrees of
-        freedom is zero. This will be the only solve executed after checking
-        for zero degrees of freedom.
+        """Initialize method for the SkeletonUnitModel. If a custom function
+        is provided via the initializer argument in the config block,
+        then, this method will use it. If no custom function is
+        provided, the _default_initializer method is used. Irrespective
+        of which method is being used (default or custom), the expectation is
+        that the degrees of freedom is zero at the start of initialization.
 
         Args:
             outlvl ([idaes logger], optional):
@@ -130,25 +131,22 @@ class SkeletonUnitModelData(ProcessBlockData):
                 but if None, default args for ipopt from IDAES is used.
 
         Raises:
-            ConfigurationError: [Checks for degrees of freedom before final
-            solve and raises exception when not zero.]
+            ConfigurationError: If degrees of freedom is not zero at the start
+            of initialization.
         """
+
         # Set solver options
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
         opt = get_solver(solver=solver, options=optarg)
 
-        if self.config.custom_initializer:
-            self._custom_initialize_method()
-        elif degrees_of_freedom(self) == 0:
-            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = opt.solve(self, tee=slc.tee)
-            init_log.info("Initialization completed using default method {}.".
-                          format(idaeslog.condition(res)))
+        if degrees_of_freedom(self) == 0:
+            self.config.initializer(
+                self, opt=opt, init_log=init_log, solve_log=solve_log)
         else:
             raise ConfigurationError(
-                "Degrees of freedom is not zero during default "
+                "Degrees of freedom is not zero during start of "
                 "initialization. Fix/unfix appropriate number of variables "
                 "to result in zero degrees of freedom for initialization.")
 
