@@ -62,7 +62,7 @@ jobs:
           conda install --quiet --yes python=${{ matrix.python-version }}
           echo '::endgroup::'
           echo '::group::Output of pip install/list/show'
-          pip install --progress-bar off ${{ matrix.idaes-install-target }}
+          pip install --progress-bar off ${{ matrix.pip-install-target }}
           pip list
           pip show idaes-pse pyomo
           echo '::endgroup::'
