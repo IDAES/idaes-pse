@@ -17,13 +17,14 @@ on:
       git-ref:
         description: Git hash (optional)
         required: false
-  pull_request:
-    types:
-      - opened
-      # ready_for_review occurs when a draft PR is turned to non-draft
-      - ready_for_review
-      # synchronize occurs whenever commits are pushed to the PR branch
-      - synchronize
+  # FIXME disabled for debugging, uncomment before merging
+  # pull_request:
+  #   types:
+  #     - opened
+  #     # ready_for_review occurs when a draft PR is turned to non-draft
+  #     - ready_for_review
+  #     # synchronize occurs whenever commits are pushed to the PR branch
+  #     - synchronize
 
 env:
   # default Python version to use for checks that do not require multiple versions
