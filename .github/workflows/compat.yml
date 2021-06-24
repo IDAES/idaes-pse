@@ -50,7 +50,7 @@ jobs:
           - idaes-install-target: stable
             pip-install-target: idaes-pse
           - idaes-install-target: main
-            pip-install-target: https://github.com/IDAES/idaes-pse/archive/master.zip
+            pip-install-target: https://github.com/IDAES/idaes-pse/archive/main.zip
           - idaes-install-target: local
             pip-install-target: '.'
     steps: 
