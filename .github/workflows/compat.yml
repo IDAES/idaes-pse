@@ -75,5 +75,5 @@ jobs:
           echo '::endgroup::'
           echo '::group::Output of pytest'
           pip install --progress-bar off pytest addheader
-          pytest -x
+          pytest
           echo '::endgroup::'
