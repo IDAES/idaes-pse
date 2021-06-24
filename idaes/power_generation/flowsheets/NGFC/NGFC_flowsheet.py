@@ -1,12 +1,15 @@
-##############################################################################
-# The development of this flowsheet/code is funded by the ARPA-E DIFFERENTIATE
-# project: “Machine Learning for Natural Gas to Electric Power System Design”
-# Project number: DE-FOA-0002107-1625.
-# This project is a collaborative effort between the Pacific Northwest National
-# Laboratory, the National Energy Technology Laboratory, and the University of
-# Washington to design NGFC systems with high efficiencies and low CO2
-# emissions.
-##############################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
@@ -68,8 +71,7 @@ from idaes.generic_models.unit_models.pressure_changer import \
 from idaes.generic_models.unit_models.separator import SplittingType
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
-from idaes.power_generation.properties.natural_gas_PR import \
-    get_NG_properties, rxn_configuration
+from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
 from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
     build_SOFC_ROM, initialize_SOFC_ROM
 
@@ -78,21 +80,22 @@ import logging
 
 def build_power_island(m):
     # create property packages - 3 property packages and 1 reaction
-    NG_config = get_NG_properties(
+    NG_config = get_prop(
         components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
                     'N2', 'O2', 'Ar'])
     m.fs.NG_props = GenericParameterBlock(default=NG_config)
 
-    syn_config = get_NG_properties(
+    syn_config = get_prop(
         components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"])
     m.fs.syn_props = GenericParameterBlock(default=syn_config)
 
-    air_config = get_NG_properties(
+    air_config = get_prop(
         components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
     m.fs.air_props = GenericParameterBlock(default=air_config)
 
     m.fs.rxn_props = GenericReactionParameterBlock(
-        default={"property_package": m.fs.syn_props, **rxn_configuration})
+        default=get_rxn(
+            m.fs.syn_props, reactions=["h2_cmb", "co_cmb", "ch4_cmb"]))
 
     # build anode side units
     m.fs.anode_mix = Mixer(
@@ -1411,7 +1414,7 @@ def main():
     solver = pyo.SolverFactory("ipopt")
     solver.options = {'bound_push': 1e-16}
 
-    if os.path.exists('NGFC_flowsheet_init.json'):
+    if os.path.exists('NGFC_flowsheet_init.json.gz'):
         build_power_island(m)
         build_reformer(m)
         connect_reformer_to_power_island(m)
@@ -1419,7 +1422,7 @@ def main():
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
         scale_flowsheet(m)
-        ms.from_json(m, fname='NGFC_flowsheet_init.json')
+        ms.from_json(m, fname='NGFC_flowsheet_init.json.gz')
 
     else:
         build_power_island(m)
@@ -1434,7 +1437,7 @@ def main():
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
         solver.solve(m, tee=True)
-        ms.to_json(m, fname='NGFC_flowsheet_init.json')
+        ms.to_json(m, fname='NGFC_flowsheet_init.json.gz')
 
     # uncomment to report results
     # make_stream_dict(m)
@@ -1442,4 +1445,3 @@ def main():
     # pfd_result("NGFC_results.svg", m, df)
 
     return m
-

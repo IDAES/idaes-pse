@@ -1,12 +1,15 @@
-##############################################################################
-# The development of this flowsheet/code is funded by the ARPA-E DIFFERENTIATE
-# project: “Machine Learning for Natural Gas to Electric Power System Design”
-# Project number: DE-FOA-0002107-1625.
-# This project is a collaborative effort between the Pacific Northwest National
-# Laboratory, the National Energy Technology Laboratory, and the University of
-# Washington to design NGFC systems with high efficiencies and low CO2
-# emissions.
-##############################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
@@ -25,7 +28,7 @@ import pytest
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.eos.ceos import \
     cubic_roots_available
-from idaes.power_generation.properties.natural_gas_PR import get_NG_properties
+from idaes.power_generation.properties.natural_gas_PR import get_prop
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 from idaes.generic_models.unit_models import GibbsReactor
@@ -57,7 +60,10 @@ class TestNaturalGasProps(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={'dynamic': False})
 
-        m.fs.props = GenericParameterBlock(default=get_NG_properties())
+        m.fs.props = GenericParameterBlock(default=get_prop(
+            components=[
+                'H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
+                'N2', 'O2', 'Ar']))
         m.fs.state = m.fs.props.build_state_block(
                 [1],
                 default={"defined_state": True})
@@ -86,7 +92,7 @@ class TestNaturalGasProps(object):
             m.fs.state[1].temperature.fix(300)
             m.fs.state[1].pressure.fix(10**(0.5*logP))
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             m.fs.state[1].temperature.unfix()
 
@@ -117,7 +123,7 @@ class TestNaturalGasProps(object):
             m.fs.state[1].temperature.fix(T)
             m.fs.state[1].pressure.fix(1e5)
 
-            m.fs.state.initialize(outlvl=0)
+            m.fs.state.initialize()
 
             results = solver.solve(m)
 
@@ -140,8 +146,8 @@ class TestNaturalGasProps(object):
     @pytest.mark.component
     def test_gibbs(self, m):
         m.fs.props = GenericParameterBlock(
-            default=get_NG_properties(components=['H2', 'CO', 'H2O', 'CO2',
-                                                  'O2', 'N2', 'Ar', 'CH4']))
+            default=get_prop(components=['H2', 'CO', 'H2O', 'CO2',
+                                         'O2', 'N2', 'Ar', 'CH4']))
         m.fs.reactor = GibbsReactor(default={
             "dynamic": False,
             "has_heat_transfer": True,

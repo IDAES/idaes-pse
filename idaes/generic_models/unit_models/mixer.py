@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 General purpose mixer block for IDAES models
 """
@@ -815,15 +815,16 @@ objects linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=idaeslog.NOTSET, optarg={},
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, hold_state=False):
         """
         Initialization routine for mixer.
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
@@ -984,13 +985,22 @@ objects linked to all inlet states and the mixed state,
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
         mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            t_ref = self.flowsheet().config.time.first()
+            mb_type = self.mixed_state[t_ref].default_material_balance_type()
+
+        if hasattr(self, "pressure_equality_constraints"):
+            for (t, i), c in self.pressure_equality_constraints.items():
+                s = iscale.get_scaling_factor(
+                    self.mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
 
         if hasattr(self, "material_mixing_equations"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, p, j), c in self.material_mixing_equations.items():
                     flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
                     s = iscale.get_scaling_factor(flow_term, default=1)
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, j), c in self.material_mixing_equations.items():
                     for i, p in enumerate(self.mixed_state.phase_list):
@@ -1000,7 +1010,7 @@ objects linked to all inlet states and the mixed state,
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
                             s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.total:
                 pc_set = self.mixed_state.phase_component_set
                 for t, c in self.material_mixing_equations.items():
@@ -1011,4 +1021,4 @@ objects linked to all inlet states and the mixed state,
                         else:
                             _s = iscale.get_scaling_factor(ft, default=1)
                             s = _s if _s < s else s
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)

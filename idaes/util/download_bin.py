@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import os
 import hashlib
 import idaes.logger as idaeslog
@@ -21,6 +21,10 @@ import urllib
 
 _log = idaeslog.getLogger(__name__)
 _release_base_url = idaes.config.release_base_url
+
+
+class UnsupportedPlatformError(RuntimeError):
+    pass
 
 
 def _hash(fname):
@@ -46,12 +50,17 @@ def _get_file_downloader(insecure, cacert):
 def _get_platform(fd, platform, arch):
     if platform == "auto":
         platform = arch[0]
-        if platform == "linux":
-            linux_dist = fd.get_os_version().replace(".", "")
-            if linux_dist in idaes.config.known_binary_platform:
-                platform = linux_dist
+    if platform == "linux":
+        linux_dist = fd.get_os_version().replace(".", "")
+        _log.debug(f"Detected Linux distribution: {linux_dist}")
+        if linux_dist in idaes.config.known_binary_platform:
+            platform = linux_dist
+        else:
+            raise UnsupportedPlatformError(
+                f"Detected platform {linux_dist} is not recognized as "
+                "supported platform.")
     if platform not in idaes.config.known_binary_platform:
-        raise Exception("Unknow platform {}".format(platform))
+        raise UnsupportedPlatformError(f"Unknown platform: {platform}.")
     if platform in idaes.config.binary_platform_map:
         platform = idaes.config.binary_platform_map[platform]
     _log.debug(f"Downloading binaries for {platform}")

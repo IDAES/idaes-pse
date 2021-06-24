@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Main Assumptions:
 
@@ -78,6 +78,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
@@ -919,7 +920,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
     def initialize(blk, state_args_PA=None, state_args_SA=None,
                    outlvl=idaeslog.NOTSET, solver=None,
-                   optarg={}):
+                   optarg=None):
         '''
         Initialization routine.
         1.- initialize state blocks, using an initial guess for inlet
@@ -940,8 +941,9 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -1060,24 +1062,24 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         for t, c in self.eq_surr_waterwall_heat.items():
             sf = iscale.get_scaling_factor(
                  self.waterwall_heat[t], default=1e-7, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set platen heat constraint scaling factor
         if self.config.has_platen_superheater is True:
             for t, c in self.eq_surr_platen_heat.items():
                 sf = iscale.get_scaling_factor(
                      self.platen_heat[t], default=1e-7, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set roof heat constraint scaling factor
         if self.config.has_roof_superheater is True:
             for t, c in self.eq_surr_roof_heat.items():
                 sf = iscale.get_scaling_factor(
                      self.roof_heat[t], default=1e-6, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         # set flue gas temperature constraint scaling factor
         for t, c in self.flue_gas_temp_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.platen_heat[t], default=1e-7, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

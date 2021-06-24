@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for CLC solid phase thermo state block; tests for construction and solve
 Author: Chinedu Okoli
@@ -18,6 +18,8 @@ Author: Chinedu Okoli
 import pytest
 
 from pyomo.environ import (ConcreteModel,
+                           TerminationCondition,
+                           SolverStatus,
                            Var)
 
 from idaes.core import FlowsheetBlock
@@ -28,7 +30,7 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
+    solid_phase_thermo import SolidPhaseParameterBlock
 
 # Get default solver for testing
 solver = get_solver()
@@ -41,7 +43,7 @@ def solid_prop():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # solid properties and state inlet block
-    m.fs.properties = SolidPhaseThermoParameterBlock()
+    m.fs.properties = SolidPhaseParameterBlock()
 
     m.fs.unit = m.fs.properties.build_state_block(
         default={"parameters": m.fs.properties,
@@ -77,3 +79,31 @@ def test_setInputs_state_block(solid_prop):
 def test_initialize(solid_prop):
     initialization_tester(
             solid_prop)
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_solve(solid_prop):
+
+    assert hasattr(solid_prop.fs.unit, "dens_mass_skeletal")
+    assert hasattr(solid_prop.fs.unit, "cp_mass")
+    assert hasattr(solid_prop.fs.unit, "enth_mass")
+
+    results = solver.solve(solid_prop)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+
+@pytest.mark.solver
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_solution(solid_prop):
+    assert (pytest.approx(3251.75, abs=1e-2) ==
+            solid_prop.fs.unit.dens_mass_skeletal.value)
+    assert (pytest.approx(1, abs=1e-2) ==
+            solid_prop.fs.unit.cp_mass.value)
+    assert (pytest.approx(0.0039, abs=1e-2) ==
+            solid_prop.fs.unit.enth_mass.value)

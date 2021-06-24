@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Simplified Flash Unit Model, only for IAPWS with mixed state.
 Phase separator - inlet water/steam mixture is separated into liquid and vapor
@@ -130,20 +130,21 @@ see property package for documentation.}"""))
             return b.mixed_state[t].pressure*1e-6 == \
                 b.liq_state[t].pressure*1e-6
 
-    def initialize(blk, state_args_water_steam={},
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+    def initialize(blk, state_args_water_steam=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Drum initialization routine.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                           package(s) for the control_volume of the model to
-                           provide an initial state for initialization
+            state_args_water_steam : a dict of arguments to be passed to the
+                           property package(s) for the control_volume of the
+                           model to provide an initial state for initialization
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:

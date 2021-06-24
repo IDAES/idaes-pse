@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """Generic Helmholtz EOS Base Class
 """
 __author__ = "John Eslick"
@@ -475,7 +475,7 @@ class HelmholtzThermoExpressions(object):
 
     def v(self, **kwargs):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
-        v = ((1-x)/delta_liq + x/delta_vap)/self.param.dens_mass_crit*self.mw
+        v = ((1-x)/delta_liq + x/delta_vap)/self.param.dens_mass_crit*self.param.mw
         return v
 
     def x(self, **kwargs):

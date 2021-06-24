@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for setting up FcPh as the state variables in a generic property
 package
@@ -238,17 +238,44 @@ def define_state(b):
 
     def get_enthalpy_flow_terms_FcPh(p):
         """Create enthalpy flow terms."""
-        return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+        # enth_mol_phase probably does not exist when this is created
+        # Use try/except to build flow term if not present
+        try:
+            eflow = b._enthalpy_flow_term
+        except AttributeError:
+            def rule_eflow(b, p):
+                return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+            eflow = b._enthalpy_flow_term = Expression(
+                b.phase_list, rule=rule_eflow)
+        return eflow[p]
     b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FcPh
 
     def get_material_density_terms_FcPh(p, j):
         """Create material density terms."""
-        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+        # dens_mol_phase probably does not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            mdens = b._material_density_term
+        except AttributeError:
+            def rule_mdens(b, p, j):
+                return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+            mdens = b._material_density_term = Expression(
+                b.phase_component_set, rule=rule_mdens)
+        return mdens[p, j]
     b.get_material_density_terms = get_material_density_terms_FcPh
 
     def get_energy_density_terms_FcPh(p):
         """Create energy density terms."""
-        return b.dens_mol_phase[p] * b.enth_mol_phase[p]
+        # Density and energy terms probably do not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            edens = b._energy_density_term
+        except AttributeError:
+            def rule_edens(b, p):
+                return b.dens_mol_phase[p] * b.energy_internal_mol_phase[p]
+            edens = b._energy_density_term = Expression(
+                b.phase_list, rule=rule_edens)
+        return edens[p]
     b.get_energy_density_terms = get_energy_density_terms_FcPh
 
     def default_material_balance_type_FcPh():
@@ -348,56 +375,61 @@ def define_default_scaling_factors(b):
 def calculate_scaling_factors(b):
     sf_flow = iscale.get_scaling_factor(b.flow_mol, default=1, warning=True)
     sf_h = iscale.get_scaling_factor(b.enth_mol, default=1, warning=True)
-    sf_mf = iscale.get_scaling_factor(
-        b.mole_frac_phase_comp, default=1e3, warning=True)
+    sf_mf = {}
+    for i, v in b.mole_frac_phase_comp.items():
+        sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
 
     for j in b.component_list:
         sf_j = iscale.get_scaling_factor(
             b.mole_frac_comp[j], default=1e3, warning=True)
-        iscale.constraint_scaling_transform(b.mole_frac_comp_eq[j], sf_j)
+        iscale.constraint_scaling_transform(
+            b.mole_frac_comp_eq[j], sf_j, overwrite=False)
 
-    iscale.constraint_scaling_transform(b.enth_mol_eq, sf_h)
+    iscale.constraint_scaling_transform(b.enth_mol_eq, sf_h, overwrite=False)
 
     if len(b.phase_list) == 1:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j)
+                b.component_flow_balances[j], sf_j, overwrite=False)
 
         # b.phase_fraction_constraint is well scaled
 
     elif len(b.phase_list) == 2:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_flow)
+                b.component_flow_balances[j], sf_flow, overwrite=False)
 
-        iscale.constraint_scaling_transform(b.sum_mole_frac, sf_mf)
+        iscale.constraint_scaling_transform(
+            b.sum_mole_frac, min(sf_mf.values()), overwrite=False)
 
         for p in b.phase_list:
             sf_p = iscale.get_scaling_factor(
                 b.phase_frac[p], default=1, warning=True)
             iscale.constraint_scaling_transform(
-                b.phase_fraction_constraint[p], sf_p*sf_flow)
+                b.phase_fraction_constraint[p], sf_p*sf_flow, overwrite=False)
 
     else:
         for j in b.component_list:
             sf_fc = iscale.get_scaling_factor(
                 b.flow_mol_comp[j], default=1, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_fc)
+                b.component_flow_balances[j], sf_fc, overwrite=False)
 
         for p in b.phase_list:
             sf_fp = iscale.get_scaling_factor(
                 b.flow_mol_phase[p], default=1, warning=True)
             iscale.constraint_scaling_transform(
-                b.sum_mole_frac[p], sf_mf)
+                b.sum_mole_frac[p], min(sf_mf[p, :].values()), overwrite=False)
             iscale.constraint_scaling_transform(
-                b.phase_fraction_constraint[p], sf_fp)
+                b.phase_fraction_constraint[p], sf_fp, overwrite=False)
 
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)

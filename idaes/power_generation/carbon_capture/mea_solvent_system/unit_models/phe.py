@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 IDAES PLATE HEAT EXCHANGER MODEL (PHE) USING EFFECTIVENESS-NTU METHOD
 
@@ -714,7 +714,7 @@ class PHEData(UnitModelBlockData):
                              doc='Heat gain by cold fluid')
 
     def initialize(blk, hotside_state_args=None, coldside_state_args=None,
-                   outlvl=idaeslog.NOTSET, solver=None, optarg={}):
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         Initialisation routine for PHE unit (default solver ipopt)
 
@@ -724,8 +724,9 @@ class PHEData(UnitModelBlockData):
                            initialization (see documentation of the specific
                            property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None)
         Returns:
             None

@@ -1,12 +1,15 @@
-##############################################################################
-# The development of this flowsheet/code is funded by the ARPA-E DIFFERENTIATE
-# project: “Machine Learning for Natural Gas to Electric Power System Design”
-# Project number: DE-FOA-0002107-1625.
-# This project is a collaborative effort between the Pacific Northwest National
-# Laboratory, the National Energy Technology Laboratory, and the University of
-# Washington to design NGFC systems with high efficiencies and low CO2
-# emissions.
-##############################################################################
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
@@ -55,7 +58,7 @@ solver = get_solver()
 
 @pytest.fixture(scope="module")
 def m():
-    m = pyo.ConcreteModel()
+    m = pyo.ConcreteModel(name='NGFC without carbon capture')
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     build_power_island(m)
@@ -126,16 +129,20 @@ def test_ROM(m):
 
 @pytest.mark.integration
 def test_json_load(m):
-    fname = os.path.join(this_file_dir(), 'NGFC_flowsheet_init.json')
+    fname = os.path.join(os.path.join(os.path.dirname(this_file_dir()),
+                                      "NGFC"), "NGFC_flowsheet_init.json.gz")
+
     ms.from_json(m, fname=fname)
 
     assert (pyo.value(m.fs.cathode.ion_outlet.flow_mol[0]) ==
             pytest.approx(1670.093, 1e-5))
     assert (pyo.value(m.fs.reformer_recuperator.area) ==
-            pytest.approx(4512.56, 1e-5))
+            pytest.approx(4512.56, 1e-3))
     assert (pyo.value(m.fs.anode.heat_duty[0]) ==
             pytest.approx(-672918626, 1e-5))
     assert (pyo.value(m.fs.CO2_emissions) ==
             pytest.approx(291.169, 1e-5))
     assert (pyo.value(m.fs.net_power) ==
             pytest.approx(659.879, 1e-5))
+
+

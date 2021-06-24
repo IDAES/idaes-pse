@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Steam turbine outlet stage model.  This model is based on:
 
@@ -102,10 +102,9 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
     def initialize(
         self,
-        state_args={},
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
         calculate_cf=True,
     ):
         """
@@ -114,7 +113,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         then reactivates the constraints and solves.
 
         Args:
-            state_args (dict): Initial state for property initialization
             outlvl : sets output level of initialization routine
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -135,7 +133,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                     self.outlet.pressure[t]/self.inlet.pressure[t])
                 self.deltaP[t] = value(
                     self.outlet.pressure[t] - self.inlet.pressure[t])
-
 
         # Deactivate special constraints
         self.stodola_equation.deactivate()
@@ -162,7 +159,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
-        # Free eff_isen and activate sepcial constarints
+        # Free eff_isen and activate special constarints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         if calculate_cf:
@@ -189,7 +186,8 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
-            "Initialization Complete (Outlet Stage): {}".format(idaeslog.condition(res))
+            "Initialization Complete (Outlet Stage): {}".format(
+                idaeslog.condition(res))
         )
 
         # reload original spec
@@ -208,4 +206,4 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                 self.control_volume.properties_in[t].flow_mol,
                 default=1,
                 warning=True)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 Power Plant costing library
@@ -116,7 +116,7 @@ def get_PP_costing(self, cost_accounts,
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year 
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2018')
 
@@ -310,10 +310,12 @@ def get_PP_costing(self, cost_accounts,
         iscale.set_scaling_factor(self.costing.total_plant_cost[i], 1)
         iscale.constraint_scaling_transform(self.
                                             costing.bare_erected_cost_eq[i],
-                                            1e-3)
+                                            1e-3,
+                                            overwrite=False)
         iscale.constraint_scaling_transform(self.
                                             costing.total_plant_cost_eq[i],
-                                            1)
+                                            1,
+                                            overwrite=False)
 
 
 # -----------------------------------------------------------------------------
@@ -349,7 +351,7 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year 
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2017')
 
@@ -490,9 +492,12 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     iscale.set_scaling_factor(self.costing.equipment_cost, 1e3)
     iscale.set_scaling_factor(self.costing.bare_erected_cost, 1e3)
     iscale.set_scaling_factor(self.costing.total_plant_cost, 1e3)
-    iscale.constraint_scaling_transform(self.costing.equipment_cost_eq, 1e-6)
-    iscale.constraint_scaling_transform(self.costing.bare_erected_cost_eq, 1e3)
-    iscale.constraint_scaling_transform(self.costing.bare_erected_cost_eq, 1e3)
+    iscale.constraint_scaling_transform(
+        self.costing.equipment_cost_eq, 1e-6, overwrite=False)
+    iscale.constraint_scaling_transform(
+        self.costing.bare_erected_cost_eq, 1e3, overwrite=False)
+    iscale.constraint_scaling_transform(
+        self.costing.bare_erected_cost_eq, 1e3, overwrite=False)
 
 
 # -----------------------------------------------------------------------------
@@ -524,7 +529,7 @@ def get_ASU_cost(self, scaled_param):
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year 
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2017')
 
@@ -585,9 +590,10 @@ def get_ASU_cost(self, scaled_param):
     iscale.set_scaling_factor(self.costing.bare_erected_cost, 1)
     iscale.set_scaling_factor(self.costing.total_plant_cost, 1)
 
-    iscale.constraint_scaling_transform(self.costing.bare_erected_cost_eq,
-                                        1e-3)
-    iscale.constraint_scaling_transform(self.costing.total_plant_cost_eq, 1)
+    iscale.constraint_scaling_transform(
+        self.costing.bare_erected_cost_eq, 1e-3, overwrite=False)
+    iscale.constraint_scaling_transform(
+        self.costing.total_plant_cost_eq, 1, overwrite=False)
 
 
 # -----------------------------------------------------------------------------

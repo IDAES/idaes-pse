@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Heat Exchanger Models.
 """
@@ -437,7 +437,7 @@ class HeatExchangerData(UnitModelBlockData):
         state_args_2=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
         duty=None,
     ):
         """
@@ -451,7 +451,8 @@ class HeatExchangerData(UnitModelBlockData):
                 initialization for the cold side (see documentation of the specific
                 property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             duty : an initial guess for the amount of heat transfered. This
@@ -604,16 +605,18 @@ class HeatExchangerData(UnitModelBlockData):
         sf_a = iscale.get_scaling_factor(self.area, default=1, warning=True)
 
         for t, c in self.heat_transfer_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.delta_temperature_in_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t])
+            iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
 
         for t, c in self.delta_temperature_out_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT2[t])
+            iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
         if hasattr(self, "costing"):
             # import costing scaling factors

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Visualization server back-end.
 
@@ -29,7 +29,7 @@ from urllib.parse import urlparse
 # package
 from idaes import logger
 from ..flowsheet import FlowsheetDiff, FlowsheetSerializer
-from . import persist
+from . import persist, errors
 
 _log = logger.getLogger(__name__)
 
@@ -37,33 +37,6 @@ _log = logger.getLogger(__name__)
 _this_dir = Path(__file__).parent.absolute()
 _static_dir = _this_dir / "static"
 _template_dir = _this_dir / "templates"
-
-
-class FlowsheetNotFound(Exception):
-    def __init__(self, id_, location):
-        super().__init__(f"Flowsheet {id_} not found in {location}")
-        self.location = location  # to help distinguish
-
-
-class FlowsheetNotFoundInDatastore(FlowsheetNotFound):
-    def __init__(self, id_):
-        super().__init__(id_, "datastore")
-
-
-class FlowsheetNotFoundInMemory(FlowsheetNotFound):
-    def __init__(self, id_):
-        super().__init__(id_, "Python process memory")
-
-
-class FlowsheetUnknown(Exception):
-    def __init__(self, id_):
-        super().__init__(f"Unrecognized flowsheet '{id_}'")
-
-
-class ProcessingError(Exception):
-    """Use for errors processing input."""
-
-    pass
 
 
 class FlowsheetServer(http.server.HTTPServer):
@@ -97,28 +70,30 @@ class FlowsheetServer(http.server.HTTPServer):
         self._thr.setDaemon(True)
         self._thr.start()
 
-    def add_flowsheet(self, id_, flowsheet, save_as) -> str:
+    def add_flowsheet(self, id_, flowsheet, store: persist.DataStore) -> str:
         """Add a flowsheet, and also the method of saving it.
 
         Args:
             id_: Name of flowsheet
             flowsheet: Flowsheet object
-            save_as: File, path, etc. passed to :meth:`persist.DataStore.create()` to save the
-                     changes made from the UI.
+            store: A DataStore for saving the flowsheet
 
         Returns:
             Name of flowsheet, modified as necessary to be URL friendly
+
+        Raises:
+            ProcessingError: if the flowsheet can't be serialized
+            DatastoreError: If the flowsheet can't be saved
         """
         # replace all but 'unreserved' (RFC 3896) chars with a dash; remove duplicate dashes
-        id_ = re.sub(r"-+", "-", re.sub(r"[^a-zA-Z0-9-._~]", "-", id_))
+        id_ = self.canonical_flowsheet_name(id_)
         self._flowsheets[id_] = flowsheet
-        store = persist.DataStore.create(save_as)
         _log.debug(f"Flowsheet '{id_}' storage is {store}")
         self._dsm.add(id_, store)
         # First try to update, so as not to overwrite saved value
         try:
             self.update_flowsheet(id_)
-        except FlowsheetNotFoundInDatastore:
+        except errors.FlowsheetNotFoundInDatastore:
             _log.debug(f"No existing flowsheet found in {store}: saving new value")
             # If not found in datastore, save new value
             fs_dict = FlowsheetSerializer(flowsheet, id_).as_dict()
@@ -126,6 +101,21 @@ class FlowsheetServer(http.server.HTTPServer):
         else:
             _log.debug(f"Existing flowsheet found in {store}: saving merged value")
         return id_
+
+    @staticmethod
+    def canonical_flowsheet_name(name: str) -> str:
+        """Create a canonical flowsheet name from the name provided by the user.
+
+        Replace all but 'unreserved' (RFC 3896) chars plus '~' with a dash and remove duplicate dashes.
+        The result will not have whitespace, slashes, punctuation, or any special characters.
+
+        Args:
+            name: User-provided name
+
+        Returns:
+            New name
+        """
+        return re.sub(r"-+", "-", re.sub(r"[^a-zA-Z0-9-._]", "-", name))
 
     # === Public methods called only by HTTP handler ===
 
@@ -137,8 +127,10 @@ class FlowsheetServer(http.server.HTTPServer):
         """
         try:
             self._dsm.save(id_, flowsheet)
-        except ValueError as err:
-            raise ProcessingError(str(err))
+        except errors.DatastoreError as err:
+            raise errors.ProcessingError(f"While saving flowsheet: {err}")
+        except KeyError as err:
+            raise errors.ProcessingError(f"While saving flowsheet: {err}")
 
     def update_flowsheet(self, id_: str) -> Dict:
         """Update flowsheet.
@@ -160,18 +152,18 @@ class FlowsheetServer(http.server.HTTPServer):
         try:
             saved = self._load_flowsheet(id_)
         except KeyError:
-            raise FlowsheetUnknown(id_)
+            raise errors.FlowsheetUnknown(id_)
         except ValueError:
-            raise FlowsheetNotFoundInDatastore(id_)
+            raise errors.FlowsheetNotFoundInDatastore(id_)
         # Get current value from memory
         try:
             obj = self._get_flowsheet_obj(id_)
         except KeyError:
-            raise FlowsheetNotFoundInMemory(id_)
+            raise errors.FlowsheetNotFoundInMemory(id_)
         try:
             obj_dict = self._serialize_flowsheet(id_, obj)
         except ValueError as err:
-            raise ProcessingError(f"Cannot serialize flowsheet: {err}")
+            raise errors.ProcessingError(f"Cannot serialize flowsheet: {err}")
         # Compare saved and current value
         diff = FlowsheetDiff(saved, obj_dict)
         _log.debug(f"diff: {diff}")
@@ -274,11 +266,11 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         """
         try:
             merged = self.server.update_flowsheet(id_)
-        except FlowsheetUnknown as err:
+        except errors.FlowsheetUnknown as err:
             # User error: user asked for a flowsheet by an unknown ID
             self.send_error(404, message=str(err))
             return
-        except (FlowsheetNotFound, ProcessingError) as err:
+        except (errors.FlowsheetNotFound, errors.ProcessingError) as err:
             # Internal error: flowsheet ID is found, but other things are missing
             self.send_error(500, message=str(err))
             return
@@ -291,11 +283,12 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         """Process a request to store data.
         """
         u, id_ = self._parse_flowsheet_url(self.path)
-        _log.debug(f"do_PUT: route={u} id={id_}")
+        _log.info(f"do_PUT: route={u} id={id_}")
         if u.path in ("/fs",) and id_ is None:
             self.send_error(
                 400, message=f"Query parameter 'id' is required for '{u.path}'"
             )
+            return
         if u.path == "/fs":
             self._put_fs(id_)
 
@@ -306,8 +299,11 @@ class FlowsheetServerHandler(http.server.SimpleHTTPRequestHandler):
         # save flowsheet
         try:
             self.server.save_flowsheet(id_, data)
-        except ProcessingError as err:
+        except errors.ProcessingError as err:
             self.send_error(400, message="Invalid flowsheet", explain=str(err))
+            return
+        except Exception as err:
+            self.send_error(500, message="Unknown error", explain=str(err))
             return
         self.send_response(200, message="success")
 

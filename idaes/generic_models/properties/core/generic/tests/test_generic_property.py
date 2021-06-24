@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for generic property package core code
 
@@ -24,7 +24,7 @@ from pyomo.environ import (value, Block, ConcreteModel, Param,
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData,
         GenericStateBlock)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
@@ -71,8 +71,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -101,8 +101,8 @@ class TestGenericParameterBlock(object):
             assert p in ["p1", "p2"]
         assert isinstance(m.params.get_phase("p1"), LiquidPhase)
         assert isinstance(m.params.get_phase("p2"), Phase)
-        assert m.params.p1.config.equation_of_state == dummy_eos
-        assert m.params.p2.config.equation_of_state == dummy_eos
+        assert m.params.p1.config.equation_of_state == DummyEoS
+        assert m.params.p2.config.equation_of_state == DummyEoS
 
         assert isinstance(m.params._phase_component_set, Set)
         assert len(m.params._phase_component_set) == 5
@@ -135,8 +135,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -160,8 +160,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -261,9 +261,9 @@ class TestGenericParameterBlock(object):
                                                 PT.vaporPhase]}},
                 "phases": {
                     "p1": {"type": LiquidPhase,
-                           "equation_of_state": dummy_eos},
+                           "equation_of_state": DummyEoS},
                     "p2": {"type": VaporPhase,
-                           "equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -434,8 +434,8 @@ class TestGenericParameterBlock(object):
                 "b": {"phase_equilibrium_form": {("p1", "p2"): "foo"}},
                 "c": {"phase_equilibrium_form": {("p1", "p2"): "foo"}}},
             "phases": {
-                "p1": {"equation_of_state": dummy_eos},
-                "p2": {"equation_of_state": dummy_eos}},
+                "p1": {"equation_of_state": DummyEoS},
+                "p2": {"equation_of_state": DummyEoS}},
             "state_definition": modules[__name__],
             "pressure_ref": 1e5,
             "temperature_ref": 300,
@@ -571,8 +571,8 @@ class TestGenericParameterBlock(object):
                     "b": {},
                     "c": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -613,8 +613,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -638,8 +638,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -659,8 +659,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -678,8 +678,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -704,8 +704,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -730,8 +730,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -753,8 +753,8 @@ class TestGenericParameterBlock(object):
                     "phases": {
                         "p1": {"type": LiquidPhase,
                                "component_list": ["a", "b"],
-                               "equation_of_state": dummy_eos},
-                        "p2": {"equation_of_state": dummy_eos}},
+                               "equation_of_state": DummyEoS},
+                        "p2": {"equation_of_state": DummyEoS}},
                     "state_definition": modules[__name__],
                     "pressure_ref": 1e5,
                     "temperature_ref": 300,
@@ -768,8 +768,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -798,7 +798,7 @@ class TestGenericParameterBlock(object):
         for i in m.params.reaction_e1.reaction_order:
             order = {("p1", "a"): -3, ("p1", "b"): 4,
                      ("p2", "a"): 0, ("p2", "b"): 0, ("p2", "c"): 0}
-            assert m.params.reaction_e1.reaction_order[i] == order[i]
+            assert m.params.reaction_e1.reaction_order[i].value == order[i]
 
     @pytest.mark.unit
     def test_inherent_reactions_no_stoichiometry(self):
@@ -813,8 +813,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -835,8 +835,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -859,8 +859,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -884,8 +884,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -902,8 +902,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -932,8 +932,8 @@ class TestGenericParameterBlock(object):
                 "phases": {
                     "p1": {"type": LiquidPhase,
                            "component_list": ["a", "b"],
-                           "equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                           "equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -972,8 +972,8 @@ class TestGenericStateBlock(object):
         m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -1048,11 +1048,11 @@ class TestGenericStateBlock(object):
         frame.props[1].params.get_component('c').mw = 4
 
         assert value(frame.props[1].flow_vol) == pytest.approx(
-            100/42, rel=1e-4)
+            100/55e3, rel=1e-4)
         assert value(frame.props[1].flow_vol_phase['p1']) == \
-            pytest.approx(100/42*0.75, rel=1e-4)
+            pytest.approx(100/55e3*0.75, rel=1e-4)
         assert value(frame.props[1].flow_vol_phase['p2']) == \
-            pytest.approx(100/42*0.25, rel=1e-4)
+            pytest.approx(100/55e3*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['a']) == \
             pytest.approx(100*0.1*0.75 + 100*0.7*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['b']) == \

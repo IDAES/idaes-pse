@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for tray column unit model (single feed tray, no side draws).
 
@@ -18,6 +18,7 @@ Author: Jaffer Ghouse
 import pytest
 from pyomo.environ import (ConcreteModel, TerminationCondition,
                            SolverStatus, value)
+from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.distillation import TrayColumn
@@ -102,8 +103,6 @@ class TestBTXIdeal():
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
-        assert degrees_of_freedom(m.fs.unit) == 0
-
         return m
 
     @pytest.fixture(scope="class")
@@ -138,8 +137,6 @@ class TestBTXIdeal():
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
-        assert degrees_of_freedom(m) == 0
-
         return m
 
     @pytest.mark.unit
@@ -164,13 +161,25 @@ class TestBTXIdeal():
         assert hasattr(btx_fctp.fs.unit, "rectification_section")
         assert hasattr(btx_fctp.fs.unit, "stripping_section")
 
-    @pytest.mark.solver
+    @pytest.mark.unit
+    def test_dof(self, btx_ftpz, btx_fctp):
+        assert degrees_of_freedom(btx_ftpz.fs.unit) == 0
+        assert degrees_of_freedom(btx_fctp.fs.unit) == 0
+
+    @pytest.mark.component
+    def test_units_FTPz(self, btx_ftpz, btx_fctp):
+        assert_units_consistent(btx_ftpz)
+
+    @pytest.mark.component
+    def test_units_FcTP(self, btx_fctp):
+        assert_units_consistent(btx_fctp)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
         initialization_tester(btx_fctp)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, btx_ftpz, btx_fctp):
@@ -186,7 +195,6 @@ class TestBTXIdeal():
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
@@ -282,12 +290,9 @@ class TestBTXIdealGeneric():
 
         m.fs.unit.reboiler.boilup_ratio.fix(1.3)
 
-        assert degrees_of_freedom(m) == 0
-
         return m
 
     @pytest.mark.unit
-    @pytest.mark.generic
     def test_build(self, btx_ftpz_generic):
         assert len(btx_ftpz_generic.fs.unit.config) == 12
 
@@ -301,14 +306,19 @@ class TestBTXIdealGeneric():
 
         assert len(btx_ftpz_generic.fs.unit.config) == 12
 
-    @pytest.mark.solver
-    @pytest.mark.generic
+    @pytest.mark.unit
+    def test_dof(self, btx_ftpz_generic):
+        assert degrees_of_freedom(btx_ftpz_generic) == 0
+
+    @pytest.mark.component
+    def test_units_FTPz(self, btx_ftpz_generic):
+        assert_units_consistent(btx_ftpz_generic)
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, btx_ftpz_generic):
         initialization_tester(btx_ftpz_generic)
 
-    @pytest.mark.solver
-    @pytest.mark.generic
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, btx_ftpz_generic):
@@ -318,15 +328,14 @@ class TestBTXIdealGeneric():
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
-    @pytest.mark.generic
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx_ftpz_generic):
 
         # Distillate port - btx_ftpz
         assert (pytest.approx(49.28, rel=1e-2) ==
-                value(btx_ftpz_generic.fs.unit.condenser.distillate.flow_mol[0]))
+                value(
+                    btx_ftpz_generic.fs.unit.condenser.distillate.flow_mol[0]))
         assert (pytest.approx(0.8784, rel=1e-2) ==
                 value(btx_ftpz_generic.fs.unit.condenser.
                       distillate.mole_frac_comp[0, "benzene"]))

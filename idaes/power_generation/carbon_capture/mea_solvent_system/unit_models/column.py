@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 IDAES First Generation (GEN1) MEA Rate-Based Packed Column.
 
@@ -43,6 +43,7 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection)
+from idaes.core.util import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.generic_models.unit_models.heat_exchanger_1D import \
     HeatExchangerFlowPattern as FlowPattern
@@ -1039,14 +1040,14 @@ documentation for supported schemes,
     # Model initialization routine
 
     def initialize(blk,
-                   vapor_phase_state_args={},
-                   liquid_phase_state_args={},
+                   vapor_phase_state_args=None,
+                   liquid_phase_state_args=None,
                    state_vars_fixed=False,
-                   homotopy_steps_m=[0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1],
-                   homotopy_steps_h=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1],
+                   homotopy_steps_m=None,
+                   homotopy_steps_h=None,
                    outlvl=idaeslog.NOTSET,
-                   solver='ipopt',
-                   optarg={'tol': 1e-6}):
+                   solver=None,
+                   optarg=None):
         """
         Column initialization.
 
@@ -1054,13 +1055,15 @@ documentation for supported schemes,
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
-                         property package) (default = {}).
+                         property package) (default = None).
             homotopy_steps_m : List of continuations steps between 0 and 1
                                for turning mass transfer constrainst gradually
             homotopy_steps_h : List of continuations steps between 0 and 1
                                for turning heat transfer constraints gradually
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during initialization
+                    (default = None, use IDAES default solver)
 
         """
 
@@ -1070,8 +1073,13 @@ documentation for supported schemes,
 
         # Set solver options
         # TODO: Work out why using default solver here doubles test run time
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        opt = get_solver(solver, optarg)
+
+        if homotopy_steps_m is None:
+            homotopy_steps_m = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1]
+
+        if homotopy_steps_h is None:
+            homotopy_steps_h = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1]
 
         dynamic_constraints = [
             "vapor_side_area",
@@ -1168,37 +1176,37 @@ documentation for supported schemes,
             blk.vapor_phase.material_accumulation[:, :, :, :].fix(0.0)
             blk.unfix_initial_condition()
 
-
         # ---------------------------------------------------------------------
         # get values for state variables for initialization
+        if vapor_phase_state_args is None:
+            if blk.config.process_type == ProcessType.absorber:
+                vapor_phase_state_args = {
+                    'flow_mol': blk.vapor_inlet.flow_mol[0].value,
+                    'temperature': blk.vapor_inlet.temperature[0].value,
+                    'pressure': blk.vapor_inlet.pressure[0].value,
+                    'mole_frac_comp':
+                    {'H2O': blk.vapor_inlet.mole_frac_comp[0, 'H2O'].value,
+                     'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value,
+                     'N2': blk.vapor_inlet.mole_frac_comp[0, 'N2'].value,
+                     'O2': blk.vapor_inlet.mole_frac_comp[0, 'O2'].value}}
+            elif blk.config.process_type == ProcessType.stripper:
+                vapor_phase_state_args = {
+                    'flow_mol': blk.vapor_inlet.flow_mol[0].value,
+                    'temperature': blk.vapor_inlet.temperature[0].value,
+                    'pressure': blk.vapor_inlet.pressure[0].value,
+                    'mole_frac_comp':
+                    {'H2O': blk.vapor_inlet.mole_frac_comp[0, 'H2O'].value,
+                     'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value}}
 
-        if blk.config.process_type == ProcessType.absorber:
-            vapor_phase_state_args = {
-                'flow_mol': blk.vapor_inlet.flow_mol[0].value,
-                'temperature': blk.vapor_inlet.temperature[0].value,
+        if liquid_phase_state_args is None:
+            liquid_phase_state_args = {
+                'flow_mol': blk.liquid_inlet.flow_mol[0].value,
+                'temperature': blk.liquid_inlet.temperature[0].value,
                 'pressure': blk.vapor_inlet.pressure[0].value,
                 'mole_frac_comp':
-                {'H2O': blk.vapor_inlet.mole_frac_comp[0, 'H2O'].value,
-                 'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value,
-                 'N2': blk.vapor_inlet.mole_frac_comp[0, 'N2'].value,
-                 'O2': blk.vapor_inlet.mole_frac_comp[0, 'O2'].value}}
-        elif blk.config.process_type == ProcessType.stripper:
-            vapor_phase_state_args = {
-                'flow_mol': blk.vapor_inlet.flow_mol[0].value,
-                'temperature': blk.vapor_inlet.temperature[0].value,
-                'pressure': blk.vapor_inlet.pressure[0].value,
-                'mole_frac_comp':
-                {'H2O': blk.vapor_inlet.mole_frac_comp[0, 'H2O'].value,
-                 'CO2': blk.vapor_inlet.mole_frac_comp[0, 'CO2'].value}}
-
-        liquid_phase_state_args = {
-            'flow_mol': blk.liquid_inlet.flow_mol[0].value,
-            'temperature': blk.liquid_inlet.temperature[0].value,
-            'pressure': blk.vapor_inlet.pressure[0].value,
-            'mole_frac_comp':
-            {'H2O': blk.liquid_inlet.mole_frac_comp[0, 'H2O'].value,
-             'CO2': blk.liquid_inlet.mole_frac_comp[0, 'CO2'].value,
-             'MEA': blk.liquid_inlet.mole_frac_comp[0, 'MEA'].value}}
+                {'H2O': blk.liquid_inlet.mole_frac_comp[0, 'H2O'].value,
+                 'CO2': blk.liquid_inlet.mole_frac_comp[0, 'CO2'].value,
+                 'MEA': blk.liquid_inlet.mole_frac_comp[0, 'MEA'].value}}
 
         init_log.info("STEP 1: Property Package initialization")
 

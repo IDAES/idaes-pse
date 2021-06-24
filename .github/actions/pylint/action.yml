@@ -8,12 +8,37 @@ runs:
       shell: bash
       run: |
         PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
+        echo "::group::Output of pip install commands"
         $PIP_INSTALL --upgrade pip setuptools wheel
         # TODO the pylint version will have to be pinned
         # TODO installing idaes is necessary in our case because we import some idaes code in pylint plugins
-        $PIP_INSTALL pylint -r requirements.txt
+        $PIP_INSTALL -r requirements-dev.txt
+        echo "::endgroup::"
         # don't think we need to install the extensions, though
     - name: Run pylint (errors only)
-      shell: bash
+      # use custom options for bash since the default causes the step to fail immediately for any non-zero return code of intermediate commands
+      shell: bash --noprofile --norc {0}
       run: |
-        pylint -E --ignore-patterns="test_.*" idaes || true
+        pylint_target_dir="idaes/"
+        echo "::group::Real-time pylint log"
+        pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
+        pylint_exit_status=$?
+        echo "::endgroup::"
+
+        # render report
+        base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
+        pylint_output_path=pylint.json
+        echo "::group::Rendered pylint report"
+        python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
+        echo "::endgroup::"
+
+        # show PYLINT-TODO left in the codebase
+        todo_sentinel="PYLINT-TODO"
+        # use a bash array to save options containing quotes to a variable, then use the double-quoted array expansion "${arr[@]}"
+        grep_opts=( --recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab )
+
+        echo "::group::Show pylint \"$todo_sentinel\" sentinel comments in the codebase"
+        grep "$todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$todo_sentinel\" comments found in $pylint_target_dir"
+        echo "::endgroup::"
+
+        exit "$pylint_exit_status"

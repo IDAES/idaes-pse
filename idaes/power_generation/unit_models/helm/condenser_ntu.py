@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 NTU Condenser model, for use with Helmholtz EOS property packages.
 """
@@ -25,6 +25,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util import get_solver, from_json, to_json, StoreSpec
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models.heater import (
     _make_heater_config_block, _make_heater_control_volume)
 import idaes.core.util.unit_costing as costing
@@ -310,7 +311,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         unfix='hot_flow',
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Condenser initialization method. The initialization routine assumes
@@ -324,7 +325,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for cold side (see documentation of the specific
                 property package) (default = None).
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
@@ -434,13 +436,13 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         for t, c in self.heat_transfer_equation.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.saturation_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.hot_side.properties_out[t].enth_mol)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

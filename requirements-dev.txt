@@ -1,12 +1,30 @@
 --index-url https://pypi.python.org/simple/
 
-# Put versions of dependencies, required for deployment, here.
-# They will override abstract dependencies in `setup.py`
+# Developer extra packages
 
-# Pyomo
-git+https://github.com/PyUtilib/pyutilib
-git+https://github.com/IDAES/pyomo.git@IDAES
+### docs
+alabaster>=0.7.7
+# Newer sphinx needed for proper type hint support in docstrings
+sphinx>=3.0.0
+# note: 4/22/2020, removed the version requirement here
+sphinx-rtd-theme
+sphinxcontrib-napoleon>=0.5.0
+sphinx-argparse
 
-# Install abstract dependencies from `setup.py`
--e .
--e .[dev]
+### testing and linting
+# TODO/NOTE pytest is specified as a dependency in setup.py, but we might want to pin a specific version here
+pytest
+coverage
+pytest-cov
+pylint
+flake8
+
+### other/misc
+jsonschema
+jupyter_contrib_nbextensions
+snowballstemmer==1.2.1
+addheader>=0.2.2
+
+# this will install IDAES in editable mode using the dependencies defined under the `prerelease` tag of `extras_require` in `setup.py`
+# to customize this (e.g. to install a local clone of the Pyomo git repository), install IDAES without the `prerelease` tag and then install the dependencies separately
+--editable .[prerelease]

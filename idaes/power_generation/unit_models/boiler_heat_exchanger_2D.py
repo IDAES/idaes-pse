@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 The boiler 2D heat exchanger model consist of a cross flow shell and tube
 heat exchanger. 1-D Cross Flow Heat Exchanger Model with wall temperatures,
@@ -2324,7 +2324,7 @@ tube side flows from 1 to 0"""))
 
     def initialize(blk, shell_state_args=None, tube_state_args=None,
                    outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         HeatExchangerCrossFlow1D initialisation routine
 
@@ -2340,8 +2340,9 @@ tube side flows from 1 to 0"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -2356,11 +2357,11 @@ tube side flows from 1 to 0"""))
         # ---------------------------------------------------------------------
         # Initialize shell block
 
-        flags_tube = blk.tube.initialize(outlvl=0,
+        flags_tube = blk.tube.initialize(outlvl=outlvl,
                                          optarg=optarg,
                                          solver=solver,
                                          state_args=tube_state_args)
-        flags_shell = blk.shell.initialize(outlvl=0,
+        flags_shell = blk.shell.initialize(outlvl=outlvl,
                                            optarg=optarg,
                                            solver=solver,
                                            state_args=shell_state_args)
@@ -2614,9 +2615,9 @@ tube side flows from 1 to 0"""))
         for i, c in self.heat_tube_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.tube_heat[i], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for i, c in self.heat_shell_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.shell_heat[i], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

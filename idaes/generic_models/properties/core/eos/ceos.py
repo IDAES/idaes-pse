@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for cubic equations of state.
 
@@ -349,7 +349,58 @@ class Cubic(EoSBase):
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
-    # TODO: Need to add functions to calculate cp
+    # TODO: Need to add functions to calculate cp and cv
+
+
+    @staticmethod
+    def energy_internal_mol_phase(blk, p):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        B = getattr(blk, cname+"_B")[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        # Departure function for U is similar to H minus the RT(Z-1) term
+        return (((blk.temperature*dadT - am) *
+                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                          eps=1e-6)) / (bm*EoS_p) +
+                sum(blk.mole_frac_phase_comp[p, j] *
+                    EoSBase.energy_internal_mol_ig_comp_pure(blk, j)
+                    for j in blk.components_in_phase(p)))
+
+    @staticmethod
+    def energy_internal_mol_phase_comp(blk, p, j):
+        pobj = blk.params.get_phase(p)
+        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
+            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
+
+        cname = pobj._cubic_type.name
+        am = getattr(blk, cname+"_am")[p]
+        bm = getattr(blk, cname+"_bm")[p]
+        B = getattr(blk, cname+"_B")[p]
+        dadT = getattr(blk, cname+"_dadT")[p]
+        Z = blk.compress_fact_phase[p]
+
+        EoS_u = EoS_param[pobj._cubic_type]['u']
+        EoS_w = EoS_param[pobj._cubic_type]['w']
+        EoS_p = sqrt(EoS_u**2 - 4*EoS_w)
+
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        # Departure function for U is similar to H minus the RT(Z-1) term
+        return (((blk.temperature*dadT - am) *
+                 safe_log((2*Z + B*(EoS_u+EoS_p)) / (2*Z + B*(EoS_u-EoS_p)),
+                          eps=1e-6)) / (bm*EoS_p) +
+                EoSBase.energy_internal_mol_ig_comp_pure(blk, j))
 
     @staticmethod
     def enth_mol_phase(blk, p):
@@ -543,11 +594,11 @@ class Cubic(EoSBase):
 
         kappa = getattr(blk.params, cname+"_kappa")
         am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
-                     for j in blk.params.component_list)
-                 for i in blk.params.component_list)
+                     for j in blk.component_list)
+                 for i in blk.component_list)
 
         b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
 
         A = am*blk.pressure/(Cubic.gas_constant(blk) *
                              blk.temperature_bubble[pp])**2
@@ -555,7 +606,7 @@ class Cubic(EoSBase):
                              blk.temperature_bubble[pp])
 
         delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
-                                       for i in blk.params.component_list))
+                                       for i in blk.component_list))
 
         f = getattr(blk, "_"+cname+"_ext_func_param")
         if pobj.is_vapor_phase():
@@ -596,11 +647,11 @@ class Cubic(EoSBase):
 
         kappa = getattr(blk.params, cname+"_kappa")
         am = sum(sum(x[xidx, i]*x[xidx, j]*sqrt(a(i)*a(j))*(1-kappa[i, j])
-                     for j in blk.params.component_list)
-                 for i in blk.params.component_list)
+                     for j in blk.component_list)
+                 for i in blk.component_list)
 
         b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
 
         A = am*blk.pressure/(Cubic.gas_constant(blk) *
                              blk.temperature_dew[pp])**2
@@ -608,7 +659,7 @@ class Cubic(EoSBase):
                              blk.temperature_dew[pp])
 
         delta = (2*sqrt(a(j))/am * sum(x[xidx, i]*sqrt(a(i))*(1-kappa[j, i])
-                                       for i in blk.params.component_list))
+                                       for i in blk.component_list))
 
         f = getattr(blk, "_"+cname+"_ext_func_param")
         if pobj.is_vapor_phase():
@@ -642,11 +693,11 @@ class Cubic(EoSBase):
         kappa = getattr(blk.params, cname+"_kappa")
         am = sum(sum(x[xidx, i]*x[xidx, j] *
                      sqrt(a[i]*a[j])*(1-kappa[i, j])
-                     for j in blk.params.component_list)
-                 for i in blk.params.component_list)
+                     for j in blk.component_list)
+                 for i in blk.component_list)
 
         b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
 
         A = am*blk.pressure_bubble[pp]/(Cubic.gas_constant(blk) *
                                         blk.temperature)**2
@@ -654,7 +705,7 @@ class Cubic(EoSBase):
                                         blk.temperature)
 
         delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
-                                       for i in blk.params.component_list))
+                                       for i in blk.component_list))
 
         f = getattr(blk, "_"+cname+"_ext_func_param")
         if pobj.is_vapor_phase():
@@ -688,18 +739,18 @@ class Cubic(EoSBase):
         kappa = getattr(blk.params, cname+"_kappa")
         am = sum(sum(x[xidx, i]*x[xidx, j] *
                      sqrt(a[i]*a[j])*(1-kappa[i, j])
-                     for j in blk.params.component_list)
-                 for i in blk.params.component_list)
+                     for j in blk.component_list)
+                 for i in blk.component_list)
 
         b = getattr(blk, cname+"_b")
-        bm = sum(x[xidx, i]*b[i] for i in blk.params.component_list)
+        bm = sum(x[xidx, i]*b[i] for i in blk.component_list)
 
         A = am*blk.pressure_dew[pp]/(Cubic.gas_constant(blk) *
                                      blk.temperature)**2
         B = bm*blk.pressure_dew[pp]/(Cubic.gas_constant(blk)*blk.temperature)
 
         delta = (2*sqrt(a[j])/am * sum(x[xidx, i]*sqrt(a[i])*(1-kappa[j, i])
-                                       for i in blk.params.component_list))
+                                       for i in blk.component_list))
 
         f = getattr(blk, "_"+cname+"_ext_func_param")
         if pobj.is_vapor_phase():

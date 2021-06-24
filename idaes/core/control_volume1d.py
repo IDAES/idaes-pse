@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base class for control volumes
 """
@@ -152,7 +152,7 @@ argument)."""))
 
     def add_geometry(self,
                      length_domain=None,
-                     length_domain_set=[0.0, 1.0],
+                     length_domain_set=None,
                      flow_direction=FlowDirection.forward):
         """
         Method to create spatial domain and volume Var in ControlVolume.
@@ -187,6 +187,9 @@ argument)."""))
                         "ContinuousSet object".format(self.name))
         else:
             # Create new length domain
+            if length_domain_set is None:
+                length_domain_set = [0.0, 1.0]
+
             self.length_domain = ContinuousSet(
                                     bounds=(0.0, 1.0),
                                     initialize=length_domain_set,
@@ -1634,7 +1637,7 @@ argument)."""))
                         'model_check method to the associated '
                         'ReactionBlock class.'.format(blk.name))
 
-    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg={},
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, hold_state=True):
         '''
         Initialization routine for 1D control volume.
@@ -1645,8 +1648,9 @@ argument)."""))
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
@@ -1662,6 +1666,9 @@ argument)."""))
             states were fixed during initialization else the release state is
             triggered.
         '''
+        if optarg is None:
+            optarg = {}
+
         # Get inlet state if not provided
         init_log = idaeslog.getInitLogger(
             blk.name, outlvl, tag="control_volume")
@@ -2101,27 +2108,27 @@ argument)."""))
             for (t, x, p, j), c in \
                     self.material_flow_linking_constraints.items():
                 sf = iscale.get_scaling_factor(self._flow_terms[t, x, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "material_holdup_calculation"):
             for (t, x, p, j), c in self.material_holdup_calculation.items():
                 sf = iscale.get_scaling_factor(
                     self.material_holdup[t, x, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "rate_reaction_stoichiometry_constraint"):
             for (t, x, p, j), c in \
                     self.rate_reaction_stoichiometry_constraint.items():
                 sf = iscale.get_scaling_factor(
                     self.rate_reaction_generation[t, x, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "equilibrium_reaction_stoichiometry_constraint"):
             for (t, x, p, j), c in \
                     self.equilibrium_reaction_stoichiometry_constraint.items():
                 sf = iscale.get_scaling_factor(
                     self.equilibrium_reaction_generation[t, x, p, j])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "material_balances"):
             mb_type = self._constructed_material_balance_type
@@ -2129,13 +2136,13 @@ argument)."""))
                 for (t, x, p, j), c in self.material_balances.items():
                     sf = iscale.get_scaling_factor(
                         self._flow_terms[t, x, p, j])
-                    iscale.constraint_scaling_transform(c, sf)
+                    iscale.constraint_scaling_transform(c, sf, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, x, j), c in self.material_balances.items():
                     sf = iscale.min_scaling_factor(
                         [self._flow_terms[t, x, p, j] for p in phase_list
                          if (p, j) in phase_component_set])
-                    iscale.constraint_scaling_transform(c, sf)
+                    iscale.constraint_scaling_transform(c, sf, overwrite=False)
             else:
                 _log.warning(f"Unknown material balance type {mb_type}")
 
@@ -2143,86 +2150,101 @@ argument)."""))
             for (t, x, e), c in self.elemental_flow_constraint.items():
                 sf = iscale.get_scaling_factor(
                     self.elemental_flow_term[t, x, e])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "element_balances"):
             for (t, x, e), c in self.element_balances.items():
                 sf = iscale.get_scaling_factor(self.elemental_flow_dx[t, x, e])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "elemental_holdup_calculation"):
             for (t, x, e), c in self.elemental_holdup_calculation.items():
                 sf = iscale.get_scaling_factor(self.element_holdup[t, x, e])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "enthalpy_flow_linking_constraint"):
             for (t, x, p), c in self.enthalpy_flow_linking_constraint.items():
                 sf = iscale.get_scaling_factor(self._enthalpy_flow[t, x, p])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "enthalpy_balances"):
             for (t, x), c in self.enthalpy_balances.items():
                 sf = iscale.min_scaling_factor(
                     [self._enthalpy_flow[t, x, p] for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "energy_holdup_calculation"):
             for (t, x, p), c in self.energy_holdup_calculation.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.energy_holdup[t, x, p]))
+                    c,
+                    iscale.get_scaling_factor(self.energy_holdup[t, x, p]),
+                    overwrite=False)
 
         if hasattr(self, "pressure_balance"):
             for (t, x), c in self.pressure_balance.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
+                    c,
+                    iscale.get_scaling_factor(
                         self.properties[t, x].pressure,
-                        default=1e-5))
+                        default=1e-5),
+                    overwrite=False)
 
         if hasattr(self, "sum_of_phase_fractions"):
             for (t, x), c in self.sum_of_phase_fractions.items():
                 sf = iscale.min_scaling_factor(
                     [self.phase_fraction[t, x, p] for p in phase_list])
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if hasattr(self, "material_flow_dx_disc_eq"):
             for (t, x, p, j), c in self.material_flow_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.material_flow_dx[t, x, p, j]))
+                    c,
+                    iscale.get_scaling_factor(
+                        self.material_flow_dx[t, x, p, j]),
+                    overwrite=False)
 
         if hasattr(self, "material_accumulation_disc_eq"):
             for (t, x, p, j), c in self.material_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.material_accumulation[t, x, p, j]))
+                    c,
+                    iscale.get_scaling_factor(
+                        self.material_accumulation[t, x, p, j]),
+                    overwrite=False)
 
         # Scaling for discretization equations
         if hasattr(self, "enthalpy_flow_dx_disc_eq"):
             for (t, x, p), c in self.enthalpy_flow_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor
-                    (self.enthalpy_flow_dx[t, x, p]))
+                    c,
+                    iscale.get_scaling_factor(self.enthalpy_flow_dx[t, x, p]),
+                    overwrite=False)
 
         if hasattr(self, "energy_accumulation_disc_eq"):
             for (t, x, p), c in self.energy_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.energy_accumulation[t, x, p]))
+                    c,
+                    iscale.get_scaling_factor(
+                        self.energy_accumulation[t, x, p]),
+                    overwrite=False)
 
         if hasattr(self, "pressure_dx_disc_eq"):
             for (t, x), c in self.pressure_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.pressure_dx[t, x]))
+                    c,
+                    iscale.get_scaling_factor(self.pressure_dx[t, x]),
+                    overwrite=False)
 
         if hasattr(self, "elemental_flow_dx_disc_eq"):
             for (t, x, e), c in self.elemental_flow_dx_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.elemental_flow_dx[t, x, e]))
+                    c,
+                    iscale.get_scaling_factor(self.elemental_flow_dx[t, x, e]),
+                    overwrite=False)
 
         if hasattr(self, "element_accumulation_disc_eq"):
             for (t, x, e), c in self.element_accumulation_disc_eq.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(
-                        self.element_accumulation[t, x, e]))
+                    c,
+                    iscale.get_scaling_factor(
+                        self.element_accumulation[t, x, e]),
+                    overwrite=False)

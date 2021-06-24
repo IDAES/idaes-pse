@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 # =============================================================================
 
 from pyomo.environ import (Integers,
@@ -408,7 +408,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                     material_factor_reciprocal_pumps[Mat_factor]
                 self.FT = 1
             else:
-                raise ValueError('{} - pump type not supported. '
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - pump type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for '
                                  'supported options.'.format(self.name,
                                                              pump_type))
@@ -435,7 +436,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             + 0.26986*log(PB)
                             + 0.06718*log(PB)**2)
                 else:
-                    raise ValueError('{} - pump type not supported. '
+                    # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                    raise ValueError('{} - pump type not supported. '  # pylint: disable=E1305
                                      'Please see documentation for '
                                      'supported options.'.format(self.name,
                                                                  pump_type))
@@ -503,7 +505,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
         # (costing not needed)
         elif (self.parent_block().config.
               thermodynamic_assumption.name) == 'isothermal':
-            raise ValueError('{} - pressure changers with isothermal '
+            # PYLINT-TODO-FIX fix exception message with correct number of arguments
+            raise ValueError('{} - pressure changers with isothermal '  # pylint: disable=E1305
                              'assumption are too simple to be costed. '.
                              format(self.name, mover_type))
         # if config.compressor is = True
@@ -571,7 +574,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                         properties_in[0].flow_vol*60  # 1ft3/s*60s/min = ft3/m
                 # end volumetric flow units
                 else:
-                    raise ValueError('{} - volumetric flowrate units '
+                    # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                    raise ValueError('{} - volumetric flowrate units '  # pylint: disable=E1305
                                      'not supported. '
                                      'Please see documentation for list of '
                                      'supported units.'.format(self.name,
@@ -658,7 +662,8 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
                             CE_index/500)*self.base_cost)
                 self.cp_cost_eq = Constraint(rule=CP_rule)
             else:
-                raise ValueError('{} - mover type not supported. '
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - mover type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported mover types.'.format(self.name,
                                                                  mover_type))
@@ -855,14 +860,16 @@ def platforms_ladders(self, alignment='horizontal', L_D_range='option1',
                     309.9*(D/pyunits.foot)**0.63316 *
                     (L/pyunits.foot)**0.80161)
             else:
-                raise ValueError('{} - L_D_range option not supported. '
+                # PYLINT-TODO-FIX fix exception message with correct number of arguments
+                raise ValueError('{} - L_D_range option not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported options.'.format(self.name,
                                                              L_D_range))
         self.CPL_eq = Constraint(rule=CPL_rule)
 
     else:
-        raise ValueError('{} - vessel alignment type not supported. '
+        # PYLINT-TODO-FIX fix exception message with correct number of arguments
+        raise ValueError('{} - vessel alignment type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported options.'.format(self.name,
                                                              alignment))
@@ -1002,7 +1009,8 @@ def fired_heater_costing(self,
             return self.base_cost_per_unit ==\
                 0.367*(Q/pyunits.BTU*pyunits.hr)**0.77
         else:
-            raise ValueError('{} - fired heater type not supported. '
+            # PYLINT-TODO-FIX fix exception message with correct number of arguments
+            raise ValueError('{} - fired heater type not supported. '  # pylint: disable=E1305
                                  'Please see documentation for list of '
                                  'supported FH types.'.format(self.name,
                                                               fired_type))
@@ -1171,7 +1179,8 @@ def calculate_scaling_factors(self):
         sf_a = iscale.get_scaling_factor(self.base_cost_per_unit,
                                          default=1e-4,
                                          warning=True)
-        iscale.constraint_scaling_transform(self.base_cost_per_unit_eq, sf_a)
+        iscale.constraint_scaling_transform(
+            self.base_cost_per_unit_eq, sf_a, overwrite=False)
     except AttributeError:
         pass
     # scaling purchase cost (both var/eqn exist in all costing methods)
@@ -1179,5 +1188,5 @@ def calculate_scaling_factors(self):
                                                 default=1e-4,
                                                 warning=True)
 
-    iscale.constraint_scaling_transform(self.cp_cost_eq,
-                                        s_purchase_cost)
+    iscale.constraint_scaling_transform(
+        self.cp_cost_eq, s_purchase_cost, overwrite=False)

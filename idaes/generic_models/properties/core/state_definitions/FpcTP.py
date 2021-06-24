@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for setting up FpcTP as the state variables in a generic property
 package
@@ -119,8 +119,19 @@ def define_state(b):
             units=None)
 
     def rule_mole_frac_phase_comp(b, p, j):
-        return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
-            b.flow_mol_phase_comp[p, j]
+        # Calcualting mole frac phase comp is degenerate if there is only one
+        # component in phase.
+        # Count components
+        comp_count = 0
+        for p1, j1 in b.phase_component_set:
+            if p1 == p:
+                comp_count += 1
+
+        if comp_count > 1:
+            return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
+                b.flow_mol_phase_comp[p, j]
+        else:
+            return b.mole_frac_phase_comp[p, j] == 1
     b.mole_frac_phase_comp_eq = Constraint(
         b.phase_component_set, rule=rule_mole_frac_phase_comp)
 
@@ -147,17 +158,44 @@ def define_state(b):
 
     def get_enthalpy_flow_terms_FpcTP(p):
         """Create enthalpy flow terms."""
-        return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+        # enth_mol_phase probably does not exist when this is created
+        # Use try/except to build flow term if not present
+        try:
+            eflow = b._enthalpy_flow_term
+        except AttributeError:
+            def rule_eflow(b, p):
+                return b.flow_mol_phase[p] * b.enth_mol_phase[p]
+            eflow = b._enthalpy_flow_term = Expression(
+                b.phase_list, rule=rule_eflow)
+        return eflow[p]
     b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FpcTP
 
     def get_material_density_terms_FpcTP(p, j):
         """Create material density terms."""
-        return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+        # dens_mol_phase probably does not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            mdens = b._material_density_term
+        except AttributeError:
+            def rule_mdens(b, p, j):
+                return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
+            mdens = b._material_density_term = Expression(
+                b.phase_component_set, rule=rule_mdens)
+        return mdens[p, j]
     b.get_material_density_terms = get_material_density_terms_FpcTP
 
     def get_energy_density_terms_FpcTP(p):
         """Create energy density terms."""
-        return b.dens_mol_phase[p] * b.enth_mol_phase[p]
+        # Density and energy terms probably do not exist when this is created
+        # Use try/except to build term if not present
+        try:
+            edens = b._energy_density_term
+        except AttributeError:
+            def rule_edens(b, p):
+                return b.dens_mol_phase[p] * b.energy_internal_mol_phase[p]
+            edens = b._energy_density_term = Expression(
+                b.phase_list, rule=rule_edens)
+        return edens[p]
     b.get_energy_density_terms = get_energy_density_terms_FpcTP
 
     def default_material_balance_type_FpcTP():
@@ -253,7 +291,7 @@ def calculate_scaling_factors(b):
         sf = iscale.get_scaling_factor(b.flow_mol_phase_comp[
             p, j], default=1, warning=True)
         iscale.constraint_scaling_transform(
-            b.mole_frac_phase_comp_eq[p, j], sf)
+            b.mole_frac_phase_comp_eq[p, j], sf, overwrite=False)
 
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)
