@@ -1058,94 +1058,7 @@ class _GenericStateBlock(StateBlock):
             T_units = blk[k].params.get_metadata().default_units["temperature"]
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
-                for pp in blk[k].params._pe_pairs:
-                    raoult_comps, henry_comps = _valid_VL_component_list(
-                        blk[k], pp)
-
-                    if raoult_comps == []:
-                        continue
-                    if henry_comps != []:
-                        # Need to get liquid phase name
-                        if blk[k].params.get_phase(pp[0]).is_liquid_phase():
-                            l_phase = pp[0]
-                        else:
-                            l_phase = pp[1]
-
-                    # Use lowest component temperature_crit as starting point
-                    # Starting high and moving down generally works better,
-                    # as it under-predicts next step due to exponential form of
-                    # Psat.
-                    # Subtract 1 to avoid potential singularities at Tcrit
-                    Tbub0 = min(blk[k].params.get_component(j)
-                                .temperature_crit.value
-                                for j in raoult_comps) - 1
-
-                    err = 1
-                    counter = 0
-
-                    # Newton solver with step limiter to prevent overshoot
-                    # Tolerance only needs to be ~1e-1
-                    # Iteration limit of 30
-                    while err > 1e-1 and counter < 30:
-                        f = value(sum(
-                            get_method(blk[k], "pressure_sat_comp", j)(
-                                    blk[k],
-                                    blk[k].params.get_component(j),
-                                    Tbub0*T_units) *
-                            blk[k].mole_frac_comp[j]
-                            for j in raoult_comps) +
-                            sum(blk[k].mole_frac_comp[j] *
-                                blk[k].params.get_component(
-                                    j).config.henry_component[
-                                        l_phase].return_expression(
-                                            blk[k], l_phase, j, Tbub0*T_units)
-                                for j in henry_comps) -
-                            blk[k].pressure)
-                        df = value(sum(
-                               get_method(blk[k], "pressure_sat_comp", j)(
-                                          blk[k],
-                                          blk[k].params.get_component(j),
-                                          Tbub0*T_units,
-                                          dT=True) *
-                               blk[k].mole_frac_comp[j]
-                               for j in raoult_comps) +
-                                   sum(blk[k].mole_frac_comp[j] *
-                                       blk[k].params.get_component(
-                                           j).config.henry_component[
-                                               l_phase].dT_expression(
-                                            blk[k], l_phase, j, Tbub0*T_units)
-                                       for j in henry_comps))
-
-                        # Limit temperature step to avoid excessive overshoot
-                        if f/df < -50:
-                            Tbub1 = Tbub0 + 50
-                        elif f/df > 50:
-                            Tbub1 = Tbub0 - 50
-                        else:
-                            Tbub1 = Tbub0 - f/df
-
-                        err = abs(Tbub1 - Tbub0)
-                        Tbub0 = Tbub1
-                        counter += 1
-
-                    blk[k].temperature_bubble[pp].value = Tbub0
-
-                    for j in raoult_comps:
-                        blk[k]._mole_frac_tbub[pp, j].value = value(
-                                blk[k].mole_frac_comp[j] *
-                                get_method(blk[k], "pressure_sat_comp", j)(
-                                           blk[k],
-                                           blk[k].params.get_component(j),
-                                           Tbub0*T_units) /
-                                blk[k].pressure)
-                    for j in henry_comps:
-                        blk[k]._mole_frac_tbub[pp, j].value = value(
-                            blk[k].mole_frac_comp[j] *
-                            blk[k].params.get_component(
-                                j).config.henry_component[
-                                    l_phase].return_expression(
-                                        blk[k], l_phase, j, Tbub0*T_units) /
-                            blk[k].pressure)
+                blk[k]._init_Tbub()
 
             # Dew temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
@@ -2659,7 +2572,98 @@ class GenericStateBlockData(StateBlockData):
             doc="Specific heat of reaction for inherent reactions",
             rule=dh_rule)
 
+    def _init_Tbub(self):
+        T_units = self.params.get_metadata().default_units["temperature"]
+        for pp in self.params._pe_pairs:
+            raoult_comps, henry_comps = _valid_VL_component_list(
+                self, pp)
 
+            if raoult_comps == []:
+                continue
+            if henry_comps != []:
+                # Need to get liquid phase name
+                if self.params.get_phase(pp[0]).is_liquid_phase():
+                    l_phase = pp[0]
+                else:
+                    l_phase = pp[1]
+
+            # Use lowest component temperature_crit as starting point
+            # Starting high and moving down generally works better,
+            # as it under-predicts next step due to exponential form of
+            # Psat.
+            # Subtract 1 to avoid potential singularities at Tcrit
+            Tbub0 = min(self.params.get_component(j)
+                        .temperature_crit.value
+                        for j in raoult_comps) - 1
+
+            err = 1
+            counter = 0
+
+            # Newton solver with step limiter to prevent overshoot
+            # Tolerance only needs to be ~1e-1
+            # Iteration limit of 30
+            while err > 1e-1 and counter < 30:
+                f = value(sum(
+                    get_method(self, "pressure_sat_comp", j)(
+                            self,
+                            self.params.get_component(j),
+                            Tbub0*T_units) *
+                    self.mole_frac_comp[j]
+                    for j in raoult_comps) +
+                    sum(self.mole_frac_comp[j] *
+                        self.params.get_component(
+                            j).config.henry_component[
+                                l_phase].return_expression(
+                                    self, l_phase, j, Tbub0*T_units)
+                        for j in henry_comps) -
+                    self.pressure)
+                df = value(sum(
+                       get_method(self, "pressure_sat_comp", j)(
+                                  self,
+                                  self.params.get_component(j),
+                                  Tbub0*T_units,
+                                  dT=True) *
+                       self.mole_frac_comp[j]
+                       for j in raoult_comps) +
+                           sum(self.mole_frac_comp[j] *
+                               self.params.get_component(
+                                   j).config.henry_component[
+                                       l_phase].dT_expression(
+                                    self, l_phase, j, Tbub0*T_units)
+                               for j in henry_comps))
+
+                # Limit temperature step to avoid excessive overshoot
+                if f/df < -50:
+                    Tbub1 = Tbub0 + 50
+                elif f/df > 50:
+                    Tbub1 = Tbub0 - 50
+                else:
+                    Tbub1 = Tbub0 - f/df
+
+                err = abs(Tbub1 - Tbub0)
+                Tbub0 = Tbub1
+                counter += 1
+
+            self.temperature_bubble[pp].value = Tbub0
+
+            for j in raoult_comps:
+                self._mole_frac_tbub[pp, j].value = value(
+                        self.mole_frac_comp[j] *
+                        get_method(self, "pressure_sat_comp", j)(
+                                   self,
+                                   self.params.get_component(j),
+                                   Tbub0*T_units) /
+                        self.pressure)
+            for j in henry_comps:
+                self._mole_frac_tbub[pp, j].value = value(
+                    self.mole_frac_comp[j] *
+                    self.params.get_component(
+                        j).config.henry_component[
+                            l_phase].return_expression(
+                                self, l_phase, j, Tbub0*T_units) /
+                    self.pressure)
+
+                                
 def _valid_VL_component_list(blk, pp):
     raoult_comps = []
     henry_comps = []

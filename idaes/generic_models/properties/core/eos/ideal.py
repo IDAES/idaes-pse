@@ -275,17 +275,17 @@ class Ideal(EoSBase):
             if (cobj.config.henry_component is not None and
                     p in cobj.config.henry_component):
                 return (log(b.mole_frac_comp[j]) +
-                        log(cobj.config.henry_component[p].return_expression(
+                        log(get_method(b, "henry_component", j, p)(
                             b, p, j, b.temperature_bubble[pp])))
             else:
                 return (log(b.mole_frac_comp[j]) +
-                        log(cobj.config.pressure_sat_comp.return_expression(
+                        log(get_method(b, "pressure_sat_comp", j)(
                                 b, cobj, b.temperature_bubble[pp])))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Tdew(b, p, j, pp):
+    def log_fug_phase_comp_Tdew(b, p, j, pp):
         pobj = b.params.get_phase(p)
         cobj = b.params.get_component(j)
         if pobj.is_vapor_phase():
@@ -294,11 +294,11 @@ class Ideal(EoSBase):
             if (cobj.config.henry_component is not None and
                     p in cobj.config.henry_component):
                 return (log(b._mole_frac_tdew[pp[0], pp[1], j]) +
-                        log(cobj.config.henry_component[p].return_expression(
+                        log(get_method(b, "henry_component", j, p)(
                             b, p, j, b.temperature_dew[pp])))
             else:
                 return (log(b._mole_frac_tdew[pp[0], pp[1], j]) +
-                        log(cobj.config.pressure_sat_comp.return_expression(
+                        log(get_method(b, "pressure_sat_comp", j)(
                                 b, cobj, b.temperature_dew[pp])))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))

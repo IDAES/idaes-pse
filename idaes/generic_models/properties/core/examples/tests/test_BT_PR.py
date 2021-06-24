@@ -88,11 +88,12 @@ class TestBTExample(object):
             m.fs.state[1].temperature.unfix()
             m.fs.obj.activate()
 
-            results = solver.solve(m, tee=True)
+            results = solver.solve(m)
 
             assert results.solver.termination_condition == \
                 TerminationCondition.optimal
             assert m.fs.state[1].flow_mol_phase["Liq"].value <= 1e-5
+        assert False
 
     @pytest.mark.integration
     def test_P_sweep(self, m):
