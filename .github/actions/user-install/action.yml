@@ -15,11 +15,11 @@ runs:
       shell: bash
       run: |
         echo '::group::Output of conda create/activate/install'
-        conda create --name idaes-pse --quiet --yes python=${{ input.python-version }}
+        conda create --name idaes-pse --quiet --yes python=${{ inputs.python-version }}
         conda activate idaes-pse
         echo '::endgroup::'
         echo '::group::Output of pip install/list/show'
-        pip install --progress-bar off ${{ input.install-target }}
+        pip install --progress-bar off ${{ inputs.install-target }}
         pip list
         pip show idaes-pse pyomo
         echo '::endgroup::'
