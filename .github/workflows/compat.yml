@@ -1,0 +1,54 @@
+name: Compatibility checks
+on:
+  push:
+    branches:
+      - main
+      - '*_rel'
+  schedule:
+    # run daily at 5:00 am UTC (12 am ET/9 pm PT)
+    - cron: '0 5 * * *'
+  repository_dispatch:
+    # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_compat`
+    types: [ci_run_compat]
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git hash (optional)
+        required: false
+
+jobs:
+  user-install-run:
+    name: User-style install/run (${{ matrix.idaes-install-target }}/${{ matrix.os-alias }}/py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os-runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.6'
+          - '3.7'
+          - '3.8'
+          - '3.9'
+        os-alias:
+          - linux
+          - win64
+        idaes-install-target:
+          - stable
+          - main
+        include:
+          - os-alias: linux
+            os-runs-on: ubuntu-20.04
+          - os-alias: win64
+            os-runs-on: windows-2019
+          - idaes-install-target: stable
+            pip-install-target: idaes
+          - idaes-install-target: main
+            pip-install-target: https://github.com/IDAES/idaes-pse/archive/master.zip
+    steps: 
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v2
+      - name: Install IDAES in a Conda env (user mode)
+        uses: ./.github/actions/user-install
+        with:
+          python-version: ${{ matrix.python-version }}
+          install-target: ${{ matrix.pip-install-target }}

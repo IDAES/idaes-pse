@@ -1,0 +1,35 @@
+
+name: User-style install and run
+description: Reproduce steps to install and run IDAES as they would be performed by a user
+inputs:
+  python-version:
+    description: Python version to use
+    required: true
+  install-target:
+    description: 'Command-line arguments and options to pass to the install command, e.g. pip install'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install IDAES and dependencies, run tests
+      shell: bash
+      run: |
+        echo '::group::Output of conda create/activate/install'
+        conda create --name idaes-pse --quiet --yes python=${{ input.python-version }}
+        conda activate idaes-pse
+        echo '::endgroup::'
+        echo '::group::Output of pip install/list/show'
+        pip install --progress-bar off ${{ input.install-target }}
+        pip list
+        pip show idaes-pse pyomo
+        echo '::endgroup::'
+        idaes --help
+        echo '::group::Output of "idaes get-extensions" command'
+        idaes get-extensions --verbose
+        echo '::endgroup::'
+        echo '::group::Output of pytest'
+        pip install --progress-bar off pytest
+        pytest -x
+        echo '::endgroup::'
+
+
