@@ -42,8 +42,7 @@ class TestSkeletonDefault(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False,
-                                           "custom_initializer": False})
+        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False})
         m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
 
         # input vars for skeleton
@@ -170,8 +169,7 @@ class TestSkeletonCustom(object):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False,
-                                          "custom_initializer": True})
+        m.fs.skeleton = SkeletonUnitModel(default={"dynamic": False})
         m.fs.skeleton.comp_list = Set(initialize=["c1", "c2"])
 
         # input vars for skeleton
@@ -259,22 +257,22 @@ class TestSkeletonCustom(object):
 
         assert degrees_of_freedom(skeleton_custom) == 0
 
-        def my_initialize():
+        def my_initialize(unit, **kwargs):
             # Callback for user provided initialization sequence
-            skeleton_custom.fs.skeleton.eq_temperature.deactivate()
-            skeleton_custom.fs.skeleton.eq_pressure.deactivate()
-            skeleton_custom.fs.skeleton.outlet.temperature.fix(325)
-            skeleton_custom.fs.skeleton.outlet.pressure.fix(200)
+            unit.eq_temperature.deactivate()
+            unit.eq_pressure.deactivate()
+            unit.outlet.temperature.fix(325)
+            unit.outlet.pressure.fix(200)
 
             if degrees_of_freedom == 0:
-                solver.solve(skeleton_custom)
+                solver.solve(unit)
 
-            skeleton_custom.fs.skeleton.eq_temperature.activate()
-            skeleton_custom.fs.skeleton.eq_pressure.activate()
-            skeleton_custom.fs.skeleton.outlet.temperature.unfix()
-            skeleton_custom.fs.skeleton.outlet.pressure.unfix()
+            unit.eq_temperature.activate()
+            unit.eq_pressure.activate()
+            unit.outlet.temperature.unfix()
+            unit.outlet.pressure.unfix()
 
-        skeleton_custom.fs.skeleton.custom_initializer_func = my_initialize
+        skeleton_custom.fs.skeleton.config.initializer = my_initialize
         skeleton_custom.fs.skeleton.initialize()
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
