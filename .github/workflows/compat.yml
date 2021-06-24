@@ -41,15 +41,18 @@ jobs:
         idaes-install-target:
           - stable
           - main
+          - local
         include:
           - os-alias: linux
             os-runs-on: ubuntu-20.04
           - os-alias: win64
             os-runs-on: windows-2019
           - idaes-install-target: stable
-            pip-install-target: idaes
+            pip-install-target: idaes-pse
           - idaes-install-target: main
             pip-install-target: https://github.com/IDAES/idaes-pse/archive/master.zip
+          - idaes-install-target: local
+            pip-install-target: '.'
     steps: 
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v2
