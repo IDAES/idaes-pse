@@ -31,10 +31,10 @@ jobs:
       fail-fast: true
       matrix:
         python-version:
-          - '3.6'
-          - '3.7'
+          # - '3.6'
+          # - '3.7'
           - '3.8'
-          - '3.9'
+          # - '3.9'
         os-alias:
           - linux
           - win64
@@ -53,12 +53,13 @@ jobs:
     steps: 
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: idaes-pse
       - uses: actions/checkout@v2
       - name: Install IDAES in a Conda env (user mode)
         run: |
           echo '::group::Output of conda create/activate/install'
-          conda create --name idaes-pse --quiet --yes python=${{ matrix.python-version }}
-          conda activate idaes-pse
+          conda install --quiet --yes python=${{ matrix.python-version }}
           echo '::endgroup::'
           echo '::group::Output of pip install/list/show'
           pip install --progress-bar off ${{ matrix.idaes-install-target }}
