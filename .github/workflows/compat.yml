@@ -16,6 +16,11 @@ on:
       git-ref:
         description: Git hash (optional)
         required: false
+  # FIXME remove before merging in
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 jobs:
   user-install-run:
