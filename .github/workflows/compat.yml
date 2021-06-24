@@ -55,7 +55,21 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
       - uses: actions/checkout@v2
       - name: Install IDAES in a Conda env (user mode)
-        uses: ./.github/actions/user-install
-        with:
-          python-version: ${{ matrix.python-version }}
-          install-target: ${{ matrix.pip-install-target }}
+        run: |
+          echo '::group::Output of conda create/activate/install'
+          conda create --name idaes-pse --quiet --yes python=${{ matrix.python-version }}
+          conda activate idaes-pse
+          echo '::endgroup::'
+          echo '::group::Output of pip install/list/show'
+          pip install --progress-bar off ${{ matrix.idaes-install-target }}
+          pip list
+          pip show idaes-pse pyomo
+          echo '::endgroup::'
+          idaes --help
+          echo '::group::Output of "idaes get-extensions" command'
+          idaes get-extensions --verbose
+          echo '::endgroup::'
+          echo '::group::Output of pytest'
+          pip install --progress-bar off pytest
+          pytest -x
+          echo '::endgroup::'
