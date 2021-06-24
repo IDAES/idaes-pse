@@ -74,6 +74,6 @@ jobs:
           idaes get-extensions --verbose
           echo '::endgroup::'
           echo '::group::Output of pytest'
-          pip install --progress-bar off pytest
+          pip install --progress-bar off pytest addheader
           pytest -x
           echo '::endgroup::'
