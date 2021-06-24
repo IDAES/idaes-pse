@@ -27,7 +27,8 @@ jobs:
     name: User-style install/run (${{ matrix.idaes-install-target }}/${{ matrix.os-alias }}/py${{ matrix.python-version }})
     runs-on: ${{ matrix.os-runs-on }}
     strategy:
-      fail-fast: false
+      # FIXME change back to "false" before merging
+      fail-fast: true
       matrix:
         python-version:
           - '3.6'
