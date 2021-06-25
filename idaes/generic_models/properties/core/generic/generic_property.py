@@ -1366,43 +1366,42 @@ class _GenericStateBlock(StateBlock):
             # Tolerance only needs to be ~1e-1
             # Iteration limit of 30
             while err > 1e-1 and counter < 30:
-                # Estimate fraction of Henry comps in liquid phase
-                if henry_comps != 0:
-                    xH = value(
-                        blk.pressure *
-                        sum(blk.mole_frac_comp[j] /
-                            blk.params.get_component(
-                                j).config.henry_component[
-                                    l_phase].return_expression(
-                                        blk,
-                                        l_phase,
-                                        j,
-                                        Tdew0*T_units)
-                            for j in henry_comps))
-                else:
-                    xH = 0
-
                 f = value(
                     blk.pressure *
-                    sum(blk.mole_frac_comp[j] /
-                        get_method(blk, "pressure_sat_comp", j)(
-                                   blk,
-                                   blk.params.get_component(j),
-                                   Tdew0*T_units)
-                        for j in raoult_comps) - (1-xH))
+                    (sum(blk.mole_frac_comp[j] /
+                         get_method(blk, "pressure_sat_comp", j)(
+                                    blk,
+                                    blk.params.get_component(j),
+                                    Tdew0*T_units)
+                         for j in raoult_comps) +
+                     sum(blk.mole_frac_comp[j] /
+                         blk.params.get_component(j).config.henry_component[
+                             l_phase].return_expression(
+                                 blk, l_phase, j, Tdew0*T_units)
+                         for j in henry_comps)) - 1)
                 df = -value(
                         blk.pressure *
-                        sum(blk.mole_frac_comp[j] /
-                            get_method(blk, "pressure_sat_comp", j)(
-                                   blk,
-                                   blk.params.get_component(j),
-                                   Tdew0*T_units)**2 *
-                            get_method(blk, "pressure_sat_comp", j)(
-                                   blk,
-                                   blk.params.get_component(j),
-                                   Tdew0*T_units,
-                                   dT=True)
-                            for j in raoult_comps))
+                        (sum(blk.mole_frac_comp[j] /
+                             get_method(blk, "pressure_sat_comp", j)(
+                                    blk,
+                                    blk.params.get_component(j),
+                                    Tdew0*T_units)**2 *
+                             get_method(blk, "pressure_sat_comp", j)(
+                                    blk,
+                                    blk.params.get_component(j),
+                                    Tdew0*T_units,
+                                    dT=True)
+                             for j in raoult_comps) +
+                          sum(blk.mole_frac_comp[j] /
+                              blk.params.get_component(
+                                  j).config.henry_component[
+                                      l_phase].return_expression(
+                                          blk, l_phase, j, Tdew0*T_units)**2 *
+                              blk.params.get_component(
+                                  j).config.henry_component[
+                                      l_phase].dT_expression(
+                                          blk, l_phase, j, Tdew0*T_units)
+                              for j in henry_comps)))
 
                 # Limit temperature step to avoid excessive overshoot
                 if f/df < -50:
@@ -2625,8 +2624,22 @@ class GenericStateBlockData(StateBlockData):
         try:
             def rule_pressure_sat_comp(b, j):
                 cobj = b.params.get_component(j)
-                return get_method(b, "pressure_sat_comp", j)(
-                    b, cobj, b.temperature)
+                try:
+                    return get_method(b, "pressure_sat_comp", j)(
+                        b, cobj, b.temperature)
+                except GenericPropertyPackageError:
+                    # There is the possibility this is a Henry component
+                    if cobj.config.henry_component is not None:
+                        # Assume it is a Henry component and skip
+                        _log.debug("{} Component {} does not have a method for"
+                                   " pressure_sat_comp, but is marked as being"
+                                   " Henry component in at least one phase. "
+                                   "It will be assumed that satruation "
+                                   "is not required for this component."
+                                   .format(b.name, j))
+                        return Expression.Skip
+                    else:
+                        raise
             self.pressure_sat_comp = Expression(
                 self.component_list,
                 rule=rule_pressure_sat_comp)
