@@ -30,8 +30,27 @@ Variables
 Variables will be defined by the user. Note that when defining variables, they will need to be indexed by the flowsheet time index irrespective if it is steady-state
 or dynamic. This is to ensure that port members can be connected as there is still a 0 time index even when the flowsheet is steady-state.
 
-Note that when the ``custom_initializer`` config argument is set to True, the custom callback needs to be set to the attribute
-``custom_initializer_func``. If this is not set, then a `ConfigurationError` is raised.
+Custom Callback
+---------------
+
+Note that the default value for the ``initializer`` config argument is set to trigger the ``_default_initialize`` method. To use a custom callback instead, the user needs to first define a function
+and set the ``obj.config.initializer`` to the custom callback function they defined. In the ``initialize`` method, after checking that degrees of freedom is zero, the following is triggered:
+
+.. code-block:: Python
+
+   self.config.initializer(self, opt=opt, init_log=init_log, solve_log=solve_log)
+
+Note that the function signature in the above line expects an instance, ``opt`` which is the solver (default is set to ipopt), ``init_log`` and ``solve_log`` which are the idaes logger objects for initialization
+and solve. The user can either pass these arguments in their custom function or simply do the following:
+
+.. code-block:: Python
+
+   def custom_func(unit, **kwargs):
+
+       # custom initialization sequence
+       # unit - instance of SkeletonUnitModel
+
+The `unit` refers to the instance and `**kwargs` will handle the additional function arguments that will be passed in the ``initialize`` method.
 
 .. module:: idaes.generic_models.unit_models.skeleton_model
 
