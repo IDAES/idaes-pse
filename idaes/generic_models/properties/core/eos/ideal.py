@@ -313,10 +313,10 @@ class Ideal(EoSBase):
         elif pobj.is_liquid_phase():
             if (cobj.config.henry_component is not None and
                     p in cobj.config.henry_component):
-                return (log(b.mole_frac_comp[p, j]) +
+                return (log(b.mole_frac_comp[j]) +
                         log(b.henry[p, j]))
             else:
-                return (log(b.mole_frac_comp[p, j]) +
+                return (log(b.mole_frac_comp[j]) +
                         log(b.pressure_sat_comp[j]))
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -326,7 +326,7 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         cobj = b.params.get_component(j)
         if pobj.is_vapor_phase():
-            return log(b.mole_frac_comp[p, j]) + log(b.pressure_dew[pp])
+            return log(b.mole_frac_comp[j]) + log(b.pressure_dew[pp])
         elif pobj.is_liquid_phase():
             if (cobj.config.henry_component is not None and
                     p in cobj.config.henry_component):
