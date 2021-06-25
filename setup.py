@@ -98,8 +98,8 @@ kwargs = dict(
             "*.js",
             "*.css",
             "*.html",
-            ".json.gz",
-            ".dat"
+            "*.json.gz",
+            "*.dat"
         ]
     },
     include_package_data=True,
