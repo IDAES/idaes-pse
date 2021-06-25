@@ -73,20 +73,25 @@ class TestSkeletonDefault(object):
             expr=m.fs.skeleton.pressure_out[0] ==
             m.fs.skeleton.pressure_in[0] - 10)
 
-        inlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_in,
-                      "temperature": m.fs.skeleton.temperature_in,
-                      "pressure": m.fs.skeleton.pressure_in}
-        outlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_out,
-                       "temperature": m.fs.skeleton.temperature_out,
-                       "pressure": m.fs.skeleton.pressure_out}
-
-        m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
-        m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
-
         return m
 
     @pytest.mark.unit
     def test_ports(self, skeleton_default):
+
+        inlet_dict = \
+            {"flow_mol_comp": skeleton_default.fs.skeleton.flow_comp_in,
+             "temperature": skeleton_default.fs.skeleton.temperature_in,
+             "pressure": skeleton_default.fs.skeleton.pressure_in}
+        outlet_dict = \
+            {"flow_mol_comp": skeleton_default.fs.skeleton.flow_comp_out,
+             "temperature": skeleton_default.fs.skeleton.temperature_out,
+             "pressure": skeleton_default.fs.skeleton.pressure_out}
+
+        skeleton_default.fs.skeleton.add_ports(
+            name="inlet", member_dict=inlet_dict)
+        skeleton_default.fs.skeleton.add_ports(
+            name="outlet", member_dict=outlet_dict)
+
         # Check inlet port and port members
         assert hasattr(skeleton_default.fs.skeleton, "inlet")
         assert len(skeleton_default.fs.skeleton.inlet.vars) == 3
@@ -116,11 +121,19 @@ class TestSkeletonDefault(object):
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_default_initialize(self, skeleton_default):
+    def test_initialize_exception(self, skeleton_default):
         # Check default initialize method raises ConfigurationError
 
-        with pytest.raises(ConfigurationError):
+        with pytest.raises(
+            ConfigurationError,
+            match="Degrees of freedom is not zero during start of "
+                "initialization. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."):
             skeleton_default.fs.skeleton.initialize()
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_default_initialize(self, skeleton_default):
 
         skeleton_default.fs.skeleton.inlet.flow_mol_comp[0, "c1"].fix(2)
         skeleton_default.fs.skeleton.inlet.flow_mol_comp[0, "c2"].fix(2)
@@ -200,20 +213,25 @@ class TestSkeletonCustom(object):
             expr=m.fs.skeleton.pressure_out[0] ==
             m.fs.skeleton.pressure_in[0] - 10)
 
-        inlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_in,
-                      "temperature": m.fs.skeleton.temperature_in,
-                      "pressure": m.fs.skeleton.pressure_in}
-        outlet_dict = {"flow_mol_comp": m.fs.skeleton.flow_comp_out,
-                       "temperature": m.fs.skeleton.temperature_out,
-                       "pressure": m.fs.skeleton.pressure_out}
-
-        m.fs.skeleton.add_ports(name="inlet", member_dict=inlet_dict)
-        m.fs.skeleton.add_ports(name="outlet", member_dict=outlet_dict)
-
         return m
 
     @pytest.mark.unit
     def test_ports(self, skeleton_custom):
+
+        inlet_dict = \
+            {"flow_mol_comp": skeleton_custom.fs.skeleton.flow_comp_in,
+             "temperature": skeleton_custom.fs.skeleton.temperature_in,
+             "pressure": skeleton_custom.fs.skeleton.pressure_in}
+        outlet_dict = \
+            {"flow_mol_comp": skeleton_custom.fs.skeleton.flow_comp_out,
+             "temperature": skeleton_custom.fs.skeleton.temperature_out,
+             "pressure": skeleton_custom.fs.skeleton.pressure_out}
+
+        skeleton_custom.fs.skeleton.add_ports(
+            name="inlet", member_dict=inlet_dict)
+        skeleton_custom.fs.skeleton.add_ports(
+            name="outlet", member_dict=outlet_dict)
+
         # Check inlet port and port members
         assert hasattr(skeleton_custom.fs.skeleton, "inlet")
         assert len(skeleton_custom.fs.skeleton.inlet.vars) == 3
@@ -240,6 +258,19 @@ class TestSkeletonCustom(object):
         assert hasattr(skeleton_custom.fs.skeleton, "flow_comp_out")
         assert hasattr(skeleton_custom.fs.skeleton, "temperature_out")
         assert hasattr(skeleton_custom.fs.skeleton, "pressure_out")
+
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_initialize_exception(self, skeleton_custom):
+        # Check default initialize method raises ConfigurationError
+        # when config argument for custom_initializer is True but a method
+        # was not set to the attribute custom_initializer
+        with pytest.raises(
+            ConfigurationError,
+            match="Degrees of freedom is not zero during start of "
+                "initialization. Fix/unfix appropriate number of variables "
+                "to result in zero degrees of freedom for initialization."):
+            skeleton_custom.fs.skeleton.initialize()
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component

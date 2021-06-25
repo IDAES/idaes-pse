@@ -58,12 +58,16 @@ class SkeletonUnitModelData(ProcessBlockData):
         default=False,
         domain=In([False]),
         description="Dynamic model flag",
-        doc="""Model does not handle dynamics but should be set by user."""))
+        doc="""Model does not support dynamics or holdup automatically.
+        The variables declared in this unit will need to be indexed with the
+        flowsheet time domain to facilitate connection with other
+        unit models."""))
     CONFIG.declare("initializer", ConfigValue(
         # Note: staticmethod is unbound, extract with __func__
         default=_default_initializer.__func__,
         description="Initializer to be used",
-        doc="""Boolean for custom initiliazer provided by the user"""))
+        doc="""Flag to set the callback from user for initialization.
+        Default is set to use the default_initialize method."""))
 
     def build(self):
         """
