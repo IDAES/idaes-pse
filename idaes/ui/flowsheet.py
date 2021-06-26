@@ -283,6 +283,7 @@ class FlowsheetSerializer:
             self._unit_name_used_count[unit_name] += 1
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = unit
+            
 
             performance_contents, stream_df = unit.serialize_contents()
             if stream_df is not None and not stream_df.empty:
@@ -326,19 +327,11 @@ class FlowsheetSerializer:
             # The unit is neither top-level nor connected; do not display this unit, since it is a subcomponent.
             pass
 
-    def _get_unit_model_type(self, unit) -> str:
-        """Get the type of the unit model.
-
-        If the ``unit`` argument does not have a method ``base_class_module`` then this
-        method will fail by logging a warning and returning a value of "default".
-        """
-        try:
-            unit_module = unit.base_class_module()
-        except AttributeError:
-            self._logger.warning(f"Could not get base class' module for unit '{unit}': using default")
-            unit_module = "default"
-        umt = unit_module.split(".")[-1]  # last component of full module path
-        return umt
+    def _get_unit_model_type(self, unit):
+        # Get the unit models type
+        return unit.base_class_module().split(".")[
+            -1
+        ]  # TODO look for/create equivalent getter, as getname() above
 
     def _identify_implicit_feeds_and_products(self, untouched_ports):
         # Identify feeds and products not explicitly defined by the user by examining the names of ports
