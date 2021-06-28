@@ -43,15 +43,15 @@ class IdealBubbleDew():
                 elif v_only_comps != []:
                     # Non-condensables present, no bubble point
                     return Constraint.Skip
-                elif henry_comps != []:
-                    raise ConfigurationError(
-                        "{} IdealBubbleDew cannot be used when Henry's Law "
-                        "components are present.".format(b.name))
 
                 return (sum(b.mole_frac_comp[j] *
                             get_method(b, "pressure_sat_comp", j)(
                                 b, cobj(b, j), b.temperature_bubble[p1, p2])
-                            for j in vl_comps) -
+                            for j in vl_comps) +
+                        sum(b.mole_frac_comp[j] *
+                            get_method(b, "henry_component", j, l_phase)(
+                                b, l_phase, j, b.temperature_bubble[p1, p2])
+                            for j in henry_comps) -
                         b.pressure) == 0
             b.eq_temperature_bubble = Constraint(b.params._pe_pairs,
                                                  rule=rule_bubble_temp)
@@ -80,6 +80,11 @@ class IdealBubbleDew():
                     b.mole_frac_comp[j] *
                     get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), b.temperature_bubble[p1, p2]))
+            elif j in henry_comps:
+                return b._mole_frac_tbub[p1, p2, j]*b.pressure == (
+                    b.mole_frac_comp[j] *
+                    get_method(b, "henry_component", j, l_phase)(
+                        b, l_phase, j, b.temperature_bubble[p1, p2]))
             else:
                 return b._mole_frac_tbub[p1, p2, j] == 0
         b.eq_mole_frac_tbub = Constraint(b.params._pe_pairs,
@@ -139,17 +144,16 @@ class IdealBubbleDew():
                 elif l_only_comps != []:
                     # Non-vaporisables present, no dew point
                     return Constraint.Skip
-                elif henry_comps != []:
-                    raise ConfigurationError(
-                        "{} IdealBubbleDew cannot be used when Henry's Law "
-                        "components are present.".format(b.name))
 
-                return (b.pressure*sum(
-                            b.mole_frac_comp[j] /
-                            get_method(b, "pressure_sat_comp", j)(
-                                b, cobj(b, j), b.temperature_dew[p1, p2])
-                            for j in vl_comps) - 1 ==
-                        0)
+                return (b.pressure*(
+                    sum(b.mole_frac_comp[j] /
+                        get_method(b, "pressure_sat_comp", j)(
+                            b, cobj(b, j), b.temperature_dew[p1, p2])
+                        for j in vl_comps) +
+                    sum(b.mole_frac_comp[j] /
+                        get_method(b, "henry_component", j, l_phase)(
+                            b, l_phase, j, b.temperature_dew[p1, p2])
+                        for j in henry_comps)) - 1 == 0)
             b.eq_temperature_dew = Constraint(b.params._pe_pairs,
                                               rule=rule_dew_temp)
         except AttributeError:
@@ -176,6 +180,11 @@ class IdealBubbleDew():
                 return (b._mole_frac_tdew[p1, p2, j] *
                         get_method(b, "pressure_sat_comp", j)(
                             b, cobj(b, j), b.temperature_dew[p1, p2]) ==
+                        b.mole_frac_comp[j]*b.pressure)
+            elif j in henry_comps:
+                return (b._mole_frac_tdew[p1, p2, j] *
+                        get_method(b, "henry_component", j, l_phase)(
+                            b, l_phase, j, b.temperature_dew[p1, p2]) ==
                         b.mole_frac_comp[j]*b.pressure)
             else:
                 return b._mole_frac_tdew[p1, p2, j] == 0
@@ -234,16 +243,12 @@ class IdealBubbleDew():
                 elif v_only_comps != []:
                     # Non-condensables present, no bubble point
                     return Constraint.Skip
-                elif henry_comps != []:
-                    raise ConfigurationError(
-                        "{} IdealBubbleDew cannot be used when Henry's Law "
-                        "components are present.".format(b.name))
 
-                return b.pressure_bubble[p1, p2] == sum(
-                        b.mole_frac_comp[j] *
-                        get_method(b, "pressure_sat_comp", j)(
-                            b, cobj(b, j), b.temperature)
-                        for j in vl_comps)
+                return b.pressure_bubble[p1, p2] == (
+                    sum(b.mole_frac_comp[j] * b.pressure_sat_comp[j]
+                        for j in vl_comps) +
+                    sum(b.mole_frac_comp[j] * b.henry[l_phase, j]
+                        for j in henry_comps))
             b.eq_pressure_bubble = Constraint(b.params._pe_pairs,
                                               rule=rule_bubble_press)
         except AttributeError:
@@ -268,10 +273,12 @@ class IdealBubbleDew():
 
             if j in vl_comps:
                 return (b._mole_frac_pbub[p1, p2, j] *
-                        b.pressure_bubble[p1, p2]) == (
-                    b.mole_frac_comp[j] *
-                    get_method(b, "pressure_sat_comp", j)(
-                        b, cobj(b, j), b.temperature))
+                        b.pressure_bubble[p1, p2] ==
+                        b.mole_frac_comp[j] * b.pressure_sat_comp[j])
+            if j in henry_comps:
+                return (b._mole_frac_pbub[p1, p2, j] *
+                        b.pressure_bubble[p1, p2] ==
+                        b.mole_frac_comp[j] * b.henry[l_phase, j])
             else:
                 return b._mole_frac_pbub[p1, p2, j] == 0
 
@@ -332,16 +339,12 @@ class IdealBubbleDew():
                 elif l_only_comps != []:
                     # Non-vaporisables present, no dew point
                     return Constraint.Skip
-                elif henry_comps != []:
-                    raise ConfigurationError(
-                        "{} IdealBubbleDew cannot be used when Henry's Law "
-                        "components are present.".format(b.name))
 
-                return 0 == 1 - b.pressure_dew[p1, p2]*sum(
-                        b.mole_frac_comp[j] /
-                        get_method(b, "pressure_sat_comp", j)(
-                            b, cobj(b, j), b.temperature)
-                        for j in vl_comps)
+                return 0 == 1 - b.pressure_dew[p1, p2] * (
+                    sum(b.mole_frac_comp[j] / b.pressure_sat_comp[j]
+                        for j in vl_comps) +
+                    sum(b.mole_frac_comp[j] / b.henry[l_phase, j]
+                        for j in henry_comps))
             b.eq_pressure_dew = Constraint(b.params._pe_pairs,
                                            rule=rule_dew_press)
         except AttributeError:
@@ -366,8 +369,11 @@ class IdealBubbleDew():
 
             if j in vl_comps:
                 return (b._mole_frac_pdew[p1, p2, j] *
-                        get_method(b, "pressure_sat_comp", j)(
-                            b, cobj(b, j), b.temperature) ==
+                        b.pressure_sat_comp[j] ==
+                        b.mole_frac_comp[j]*b.pressure_dew[p1, p2])
+            elif j in henry_comps:
+                return (b._mole_frac_pdew[p1, p2, j] *
+                        b.henry[l_phase, j] ==
                         b.mole_frac_comp[j]*b.pressure_dew[p1, p2])
             else:
                 return b._mole_frac_pdew[p1, p2, j] == 0

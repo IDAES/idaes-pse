@@ -39,6 +39,8 @@ from idaes.generic_models.properties.core.phase_equil.forms import fugacity
 from idaes.generic_models.properties.core.phase_equil.henry import ConstantH
 import idaes.generic_models.properties.core.pure.Perrys as Perrys
 import idaes.generic_models.properties.core.pure.RPP4 as RPP4
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
+        IdealBubbleDew
 
 import idaes.logger as idaeslog
 
@@ -123,7 +125,8 @@ class TestNoHenryComps(object):
 
         # Defining phase equilibria
         "phases_in_equilibrium": [("Vap", "Liq")],
-        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE}}
+        "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+        "bubble_dew_method": IdealBubbleDew}
 
     @pytest.fixture(scope="class")
     def model(self):
@@ -362,7 +365,8 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE}}
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
+    "bubble_dew_method": IdealBubbleDew}
 
 
 class TestHenryComps0(object):
