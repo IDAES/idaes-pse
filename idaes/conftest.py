@@ -31,16 +31,20 @@ import sys
 ####
 
 
+REQUIRED_MARKERS = {"unit", "component", "integration"}
+ALL_PLATFORMS = {"darwin", "linux", "win32"}
+
+
 @pytest.hookimpl
 def pytest_runtest_setup(item):
     _validate_required_markers(
         item,
-        required_markers={"unit", "component", "integration"},
+        required_markers=REQUIRED_MARKERS,
         expected_count=1
     )
     _skip_for_unsupported_platforms(
         item,
-        all_platforms={"darwin", "linux", "win32"},
+        all_platforms=ALL_PLATFORMS,
         negate_tag=(lambda tag: f'no{tag}'),
     )
 
