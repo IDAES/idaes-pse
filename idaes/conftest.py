@@ -94,7 +94,7 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
     if required_count < expected_count:
         reason_to_fail = 'Too few required markers'
     if required_count > expected_count:
-        reason = 'Too many required markers'
+        reason_to_fail = 'Too many required markers'
     if reason_to_fail:
         extra_info = f'Expected: {expected_count} of {required_markers}; found: {item_markers}'
         msg = f'{reason_to_fail} for test function "{item.name}". {extra_info}'
