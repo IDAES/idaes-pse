@@ -172,7 +172,7 @@ see property package for documentation.}"""))
         # Add Lagrangian multiplier variables
         e_units = self.config.property_package.get_metadata(
             ).get_derived_units("energy_mole")
-        self.lagrange_mult = Var(self.flowsheet().config.time,
+        self.lagrange_mult = Var(self.flowsheet().time,
                                  self.config.property_package.element_list,
                                  domain=Reals,
                                  initialize=100,
@@ -186,7 +186,7 @@ see property package for documentation.}"""))
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.control_volume.properties_in.phase_component_set,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
@@ -202,7 +202,7 @@ see property package for documentation.}"""))
                     for e in b.config.property_package.element_list))
 
         if len(self.config.inert_species) > 0:
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.control_volume.properties_in.phase_list,
                              self.config.inert_species,
                              doc="Inert species balances")

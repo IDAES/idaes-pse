@@ -123,7 +123,7 @@ def test_initialize():
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
-            m.fs.reheat.flowsheet().config.time,
+            m.fs.reheat.flowsheet().time,
             rule=reheat_T_rule)
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)
@@ -203,7 +203,7 @@ def test_initialize_calc_cf():
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
     m.fs.reheat.temperature_out_equation = pyo.Constraint(
-            m.fs.reheat.flowsheet().config.time,
+            m.fs.reheat.flowsheet().time,
             rule=reheat_T_rule)
 
     pyo.TransformationFactory("network.expand_arcs").apply_to(m)

@@ -56,7 +56,7 @@ def _valve_pressure_flow_cb(b):
     b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
     b.pressure_flow_equation_scale = lambda x: x**2
 
-    @b.Constraint(b.flowsheet().config.time)
+    @b.Constraint(b.flowsheet().time)
     def pressure_flow_equation(b2, t):
         Po = b2.control_volume.properties_out[t].pressure
         Pi = b2.control_volume.properties_in[t].pressure

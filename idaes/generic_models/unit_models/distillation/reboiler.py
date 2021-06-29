@@ -601,7 +601,7 @@ see property package for documentation.}"""))
         state_args_outlet = {}
         state_dict_outlet = (
             self.control_volume.properties_in[
-                self.flowsheet().config.time.first()]
+                self.flowsheet().time.first()]
             .define_port_members())
 
         for k in state_dict_outlet.keys():

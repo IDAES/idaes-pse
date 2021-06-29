@@ -239,7 +239,7 @@ see property package for documentation.}"""))
         """
 
         # Add performance variables
-        self.tank_level = Var(self.flowsheet().config.time,
+        self.tank_level = Var(self.flowsheet().time,
                               initialize=1.0,
                               doc="Water level from in the tank")
 
@@ -270,13 +270,13 @@ see property package for documentation.}"""))
                 return b.tank_diameter/2
             # Angle of the circular sector used to calculate the area
 
-            @self.Expression(self.flowsheet().config.time,
+            @self.Expression(self.flowsheet().time,
                              doc="Angle of the circular"
                              " sector of liquid level")
             def alpha_tank(b, t):
                 return 2*acos((b.tank_radius-b.tank_level[t])/b.tank_radius)
 
-            @self.Expression(self.flowsheet().config.time,
+            @self.Expression(self.flowsheet().time,
                              doc="Area covered by the liquid level"
                              " at one end of the tank")
             def tank_area(b, t):
@@ -286,7 +286,7 @@ see property package for documentation.}"""))
                        - b.tank_level[t]**2)**0.5
 
         # Constraint for volume of the liquid in tank
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="volume of liquid in the tank")
         def volume_eqn(b, t):
             if self.config.tank_type == "horizontal_cylindrical_tank":
@@ -295,7 +295,7 @@ see property package for documentation.}"""))
                 return b.volume[t] == b.tank_level[t]*b.tank_cross_sect_area
 
         # Pressure change equation due gravity
-        @self.Constraint(self.flowsheet().config.time, doc="pressure drop")
+        @self.Constraint(self.flowsheet().time, doc="pressure drop")
         def pressure_change_eqn(b, t):
             return b.deltaP[t] == \
                 b.control_volume.properties_in[t].dens_mass_phase["Liq"] * \
@@ -349,7 +349,7 @@ see property package for documentation.}"""))
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Fix outlet pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.\
                 fix(value(blk.control_volume.properties_in[t].pressure))
         blk.pressure_change_eqn.deactivate()
@@ -362,7 +362,7 @@ see property package for documentation.}"""))
             )
 
         # Unfix outlet pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.unfix()
         blk.pressure_change_eqn.activate()
 

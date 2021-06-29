@@ -132,7 +132,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         super().build()
         self._process_config()
         config = self.config
-        time = self.flowsheet().config.time
+        time = self.flowsheet().time
 
         ########################################################################
         # Add control volumes                                                  #

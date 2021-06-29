@@ -217,7 +217,7 @@ mixed phase not supported'''))
                 doc="Cross section area ratio of exit end to pipe")
 
         # Volume constraint
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Total volume of all pipes")
         def volume_eqn(b, t):
             return b.volume[t] == 0.25 * const.pi * b.diameter**2 \
@@ -232,19 +232,19 @@ mixed phase not supported'''))
         # Add performance variables
         # Velocity of fluid inside pipe
         self.velocity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=10.0,
                 doc='Fluid velocity inside pipe')
 
         # Reynolds number
         self.N_Re = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=10000.0,
                 doc='Reynolds number')
 
         # Darcy friction factor
         self.friction_factor_darcy = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=0.005,
                 doc='Darcy friction factor')
 
@@ -254,24 +254,24 @@ mixed phase not supported'''))
 
         # Pressure change due to friction
         self.deltaP_friction = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=-1.0,
             doc='Pressure change due to friction')
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=0.0,
                 doc='Pressure change due to gravity')
 
         # Pressure change due to area change at end
         self.deltaP_area_change = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=0.0,
                 doc='Pressure change due to area change')
 
         # Equation for calculating velocity
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Velocity of fluid inside pipe")
         def velocity_eqn(b, t):
             return b.velocity[t]*0.25*const.pi*b.diameter**2\
@@ -279,7 +279,7 @@ mixed phase not supported'''))
                 b.control_volume.properties_in[t].flow_vol
 
         # Equation for calculating Reynolds number
-        @self.Constraint(self.flowsheet().config.time, doc="Reynolds number")
+        @self.Constraint(self.flowsheet().time, doc="Reynolds number")
         def Reynolds_number_eqn(b, t):
             return b.N_Re[t] * \
                    b.control_volume.properties_in[t].visc_d_phase[phase] == \
@@ -287,7 +287,7 @@ mixed phase not supported'''))
                    b.control_volume.properties_in[t].dens_mass_phase[phase]
 
         # Friction factor expression depending on laminar or turbulent flow
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Darcy friction factor as"
                          " a function of Reynolds number")
         def friction_factor_darcy_eqn(b, t):
@@ -295,7 +295,7 @@ mixed phase not supported'''))
                 0.3164 * b.fcorrection_dp
 
         # Pressure change equation for friction
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure change due to friction")
         def pressure_change_friction_eqn(b, t):
             return b.deltaP_friction[t] * b.diameter == \
@@ -304,7 +304,7 @@ mixed phase not supported'''))
                    b.velocity[t]**2 * b.friction_factor_darcy[t] * b.length
 
         # Pressure change equation for gravity
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure change due to gravity")
         def pressure_change_gravity_eqn(b, t):
             return b.deltaP_gravity[t] == -const.acceleration_gravity * \
@@ -312,7 +312,7 @@ mixed phase not supported'''))
                 * b.elevation_change
 
         # Pressure change equation for contraction or expansion
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure change due to gravity")
         def pressure_change_area_change_eqn(b, t):
             if self.config.contraction_expansion_at_end == "contraction":
@@ -331,7 +331,7 @@ mixed phase not supported'''))
                 return b.deltaP_area_change[t] == 0
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time, doc="Pressure drop")
+        @self.Constraint(self.flowsheet().time, doc="Pressure drop")
         def pressure_change_total_eqn(b, t):
             return b.deltaP[t] == (b.deltaP_friction[t]
                                    + b.deltaP_gravity[t]
@@ -378,7 +378,7 @@ mixed phase not supported'''))
         )
         init_log.info_high("Initialization Step 1 Complete.")
         # Fix outlet enthalpy and pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.fix(
                 value(blk.control_volume.properties_in[t].pressure)
             )
@@ -391,7 +391,7 @@ mixed phase not supported'''))
             )
 
         # Unfix outlet enthalpy and pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.unfix()
         blk.pressure_change_total_eqn.activate()
 
