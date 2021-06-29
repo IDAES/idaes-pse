@@ -3,8 +3,8 @@ Skeleton Unit Model
 
 The IDAES Skeleton Unit model represents a bare bones unit (hence, the name skeleton) that lets the user define a unit model with a custom set
 of variables and constraints that best suits their needs but that can be connected to other models from the unit model library. This unit can be used
-to either define a surrogate for a complex unit model or to define a first-principles based model that does not use IDAES
-ControlVolumes or property packages. To facilitate connection to other models in the unit model library, the user needs to add ports and populate with variables that match
+to either define a surrogate for a complex unit model or to define a first-principles based model that does not adhere to the typical IDAES modeling hierarchy.
+To facilitate connection to other models in the unit model library, the user needs to add ports and populate with variables that match
 the port members of the models this will be connected to. To enable this, a special method is provided to enable adding ports with a specified set of variables.
 
 The two methods available for this unit are:
@@ -38,10 +38,10 @@ and set the ``obj.config.initializer`` to the custom callback function they defi
 
 .. code-block:: Python
 
-   self.config.initializer(self, opt=opt, init_log=init_log, solve_log=solve_log)
+   self.config.initializer(self, opt=opt, init_log=init_log, solve_log=solve_log, initial_guess=initial_guess)
 
 Note that the function signature in the above line expects an instance, ``opt`` which is the solver (default is set to ipopt), ``init_log`` and ``solve_log`` which are the idaes logger objects for initialization
-and solve. The user can either pass these arguments in their custom function or simply do the following:
+and solve, and ``initial_guess`` is a dict containing intial values for variables declared in the model. The user can define the custom function in one of the following ways:
 
 .. code-block:: Python
 
@@ -50,7 +50,20 @@ and solve. The user can either pass these arguments in their custom function or 
        # custom initialization sequence
        # unit - instance of SkeletonUnitModel
 
-The `unit` refers to the instance and `**kwargs` will handle the additional function arguments that will be passed in the ``initialize`` method.
+In the above example, the `unit` refers to the instance and `**kwargs` will handle the additional function arguments that will be passed in the
+``initialize`` method. The callback can be written to use these arguments if desired.
+
+.. code-block:: Python
+
+   def custom_func(unit, opt, init_log, solve_log, initial_guess):
+
+    # custom initialization sequence
+    # unit - instance of SkeletonUnitModel
+
+In the above example, the `unit` refers to the instance and the expected function arguments are listed explicitly and custom values can be passed to the callback when calling
+the ``initialize`` method. This is recommended especially when the user wants to use different values than what is passed in the ``initialize`` method, for example,
+a different solver instead of ``ipopt``.
+
 
 .. module:: idaes.generic_models.unit_models.skeleton_model
 
