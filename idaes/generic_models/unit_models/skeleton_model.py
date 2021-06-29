@@ -46,7 +46,8 @@ class SkeletonUnitModelData(ProcessBlockData):
     # This is a staticmethod that will be the default callable set for the
     # initializer flag in the config block.
     @staticmethod
-    def _default_initializer(model, opt=None, init_log=None, solve_log=None):
+    def _default_initializer(model, opt=None, init_log=None, solve_log=None,
+        initial_guess=None):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = opt.solve(model, tee=slc.tee)
         init_log.info("Initialization completed using default method {}.".
@@ -117,7 +118,7 @@ class SkeletonUnitModelData(ProcessBlockData):
 
 
     def initialize(self, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+                   solver=None, optarg=None, initial_guess=None):
         """Initialize method for the SkeletonUnitModel. If a custom function
         is provided via the initializer argument in the config block,
         then, this method will use it. If no custom function is
@@ -147,7 +148,8 @@ class SkeletonUnitModelData(ProcessBlockData):
 
         if degrees_of_freedom(self) == 0:
             self.config.initializer(
-                self, opt=opt, init_log=init_log, solve_log=solve_log)
+                self, opt=opt, init_log=init_log, solve_log=solve_log,
+                initial_guess=initial_guess)
         else:
             raise ConfigurationError(
                 "Degrees of freedom is not zero during start of "
