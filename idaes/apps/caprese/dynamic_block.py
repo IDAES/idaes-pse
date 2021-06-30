@@ -48,8 +48,8 @@ from pyomo.environ import (
         ComponentUID,
         Suffix,
         )
-from pyomo.core.base.util import Initializer
-from pyomo.core.base.block import _BlockData
+from pyomo.core.base.util import Initializer, ConstantInitializer
+from pyomo.core.base.block import _BlockData, SubclassOf
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.common.collections import ComponentMap
 from pyomo.common.config import ConfigDict, ConfigValue
@@ -84,7 +84,10 @@ class _DynamicBlockData(_BlockData):
         """ Generates time-indexed references and categorizes them. """
         model = self.mod
         time = self.time
-        inputs = self._inputs
+        try:
+            inputs = self._inputs
+        except AttributeError:
+            inputs = self._inputs = None
         try:
             measurements = self._measurements
         except AttributeError:
@@ -93,31 +96,62 @@ class _DynamicBlockData(_BlockData):
         # TODO: Give the user the option to provide their own
         # category_dict (they know the structure of their model
         # better than I do...)
-        scalar_vars, dae_vars = flatten_dae_components(
-                model,
-                time,
-                ctype=Var,
-                )
-        self.scalar_vars = scalar_vars
-        self.dae_vars = dae_vars
-        category_dict = categorize_dae_variables(
-                dae_vars,
-                time,
-                inputs,
-                measurements=measurements,
-                )
-        self.category_dict = category_dict
+        if self._category_dict is not None:
+            category_dict = self.category_dict = self._category_dict
+            if (VC.INPUT not in category_dict and inputs is not None):
+                self.category_dict[VC.INPUT] = inputs
+            if (VC.MEASUREMENT not in category_dict and measurements is not None):
+                self.category_dict[VC.MEASUREMENT] = measurements
+            self.dae_vars = []
+            for categ, varlist in category_dict.items():
+                if categ is not VC.MEASUREMENT:
+                    # Assume that measurements are duplicates
+                    self.dae_vars.extend(varlist)
+
+        else:
+            scalar_vars, dae_vars = flatten_dae_components(
+                    model,
+                    time,
+                    ctype=Var,
+                    )
+            self.scalar_vars = scalar_vars
+            self.dae_vars = dae_vars
+            category_dict = categorize_dae_variables(
+                    dae_vars,
+                    time,
+                    inputs,
+                    measurements=measurements,
+                    )
+            self.category_dict = category_dict
+
+        keys = list(category_dict)
+        for categ in keys:
+            if not category_dict[categ]:
+                # Empty categories cause problems for us down the road
+                # due empty (unknown dimension) slices.
+                category_dict.pop(categ)
 
         self._add_category_blocks()
         self._add_category_references()
 
-        self.differential_vars = category_dict[VC.DIFFERENTIAL]
-        self.algebraic_vars = category_dict[VC.ALGEBRAIC]
-        self.derivative_vars = category_dict[VC.DERIVATIVE]
-        self.input_vars = category_dict[VC.INPUT]
-        self.fixed_vars = category_dict[VC.FIXED]
+        self.categories = set(category_dict)
 
-        self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+        # Now that we don't rely on knowing what the categories
+        # will be, we do not need these attributes. They are, however,
+        # used in the tests, so for now, we add them if possible.
+        if VC.DIFFERENTIAL in category_dict:
+            self.differential_vars = category_dict[VC.DIFFERENTIAL]
+        if VC.ALGEBRAIC in category_dict:
+            self.algebraic_vars = category_dict[VC.ALGEBRAIC]
+        if VC.DERIVATIVE in category_dict:
+            self.derivative_vars = category_dict[VC.DERIVATIVE]
+        if VC.INPUT in category_dict:
+            self.input_vars = category_dict[VC.INPUT]
+        if VC.FIXED in category_dict:
+            self.fixed_vars = category_dict[VC.FIXED]
+        if VC.MEASUREMENT in category_dict:
+            self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
         # vardata map, which maps each vardata to a unique component indexed
@@ -126,9 +160,11 @@ class _DynamicBlockData(_BlockData):
         # Maps each vardata (of a time-indexed var) to the NmpcVar
         # that contains it.
         self.vardata_map = ComponentMap((var[t], var) 
-                for varlist in category_dict.values()
-                for var in varlist
+                for var in self.component_objects(SubclassOf(NmpcVar))
+                #for varlist in category_dict.values()
+                #for var in varlist
                 for t in time
+                if var.ctype is not MeasuredVar
                 )
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
@@ -145,14 +181,12 @@ class _DynamicBlockData(_BlockData):
     @classmethod
     def get_category_block_name(cls, categ):
         """ Gets block name from name of enum entry """
-        categ_name = str(categ).split('.')[1]
-        return categ_name + cls._block_suffix
+        return categ.name + cls._block_suffix
 
     @classmethod
     def get_category_set_name(cls, categ):
         """ Gets set name from name of enum entry """
-        categ_name = str(categ).split('.')[1]
-        return categ_name + cls._set_suffix
+        return categ.name + cls._set_suffix
 
     def _add_category_blocks(self):
         """ Adds an indexed block for each category of variable and
@@ -161,6 +195,7 @@ class _DynamicBlockData(_BlockData):
         category_dict = self.category_dict
         var_name = self._var_name
         for categ, varlist in category_dict.items():
+            ctype = CATEGORY_TYPE_MAP.get(categ, NmpcVar)
             # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
             # They serve as a way to access all the "differential variables"
             block_name = self.get_category_block_name(categ)
@@ -182,7 +217,15 @@ class _DynamicBlockData(_BlockData):
 
             for i, var in enumerate(varlist):
                 # Add reference-to-timeslices to new blocks:
-                category_block[i].add_component(var_name, var)
+                #
+                # Create a new reference if var is not a reference or
+                # it has the wrong ctype...
+                # We may want to reconsider overriding the user's ctype...
+                # We may also want to make sure these references are not
+                # attached to anything. Otherwise we will fail here.
+                ref = var if var.is_reference() and var.ctype is ctype \
+                        else Reference(var, ctype=ctype)
+                category_block[i].add_component(var_name, ref)
                 # These vars were created by the categorizer
                 # and have custom ctypes.
 
@@ -200,7 +243,7 @@ class _DynamicBlockData(_BlockData):
         self.vectors.deactivate()
 
         for categ in category_dict:
-            ctype = CATEGORY_TYPE_MAP[categ]
+            ctype = CATEGORY_TYPE_MAP.get(categ, NmpcVar)
             # Get the block that holds this category of var,
             # and the name of the attribute that holds the
             # custom-ctype var (this attribute is the same
@@ -209,7 +252,8 @@ class _DynamicBlockData(_BlockData):
             var_name = self._var_name
 
             # Get a slice of the block, e.g. self.DIFFERENTIAL_BLOCK[:]
-            _slice = getattr(self, block_name)[:]
+            block = getattr(self, block_name)
+            _slice = block[:]
             #_slice = self.__getattribute__(block_name)[:]
             # Why does this work when self.__getattr__(block_name) does not?
             # __getattribute__ appears to work just fine...
@@ -224,11 +268,10 @@ class _DynamicBlockData(_BlockData):
             # `self.vectors.differential[i,t0]`
             # to get the "ith coordinate" of the vector of differential
             # variables at time t0.
+            ref = Reference(_slice, ctype=_NmpcVector)
             self.vectors.add_component(
-                    ctype._attr,
-                    # ^ I store the name I want this attribute to have,
-                    # e.g. 'differential', on the custom ctype.
-                    Reference(_slice, ctype=_NmpcVector),
+                    categ.name.lower(), # Lowercase of the enum name
+                    ref,
                     )
 
     # Time is added in DynamicBlock.construct but this is nice if the user wants
@@ -398,6 +441,10 @@ class _DynamicBlockData(_BlockData):
         # initialize_by_element_in_range multiple times, so
         # this method does not call `initialize_samples_by_element`
         # in a loop.
+        if VC.DIFFERENTIAL in self.categories:
+            time_linking_vars = self.differential_vars
+        else:
+            time_linking_vars = None
         with square_solve_context as sqs:
             initialize_by_element_in_range(
                     model,
@@ -405,7 +452,8 @@ class _DynamicBlockData(_BlockData):
                     time.first(),
                     time.last(),
                     dae_vars=self.dae_vars,
-                    time_linking_vars=list(self.differential_vars[:]),
+                    #time_linking_vars=list(self.differential_vars[:]),
+                    time_linking_vars=time_linking_vars,
                     outlvl=config.outlvl,
                     solver=solver,
                     )
@@ -467,34 +515,60 @@ class _DynamicBlockData(_BlockData):
             nmpc_var.variance = val
         # MeasurementVars will not have their variance set since they are
         # not mapped to in vardata_map
-        for var in self.measurement_vars:
+        for var in self.component_objects(MeasuredVar):
+            # component_objects is fine here because we don't need
+            # to access measurements in any particular order.
             if var[t0] in variance_map:
                 var.variance = variance_map[var[t0]]
 
     def generate_inputs_at_time(self, t):
-        for val in self.vectors.input[:,t].value:
-            yield val
+        if VC.INPUT in self.categories:
+            for val in self.vectors.input[:,t].value:
+                yield val
+        else:
+            raise RuntimeError(
+                    "Trying to generate inputs but no input "
+                    "category has been specified."
+                    )
 
     def generate_measurements_at_time(self, t):
-        for var in self.measurement_vars:
-            yield var[t].value
+        if VC.MEASUREMENT in self.categories:
+            for val in self.vectors.measurement[:,t].value:
+                yield val
+        else:
+            raise RuntimeError(
+                    "Trying to generate measurements but no measurement "
+                    "category has been specified."
+                    )
 
     def inject_inputs(self, inputs):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
-        for var, val in zip(self.input_vars, inputs):
-            # Would like:
-            # self.input_vars[:,:].fix(inputs)
-            # This is an example of setting a matrix from a vector.
-            # Could even aspire towards:
-            # self.input_vars[:,t0:t1].fix(inputs[t1])
-            var[:].fix(val)
+        if VC.INPUT in self.categories:
+            for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
+                # Would like:
+                # self.vectors.input[:,:].fix(inputs)
+                # This is an example of setting a matrix from a vector.
+                # Could even aspire towards:
+                # self.vectors.input[:,t0:t1].fix(inputs)
+                var[:].fix(val)
+        else:
+            raise RuntimeError(
+                    "Trying to set input values but no input "
+                    "category has been specified."
+                    )
 
     def load_measurements(self, measured):
         t0 = self.time.first()
-        # Want: self.measured_vars[:,t0].fix(measured)
-        for var, val in zip(self.measurement_vars, measured):
-            var[t0].fix(val)
+        if VC.MEASUREMENT in self.categories:
+            # Want: self.measured_vars[:,t0].fix(measured)
+            for var, val in zip(self.MEASUREMENT_BLOCK[:].var, measured):
+                var[t0].fix(val)
+        else:
+            raise RuntimeError(
+                    "Trying to set measurement values but no measurement "
+                    "category has been specified."
+                    )
 
     def advance_by_time(self,
             t_shift,
@@ -686,6 +760,8 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_measurements = Initializer(kwds.pop('measurements', None),
                 treat_sequences_as_mappings=False)
+        self._init_category_dict = Initializer(kwds.pop('category_dict', None),
+                treat_sequences_as_mappings=False)
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):
@@ -704,6 +780,11 @@ class DynamicBlock(Block):
 
         if self._init_measurements is not None:
             block._measurements = self._init_measurements(parent, idx)
+
+        if self._init_category_dict is not None:
+            block._category_dict = self._init_category_dict(parent, idx)
+        else:
+            block._category_dict = None
 
         block._construct()
 
