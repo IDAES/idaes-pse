@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 __author__ = "Kuan-Han Lin"
 
 """
-main script for running the example
+main script for running the example.
 """
 
 
