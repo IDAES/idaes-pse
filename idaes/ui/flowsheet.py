@@ -277,7 +277,7 @@ class FlowsheetSerializer:
             # The unit is top-level and therefore should be displayed.
             self.unit_models[unit] = {
                 "name": unit_name,
-                "type": self._get_unit_model_type(unit),
+                "type": self.get_unit_model_type(unit),
             }
 
             self._unit_name_used_count[unit_name] += 1
@@ -306,15 +306,16 @@ class FlowsheetSerializer:
             self._serialized_contents[unit_name]["performance_contents"] = performance_df
 
         elif unit in self._known_endpoints:
-            # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
-            # Find the top-level parent unit and assign the serialized link to the parent.
+            # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in
+            # an indexed block. Find the top-level parent unit and assign the
+            # serialized link to the parent.
             parent_unit = unit.parent_block()
             while not parent_unit == self.flowsheet:
                 parent_unit = parent_unit.parent_block()
 
             self.unit_models[parent_unit] = {
                 "name": parent_unit.getname(),
-                "type": self._get_unit_model_type(parent_unit),
+                "type": self.get_unit_model_type(parent_unit),
             }
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = parent_unit
@@ -326,19 +327,12 @@ class FlowsheetSerializer:
             # The unit is neither top-level nor connected; do not display this unit, since it is a subcomponent.
             pass
 
-    def _get_unit_model_type(self, unit) -> str:
-        """Get the type of the unit model.
-
-        If the ``unit`` argument does not have a method ``base_class_module`` then this
-        method will fail by logging a warning and returning a value of "default".
-        """
-        try:
-            unit_module = unit.base_class_module()
-        except AttributeError:
-            self._logger.warning(f"Could not get base class' module for unit '{unit}': using default")
-            unit_module = "default"
-        umt = unit_module.split(".")[-1]  # last component of full module path
-        return umt
+    @staticmethod
+    def get_unit_model_type(unit) -> str:
+        """Get the type of the unit model."""
+        unit_module = unit.base_class_module()
+        unit_module_type = unit_module.split(".")[-1]
+        return unit_module_type
 
     def _identify_implicit_feeds_and_products(self, untouched_ports):
         # Identify feeds and products not explicitly defined by the user by examining the names of ports
