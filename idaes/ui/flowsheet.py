@@ -329,7 +329,7 @@ class FlowsheetSerializer:
 
     @staticmethod
     def get_unit_model_type(unit) -> str:
-        """Get the type of the unit model."""
+        """Get the 'type' of the unit model."""
         unit_module = unit.base_class_module()
         unit_module_type = unit_module.split(".")[-1]
         return unit_module_type
