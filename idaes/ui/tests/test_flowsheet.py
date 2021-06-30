@@ -361,7 +361,7 @@ def test_flowsheet_serializer_invalid():
 
 
 @pytest.mark.unit
-def test_get_unit_base_module():
+def test_flowsheet_serializer_get_unit_model_type():
     from idaes.core import MaterialBalanceType
     from idaes.generic_models.unit_models.pressure_changer import (
         ThermodynamicAssumption,
