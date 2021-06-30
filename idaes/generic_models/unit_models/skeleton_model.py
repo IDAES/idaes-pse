@@ -127,13 +127,15 @@ class SkeletonUnitModelData(ProcessBlockData):
         that the degrees of freedom is zero at the start of initialization.
 
         Args:
-            outlvl ([idaes logger], optional):
-                [Set idaes logger level]. Defaults to idaeslog.NOTSET.
-            solver ([string], optional):
-                [solver to be used for solve]. Defaults to None but if None,
+            outlvl (idaes logger, optional):
+                Set idaes logger level. Defaults to idaeslog.NOTSET.
+            solver (string, optional):
+                solver to be used for solve. Defaults to None but if None,
                 ipopt from IDAES is used.
-            optarg ([dict], optional): [solver arguments]. Defaults to None
+            optarg ({dict}, optional): solver arguments. Defaults to None
                 but if None, default args for ipopt from IDAES is used.
+            initial_guess ({dict}, optional): initial guess that is passed
+            to custom initialize. Not used for the default initialize method.
 
         Raises:
             ConfigurationError: If degrees of freedom is not zero at the start
