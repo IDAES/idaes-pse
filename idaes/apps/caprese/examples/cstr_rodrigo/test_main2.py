@@ -26,6 +26,10 @@ import matplotlib.pyplot as plt
 
 __author__ = "Kuan-Han Lin"
 
+"""
+main script for running the example
+"""
+
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
