@@ -163,8 +163,8 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
     # Fix control inputs (why????
     m.Tjinb.fix(250.0)
     
-    m.not_use = Var(m.t)
-    m.not_use.fix(1.0)
+    #m.not_use = Var(m.t)
+    #m.not_use.fix(1.0)
         
     #bounds
     if bounds:
