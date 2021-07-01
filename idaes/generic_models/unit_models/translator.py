@@ -165,7 +165,7 @@ see property package for documentation.}""",
 
         # Add State Blocks
         self.properties_in = self.config.inlet_property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties in incoming stream",
             default={
                 "defined_state": True,
@@ -175,7 +175,7 @@ see property package for documentation.}""",
         )
 
         self.properties_out = self.config.outlet_property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties in outgoing stream",
             default={
                 "defined_state": self.config.outlet_state_defined,

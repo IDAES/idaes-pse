@@ -495,8 +495,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
 
         self.power = pyo.Var(
-            self.flowsheet().config.time, initialize=-1e8, doc="power (W)")
-        @self.Constraint(self.flowsheet().config.time)
+            self.flowsheet().time, initialize=-1e8, doc="power (W)")
+        @self.Constraint(self.flowsheet().time)
         def power_eqn(b, t):
             return (b.power[t] ==
                 b.outlet_stage.control_volume.work[t]*b.outlet_stage.efficiency_mech

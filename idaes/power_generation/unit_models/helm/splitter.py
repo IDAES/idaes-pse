@@ -134,7 +134,7 @@ from 1 to num_outlets).}""",
         Returns:
             None
         """
-        time = self.flowsheet().config.time
+        time = self.flowsheet().time
         super().build()
 
         self._get_property_package()
@@ -176,7 +176,7 @@ from 1 to num_outlets).}""",
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["defined_state"] = True
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties of mixed (inlet) stream",
             default=tmp_dict,
         )
@@ -236,7 +236,7 @@ from 1 to num_outlets).}""",
         # Create an instance of StateBlock for all outlets
         for o in self.outlet_list:
             o_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="Material properties at outlet",
                 default=tmp_dict,
             )
@@ -285,14 +285,14 @@ from 1 to num_outlets).}""",
 
         # check for fixed outlet flows and use them to calculate fixed split
         # fractions
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             for o in self.outlet_list:
                 if self.outlet_blocks[o][t].flow_mol.fixed:
                     self.split_fraction[t, o].fix(
                         value(self.mixed_state[t]/self.outlet_blocks[o][t].flow_mol))
 
         # fix or unfix split fractions so n - 1 are fixed
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             # see how many split fractions are fixed
             n = sum(1 for o in self.outlet_list if self.split_fraction[t, o].fixed)
             # if number of outlets - 1 we're good

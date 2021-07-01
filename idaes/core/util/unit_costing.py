@@ -286,11 +286,11 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
     if self.parent_block().config.thermodynamic_assumption.name == 'pump':
         w = (self.parent_block().
              work_fluid[self.parent_block().
-                        flowsheet().config.time.first()])
+                        flowsheet().time.first()])
     else:
         w = (self.parent_block().
              work_mechanical[self.parent_block().
-                             flowsheet().config.time.first()])
+                             flowsheet().time.first()])
 
     work_hp = pyunits.convert(w, to_units=pyunits.hp) / self.number_of_units
 
@@ -309,7 +309,7 @@ def pressure_changer_costing(self, Mat_factor="stain_steel",
         if self.parent_block().config.thermodynamic_assumption.name == 'pump':
             # assign work fluid  = to w
             w = self.parent_block().work_fluid[self.parent_block().
-                                               flowsheet().config.time.first()]
+                                               flowsheet().time.first()]
 
             # new variables only used by pump costing
             self.pump_head = Var(

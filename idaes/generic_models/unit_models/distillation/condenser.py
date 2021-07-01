@@ -219,7 +219,7 @@ see property package for documentation.}"""))
                 # the assumption is that there will only be a single pair
                 # i.e. vap-liq. 
                 idx = next(iter(self.control_volume.properties_out[
-                    self.flowsheet().config.time.first()].temperature_bubble))
+                    self.flowsheet().time.first()].temperature_bubble))
 
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
@@ -717,7 +717,7 @@ see property package for documentation.}"""))
             state_args = {}
             state_dict = (
                 self.control_volume.properties_in[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
