@@ -189,17 +189,17 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 .format(self.name))
 
         self.primary_air = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             default=self.config.property_package_args)
         self.primary_air_moist = self.config.property_package.\
             build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 default=self.config.property_package_args)
         self.secondary_air = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             default=self.config.property_package_args)
         self.flue_gas = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             default=self.config.property_package_args)
 
         self.add_port("primary_air_inlet", self.primary_air)
@@ -227,7 +227,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
         # Surrogate model predictions
         # Constraints for heat duty in boiler water wall zones
-        @self.Constraint(self.flowsheet().config.time, self.zones,
+        @self.Constraint(self.flowsheet().time, self.zones,
                          doc="Surrogate model for heat loss"
                          " to water wall zones")
         def eq_surr_waterwall_heat(b, t, z):
@@ -235,7 +235,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 eval(data_dict[z])
 
         if self.config.has_platen_superheater is True:
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              doc="Surrogate model for heat loss"
                              " to platen superheater")
             def eq_surr_platen_heat(b, t):
@@ -243,7 +243,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                     == eval(data_dict['pl'])
 
         if self.config.has_roof_superheater is True:
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              doc="Surrogate model for heat loss in "
                              " the roof and backpass heater")
             def eq_surr_roof_heat(b, t):
@@ -251,7 +251,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                     eval(data_dict['roof'])
 
         # Constraints for unburned carbon
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Surrogate model for"
                          " mass fraction of unburned carbon")
         def eq_surr_ln_ubc(b, t):
@@ -259,7 +259,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
         # Constraints for NOx in mol fraction, surrogate model in PPM,
         # converted to mass fraction
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="NOx in mol fraction"
                              "surrogate model must be in PPM")
         def eq_surr_nox(b, t):
@@ -301,61 +301,61 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # Number of waterwall zones is given by config,
         # Optionally the model could contain a platen and a roof superheater
 
-        self.deltaP = Var(self.flowsheet().config.time,
+        self.deltaP = Var(self.flowsheet().time,
                           initialize=1000,
                           doc='Pressure drop of secondary air '
                           'through windbox and burner [Pa]')
 
         self.zones = RangeSet(self.config.number_of_zones)
 
-        self.fcorrection_heat_ww = Var(self.flowsheet().config.time,
+        self.fcorrection_heat_ww = Var(self.flowsheet().time,
                                        initialize=1,
                                        doc='Correction factor '
                                        'for waterwall heat duty')
 
         if self.config.has_platen_superheater is True:
-            self.fcorrection_heat_platen = Var(self.flowsheet().config.time,
+            self.fcorrection_heat_platen = Var(self.flowsheet().time,
                                                initialize=1,
                                                doc='Correction factor for '
                                                'platen SH heat duty')
 
         # wall temperatures of water wall zones
-        self.wall_temperature_waterwall = Var(self.flowsheet().config.time,
+        self.wall_temperature_waterwall = Var(self.flowsheet().time,
                                               self.zones,
                                               initialize=700.0,
                                               doc='Wall temperature [K] in '
                                               'Waterwall zones')
 
         # heat duties for water wall zones
-        self.waterwall_heat = Var(self.flowsheet().config.time, self.zones,
+        self.waterwall_heat = Var(self.flowsheet().time, self.zones,
                                   initialize=2.0e7,
                                   doc='Heat duty [W] or heat loss '
                                   'to waterwall zones')
 
         if self.config.has_platen_superheater is True:
             # heat duty to platen super heater
-            self.platen_heat = Var(self.flowsheet().config.time,
+            self.platen_heat = Var(self.flowsheet().time,
                                    initialize=6.0e7,
                                    doc='Platen superheater heat duty [W]')
             # wall temperature of platen superheater
-            self.wall_temperature_platen = Var(self.flowsheet().config.time,
+            self.wall_temperature_platen = Var(self.flowsheet().time,
                                                initialize=800.0,
                                                doc='Platen superheater'
                                                ' wall temperature [K]')
 
         if self.config.has_roof_superheater is True:
             # heat duty to roof superheater
-            self.roof_heat = Var(self.flowsheet().config.time,
+            self.roof_heat = Var(self.flowsheet().time,
                                  initialize=5e6,
                                  doc='Roof superheater heat duty [W]')
             # wall temperature of roof superheater
-            self.wall_temperature_roof = Var(self.flowsheet().config.time,
+            self.wall_temperature_roof = Var(self.flowsheet().time,
                                              initialize=800.0,
                                              doc='Roof superheater '
                                              'wall temperature [K]')
 
         # PA/coal temperature, usually fixed around 150 F
-        self.temperature_coal = Var(self.flowsheet().config.time,
+        self.temperature_coal = Var(self.flowsheet().time,
                                     initialize=338.7,
                                     doc='Coal temperature in K')
 
@@ -363,12 +363,12 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # combustion air flowrate
         # If SR is a function of load or raw coal flow rate,
         # specify constraint in flowsheet model
-        self.SR = Var(self.flowsheet().config.time,
+        self.SR = Var(self.flowsheet().time,
                       initialize=1.15,
                       doc='Overall furnace Stoichiometric ratio - SR')
 
         # lower furnace Stoichiometric ratio
-        self.SR_lf = Var(self.flowsheet().config.time,
+        self.SR_lf = Var(self.flowsheet().time,
                          initialize=1.15,
                          doc='Lower furnace Stoichiometric ratio'
                          ' - SR excluding overfire air')
@@ -376,18 +376,18 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # PA to coal mass flow ratio,
         # typically 2.0 depending on load or mill curve
         # usually this is an input of surrogate model
-        self.ratio_PA2coal = Var(self.flowsheet().config.time,
+        self.ratio_PA2coal = Var(self.flowsheet().time,
                                  initialize=2.0,
                                  doc='Primary air to coal ratio')
 
         # mass flow rate of raw coal fed to mill
         # (raw coal flow without moisture vaporization in mill)
-        self.flowrate_coal_raw = Var(self.flowsheet().config.time,
+        self.flowrate_coal_raw = Var(self.flowsheet().time,
                                      initialize=25.0,
                                      doc='Raw coal mass flowrate [kg/s]')
 
         # mass flow rate of coal to burners after moisture vaporization in mill
-        self.flowrate_coal_burner = Var(self.flowsheet().config.time,
+        self.flowrate_coal_burner = Var(self.flowsheet().time,
                                         initialize=20.0,
                                         doc='Mass flowrate coal to burners '
                                         'with moisture'
@@ -395,27 +395,27 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
         # raw coal moisture mass fraction (on as received basis),
         # can change with time to represent HHV change on as received basis
-        self.mf_H2O_coal_raw = Var(self.flowsheet().config.time,
+        self.mf_H2O_coal_raw = Var(self.flowsheet().time,
                                    initialize=0.15,
                                    doc='Raw coal mass fraction of'
                                    ' moisture on as received basis')
 
         # moisture mass fraction of coal to burners after mill,
         # calculated based on fraction of moistures vaporized in mill
-        self.mf_H2O_coal_burner = Var(self.flowsheet().config.time,
+        self.mf_H2O_coal_burner = Var(self.flowsheet().time,
                                       initialize=0.15,
                                       doc='Mass fraction of moisture'
                                       ' on as received basis')
 
         # Fraction of moisture vaporized in mill,
         # set in flowsheet as a function of coal flow rate, default is 0.6
-        self.frac_moisture_vaporized = Var(self.flowsheet().config.time,
+        self.frac_moisture_vaporized = Var(self.flowsheet().time,
                                            initialize=0.6,
                                            doc='Fraction of coal'
                                            ' moisture vaporized in mill')
 
         # Vaporized moisture mass flow rate
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Vaporized moisture mass flowrate [kg/s]")
         def flowrate_moist_vaporized(b, t):
             return b.flowrate_coal_raw[t] * b.mf_H2O_coal_raw[t] \
@@ -450,33 +450,33 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # flyash, predicted by surrogate model.
         # When generating the surrogate, sum up all elements in
         # flyash from fireside boiler model outputs
-        self.ubc_in_flyash = Var(self.flowsheet().config.time,
+        self.ubc_in_flyash = Var(self.flowsheet().time,
                                  initialize=0.01,
                                  doc='Unburned carbon and'
                                  ' other organic elements in fly ash')
 
         # mole fraction of NO in flue gas, predicted by surrogate model
         # usually mole fraction is very close to mass fraction of NO
-        self.frac_mol_NOx_fluegas = Var(self.flowsheet().config.time,
+        self.frac_mol_NOx_fluegas = Var(self.flowsheet().time,
                                         initialize=1e-4,
                                         doc='Mole fraction of NOx in flue gas')
 
         # NOx in lb/MMBTU, NO is converted to NO2 as NOx
-        @self.Expression(self.flowsheet().config.time, doc="NOx in lb/MMBTU")
+        @self.Expression(self.flowsheet().time, doc="NOx in lb/MMBTU")
         def nox_lb_mmbtu(b, t):
             return b.flue_gas_outlet.flow_mol_comp[t, "NO"] * 0.046 * 2.20462 \
                 / (b.flowrate_coal_raw[t] * (1-b.mf_H2O_coal_raw[t])
                    * b.hhv_coal_dry/1.054e9)
 
         # coal flow rate after mill
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Coal flow rate to burners after mill")
         def flowrate_coal_burner_eqn(b, t):
             return b.flowrate_coal_burner[t] == b.flowrate_coal_raw[t] \
                 - b.flowrate_moist_vaporized[t]
 
         # moisture mass fraction in coal after mill
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Moisture mass fraction for coal after mill")
         def mf_H2O_coal_burner_eqn(b, t):
             return b.flowrate_coal_raw[t] * b.mf_H2O_coal_raw[t] == \
@@ -488,31 +488,31 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         def mf_daf_dry(b):
             return 1-b.mf_Ash_coal_dry
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Ash mass flow rate kg/s")
         def flowrate_ash(b, t):
             return b.flowrate_coal_raw[t] * \
                 (1-b.mf_H2O_coal_raw[t])*b.mf_Ash_coal_dry
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Dry ash free - daf_coal flow rate "
                          "in fuel fed to the boiler kg/s")
         def flowrate_daf_fuel(b, t):
             return b.flowrate_coal_raw[t] * \
                 (1-b.mf_H2O_coal_raw[t]) * b.mf_daf_dry
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Dry ash free (daf) coal flow rate in fly ash")
         def flowrate_daf_flyash(b, t):
             return b.flowrate_ash[t] / (1.0 - b.ubc_in_flyash[t]) \
                 * b.ubc_in_flyash[t]
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Burned daf coal flow rate")
         def flowrate_daf_burned(b, t):
             return b.flowrate_daf_fuel[t] - b.flowrate_daf_flyash[t]
 
-        @self.Expression(self.flowsheet().config.time, doc="Coal burnout")
+        @self.Expression(self.flowsheet().time, doc="Coal burnout")
         def coal_burnout(b, t):
             return b.flowrate_daf_burned[t] / b.flowrate_daf_fuel[t]
 
@@ -564,7 +564,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         def hf_daf(b):
             return b.dhc+b.dhh+b.dhs-b.dhcoal
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Heat of formation of "
                          "moisture-containing coal to burners")
         def hf_coal(b, t):
@@ -580,26 +580,26 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                       + b.mf_N_daf / b.atomic_mass_N
                       + b.mf_S_daf / b.atomic_mass_S)
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Gt1 or Einstein quantum theory function for daf "
                          "coal sensible heat calculation")
         def gt1(b, t):
             return 1/(exp(380/b.temperature_coal[t])-1)
 
         # since flyash and flue gas outlet temperature is not fixed
-        self.gt1_flyash = Var(self.flowsheet().config.time,
+        self.gt1_flyash = Var(self.flowsheet().time,
                               initialize=1,
                               doc='Gt1 or Einstein quantum theory function'
                               ' for daf part of flyash')
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Gt1 or Einstein quantum theory "
                          "for daf part of flyash")
         def gt1_flyash_eqn(b, t):
             return b.gt1_flyash[t] \
                 * (exp(380/b.flue_gas[t].temperature)-1) == 1
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Gt2 or Einstein quantum theory "
                          "function for daf coal "
                          "sensible heat calculation for high temperature")
@@ -608,25 +608,25 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
         # declare variable rather than use expression
         # since flyash and flue gas outlet temperature is not fixed
-        self.gt2_flyash = Var(self.flowsheet().config.time,
+        self.gt2_flyash = Var(self.flowsheet().time,
                               initialize=1,
                               doc='Gt2 or Einstein quantum theory function '
                               'for daf part of flyash')
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Gt2 or Einstein quantum theory function "
                          "for daf part of flyash")
         def gt2_flyash_eqn(b, t):
             return b.gt2_flyash[t] \
                 * (exp(1800/b.flue_gas[t].temperature)-1) == 1
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Sensible heat of daf coal")
         def hs_daf(b, t):
             return const.gas_constant/b.am_daf*(380*(b.gt1[t]-0.3880471566)
                                                 + 3600*(b.gt2[t]-0.002393883))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Sensible heat for daf part of flyash")
         def hs_daf_flyash(b, t):
             return const.gas_constant/b.am_daf*(380*(b.gt1_flyash[t]
@@ -634,7 +634,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                                                 + 3600*(b.gt2_flyash[t]
                                                         - 0.002393883))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Sensible heat of coal to burners")
         def hs_coal(b, t):
             return (1-b.mf_H2O_coal_burner[t]) * b.mf_daf_dry * b.hs_daf[t] \
@@ -643,7 +643,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 * (593 * (b.temperature_coal[t]-298.15)
                    + 0.293*(b.temperature_coal[t]**2 - 298.15**2))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Total enthalpy of "
                          "moisture-containing coal to burners")
         def h_coal(b, t):
@@ -651,39 +651,39 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
         # variable for O2 mole fraction in flue gas on dry basis
         # it can be used for data reconciliation and parameter estimation
-        self.fluegas_o2_pct_dry = Var(self.flowsheet().config.time,
+        self.fluegas_o2_pct_dry = Var(self.flowsheet().time,
                                       initialize=3,
                                       doc='Mol percent of O2 on dry basis')
 
     def _make_mass_balance(self):
         # PA flow rate calculated based on PA/coal ratio
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Ratio of PA mass flow to raw coal mass flow")
         def ratio_PA2coal_eqn(b, t):
             return b.primary_air[t].flow_mass == b.flowrate_coal_raw[t] \
                     * b.ratio_PA2coal[t]
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="C molar flow from coal")
         def molflow_C_fuel(b, t):
             return b.flowrate_daf_fuel[t] * b.mf_C_daf / b.atomic_mass_C
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="H molar flow from coal")
         def molflow_H_fuel(b, t):
             return b.flowrate_daf_fuel[t] * b.mf_H_daf / b.atomic_mass_H
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="O molar flow from coal")
         def molflow_O_fuel(b, t):
             return b.flowrate_daf_fuel[t] * b.mf_O_daf / b.atomic_mass_O
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="N molar flow from coal")
         def molflow_N_fuel(b, t):
             return b.flowrate_daf_fuel[t]*b.mf_N_daf/b.atomic_mass_N
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="S molar flow from coal")
         def molflow_S_fuel(b, t):
             return b.flowrate_daf_fuel[t]*b.mf_S_daf/b.atomic_mass_S
@@ -693,7 +693,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             # specified as model parameter
             # Overwrite the composition from inlets
             # Let N2 molar flow calculated by balance
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.config.property_package.component_list,
                              doc="PA component molar flow")
             def molar_flow_PA_eqn(b, t, j):
@@ -707,7 +707,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
             # specified as model parameter
             # Overwrite the composition from inlets
             # Let N2 molar flow calculated by balance
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.config.property_package.component_list,
                              doc="SA component molar flow")
             def molar_flow_SA_eqn(b, t, j):
@@ -718,7 +718,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                        b.secondary_air[t].flow_mol * b.mole_frac_air[j]
 
         # calculate molar flow of primary_air_moist stream
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.config.property_package.component_list)
         def primary_air_moist_comp_flow_eqn(b, t, j):
             if j == "H2O":
@@ -731,13 +731,13 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                        b.primary_air_moist[t].flow_mol_comp[j]
 
         # total combustion air mass flow rate
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Total combustion air mass flow rate")
         def flow_mass_TCA(b, t):
             return b.primary_air[t].flow_mass + b.secondary_air[t].flow_mass
 
         # overall Stoichiometric ratio (SR)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="SR equation")
         def SR_eqn(b, t):
             return b.SR[t]*(b.molflow_C_fuel[t] + b.molflow_H_fuel[t]/4
@@ -745,14 +745,14 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 b.primary_air[t].flow_mol_comp["O2"] \
                 + b.secondary_air[t].flow_mol_comp["O2"]
 
-        @self.Expression(self.flowsheet().config.time, doc="C mole flow")
+        @self.Expression(self.flowsheet().time, doc="C mole flow")
         def molflow_C_fluegas(b, t):
             return b.flowrate_daf_burned[t] \
                 * b.mf_C_daf/b.atomic_mass_C \
                 + b.primary_air_moist[t].flow_mol_comp["CO2"] \
                 + b.secondary_air[t].flow_mol_comp["CO2"]
 
-        @self.Expression(self.flowsheet().config.time, doc="H mole flow")
+        @self.Expression(self.flowsheet().time, doc="H mole flow")
         def molflow_H_fluegas(b, t):
             return b.flowrate_daf_burned[t] \
                 * b.mf_H_daf/b.atomic_mass_H \
@@ -761,7 +761,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 + b.flowrate_coal_burner[t]*b.mf_H2O_coal_burner[t] \
                 / (b.atomic_mass_H*2 + b.atomic_mass_O)*2
 
-        @self.Expression(self.flowsheet().config.time, doc="O mole flow")
+        @self.Expression(self.flowsheet().time, doc="O mole flow")
         def molflow_O_fluegas(b, t):
             return b.flowrate_daf_burned[t] \
                 * b.mf_O_daf/b.atomic_mass_O \
@@ -778,7 +778,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 + b.flowrate_coal_burner[t]*b.mf_H2O_coal_burner[t] \
                 / (b.atomic_mass_H*2 + b.atomic_mass_O)
 
-        @self.Expression(self.flowsheet().config.time, doc="N mole flow")
+        @self.Expression(self.flowsheet().time, doc="N mole flow")
         def molflow_N_fluegas(b, t):
             return b.flowrate_daf_burned[t] \
                 * b.mf_N_daf/b.atomic_mass_N \
@@ -787,7 +787,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 + b.secondary_air[t].flow_mol_comp["N2"]*2 \
                 + b.secondary_air[t].flow_mol_comp["NO"]
 
-        @self.Expression(self.flowsheet().config.time, doc="S mole flow")
+        @self.Expression(self.flowsheet().time, doc="S mole flow")
         def molflow_S_fluegas(b, t):
             return b.flowrate_daf_burned[t] \
                 * b.mf_S_daf/b.atomic_mass_S \
@@ -796,39 +796,39 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
 
         # calculate flue gas flow component at flue_gas_outlet
         # NO mole fraction in flue gas is given by NOx surrogate model
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="NO at flue gas outlet")
         def NO_eqn(b, t):
             return b.flue_gas[t].flow_mol_comp["NO"] == \
                 b.frac_mol_NOx_fluegas[t] * b.flue_gas[t].flow_mol
 
         # N2 at outlet
-        @self.Constraint(self.flowsheet().config.time, doc="N2 at outlet")
+        @self.Constraint(self.flowsheet().time, doc="N2 at outlet")
         def N2_eqn(b, t):
             return b.flue_gas_outlet.flow_mol_comp[t, "N2"] == \
                 + b.molflow_N_fluegas[t]/2 \
                 - b.flue_gas_outlet.flow_mol_comp[t, 'NO']/2
 
         # SO2 at outlet
-        @self.Constraint(self.flowsheet().config.time, doc="SO2 at outlet")
+        @self.Constraint(self.flowsheet().time, doc="SO2 at outlet")
         def SO2_eqn(b, t):
             return b.flue_gas_outlet.flow_mol_comp[t, "SO2"] == \
                 b.molflow_S_fluegas[t]
 
         # H2O at outlet
-        @self.Constraint(self.flowsheet().config.time, doc="H2O at outlet")
+        @self.Constraint(self.flowsheet().time, doc="H2O at outlet")
         def H2O_eqn(b, t):
             return b.flue_gas_outlet.flow_mol_comp[t, "H2O"] == \
                 b.molflow_H_fluegas[t]/2
 
         # CO2 at outlet
-        @self.Constraint(self.flowsheet().config.time, doc="CO2 at outlet")
+        @self.Constraint(self.flowsheet().time, doc="CO2 at outlet")
         def CO2_eqn(b, t):
             return b.flue_gas_outlet.flow_mol_comp[t, "CO2"] == \
                 b.molflow_C_fluegas[t]
 
         # O2 at outlet
-        @self.Constraint(self.flowsheet().config.time, doc="O2 at outlet")
+        @self.Constraint(self.flowsheet().time, doc="O2 at outlet")
         def O2_eqn(b, t):
             return b.flue_gas_outlet.flow_mol_comp[t, "O2"] == \
                 (b.molflow_O_fluegas[t] - b.molflow_C_fluegas[t]*2
@@ -836,7 +836,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                  - b.flue_gas_outlet.flow_mol_comp[t, "NO"])/2
 
         # constraint for mol percent of O2 in flue gas on dry basis
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Mol percent of O2 in flue gas on dry basis")
         def fluegas_o2_pct_dry_eqn(b, t):
             return b.fluegas_o2_pct_dry[t] \
@@ -848,7 +848,7 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                 == b.flue_gas_outlet.flow_mol_comp[t, "O2"]
 
         # mass flow rate of flyash containing unburned fuel
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Flyash mass flow rate  kg/s")
         def flow_mass_flyash(b, t):
             return (b.flowrate_daf_flyash[t] + b.flowrate_ash[t])
@@ -857,14 +857,14 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # flue gas pressure is secondary air presure
         # - pressure drop through windbox
         # and burner secondary air register
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Flue gas pressure in Pascals")
         def flue_gas_pressure_eqn(b, t):
             return b.flue_gas[t].pressure*1e-5 == (b.secondary_air[t].pressure
                                                    - b.deltaP[t]) * 1e-5
 
         # set pressure of primary air with moisture at mill outlet
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Mill outlet pressure")
         def primary_air_moist_pressure_eqn(b, t):
             return b.primary_air[t].pressure*1e-5 == \
@@ -874,13 +874,13 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
         # temperature of primary_air_moist is equal to coal temparature
         # leaving mill, ignore the temperature of primary_air_inlet in energy
         # balance equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Temperature of primary air leaving mill")
         def primary_air_moist_temperature_eqn(b, t):
             return b.primary_air_moist[t].temperature == b.temperature_coal[t]
 
         # overall energy balance to calculate FEGT
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Temperature at flue gas outlet")
         def flue_gas_temp_eqn(b, t):
             return (b.primary_air_moist[t].flow_mol
@@ -903,14 +903,14 @@ ratio, PA to coal ratio, and lower stoichiometric ratio,
                  + b.flowrate_daf_flyash[t] * b.hs_daf_flyash[t])
 
         # expression to calculate total heat duty of waterwall
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Total heat duty of all waterwall zones")
         def heat_total_ww(b, t):
             return sum(b.waterwall_heat[t, j] for j in b.zones)
 
         # expression to calculate total heat loss through
         # waterwall, platen SH, and roof SH
-        @self.Expression(self.flowsheet().config.time, doc="Total heat duty")
+        @self.Expression(self.flowsheet().time, doc="Total heat duty")
         def heat_total(b, t):
             return b.heat_total_ww[t] \
                 + (b.platen_heat[t] if self.config.has_platen_superheater is

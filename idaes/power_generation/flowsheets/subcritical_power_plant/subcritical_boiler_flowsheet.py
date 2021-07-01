@@ -300,38 +300,38 @@ def set_arcs_and_constraints(m):
     # Follwing are flowsheet level constraints
     #
     # Constraint to set boiler zone heat duty equal to waterwall section duty
-    @fs.Constraint(fs.config.time, fs.ww_zones, doc="boiler zone heat duty")
+    @fs.Constraint(fs.time, fs.ww_zones, doc="boiler zone heat duty")
     def zone_heat_loss_eqn(b, t, izone):
         return 1e-6*b.aBoiler.waterwall_heat[t, izone] == \
                1e-6*b.Waterwalls[izone].heat_fireside[t]
 
     # Constraint to set boiler platen heat duty equal to platen model duty
-    @fs.Constraint(fs.config.time, doc="platen SH heat duty")
+    @fs.Constraint(fs.time, doc="platen SH heat duty")
     def platen_heat_loss_eqn(b, t):
         return 1e-6*b.aBoiler.platen_heat[t] == 1e-6*b.aPlaten.heat_fireside[t]
 
     # Constraint to set boiler roof heat duty equal to roof model duty
-    @fs.Constraint(fs.config.time, doc="roof SH heat duty")
+    @fs.Constraint(fs.time, doc="roof SH heat duty")
     def roof_heat_loss_eqn(b, t):
         return 1e-6*b.aBoiler.roof_heat[t] == 1e-6*b.aRoof.heat_fireside[t]
 
     # Constraint to set boiler slag layer wall temperature equal to
     # waterwall section model slag wall temperature
-    @fs.Constraint(fs.config.time, fs.ww_zones, doc="zone wall temperature")
+    @fs.Constraint(fs.time, fs.ww_zones, doc="zone wall temperature")
     def zone_wall_temp_eqn(b, t, izone):
         return b.aBoiler.wall_temperature_waterwall[t, izone] == \
                b.Waterwalls[izone].temp_slag_boundary[t]
 
     # Constraint to set boiler platen slag wall temperature equal to
     # platen superheater slag wall temperature
-    @fs.Constraint(fs.config.time, doc="platen wall temperature")
+    @fs.Constraint(fs.time, doc="platen wall temperature")
     def platen_wall_temp_eqn(b, t):
         return b.aBoiler.wall_temperature_platen[t] == \
                b.aPlaten.temp_slag_boundary[t]
 
     # Constraint to set boiler roof slag wall temperature equal to
     # roof superheater slag wall temperature
-    @fs.Constraint(fs.config.time, doc="roof wall temperature")
+    @fs.Constraint(fs.time, doc="roof wall temperature")
     def roof_wall_temp_eqn(b, t):
         return b.aBoiler.wall_temperature_roof[t] == \
                b.aRoof.temp_slag_boundary[t]
@@ -339,25 +339,25 @@ def set_arcs_and_constraints(m):
     # Constraint to set RH steam flow as 90% of main steam flow
     # This constraint should be deactivated if this boiler sub-flowsheet
     # is combined with the steam cycle sub-flowsheet to form a full plant model
-    @fs.Constraint(fs.config.time, doc="RH steam flow")
+    @fs.Constraint(fs.time, doc="RH steam flow")
     def flow_mol_steam_rh_eqn(b, t):
         return b.aRH1.tube_inlet.flow_mol[t] == 0.9\
                * b.aPlaten.outlet.flow_mol[t]
 
     # Constraint to set pressure drop of PA equal to that of SA
-    @fs.Constraint(fs.config.time, doc="Pressure drop of PA and SA of APH")
+    @fs.Constraint(fs.time, doc="Pressure drop of PA and SA of APH")
     def pressure_drop_of_APH_eqn(b, t):
         return b.aAPH.deltaP_side_2[t] == b.aAPH.deltaP_side_3[t]
 
     # Constraint to set the temperature of PA before APH equal to
     # the temperature of TA
-    @fs.Constraint(fs.config.time, doc="Same inlet temperature for PA and SA")
+    @fs.Constraint(fs.time, doc="Same inlet temperature for PA and SA")
     def pa_ta_temperature_identical_eqn(b, t):
         return b.aAPH.side_2_inlet.temperature[t] == \
                b.Mixer_PA.TA_inlet.temperature[t]
 
     # Constraint to set blowdown water flow rate equal to 2% of feed water flow
-    @fs.Constraint(fs.config.time, doc="Blowdown water flow fraction")
+    @fs.Constraint(fs.time, doc="Blowdown water flow fraction")
     def blowdown_flow_fraction_eqn(b, t):
         return b.blowdown_split.FW_Blowdown.flow_mol[t] == 0.02\
                * b.aECON.tube_inlet.flow_mol[t]
@@ -365,7 +365,7 @@ def set_arcs_and_constraints(m):
     # Surrogate model of UA (overall heat transfer coefficient times area)
     # for heat transfer from flue gas to primary air in air preheater
     # as a function of raw coal flow rate, which is related to load
-    @fs.Constraint(fs.config.time, doc="UA for APH of PA")
+    @fs.Constraint(fs.time, doc="UA for APH of PA")
     def ua_side_2_eqn(b, t):
         return 1e-4 * b.aAPH.ua_side_2[t] == \
                1e-4 * (-150.0 * b.aBoiler.flowrate_coal_raw[t]**2
@@ -374,7 +374,7 @@ def set_arcs_and_constraints(m):
     # Surrogate model of UA (overall heat transfer coefficient times area)
     # for heat transfer from flue gas to secondary air in air preheater
     # as a function of raw coal flow rate, which is related to load
-    @fs.Constraint(fs.config.time, doc="UA for APH of SA")
+    @fs.Constraint(fs.time, doc="UA for APH of SA")
     def ua_side_3_eqn(b, t):
         return 1e-5 * b.aAPH.ua_side_3[t] == \
                1e-5 * (30000*b.aBoiler.flowrate_coal_raw[t] + 100000)
@@ -387,7 +387,7 @@ def set_arcs_and_constraints(m):
     # This is usually controlled to get a desired mill outlet temperature
     # Currently we don't have a mill model and the controller on the flowsheet
     # Usually more temperatuing air is needed at lower load
-    @fs.Constraint(fs.config.time, prop_gas.component_list,
+    @fs.Constraint(fs.time, prop_gas.component_list,
                    doc="Fraction of tempering air as total PA flow")
     def fraction_of_ta_in_total_pa_eqn(b, t, j):
         return b.Mixer_PA.PA_inlet.flow_mol_comp[t, j] == ((
@@ -399,7 +399,7 @@ def set_arcs_and_constraints(m):
     # Constraint to set total PA flow to coal flow ratio as a function of
     # raw coal flow rate
     # This is related to mill curve and burner out of service scheduling
-    @fs.Constraint(fs.config.time, doc="PA to coal ratio")
+    @fs.Constraint(fs.time, doc="PA to coal ratio")
     def pa_to_coal_ratio_eqn(b, t):
         return b.aBoiler.ratio_PA2coal[t] == (
             0.0018 * b.aBoiler.flowrate_coal_raw[t]**2
@@ -409,7 +409,7 @@ def set_arcs_and_constraints(m):
     # as a function of coal flow rate
     # This is related to scheduling by the controller to adjust to obtain
     # a desired main steam temperature, unburned carbon and NOx
-    @fs.Constraint(fs.config.time, doc="Steady state dry O2 in flue gas")
+    @fs.Constraint(fs.time, doc="Steady state dry O2 in flue gas")
     def dry_o2_in_flue_gas_eqn(b, t):
         return b.aBoiler.fluegas_o2_pct_dry[t] == (
             -0.00075*b.aBoiler.flowrate_coal_raw[t]**3
@@ -417,7 +417,7 @@ def set_arcs_and_constraints(m):
             - 2.0*b.aBoiler.flowrate_coal_raw[t] + 22.95)
 
     # Boiler efficiency based on enthalpy increase of main and RH steams
-    @fs.Expression(fs.config.time, doc="boiler efficiency based on steam")
+    @fs.Expression(fs.time, doc="boiler efficiency based on steam")
     def boiler_efficiency_steam(b, t):
         return (((b.aPlaten.outlet.flow_mol[t]
                  - b.Attemp.Water_inlet.flow_mol[t])
@@ -434,7 +434,7 @@ def set_arcs_and_constraints(m):
                    * b.aBoiler.hhv_coal_dry))
 
     # Boiler efficiency based on heat absorbed
-    @fs.Expression(fs.config.time, doc="boiler efficiency based on heat")
+    @fs.Expression(fs.time, doc="boiler efficiency based on heat")
     def boiler_efficiency_heat(b, t):
         return ((b.aBoiler.heat_total[t] + b.aRH2.total_heat[t]
                 + b.aRH1.total_heat[t] + b.aPSH.total_heat[t]
@@ -1140,7 +1140,7 @@ def main_dynamic():
     m_dyn = get_model(dynamic=True)
     copy_non_time_indexed_values(
         m_dyn.fs_main, m_ss.fs_main, copy_fixed=True, outlvl=idaeslog.ERROR)
-    for t in m_dyn.fs_main.config.time:
+    for t in m_dyn.fs_main.time:
         copy_values_at_time(
             m_dyn.fs_main, m_ss.fs_main, t, 0.0, copy_fixed=True,
             outlvl=idaeslog.ERROR)
@@ -1192,7 +1192,7 @@ def run_dynamic(m):
     fs = m.fs_main.fs_blr
 
     # Create a disturbance
-    for t in m.fs_main.config.time:
+    for t in m.fs_main.time:
         if t >= 30:
             fs.aBoiler.flowrate_coal_raw[t].fix(
                 fs.aBoiler.flowrate_coal_raw[0].value*1.025)
@@ -1218,7 +1218,7 @@ def print_dynamic_results(m):
     fegt = []
     drum_level = []
 
-    for t in m.fs_main.config.time:
+    for t in m.fs_main.time:
         time.append(t)
         coal_flow.append(fs.aBoiler.flowrate_coal_raw[t].value)
         steam_flow.append(fs.aPlaten.outlet.flow_mol[t].value/1000)
