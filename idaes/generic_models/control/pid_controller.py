@@ -171,11 +171,11 @@ class PIDBlockData(ProcessBlockData):
                 "Controller configuration requires 'output'")
 
         # Shorter pointers to time set information
-        time_set = self.flowsheet().config.time
+        time_set = self.flowsheet().time
         t0 = time_set.first()
 
         # Get units of time domain, PV and output
-        t_units = self.flowsheet().config.time_units
+        t_units = self.flowsheet().time_units
         pv_units = self.config.pv.get_units()
         out_units = self.config.output.get_units()
         gain_units = out_units/pv_units if pv_units is not None else None
