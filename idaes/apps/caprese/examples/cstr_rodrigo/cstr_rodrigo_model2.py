@@ -1,15 +1,31 @@
-# -*- coding: utf-8 -*-
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
-Created on Tue Jun 23 19:45:54 2020
-
-@author: greg6
+Test for Cappresse's module for NMPC.
 """
 
-# from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-#                            Set, SolverFactory, Var, value, 
-#                            TransformationFactory, TerminationCondition)
-from pyomo.environ import*
-from pyomo.dae import*
+from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
+                            Set, SolverFactory, Var, value, 
+                            TransformationFactory, TerminationCondition, Param,
+                            exp)
+from pyomo.dae.contset import ContinuousSet
+from pyomo.dae.diffvar import DerivativeVar
+
+from idaes.core.util.model_statistics import degrees_of_freedom
+
+
+__author__ = "Kuan-Han Lin"
+
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -55,8 +71,6 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
     
     #States
     m.Ca = Var(m.t,  initialize=1.60659680385930765667001907104350E-02)
-    # m.T = Var(m.t,  initialize=3.92336059452774350120307644829154E+02)
-    # m.Tj = Var(m.t,  initialize=3.77995395658401662331016268581152E+02)
     m.Tall = Var(m.t, m.T_ind)
     
     #Algebraic var
@@ -65,39 +79,21 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
     #Controls
     m.Tjinb = Var(m.t, initialize=250)
     
-    #: These guys have to be zero at the steady-state (steady).
-    zero0 = dict.fromkeys(m.t)
-    for key in zero0.keys():
-        zero0[key] = 0.0
+    #Derivative variables
     if steady:
         m.Cadot = Var(m.t, initialize = 0.0)
-        m.Tdot = Var(m.t, initialize = 0.0)
-        m.Tjdot = Var(m.t, initialize = 0.0)
+        m.Talldot = Var(m.t, m.T_ind, initialize = 0.0)
         m.Cadot.fix()
-        m.Tdot.fix()
-        m.Tjdot.fix()
+        m.Talldot.fix()
     else:
         m.Cadot = DerivativeVar(m.Ca, initialize=-3.58709135E+01)
-        # m.Tdot = DerivativeVar(m.T, initialize=5.19191848E+03)
-        # m.Tjdot = DerivativeVar(m.Tj, initialize=-9.70467399E+02)
         m.Talldot = DerivativeVar(m.Tall, wrt = m.t)
         
     #Constraint rules
-
-    # Using Constraint.Skip on equations at t0 is not supported right now.
-    # This is only because I will attempt to solve for consistent initial
-    # conditions, but at the initial conditions, this model will not exist.
-    # TODO: Add as option ability to solve/not solve for consistent ICs
     def _rule_k(m, i):
-        #if i == 0:
-        #    return Constraint.Skip
-        #else:
         return m.k[i] == m.k0 * exp(-m.Er / m.Tall[i, "T"])
 
     def _rule_ca(m, i):
-        #if i == 0:
-        #    return Constraint.Skip
-        #else:
         rule = (m.Cadot[i] == (m.F[i] / m.V) * 
                               (m.Cainb - m.Ca[i]) - 2 * 
                               m.k[i] * 
@@ -105,66 +101,41 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
         return rule
 
     def _rule_t(m, i):
-        #if i == 0:
-        #    return Constraint.Skip
-        #else:
-        return m.Talldot[i, "T"] == (m.F[i] / m.V) * (m.Tinb - m.Tall[i, "T"]) + \
-        2.0 * m.dH / (m.rho * m.Cp) * m.k[i] * m.Ca[i] ** 2 -\
-        m.UA / (m.V * m.rho * m.Cp) * (m.Tall[i, "T"] - m.Tall[i, "Tj"])
+        return m.Talldot[i, "T"] == ((m.F[i] / m.V) * (m.Tinb - m.Tall[i, "T"]) + 
+                                     2.0 * m.dH / (m.rho * m.Cp) * m.k[i] * m.Ca[i] ** 2 -
+                                     m.UA / (m.V * m.rho * m.Cp) * (m.Tall[i, "T"] - m.Tall[i, "Tj"]))
 
     def _rule_tj(m, i):
-        #if i == 0:
-        #    return Constraint.Skip
-        #else:
-        return (m.Talldot[i, "Tj"] ==
-               (m.Fw[i] / m.Vw) * 
-               (m.Tjinb[i] - m.Tall[i, "Tj"]) + 
-               m.UA / 
-               (m.Vw * m.rhow * m.Cpw) * 
-               (m.Tall[i, "T"] - m.Tall[i, "Tj"]))
+        return m.Talldot[i, "Tj"] == ((m.Fw[i] / m.Vw) * (m.Tjinb[i] - m.Tall[i, "Tj"]) + 
+                                      m.UA/(m.Vw * m.rhow * m.Cpw) * (m.Tall[i, "T"] - m.Tall[i, "Tj"]))
     
     #Constraints
     m.kdef = Constraint(m.t, rule = _rule_k)
     m.de_ca = Constraint(m.t, rule = _rule_ca)
     m.de_T = Constraint(m.t, rule = _rule_t)
     m.de_Tj = Constraint(m.t, rule = _rule_tj)
-    
-    # #ics rule
-    # m.Ca_ic = Param( default=1.9193793974995963E-02, mutable=True)
-    # m.T_ic = Param( default=3.8400724261199036E+02, mutable=True)
-    # m.Tj_ic = Param( default=3.7127352272578315E+02, mutable=True)
-    
-    # # # #
-    # # The following are not used:
-    # def _rule_ca0(m):
-    #     return m.Ca[0] == m.Ca_ic
-
-    # def _rule_t0(m):
-    #     return m.T[0] == m.T_ic
-
-    # def _rule_tj0(m):
-    #     return m.Tj[0] == m.Tj_ic
-    # # # #
         
     # Time discretization
     if not steady:
         disc = TransformationFactory('dae.collocation')
         disc.apply_to(m, wrt=m.t, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
+        
+    # Set initialize values for IndexedVar with string index
     m.Tall[:, "T"] = 3.92336059452774350120307644829154E+02
     m.Tall[:, "Tj"] = 3.77995395658401662331016268581152E+02
     m.Talldot[:, "T"] = 5.19191848E+03
     m.Talldot[:, "Tj"] = -9.70467399E+02
     
+    #Set initial conditions for states
     if not steady:
         m.Ca[0].fix(1.9193793974995963E-02)
         m.Tall[0, "T"].fix(3.8400724261199036E+02)
         m.Tall[0, "Tj"].fix(3.7127352272578315E+02)
-        
-    # Fix control inputs (why????
+    
+    #Fix input here to pass dof check 
+    #(not necessary for running nmpc; it will be fixed if it's not fix here)
     m.Tjinb.fix(250.0)
     
-    #m.not_use = Var(m.t)
-    #m.not_use.fix(1.0)
         
     #bounds
     if bounds:
@@ -178,7 +149,6 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
         m.Tjinb.setub(300.)
         
     return m
-
 
 # states = ["Ca", "T", "Tj"]
 # controls = ["Tjinb"]
@@ -194,3 +164,11 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
 # T: 386.0954447399273
 # Tj: 374.1675457210488
 # Tjinb(control input): 260.5685074460155
+
+if __name__ == '__main__':
+    m_plant = make_model()
+    m_ss = make_model(steady = True)
+    
+    assert degrees_of_freedom(m_plant) == 0
+    assert degrees_of_freedom(m_ss) == 0
+    
