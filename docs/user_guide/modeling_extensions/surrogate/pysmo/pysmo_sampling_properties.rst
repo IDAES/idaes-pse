@@ -14,7 +14,7 @@ The following code snippet shows basic usage of the package for generating sampl
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogates.pysmo import sampling as sp
+   >>> from idaes.surrogate.pysmo import sampling as sp
 
    # Declaration of lower and upper bounds of 3D space to be sampled
    >>> bounds = [[0, 0, 0], [1.2, 0.1, 1]]
@@ -29,7 +29,7 @@ The following code snippet shows basic usage of the package for selecting sample
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogates.pysmo import sampling as sp
+   >>> from idaes.surrogate.pysmo import sampling as sp
    >>> import pandas as pd
 
    # Load dataset from a csv file
