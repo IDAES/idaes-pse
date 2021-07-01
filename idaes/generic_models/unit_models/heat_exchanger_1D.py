@@ -1,15 +1,15 @@
-###############################################################################
+#################################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-###############################################################################
+#################################################################################
 """
 Basic IDAES 1D Heat Exchanger Model.
 
@@ -142,7 +142,7 @@ balance type
             domain=In(MomentumBalanceType),
             description="Momentum balance construction flag",
             doc="""Indicates what type of momentum balance should
-            be constructed,
+be constructed,
 **default** - MomentumBalanceType.pressureTotal.
 **Valid values:** {
 **MomentumBalanceType.none** - exclude momentum balances,
@@ -184,7 +184,7 @@ constructed,
             domain=is_physical_parameter_block,
             description="Property package to use for control volume",
             doc="""Property parameter object used to define property
-            calculations
+calculations
 (default = 'use_parent_value')
 - 'use_parent_value' - get package from parent (default = None)
 - a ParameterBlock object""",
@@ -210,7 +210,7 @@ and used when constructing these
             default=useDefault,
             description="Discretization method to use for DAE transformation",
             doc="""Discretization method to use for DAE transformation. See
-            Pyomo documentation for supported transformations.""",
+Pyomo documentation for supported transformations.""",
         ),
     )
     _SideTemplate.declare(
