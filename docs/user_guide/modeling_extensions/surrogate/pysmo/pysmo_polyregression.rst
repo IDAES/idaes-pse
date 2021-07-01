@@ -9,7 +9,7 @@ orders and basis function forms.
 *pysmo.polynomial_regression* considers three types of basis functions
 
 * univariate polynomials,
-* second-degree bivariate pilynomials, and
+* second-degree bivariate polynomials, and
 * user-specified basis functions.
 
 Thus, for a problem with :math:`m` sample points and :math:`n` input variables, the resulting polynomial is of the form
@@ -27,7 +27,7 @@ and then the method ``training`` is called on the initialized object:
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogates.pysmo import polynomial_regression
+   >>> from idaes.surrogate.pysmo import polynomial_regression
    >>> import pandas as pd
 
    # Load dataset from a csv file
@@ -86,7 +86,7 @@ an objective:
 
    # Required imports
    >>> import pyomo.environ as pyo
-   >>> from idaes.surrogates.pysmo import polynomial_regression
+   >>> from idaes.surrogate.pysmo import polynomial_regression
    >>> import pandas as pd
 
    # Create a Pyomo model

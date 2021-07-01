@@ -135,7 +135,7 @@ def tag_model(m):
     return tags, tag_format
 
 
-def write_pfd_results(filename, tags, tag_format):
+def write_pfd_results(filename, tags, tag_format, infilename=None):
     """
     Write simulation results in a template PFD in svg format and save as
     filename.
@@ -144,11 +144,14 @@ def write_pfd_results(filename, tags, tag_format):
         filename: (str) file namd for output
         tags: (dict) tag keys and expression values
         tag_format: (dict) tag keys and format string values
+        infilename: input file name, if you want to use an alternative diagram
 
     Returns:
         None
     """
-    with open(os.path.join(this_file_dir(), "gas_turbine.svg"), "r") as f:
+    if infilename is None:
+        infilename = os.path.join(this_file_dir(), "gas_turbine.svg")
+    with open(infilename, "r") as f:
         iutil.svg_tag(
             svg=f,
             tags=tags,
@@ -279,6 +282,9 @@ def main(
         "H2":1000,
         "CO":1000,
         "C2H4":1000,
+        "C2H6":1000,
+        "C3H8":1000,
+        "C4H10":1000,
         "CO2":1000}
     for c, s in _mf_scale.items():
         m.fs.gas_prop_params.set_default_scaling(
