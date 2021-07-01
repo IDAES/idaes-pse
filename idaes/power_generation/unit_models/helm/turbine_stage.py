@@ -44,7 +44,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
 
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_mech.fix()
-        time_set = self.flowsheet().config.time
+        time_set = self.flowsheet().time
         self.shaft_speed = Var(time_set,
                                doc="Shaft speed [1/s]",
                                initialize=60.0,
@@ -63,7 +63,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 

@@ -133,7 +133,7 @@ def delta_temperature_lmtd_callback(b):
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
 
@@ -148,7 +148,7 @@ def delta_temperature_amtd_callback(b):
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] + dT2[t]) * 0.5
 
@@ -173,7 +173,7 @@ def delta_temperature_underwood_callback(b):
         function="cbrt",
         arg_units=[temp_units])
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3 * temp_units
 
@@ -282,7 +282,7 @@ class HeatExchangerData(UnitModelBlockData):
         temp_units = s1_metadata.get_derived_units("temperature")
 
         u = self.overall_heat_transfer_coefficient = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             domain=PositiveReals,
             initialize=100.0,
             doc="Overall heat transfer coefficient",
@@ -295,20 +295,20 @@ class HeatExchangerData(UnitModelBlockData):
             units=a_units
         )
         self.delta_temperature_in = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
             units=temp_units
         )
         self.delta_temperature_out = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
             units=temp_units
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc="Factor to adjust coutercurrent flow heat "
                 "transfer calculation for cross flow.",
@@ -360,7 +360,7 @@ class HeatExchangerData(UnitModelBlockData):
         # Add end temperature differnece constraints                           #
         ########################################################################
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def delta_temperature_in_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
@@ -377,7 +377,7 @@ class HeatExchangerData(UnitModelBlockData):
                                       to_units=temp_units)
                 )
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def delta_temperature_out_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
@@ -397,7 +397,7 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         # Add a unit level energy balance                                      #
         ########################################################################
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def unit_heat_balance(b, t):
             return 0 == (hot_side.heat[t] +
                          pyunits.convert(cold_side.heat[t],
@@ -413,7 +413,7 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         deltaT = self.delta_temperature
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
                 return pyunits.convert(self.heat_duty[t], to_units=q_units) == (

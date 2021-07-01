@@ -102,7 +102,7 @@ see property package for documentation.}""",
 
         # Add State Block
         self.properties = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties in product",
             default={
                 "defined_state": True,
@@ -113,7 +113,7 @@ see property package for documentation.}""",
 
         # Add references to all state vars
         s_vars = self.properties[
-            self.flowsheet().config.time.first()
+            self.flowsheet().time.first()
         ].define_state_vars()
         for s in s_vars:
             l_name = s_vars[s].local_name

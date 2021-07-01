@@ -877,12 +877,12 @@ class Test_costing(object):
         def perf_callback(b):
             unit_hd = units.J/units.kg
             unit_vflw = units.m**3/units.s
-            @b.Constraint(m.fs.config.time)
+            @b.Constraint(m.fs.time)
             def pc_isen_eff_eqn(b, t):
                 prnt = b.parent_block()
                 vflw = prnt.control_volume.properties_in[t].flow_vol
                 return prnt.efficiency_isentropic[t] == 0.9/3.975*vflw/unit_vflw
-            @b.Constraint(m.fs.config.time)
+            @b.Constraint(m.fs.time)
             def pc_isen_head_eqn(b, t):
                 prnt = b.parent_block()
                 vflw = prnt.control_volume.properties_in[t].flow_vol
@@ -922,12 +922,12 @@ class Test_costing(object):
             "support_isentropic_performance_curves":True})
         unit_hd = units.J/units.kg
         unit_vflw = units.m**3/units.s
-        @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
+        @m.fs.unit.performance_curve.Constraint(m.fs.time)
         def pc_isen_eff_eqn(b, t):
             prnt = b.parent_block()
             vflw = prnt.control_volume.properties_in[t].flow_vol
             return prnt.efficiency_isentropic[t] == 0.9/3.975*vflw/unit_vflw
-        @m.fs.unit.performance_curve.Constraint(m.fs.config.time)
+        @m.fs.unit.performance_curve.Constraint(m.fs.time)
         def pc_isen_head_eqn(b, t):
             prnt = b.parent_block()
             vflw = prnt.control_volume.properties_in[t].flow_vol

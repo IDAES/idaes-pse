@@ -75,7 +75,7 @@ Default is PI"""))
                 raise ConfigurationError("Controller configuration"
                                          " requires 'mv'")
             # Shorter pointers to time set information
-            time_set = self.flowsheet().config.time
+            time_set = self.flowsheet().time
             self.pv = Reference(self.config.pv)
             self.mv = Reference(self.config.mv)
 
@@ -122,7 +122,7 @@ Default is PI"""))
                                              doc="Integral term")
                 self.error_from_integral = DerivativeVar(
                     self.integral_of_error,
-                    wrt=self.flowsheet().config.time,
+                    wrt=self.flowsheet().time,
                     initialize=0)
 
                 @self.Constraint(time_set,
@@ -134,7 +134,7 @@ Default is PI"""))
             if self.config.type == 'PID' or self.config.type == 'PD':
                 self.derivative_of_error = DerivativeVar(
                     self.error,
-                    wrt=self.flowsheet().config.time,
+                    wrt=self.flowsheet().time,
                     initialize=0)
 
             @self.Expression(time_set, doc="Proportional output")
@@ -177,7 +177,7 @@ Default is PI"""))
             @self.Constraint(time_set,
                              doc="Bounded output of manipulated variable")
             def mv_eqn(b, t):
-                if t == b.flowsheet().config.time.first():
+                if t == b.flowsheet().time.first():
                     return Constraint.Skip
                 else:
                     if self.config.bounded_output is True:

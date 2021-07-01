@@ -511,14 +511,14 @@ thickness of the tube""",
 
         # Performance variables
         self.shell_heat_transfer_coefficient = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.shell.length_domain,
             initialize=50,
             doc="Heat transfer coefficient",
             units=shell_units("heat_transfer_coefficient")
         )
         self.tube_heat_transfer_coefficient = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.tube.length_domain,
             initialize=50,
             doc="Heat transfer coefficient",
@@ -528,7 +528,7 @@ thickness of the tube""",
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
         if self.config.has_wall_conduction == WallConductionType.zero_dimensional:
             self.temperature_wall = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.tube.length_domain,
                 initialize=298.15,
                 units=shell_units("temperature")
@@ -538,7 +538,7 @@ thickness of the tube""",
             # Energy transfer between shell and tube wall
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.shell.length_domain,
                 doc="Heat transfer between shell and tube",
             )
@@ -555,7 +555,7 @@ thickness of the tube""",
 
             # Energy transfer between tube wall and tube
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.tube.length_domain,
                 doc="Convective heat transfer",
             )
@@ -576,7 +576,7 @@ thickness of the tube""",
                 q_units = shell_units("power")/shell_units("length")
             # Wall 0D model
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.shell.length_domain,
                 doc="wall 0D model",
             )
@@ -658,7 +658,7 @@ thickness of the tube""",
         if blk.config.has_wall_conduction == WallConductionType.zero_dimensional:
             shell_units = \
                 blk.config.shell_side.property_package.get_metadata().get_derived_units
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(
                         value(
