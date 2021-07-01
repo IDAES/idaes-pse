@@ -53,7 +53,7 @@ and then the function *training* is called on the initialized object:
 .. code:: python
 
    # Required imports
-   >>> from idaes.surrogates.pysmo import radial_basis_function
+   >>> from idaes.surrogate.pysmo import radial_basis_function
    >>> import pandas as pd
 
    # Load dataset from a csv file

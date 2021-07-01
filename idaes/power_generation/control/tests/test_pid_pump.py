@@ -53,7 +53,7 @@ def set_scaling_factors(m):
             iscale.constraint_scaling_transform(c, 1e-6)
 
     # scaling factor for control valves
-    for t in m.fs.config.time:
+    for t in m.fs.time:
         iscale.set_scaling_factor(
             m.fs.valve.control_volume.properties_in[t].flow_mol, 0.001)
 
@@ -65,7 +65,7 @@ def main():
     m_ss = get_model(dynamic=False)
     m_dyn = get_model(dynamic=True)
     copy_non_time_indexed_values(m_dyn.fs, m_ss.fs, copy_fixed=True)
-    for t in m_dyn.fs.config.time:
+    for t in m_dyn.fs.time:
         copy_values_at_time(m_dyn.fs, m_ss.fs, t, 0.0, copy_fixed=True)
     m_dyn.fs.controller.mv_ref.value = m_dyn.fs.valve.valve_opening[0].value
     # calculate integral error assuming error is zero

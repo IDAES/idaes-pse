@@ -255,7 +255,7 @@ domain,
         self.add_outlet_port()
 
         # Add PFR performance equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.control_volume.length_domain,
                          self.config.reaction_package.rate_reaction_idx,
                          doc="PFR performance equation")

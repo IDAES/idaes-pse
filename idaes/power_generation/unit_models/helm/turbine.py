@@ -94,14 +94,14 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_isentropic = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.9,
             doc="Isentropic efficiency"
         )
         eff.fix()
 
         pratio = self.ratioP = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.7,
             doc="Ratio of outlet to inlet pressure"
         )
@@ -111,21 +111,21 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         properties_out = self.control_volume.properties_out
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Outlet isentropic enthalpy"
         )
         def h_is(b, t):
             return te.h(s=properties_in[t].entr_mol, p=properties_out[t].pressure)
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Isentropic enthalpy change"
         )
         def delta_enth_isentropic(b, t):
             return self.h_is[t] - properties_in[t].enth_mol
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Isentropic work"
         )
         def work_isentropic(b, t):
@@ -133,23 +133,23 @@ class HelmIsentropicTurbineData(BalanceBlockData):
                 properties_in[t].enth_mol - self.h_is[t])
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Outlet enthalpy"
         )
         def h_o(b, t): # Early access to the outlet enthalpy and work
             return properties_in[t].enth_mol - eff[t]*(
                 properties_in[t].enth_mol - self.h_is[t])
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def eq_work(b, t): # Work from energy balance
             return properties_out[t].enth_mol == self.h_o[t]
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def eq_pressure_ratio(b, t):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(self.flowsheet().time)
         def work_mechanical(b, t):
             return b.control_volume.work[t]
 
@@ -182,7 +182,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.ratioP[t] = pyo.value(
                     self.outlet.pressure[t]/self.inlet.pressure[t])
@@ -199,7 +199,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         self.ratioP.fix()
         self.deltaP.unfix()
         self.efficiency_isentropic.fix()
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             self.outlet.pressure[t] = pyo.value(
                 self.inlet.pressure[t]*self.ratioP[t])
             self.deltaP[t] = pyo.value(

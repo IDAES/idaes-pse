@@ -155,7 +155,7 @@ see property package for documentation.}"""))
 
         for i in inlet_list:
             state_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="State block for " + i + "_inlet to tray",
                 default=state_block_args)
 
@@ -167,7 +167,7 @@ see property package for documentation.}"""))
         mixed_block_args["defined_state"] = False
 
         self.properties_out = self.config.property_package.\
-            build_state_block(self.flowsheet().config.time,
+            build_state_block(self.flowsheet().time,
                               doc="State block for mixed outlet from tray",
                               default=mixed_block_args)
 
@@ -201,7 +201,7 @@ see property package for documentation.}"""))
     def _add_material_balance(self):
         """Method to construct the mass balance equation."""
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.config.property_package.component_list,
                          doc="material balance")
         def material_mixing_equations(b, t, j):
@@ -224,12 +224,12 @@ see property package for documentation.}"""))
 
         if self.config.has_heat_transfer:
             units_meta = self.config.property_package.get_metadata()
-            self.heat_duty = Var(self.flowsheet().config.time,
+            self.heat_duty = Var(self.flowsheet().time,
                                  initialize=0,
                                  doc="Heat duty for the tray",
                                  units=units_meta.get_derived_units("power"))
 
-        @self.Constraint(self.flowsheet().config.time, doc="energy balance")
+        @self.Constraint(self.flowsheet().time, doc="energy balance")
         def enthalpy_mixing_equations(b, t):
             if self.config.is_feed_tray:
                 if self.config.has_heat_transfer:
@@ -290,12 +290,12 @@ see property package for documentation.}"""))
         """Method to construct the pressure balance."""
         if self.config.has_pressure_change:
             units_meta = self.config.property_package.get_metadata()
-            self.deltaP = Var(self.flowsheet().config.time,
+            self.deltaP = Var(self.flowsheet().time,
                               initialize=0,
                               doc="Pressure drop across tray",
                               units=units_meta.get_derived_units("pressure"))
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure balance for tray")
         def pressure_drop_equation(self, t):
             if self.config.has_pressure_change:
@@ -678,7 +678,7 @@ see property package for documentation.}"""))
             state_args_vap = {}
             state_dict = (
                 self.properties_in_feed[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -722,7 +722,7 @@ see property package for documentation.}"""))
             state_args_liq = {}
             state_dict = (
                 self.properties_in_liq[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -739,7 +739,7 @@ see property package for documentation.}"""))
             state_args_vap = {}
             state_dict = (
                 self.properties_in_vap[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -790,7 +790,7 @@ see property package for documentation.}"""))
             # will work for most combination of state vars.
             state_dict = (
                 self.properties_in_liq[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
             for k in state_dict.keys():
                 if k == "pressure":

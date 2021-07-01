@@ -180,13 +180,13 @@ between flow and pressure driven simulations.}""",
         self.add_inlet_state_blocks()
         self.add_mixed_state_block()
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def mass_balance(b, t):
             return self.mixed_state[t].flow_mol == sum(
                 self.inlet_blocks[i][t].flow_mol for i in self.inlet_list
             )
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def energy_balance(b, t):
             return self.mixed_state[t].enth_mol*self.mixed_state[t].flow_mol == \
                 sum(self.inlet_blocks[i][t].enth_mol
@@ -259,7 +259,7 @@ between flow and pressure driven simulations.}""",
         # Create an instance of StateBlock for all inlets
         for i in self.inlet_list:
             i_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="Material properties at inlet",
                 default=tmp_dict,
             )
@@ -279,7 +279,7 @@ between flow and pressure driven simulations.}""",
         tmp_dict["defined_state"] = False
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties of mixed stream",
             default=tmp_dict,
         )
@@ -303,7 +303,7 @@ between flow and pressure driven simulations.}""",
 
         # Calculate minimum inlet pressure
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_list,
             doc="Calculation for minimum inlet pressure",
         )
@@ -318,7 +318,7 @@ between flow and pressure driven simulations.}""",
 
         # Set inlet pressure to minimum pressure
         @self.Constraint(
-            self.flowsheet().config.time, doc="Link pressure to control volume")
+            self.flowsheet().time, doc="Link pressure to control volume")
         def minimum_pressure_constraint(b, t):
             return self.mixed_state[t].pressure == (
                 self.minimum_pressure[t, self.inlet_list[-1]]
@@ -333,7 +333,7 @@ between flow and pressure driven simulations.}""",
         """
         # Create equality constraints
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_list,
             doc="Calculation for minimum inlet pressure",
         )

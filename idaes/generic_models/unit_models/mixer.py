@@ -295,7 +295,7 @@ objects linked to all inlet states and the mixed state,
 
         mb_type = self.config.material_balance_type
         if mb_type == MaterialBalanceType.useDefault:
-            t_ref = self.flowsheet().config.time.first()
+            t_ref = self.flowsheet().time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
 
         if mb_type != MaterialBalanceType.none:
@@ -422,7 +422,7 @@ objects linked to all inlet states and the mixed state,
         # Create an instance of StateBlock for all inlets
         for i in inlet_list:
             i_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="Material properties at inlet",
                 default=tmp_dict,
             )
@@ -446,7 +446,7 @@ objects linked to all inlet states and the mixed state,
         tmp_dict["defined_state"] = False
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties of mixed stream",
             default=tmp_dict,
         )
@@ -471,7 +471,7 @@ objects linked to all inlet states and the mixed state,
         # Check that the user-provided StateBlock uses the same prop pack
         if (
             self.config.mixed_state_block[
-                self.flowsheet().config.time.first()
+                self.flowsheet().time.first()
             ].config.parameters
             != self.config.property_package
         ):
@@ -498,7 +498,7 @@ objects linked to all inlet states and the mixed state,
         units = pp.get_metadata()
 
         flow_basis = mixed_block[
-            self.flowsheet().config.time.first()].get_material_flow_basis()
+            self.flowsheet().time.first()].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             flow_units = units.get_derived_units("flow_mole")
         elif flow_basis == MaterialFlowBasis.mass:
@@ -512,7 +512,7 @@ objects linked to all inlet states and the mixed state,
             if self.config.has_phase_equilibrium is True:
                 try:
                     self.phase_equilibrium_generation = Var(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         pp.phase_equilibrium_idx,
                         domain=Reals,
                         doc="Amount of generation in unit by phase equilibria",
@@ -560,7 +560,7 @@ objects linked to all inlet states and the mixed state,
 
             # Write phase-component balances
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 pc_set,
                 doc="Material mixing equations",
             )
@@ -580,7 +580,7 @@ objects linked to all inlet states and the mixed state,
         elif mb_type == MaterialBalanceType.componentTotal:
             # Write phase-component balances
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 mixed_block.component_list,
                 doc="Material mixing equations",
             )
@@ -598,7 +598,7 @@ objects linked to all inlet states and the mixed state,
         elif mb_type == MaterialBalanceType.total:
             # Write phase-component balances
             @self.Constraint(
-                self.flowsheet().config.time, doc="Material mixing equations"
+                self.flowsheet().time, doc="Material mixing equations"
             )
             def material_mixing_equations(b, t):
                 return 0 == sum(
@@ -634,7 +634,7 @@ objects linked to all inlet states and the mixed state,
         Add energy mixing equations (total enthalpy balance).
         """
 
-        @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
+        @self.Constraint(self.flowsheet().time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
             return 0 == (
                 sum(
@@ -664,7 +664,7 @@ objects linked to all inlet states and the mixed state,
 
         # Add variables
         self.minimum_pressure = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_idx,
             doc="Variable for calculating minimum inlet pressure",
             units=units.get_derived_units("pressure")
@@ -680,7 +680,7 @@ objects linked to all inlet states and the mixed state,
 
         # Calculate minimum inlet pressure
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_idx,
             doc="Calculation for minimum inlet pressure",
         )
@@ -699,7 +699,7 @@ objects linked to all inlet states and the mixed state,
 
         # Set inlet pressure to minimum pressure
         @self.Constraint(
-            self.flowsheet().config.time, doc="Link pressure to control volume"
+            self.flowsheet().time, doc="Link pressure to control volume"
         )
         def mixture_pressure(b, t):
             return mixed_block[t].pressure == (
@@ -717,7 +717,7 @@ objects linked to all inlet states and the mixed state,
 
         # Create equality constraints
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.inlet_idx,
             doc="Calculation for minimum inlet pressure",
         )
@@ -755,7 +755,7 @@ objects linked to all inlet states and the mixed state,
             None
         """
         # Try property block model check
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             try:
                 inlet_list = blk.create_inlet_list()
                 for i in inlet_list:
@@ -868,7 +868,7 @@ objects linked to all inlet states and the mixed state,
 
         o_flags = {}
         # Calculate initial guesses for mixed stream state
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             # Iterate over state vars as defined by property package
             s_vars = mblock[t].define_state_vars()
             for s in s_vars:
@@ -915,7 +915,7 @@ objects linked to all inlet states and the mixed state,
         )
 
         # Revert fixed status of variables to what they were before
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             s_vars = mblock[t].define_state_vars()
             for s in s_vars:
                 for k in s_vars[s]:
@@ -927,7 +927,7 @@ objects linked to all inlet states and the mixed state,
                 and blk.pressure_equality_constraints.active is True
             ):
                 blk.pressure_equality_constraints.deactivate()
-                for t in blk.flowsheet().config.time:
+                for t in blk.flowsheet().time:
                     sys_press = getattr(
                         blk,
                         blk.create_inlet_list()[0] + "_state")[t].pressure
@@ -935,7 +935,7 @@ objects linked to all inlet states and the mixed state,
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG)as slc:
                     res = opt.solve(blk, tee=slc.tee)
                 blk.pressure_equality_constraints.activate()
-                for t in blk.flowsheet().config.time:
+                for t in blk.flowsheet().time:
                     blk.mixed_state[t].pressure.unfix()
             else:
                 with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -986,7 +986,7 @@ objects linked to all inlet states and the mixed state,
         super().calculate_scaling_factors()
         mb_type = self.config.material_balance_type
         if mb_type == MaterialBalanceType.useDefault:
-            t_ref = self.flowsheet().config.time.first()
+            t_ref = self.flowsheet().time.first()
             mb_type = self.mixed_state[t_ref].default_material_balance_type()
 
         if hasattr(self, "pressure_equality_constraints"):
