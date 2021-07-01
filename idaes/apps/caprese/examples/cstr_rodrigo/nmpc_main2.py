@@ -12,6 +12,7 @@
 ##############################################################################
 """
 Example for Caprese's module for NMPC.
+Main script for running the example.
 """
 import random
 from idaes.apps.caprese.nmpc import NMPCSim
@@ -26,9 +27,6 @@ import matplotlib.pyplot as plt
 
 __author__ = "Kuan-Han Lin"
 
-"""
-main script for running the example.
-"""
 
 
 # See if ipopt is available and set up solver
@@ -73,8 +71,6 @@ class PlotData(object):
         return fig, ax
 
 def main(plot_switch=False):
-
-    # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_controller = make_model(horizon=10, ntfe=5, ntcp=2, bounds=True)
     sample_time = 2.
     m_plant = make_model(horizon=sample_time, ntfe=2, ntcp=2, bounds = True)
@@ -95,11 +91,8 @@ def main(plot_switch=False):
             m_controller.Tall[0, "T"],
             m_controller.Tall[0, "Tj"],
             m_controller.Ca[0],
-            # m_controller.fs.cstr.outlet.conc_mol[0, 'S'],
-            # m_controller.fs.cstr.outlet.conc_mol[0, 'P'],
-            # m_controller.fs.cstr.outlet.temperature[0],
-            # m_controller.fs.cstr.volume[0],
             ]
+    
     # Construct the "NMPC simulator" object
     nmpc = NMPCSim(
             plant_model=m_plant,
@@ -121,7 +114,9 @@ def main(plot_switch=False):
 
     solve_consistent_initial_conditions(plant, plant.time, solver)
     solve_consistent_initial_conditions(controller, controller.time, solver)
-
+    
+    # We now perform the "RTO" calculation: Find the optimal steady state
+    # to achieve the following setpoint
     setpoint = [(controller.mod.Ca[0], 0.018)]
     setpoint_weights = [(controller.mod.Ca[0], 1.)]
     
@@ -146,7 +141,7 @@ def main(plot_switch=False):
     solver.solve(nmpc.controller, tee=True)
     
     #-------------------------------------------------------------------------
-    #noise for measurements and inputs
+    #noise for measurements
     variance = [
         (nmpc.controller.mod.Tall[0, "T"], 0.05),
         (nmpc.controller.mod.Tall[0, "Tj"], 0.02),
@@ -158,6 +153,7 @@ def main(plot_switch=False):
             (var[c_t0].lb, var[c_t0].ub) for var in controller.measurement_vars
             ]
     
+    # noise for inputs
     variance = [
         (plant.mod.Tjinb[0], 0.01),
         ]
@@ -174,10 +170,10 @@ def main(plot_switch=False):
 
     # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
-    nmpc.plant.mod.Tjinb.fix() #somewhere before forget to fix inputs
+    nmpc.plant.mod.Tjinb.fix() #Fix the input to solve the plant
     solver.solve(nmpc.plant, tee = True)
 
-    for i in range(1,11):
+    for i in range(1, n_samples_to_simulate +1):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
         measured = nmpc.plant.generate_measurements_at_time(p_ts)
         nmpc.plant.advance_one_sample()
@@ -204,9 +200,8 @@ def main(plot_switch=False):
         plant.inject_inputs(inputs)
         
         nmpc.plant.initialize_by_solving_elements(solver)
-        nmpc.plant.mod.Tjinb.fix() #somewhere before forget to fix inputs
-        solver.solve(nmpc.plant, tee = True)
-        
+        nmpc.plant.mod.Tjinb.fix() #Fix the input to solve the plant
+        solver.solve(nmpc.plant, tee = True)    
         
     return nmpc
     
