@@ -68,7 +68,6 @@ class _EstimatorBlockData(_DynamicBlockData):
     def _add_actual_measurement_param(self):
         """This function creates a indexed block and "fixed" variables to allocate 
         actual measurement measured from the plant. 
-
         """
         block_name = "ACTUAL_MEASUREMENT_BLOCK"
         mea_set = self.MEASUREMENT_SET
@@ -86,7 +85,6 @@ class _EstimatorBlockData(_DynamicBlockData):
     def _add_measurement_error(self):
         """This function creates a indexed block, including measurement errors and 
         measurement constraints: actual mea = measured state + mea_err
-
         """
         block_name = "MEASUREMENT_ERROR_BLOCK"
         mea_set = self.MEASUREMENT_SET
@@ -125,6 +123,21 @@ class _EstimatorBlockData(_DynamicBlockData):
     #             mea_err = parent.MEASUREMENT_ERROR_BLOCK[ind].mea_err
     #             return actual_mea[s] == measured_stat[s] + mea_err[s]
     #         meacon_block[i].add_component(con_name, Constraint(sample_points, rule = _con_mea_err))
+    
+    def _add_model_disturbance(self):
+        """This function creates a indexed block, including model disturbances.
+        The order of disturbances is the same as differential vars and derivative vars.
+        """
+        block_name = "MODEL_DISTURBANCE_BLOCK"
+        diffvar_set = self.DIFFERENTIAL_SET
+        moddis_block = Block(diffvar_set)
+        self.add_component(block_name, moddis_block)
+        sample_points = self.sample_points
+        for i in diffvar_set:
+            var_name = "mod_disturb"
+            moddis_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
+            moddis_block[i].find_component(var_name)[0].fix(0.0) #fix model disturbance at t = 0 as 0.0
+        
         
         
 
