@@ -21,7 +21,7 @@ __author__ = "Kuan-Han Lin"
 # from idaes.apps.caprese.common.config import (
 #         ControlPenaltyType,
 #         )
-# from idaes.apps.caprese.common.config import VariableCategory as VC
+from idaes.apps.caprese.common.config import VariableCategory as VC
 # from idaes.apps.caprese.categorize import (
 #         categorize_dae_variables,
 #         CATEGORY_TYPE_MAP,
@@ -66,12 +66,12 @@ class _EstimatorBlockData(_DynamicBlockData):
         print("dummy fun = ", 123)
         
     def _add_actual_measurement_param(self):
-        """This function creates a block and "fixed" variables to allocate 
+        """This function creates a indexed block and "fixed" variables to allocate 
         actual measurement measured from the plant. 
 
         """
-        block_name = "ACTUAL_MEASUREMENT_BLOCK" #should be change after define MEA_ERR category
-        mea_set = self.MEASUREMENT_SET #better to use get_category_set_name
+        block_name = "ACTUAL_MEASUREMENT_BLOCK"
+        mea_set = self.MEASUREMENT_SET
         actmea_block = Block(mea_set)
         self.add_component(block_name, actmea_block)
         # meaerr_block.deactivate() #keep it activate? Yes!
@@ -84,8 +84,12 @@ class _EstimatorBlockData(_DynamicBlockData):
             actmea_block[i].find_component(var_name).fix()
     
     def _add_measurement_error(self):
-        block_name = "MEASUREMENT_ERROR_BLOCK" #should be change after define MEA_ERR category
-        mea_set = self.MEASUREMENT_SET #better to use get_category_set_name
+        """This function creates a indexed block, including measurement errors and 
+        measurement constraints: actual mea = measured state + mea_err
+
+        """
+        block_name = "MEASUREMENT_ERROR_BLOCK"
+        mea_set = self.MEASUREMENT_SET
         meaerr_block = Block(mea_set)
         self.add_component(block_name, meaerr_block)
         # meaerr_block.deactivate() #keep it activate? Yes!
