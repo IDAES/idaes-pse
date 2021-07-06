@@ -17,7 +17,7 @@ import random
 from idaes.apps.caprese.mhe import MHESim
 # from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory
-# from pyomo.dae.initialization import solve_consistent_initial_conditions
+from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from cstr_rodrigo_model2 import make_model
 import pandas as pd
@@ -87,7 +87,7 @@ def main(plot_switch=False):
             ]
     measurements = [
             m_estimator.Tall[0, "T"],
-            # m_controller.Tall[0, "Tj"],
+            # m_estimator.Tall[0, "Tj"],
             m_estimator.Ca[0],
             ]
     
@@ -101,16 +101,43 @@ def main(plot_switch=False):
             measurements=measurements,
             sample_time=sample_time,
             )
+
+    plant = mhe.plant
+    estimator = mhe.estimator
+    
+    p_t0 = mhe.plant.time.first()
+    c_t0 = mhe.estimator.time.first()
+    p_ts = mhe.plant.sample_points[1]
+    c_ts = mhe.estimator.sample_points[1]
+
+    solve_consistent_initial_conditions(plant, plant.time, solver)
+    #measurement_error_constraints are only defined at sample points
+    solve_consistent_initial_conditions(estimator, estimator.time, solver, suppress_warnings = True)
+    
+    # # We now perform the "RTO" calculation: Find the optimal steady state
+    # # to achieve the following setpoint
+    # setpoint = [(estimator.mod.Ca[0], 0.018)]
+    # setpoint_weights = [(estimator.mod.Ca[0], 1.)]
+    
+    # mhe.estimator.add_setpoint_objective(setpoint, setpoint_weights)
+    # mhe.estimator.solve_setpoint(solver)
+    
+    # Now we are ready to construct the tracking NMPC problem
+    # noise_weights = [
+    #         *((v, 1.) for v in mhe.estimator.vectors.differential[:,0]),
+    #         *((v, 1.) for v in mhe.estimator.vectors.input[:,0]),
+    #         ]
+    
+    # mhe.estimator.add_noise_minimize_objective(noise_weights)
+    
+    # mhe.estimator.initialize_to_initial_conditions()
+    
+    # # Solve the first control problem
+    # mhe.estimator.vectors.input[...].unfix()
+    # mhe.estimator.vectors.input[:,0].fix()
+    # solver.solve(mhe.estimator, tee=True)
     
     return mhe
-
-    plant = nmpc.plant
-    estimator = nmpc.estimator
-    
-    p_t0 = nmpc.plant.time.first()
-    c_t0 = nmpc.estimator.time.first()
-    p_ts = nmpc.plant.sample_points[1]
-    c_ts = nmpc.estimator.sample_points[1]
 
 if __name__ == '__main__':
     mhe = main()

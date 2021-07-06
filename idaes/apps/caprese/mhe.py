@@ -111,4 +111,5 @@ class MHESim(object):
         self.estimator._add_measurement_constraint()
         self.estimator._add_model_disturbance()
         self.estimator._add_disturbance_to_differential_cons()
+        self.estimator._add_MHE_variables_into_vectors()
 

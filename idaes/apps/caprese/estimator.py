@@ -53,6 +53,7 @@ from pyomo.environ import (
 #         TerminationCondition,
         Constraint,
         Block,
+        Reference,
         )
 from pyomo.core.base.block import _BlockData
 # from pyomo.common.collections import ComponentMap
@@ -60,6 +61,11 @@ from pyomo.core.base.block import _BlockData
 # from pyomo.dae.set_utils import deactivate_model_at
 # from pyomo.dae.flatten import flatten_dae_components
 from pyomo.core.base.indexed_component import UnindexedComponent_set
+
+import idaes.apps.caprese.nmpc_var as nmpc_var
+# from idaes.apps.caprese.nmpc_var import (
+#         NmpcVar,
+#         )
 
 
 class _EstimatorBlockData(_DynamicBlockData):
@@ -74,14 +80,14 @@ class _EstimatorBlockData(_DynamicBlockData):
         """This function creates a indexed block and "fixed" variables to allocate 
         actual measurement measured from the plant. 
         """
-        block_name = "ACTUAL_MEASUREMENT_BLOCK"
+        block_name = "ACTUALMEASUREMENT_BLOCK"
         mea_set = self.MEASUREMENT_SET
         actmea_block = Block(mea_set)
         self.add_component(block_name, actmea_block)
         # meaerr_block.deactivate() #keep it activate? Yes!
         sample_points = self.sample_points
         for i in mea_set:
-            var_name = "actual_mea"
+            var_name = "var"
             init_mea_block = self.MEASUREMENT_BLOCK[i]
             init_val = {idx: init_mea_block.var[idx].value for idx in sample_points}
             actmea_block[i].add_component(var_name, Var(sample_points, initialize = init_val))
@@ -91,23 +97,23 @@ class _EstimatorBlockData(_DynamicBlockData):
         """This function creates a indexed block, including measurement errors and 
         measurement constraints: actual mea = measured state + mea_err
         """
-        block_name = "MEASUREMENT_ERROR_BLOCK"
+        block_name = "MEASUREMENTERROR_BLOCK"
         mea_set = self.MEASUREMENT_SET
         meaerr_block = Block(mea_set)
         self.add_component(block_name, meaerr_block)
         # meaerr_block.deactivate() #keep it activate? Yes!
         sample_points = self.sample_points
         for i in mea_set:
-            var_name = "mea_err"
+            var_name = "var"
             meaerr_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
             
             # con_name = "con_mea_err" #actual_mea = measured_state + mea_err
             # def _con_mea_err(m, s):
             #     ind = m.index()
             #     parent = m.parent_block()
-            #     actual_mea = parent.ACTUAL_MEASUREMENT_BLOCK[ind].actual_mea
+            #     actual_mea = parent.ACTUALMEASUREMENT_BLOCK[ind].actual_mea
             #     measured_stat = parent.MEASUREMENT_BLOCK[ind].var
-            #     mea_err = parent.MEASUREMENT_ERROR_BLOCK[ind].mea_err
+            #     mea_err = parent.MEASUREMENTERROR_BLOCK[ind].mea_err
             #     return actual_mea[s] == measured_stat[s] + mea_err[s]
             # meaerr_block[i].add_component(con_name, Constraint(sample_points, rule = _con_mea_err))
             
@@ -118,29 +124,33 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.add_component(block_name, meacon_block)
         
         con_name = "con_mea_err" #actual_mea = measured_state + mea_err
+        time = self.time
         sample_points = self.sample_points
         for i in mea_set:
             def _con_mea_err(m, s):
-                ind = m.index()
-                parent = m.parent_block()
-                actual_mea = parent.ACTUAL_MEASUREMENT_BLOCK[ind].actual_mea
-                measured_stat = parent.MEASUREMENT_BLOCK[ind].var
-                mea_err = parent.MEASUREMENT_ERROR_BLOCK[ind].mea_err
-                return actual_mea[s] == measured_stat[s] + mea_err[s]
-            meacon_block[i].add_component(con_name, Constraint(sample_points, 
+                if s not in sample_points:
+                    return Constraint.Skip
+                else:
+                    ind = m.index()
+                    parent = m.parent_block()
+                    actual_mea = parent.ACTUALMEASUREMENT_BLOCK[ind].var
+                    measured_stat = parent.MEASUREMENT_BLOCK[ind].var
+                    mea_err = parent.MEASUREMENTERROR_BLOCK[ind].var
+                    return actual_mea[s] == measured_stat[s] + mea_err[s]
+            meacon_block[i].add_component(con_name, Constraint(time, 
                                                                rule = _con_mea_err))
     
     def _add_model_disturbance(self):
         """This function creates a indexed block, including model disturbances.
         The order of disturbances is the same as differential vars and derivative vars.
         """
-        block_name = "MODEL_DISTURBANCE_BLOCK"
+        block_name = "MODELDISTURBANCE_BLOCK"
         diffvar_set = self.DIFFERENTIAL_SET
         moddis_block = Block(diffvar_set)
         self.add_component(block_name, moddis_block)
         sample_points = self.sample_points
         for i in diffvar_set:
-            var_name = "mod_disturb"
+            var_name = "var"
             moddis_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
             moddis_block[i].find_component(var_name)[0].fix(0.0) #fix model disturbance at t = 0 as 0.0
         
@@ -196,7 +206,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             for tp in time:
                 curr_sampt = curr_sample_point(tp, sample_points)
                 newbody = (curr_difeq[tp].body - 
-                           self.MODEL_DISTURBANCE_BLOCK[mod_dist_block_ind].mod_disturb[curr_sampt])
+                           self.MODELDISTURBANCE_BLOCK[mod_dist_block_ind].var[curr_sampt])
                 #Differential constraints are confirmed as equalities in categorize_dae_variables_and_constraints
                 #I just set it equal to the original upper bound for convience.
                 newexpr = newbody == curr_difeq[tp].upper.value 
@@ -204,6 +214,44 @@ class _EstimatorBlockData(_DynamicBlockData):
                 con_attr.add(tp, expr = newexpr)
             curr_difeq.deactivate()
             
+    def _add_MHE_variables_into_vectors(self):
+        MHE_CATEGORY_TYPE_MAP = {
+            VC.ACTUALMEASUREMENT: nmpc_var.ActualMeasurementVar,
+            VC.MEASUREMENTERROR: nmpc_var.MeasurementErrorVar,
+            VC.MODELDISTURBANCE: nmpc_var.ModelDisturbanceVar,
+                                }
+        
+        MHE_category_list_map = {
+            VC.ACTUALMEASUREMENT: [self.ACTUALMEASUREMENT_BLOCK[i].var
+                                   for i in self.MEASUREMENT_SET],
+            VC.MEASUREMENTERROR: [self.MEASUREMENTERROR_BLOCK[i].var
+                                  for i in self.MEASUREMENT_SET],
+            VC.MODELDISTURBANCE: [self.MODELDISTURBANCE_BLOCK[i].var
+                                  for i in self.DERIVATIVE_SET],
+                                }
+        
+        MHE_category_dict = {
+            category: [
+                Reference(var, ctype=ctype)
+                for var in MHE_category_list_map[category]
+                ]
+            for category, ctype in MHE_CATEGORY_TYPE_MAP.items()
+                            }
+        
+        self.MHE_category_dict = MHE_category_dict
+            
+        for categ in MHE_category_dict:
+            ctype = MHE_CATEGORY_TYPE_MAP.get(categ, nmpc_var.NmpcVar)
+            block_name = self.get_category_block_name(categ)
+            var_name = self._var_name
+            block = getattr(self, block_name)
+            _slice = block[:]
+            _slice = getattr(_slice, var_name)[:]
+            ref = Reference(_slice, ctype=nmpc_var._NmpcVector)
+            self.vectors.add_component(
+                    categ.name.lower(), # Lowercase of the enum name
+                    ref,
+                    )
         
         
 

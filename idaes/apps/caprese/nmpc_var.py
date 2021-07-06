@@ -72,6 +72,15 @@ class FixedVar(NmpcVar):
 
 class MeasuredVar(NmpcVar):
     _attr = 'measurement'
+    
+class ActualMeasurementVar(NmpcVar):
+    _attr = 'actualmeasurement'
+    
+class MeasurementErrorVar(NmpcVar):
+    _attr = 'meaerror'
+
+class ModelDisturbanceVar(NmpcVar):
+    _attr = 'modeldisturbance'
 
 
 class _NmpcVector(IndexedVar):
