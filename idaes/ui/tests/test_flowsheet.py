@@ -28,6 +28,7 @@ from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VL
     BTXParameterBlock,
 )
 from idaes.generic_models.unit_models import Flash, Mixer
+from .shared import dict_diff
 
 # === Sample data ===
 
@@ -337,9 +338,16 @@ def test_flowsheet_serializer_flash(flash_flowsheet, flash_flowsheet_json):
     stored_dict = json.loads(flash_flowsheet_json)
     _canonicalize(test_dict)
     _canonicalize(stored_dict)
-    assert json.dumps(test_dict, sort_keys=True) == json.dumps(
-        stored_dict, sort_keys=True
-    )
+    test_json = json.dumps(test_dict, sort_keys=True)
+    stored_json = json.dumps(stored_dict, sort_keys=True)
+    if test_json != stored_json:
+        diff = dict_diff(test_dict, stored_dict)
+        print("Diff between generated dict and expected dict:")
+        print(diff)
+        print("---")
+        print("Generated data (JSON):\n{test_json}")
+        print("---")
+        print("Expected data (JSON):\n{test_json}")
 
 
 def _show_json(test=None, stored=None):
