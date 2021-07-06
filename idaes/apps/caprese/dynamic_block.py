@@ -25,6 +25,7 @@ from idaes.apps.caprese.common.config import (
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
+        categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
 from idaes.apps.caprese.nmpc_var import (
@@ -47,6 +48,7 @@ from pyomo.environ import (
         Set,
         ComponentUID,
         Suffix,
+        Constraint,
         )
 from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, SubclassOf
@@ -123,6 +125,23 @@ class _DynamicBlockData(_BlockData):
                     measurements=measurements,
                     )
             self.category_dict = category_dict
+            
+            #Want to replace "categorize_dae_variables" with "categorize_dae_variables_and_constraints",
+            #but MEASUREMENT category disappears in the latter function; check it with Robby.
+            scalar_cons, dae_cons = flatten_dae_components(
+                    model,
+                    time,
+                    ctype=Constraint,
+                    )
+            
+            not_use_category_dict, con_category_dict = categorize_dae_variables_and_constraints(
+                                                                                    model,
+                                                                                    dae_vars,
+                                                                                    dae_cons,
+                                                                                    time,
+                                                                                    )
+            self.con_category_dict = con_category_dict  
+                                                                            
 
         keys = list(category_dict)
         for categ in keys:
