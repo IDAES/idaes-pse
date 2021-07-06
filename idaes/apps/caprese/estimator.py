@@ -22,10 +22,11 @@ __author__ = "Kuan-Han Lin"
 #         ControlPenaltyType,
 #         )
 from idaes.apps.caprese.common.config import VariableCategory as VC
-# from idaes.apps.caprese.categorize import (
-#         categorize_dae_variables,
-#         CATEGORY_TYPE_MAP,
-#         )
+from idaes.apps.caprese.categorize import (
+        # categorize_dae_variables,
+        _identify_derivative_if_differential,
+        # CATEGORY_TYPE_MAP,
+        )
 # from idaes.apps.caprese.nmpc_var import (
 #         NmpcVar,
 #         DiffVar,
@@ -41,6 +42,10 @@ from idaes.apps.caprese.dynamic_block import (
         DynamicBlock,
         )
 # from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.apps.caprese.common.config import (
+        VariableCategory as VC,
+        ConstraintCategory as CC,
+        )
 
 from pyomo.environ import (
         Var,
@@ -96,7 +101,25 @@ class _EstimatorBlockData(_DynamicBlockData):
             var_name = "mea_err"
             meaerr_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
             
-            con_name = "con_mea_err" #actual_mea = measured_state + mea_err
+            # con_name = "con_mea_err" #actual_mea = measured_state + mea_err
+            # def _con_mea_err(m, s):
+            #     ind = m.index()
+            #     parent = m.parent_block()
+            #     actual_mea = parent.ACTUAL_MEASUREMENT_BLOCK[ind].actual_mea
+            #     measured_stat = parent.MEASUREMENT_BLOCK[ind].var
+            #     mea_err = parent.MEASUREMENT_ERROR_BLOCK[ind].mea_err
+            #     return actual_mea[s] == measured_stat[s] + mea_err[s]
+            # meaerr_block[i].add_component(con_name, Constraint(sample_points, rule = _con_mea_err))
+            
+    def _add_measurement_constraint(self):
+        block_name = "MEASUREMENT_CONSTRAINT_BLOCK" 
+        mea_set = self.MEASUREMENT_SET
+        meacon_block = Block(mea_set)
+        self.add_component(block_name, meacon_block)
+        
+        con_name = "con_mea_err" #actual_mea = measured_state + mea_err
+        sample_points = self.sample_points
+        for i in mea_set:
             def _con_mea_err(m, s):
                 ind = m.index()
                 parent = m.parent_block()
@@ -104,25 +127,8 @@ class _EstimatorBlockData(_DynamicBlockData):
                 measured_stat = parent.MEASUREMENT_BLOCK[ind].var
                 mea_err = parent.MEASUREMENT_ERROR_BLOCK[ind].mea_err
                 return actual_mea[s] == measured_stat[s] + mea_err[s]
-            meaerr_block[i].add_component(con_name, Constraint(sample_points, rule = _con_mea_err))
-            
-    # def _add_measurement_constraint(self):
-    #     block_name = "MEASUREMENT_CONSTRAINT_BLOCK" #should be change after define MEA_ERR category
-    #     mea_set = self.MEASUREMENT_SET #better to use get_category_set_name
-    #     meacon_block = Block(mea_set)
-    #     self.add_component(block_name, meacon_block)
-        
-    #     con_name = "con_mea_err" #actual_mea = measured_state + mea_err
-    #     sample_points = self.sample_points
-    #     for i in mea_set:
-    #         def _con_mea_err(m, s):
-    #             ind = m.index()
-    #             parent = m.parent_block()
-    #             actual_mea = parent.ACTUAL_MEASUREMENT_BLOCK[ind].actual_mea
-    #             measured_stat = parent.MEASUREMENT_BLOCK[ind].var
-    #             mea_err = parent.MEASUREMENT_ERROR_BLOCK[ind].mea_err
-    #             return actual_mea[s] == measured_stat[s] + mea_err[s]
-    #         meacon_block[i].add_component(con_name, Constraint(sample_points, rule = _con_mea_err))
+            meacon_block[i].add_component(con_name, Constraint(sample_points, 
+                                                               rule = _con_mea_err))
     
     def _add_model_disturbance(self):
         """This function creates a indexed block, including model disturbances.
@@ -138,6 +144,66 @@ class _EstimatorBlockData(_DynamicBlockData):
             moddis_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
             moddis_block[i].find_component(var_name)[0].fix(0.0) #fix model disturbance at t = 0 as 0.0
         
+    def _add_disturbance_to_differential_cons(self):
+        """
+        This function creates a indexed block, including model differential equations
+        with model disturbances.
+        """
+        block_name = "DISTURBED_DIFFERENTIAL_CONSTRAINT_BLOCK"
+        diff_equs = self.con_category_dict[CC.DIFFERENTIAL]
+        n_diff_equs = len(diff_equs)
+        assert n_diff_equs == len(self.DIFFERENTIAL_SET) #This should be correct!
+        ddc_block = Block(range(n_diff_equs))
+        self.add_component(block_name, ddc_block)
+        
+        #Because model disturbances is indexed by sample time, this function finds
+        #the corresponding sample time from a given time point.
+        def curr_sample_point(time_pt, sample_points):
+            for j in sample_points:
+                if j >= time_pt:
+                    return j
+        
+        #Now, var_category and con_category don't come from the same function.
+        #(var_category is from categorize_dae_variables; con_category is from categorize_dae_variables_and_constraints)
+        #Thus, the order of differential vars may be different from the order of differential equations.
+        #(Note that the order of differential vars, derivative vars, and model disturbances are corresponding.)
+        #Use the following function to get the correct model disturbance.
+        def find_correspondsing_model_disturbance(curr_difeq, time, derivativelist):
+            t0 = time.first()
+            check_list = [id(var[t0]) for var in derivativelist]
+            is_diff, target_deriv = _identify_derivative_if_differential(curr_difeq[t0], time)
+            if not is_diff:
+                raise RuntimeError(
+                "Fail to find the corresponding model disturbance from a differential equation."
+                )
+            target_id = id(target_deriv)
+            model_dist_block_ind = check_list.index(target_id)
+            return model_dist_block_ind
+        #if var_category and con_category are all from "categorize_dae_variables_and_constraints",
+        #"find_correspondsing_model_disturbance" can be removed!
+                
+        time = self.time
+        sample_points = self.sample_points
+        derivativelist = self.category_dict[VC.DERIVATIVE]
+        for i in range(n_diff_equs):
+            curr_difeq = diff_equs[i]
+            mod_dist_block_ind = find_correspondsing_model_disturbance(curr_difeq, 
+                                                                       time, 
+                                                                       derivativelist)
+            con_name = "disturbed_diff_con"
+            ddc_block[i].add_component(con_name, Constraint(time))
+            #Here run the iterations to set the constraint expression one by one. Other better way to do that?
+            for tp in time:
+                curr_sampt = curr_sample_point(tp, sample_points)
+                newbody = (curr_difeq[tp].body - 
+                           self.MODEL_DISTURBANCE_BLOCK[mod_dist_block_ind].mod_disturb[curr_sampt])
+                #Differential constraints are confirmed as equalities in categorize_dae_variables_and_constraints
+                #I just set it equal to the original upper bound for convience.
+                newexpr = newbody == curr_difeq[tp].upper.value 
+                con_attr = ddc_block[i].find_component(con_name)
+                con_attr.add(tp, expr = newexpr)
+            curr_difeq.deactivate()
+            
         
         
 

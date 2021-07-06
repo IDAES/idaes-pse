@@ -19,7 +19,7 @@ from idaes.apps.caprese.mhe import MHESim
 from pyomo.environ import SolverFactory
 # from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
-from cstr_rodrigo_model2 import make_model
+from idaes.apps.caprese.examples.cstr_model import make_model
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -69,10 +69,10 @@ class PlotData(object):
         return fig, ax
 
 def main(plot_switch=False):
-    m_estimator = make_model(horizon=4., ntfe=4, ntcp=2, bounds=True)
-    sample_time = 2.
-    m_plant = make_model(horizon=sample_time, ntfe=2, ntcp=2, bounds = True)
-    time_plant = m_plant.t
+    m_estimator = make_model(horizon=1, ntfe=4, ntcp=2, bounds=True)
+    sample_time = 0.5
+    m_plant = make_model(horizon=sample_time, ntfe=5, ntcp=2)
+    time_plant = m_plant.fs.time
 
     simulation_horizon = 20
     n_samples_to_simulate = round(simulation_horizon/sample_time)
@@ -83,20 +83,24 @@ def main(plot_switch=False):
     # We must identify for the estimator which variables are our
     # inputs and measurements.
     inputs = [
-            m_plant.Tjinb[0],
+            m_plant.fs.mixer.S_inlet.flow_vol[0],
+            m_plant.fs.mixer.E_inlet.flow_vol[0],
             ]
     measurements = [
-            m_estimator.Tall[0, "T"],
-            # m_controller.Tall[0, "Tj"],
-            m_estimator.Ca[0],
+            m_estimator.fs.cstr.outlet.conc_mol[0, 'C'],
+            m_estimator.fs.cstr.outlet.conc_mol[0, 'E'],
+            m_estimator.fs.cstr.outlet.conc_mol[0, 'S'],
+            m_estimator.fs.cstr.outlet.conc_mol[0, 'P'],
+            m_estimator.fs.cstr.outlet.temperature[0],
+            m_estimator.fs.cstr.volume[0],
             ]
     
     # Construct the "MHE simulator" object
     mhe = MHESim(
             plant_model=m_plant,
-            plant_time_set=m_plant.t,
+            plant_time_set=m_plant.fs.time,
             estimator_model=m_estimator, 
-            estimator_time_set=m_estimator.t,
+            estimator_time_set=m_estimator.fs.time,
             inputs_at_t0=inputs,
             measurements=measurements,
             sample_time=sample_time,

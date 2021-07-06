@@ -108,6 +108,7 @@ class MHESim(object):
         #The following should be organized in a function
         self.estimator._add_actual_measurement_param()
         self.estimator._add_measurement_error()
-        # self.estimator._add_measurement_constraint()
+        self.estimator._add_measurement_constraint()
         self.estimator._add_model_disturbance()
+        self.estimator._add_disturbance_to_differential_cons()
 
