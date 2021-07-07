@@ -217,16 +217,31 @@ def test_property_construction_ordered():
     assert len(list(m.component_data_objects(Var))) == nvar
     assert len(list(m.component_data_objects(Constraint))) == ncon
 
+    matching = [
+            ('mw', 'mw_eqn'),
+            ('dens_mol', 'ideal_gas'),
+            ('dens_mol_comp', 'comp_conc_eqn'),
+            ('dens_mass', 'dens_mass_basis'),
+            ('visc_d', 'visc_d_constraint'),
+            ('diffusion_comp', 'diffusion_comp_constraint'),
+            ('therm_cond', 'therm_cond_constraint'),
+            ('cp_mol_comp', 'cp_shomate_eqn'),
+            ('cp_mol', 'mixture_heat_capacity_eqn'),
+            ('cp_mass', 'cp_mass_basis'),
+            ('enth_mol_comp', 'enthalpy_shomate_eqn'),
+            ('enth_mol', 'mixture_enthalpy_eqn'),
+            ]   
+
     # Make sure the matching captures all the non-state vars.
     state_vars = m.fs.state.define_state_vars()
     n_state_vars = len(state_vars)
     n_vars = len(m.fs.properties._metadata._properties)
-    assert len(m.fs.properties.matching) == n_vars - n_state_vars
+    assert len(matching) == n_vars - n_state_vars
 
     # Make sure we can add constraints one at a time, and only
     # add one additional variable. This is specific to this
     # property package.
-    for varname, conname in m.fs.properties.matching:
+    for varname, conname in matching:
         assert varname not in state_vars
         var = getattr(m.fs.state, varname)
         con = getattr(m.fs.state, conname)

@@ -231,26 +231,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'diffusion_comp': {'method': '_diffusion_comp',
                                    'units': 'cm2/s'}})
 
-        # Not only a matching, but an ordering as well. Depending on the
-        # property package, the order may or may not be meaningful. Here
-        # the order is a topological order of the DAG of constraints,
-        # meaning the addition of each constraint-data in this order adds
-        # only one additional vardata to the system.
-        cls.matching = [
-                ('mw', 'mw_eqn'),
-                ('dens_mol', 'ideal_gas'),
-                ('dens_mol_comp', 'comp_conc_eqn'),
-                ('dens_mass', 'dens_mass_basis'),
-                ('visc_d', 'visc_d_constraint'),
-                ('diffusion_comp', 'diffusion_comp_constraint'),
-                ('therm_cond', 'therm_cond_constraint'),
-                ('cp_mol_comp', 'cp_shomate_eqn'),
-                ('cp_mol', 'mixture_heat_capacity_eqn'),
-                ('cp_mass', 'cp_mass_basis'),
-                ('enth_mol_comp', 'enthalpy_shomate_eqn'),
-                ('enth_mol', 'mixture_enthalpy_eqn'),
-                ]
-
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
                                'mass': pyunits.kg,
