@@ -276,24 +276,6 @@ def test_property_construction_unordered():
     assert len(list(m.component_data_objects(Constraint))) == ncon
 
 
-def _create_subsystem_block(variables, constraints):
-    block = ConcreteModel()
-    block.vars = Reference(variables)
-    block.cons = Reference(constraints)
-    var_set = ComponentSet(variables)
-    other_vars = []
-    for con in constraints:
-        for var in identify_variables(con.body, include_fixed=False):
-            # Fixed vars will not be picked up by writer, so no point
-            # including them. If we use this block for other purposes
-            # than solving, this may change.
-            if var not in var_set:
-                other_vars.append(var)
-                var_set.add(var)
-    block.other_vars = Reference(other_vars)
-    return block
-
-
 class TestProperties(TestCase):
     """
     The purpose of these tests is to ensure that the property package's
