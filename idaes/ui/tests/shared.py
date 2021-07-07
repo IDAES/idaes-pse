@@ -26,12 +26,11 @@ def dict_diff(d1, d2, result=[], pfx=""):
         if set(d1.keys()) != set(d2.keys()):
             for k in d1:
                 if k not in d2:
-                    result.append(f"{pfx}{k} in first, not in second")
+                    result.append(f"{pfx}.{k} in first, not in second")
             for k in d2:
                 if k not in d1:
-                    result.append(f"{pfx}{k} in first, not in second")
+                    result.append(f"{pfx}.{k} in second, not in first")
         for k in d1:
             if k in d2:
-                pfx += f"{k}."
-                dict_diff(d1[k], d2[k], result=result, pfx=pfx)
+                dict_diff(d1[k], d2[k], result=result, pfx=f"{pfx}.{k}")
     return result
