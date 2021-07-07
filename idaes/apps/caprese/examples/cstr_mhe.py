@@ -17,7 +17,7 @@ import random
 from idaes.apps.caprese.mhe import MHESim
 # from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory
-# from pyomo.dae.initialization import solve_consistent_initial_conditions
+from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
 import pandas as pd
@@ -106,15 +106,49 @@ def main(plot_switch=False):
             sample_time=sample_time,
             )
     
-    return mhe
-
-    plant = nmpc.plant
-    estimator = nmpc.estimator
+    plant = mhe.plant
+    estimator = mhe.estimator
     
-    p_t0 = nmpc.plant.time.first()
-    c_t0 = nmpc.estimator.time.first()
-    p_ts = nmpc.plant.sample_points[1]
-    c_ts = nmpc.estimator.sample_points[1]
+    p_t0 = mhe.plant.time.first()
+    c_t0 = mhe.estimator.time.first()
+    p_ts = mhe.plant.sample_points[1]
+    c_ts = mhe.estimator.sample_points[1]
+
+    solve_consistent_initial_conditions(plant, plant.time, solver)
+    #measurement_error_constraints are only defined at sample points
+    solve_consistent_initial_conditions(estimator, estimator.time, solver, suppress_warnings = True)
+    
+    estimator.mod.fs.cstr.volume[0].unfix()
+    
+    # Now we are ready to construct the objective function for MHE
+    model_disturbance_weights = [
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','S'], 0.1),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','E'], 0.1),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','C'], 0.1),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','P'], 0.1),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','Solvent'], 0.1),
+            (estimator.mod.fs.cstr.control_volume.energy_holdup[0,'aq'], 0.1),
+            ]
+
+    measurement_noise_weights = [
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'C'], 10.),
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'E'], 10.),
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'S'], 10.),
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 10.),
+            (estimator.mod.fs.cstr.outlet.temperature[0], 0.1),
+            (estimator.mod.fs.cstr.volume[0], 1.),
+            ]   
+    
+    mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
+                                               measurement_noise_weights)
+    
+    mhe.estimator.initialize_to_initial_conditions()
+    
+    # Solve the first estimation problem
+    mhe.estimator.check_var_con_dof()
+    solver.solve(mhe.estimator, tee=True)
+    
+    return mhe
 
 if __name__ == '__main__':
     mhe = main()

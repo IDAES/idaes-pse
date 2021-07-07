@@ -28,20 +28,20 @@ from idaes.apps.caprese.categorize import (
         # CATEGORY_TYPE_MAP,
         )
 # from idaes.apps.caprese.nmpc_var import (
-#         NmpcVar,
+        # NmpcVar,
 #         DiffVar,
 #         AlgVar,
 #         InputVar,
 #         DerivVar,
 #         FixedVar,
-#         MeasuredVar,
-#         )
+#         MeasuredVar,         
+        # )
 from idaes.apps.caprese.dynamic_block import (
         _DynamicBlockData,
         IndexedDynamicBlock,
         DynamicBlock,
         )
-# from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.apps.caprese.common.config import (
         VariableCategory as VC,
         ConstraintCategory as CC,
@@ -95,7 +95,8 @@ class _EstimatorBlockData(_DynamicBlockData):
         for i in mea_set:
             var_name = "var"
             init_mea_block = self.MEASUREMENT_BLOCK[i]
-            init_val = {idx: init_mea_block.var[idx].value for idx in sample_points}
+            init_val = {idx: 0.0 if init_mea_block.var[idx].value is None else init_mea_block.var[idx].value 
+                        for idx in sample_points} #Not sure why it doesn't work when the value is None
             actmea_block[i].add_component(var_name, Var(sps_set, initialize = init_val))
             actmea_block[i].find_component(var_name).fix() #This block should always be fixed!
     
@@ -280,7 +281,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         #give weights or variances?
         #creating a component mapping is better!!!!!
-        #use addtribute?
+        #try add weight attribute in Var? fail....
         moddis_weight_dict = {}
         for var, weight in model_disturbance_weights:
             moddis = self.diffvar_map_moddis[var]
@@ -313,6 +314,20 @@ class _EstimatorBlockData(_DynamicBlockData):
             )
         
         self.noise_minimize_objective = Objective(expr = wQw + vRv)  
+        
+    def check_var_con_dof(self):
+        self.vectors.input[...].fix()
+        self.vectors.differential[...].unfix()
+        
+        for diff_eq in self.con_category_dict[CC.DIFFERENTIAL]:
+            diff_eq.deactivate()
+        
+        n_diffvars = len(self.DIFFERENTIAL_SET.ordered_data())
+        n_steps_in_horizon = len(self.sample_points) - 1
+        correct_dof = n_diffvars * (n_steps_in_horizon + 1)
+        
+        dof = degrees_of_freedom(self)
+        assert dof == correct_dof
         
 
 

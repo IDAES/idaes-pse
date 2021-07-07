@@ -113,16 +113,8 @@ def main(plot_switch=False):
     solve_consistent_initial_conditions(plant, plant.time, solver)
     #measurement_error_constraints are only defined at sample points
     solve_consistent_initial_conditions(estimator, estimator.time, solver, suppress_warnings = True)
-    
-    # # We now perform the "RTO" calculation: Find the optimal steady state
-    # # to achieve the following setpoint
-    # setpoint = [(estimator.mod.Ca[0], 0.018)]
-    # setpoint_weights = [(estimator.mod.Ca[0], 1.)]
-    
-    # mhe.estimator.add_setpoint_objective(setpoint, setpoint_weights)
-    # mhe.estimator.solve_setpoint(solver)
-    
-    # Now we are ready to construct the tracking NMPC problem
+        
+    # Now we are ready to construct the objective function for MHE
     model_disturbance_weights = [
             (estimator.mod.Ca[0], 0.1),
             (estimator.mod.Tall[0, "T"], 0.2),
@@ -137,12 +129,11 @@ def main(plot_switch=False):
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
     
-    # mhe.estimator.initialize_to_initial_conditions()
+    mhe.estimator.initialize_to_initial_conditions()
     
-    # # Solve the first control problem
-    # mhe.estimator.vectors.input[...].unfix()
-    # mhe.estimator.vectors.input[:,0].fix()
-    # solver.solve(mhe.estimator, tee=True)
+    # Solve the first estimation problem
+    mhe.estimator.check_var_con_dof()
+    solver.solve(mhe.estimator, tee=True)
     
     return mhe
 
