@@ -326,9 +326,11 @@ def test_boiler_demo(serialized_boiler_flowsheet_json):
     stored_dict = json.loads(serialized_boiler_flowsheet_json)
     _canonicalize(test_dict)
     _canonicalize(stored_dict)
-    assert json.dumps(test_dict, sort_keys=True) == json.dumps(
-        stored_dict, sort_keys=True
-    )
+    test_json = json.dumps(test_dict, sort_keys=True)
+    stored_json = json.dumps(stored_dict, sort_keys=True)
+    if test_json != stored_json:
+        report_failure(test_dict, stored_dict)
+        pytest.fail("Serialized flowsheet does not match expected")
 
 
 @pytest.mark.unit
@@ -341,13 +343,19 @@ def test_flowsheet_serializer_flash(flash_flowsheet, flash_flowsheet_json):
     test_json = json.dumps(test_dict, sort_keys=True)
     stored_json = json.dumps(stored_dict, sort_keys=True)
     if test_json != stored_json:
-        diff = dict_diff(test_dict, stored_dict)
-        print("Diff between generated dict and expected dict:")
-        print(diff)
-        print("---")
-        print("Generated data (JSON):\n{test_json}")
-        print("---")
-        print("Expected data (JSON):\n{test_json}")
+        report_failure(test_dict, stored_dict)
+        pytest.fail("Serialized flowsheet does not match expected")
+
+
+def report_failure(test_dict, stored_dict):
+    test_json, stored_json = (json.dumps(d, indent=2) for d in (test_dict, stored_dict))
+    diff = dict_diff(test_dict, stored_dict)
+    print("Diff between generated dict and expected dict:")
+    print(diff)
+   # print("---")
+   # print(f"Generated data (JSON):\n{test_json}")
+   # print("---")
+    # print(f"Expected data (JSON):\n{stored_json}")
 
 
 def _show_json(test=None, stored=None):
