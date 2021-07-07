@@ -260,8 +260,9 @@ class FlowsheetSerializer:
             stream_states_dict,
         )  # deferred to avoid circ. import
 
-        # We might have this information from generating self.serialized_components but I (Makayla) don't
-        # know how that connects to the stream names so this will be left alone for now
+        # We might have this information from generating self.serialized_components
+        # but I (Makayla) don't know how that connects to the stream names so this
+        # will be left alone for now
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
             for var, var_value in stream_value.define_display_vars().items():
@@ -405,6 +406,11 @@ class FlowsheetSerializer:
                     "name": unit_port.getname(),
                     "type": type_,
                 }
+                # Add edge. src/dst are reversed for feed vs. product
+                src = unit_port if type_ == "feed" else self.ports[port]
+                dst = unit_port if type_ != "feed" else self.ports[port]
+                self.edges[edge_name] = {"source": src, "dest": dst}
+                # Add label
                 self.labels[edge_name] = f"{type_} info"
             else:
                 self._logger.warning(
