@@ -22,7 +22,7 @@ import pytest
 from pyomo.environ import ConcreteModel, units as pyunits
 from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.core import FlowsheetBlock, MaterialBalanceType, LiquidPhase
+from idaes.core import FlowsheetBlock, MaterialBalanceType, LiquidPhase, Solute
 from idaes.generic_models.unit_models import Flash, HeatExchanger1D
 from idaes.generic_models.unit_models.pressure_changer import \
     PressureChanger, ThermodynamicAssumption
@@ -482,7 +482,7 @@ def test_interrogator_parameter_block_custom_phase_comps():
 
     m.fs.params = PropertyInterrogatorBlock(default={
         "phase_list": {"P1": LiquidPhase, "P2": None},
-        "component_list": {"c1": None, "c2": None}})
+        "component_list": {"c1": Solute, "c2": None}})
 
     # Check that parameter block has expected attributes
     assert isinstance(m.fs.params.required_properties, dict)
@@ -497,8 +497,8 @@ def test_interrogator_state_block_methods_custom_phase_comps():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock(default={
-        "phase_list": {"P1": None, "P2": None},
-        "component_list": {"c1": None, "c2": None}})
+        "phase_list": {"P1": LiquidPhase, "P2": None},
+        "component_list": {"c1": Solute, "c2": None}})
 
     m.fs.props = m.fs.params.build_state_block([0])
 

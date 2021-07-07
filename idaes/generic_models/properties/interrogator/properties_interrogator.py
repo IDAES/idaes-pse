@@ -79,7 +79,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
                 if t is None:
                     t = Phase
                 elif not issubclass(
-                        t, (Phase, LiquidPhase, SolidPhase, VaporPhase)):
+                        t, Phase):
                     raise Exception()
                 self.add_component(p, t())
 

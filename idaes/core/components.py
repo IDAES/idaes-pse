@@ -233,7 +233,7 @@ class ComponentData(ProcessBlockData):
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
-@declare_process_block_class("Solute")
+@declare_process_block_class("Solute", block_class=Component)
 class SoluteData(ComponentData):
     """
     Component type for species which should be considered as solutes in
@@ -262,7 +262,7 @@ class SoluteData(ComponentData):
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
-@declare_process_block_class("Solvent")
+@declare_process_block_class("Solvent", block_class=Component)
 class SolventData(ComponentData):
     """
     Component type for species which should be considered as solvents in
@@ -289,7 +289,7 @@ class SolventData(ComponentData):
         parent.solvent_set.add(self.local_name)
 
 
-@declare_process_block_class("Ion")
+@declare_process_block_class("Ion", block_class=Component)
 class IonData(SoluteData):
     """
     Component type for ionic species. These can exist only in AqueousPhases,
@@ -328,7 +328,7 @@ class IonData(SoluteData):
             "directly".format(self.name))
 
 
-@declare_process_block_class("Anion")
+@declare_process_block_class("Anion", block_class=Component)
 class AnionData(IonData):
     """
     Component type for anionic species. These can exist only in AqueousPhases,
@@ -360,7 +360,7 @@ class AnionData(IonData):
         parent.anion_set.add(self.local_name)
 
 
-@declare_process_block_class("Cation")
+@declare_process_block_class("Cation", block_class=Component)
 class CationData(IonData):
     """
     Component type for cationic species. These can exist only in AqueousPhases,
@@ -392,7 +392,7 @@ class CationData(IonData):
         parent.cation_set.add(self.local_name)
 
 
-@declare_process_block_class("Apparent")
+@declare_process_block_class("Apparent", block_class=Component)
 class ApparentData(SoluteData):
     """
     Component type for apparent species. Apparent species are those compunds

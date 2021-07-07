@@ -21,7 +21,7 @@ import pytest
 
 from pyomo.environ import ConcreteModel, units as pyunits
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, LiquidPhase, Solute
 from idaes.generic_models.unit_models import CSTR, PFR
 from idaes.generic_models.properties.interrogator import (
         PropertyInterrogatorBlock, ReactionInterrogatorBlock)
@@ -352,8 +352,8 @@ def test_interrogator_rxn_block_unindexed_call_custom_phase_comp():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock(default={
-        "phase_list": ["P1", "P2"],
-        "component_list": ["c1", "c2"]})
+        "phase_list": {"P1": LiquidPhase, "P2": None},
+        "component_list": {"c1": Solute, "c2": None}})
     m.fs.rxn_params = ReactionInterrogatorBlock(
             default={"property_package": m.fs.params})
 
