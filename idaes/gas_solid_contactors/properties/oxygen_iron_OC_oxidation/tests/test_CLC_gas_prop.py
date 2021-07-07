@@ -131,28 +131,6 @@ def test_solution(gas_prop):
 # -----------------------------------------------------------------------------
 
 
-def make_model():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    m.fs.properties = GasPhaseParameterBlock()
-    m.fs.state = m.fs.properties.build_state_block(
-            default={
-                "parameters": m.fs.properties,
-                "defined_state": True,
-                })
-
-    m.fs.state.flow_mol.set_value(1.0*pyunits.mol/pyunits.s)
-    m.fs.state.temperature.set_value(450.0*pyunits.K)
-    m.fs.state.pressure.set_value(1.60*pyunits.bar)
-    m.fs.state.mole_frac_comp["CO2"].set_value(0.0004)
-    m.fs.state.mole_frac_comp["H2O"].set_value(0.0093)
-    m.fs.state.mole_frac_comp["O2"].set_value(0.2095)
-    m.fs.state.mole_frac_comp["N2"].set_value(0.7808)
-
-    return m
-
-
 def test_state_vars():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
