@@ -146,7 +146,7 @@ Must be True if dynamic = True,
 
         # Get dict of Port members and names
         member_list = block[
-                blk.flowsheet().config.time.first()].define_port_members()
+                blk.flowsheet().time.first()].define_port_members()
 
         # Create References for port members
         for s in member_list:
@@ -222,13 +222,13 @@ Must be True if dynamic = True,
         if isinstance(block, ControlVolumeBlockData):
             try:
                 member_list = (block.properties_in[
-                                    block.flowsheet().config.time.first()]
+                                    block.flowsheet().time.first()]
                                .define_port_members())
                 p._state_block = (block.properties_in, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
-                                    block.flowsheet().config.time.first(), 0]
+                                    block.flowsheet().time.first(), 0]
                                    .define_port_members())
                     if block._flow_direction == FlowDirection.forward:
                         p._state_block = (block.properties,
@@ -244,7 +244,7 @@ Must be True if dynamic = True,
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
             member_list = block[
-                    blk.flowsheet().config.time.first()].define_port_members()
+                    blk.flowsheet().time.first()].define_port_members()
             p._state_block = (block, )
         else:
             raise ConfigurationError(
@@ -377,13 +377,13 @@ Must be True if dynamic = True,
         if isinstance(block, ControlVolumeBlockData):
             try:
                 member_list = (block.properties_out[
-                                    block.flowsheet().config.time.first()]
+                                    block.flowsheet().time.first()]
                                .define_port_members())
                 p._state_block = (block.properties_out, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
-                                    block.flowsheet().config.time.first(), 0]
+                                    block.flowsheet().time.first(), 0]
                                    .define_port_members())
                     if block._flow_direction == FlowDirection.forward:
                         p._state_block = (block.properties,
@@ -399,7 +399,7 @@ Must be True if dynamic = True,
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
             member_list = block[
-                    blk.flowsheet().config.time.first()].define_port_members()
+                    blk.flowsheet().time.first()].define_port_members()
             p._state_block = (block, )
         else:
             raise ConfigurationError(
@@ -511,7 +511,7 @@ Must be True if dynamic = True,
                     "once per UnitModel.".format(self.name))
 
         # Get a representative time point for testing
-        rep_time = self.flowsheet().config.time.first()
+        rep_time = self.flowsheet().time.first()
         if state_1[rep_time].params is not state_2[rep_time].params:
             raise ConfigurationError(
                     "{} add_state_material_balances method was provided with "
@@ -534,7 +534,7 @@ Must be True if dynamic = True,
             # to allow for systems where a phase-transition may occur?
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 pc_set,
                 doc="State material balances",
             )
@@ -546,7 +546,7 @@ Must be True if dynamic = True,
         elif balance_type == MaterialBalanceType.componentTotal:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 component_list,
                 doc="State material balances",
             )
@@ -562,7 +562,7 @@ Must be True if dynamic = True,
         elif balance_type == MaterialBalanceType.total:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="State material balances",
             )
             def state_material_balances(b, t):

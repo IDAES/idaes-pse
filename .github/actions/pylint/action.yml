@@ -10,11 +10,13 @@ runs:
         PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
         echo "::group::Output of pip install commands"
         $PIP_INSTALL --upgrade pip setuptools wheel
-        # TODO the pylint version will have to be pinned
         # TODO installing idaes is necessary in our case because we import some idaes code in pylint plugins
+        # don't think we need to install the extensions, though
         $PIP_INSTALL -r requirements-dev.txt
         echo "::endgroup::"
-        # don't think we need to install the extensions, though
+        echo "::group::Display pylint version"
+        pip show pylint astroid
+        echo "::endgroup::"
     - name: Run pylint (errors only)
       # use custom options for bash since the default causes the step to fail immediately for any non-zero return code of intermediate commands
       shell: bash --noprofile --norc {0}

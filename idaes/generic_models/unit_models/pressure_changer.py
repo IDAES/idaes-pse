@@ -82,7 +82,7 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
         super().build()
         if self.config.build_head_expressions:
             try:
-                @self.Expression(self.flowsheet().config.time)
+                @self.Expression(self.flowsheet().time)
                 def head_isentropic(b, t): # units are energy/mass
                     b = b.parent_block()
                     if hasattr(b.control_volume.properties_in[t], "flow_mass"):
@@ -93,7 +93,7 @@ class IsentropicPerformanceCurveData(ProcessBlockData):
                             b.control_volume.properties_in[t].flow_mol /
                             b.control_volume.properties_in[t].mw)
 
-                @self.Expression(self.flowsheet().config.time)
+                @self.Expression(self.flowsheet().time)
                 def head(b, t): # units are energy/mass
                     b = b.parent_block()
                     if hasattr(b.control_volume.properties_in[t], "flow_mass"):
@@ -321,11 +321,11 @@ see property package for documentation.}""",
 
         # Performance Variables
         self.ratioP = Var(
-            self.flowsheet().config.time, initialize=1.0, doc="Pressure Ratio"
+            self.flowsheet().time, initialize=1.0, doc="Pressure Ratio"
         )
 
         # Pressure Ratio
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
             return (
@@ -360,16 +360,16 @@ see property package for documentation.}""",
         units_meta = self.config.property_package.get_metadata()
 
         self.work_fluid = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=1.0,
             doc="Work required to increase the pressure of the liquid",
             units=units_meta.get_derived_units("power")
         )
         self.efficiency_pump = Var(
-            self.flowsheet().config.time, initialize=1.0, doc="Pump efficiency"
+            self.flowsheet().time, initialize=1.0, doc="Pump efficiency"
         )
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pump fluid work constraint")
         def fluid_work_calculation(b, t):
             return b.work_fluid[t] == (
@@ -382,7 +382,7 @@ see property package for documentation.}""",
 
         # Actual work
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Actual mechanical work calculation"
         )
         def actual_work(b, t):
@@ -407,7 +407,7 @@ see property package for documentation.}""",
         """
         # Isothermal constraint
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="For isothermal condition: Equate inlet and "
             "outlet temperature",
         )
@@ -427,7 +427,7 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def zero_work_equation(b, t):
             return self.control_volume.work[t] == 0
 
@@ -446,12 +446,12 @@ see property package for documentation.}""",
         # Get indexing sets from control volume
         # Add isentropic variables
         self.efficiency_isentropic = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.8,
             doc="Efficiency with respect to an isentropic process [-]",
         )
         self.work_isentropic = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.0,
             doc="Work input to unit if isentropic process",
             units=units_meta.get_derived_units("power")
@@ -464,14 +464,14 @@ see property package for documentation.}""",
 
         self.properties_isentropic = (
             self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="isentropic properties at outlet",
                 default=tmp_dict)
         )
 
         # Connect isentropic state block properties
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Pressure for isentropic calculations"
         )
         def isentropic_pressure(b, t):
@@ -486,7 +486,7 @@ see property package for documentation.}""",
                                          self.control_volume.properties_out)
 
         # This assumes isentropic entropy is the same as inlet
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Isentropic assumption")
         def isentropic(b, t):
             return (
@@ -496,7 +496,7 @@ see property package for documentation.}""",
 
         # Isentropic work
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Calculate work of isentropic process"
         )
         def isentropic_energy_balance(b, t):
@@ -514,7 +514,7 @@ see property package for documentation.}""",
 
         # Actual work
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Actual mechanical work calculation"
         )
         def actual_work(b, t):
@@ -547,13 +547,13 @@ see property package for documentation.}""",
             # Check that pressure does not decrease
             if any(
                 blk.deltaP[t].fixed and (value(blk.deltaP[t]) < 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning("{} Compressor set with negative deltaP."
                              .format(blk.name))
             if any(
                 blk.ratioP[t].fixed and (value(blk.ratioP[t]) < 1.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Compressor set with ratioP less than 1."
@@ -565,7 +565,7 @@ see property package for documentation.}""",
                     value(blk.control_volume.properties_in[t].pressure)
                     > value(blk.control_volume.properties_out[t].pressure)
                 )
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Compressor set with pressure decrease."
@@ -575,7 +575,7 @@ see property package for documentation.}""",
             if any(
                 blk.work_mechanical[t].fixed and (
                     value(blk.work_mechanical[t]) < 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Compressor maybe set with negative work."
@@ -586,7 +586,7 @@ see property package for documentation.}""",
             # Check that pressure does not increase
             if any(
                 blk.deltaP[t].fixed and (value(blk.deltaP[t]) > 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine set with positive deltaP."
@@ -594,7 +594,7 @@ see property package for documentation.}""",
                 )
             if any(
                 blk.ratioP[t].fixed and (value(blk.ratioP[t]) > 1.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine set with ratioP greater "
@@ -606,7 +606,7 @@ see property package for documentation.}""",
                     value(blk.control_volume.properties_in[t].pressure)
                     < value(blk.control_volume.properties_out[t].pressure)
                 )
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine maybe set with pressure "
@@ -616,7 +616,7 @@ see property package for documentation.}""",
             if any(
                 blk.work_mechanical[t].fixed and (
                     value(blk.work_mechanical[t]) > 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine set with positive work."
@@ -628,7 +628,7 @@ see property package for documentation.}""",
 
         # Run model checks on isentropic property block
         try:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 blk.properties_in[t].model_check()
         except AttributeError:
             pass
@@ -726,7 +726,7 @@ see property package for documentation.}""",
         opt = get_solver(solver, optarg)
 
         cv = blk.control_volume
-        t0 = blk.flowsheet().config.time.first()
+        t0 = blk.flowsheet().time.first()
         state_args_out = {}
 
         if state_args is None:
@@ -820,7 +820,7 @@ see property package for documentation.}""",
         opt = get_solver(solver, optarg)
 
         cv = blk.control_volume
-        t0 = blk.flowsheet().config.time.first()
+        t0 = blk.flowsheet().time.first()
         state_args_out = {}
 
         # performance curves exist and are active so initialize with them
@@ -838,7 +838,7 @@ see property package for documentation.}""",
             # until the performance curves are turned on.
             unfix_eff = {}
             unfix_ratioP = {}
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 if not (blk.ratioP[t].fixed or  blk.deltaP[t].fixed or
                     cv.properties_out[t].pressure.fixed):
                     if blk.config.compressor:
@@ -924,26 +924,26 @@ see property package for documentation.}""",
         # Solve for isothermal conditions
         if isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Var,
         ):
             blk.properties_isentropic[:].temperature.fix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].enth_mol,
+                blk.flowsheet().time.first()].enth_mol,
             Var,
         ):
             blk.properties_isentropic[:].enth_mol.fix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Expression,
         ):
             def tmp_rule(b, t):
                 return blk.properties_isentropic[t].temperature == \
                     blk.control_volume.properties_in[t].temperature
             blk.tmp_init_constraint = Constraint(
-                blk.flowsheet().config.time, rule=tmp_rule)
+                blk.flowsheet().time, rule=tmp_rule)
 
         blk.isentropic.deactivate()
 
@@ -954,19 +954,19 @@ see property package for documentation.}""",
 
         if isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Var,
         ):
             blk.properties_isentropic[:].temperature.unfix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].enth_mol,
+                blk.flowsheet().time.first()].enth_mol,
             Var,
         ):
             blk.properties_isentropic[:].enth_mol.unfix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Expression,
         ):
             blk.del_component(blk.tmp_init_constraint)

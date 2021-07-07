@@ -35,6 +35,10 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
+# Near-zero value to use for unsymmetric reference state
+EPS = 1e-20
+
+
 class Unsymmetric(object):
     """
     Sub-methods for the symmetric (fused-salt) reference state
@@ -48,7 +52,7 @@ class Unsymmetric(object):
                         sum(b.mole_frac_phase_comp_true[pname, j]
                             for j in b.params.solvent_set|b.params.solute_set))
             else:
-                return 0
+                return EPS
 
         b.add_component(pname+"_x_ref",
                         Expression(b.params.true_species_set, rule=rule_x_ref))

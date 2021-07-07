@@ -28,3 +28,4 @@ from .feed_flash import FeedFlash
 from .statejunction import StateJunction
 from .translator import Translator
 from .valve import ValveFunctionType, Valve, ValveData
+from .skeleton_model import SkeletonUnitModel, SkeletonUnitModelData

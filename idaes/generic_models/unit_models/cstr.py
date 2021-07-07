@@ -215,7 +215,7 @@ see reaction package for documentation.}"""))
         self.volume = Reference(self.control_volume.volume[:])
 
         # Add CSTR performance equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.config.reaction_package.rate_reaction_idx,
                          doc="CSTR performance equation")
         def cstr_performance_eqn(b, t, r):
@@ -254,7 +254,7 @@ see reaction package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             units=units_meta('length'),
                             doc='vessel diameter')
-        time = self.flowsheet().config.time.first()
+        time = self.flowsheet().time.first()
         self.volume_eq = Constraint(expr=self.volume[time]
                                     == self.length*self.diameter)
         module.cstr_costing(self.costing, **kwargs)
