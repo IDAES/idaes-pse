@@ -49,7 +49,7 @@ from idaes.apps.caprese.common.config import (
 
 from pyomo.environ import (
         Var,
-#         Objective,
+        Objective,
 #         TerminationCondition,
         Constraint,
         Block,
@@ -67,7 +67,7 @@ import idaes.apps.caprese.nmpc_var as nmpc_var
 # from idaes.apps.caprese.nmpc_var import (
 #         NmpcVar,
 #         )
-
+from pyomo.common.collections import ComponentMap
 
 class _EstimatorBlockData(_DynamicBlockData):
     """ This class adds methods useful for working with dynamic
@@ -85,35 +85,36 @@ class _EstimatorBlockData(_DynamicBlockData):
         """This function creates a indexed block and "fixed" variables to allocate 
         actual measurement measured from the plant. 
         """
-        block_name = "ACTUALMEASUREMENT_BLOCK"
+        block_name = self.get_category_block_name(VC.ACTUALMEASUREMENT)
         mea_set = self.MEASUREMENT_SET
         actmea_block = Block(mea_set)
         self.add_component(block_name, actmea_block)
-        # meaerr_block.deactivate() #keep it activate? Yes!
+
         sample_points = self.sample_points
-        sps_set = self.SAMPLEPOINT_SET
+        sps_set = self.SAMPLEPOINT_SET       
         for i in mea_set:
             var_name = "var"
             init_mea_block = self.MEASUREMENT_BLOCK[i]
             init_val = {idx: init_mea_block.var[idx].value for idx in sample_points}
             actmea_block[i].add_component(var_name, Var(sps_set, initialize = init_val))
-            actmea_block[i].find_component(var_name).fix()
+            actmea_block[i].find_component(var_name).fix() #This block should always be fixed!
     
     def _add_measurement_error(self):
         """This function creates a indexed block, including measurement errors and 
         measurement constraints: actual mea = measured state + mea_err
         """
-        block_name = "MEASUREMENTERROR_BLOCK"
+        block_name = self.get_category_block_name(VC.MEASUREMENTERROR)
         mea_set = self.MEASUREMENT_SET
         meaerr_block = Block(mea_set)
         self.add_component(block_name, meaerr_block)
-        # meaerr_block.deactivate() #keep it activate? Yes!
+
         sample_points = self.sample_points
         sps_set = self.SAMPLEPOINT_SET
         for i in mea_set:
             var_name = "var"
             meaerr_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             
+            ## Decide to add the measurement constraint to another block!
             # con_name = "con_mea_err" #actual_mea = measured_state + mea_err
             # def _con_mea_err(m, s):
             #     ind = m.index()
@@ -123,6 +124,11 @@ class _EstimatorBlockData(_DynamicBlockData):
             #     mea_err = parent.MEASUREMENTERROR_BLOCK[ind].mea_err
             #     return actual_mea[s] == measured_stat[s] + mea_err[s]
             # meaerr_block[i].add_component(con_name, Constraint(sample_points, rule = _con_mea_err))
+        
+        measurement_block = self.MEASUREMENT_BLOCK
+        t0 = self.time.first()
+        self.meavar_map_meaerr = ComponentMap((measurement_block[ind].var[t0], meaerr_block[ind].var)
+                                                for ind in self.MEASUREMENT_SET)
             
     def _add_measurement_constraint(self):
         block_name = "MEASUREMENT_CONSTRAINT_BLOCK" 
@@ -144,6 +150,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                     measured_stat = parent.MEASUREMENT_BLOCK[ind].var
                     mea_err = parent.MEASUREMENTERROR_BLOCK[ind].var
                     return actual_mea[s] == measured_stat[s] + mea_err[s]
+                
             meacon_block[i].add_component(con_name, Constraint(time, 
                                                                rule = _con_mea_err))
     
@@ -151,16 +158,22 @@ class _EstimatorBlockData(_DynamicBlockData):
         """This function creates a indexed block, including model disturbances.
         The order of disturbances is the same as differential vars and derivative vars.
         """
-        block_name = "MODELDISTURBANCE_BLOCK"
+        block_name = self.get_category_block_name(VC.MODELDISTURBANCE)
         diffvar_set = self.DIFFERENTIAL_SET
         moddis_block = Block(diffvar_set)
         self.add_component(block_name, moddis_block)
+        
         sample_points = self.sample_points
         sps_set = self.SAMPLEPOINT_SET
         for i in diffvar_set:
             var_name = "var"
             moddis_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             moddis_block[i].find_component(var_name)[0].fix(0.0) #fix model disturbance at t = 0 as 0.0
+            
+        differential_block = self.find_component("DIFFERENTIAL_BLOCK")
+        t0 = self.time.first()
+        self.diffvar_map_moddis = ComponentMap((differential_block[ind].var[t0] ,moddis_block[ind].var)
+                                               for ind in diffvar_set)
         
     def _add_disturbance_to_differential_cons(self):
         """
@@ -186,7 +199,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         #Thus, the order of differential vars may be different from the order of differential equations.
         #(Note that the order of differential vars, derivative vars, and model disturbances are corresponding.)
         #Use the following function to get the correct model disturbance.
-        def find_correspondsing_model_disturbance(curr_difeq, time, derivativelist):
+        def find_correspondsing_model_disturbance(curr_difeq, time, derivativelist): #change to use the component
             t0 = time.first()
             check_list = [id(var[t0]) for var in derivativelist]
             is_diff, target_deriv = _identify_derivative_if_differential(curr_difeq[t0], time)
@@ -220,9 +233,9 @@ class _EstimatorBlockData(_DynamicBlockData):
                 newexpr = newbody == curr_difeq[tp].upper.value 
                 con_attr = ddc_block[i].find_component(con_name)
                 con_attr.add(tp, expr = newexpr)
-            curr_difeq.deactivate()
+            curr_difeq.deactivate() #deactivate the undisturbed differential equs
             
-    def _add_MHE_variables_into_vectors(self):
+    def _add_MHE_variables_into_vectors(self): 
         MHE_CATEGORY_TYPE_MAP = {
             VC.ACTUALMEASUREMENT: nmpc_var.ActualMeasurementVar,
             VC.MEASUREMENTERROR: nmpc_var.MeasurementErrorVar,
@@ -260,8 +273,48 @@ class _EstimatorBlockData(_DynamicBlockData):
                     categ.name.lower(), # Lowercase of the enum name
                     ref,
                     )
+            
+    def add_noise_minimize_objective(self,
+                                     model_disturbance_weights,
+                                     measurement_noise_weights):
         
+        #give weights or variances?
+        #creating a component mapping is better!!!!!
+        #use addtribute?
+        moddis_weight_dict = {}
+        for var, weight in model_disturbance_weights:
+            moddis = self.diffvar_map_moddis[var]
+            moddis_weight_dict[id(moddis)] = weight
+            
+        meaerr_weight_dict = {}
+        for var, weight in measurement_noise_weights:
+            meaerr = self.meavar_map_meaerr[var]
+            meaerr_weight_dict[id(meaerr)] = weight
+            
+        #check if given measurement is not declared as measurement before
         
+        moddis_block = self.MODELDISTURBANCE_BLOCK
+        moddis_list = [moddis_block[ind].var for ind in self.DIFFERENTIAL_SET]
+        
+        meaerr_block = self.MEASUREMENTERROR_BLOCK
+        meaerr_list = [meaerr_block[ind].var for ind in self.MEASUREMENT_SET]
+        
+        wQw = sum(
+            moddis_weight_dict[id(moddis)] * moddis[sampt]**2
+            for moddis in moddis_list
+            for sampt in self.sample_points
+            if sampt != self.time.first()
+            )
+        
+        vRv = sum(
+            meaerr_weight_dict[id(meaerr)] * meaerr[sampt]**2
+            for meaerr in meaerr_list
+            for sampt in self.sample_points #here should include the time.first()
+            )
+        
+        self.noise_minimize_objective = Objective(expr = wQw + vRv)  
+        
+
 
 class EstimatorBlock(DynamicBlock):
     """ This is a user-facing class to be instantiated when one

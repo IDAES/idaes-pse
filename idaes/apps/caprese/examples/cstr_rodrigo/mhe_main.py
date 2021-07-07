@@ -123,12 +123,19 @@ def main(plot_switch=False):
     # mhe.estimator.solve_setpoint(solver)
     
     # Now we are ready to construct the tracking NMPC problem
-    # noise_weights = [
-    #         *((v, 1.) for v in mhe.estimator.vectors.differential[:,0]),
-    #         *((v, 1.) for v in mhe.estimator.vectors.input[:,0]),
-    #         ]
+    model_disturbance_weights = [
+            (estimator.mod.Ca[0], 0.1),
+            (estimator.mod.Tall[0, "T"], 0.2),
+            (estimator.mod.Tall[0, "Tj"], 0.3),
+            ]
+
+    measurement_noise_weights = [
+            (estimator.mod.Ca[0], 10.),
+            (estimator.mod.Tall[0, "T"], 20.),
+            ]   
     
-    # mhe.estimator.add_noise_minimize_objective(noise_weights)
+    mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
+                                               measurement_noise_weights)
     
     # mhe.estimator.initialize_to_initial_conditions()
     
