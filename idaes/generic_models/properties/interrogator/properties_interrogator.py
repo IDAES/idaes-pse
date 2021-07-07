@@ -31,9 +31,9 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         Phase,
                         LiquidPhase,
+                        SolidPhase,
                         VaporPhase,
                         Component)
-from idaes.core.util.config import list_of_strings
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -55,11 +55,12 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare("phase_list", ConfigValue(
-        domain=list_of_strings,
-        description="User defined phase list"))
+        domain=dict,
+        description="User defined phase list. Dict with form {name: Type}"))
     CONFIG.declare("component_list", ConfigValue(
-        domain=list_of_strings,
-        description="User defined component list"))
+        domain=dict,
+        description="User defined component list. Dict with form {name: Type}"
+        ))
 
     def build(self):
         '''
@@ -74,16 +75,25 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             self.Liq = LiquidPhase()
             self.Vap = VaporPhase()
         else:
-            for p in self.config.phase_list:
-                self.add_component(p, Phase())
+            for p, t in self.config.phase_list.items():
+                if t is None:
+                    t = Phase
+                elif not issubclass(
+                        t, (Phase, LiquidPhase, SolidPhase, VaporPhase)):
+                    raise Exception()
+                self.add_component(p, t())
 
         # Component objects
         if self.config.component_list is None:
             self.A = Component()
             self.B = Component()
         else:
-            for j in self.config.component_list:
-                self.add_component(j, Component())
+            for j, t in self.config.component_list.items():
+                if t is None:
+                    t = Component
+                elif not issubclass(t, Component):
+                    raise Exception()
+                self.add_component(j, t())
 
         # Set up dict to record property calls
         self.required_properties = {}

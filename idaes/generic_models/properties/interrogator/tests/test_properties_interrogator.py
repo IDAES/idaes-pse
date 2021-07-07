@@ -20,8 +20,9 @@ Tests for Property Interrogator Tool
 import pytest
 
 from pyomo.environ import ConcreteModel, units as pyunits
+from pyomo.util.check_units import assert_units_equivalent
 
-from idaes.core import FlowsheetBlock, MaterialBalanceType
+from idaes.core import FlowsheetBlock, MaterialBalanceType, LiquidPhase
 from idaes.generic_models.unit_models import Flash, HeatExchanger1D
 from idaes.generic_models.unit_models.pressure_changer import \
     PressureChanger, ThermodynamicAssumption
@@ -41,6 +42,19 @@ def test_interrogator_parameter_block():
     # Check that parameter block has expected attributes
     assert isinstance(m.fs.params.required_properties, dict)
     assert len(m.fs.params.required_properties) == 0
+
+
+@pytest.mark.unit
+def test_units_metadata():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = PropertyInterrogatorBlock()
+
+    units_meta = m.fs.params.get_metadata().get_derived_units
+
+    assert_units_equivalent(units_meta('length'), pyunits.m)
+    assert_units_equivalent(units_meta('pressure'), pyunits.Pa)
 
 
 @pytest.mark.unit
@@ -467,8 +481,8 @@ def test_interrogator_parameter_block_custom_phase_comps():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock(default={
-        "phase_list": ["P1", "P2"],
-        "component_list": ["c1", "c2"]})
+        "phase_list": {"P1": LiquidPhase, "P2": None},
+        "component_list": {"c1": None, "c2": None}})
 
     # Check that parameter block has expected attributes
     assert isinstance(m.fs.params.required_properties, dict)
@@ -483,8 +497,8 @@ def test_interrogator_state_block_methods_custom_phase_comps():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.params = PropertyInterrogatorBlock(default={
-        "phase_list": ["P1", "P2"],
-        "component_list": ["c1", "c2"]})
+        "phase_list": {"P1": None, "P2": None},
+        "component_list": {"c1": None, "c2": None}})
 
     m.fs.props = m.fs.params.build_state_block([0])
 
