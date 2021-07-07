@@ -106,6 +106,7 @@ class MHESim(object):
             self.sample_time = sample_time
             
         #The following should be organized in a function
+        self.estimator._add_sample_point_set()
         self.estimator._add_actual_measurement_param()
         self.estimator._add_measurement_error()
         self.estimator._add_measurement_constraint()

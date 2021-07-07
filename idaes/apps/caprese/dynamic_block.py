@@ -169,7 +169,7 @@ class _DynamicBlockData(_BlockData):
         if VC.FIXED in category_dict:
             self.fixed_vars = category_dict[VC.FIXED]
         if VC.MEASUREMENT in category_dict:
-            self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+            self.measurement_vars = category_dict.pop(VC.MEASUREMENT) #if it a bug to use pop here?
 
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined

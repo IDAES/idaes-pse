@@ -54,6 +54,7 @@ from pyomo.environ import (
         Constraint,
         Block,
         Reference,
+        Set,
         )
 from pyomo.core.base.block import _BlockData
 # from pyomo.common.collections import ComponentMap
@@ -76,6 +77,10 @@ class _EstimatorBlockData(_DynamicBlockData):
     def empty_now(self):
         print("dummy fun = ", 123)
         
+    def _add_sample_point_set(self):
+        set_name = "SAMPLEPOINT_SET"
+        self.add_component(set_name, Set(initialize = self.sample_points))
+        
     def _add_actual_measurement_param(self):
         """This function creates a indexed block and "fixed" variables to allocate 
         actual measurement measured from the plant. 
@@ -86,11 +91,12 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.add_component(block_name, actmea_block)
         # meaerr_block.deactivate() #keep it activate? Yes!
         sample_points = self.sample_points
+        sps_set = self.SAMPLEPOINT_SET
         for i in mea_set:
             var_name = "var"
             init_mea_block = self.MEASUREMENT_BLOCK[i]
             init_val = {idx: init_mea_block.var[idx].value for idx in sample_points}
-            actmea_block[i].add_component(var_name, Var(sample_points, initialize = init_val))
+            actmea_block[i].add_component(var_name, Var(sps_set, initialize = init_val))
             actmea_block[i].find_component(var_name).fix()
     
     def _add_measurement_error(self):
@@ -103,9 +109,10 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.add_component(block_name, meaerr_block)
         # meaerr_block.deactivate() #keep it activate? Yes!
         sample_points = self.sample_points
+        sps_set = self.SAMPLEPOINT_SET
         for i in mea_set:
             var_name = "var"
-            meaerr_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
+            meaerr_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             
             # con_name = "con_mea_err" #actual_mea = measured_state + mea_err
             # def _con_mea_err(m, s):
@@ -149,9 +156,10 @@ class _EstimatorBlockData(_DynamicBlockData):
         moddis_block = Block(diffvar_set)
         self.add_component(block_name, moddis_block)
         sample_points = self.sample_points
+        sps_set = self.SAMPLEPOINT_SET
         for i in diffvar_set:
             var_name = "var"
-            moddis_block[i].add_component(var_name, Var(sample_points, initialize = 0.0))
+            moddis_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             moddis_block[i].find_component(var_name)[0].fix(0.0) #fix model disturbance at t = 0 as 0.0
         
     def _add_disturbance_to_differential_cons(self):
