@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Writer of the data into the GAMS file
 """
@@ -211,6 +211,9 @@ def SNDdt(textFile, DataToWrite, Combination=False, PlotData=False):
             textFile.write("delta('%s', '%d') = %.13f ;\n" % ("SND", i, x[0]))
             textFile.write("tau('%s','%d') = %.13f ;\n" % ("SND", i, x[1]))
         else:
+            pass  # required by pylint so that the block directive applies
+            # PYLINT-TODO-FIX use correct number of args in format strings
+            # pylint: disable=too-few-format-args
             textFile.write("itt('%s','%d') = %.13f ;\n" % (i, itt_val))
             textFile.write("delta('%s', '%d') = %.13f ;\n" % (i, x[0]))
             textFile.write("tau('%s','%d') = %.13f ;\n" % (i, x[1]))

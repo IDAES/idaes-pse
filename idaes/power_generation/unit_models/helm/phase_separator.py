@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Simplified Flash Unit Model, only for IAPWS with mixed state.
 Phase separator - inlet water/steam mixture is separated into liquid and vapor
@@ -83,49 +83,49 @@ see property package for documentation.}"""))
         super(WaterFlashData, self).build()
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             default=self.config.property_package_args)
 
         self.add_port("inlet", self.mixed_state)
 
         self.vap_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             default=self.config.property_package_args)
 
         self.liq_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             default=self.config.property_package_args)
 
         self.add_port("vap_outlet", self.vap_state)
         self.add_port("liq_outlet", self.liq_state)
         # vapor outlet state
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def vap_material_balance(b, t):
             return 1e-4*b.mixed_state[t].flow_mol*b.mixed_state[t].vapor_frac == \
                 b.vap_state[t].flow_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def vap_enthalpy_balance(b, t):
             return b.mixed_state[t].enth_mol_phase["Vap"]*1e-4 == \
                 b.vap_state[t].enth_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def vap_pressure_balance(b, t):
             return b.mixed_state[t].pressure*1e-6 == \
                 b.vap_state[t].pressure*1e-6
 
         # liquid outlet state
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def liq_material_balance(b, t):
             return 1e-4*b.mixed_state[t].flow_mol*(1 - b.mixed_state[t].vapor_frac)\
                 == b.liq_state[t].flow_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def liq_enthalpy_balance(b, t):
             return 1e-4*b.mixed_state[t].enth_mol_phase["Liq"] == \
                 b.liq_state[t].enth_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def liq_pressure_balance(b, t):
             return b.mixed_state[t].pressure*1e-6 == \
                 b.liq_state[t].pressure*1e-6
@@ -158,7 +158,7 @@ see property package for documentation.}"""))
                                   state_args_water_steam)
         blk.mixed_state.initialize(solver=solver, optarg=optarg, outlvl=outlvl)
         # initialize outlet states
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.vap_state[t].flow_mol = value(blk.mixed_state[t].
                                               flow_mol*blk.mixed_state[t].
                                               vapor_frac)

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for ControlVolumeBlockData.
 
@@ -892,7 +892,7 @@ def test_add_phase_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -922,7 +922,7 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -948,7 +948,7 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -983,7 +983,7 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -1009,7 +1009,7 @@ def test_add_phase_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -1039,7 +1039,7 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -1065,7 +1065,7 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -1100,7 +1100,7 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.phase_list,
                            m.fs.cv.config.property_package.component_list)
 
@@ -1419,7 +1419,7 @@ def test_add_total_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1448,7 +1448,7 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1473,7 +1473,7 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1507,7 +1507,7 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1532,7 +1532,7 @@ def test_add_total_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1561,7 +1561,7 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1586,7 +1586,7 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1620,7 +1620,7 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
@@ -1807,7 +1807,7 @@ def test_add_total_element_balances_custom_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time,
                            m.fs.pp.element_list)
 
     def custom_method(t, e):
@@ -2069,7 +2069,7 @@ def test_add_total_enthalpy_balances_custom_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time)
 
     def custom_method(t):
         return m.fs.cv.test_var[t]*units.J/units.s
@@ -2261,7 +2261,7 @@ def test_add_total_pressure_balances_custom_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().time)
 
     def custom_method(t):
         return m.fs.cv.test_var[t]*units.Pa

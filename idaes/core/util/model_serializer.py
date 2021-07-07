@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Functions for saving and loading Pyomo objects to json
 """
@@ -846,6 +846,14 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     lookup = {} # A dict to use for a lookup tables
     suffixes={} # A list of suffixes delayed to end so lookup is complete
     # Read toplevel componet (is recursive)
+    if root_name is None:
+        for k in sd:
+            if k.startswith("__") and k.endswith("__"):
+                # This is metadata or maybe some similar future addition.
+                continue
+            else:
+                root_name = k
+                break # should be one root, use it's name
     _read_component(
         sd, o, wts, lookup=lookup, suffixes=suffixes, root_name=root_name)
     read_time = time.time() # to calc time to read model state minus suffixes

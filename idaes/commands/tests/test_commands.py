@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for idaes.commands
 """
@@ -28,7 +28,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence
+from idaes.commands import examples, extensions, convergence, config
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 import idaes
@@ -606,3 +606,62 @@ def test_conv_eval(runner):
         os.remove(fname)
     if os.path.exists(fname2):
         os.remove(fname2)
+
+@pytest.mark.unit
+def test_conf_display(runner):
+    result = runner.invoke(config.config_display)
+    assert result.exit_code == 0
+
+@pytest.mark.unit
+def test_conf_file_paths(runner):
+    result = runner.invoke(config.config_file)
+    assert result.exit_code == 0
+    result = runner.invoke(config.config_file, ["--global"])
+    assert result.exit_code == 0
+    result = runner.invoke(config.config_file, ["--local"])
+    assert result.exit_code == 0
+
+@pytest.mark.unit
+def test_conf_file_paths(runner):
+    fname = os.path.join(idaes.testing_directory, "conf_test.json")
+    result = runner.invoke(config.config_write, ["--file", fname])
+    assert result.exit_code == 0
+    with open(fname, "r") as f:
+        d = json.load(f)
+        assert d["logger_capture_solver"] == True
+    if os.path.exists(fname):
+        os.remove(fname)
+
+@pytest.mark.unit
+def test_conf_set(runner):
+    fname = os.path.join(idaes.testing_directory, "conf_test.json")
+    def _tst(args):
+        result = runner.invoke(config.config_set, [
+            "logging:loggers:idaes.solver:handlers", "['console']"] + args)
+        assert result.exit_code == 0
+        with open(fname, "r") as f:
+            d = json.load(f)
+            assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
+            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == 'console'
+        result = runner.invoke(config.config_set, [
+            "logging:loggers:idaes.solver:handlers", "'console'", "--del"] + args)
+        assert result.exit_code == 0
+        result = runner.invoke(config.config_set, [
+            "logging:loggers:idaes.solver:handlers", "'console'", "--add"] + args)
+        assert result.exit_code == 0
+        with open(fname, "r") as f:
+            d = json.load(f)
+            assert len(d["logging"]["loggers"]["idaes.solver"]["handlers"]) == 1
+            assert d["logging"]["loggers"]["idaes.solver"]["handlers"][0] == 'console'
+        result = runner.invoke(config.config_set, [
+            "ipopt_l1:options:max_iter", "100"] + args)
+        assert result.exit_code == 0
+        assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1))
+        assert "ConfigDict" in str(type(idaes.cfg.ipopt_l1.options))
+        assert idaes.cfg.ipopt_l1.options.max_iter == 100
+        if os.path.exists(fname):
+            os.remove(fname)
+
+    _tst(["--global", "--file", fname, "--file_as_global"])
+    _tst(["--local", "--file", fname, "--file_as_local"])
+    _tst(["--file", fname])

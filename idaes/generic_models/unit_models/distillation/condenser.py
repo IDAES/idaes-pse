@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Condenser model for distillation.
 
@@ -219,7 +219,7 @@ see property package for documentation.}"""))
                 # the assumption is that there will only be a single pair
                 # i.e. vap-liq. 
                 idx = next(iter(self.control_volume.properties_out[
-                    self.flowsheet().config.time.first()].temperature_bubble))
+                    self.flowsheet().time.first()].temperature_bubble))
 
                 def rule_total_cond(self, t):
                     return self.control_volume.properties_out[t].\
@@ -717,7 +717,7 @@ see property package for documentation.}"""))
             state_args = {}
             state_dict = (
                 self.control_volume.properties_in[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():

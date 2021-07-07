@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
@@ -49,13 +49,13 @@ def _assert_properties(pb):
 
 
 def _linear_callback(blk):
-    @blk.Expression(blk.flowsheet().config.time)
+    @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return b.valve_opening[t]
 
 
 def _quick_open_callback(blk):
-    @blk.Expression(blk.flowsheet().config.time)
+    @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return pyo.sqrt(b.valve_opening[t])
 
@@ -63,7 +63,7 @@ def _quick_open_callback(blk):
 def _equal_percentage_callback(blk):
     blk.alpha = pyo.Var(initialize=1, doc="Valve function parameter")
     blk.alpha.fix()
-    @blk.Expression(blk.flowsheet().config.time)
+    @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return b.alpha ** (b.valve_opening[t] - 1)
 
@@ -176,7 +176,7 @@ ValveFunctionType.custom}""",
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         self.valve_opening = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=1,
             doc="Fraction open for valve from 0 to 1",
         )
@@ -214,7 +214,7 @@ ValveFunctionType.custom}""",
             rule = _vapor_pressure_flow_rule
 
         self.pressure_flow_equation = pyo.Constraint(
-            self.flowsheet().config.time, rule=rule
+            self.flowsheet().time, rule=rule
         )
 
 
@@ -247,7 +247,7 @@ ValveFunctionType.custom}""",
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.deltaP[t].fix(pyo.value(
                     self.outlet.pressure[t] - self.inlet.pressure[t]))

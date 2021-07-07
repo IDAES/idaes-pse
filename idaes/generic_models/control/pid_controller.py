@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 PID controller block
 """
@@ -171,11 +171,11 @@ class PIDBlockData(ProcessBlockData):
                 "Controller configuration requires 'output'")
 
         # Shorter pointers to time set information
-        time_set = self.flowsheet().config.time
+        time_set = self.flowsheet().time
         t0 = time_set.first()
 
         # Get units of time domain, PV and output
-        t_units = self.flowsheet().config.time_units
+        t_units = self.flowsheet().time_units
         pv_units = self.config.pv.get_units()
         out_units = self.config.output.get_units()
         gain_units = out_units/pv_units if pv_units is not None else None

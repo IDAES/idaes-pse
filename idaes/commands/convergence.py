@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """Commandline interface for convergence testing tools"""
 
 __author__ = "John Eslick"
@@ -22,7 +22,6 @@ import json
 import logging
 from pyomo.common.dependencies import attempt_import
 from idaes.commands import cb
-import idaes.convergence
 
 cnv = attempt_import('idaes.core.util.convergence.convergence_base')[0]
 dmf = attempt_import('idaes.dmf')[0]
@@ -43,6 +42,7 @@ _log = logging.getLogger("idaes.commands.convergence")
     help="Addtional module that registers ConvergenceEvaluation classes")
 def convergence_sample(
     evaluation_class, sample_file, number_samples, seed, convergence_module):
+    import idaes.convergence
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
     if evaluation_class in cnv.convergence_classes:
@@ -79,6 +79,7 @@ def convergence_sample(
     help="Run only a single sample with given name")
 def convergence_eval(
     sample_file, dmf, report_file, json_file, convergence_module, single_sample):
+    import idaes.convergence
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
     if dmf is not None:
@@ -113,6 +114,7 @@ def convergence_eval(
 @click.option('-m', '--convergence_module', default=None, type=str, required=False,
     help="Optional addtional module that registers convergence classes")
 def convergence_search(regex, convergence_module):
+    import idaes.convergence
     if convergence_module is not None:
         mod = importlib.import_module(convergence_module)
     if regex is not None:
