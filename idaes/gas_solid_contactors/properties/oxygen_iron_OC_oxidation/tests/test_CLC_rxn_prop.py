@@ -146,6 +146,7 @@ def test_solution(rxn_prop):
             rxn_prop.fs.unit.reaction_rate['R1'].value)
 
 
+@pytest.mark.unit
 def test_state_vars():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -194,6 +195,7 @@ def test_state_vars():
     assert len(rxn_cons) == 4
 
 
+@pytest.mark.unit
 class TestProperties(unittest.TestCase):
 
     def _make_model(self):

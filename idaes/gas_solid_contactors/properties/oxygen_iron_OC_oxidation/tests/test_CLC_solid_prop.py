@@ -124,6 +124,7 @@ def test_solution(solid_prop):
             solid_prop.fs.unit.enth_mass.value)
 
 
+@pytest.mark.unit
 def test_state_vars():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -145,6 +146,7 @@ def test_state_vars():
         assert name in m.fs.properties._metadata._properties
 
 
+@pytest.mark.unit
 def test_indexed_state_block():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -163,6 +165,7 @@ def test_indexed_state_block():
         assert isinstance(state.sum_component_eqn, Constraint)
 
 
+@pytest.mark.unit
 def test_property_construction_ordered():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -202,6 +205,7 @@ def test_property_construction_ordered():
         assert len(list(m.component_data_objects(Constraint))) == ncon
 
 
+@pytest.mark.unit
 class TestProperties(unittest.TestCase):
 
     def _make_model(self):

@@ -131,6 +131,7 @@ def test_solution(gas_prop):
 # -----------------------------------------------------------------------------
 
 
+@pytest.mark.unit
 def test_state_vars():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -154,6 +155,7 @@ def test_state_vars():
         assert m.fs.properties._metadata._properties[name]["method"] is None
 
 
+@pytest.mark.unit
 def test_indexed_state_block():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -177,6 +179,7 @@ def test_indexed_state_block():
             assert m.fs.properties._metadata._properties[name]["method"] is None
 
 
+@pytest.mark.unit
 def test_property_construction_ordered():
     """
     The purpose of this test is to make sure each property can be
@@ -233,6 +236,7 @@ def test_property_construction_ordered():
         assert len(list(m.component_data_objects(Constraint))) == ncon
 
 
+@pytest.mark.unit
 def test_property_construction_unordered():
     """
     The purpose of this test is to make sure "chained construction"
@@ -269,6 +273,7 @@ def test_property_construction_unordered():
     assert len(list(m.component_data_objects(Constraint))) == ncon
 
 
+@pytest.mark.unit
 class TestProperties(TestCase):
     """
     The purpose of these tests is to ensure that the property package's
@@ -970,16 +975,4 @@ class TestProperties(TestCase):
 
 
 if __name__ == "__main__":
-    test_state_vars()
-    test_indexed_state_block()
-    test_property_construction_ordered()
-    test_property_construction_unordered()
-    test = TestProperties()
-    test.test_mw()
-    test.test_dens_mol()
-    test.test_dens_mol_comp()
-    test.test_visc_d()
-    test.test_diffusion_comp()
-    test.test_therm_cond()
-    test.test_cp()
-    test.test_enth()
+    unittest.main()
