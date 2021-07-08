@@ -49,13 +49,13 @@ def _assert_properties(pb):
 
 
 def _linear_callback(blk):
-    @blk.Expression(blk.flowsheet().config.time)
+    @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return b.valve_opening[t]
 
 
 def _quick_open_callback(blk):
-    @blk.Expression(blk.flowsheet().config.time)
+    @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return pyo.sqrt(b.valve_opening[t])
 
@@ -63,7 +63,7 @@ def _quick_open_callback(blk):
 def _equal_percentage_callback(blk):
     blk.alpha = pyo.Var(initialize=1, doc="Valve function parameter")
     blk.alpha.fix()
-    @blk.Expression(blk.flowsheet().config.time)
+    @blk.Expression(blk.flowsheet().time)
     def valve_function(b, t):
         return b.alpha ** (b.valve_opening[t] - 1)
 
@@ -176,7 +176,7 @@ ValveFunctionType.custom}""",
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         self.valve_opening = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=1,
             doc="Fraction open for valve from 0 to 1",
         )
@@ -214,7 +214,7 @@ ValveFunctionType.custom}""",
             rule = _vapor_pressure_flow_rule
 
         self.pressure_flow_equation = pyo.Constraint(
-            self.flowsheet().config.time, rule=rule
+            self.flowsheet().time, rule=rule
         )
 
 
@@ -247,7 +247,7 @@ ValveFunctionType.custom}""",
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.deltaP[t].fix(pyo.value(
                     self.outlet.pressure[t] - self.inlet.pressure[t]))

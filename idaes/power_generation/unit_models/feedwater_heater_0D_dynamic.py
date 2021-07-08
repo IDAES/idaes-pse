@@ -155,7 +155,7 @@ class FWHCondensing0DData(CondenserData):
                                    doc="Inside diameter of FWH tank")
         self.cond_sect_length = Var(initialize=10,
                                     doc="Length of condensing section")
-        self.level = Var(self.flowsheet().config.time,
+        self.level = Var(self.flowsheet().time,
                          initialize=1,
                          doc="Water level in condensing section")
 
@@ -166,13 +166,13 @@ class FWHCondensing0DData(CondenserData):
 
         # Expressure for the angle from the tank cylinder center to
         # the circumference point at water level between -pi/2 and pi/2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Angle of water level")
         def alpha(b, t):
             return asin((b.level[t]-b.heater_radius)/b.heater_radius)
 
         # Constraint to calculate the shell side liquid volume
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Calculate the volume of "
                          "shell side based on water level")
         def shell_volume_eqn(b, t):
@@ -183,7 +183,7 @@ class FWHCondensing0DData(CondenserData):
                 * b.cond_sect_length*b.vol_frac_shell)
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure drop")
         def pressure_change_total_eqn(b, t):
             return b.shell.deltaP[t] == const.acceleration_gravity*b.level[t]\
@@ -270,7 +270,7 @@ class FWH0DDynamicData(UnitModelBlockData):
                        }
             self.drain_mix = Mixer(default=mix_cfg)
 
-            @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
+            @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
                 """
                 Constraint to set the drain mixer pressure to the pressure of

@@ -16,7 +16,8 @@ sphinx-argparse
 pytest
 coverage
 pytest-cov
-pylint
+# @lbianchi-lbl: pinned pylint version after update to 2.9.1 broke previously passing checks
+pylint==2.8.3
 flake8
 
 ### other/misc

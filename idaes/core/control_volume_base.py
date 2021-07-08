@@ -818,7 +818,7 @@ have a config block which derives from CONFIG_Base,
 
     def _get_representative_property_block(self):
         try:
-            t_ref = self.flowsheet().config.time.first()
+            t_ref = self.flowsheet().time.first()
         except AttributeError:
             raise ConfigurationError(
                     "{} control volume does not appear to be part of a "

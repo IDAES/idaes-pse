@@ -185,7 +185,6 @@ class TestBTX_cocurrent(object):
         return m
 
     @pytest.mark.unit
-    @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "shell_inlet")
         assert len(btx.fs.unit.shell_inlet.vars) == 4
@@ -261,12 +260,10 @@ class TestBTX_cocurrent(object):
         assert degrees_of_freedom(btx) == 0
 
     @pytest.mark.component
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, btx):
         initialization_tester(btx)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, btx):
@@ -277,7 +274,6 @@ class TestBTX_cocurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
@@ -295,7 +291,6 @@ class TestBTX_cocurrent(object):
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.pressure[0]))
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, btx):
@@ -358,7 +353,6 @@ class TestBTX_countercurrent(object):
         return m
 
     @pytest.mark.unit
-    @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "shell_inlet")
         assert len(btx.fs.unit.shell_inlet.vars) == 4
@@ -433,7 +427,6 @@ class TestBTX_countercurrent(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, btx):
@@ -447,7 +440,6 @@ class TestBTX_countercurrent(object):
                                  "temperature": 331.5,
                                  "pressure": 101325})
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, btx):
@@ -458,7 +450,6 @@ class TestBTX_countercurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, btx):
@@ -476,7 +467,6 @@ class TestBTX_countercurrent(object):
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.pressure[0]))
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, btx):
@@ -539,7 +529,6 @@ class TestIAPWS_cocurrent(object):
         return m
 
     @pytest.mark.unit
-    @pytest.mark.build
     def test_build(self, iapws):
         assert len(iapws.fs.unit.shell_inlet.vars) == 3
         assert hasattr(iapws.fs.unit.shell_inlet, "flow_mol")
@@ -608,14 +597,11 @@ class TestIAPWS_cocurrent(object):
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
 
-    @pytest.mark.initialization
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.unit
     def test_solve(self, iapws):
@@ -626,7 +612,6 @@ class TestIAPWS_cocurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iapws):
@@ -645,7 +630,6 @@ class TestIAPWS_cocurrent(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(iapws.fs.unit.tube_outlet.pressure[0])
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, iapws):
@@ -708,7 +692,6 @@ class TestIAPWS_countercurrent(object):
         return m
 
     @pytest.mark.unit
-    @pytest.mark.build
     def test_build(self, iapws):
         assert len(iapws.fs.unit.shell_inlet.vars) == 3
         assert hasattr(iapws.fs.unit.shell_inlet, "flow_mol")
@@ -777,14 +760,11 @@ class TestIAPWS_countercurrent(object):
     def test_dof(self, iapws):
         assert degrees_of_freedom(iapws) == 0
 
-    @pytest.mark.initialization
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, iapws):
         initialization_tester(iapws)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, iapws):
@@ -795,7 +775,6 @@ class TestIAPWS_countercurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, iapws):
@@ -814,7 +793,6 @@ class TestIAPWS_countercurrent(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(iapws.fs.unit.tube_outlet.pressure[0])
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, iapws):
@@ -882,7 +860,6 @@ class TestSaponification_cocurrent(object):
 
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
         assert len(sapon.fs.unit.shell_inlet.vars) == 4
@@ -954,14 +931,11 @@ class TestSaponification_cocurrent(object):
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.initialization
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, sapon):
@@ -972,7 +946,6 @@ class TestSaponification_cocurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
@@ -1013,7 +986,6 @@ class TestSaponification_cocurrent(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(sapon.fs.unit.tube_outlet.pressure[0])
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
@@ -1078,7 +1050,6 @@ class TestSaponification_countercurrent(object):
 
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, sapon):
         assert len(sapon.fs.unit.shell_inlet.vars) == 4
@@ -1150,13 +1121,11 @@ class TestSaponification_countercurrent(object):
     def test_dof(self, sapon):
         assert degrees_of_freedom(sapon) == 0
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, sapon):
@@ -1167,7 +1136,6 @@ class TestSaponification_countercurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, sapon):
@@ -1208,7 +1176,6 @@ class TestSaponification_countercurrent(object):
         assert pytest.approx(101325, abs=1e2) == \
             value(sapon.fs.unit.tube_outlet.pressure[0])
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_conservation(self, sapon):
@@ -1353,7 +1320,6 @@ class TestBT_Generic_cocurrent(object):
         return m
 
     @pytest.mark.component
-    @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "shell_inlet")
         assert len(btx.fs.unit.shell_inlet.vars) == 4
@@ -1428,13 +1394,11 @@ class TestBT_Generic_cocurrent(object):
     def test_dof(self, btx):
         assert degrees_of_freedom(btx) == 0
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_initialize(self, btx):
         initialization_tester(btx)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solve(self, btx):
@@ -1445,7 +1409,6 @@ class TestBT_Generic_cocurrent(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_solution(self, btx):
@@ -1463,7 +1426,6 @@ class TestBT_Generic_cocurrent(object):
         assert (pytest.approx(101.325, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.pressure[0]))
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.integration
     def test_conservation(self, btx):

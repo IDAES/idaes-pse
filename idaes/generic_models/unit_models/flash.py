@@ -228,7 +228,7 @@ see property package for documentation.}"""))
         if not self.config.ideal_separation:
             def split_frac_rule(b, t, o):
                 return b.split.split_fraction[t, o, o] == 1
-            self.split_fraction_eq = Constraint(self.flowsheet().config.time,
+            self.split_fraction_eq = Constraint(self.flowsheet().time,
                                                 self.split.outlet_idx,
                                                 rule=split_frac_rule)
 
