@@ -26,10 +26,19 @@ from pyomo.environ import (
         value,
         units as pyunits,
         )
+import pyomo.common.unittest as unittest
+from pyomo.common.collections import ComponentMap
+from pyomo.util.subsystems import ParamSweeper
+from pyomo.contrib.incidence_analysis import (
+        solve_strongly_connected_components,
+        )
 
 from idaes.core import FlowsheetBlock
 
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom,
+        number_large_residuals,
+        )
 
 from idaes.core.util.testing import (get_default_solver,
                                      initialization_tester)
@@ -185,5 +194,249 @@ def test_state_vars():
     assert len(rxn_cons) == 4
 
 
+class TestProperties(unittest.TestCase):
+
+    def _make_model(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.solid_properties = SolidPhaseParameterBlock()
+        m.fs.solid_state = m.fs.solid_properties.build_state_block(default={
+            "parameters": m.fs.solid_properties,
+            "defined_state": True,
+            })
+
+        m.fs.gas_properties = GasPhaseParameterBlock()
+        m.fs.gas_state = m.fs.gas_properties.build_state_block(default={
+            "parameters": m.fs.gas_properties,
+            "defined_state": True,
+            })
+
+        m.fs.reaction_properties = HeteroReactionParameterBlock(default={
+            "solid_property_package": m.fs.solid_properties,
+            "gas_property_package": m.fs.gas_properties,
+            })
+        m.fs.reaction_block = m.fs.reaction_properties.reaction_block_class(
+                default={
+                    "parameters": m.fs.reaction_properties,
+                    "solid_state_block": m.fs.solid_state,
+                    "gas_state_block": m.fs.gas_state,
+                    "has_equilibrium": False,
+                })
+
+        for var in m.fs.gas_state.define_state_vars().values():
+            var.fix()
+        for var in m.fs.solid_state.define_state_vars().values():
+            var.fix()
+        return m
+
+    def test_k_rxn(self):
+        m = self._make_model()
+        rxn_block = m.fs.reaction_block
+
+        n_scen = 4
+        mols = pyunits.mol/pyunits.s
+        kgs = pyunits.kg/pyunits.s
+        K = pyunits.K
+        bar = pyunits.bar
+        state_values = {
+            "gas_state.flow_mol": [1.0*mols]*n_scen,
+            "solid_state.flow_mass": [1.0*kgs]*n_scen,
+            "gas_state.temperature": [1000.0*K, 1100.0*K, 1200.0*K, 1300.0*K],
+            "solid_state.temperature": [1000.0*K, 1100.0*K, 1200.0*K, 1300.0*K],
+            "gas_state.pressure": [1.0*bar]*n_scen,
+            "solid_state.particle_porosity": [0.27]*n_scen,
+            "gas_state.mole_frac_comp[O2]": [0.25]*n_scen,
+            "gas_state.mole_frac_comp[N2]": [0.25]*n_scen,
+            "gas_state.mole_frac_comp[H2O]": [0.25]*n_scen,
+            "gas_state.mole_frac_comp[CO2]": [0.25]*n_scen,
+            "solid_state.mass_frac_comp[Fe2O3]": [1.0/3.0]*n_scen,
+            "solid_state.mass_frac_comp[Fe3O4]": [1.0/3.0]*n_scen,
+            "solid_state.mass_frac_comp[Al2O3]": [1.0/3.0]*n_scen,
+            }
+        state_values = ComponentMap((m.fs.find_component(name), values)
+                for name, values in state_values.items())
+
+        # Units of k_rxn are "non-physical" si units, chosen to be
+        # consistent with the reaction rate rule.
+        target_values = {
+                "reaction_block.k_rxn[R1]": [
+                    5.7556e-5,
+                    6.7076e-5,
+                    7.6203e-5,
+                    8.4888e-5,
+                    ],
+                }
+        target_values = ComponentMap((m.fs.find_component(name), values)
+                for name, values in target_values.items())
+
+        assert degrees_of_freedom(m.fs) == 0
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, outputs in param_sweeper:
+                solve_strongly_connected_components(m.fs)
+
+                # Make sure property equalites have been converged
+                assert number_large_residuals(m.fs, tol=1e-8) == 0
+
+                # Sanity checks that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in outputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), rel=1e-3)
+
+    def test_oc_conv(self):
+        m = self._make_model()
+        rxn_block = m.fs.reaction_block
+
+        n_scen = 3
+        mols = pyunits.mol/pyunits.s
+        kgs = pyunits.kg/pyunits.s
+        K = pyunits.K
+        bar = pyunits.bar
+        state_values = {
+            "gas_state.flow_mol": [1.0*mols]*n_scen,
+            "solid_state.flow_mass": [1.0*kgs]*n_scen,
+            "gas_state.temperature": [1273.0*K]*n_scen,
+            "solid_state.temperature": [1273.0*K]*n_scen,
+            "gas_state.pressure": [1.0*bar]*n_scen,
+            "solid_state.particle_porosity": [0.27]*n_scen,
+            "gas_state.mole_frac_comp[O2]": [0.25]*n_scen,
+            "gas_state.mole_frac_comp[N2]": [0.25]*n_scen,
+            "gas_state.mole_frac_comp[H2O]": [0.25]*n_scen,
+            "gas_state.mole_frac_comp[CO2]": [0.25]*n_scen,
+            "solid_state.mass_frac_comp[Fe2O3]": [2/3, 0.0, 1/3],
+            "solid_state.mass_frac_comp[Fe3O4]": [0.0, 2/3, 1/3],
+            "solid_state.mass_frac_comp[Al2O3]": [1/3]*n_scen,
+            }
+        state_values = ComponentMap((m.fs.find_component(name), values)
+                for name, values in state_values.items())
+
+        target_values = {
+                "reaction_block.OC_conv": [
+                    1.0,
+                    0.0,
+                    0.4915,
+                    ],
+                "reaction_block.OC_conv_temp": [
+                    2.005e-4,
+                    1.0,
+                    0.6371,
+                    ],
+                }
+        target_values = ComponentMap((m.fs.find_component(name), values)
+                for name, values in target_values.items())
+
+        assert degrees_of_freedom(m.fs) == 0
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, outputs in param_sweeper:
+                solve_strongly_connected_components(m.fs)
+
+                # Make sure property equalites have been converged
+                assert number_large_residuals(m.fs, tol=1e-8) == 0
+
+                # Sanity checks that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in outputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+    def test_reaction_rate(self):
+        m = self._make_model()
+        rxn_block = m.fs.reaction_block
+
+        n_scen = 9
+        mols = pyunits.mol/pyunits.s
+        kgs = pyunits.kg/pyunits.s
+        K = pyunits.K
+        bar = pyunits.bar
+        state_values = {
+            "gas_state.flow_mol": [1.0*mols]*n_scen,
+            "solid_state.flow_mass": [1.0*kgs]*n_scen,
+            "gas_state.temperature": [1273.0*K]*n_scen,
+            "solid_state.temperature": [
+                1273.0*K, 1273.0*K, 1273.0*K,
+                1273.0*K, 1273.0*K, 1273.0*K,
+                1100.0*K, 1200.0*K, 1300.0*K,
+                ],
+            "gas_state.pressure": [1.0*bar]*n_scen,
+            "solid_state.particle_porosity": [0.27]*n_scen,
+            "gas_state.mole_frac_comp[O2]":  [
+                1.0, 0.7, 0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                ],
+            "gas_state.mole_frac_comp[N2]":  [
+                0.0, 0.1, 1/3, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                ],
+            "gas_state.mole_frac_comp[H2O]": [
+                0.0, 0.1, 1/3, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                ],
+            "gas_state.mole_frac_comp[CO2]": [
+                0.0, 0.1, 1/3, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,
+                ],
+            "solid_state.mass_frac_comp[Fe2O3]": [
+                1/3, 1/3, 1/3, 2/3, 0.0, 1/3, 1/3, 1/3, 1/3,
+                ],
+            "solid_state.mass_frac_comp[Fe3O4]": [
+                1/3, 1/3, 1/3, 0.0, 2/3, 1/3, 1/3, 1/3, 1/3,
+                ],
+            "solid_state.mass_frac_comp[Al2O3]": [1/3]*n_scen,
+            }
+        state_values = ComponentMap((m.fs.find_component(name), values)
+                for name, values in state_values.items())
+
+        molm3s = pyunits.mol/pyunits.m**3/pyunits.s
+        target_values = {
+                "reaction_block.reaction_rate[R1]": [
+                    351.367*molm3s,
+                    245.957*molm3s,
+                    0.0*molm3s,
+                    0.0*molm3s,
+                    271.731*molm3s,
+                    87.842*molm3s,
+                    71.344*molm3s,
+                    81.051*molm3s,
+                    90.288*molm3s,
+                    ],
+                }
+        target_values = ComponentMap((m.fs.find_component(name), values)
+                for name, values in target_values.items())
+
+        assert degrees_of_freedom(m.fs) == 0
+
+        param_sweeper = ParamSweeper(n_scen, state_values,
+                output_values=target_values)
+        with param_sweeper:
+            for inputs, outputs in param_sweeper:
+                solve_strongly_connected_components(m.fs)
+
+                # Make sure property equalites have been converged
+                assert number_large_residuals(m.fs, tol=1e-8) == 0
+
+                # Sanity checks that inputs are properly set
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                # Make sure properties have been calculated as expected
+                for var, val in outputs.items():
+                    if value(val) != 0:
+                        # To get around Pyomo issue #1627
+                        val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+
 if __name__ == "__main__":
-    test_state_vars()
+    unittest.main()
