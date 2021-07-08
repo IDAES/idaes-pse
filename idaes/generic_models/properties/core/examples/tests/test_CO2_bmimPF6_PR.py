@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Author: Andrew Lee, Alejandro Garciadiego
 """
@@ -22,6 +22,7 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import Component, FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -76,10 +77,14 @@ class TestParamBlock(object):
 
         assert model.param.config.state_definition == FTPx
 
-        assert model.param.config.state_bounds == {
-            "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
-            "temperature": (10, 300, 500, pyunits.K),
-            "pressure": (5e-4, 1e5, 1e10, pyunits.Pa)}
+        assertStructuredAlmostEqual(
+            model.param.config.state_bounds,
+            { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+              "temperature": (10, 300, 500, pyunits.K),
+              "pressure": (5e-4, 1e5, 1e10, pyunits.Pa) },
+            item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.param.config.phase_equilibrium_state == {
             ("Vap", "Liq"): smooth_VLE}
@@ -197,7 +202,7 @@ class TestStateBlock(object):
             model.fs.props[1]._t1_Vap_Liq] == 1e-2
 
         assert model.fs.props[1].scaling_factor[
-            model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1000
+            model.fs.props[1]._mole_frac_tbub["Vap", "Liq", "bmimPF6"]] == 1
         assert model.fs.props[1].scaling_factor[
             model.fs.props[1]._mole_frac_tbub[
                 "Vap", "Liq", "carbon_dioxide"]] == 1000

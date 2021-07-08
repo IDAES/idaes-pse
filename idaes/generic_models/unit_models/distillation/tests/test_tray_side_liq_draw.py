@@ -1,32 +1,31 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for conventional tray unit model (no feed, has liq side draws).
 
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import (ConcreteModel, TerminationCondition,
-                           SolverStatus, value)
+from pyomo.environ import (
+    ConcreteModel, TerminationCondition, SolverStatus, value)
+from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-                        MomentumBalanceType)
+from idaes.core import FlowsheetBlock
 from idaes.generic_models.unit_models.distillation import Tray
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom, \
-    number_variables, number_total_constraints, number_unused_variables, \
-    fixed_variables_set, activated_constraints_set
+    number_variables, number_total_constraints, number_unused_variables
 from idaes.core.util.testing import \
     PhysicalParameterTestBlock, initialization_tester
 from idaes.core.util import get_solver
@@ -69,6 +68,25 @@ class TestBTXIdeal():
                                   "has_liquid_side_draw": True,
                                   "has_heat_transfer": True,
                                   "has_pressure_change": True})
+
+        # Set inputs
+        m.fs.unit.liq_in.flow_mol.fix(1)
+        m.fs.unit.liq_in.temperature.fix(369)
+        m.fs.unit.liq_in.pressure.fix(101325)
+        m.fs.unit.liq_in.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.liq_in.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.vap_in.flow_mol.fix(1)
+        m.fs.unit.vap_in.temperature.fix(372)
+        m.fs.unit.vap_in.pressure.fix(101325)
+        m.fs.unit.vap_in.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.vap_in.mole_frac_comp[0, "toluene"].fix(0.5)
+
+        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.heat_duty.fix(0)
+
+        m.fs.unit.liq_side_sf.fix(0.5)
+
         return m
 
     @pytest.fixture(scope="class")
@@ -85,9 +103,24 @@ class TestBTXIdeal():
                                   "has_liquid_side_draw": True,
                                   "has_heat_transfer": True,
                                   "has_pressure_change": True})
+
+        # Set inputs
+        m.fs.unit.liq_in.flow_mol_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.liq_in.flow_mol_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.liq_in.temperature.fix(369)
+        m.fs.unit.liq_in.pressure.fix(101325)
+
+        m.fs.unit.vap_in.flow_mol_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.vap_in.flow_mol_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.vap_in.temperature.fix(372)
+        m.fs.unit.vap_in.pressure.fix(101325)
+
+        m.fs.unit.deltaP.fix(0)
+        m.fs.unit.heat_duty.fix(0)
+        m.fs.unit.liq_side_sf.fix(0.5)
+
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, btx_ftpz, btx_fctp):
         # General build
@@ -190,55 +223,25 @@ class TestBTXIdeal():
 
     @pytest.mark.unit
     def test_dof(self, btx_ftpz, btx_fctp):
-
-        # Set inputs
-        btx_ftpz.fs.unit.liq_in.flow_mol.fix(1)
-        btx_ftpz.fs.unit.liq_in.temperature.fix(369)
-        btx_ftpz.fs.unit.liq_in.pressure.fix(101325)
-        btx_ftpz.fs.unit.liq_in.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx_ftpz.fs.unit.liq_in.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx_ftpz.fs.unit.vap_in.flow_mol.fix(1)
-        btx_ftpz.fs.unit.vap_in.temperature.fix(372)
-        btx_ftpz.fs.unit.vap_in.pressure.fix(101325)
-        btx_ftpz.fs.unit.vap_in.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx_ftpz.fs.unit.vap_in.mole_frac_comp[0, "toluene"].fix(0.5)
-
-        btx_ftpz.fs.unit.deltaP.fix(0)
-        btx_ftpz.fs.unit.heat_duty.fix(0)
-
-        btx_ftpz.fs.unit.liq_side_sf.fix(0.5)
-
         assert degrees_of_freedom(btx_ftpz.fs.unit) == 0
-
-        # Set inputs
-        btx_fctp.fs.unit.liq_in.flow_mol_comp[0, "benzene"].fix(0.5)
-        btx_fctp.fs.unit.liq_in.flow_mol_comp[0, "toluene"].fix(0.5)
-        btx_fctp.fs.unit.liq_in.temperature.fix(369)
-        btx_fctp.fs.unit.liq_in.pressure.fix(101325)
-
-        btx_fctp.fs.unit.vap_in.flow_mol_comp[0, "benzene"].fix(0.5)
-        btx_fctp.fs.unit.vap_in.flow_mol_comp[0, "toluene"].fix(0.5)
-        btx_fctp.fs.unit.vap_in.temperature.fix(372)
-        btx_fctp.fs.unit.vap_in.pressure.fix(101325)
-
-        btx_fctp.fs.unit.deltaP.fix(0)
-        btx_fctp.fs.unit.heat_duty.fix(0)
-        btx_fctp.fs.unit.liq_side_sf.fix(0.5)
-
         assert degrees_of_freedom(btx_fctp.fs.unit) == 0
 
-    @pytest.mark.initialization
-    @pytest.mark.solver
+    @pytest.mark.component
+    def test_units_FTPz(self, btx_ftpz, btx_fctp):
+        assert_units_consistent(btx_ftpz)
+
+    @pytest.mark.component
+    def test_units_FcTP(self, btx_fctp):
+        assert_units_consistent(btx_fctp)
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
         initialization_tester(btx_fctp)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, btx_ftpz, btx_fctp):
 
         results = solver.solve(btx_ftpz)
@@ -255,10 +258,8 @@ class TestBTXIdeal():
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
 
         # liq_out port
@@ -277,9 +278,11 @@ class TestBTXIdeal():
         assert (pytest.approx(0.23168, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.liq_side_draw.flow_mol[0]))
         assert (pytest.approx(0.33313, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[0, "benzene"]))
+                value(btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[
+                    0, "benzene"]))
         assert (pytest.approx(0.66686, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[0, "toluene"]))
+                value(btx_ftpz.fs.unit.liq_side_draw.mole_frac_comp[
+                    0, "toluene"]))
         assert (pytest.approx(370.567, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.liq_side_draw.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
@@ -309,9 +312,11 @@ class TestBTXIdeal():
 
         # side liq_out port
         assert (pytest.approx(0.07717, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[0, "benzene"]))
+                value(btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[
+                    0, "benzene"]))
         assert (pytest.approx(0.15449, abs=1e-3) ==
-                value(btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[0, "toluene"]))
+                value(btx_fctp.fs.unit.liq_side_draw.flow_mol_comp[
+                    0, "toluene"]))
         assert (pytest.approx(370.567, abs=1e-3) ==
                 value(btx_fctp.fs.unit.liq_side_draw.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==

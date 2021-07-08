@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 General Cubic Equation of State property package with VLE calucations.
 Cubic formulation and pure component property correlations from:
@@ -216,7 +216,7 @@ class _CubicStateBlock(StateBlock):
 
     def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -231,7 +231,8 @@ class _CubicStateBlock(StateBlock):
                          * pressure
                          * temperature
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
                               - True - states have already been fixed and
@@ -239,7 +240,7 @@ class _CubicStateBlock(StateBlock):
                                        about fixing and unfixing variables.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
@@ -1728,21 +1729,25 @@ class CubicStateBlockData(StateBlockData):
         if self.is_property_constructed("_teq"):
             iscale.set_scaling_factor(self._teq, sf_T)
         if self.is_property_constructed("_teq_constraint"):
-            iscale.constraint_scaling_transform(self._teq_constraint, sf_T)
+            iscale.constraint_scaling_transform(
+                self._teq_constraint, sf_T, overwrite=False)
 
         if self.is_property_constructed("_t1"):
             iscale.set_scaling_factor(self._t1, sf_T)
         if self.is_property_constructed("_t1_constraint"):
-            iscale.constraint_scaling_transform(self._t1_constraint, sf_T)
+            iscale.constraint_scaling_transform(
+                self._t1_constraint, sf_T, overwrite=False)
 
         if self.is_property_constructed("_mole_frac_pdew"):
             iscale.set_scaling_factor(self._mole_frac_pdew, 1e3)
-            iscale.constraint_scaling_transform(self._sum_mole_frac_pdew, 1e3)
+            iscale.constraint_scaling_transform(
+                self._sum_mole_frac_pdew, 1e3, overwrite=False)
 
         if self.is_property_constructed("total_flow_balance"):
             s = iscale.get_scaling_factor(
                 self.flow_mol, default=1, warning=True)
-            iscale.constraint_scaling_transform(self.total_flow_balance, s)
+            iscale.constraint_scaling_transform(
+                self.total_flow_balance, s, overwrite=False)
 
         if self.is_property_constructed("component_flow_balances"):
             for i, c in self.component_flow_balances.items():
@@ -1750,48 +1755,50 @@ class CubicStateBlockData(StateBlockData):
                     s = iscale.get_scaling_factor(
                         self.mole_frac_comp[i], default=1, warning=True)
                     s *= sf_flow
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
                 else:
                     s = iscale.get_scaling_factor(
                         self.mole_frac_comp[i], default=1, warning=True)
-                    iscale.constraint_scaling_transform(c, s)
+                    iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if self.is_property_constructed("dens_mol_phase"):
             for c in self.eq_dens_mol_phase.values():
-                iscale.constraint_scaling_transform(c, sf_P)
+                iscale.constraint_scaling_transform(c, sf_P, overwrite=False)
 
         if self.is_property_constructed("dens_mass_phase"):
             for p, c in self.eq_dens_mass_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.dens_mass_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("enth_mol_phase"):
             for p, c in self.eq_enth_mol_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.enth_mol_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("enth_mol"):
             sf = iscale.get_scaling_factor(
                 self.enth_mol, default=1, warning=True)
             sf *= sf_flow
-            iscale.constraint_scaling_transform(self.eq_enth_mol, sf)
+            iscale.constraint_scaling_transform(
+                self.eq_enth_mol, sf, overwrite=False)
 
         if self.is_property_constructed("entr_mol_phase"):
             for p, c in self.eq_entr_mol_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.entr_mol_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         if self.is_property_constructed("entr_mol"):
             sf = iscale.get_scaling_factor(
                 self.entr_mol, default=1, warning=True)
             sf *= sf_flow
-            iscale.constraint_scaling_transform(self.eq_entr_mol, sf)
+            iscale.constraint_scaling_transform(
+                self.eq_entr_mol, sf, overwrite=False)
 
         if self.is_property_constructed("gibbs_mol_phase"):
             for p, c in self.eq_gibbs_mol_phase.items():
                 sf = iscale.get_scaling_factor(
                     self.gibbs_mol_phase[p], default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

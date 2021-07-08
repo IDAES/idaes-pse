@@ -1,3 +1,15 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.network import Arc
@@ -41,7 +53,7 @@ def set_scaling_factors(m):
             iscale.constraint_scaling_transform(c, 1e-6)
 
     # scaling factor for control valves
-    for t in m.fs.config.time:
+    for t in m.fs.time:
         iscale.set_scaling_factor(
             m.fs.valve.control_volume.properties_in[t].flow_mol, 0.001)
 
@@ -53,7 +65,7 @@ def main():
     m_ss = get_model(dynamic=False)
     m_dyn = get_model(dynamic=True)
     copy_non_time_indexed_values(m_dyn.fs, m_ss.fs, copy_fixed=True)
-    for t in m_dyn.fs.config.time:
+    for t in m_dyn.fs.time:
         copy_values_at_time(m_dyn.fs, m_ss.fs, t, 0.0, copy_fixed=True)
     m_dyn.fs.controller.mv_ref.value = m_dyn.fs.valve.valve_opening[0].value
     # calculate integral error assuming error is zero

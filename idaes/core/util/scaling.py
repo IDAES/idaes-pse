@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains utilities to provide variable and expression scaling
 factors by providing an expression to calculate them via a suffix.
@@ -29,6 +29,7 @@ __author__ = "John Eslick, Tim Bartholomew, Robert Parker"
 
 from math import log10
 import scipy.sparse.linalg as spla
+import scipy.linalg as la
 
 import pyomo.environ as pyo
 from pyomo.core.expr.visitor import identify_variables
@@ -72,7 +73,7 @@ def scale_arc_constraints(blk):
             constraint_scaling_transform(c, sf)
 
 
-def map_scaling_factor(iter, default=1, warning=False, func=min):
+def map_scaling_factor(iter, default=1, warning=False, func=min, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and call func
     on the result.  This could be use, for example, to get the minimum or
     maximum scaling factor of a set of components.
@@ -84,19 +85,22 @@ def map_scaling_factor(iter, default=1, warning=False, func=min):
         warning: Log a warning for missing scaling factors
         func: The function to call on the resulting iterable of scaling factors.
             The default is min().
+        hint: Paired with warning=True, this is a string to indicate where the
+            missing scaling factor was being accessed, to easier diagnose issues.
 
     Returns:
         The result of func on the set of scaling factors
     """
     return func(
         map(
-            lambda x: get_scaling_factor(x, default=default, warning=warning),
+            lambda x: get_scaling_factor(
+                x, default=default, warning=warning, hint=hint),
             iter
         )
     )
 
 
-def min_scaling_factor(iter, default=1, warning=True):
+def min_scaling_factor(iter, default=1, warning=True, hint=None):
     """Map get_scaling_factor to an iterable of Pyomo components, and get the
     minimum scaling factor.
 
@@ -106,6 +110,8 @@ def min_scaling_factor(iter, default=1, warning=True):
             None, this will raise an exception when scaling factors are missing.
             The default is default=1.
         warning: Log a warning for missing scaling factors
+        hint: Paired with warning=True, this is a string to indicate where the
+            missing scaling factor was being accessed, to easier diagnose issues.
 
     Returns:
         Minimum scaling factor of the components in iter
@@ -115,7 +121,7 @@ def min_scaling_factor(iter, default=1, warning=True):
 
 def propagate_indexed_component_scaling_factors(
     blk,
-    typ=(pyo.Var, pyo.Constraint, pyo.Expression),
+    typ=None,
     overwrite=False,
     descend_into=True):
     """Use the parent component scaling factor to set all component data object
@@ -128,6 +134,9 @@ def propagate_indexed_component_scaling_factors(
             overwrittten (default=False)
         descend_into: descend into child blocks (default=True)
     """
+    if typ is None:
+        typ = (pyo.Var, pyo.Constraint, pyo.Expression)
+
     for c in blk.component_objects(typ, descend_into=descend_into):
         if get_scaling_factor(c) is not None and c.is_indexed():
             for cdat in c.values():
@@ -184,7 +193,7 @@ def set_scaling_factor(c, v, data_objects=True):
             suf[cdat] = v
 
 
-def get_scaling_factor(c, default=None, warning=False, exception=False):
+def get_scaling_factor(c, default=None, warning=False, exception=False, hint=None):
     """Get a component scale factor.
 
     Args:
@@ -194,6 +203,8 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
                  (default=False)
         exception: whether to riase an Exception if a scaling factor is not
                    found (default=False)
+        hint: (str) a string to add to the warning or exception message to help
+            loacate the source.
 
     Returns:
         scaling factor (float)
@@ -201,19 +212,22 @@ def get_scaling_factor(c, default=None, warning=False, exception=False):
     try:
         sf = c.parent_block().scaling_factor[c]
     except (AttributeError, KeyError):
+        if hint is None:
+            h = ""
+        else:
+            h = f", {hint}"
         if warning:
-            if isinstance(c, pyo.Component):
-                _log.warning(f"Accessing missing scaling factor for {c}")
+            if hasattr(c, "is_component_type") and c.is_component_type():
+                _log.warning(f"Missing scaling factor for {c}{h}")
             else:
-                _log.warning(f"Trying to get scaling factor for unnamed expr")
+                _log.warning(f"Trying to get scaling factor for unnamed expr {h}")
         if exception and default is None:
-            if isinstance(c, pyo.Component):
-                _log.error(f"Accessing missing scaling factor for {c}")
+            if hasattr(c, "is_component_type") and c.is_component_type():
+                _log.error(f"Missing scaling factor for {c}{h}")
             else:
-                _log.error(f"Trying to get scaling factor for unnamed expr")
+                _log.error(f"Trying to get scaling factor for unnamed expr {h}")
             raise
         sf = default
-
     return sf
 
 
@@ -287,11 +301,11 @@ def __set_constraint_transform_applied_scaling_factor(c, v):
         None
     """
     try:
-        c.parent_block().constaint_transformed_scaling_factor[c] = v
+        c.parent_block().constraint_transformed_scaling_factor[c] = v
     except AttributeError:
-        c.parent_block().constaint_transformed_scaling_factor = pyo.Suffix(
+        c.parent_block().constraint_transformed_scaling_factor = pyo.Suffix(
             direction=pyo.Suffix.LOCAL)
-        c.parent_block().constaint_transformed_scaling_factor[c] = v
+        c.parent_block().constraint_transformed_scaling_factor[c] = v
 
 
 def get_constraint_transform_applied_scaling_factor(c, default=None):
@@ -307,7 +321,7 @@ def get_constraint_transform_applied_scaling_factor(c, default=None):
         default.
     """
     try:
-        sf = c.parent_block().constaint_transformed_scaling_factor.get(c, default)
+        sf = c.parent_block().constraint_transformed_scaling_factor.get(c, default)
     except AttributeError:
         sf = default # when there is no suffix
     return sf
@@ -319,14 +333,14 @@ def __unset_constraint_transform_applied_scaling_factor(c):
     transformation.
     """
     try:
-        del c.parent_block().constaint_transformed_scaling_factor[c]
+        del c.parent_block().constraint_transformed_scaling_factor[c]
     except AttributeError:
         pass # no scaling factor suffix, is fine
     except KeyError:
         pass # no scaling factor is fine
 
 
-def constraint_scaling_transform(c, s):
+def constraint_scaling_transform(c, s, overwrite=True):
     """This transforms a constraint by the argument s.  The scaling factor
     applies to original constraint (e.g. if one where to call this twice in a row
     for a constraint with a scaling factor of 2, the original constraint would
@@ -335,13 +349,23 @@ def constraint_scaling_transform(c, s):
     Args:
         c: Pyomo constraint
         s: scale factor applied to the constraint as originally written
+        overwrite: overwrite existing scaling factors if present (default=True)
 
     Returns:
         None
     """
     if not isinstance(c, _ConstraintData):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
-    st = get_constraint_transform_applied_scaling_factor(c, default=1)
+    st = get_constraint_transform_applied_scaling_factor(c, default=None)
+
+    if not overwrite and st is not None:
+        # Existing scaling factor and overwrite False, do nothing
+        return
+
+    if st is None:
+        # If no existing scaling factor, use value of 1
+        st = 1
+
     v = s/st
     c.set_value(
         (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
@@ -397,6 +421,22 @@ def unscaled_constraints_generator(blk, descend_into=True):
         if get_scaling_factor(c) is None and \
             get_constraint_transform_applied_scaling_factor(c) is None:
             yield c
+
+def constraints_with_scale_factor_generator(blk, descend_into=True):
+    """Generator for constraints scaled by a sclaing factor, may or not have
+    been transformed.
+
+    Args:
+        block
+
+    Yields:
+        constraint with a scale factor, scale factor
+    """
+    for c in blk.component_data_objects(
+        pyo.Constraint, active=True, descend_into=descend_into):
+        s = get_scaling_factor(c)
+        if s is not None:
+            yield c, s
 
 
 def badly_scaled_var_generator(
@@ -472,12 +512,13 @@ def constraint_autoscale_large_jac(
     nlp = PyomoNLP(m)
     jac = nlp.evaluate_jacobian().tocsr()
     # Get lists of varibles and constraints to translate Jacobian indexes
-    clist = nlp.get_pyomo_constraints()
-    vlist = nlp.get_pyomo_variables()
+    # save them on the NLP for later, since genrating them seems to take a while
+    nlp.clist = clist = nlp.get_pyomo_constraints()
+    nlp.vlist = vlist = nlp.get_pyomo_variables()
     # Create a scaled Jacobian to account for variable scaling, for now ignore
     # constraint scaling
     jac_scaled = jac.copy()
-    for i in range(len(clist)):
+    for i, c in enumerate(clist):
         for j in jac_scaled[i].indices:
             v = vlist[j]
             if ignore_variable_scaling:
@@ -486,8 +527,7 @@ def constraint_autoscale_large_jac(
                 sv = get_scaling_factor(v, default=1)
             jac_scaled[i,j] = jac_scaled[i,j]/sv
     # calculate constraint scale factors
-    for i in range(len(clist)):
-        c = clist[i]
+    for i, c in enumerate(clist):
         sc = get_scaling_factor(c, default=1)
         if not no_scale:
             if (ignore_constraint_scaling or get_scaling_factor(c) is None):
@@ -527,7 +567,33 @@ def get_jacobian(m, scaled=True):
         return jac, nlp
 
 
-def jacobian_cond(m, scaled=True, ord=None):
+def extreme_jacobian_entries(
+        m=None, scaled=True, large=1e4, small=1e-4, zero=1e-10, jac=None, nlp=None):
+    """
+    Show very large and very small Jacobian entries.
+
+    Args:
+        m: model
+        scaled: if true use scaled Jacobian
+        large: >= to this value is consdered large
+        small: <= to this and >= zero is consdered small
+
+    Returns:
+        (list of tuples), Jacobian entry, Constraint, Variable
+    """
+    if jac is None or nlp is None:
+        jac, nlp = get_jacobian(m, scaled)
+    el = []
+    for i, c in enumerate(nlp.clist):
+        for j in jac[i].indices:
+            v = nlp.vlist[j]
+            e = abs(jac[i, j])
+            if (e <= small and e > zero) or e >= large:
+                el.append((e, c, v))
+    return el
+
+
+def jacobian_cond(m=None, scaled=True, ord=None, pinv=False, jac=None):
     """
     Get the condition number of the scaled or unscaled Jacobian matrix of a model.
 
@@ -535,13 +601,24 @@ def jacobian_cond(m, scaled=True, ord=None):
         m: calculate the condition number of the Jacobian from this model.
         scaled: if True use scaled Jacobian, else use unscaled
         ord: norm order, None = Frobenius, see scipy.sparse.linalg.norm for more
+        pinv: Use pseudoinverse, works for non-square matrixes
+        jac: (optional) perviously calculated jacobian
 
     Returns:
         (float) Condition number
     """
-    jac, nlp = get_jacobian(m, scaled=scaled)
-    jac_inv = spla.inv(jac)
-    return spla.norm(jac, ord)*spla.norm(jac_inv, ord)
+    if jac is None:
+        jac, nlp = get_jacobian(m, scaled)
+    jac = jac.tocsc()
+    if jac.shape[0] != jac.shape[1] and not pinv:
+        _log.warning("Nonsquare Jacobian using pseudo inverse")
+        pinv = True
+    if not pinv:
+        jac_inv = spla.inv(jac)
+        return spla.norm(jac, ord)*spla.norm(jac_inv, ord)
+    else:
+        jac_inv = la.pinv(jac.toarray())
+        return spla.norm(jac, ord)*la.norm(jac_inv, ord)
 
 
 class CacheVars(object):
@@ -569,7 +646,7 @@ class FlattenedScalingAssignment(object):
     variable-constraint assignment can be constructed, especially when
     the variables and constraints are all indexed by some common set(s).
     """
-    def __init__(self, scaling_factor, varconlist=[], nominal_index=()):
+    def __init__(self, scaling_factor, varconlist=None, nominal_index=()):
         """
         Args:
             scaling_factor: A Pyomo scaling_factor Suffix that will hold all
@@ -582,6 +659,9 @@ class FlattenedScalingAssignment(object):
                            when a calculation needs to be performed using
                            data objects.
         """
+        if varconlist is None:
+            varconlist = []
+
         self.scaling_factor = scaling_factor
         self.nominal_index = nominal_index
         if nominal_index is None or nominal_index == ():

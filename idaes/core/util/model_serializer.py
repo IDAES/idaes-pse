@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Functions for saving and loading Pyomo objects to json
 """
@@ -389,7 +389,7 @@ def _may_have_subcomponents(o):
         if hasattr(o.component_objects, "__call__"):
             return True
 
-def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
+def _write_component(sd, o, wts, count=None, lookup=None, suffixes=None):
     """
     Writes a component state to the save dictionary under a key given by the
     components name.
@@ -405,6 +405,11 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
     Returns:
         None
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = []
+
     # Get list of attributes to save, also returns ff, which is a filter
     # function and only used in reading stuff back in.
     alist, ff = wts.get_class_attr_list(o)
@@ -439,7 +444,7 @@ def _write_component(sd, o, wts, count=None, lookup={}, suffixes=[]):
                               count=count, suffixes=suffixes)
 
 
-def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
+def _write_component_data(sd, o, wts, count=None, lookup=None, suffixes=None):
     """
     Iterate through the component data and write to the sd dictionary. The keys
     for the data items are added to the dictionary. If the component has
@@ -457,6 +462,11 @@ def _write_component_data(sd, o, wts, count=None, lookup={}, suffixes=[]):
     Returns:
         None
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = []
+
     if wts.include_suffix and isinstance(o, Suffix):
         # make special provision for writing suffixes.
         for key in o:
@@ -533,7 +543,7 @@ def component_data_to_dict(o, wts):
             _write_component(sd=cdict, o=o2, wts=wts)
     return edict
 
-def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
+def to_json(o, fname=None, human_read=False, wts=None, metadata=None, gz=None,
             return_dict=False, return_json_string=False):
     """
     Save the state of a model to a Python dictionary, and optionally dump it
@@ -571,6 +581,8 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
             gz = fname.endswith(".gz")
         else:
             gz = False
+    if metadata is None:
+        metadata = {}
 
     suffixes = []
     lookup = {}
@@ -615,10 +627,15 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=None,
     else:
         return None
 
-def _read_component(sd, o, wts, lookup={}, suffixes={}, root_name=None):
+def _read_component(sd, o, wts, lookup=None, suffixes=None, root_name=None):
     """
     Read a component dictionary into a model
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = {}
+
     alist, ff = wts.get_class_attr_list(o)
     if alist is None: return
     if root_name is None:
@@ -658,7 +675,7 @@ def _read_component(sd, o, wts, lookup={}, suffixes={}, root_name=None):
         _read_component_data(odict["data"], o, wts,
                              lookup=lookup, suffixes=suffixes)
 
-def _read_component_data(sd, o, wts, lookup={}, suffixes={}):
+def _read_component_data(sd, o, wts, lookup=None, suffixes=None):
     """
     Read a Pyomo component's data in from a dict.
 
@@ -672,6 +689,11 @@ def _read_component_data(sd, o, wts, lookup={}, suffixes={}):
     Returns:
         None
     """
+    if lookup is None:
+        lookup = {}
+    if suffixes is None:
+        suffixes = {}
+
     alist = [] # list of attributes to read
     c = 0 # counter of data items in component
     try:
@@ -824,6 +846,14 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=None, root_name=None)
     lookup = {} # A dict to use for a lookup tables
     suffixes={} # A list of suffixes delayed to end so lookup is complete
     # Read toplevel componet (is recursive)
+    if root_name is None:
+        for k in sd:
+            if k.startswith("__") and k.endswith("__"):
+                # This is metadata or maybe some similar future addition.
+                continue
+            else:
+                root_name = k
+                break # should be one root, use it's name
     _read_component(
         sd, o, wts, lookup=lookup, suffixes=suffixes, root_name=root_name)
     read_time = time.time() # to calc time to read model state minus suffixes

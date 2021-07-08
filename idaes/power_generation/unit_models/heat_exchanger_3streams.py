@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 3 stream IDAES heat exchanger model with given UA.
 side 1 is hot stream, side 2 and 3 are cold streams
@@ -273,12 +273,12 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
         # UA (product of overall heat transfer coefficient and area)
         # between side 1 and side 2
-        self.ua_side_2 = Var(self.flowsheet().config.time, initialize=10.0,
+        self.ua_side_2 = Var(self.flowsheet().time, initialize=10.0,
                              doc='UA between side 1 and side 2')
 
         # UA (product of overall heat transfer coefficient and area)
         # between side 1 and side 3
-        self.ua_side_3 = Var(self.flowsheet().config.time, initialize=10.0,
+        self.ua_side_3 = Var(self.flowsheet().time, initialize=10.0,
                              doc='UA between side 1 and side 3')
 
         # fraction of heat from hot stream as heat loss to ambient
@@ -312,45 +312,43 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
         # Performance parameters and variables
         # Temperature driving force
-        self.temperature_driving_force_side_2 = Var(self.flowsheet().config.
-                                                    time,
+        self.temperature_driving_force_side_2 = Var(self.flowsheet().time,
                                                     initialize=1.0,
                                                     doc='Mean driving force '
                                                     'for heat exchange')
 
         # Temperature driving force
-        self.temperature_driving_force_side_3 = Var(self.flowsheet().
-                                                    config.time,
+        self.temperature_driving_force_side_3 = Var(self.flowsheet().time,
                                                     initialize=1.0,
                                                     doc='Mean driving force '
                                                     'for heat exchange')
 
         # Temperature difference at side 2 inlet
-        self.side_2_inlet_dT = Var(self.flowsheet().config.time,
+        self.side_2_inlet_dT = Var(self.flowsheet().time,
                                    initialize=1.0,
                                    doc='Temperature difference '
                                    'at side 2 inlet')
 
         # Temperature difference at side 2 outlet
-        self.side_2_outlet_dT = Var(self.flowsheet().config.time,
+        self.side_2_outlet_dT = Var(self.flowsheet().time,
                                     initialize=1.0,
                                     doc='Temperature difference '
                                     'at side 2 outlet')
 
         # Temperature difference at side 3 inlet
-        self.side_3_inlet_dT = Var(self.flowsheet().config.time,
+        self.side_3_inlet_dT = Var(self.flowsheet().time,
                                    initialize=1.0,
                                    doc='Temperature difference'
                                    ' at side 3 inlet')
 
         # Temperature difference at side 3 outlet
-        self.side_3_outlet_dT = Var(self.flowsheet().config.time,
+        self.side_3_outlet_dT = Var(self.flowsheet().time,
                                     initialize=1.0,
                                     doc='Temperature difference '
                                     'at side 3 outlet')
 
         # Driving force side 2 (Underwood approximation)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Log mean temperature difference calculation "
                          "using Underwood approximation")
         def LMTD_side_2(b, t):
@@ -359,7 +357,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                   + b.side_2_outlet_dT[t]**(1/3))/2)**(3)
 
         # Driving force side 3 (Underwood approximation)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Log mean temperature difference calculation "
                          "using Underwood approximation")
         def LMTD_side_3(b, t):
@@ -368,21 +366,21 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                   + b.side_3_outlet_dT[t]**(1/3))/2)**(3)
 
         # Heat duty side 2
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Heat transfer rate")
         def heat_duty_side_2_eqn(b, t):
             return b.heat_duty_side_2[t] == \
                 (b.ua_side_2[t] * b.temperature_driving_force_side_2[t])
 
         # Heat duty side 3
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Heat transfer rate")
         def heat_duty_side_3_eqn(b, t):
             return b.heat_duty_side_3[t] == \
                 (b.ua_side_3[t]*b.temperature_driving_force_side_3[t])
 
         # Energy balance equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Energy balance between two sides")
         def heat_duty_side_1_eqn(b, t):
             return -b.heat_duty_side_1[t]*(1-b.frac_heatloss) == \
@@ -395,14 +393,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
         """
         # Temperature Differences
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 2 inlet temperature difference")
         def side_2_inlet_dT_eqn(b, t):
             return b.side_2_inlet_dT[t] == (
                        b.side_1.properties_in[t].temperature -
                        b.side_2.properties_in[t].temperature)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 2 outlet temperature difference")
         def side_2_outlet_dT_eqn(b, t):
             return b.side_2_outlet_dT[t] == (
@@ -414,14 +412,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         Add temperature driving force Constraints for counter-current flow.
         """
         # Temperature Differences
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 2 inlet temperature difference")
         def side_2_inlet_dT_eqn(b, t):
             return b.side_2_inlet_dT[t] == (
                        b.side_1.properties_out[t].temperature -
                        b.side_2.properties_in[t].temperature)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 2 outlet temperature difference")
         def side_2_outlet_dT_eqn(b, t):
             return b.side_2_outlet_dT[t] == (
@@ -433,14 +431,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         Add temperature driving force Constraints for co-current flow.
         """
         # Temperature Differences
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 3 inlet temperature difference")
         def side_3_inlet_dT_eqn(b, t):
             return b.side_3_inlet_dT[t] == (
                        b.side_1.properties_in[t].temperature -
                        b.side_3.properties_in[t].temperature)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 3 outlet temperature difference")
         def side_3_outlet_dT_eqn(b, t):
             return b.side_3_outlet_dT[t] == (
@@ -452,14 +450,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         Add temperature driving force Constraints for counter-current flow.
         """
         # Temperature Differences
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 3 inlet temperature difference")
         def side_3_inlet_dT_eqn(b, t):
             return b.side_3_inlet_dT[t] == (
                        b.side_1.properties_out[t].temperature -
                        b.side_3.properties_in[t].temperature)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Side 3 outlet temperature difference")
         def side_3_outlet_dT_eqn(b, t):
             return b.side_3_outlet_dT[t] == (
@@ -468,7 +466,7 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
 
     def initialize(blk, state_args_1=None, state_args_2=None,
                    state_args_3=None, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -489,8 +487,9 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
                            (see documentation of the specific property package)
                            (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={})
-            solver : str indicating whcih solver to use during
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
 
         Returns:
@@ -542,14 +541,14 @@ exchanger (default = 'counter-current' - counter-current flow arrangement"""))
         for t, c in self.heat_duty_side_1_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_1[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_2_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_2[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.heat_duty_side_3_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.heat_duty_side_3[t], default=1, warning=True)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

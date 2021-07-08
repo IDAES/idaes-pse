@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for setting up FTPx as the state variables in a generic property
 package
@@ -499,52 +499,58 @@ def define_default_scaling_factors(b):
 def calculate_scaling_factors(b):
     sf_flow = iscale.get_scaling_factor(
         b.flow_mol, default=1, warning=True)
-    sf_mf = iscale.get_scaling_factor(
-        b.mole_frac_phase_comp, default=1e3, warning=True)
+    sf_mf = {}
+    for i, v in b.mole_frac_phase_comp.items():
+        sf_mf[i] = iscale.get_scaling_factor(v, default=1e3, warning=True)
 
     if b.config.defined_state is False:
-        iscale.constraint_scaling_transform(b.sum_mole_frac_out, sf_mf)
+        iscale.constraint_scaling_transform(
+            b.sum_mole_frac_out, min(sf_mf.values()), overwrite=False)
 
     if len(b.phase_list) == 1:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j)
+                b.component_flow_balances[j], sf_j, overwrite=False)
 
         # b.phase_fraction_constraint is well scaled
 
     elif len(b.phase_list) == 2:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j*sf_flow)
+                b.component_flow_balances[j], sf_j*sf_flow, overwrite=False)
 
-        iscale.constraint_scaling_transform(b.sum_mole_frac, sf_mf)
+        iscale.constraint_scaling_transform(
+            b.sum_mole_frac, min(sf_mf.values()), overwrite=False)
 
         for p in b.phase_list:
             iscale.constraint_scaling_transform(
-                b.phase_fraction_constraint[p], sf_flow)
+                b.phase_fraction_constraint[p], sf_flow, overwrite=False)
 
     else:
-        iscale.constraint_scaling_transform(b.total_flow_balance, sf_flow)
+        iscale.constraint_scaling_transform(
+            b.total_flow_balance, sf_flow, overwrite=False)
 
         for j in b.component_list:
             sf_j = iscale.get_scaling_factor(
                 b.mole_frac_comp[j], default=1e3, warning=True)
             iscale.constraint_scaling_transform(
-                b.component_flow_balances[j], sf_j*sf_flow)
+                b.component_flow_balances[j], sf_j*sf_flow, overwrite=False)
 
         for p in b.phase_list:
             iscale.constraint_scaling_transform(
-                b.sum_mole_frac[p], sf_mf)
+                b.sum_mole_frac[p], min(sf_mf[p, :].values()), overwrite=False)
             iscale.constraint_scaling_transform(
-                b.phase_fraction_constraint[p], sf_flow)
+                b.phase_fraction_constraint[p], sf_flow, overwrite=False)
 
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)

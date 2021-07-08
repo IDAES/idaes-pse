@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This package provides the necessary constraints for gas phase properties for
 the CLC of methane
@@ -29,9 +29,9 @@ from pyomo.environ import (Constraint,
                            PositiveReals,
                            Reals,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -39,6 +39,8 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
                         Component,
                         VaporPhase)
 from idaes.core.util.initialization import (fix_state_vars,
@@ -59,7 +61,7 @@ __author__ = "Chinedu Okoli"
 _log = idaeslog.getLogger(__name__)
 
 
-@declare_process_block_class("GasPhaseThermoParameterBlock")
+@declare_process_block_class("GasPhaseParameterBlock")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -74,7 +76,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class = GasPhaseThermoStateBlock
+        self._state_block_class = GasPhaseStateBlock
 
         # Create Phase object
         self.Vap = VaporPhase()
@@ -84,21 +86,11 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.CO2 = Component()
         self.H2O = Component()
 
-        # Thermodynamic reference state
-        self.pressure_ref = Param(within=PositiveReals,
-                                  mutable=True,
-                                  default=1.01325,
-                                  doc='Reference pressure [bar]')
-        self.temperature_ref = Param(within=PositiveReals,
-                                     mutable=True,
-                                     default=298.15,
-                                     doc='Thermodynamic Reference'
-                                     'Temperature [K]')
-
         # Gas Constant
         self.gas_const = Param(within=PositiveReals,
                                default=8.314459848e-3,
-                               doc='Gas Constant [kJ/mol.K]')
+                               doc='Gas Constant [kJ/mol.K]',
+                               units=pyunits.kJ/pyunits.mol/pyunits.K)
 
     # -------------------------------------------------------------------------
         """ Pure gas component properties"""
@@ -109,7 +101,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 self.component_list,
                 mutable=False,
                 initialize=mw_comp_dict,
-                doc="Molecular weights of gas components [kg/mol]")
+                doc="Molecular weights of gas components [kg/mol]",
+                units=pyunits.kg/pyunits.mol)
 
         # Std. heat of formation of comp. - units = kJ/(mol comp) - ref: NIST
         enth_mol_form_comp_dict = {'CH4': -74.8731, 'CO2': -393.5224,
@@ -118,7 +111,8 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 self.component_list,
                 mutable=False,
                 initialize=enth_mol_form_comp_dict,
-                doc="Component molar heats of formation [kJ/mol]")
+                doc="Component molar heats of formation [kJ/mol]",
+                units=pyunits.kJ/pyunits.mol)
 
         # Ideal gas spec. heat capacity parameters(Shomate) of
         # components - ref: NIST webbook. Shomate equations from NIST.
@@ -222,23 +216,21 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'diffusion_comp': {'method': '_diffusion_comp',
                                    'units': 'cm2/s'}})
 
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'kg',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'kJ',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.kg,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
-class _GasPhaseThermoStateBlock(StateBlock):
+class _GasPhaseStateBlock(StateBlock):
     """
-    This Class contains methods which should be applied to Property Blocks as a
-    whole, rather than individual elements of indexed Property Blocks.
+    This Class contains methods which should be applied to State Blocks as a
+    whole, rather than individual elements of indexed State Blocks.
     """
     def initialize(blk, state_args=None, hold_state=False,
                    state_vars_fixed=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg={}):
+                   solver=None, optarg=None):
         """
         Initialization routine for property package.
         Keyword Arguments:
@@ -251,13 +243,14 @@ class _GasPhaseThermoStateBlock(StateBlock):
                          Keys for the state_args dictionary are:
                          flow_mol, temperature, pressure and mole_frac_comp
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
                      initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
@@ -289,9 +282,6 @@ class _GasPhaseThermoStateBlock(StateBlock):
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
-
-        # Create solver
-        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialise values
@@ -366,6 +356,8 @@ class _GasPhaseThermoStateBlock(StateBlock):
                 blk[k])
 
         if free_vars > 0:
+            # Create solver
+            opt = get_solver(solver, optarg)
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
                 res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
         else:
@@ -381,7 +373,7 @@ class _GasPhaseThermoStateBlock(StateBlock):
             else:
                 blk.release_state(flags)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
         Method to relase state variables fixed during initialization.
         Keyword Arguments:
@@ -406,9 +398,9 @@ class _GasPhaseThermoStateBlock(StateBlock):
         init_log.info_high('States released.')
 
 
-@declare_process_block_class("GasPhaseThermoStateBlock",
-                             block_class=_GasPhaseThermoStateBlock)
-class GasPhaseThermoStateBlockData(StateBlockData):
+@declare_process_block_class("GasPhaseStateBlock",
+                             block_class=_GasPhaseStateBlock)
+class GasPhaseStateBlockData(StateBlockData):
     """
     Property package for gas phase properties of methane combustion in CLC FR
     """
@@ -417,7 +409,7 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(GasPhaseThermoStateBlockData, self).build()
+        super(GasPhaseStateBlockData, self).build()
 
         # Object reference for molecular weight if needed by CV1D
         # Molecular weights
@@ -427,18 +419,22 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         """List the necessary state variable objects."""
         self.flow_mol = Var(initialize=1.0,
                             domain=Reals,
-                            doc='Component molar flowrate [mol/s]')
+                            doc='Component molar flowrate [mol/s]',
+                            units=pyunits.mol/pyunits.s)
         self.mole_frac_comp = Var(
                 self._params.component_list,
                 domain=Reals,
                 initialize=1 / len(self._params.component_list),
-                doc='State component mole fractions [-]')
+                doc='State component mole fractions [-]',
+                units=pyunits.mol/pyunits.mol)
         self.pressure = Var(initialize=1.01325,
                             domain=Reals,
-                            doc='State pressure [bar]')
+                            doc='State pressure [bar]',
+                            units=pyunits.bar)
         self.temperature = Var(initialize=298.15,
                                domain=Reals,
-                               doc='State temperature [K]')
+                               doc='State temperature [K]',
+                               units=pyunits.K)
 
         # Create standard constraints
         # Sum mole fractions if not inlet block
@@ -452,7 +448,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Molecular weight of gas mixture
         self.mw = Var(domain=Reals,
                       initialize=1.0,
-                      doc="Molecular weight of gas mixture [kg/mol]")
+                      doc="Molecular weight of gas mixture [kg/mol]",
+                      units=pyunits.kg/pyunits.mol)
 
         def mw_eqn(b):
             return (b.mw ==
@@ -471,7 +468,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Molar density
         self.dens_mol = Var(domain=Reals,
                             initialize=1.0,
-                            doc="Molar density/concentration [mol/m3]")
+                            doc="Molar density/concentration [mol/m3]",
+                            units=pyunits.mol/pyunits.m**3)
 
         def ideal_gas(b):
             return (b.dens_mol*b._params.gas_const*b.temperature*1e-2 ==
@@ -486,12 +484,13 @@ class GasPhaseThermoStateBlockData(StateBlockData):
             raise
 
     def _dens_mol_comp(self):
-        # Mixture heat capacities
+        # Component molar densities
         self.dens_mol_comp = Var(self._params.component_list,
                                  domain=Reals,
                                  initialize=1.0,
                                  doc='Component molar concentration'
-                                 '[mol/m3]')
+                                 '[mol/m3]',
+                                 units=pyunits.mol/pyunits.m**3)
 
         def comp_conc_eqn(b, j):
             return (b.dens_mol_comp[j] ==
@@ -510,7 +509,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Mass density
         self.dens_mass = Var(domain=Reals,
                              initialize=1.0,
-                             doc="Mass density [kg/m3]")
+                             doc="Mass density [kg/m3]",
+                             units=pyunits.kg/pyunits.m**3)
 
         def dens_mass_basis(b):
             return b.dens_mass == b.mw*b.dens_mol
@@ -527,7 +527,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Mixture dynamic viscosity
         self.visc_d = Var(domain=Reals,
                           initialize=1e-5,
-                          doc="Mixture dynamic viscosity [kg/m.s]")
+                          doc="Mixture dynamic viscosity [kg/m.s]",
+                          units=pyunits.kg/pyunits.m/pyunits.s)
 
         def visc_d_comp(i):
             return self._params.visc_d_param[i, 1] * \
@@ -560,7 +561,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                                   domain=Reals,
                                   initialize=1e-5,
                                   doc='Component diffusion in a gas mixture'
-                                  '[cm2/s]')
+                                  '[cm2/s]',
+                                  units=pyunits.cm**2/pyunits.s)
 
         def D_bin(i, j):
             # 1e3 used to multiply MW to convert from kg/mol to kg/kmol
@@ -593,7 +595,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Thermal conductivity of gas
         self.therm_cond = Var(domain=Reals,
                               initialize=1e-5,
-                              doc="Thermal conductivity of gas [kJ/m.K.s]")
+                              doc="Thermal conductivity of gas [kJ/m.K.s]",
+                              units=pyunits.kJ/pyunits.m/pyunits.K/pyunits.s)
 
         def therm_cond_comp(i):
             return self._params.therm_cond_param[i, 1] \
@@ -636,7 +639,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                                domain=Reals,
                                initialize=1.0,
                                doc="Pure component vapour heat capacities "
-                               "[kJ/mol.K]")
+                               "[kJ/mol.K]",
+                               units=pyunits.kJ/pyunits.mol/pyunits.K)
 
         def pure_component_cp_mol(b, j):
             return b.cp_mol_comp[j] == 1e-3*(
@@ -659,7 +663,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Mixture heat capacities
         self.cp_mol = Var(domain=Reals,
                           initialize=1.0,
-                          doc="Mixture heat capacity [kJ/mol.K]")
+                          doc="Mixture heat capacity [kJ/mol.K]",
+                          units=pyunits.kJ/pyunits.mol/pyunits.K)
 
         def cp_mol(b):
             return b.cp_mol == sum(b.cp_mol_comp[j]*b.mole_frac_comp[j]
@@ -678,7 +683,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         # Mixture heat capacities
         self.cp_mass = Var(domain=Reals,
                            initialize=1.0,
-                           doc="Mixture heat capacity, mass-basis [kJ/kg.K]")
+                           doc="Mixture heat capacity, mass-basis [kJ/kg.K]",
+                           units=pyunits.kJ/pyunits.kg/pyunits.K)
 
         def cp_mass(b):
             return b.cp_mass*b.mw == b.cp_mol
@@ -697,7 +703,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
                 self._params.component_list,
                 domain=Reals,
                 initialize=1.0,
-                doc="Pure component enthalpies [kJ/mol]")
+                doc="Pure component enthalpies [kJ/mol]",
+                units=pyunits.kJ/pyunits.mol)
 
         def pure_comp_enthalpy(b, j):
             return b.enth_mol_comp[j] == (
@@ -723,7 +730,8 @@ class GasPhaseThermoStateBlockData(StateBlockData):
         self.enth_mol = Var(
                             domain=Reals,
                             initialize=1.0,
-                            doc='Mixture specific enthalpy [kJ/mol]')
+                            doc='Mixture specific enthalpy [kJ/mol]',
+                            units=pyunits.kJ/pyunits.mol)
         try:
             # Try to build constraint
             self.mixture_enthalpy_eqn = Constraint(expr=(
@@ -775,3 +783,9 @@ class GasPhaseThermoStateBlockData(StateBlockData):
             _log.error('{} Pressure set below lower bound.'.format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
+
+    def default_material_balance_type(blk):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(blk):
+        return EnergyBalanceType.enthalpyTotal

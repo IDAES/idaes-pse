@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 This module contains utility functions to generate phase equilibrium data and
@@ -39,7 +39,7 @@ import numpy as np
 def Txy_diagram(
     model, component_1, component_2, pressure, num_points = 20, temperature = 298.15,  figure_name = None,
     print_legend = True, include_pressure = False, print_level=idaeslog.NOTSET,
-    solver_op={'tol': 1e-6}):
+    solver=None, solver_op=None):
 
     """
     This method generates T-x-y plots. Given the components, pressure and property dictionary
@@ -61,6 +61,7 @@ def Txy_diagram(
         include_pressure (bool) = If True, print pressure at which the plot is
         calculated in legends. The default is False.
         print_level: printing level from initialization
+        solver: solver to use (default=None, use IDAES default solver)
         solver_op: solver options
 
     Returns:
@@ -68,13 +69,14 @@ def Txy_diagram(
     """
     # Run txy_ data funtion to obtain bubble and dew twmperatures
     Txy_data_to_plot = Txy_data(model, component_1, component_2, pressure, num_points, temperature,
-                                print_level, solver_op)
+                                print_level, solver, solver_op)
 
     # Run diagrams function to convert t-x-y data into a plot
     build_txy_diagrams(Txy_data_to_plot, figure_name, print_legend, include_pressure)
 
+
 def Txy_data(model, component_1, component_2, pressure, num_points = 20, temperature = 298.15,
-            print_level=idaeslog.NOTSET, solver_op={'tol': 1e-6}):
+            print_level=idaeslog.NOTSET, solver=None, solver_op=None):
     """
     Function to generate T-x-y data. The function builds a state block and extracts
     bubble and dew temperatures at P pressure for N number of compositions.
@@ -90,6 +92,7 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
         model: Model wit intialized Property package which contains data to calculate
         bubble and dew temperatures for  component 1 and component 2
         print_level: printing level from initialization
+        solver: solver to use (default=None, use IDAES default solver)
         solver_op: solver options
 
     Returns:
@@ -125,9 +128,9 @@ def Txy_data(model, component_1, component_2, pressure, num_points = 20, tempera
 
     # Initialize flash unit model
     model.props[1].calculate_scaling_factors()
-    model.props.initialize(optarg=solver_op, outlvl=print_level)
+    model.props.initialize(solver=solver, optarg=solver_op, outlvl=print_level)
 
-    solver = get_solver()
+    solver = get_solver(solver, solver_op)
 
     # Create an array of compositions with N number of points
     x_d = np.linspace(x, 1 - x - xs, num_points)

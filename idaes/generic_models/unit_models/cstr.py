@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Standard IDAES CSTR model.
 """
@@ -215,7 +215,7 @@ see reaction package for documentation.}"""))
         self.volume = Reference(self.control_volume.volume[:])
 
         # Add CSTR performance equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.config.reaction_package.rate_reaction_idx,
                          doc="CSTR performance equation")
         def cstr_performance_eqn(b, t, r):
@@ -254,7 +254,7 @@ see reaction package for documentation.}"""))
         self.diameter = Var(initialize=1,
                             units=units_meta('length'),
                             doc='vessel diameter')
-        time = self.flowsheet().config.time.first()
+        time = self.flowsheet().time.first()
         self.volume_eq = Constraint(expr=self.volume[time]
                                     == self.length*self.diameter)
         module.cstr_costing(self.costing, **kwargs)

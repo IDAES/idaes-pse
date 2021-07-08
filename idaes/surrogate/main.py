@@ -1,3 +1,15 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 from idaes.surrogate import alamopy
 from idaes.surrogate.pysmo import polynomial_regression, radial_basis_function, kriging
 from idaes.surrogate.my_surrogate_base import Surrogate
@@ -428,6 +440,9 @@ class Pysmo_rbf(Surrogate):
             list_vars = []
             for i in feature_vec.keys():
                 list_vars.append(feature_vec[i])
+            # PYLINT-TODO-FIX the method "rbf_generate_expression" does not exist for this class
+            # maybe the name of the method should be "generate_expression" like in the self.pyomo_vars case?
+            # pylint: disable=no-member
             self._model = self.pysmo_rbf_results.rbf_generate_expression(list_vars)
 
 
@@ -479,6 +494,9 @@ class Pysmo_kriging(Surrogate):
             list_vars = []
             for i in feature_vec.keys():
                 list_vars.append(feature_vec[i])
+            # PYLINT-TODO-FIX the method "kriging_generate_expression" does not exist for this class
+            # maybe the name of the method should be "generate_expression" like in the self.pyomo_vars case?
+            # pylint: disable=no-member
             self._model = self.pysmo_kriging_results.kriging_generate_expression(list_vars)
 
 

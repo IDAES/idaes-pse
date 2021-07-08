@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Flowsheet example of the 2-region bubbling fluidized bed (BFB) model
 for a methane combustion with iron-oxide case study
@@ -37,9 +37,9 @@ from idaes.gas_solid_contactors.unit_models.bubbling_fluidized_bed \
 
 # Import property packages
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseThermoParameterBlock
+    gas_phase_thermo import GasPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
+    solid_phase_thermo import SolidPhaseParameterBlock
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
@@ -57,8 +57,8 @@ def main():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Set up thermo-physical and reaction properties
-    m.fs.gas_properties = GasPhaseThermoParameterBlock()
-    m.fs.solid_properties = SolidPhaseThermoParameterBlock()
+    m.fs.gas_properties = GasPhaseParameterBlock()
+    m.fs.solid_properties = SolidPhaseParameterBlock()
 
     m.fs.hetero_reactions = HeteroReactionParameterBlock(
             default={"solid_property_package": m.fs.solid_properties,
@@ -169,4 +169,3 @@ if __name__ == "__main__":
     print()
     stream_table = m.fs.BFB._get_stream_table_contents()
     print(stream_table)
-    m.fs.BFB.results_plot()

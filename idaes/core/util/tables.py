@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 from pandas import DataFrame
 from collections import OrderedDict
@@ -25,7 +25,7 @@ __author__ = "John Eslick, Andrew Lee"
 
 
 def arcs_to_stream_dict(
-    blk, additional=None, descend_into=True, sort=False, prepend=None, s={}):
+    blk, additional=None, descend_into=True, sort=False, prepend=None, s=None):
     """
     Creates a stream dictionary from the Arcs in a model, using the Arc names as
     keys. This can be used to automate the creation of the streams dictionary
@@ -81,7 +81,6 @@ def stream_states_dict(streams, time_point=0):
         A pandas DataFrame containing the stream table data.
     """
     stream_dict = OrderedDict()
-
     def _stream_dict_add(sb, n, i=None):
         """add a line to the stream table"""
         if i is None:

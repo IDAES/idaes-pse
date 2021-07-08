@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for Reboiler unit model. Tests 2 sets of state vars using the
 ideal property package (FTPz and FcTP).
@@ -19,9 +19,10 @@ Author: Jaffer Ghouse
 import pytest
 from pyomo.environ import (ConcreteModel, TerminationCondition,
                            SolverStatus, value)
+from pyomo.util.check_units import assert_units_consistent
 
-from idaes.core import FlowsheetBlock, MaterialBalanceType, EnergyBalanceType, \
-    MomentumBalanceType
+from idaes.core import \
+    FlowsheetBlock, MaterialBalanceType, EnergyBalanceType, MomentumBalanceType
 from idaes.generic_models.unit_models.distillation import Reboiler
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
@@ -72,6 +73,17 @@ class TestBTXIdeal():
             default={"property_package": m.fs.properties,
                      "has_boilup_ratio": True})
 
+        # Fix the reboiler variables
+        m.fs.unit.boilup_ratio.fix(1)
+
+        # Fix the inputs (typically this will be the outlet liquid from the
+        # bottom tray)
+        m.fs.unit.inlet.flow_mol.fix(1)
+        m.fs.unit.inlet.temperature.fix(363)
+        m.fs.unit.inlet.pressure.fix(101325)
+        m.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
+
         return m
 
     @pytest.fixture(scope="class")
@@ -89,9 +101,18 @@ class TestBTXIdeal():
             default={"property_package": m.fs.properties,
                      "has_boilup_ratio": True})
 
+        # Fix the reboiler variables
+        m.fs.unit.boilup_ratio.fix(1)
+
+        # Fix the inputs (typically this will be the outlet liquid from the
+        # bottom tray)
+        m.fs.unit.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
+        m.fs.unit.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
+        m.fs.unit.inlet.temperature.fix(363)
+        m.fs.unit.inlet.pressure.fix(101325)
+
         return m
 
-    @pytest.mark.build
     @pytest.mark.unit
     def test_build(self, btx_ftpz, btx_fctp):
 
@@ -144,43 +165,25 @@ class TestBTXIdeal():
 
     @pytest.mark.unit
     def test_dof(self, btx_ftpz, btx_fctp):
-
-        # Fix the reboiler variables
-        btx_ftpz.fs.unit.boilup_ratio.fix(1)
-
-        # Fix the inputs (typically this will be the outlet liquid from the
-        # bottom tray)
-        btx_ftpz.fs.unit.inlet.flow_mol.fix(1)
-        btx_ftpz.fs.unit.inlet.temperature.fix(363)
-        btx_ftpz.fs.unit.inlet.pressure.fix(101325)
-        btx_ftpz.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
-        btx_ftpz.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
-
         assert degrees_of_freedom(btx_ftpz) == 0
-
-        # Fix the reboiler variables
-        btx_fctp.fs.unit.boilup_ratio.fix(1)
-
-        # Fix the inputs (typically this will be the outlet liquid from the
-        # bottom tray)
-        btx_fctp.fs.unit.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
-        btx_fctp.fs.unit.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
-        btx_fctp.fs.unit.inlet.temperature.fix(363)
-        btx_fctp.fs.unit.inlet.pressure.fix(101325)
-
         assert degrees_of_freedom(btx_fctp) == 0
 
-    @pytest.mark.initialization
-    @pytest.mark.solver
+    @pytest.mark.component
+    def test_units_FTPz(self, btx_ftpz, btx_fctp):
+        assert_units_consistent(btx_ftpz)
+
+    @pytest.mark.component
+    def test_units_FcTP(self, btx_fctp):
+        assert_units_consistent(btx_fctp)
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, btx_ftpz, btx_fctp):
         initialization_tester(btx_ftpz)
         initialization_tester(btx_fctp)
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, btx_ftpz, btx_fctp):
         results = solver.solve(btx_ftpz)
 
@@ -196,10 +199,8 @@ class TestBTXIdeal():
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, btx_ftpz, btx_fctp):
         # Bottoms port
         assert (pytest.approx(0.5, abs=1e-3) ==
@@ -217,9 +218,11 @@ class TestBTXIdeal():
         assert (pytest.approx(0.5, abs=1e-3) ==
                 value(btx_ftpz.fs.unit.vapor_reboil.flow_mol[0]))
         assert (pytest.approx(0.6108, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[0, "benzene"]))
+                value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[
+                    0, "benzene"]))
         assert (pytest.approx(0.3892, abs=1e-3) ==
-                value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[0, "toluene"]))
+                value(btx_ftpz.fs.unit.vapor_reboil.mole_frac_comp[
+                    0, "toluene"]))
         assert (pytest.approx(368.728, abs=1e-2) ==
                 value(btx_ftpz.fs.unit.vapor_reboil.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
@@ -243,9 +246,11 @@ class TestBTXIdeal():
 
         # Vapor reboil port
         assert (pytest.approx(0.3054, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "benzene"]))
+                value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[
+                    0, "benzene"]))
         assert (pytest.approx(0.1946, abs=1e-3) ==
-                value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[0, "toluene"]))
+                value(btx_fctp.fs.unit.vapor_reboil.flow_mol_comp[
+                    0, "toluene"]))
         assert (pytest.approx(368.728, abs=1e-2) ==
                 value(btx_fctp.fs.unit.vapor_reboil.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
@@ -255,10 +260,8 @@ class TestBTXIdeal():
         assert (pytest.approx(16926.5, rel=1e-4) ==
                 value(btx_fctp.fs.unit.heat_duty[0]))
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_conservation(self, btx_ftpz, btx_fctp):
         assert abs(value(btx_ftpz.fs.unit.inlet.flow_mol[0] -
                          (btx_ftpz.fs.unit.bottoms.flow_mol[0] +

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tray model for distillation. Can build the following:
 1. Conventional tray with liq/vap inlet and liq/vap outlet
@@ -155,7 +155,7 @@ see property package for documentation.}"""))
 
         for i in inlet_list:
             state_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="State block for " + i + "_inlet to tray",
                 default=state_block_args)
 
@@ -167,7 +167,7 @@ see property package for documentation.}"""))
         mixed_block_args["defined_state"] = False
 
         self.properties_out = self.config.property_package.\
-            build_state_block(self.flowsheet().config.time,
+            build_state_block(self.flowsheet().time,
                               doc="State block for mixed outlet from tray",
                               default=mixed_block_args)
 
@@ -201,7 +201,7 @@ see property package for documentation.}"""))
     def _add_material_balance(self):
         """Method to construct the mass balance equation."""
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.config.property_package.component_list,
                          doc="material balance")
         def material_mixing_equations(b, t, j):
@@ -224,12 +224,12 @@ see property package for documentation.}"""))
 
         if self.config.has_heat_transfer:
             units_meta = self.config.property_package.get_metadata()
-            self.heat_duty = Var(self.flowsheet().config.time,
+            self.heat_duty = Var(self.flowsheet().time,
                                  initialize=0,
                                  doc="Heat duty for the tray",
                                  units=units_meta.get_derived_units("power"))
 
-        @self.Constraint(self.flowsheet().config.time, doc="energy balance")
+        @self.Constraint(self.flowsheet().time, doc="energy balance")
         def enthalpy_mixing_equations(b, t):
             if self.config.is_feed_tray:
                 if self.config.has_heat_transfer:
@@ -290,12 +290,12 @@ see property package for documentation.}"""))
         """Method to construct the pressure balance."""
         if self.config.has_pressure_change:
             units_meta = self.config.property_package.get_metadata()
-            self.deltaP = Var(self.flowsheet().config.time,
+            self.deltaP = Var(self.flowsheet().time,
                               initialize=0,
                               doc="Pressure drop across tray",
                               units=units_meta.get_derived_units("pressure"))
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure balance for tray")
         def pressure_drop_equation(self, t):
             if self.config.has_pressure_change:
@@ -644,7 +644,7 @@ see property package for documentation.}"""))
 
     def initialize(self, state_args_feed=None, state_args_liq=None,
                    state_args_vap=None, hold_state_liq=False,
-                   hold_state_vap=False, solver=None, optarg={},
+                   hold_state_vap=False, solver=None, optarg=None,
                    outlvl=idaeslog.NOTSET):
 
         # TODO:
@@ -678,7 +678,7 @@ see property package for documentation.}"""))
             state_args_vap = {}
             state_dict = (
                 self.properties_in_feed[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -722,7 +722,7 @@ see property package for documentation.}"""))
             state_args_liq = {}
             state_dict = (
                 self.properties_in_liq[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -739,7 +739,7 @@ see property package for documentation.}"""))
             state_args_vap = {}
             state_dict = (
                 self.properties_in_vap[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
 
             for k in state_dict.keys():
@@ -790,7 +790,7 @@ see property package for documentation.}"""))
             # will work for most combination of state vars.
             state_dict = (
                 self.properties_in_liq[
-                    self.flowsheet().config.time.first()]
+                    self.flowsheet().time.first()]
                 .define_port_members())
             for k in state_dict.keys():
                 if k == "pressure":

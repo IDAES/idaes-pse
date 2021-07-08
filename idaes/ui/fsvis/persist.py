@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Storage of models for the IDAES Flowsheet Visualizer.
 
@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, Union
 # package
 from idaes import logger
+from . import errors
 
 _log = logger.getLogger(__name__)
 
@@ -78,6 +79,10 @@ class DataStore(ABC):
     def __eq__(self, other):
         return str(other) == str(self)
 
+    @property
+    def filename(self):
+        return ""
+
 
 class FileDataStore(DataStore):
     def __init__(self, path: Path):
@@ -96,16 +101,25 @@ class FileDataStore(DataStore):
 
         Returns:
             None
+
+        Raises:
+            DataStoreError, if serialization or I/O fails
         """
         _log.debug(f"Save to file: {self._p}")
-        with self._p.open("w") as fp:
-            if isinstance(data, dict):
-                try:
-                    json.dump(data, fp)
-                except TypeError as err:
-                    raise ValueError(f"Writing JSON failed: {err}")
-            else:
-                fp.write(str(data))
+        try:
+            with self._p.open("w") as fp:
+                if isinstance(data, dict):
+                    try:
+                        json.dump(data, fp)
+                    except TypeError as err:
+                        raise errors.DatastoreSerializeError(data, err, stream=fp)
+                else:
+                    _parse_json(data)  # validation
+                    fp.write(str(data))
+        except ValueError as err:
+            raise errors.DatastoreError(str(err))
+        except IOError as err:
+            raise errors.DatastoreSaveError(f"IO error with datastore: {err}")
 
     def load(self):
         _log.debug(f"Load from file: {self._p}")
@@ -121,7 +135,11 @@ class FileDataStore(DataStore):
         return data
 
     def __str__(self):
-        return f"file storage at '{self._p}'"
+        return f"file '{self._p}'"
+
+    @property
+    def filename(self):
+        return str(self._p)
 
 
 class MemoryDataStore(DataStore):
@@ -139,18 +157,18 @@ class MemoryDataStore(DataStore):
 
         Returns:
             None
+
+        Raises:
+            DataStoreError, if serialization fails
         """
         if isinstance(data, dict):
             try:
                 json.dumps(data)
             except TypeError as err:
-                raise ValueError(f"Input is not serializable as JSON: {err}")
+                raise errors.DatastoreSerializeError(data, err)
             self._data = data
         else:
-            try:
-                self._data = json.loads(str(data))
-            except json.JSONDecodeError as err:
-                raise ValueError("Parsing JSON failed: {err}")
+            self._data = _parse_json(data)
 
     def load(self) -> Dict:
         if self._data is None:
@@ -158,7 +176,22 @@ class MemoryDataStore(DataStore):
         return self._data
 
     def __str__(self):
-        return "memory storage"
+        return "__MEMORY__"
+
+
+def _parse_json(data) -> Dict:
+    """Parse string of the data to JSON, with desired exceptions raised.
+
+    Raises:
+        errors.DatastoreSerializeError: If the parse fails
+    """
+    s = str(data)
+    try:
+        data = json.loads(s)
+    except json.decoder.JSONDecodeError as err:
+        err2 = f"could not decode string of JSON: {err}"
+        raise errors.DatastoreSerializeError(s[:256], err2)
+    return data
 
 
 class DataStoreManager:
@@ -199,7 +232,7 @@ class DataStoreManager:
 
         Raises:
             KeyError if the flowsheet is not found
-            ValueError on JSON errors
+            DatastoreSerializeError on JSON errors
         """
         self._find(id_).save(data)
         _log.debug(f"Flowsheet '{id_}' saved")

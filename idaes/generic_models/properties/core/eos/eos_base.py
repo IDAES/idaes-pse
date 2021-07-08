@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base class for EoS modules.
 
@@ -52,6 +52,42 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "build_parameters"))
 
     @staticmethod
+    def act_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "act_phase_comp"))
+
+    @staticmethod
+    def act_phase_comp_true(b, p, j):
+        raise NotImplementedError(_msg(b, "act_phase_comp_true"))
+
+    @staticmethod
+    def act_phase_comp_appr(b, p, j):
+        raise NotImplementedError(_msg(b, "act_phase_comp_appr"))
+
+    @staticmethod
+    def log_act_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "log_act_phase_comp"))
+
+    @staticmethod
+    def log_act_phase_comp_true(b, p, j):
+        raise NotImplementedError(_msg(b, "log_act_phase_comp_true"))
+
+    @staticmethod
+    def log_act_phase_comp_appr(b, p, j):
+        raise NotImplementedError(_msg(b, "log_act_phase_comp_appr"))
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        raise NotImplementedError(_msg(b, "act_coeff_phase_comp"))
+
+    @staticmethod
+    def act_coeff_phase_comp_true(b, p, j):
+        raise NotImplementedError(_msg(b, "act_coeff_phase_comp_true"))
+
+    @staticmethod
+    def act_coeff_phase_comp_appr(b, p, j):
+        raise NotImplementedError(_msg(b, "act_coeff_phase_comp_appr"))
+
+    @staticmethod
     def cp_mol_phase(b, p):
         raise NotImplementedError(_msg(b, "cp_mol_phase"))
 
@@ -68,6 +104,11 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "cv_mol_phase_comp"))
 
     @staticmethod
+    def heat_capacity_ratio_phase(b, p):
+        return (b.cp_mol_phase[p] /
+                b.cv_mol_phase[p])
+
+    @staticmethod
     def cv_mol_ig_comp_pure(b, j):
         # Method for calculating pure component ideal gas cv from cp
         # For ideal gases, cv = cp - R
@@ -78,11 +119,16 @@ class EoSBase():
             b, cobj(b, j), b.temperature) - R)
 
     @staticmethod
-    def cv_mol_ls_comp_pure(b, j):
+    def cv_mol_ls_comp_pure(b, p, j):
         # Method for calculating pure component liquid and solid cv from cp
         # For ideal (incompressible) liquids and solids, cv = cp
-        return get_method(b, "cp_mol_liq_comp", j)(
-            b, cobj(b, j), b.temperature)
+        pobj = b.params.get_phase(p)
+        if pobj.is_liquid_phase():
+            return get_method(b, "cp_mol_liq_comp", j)(
+                b, cobj(b, j), b.temperature)
+        elif pobj.is_solid_phase():
+            return get_method(b, "cp_mol_sol_comp", j)(
+                b, cobj(b, j), b.temperature)
 
     @staticmethod
     def dens_mass_phase(b, p):
@@ -138,7 +184,13 @@ class EoSBase():
             dU_form)
 
     @staticmethod
-    def energy_internal_mol_ls_comp_pure(b, j):
+    def energy_internal_mol_ls_comp_pure(b, p, j):
+        pobj = b.params.get_phase(p)
+        if pobj.is_liquid_phase():
+            mthd = get_method(b, "enth_mol_liq_comp", j)
+        elif pobj.is_solid_phase():
+            mthd = get_method(b, "enth_mol_sol_comp", j)
+
         # Method for calculating pure component U from H for liquids & solids
         units = b.params.get_metadata().derived_units
         R = pyunits.convert(const.gas_constant,
@@ -165,13 +217,10 @@ class EoSBase():
             dU_form = delta_n*R*b.params.temperature_ref
 
             # For ideal (incompressible) liquids and solids, U = H + dU_form
-            return (get_method(b, "enth_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature) +
-                dU_form)
+            return (mthd(b, cobj(b, j), b.temperature) + dU_form)
         else:
             # If not including heat of formation, U = H
-            return get_method(b, "enth_mol_liq_comp", j)(
-                b, cobj(b, j), b.temperature)
+            return mthd(b, cobj(b, j), b.temperature)
 
     @staticmethod
     def enth_mol_phase(b, p):

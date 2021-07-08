@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 This module contains miscellaneous utility functions for use in IDAES models.
@@ -18,7 +18,7 @@ import xml.dom.minidom
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
-from pyomo.core.base.plugin import ModelComponentFactory
+from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
@@ -32,7 +32,7 @@ _log = idaeslog.getLogger(__name__)
 
 
 # Author: Andrew Lee
-def get_solver(solver=None, options={}):
+def get_solver(solver=None, options=None):
     """
     General method for getting a solver object which defaults to the standard
     IDAES solver (defined in the IDAES configuration).
@@ -40,7 +40,8 @@ def get_solver(solver=None, options={}):
     Args:
         solver: string name for desired solver. Default=None, use default solver
         options: dict of solver options to use, overwrites any settings
-                 provided by IDAES configuration.
+                 provided by IDAES configuration. Default = None, use default
+                 solver options.
 
     Returns:
         A Pyomo solver object
@@ -48,7 +49,10 @@ def get_solver(solver=None, options={}):
     if solver is None:
         solver = "default"
     solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
-    solver_obj.options.update(options)
+
+    if options is not None:
+        solver_obj.options.update(options)
+
     return solver_obj
 
 
@@ -123,7 +127,7 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
-    tag_format={},
+    tag_format=None,
     tag_format_default="{:.4e}"
 ):
     """
@@ -154,6 +158,9 @@ def svg_tag(
     Returns:
         SVG String
     """
+    if tag_format is None:
+        tag_format = {}
+
     if isinstance(svg, str):  # assume this is svg content string
         pass
     elif isinstance(svg, bytes):

@@ -34,8 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyutilib @ https://github.com/PyUtilib/pyutilib/archive/master.zip",
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.0.idaes.2021.05.09.zip",
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.1.idaes.2021.06.04.zip",
 ]
 
 
@@ -64,8 +63,7 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyutilib>=6.0.0",
-        "pyomo>=5.7.3",
+        "pyomo>=6.0",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
@@ -100,6 +98,8 @@ kwargs = dict(
             "*.js",
             "*.css",
             "*.html",
+            "*.json.gz",
+            "*.dat"
         ]
     },
     include_package_data=True,

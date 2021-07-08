@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This file contains 0D feedwater heater models. These models are suitable for
 steady state calculations. For dynamic modeling 1D models are required. There
@@ -154,13 +154,13 @@ class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
         units_meta = self.shell.config.property_package.get_metadata()
-        self.enth_sub = Var(self.flowsheet().config.time,
+        self.enth_sub = Var(self.flowsheet().time,
                             initialize=0,
                             units=units_meta.get_derived_units("energy_mole"))
         self.enth_sub.fix()
 
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Calculate steam extraction rate such that all steam condenses",
         )
         def extraction_rate_constraint(b, t):
@@ -246,7 +246,7 @@ class FWH0DData(UnitModelBlockData):
             }
             self.drain_mix = Mixer(default=mix_cfg)
 
-            @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
+            @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
                 """
                 Constraint to set the drain mixer pressure to the pressure of
