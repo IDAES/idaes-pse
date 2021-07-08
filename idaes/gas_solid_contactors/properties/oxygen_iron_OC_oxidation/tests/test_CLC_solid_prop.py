@@ -17,10 +17,13 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import (
+        ConcreteModel,
+        TerminationCondition,
+        SolverStatus,
+        Var,
+        Constraint,
+        )
 
 from idaes.core import FlowsheetBlock
 
@@ -108,3 +111,81 @@ def test_solution(solid_prop):
             solid_prop.fs.unit.cp_mass.value)
     assert (pytest.approx(0.0039, abs=1e-2) ==
             solid_prop.fs.unit.enth_mass.value)
+
+
+def test_state_vars():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SolidPhaseParameterBlock()
+    m.fs.state = m.fs.properties.build_state_block()
+
+    assert isinstance(m.fs.state.flow_mass, Var)
+    assert isinstance(m.fs.state.temperature, Var)
+    assert isinstance(m.fs.state.particle_porosity, Var)
+    assert isinstance(m.fs.state.mass_frac_comp, Var)
+
+    assert isinstance(m.fs.state.sum_component_eqn, Constraint)
+
+    assert len(list(m.fs.state.component_data_objects(Var))) == 6
+    assert len(list(m.component_data_objects(Constraint))) == 1
+
+    for name, var in m.fs.state.define_state_vars().items():
+        assert name in m.fs.properties._metadata._properties
+
+
+def test_indexed_state_block():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = SolidPhaseParameterBlock()
+    m.fs.state = m.fs.properties.build_state_block([1,2,3])
+
+    assert len([v for v in m.component_data_objects(Var) if not v.fixed]) == 18
+    assert len(list(m.component_data_objects(Constraint))) == 3
+
+    for i, state in m.fs.state.items():
+        assert isinstance(state.flow_mass, Var)
+        assert isinstance(state.temperature, Var)
+        assert isinstance(state.particle_porosity, Var)
+        assert isinstance(state.mass_frac_comp, Var)
+
+        assert isinstance(state.sum_component_eqn, Constraint)
+
+
+def test_property_construction_ordered():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = SolidPhaseParameterBlock()
+    m.fs.state = m.fs.properties.build_state_block()
+
+    # If we construct properties in this order, variables and constraints
+    # will be added one at a time.
+    matching = [
+            ("dens_mass_skeletal", "density_skeletal_constraint"),
+            ("dens_mass_particle", "density_particle_constraint"),
+            ("cp_mol_comp", "cp_shomate_eqn"),
+            ("cp_mass", "mixture_heat_capacity_eqn"),
+            ("enth_mol_comp", "enthalpy_shomate_eqn"),
+            ("enth_mass", "mixture_enthalpy_eqn"),
+            ]
+
+    state_vars = m.fs.state.define_state_vars()
+    n_state_vars = len(state_vars)
+    n_vars = len(m.fs.properties._metadata._properties)
+    assert len(matching) == n_vars - n_state_vars
+
+    nvar = len(list(m.fs.state.component_data_objects(Var)))
+    ncon = len(list(m.component_data_objects(Constraint)))
+
+    for varname, conname in matching:
+        assert varname not in state_vars
+        var = getattr(m.fs.state, varname)
+        con = getattr(m.fs.state, conname)
+        dim = len(var)
+        nvar += dim
+        ncon += dim
+        assert dim == len(con)
+        assert isinstance(var, Var)
+        assert isinstance(con, Constraint)
+        assert len(list(m.fs.state.component_data_objects(Var))) == nvar
+        assert len(list(m.component_data_objects(Constraint))) == ncon
