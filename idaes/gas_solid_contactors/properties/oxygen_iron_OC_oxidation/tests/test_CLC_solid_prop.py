@@ -242,9 +242,6 @@ class TestProperties(unittest.TestCase):
         target_values = ComponentMap((state.find_component(name), values)
                 for name, values in target_values.items())
 
-        # Construct dens_mass_particle and all its prerequisites
-        state.dens_mass_particle
-
         param_sweeper = ParamSweeper(
                 n_scen,
                 state_values,
@@ -289,9 +286,6 @@ class TestProperties(unittest.TestCase):
                 }
         target_values = ComponentMap((state.find_component(name), values)
                 for name, values in target_values.items())
-
-        # Construct dens_mass_particle and all its prerequisites
-        state.dens_mass_particle
 
         param_sweeper = ParamSweeper(
                 n_scen,
@@ -361,9 +355,6 @@ class TestProperties(unittest.TestCase):
         target_values = ComponentMap((state.find_component(name), values)
                 for name, values in target_values.items())
 
-        # Construct dens_mass_particle and all its prerequisites
-        state.dens_mass_particle
-
         param_sweeper = ParamSweeper(
                 n_scen,
                 state_values,
@@ -432,9 +423,6 @@ class TestProperties(unittest.TestCase):
                 }
         target_values = ComponentMap((state.find_component(name), values)
                 for name, values in target_values.items())
-
-        # Construct dens_mass_particle and all its prerequisites
-        state.dens_mass_particle
 
         param_sweeper = ParamSweeper(
                 n_scen,
