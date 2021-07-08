@@ -98,7 +98,8 @@ def _validate_required_markers(item, required_markers=None, expected_count=1):
     if reason_to_fail:
         msg = (
             f'{reason_to_fail} for test function "{item.name}". '
-            f'Expected: {expected_count} of {required_markers}; found: {item_markers}'
+            f'Expected: {expected_count} of {required_markers}; '
+            f'found: {required_markers_on_item or required_count}'
         )
         pytest.fail(msg)
 
