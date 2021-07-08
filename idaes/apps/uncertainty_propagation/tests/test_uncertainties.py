@@ -328,7 +328,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             propagate_results =  propagate_uncertainty(1, theta, cov, variable_name)
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_quantify_propagate_uncertainty_NRTL(self):
         '''
         It tests the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -349,9 +349,8 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.gradient_f[0], [-0.19649493])
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
         assert results.propagation_f == pytest.approx(0.0021199499778127204)
-        
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_quantify_propagate_uncertainty_NRTL_exception(self):
         '''
         It tests an exception error when the ipopt fails for the function quantify_propagate_uncertainty with IDAES NRTL model.
