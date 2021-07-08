@@ -27,15 +27,18 @@ from idaes.apps.caprese.categorize import (
         _identify_derivative_if_differential,
         # CATEGORY_TYPE_MAP,
         )
-# from idaes.apps.caprese.nmpc_var import (
-        # NmpcVar,
-#         DiffVar,
-#         AlgVar,
-#         InputVar,
-#         DerivVar,
-#         FixedVar,
-#         MeasuredVar,         
-        # )
+from idaes.apps.caprese.nmpc_var import (
+        NmpcVar,
+        DiffVar,
+        AlgVar,
+        InputVar,
+        DerivVar,
+        FixedVar,
+        MeasuredVar,
+        ActualMeasurementVar,
+        MeasurementErrorVar,
+        ModelDisturbanceVar,
+        )
 from idaes.apps.caprese.dynamic_block import (
         _DynamicBlockData,
         IndexedDynamicBlock,
@@ -315,6 +318,11 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         self.noise_minimize_objective = Objective(expr = wQw + vRv)  
         
+    def load_measurements_for_MHE(self, measurements):
+        t_last = self.time.last()
+        for var, val in zip(self.ACTUALMEASUREMENT_BLOCK[:].var, measurements):
+            var[t_last].fix(val)
+        
     def check_var_con_dof(self):
         self.vectors.input[...].fix()
         self.vectors.differential[...].unfix()
@@ -328,8 +336,35 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         dof = degrees_of_freedom(self)
         assert dof == correct_dof
+     
+    #Do not want to change the original one in dynamic_block.py
+    def MHE_initialize_to_initial_conditions(self, 
+            ctype=(DiffVar, AlgVar, DerivVar, ActualMeasurementVar),
+            ):
+        """ Sets values to initial values for specified variable
+        ctypes for all time points.
+        """
+        # There should be negligible overhead to initializing
+        # in many small loops as opposed to one big loop here.
+        for i in range(len(self.sample_points)):
+            self.initialize_sample_to_initial(i, ctype=ctype)
+    
+    #Do not want to change the original one in dynamic_block.py
+    def MHE_advance_one_sample(self,
+            ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar, 
+                   ActualMeasurementVar, MeasurementErrorVar, ModelDisturbanceVar),
+            tolerance=1e-8,
+            ):
+        """ Set values for the variables of the specified ctypes
+        to their values one sample time in the future.
+        """
+        sample_time = self.sample_time
+        self.advance_by_time(
+                sample_time,
+                ctype=ctype,
+                tolerance=tolerance,
+                )
         
-
 
 class EstimatorBlock(DynamicBlock):
     """ This is a user-facing class to be instantiated when one

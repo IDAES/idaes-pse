@@ -129,11 +129,42 @@ def main(plot_switch=False):
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
     
-    mhe.estimator.initialize_to_initial_conditions()
+    mhe.estimator.MHE_initialize_to_initial_conditions()
+    
+    # This "initialization" really simulates the plant with the new inputs.
+    mhe.plant.initialize_by_solving_elements(solver)
+    mhe.plant.mod.Tjinb.fix() #Fix the input to solve the plant
+    solver.solve(mhe.plant, tee = True)
+    
+    measurements = mhe.plant.generate_measurements_at_time(p_ts)
+    #apply measurement error here
+    mhe.estimator.load_measurements_for_MHE(measurements)
     
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof()
     solver.solve(mhe.estimator, tee=True)
+    
+    
+    for i in range(1,11):
+        print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
+        
+        mhe.plant.advance_one_sample()
+        mhe.plant.initialize_to_initial_conditions()
+        #inject inputs here if it's updated
+        
+        mhe.plant.initialize_by_solving_elements(solver)
+        mhe.plant.mod.Tjinb.fix() #Fix the input to solve the plant
+        solver.solve(mhe.plant)
+        
+        measurements = mhe.plant.generate_measurements_at_time(p_ts)
+        #apply measurement error here
+        
+        mhe.estimator.MHE_advance_one_sample()
+        mhe.estimator.load_measurements_for_MHE(measurements)
+        
+        mhe.estimator.check_var_con_dof()
+        solver.solve(mhe.estimator, tee=True)
+        
     
     return mhe
 

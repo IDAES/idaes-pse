@@ -37,6 +37,7 @@ from idaes.apps.caprese.nmpc_var import (
         InputVar,
         FixedVar,
         MeasuredVar,
+        ActualMeasurementVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
 
