@@ -17,10 +17,15 @@ Author: Chinedu Okoli
 
 import pytest
 
-from pyomo.environ import (ConcreteModel,
-                           TerminationCondition,
-                           SolverStatus,
-                           Var)
+from pyomo.environ import (
+        ConcreteModel,
+        TerminationCondition,
+        SolverStatus,
+        Var,
+        Constraint,
+        value,
+        units as pyunits,
+        )
 
 from idaes.core import FlowsheetBlock
 
@@ -130,3 +135,55 @@ def test_solution(rxn_prop):
             rxn_prop.fs.unit.OC_conv.value)
     assert (pytest.approx(0, abs=1e-2) ==
             rxn_prop.fs.unit.reaction_rate['R1'].value)
+
+
+def test_state_vars():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.solid_properties = SolidPhaseParameterBlock()
+    m.fs.solid_state = m.fs.solid_properties.build_state_block(default={
+        "parameters": m.fs.solid_properties,
+        "defined_state": True,
+        })
+
+    m.fs.gas_properties = GasPhaseParameterBlock()
+    m.fs.gas_state = m.fs.gas_properties.build_state_block(default={
+        "parameters": m.fs.gas_properties,
+        "defined_state": True,
+        })
+
+    m.fs.reaction_properties = HeteroReactionParameterBlock(default={
+        "solid_property_package": m.fs.solid_properties,
+        "gas_property_package": m.fs.gas_properties,
+        })
+    m.fs.reaction_block = m.fs.reaction_properties.reaction_block_class(
+            default={
+                "parameters": m.fs.reaction_properties,
+                "solid_state_block": m.fs.solid_state,
+                "gas_state_block": m.fs.gas_state,
+                "has_equilibrium": False,
+            })
+
+    for var in m.fs.gas_state.define_state_vars().values():
+        var.fix()
+    for var in m.fs.solid_state.define_state_vars().values():
+        var.fix()
+
+    # Note that these checks are necessary to trigger the construction of
+    # the reaction block variables
+    assert isinstance(m.fs.reaction_block.k_rxn, Var)
+    assert isinstance(m.fs.reaction_block.OC_conv, Var)
+    assert isinstance(m.fs.reaction_block.OC_conv_temp, Var)
+    assert isinstance(m.fs.reaction_block.reaction_rate, Var)
+
+    assert degrees_of_freedom(m) == 0
+
+    rxn_vars = list(m.fs.reaction_block.component_data_objects(Var))
+    rxn_cons = list(m.fs.reaction_block.component_data_objects(Constraint))
+    assert len(rxn_vars) == 4
+    assert len(rxn_cons) == 4
+
+
+if __name__ == "__main__":
+    test_state_vars()
