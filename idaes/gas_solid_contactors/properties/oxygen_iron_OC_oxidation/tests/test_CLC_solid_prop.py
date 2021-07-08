@@ -314,7 +314,77 @@ class TestProperties(unittest.TestCase):
                     val = value(pyunits.convert(val, var.get_units()))
                     assert var.value == pytest.approx(value(val), abs=1e-3)
 
+    def test_cp(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 4
+        K = pyunits.K
+        state_values = {
+                "flow_mass": [1.0*pyunits.kg/pyunits.s]*n_scen,
+                "temperature": [1000.0*K, 1100*K, 1200*K, 1300*K],
+                "particle_porosity": [0.27]*n_scen,
+                "mass_frac_comp[Fe2O3]": [1.0/3.0]*n_scen,
+                "mass_frac_comp[Fe3O4]": [1.0/3.0]*n_scen,
+                "mass_frac_comp[Al2O3]": [1.0/3.0]*n_scen,
+                }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
+        kJmolK = pyunits.kJ/pyunits.mol/pyunits.K
+        kJkgK = pyunits.kJ/pyunits.kg/pyunits.K
+        target_values = {
+                "cp_mol_comp[Fe2O3]": [
+                    0.1401*kJmolK,
+                    0.1408*kJmolK,
+                    0.1415*kJmolK,
+                    0.1423*kJmolK,
+                    ],
+                "cp_mol_comp[Fe3O4]": [
+                    0.2008*kJmolK,
+                    0.2008*kJmolK,
+                    0.2008*kJmolK,
+                    0.2008*kJmolK,
+                    ],
+                "cp_mol_comp[Al2O3]": [
+                    0.1249*kJmolK,
+                    0.1268*kJmolK,
+                    0.1285*kJmolK,
+                    0.1299*kJmolK,
+                    ],
+                "cp_mass": [
+                    0.9899*kJkgK,
+                    0.9975*kJkgK,
+                    1.0045*kJkgK,
+                    1.0108*kJkgK,
+                    ],
+                }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
+
+        # Construct dens_mass_particle and all its prerequisites
+        state.dens_mass_particle
+
+        param_sweeper = ParamSweeper(
+                n_scen,
+                state_values,
+                output_values=target_values,
+                )
+        with param_sweeper:
+            for inputs, outputs in param_sweeper:
+                solve_strongly_connected_components(state)
+
+                # Check that we have eliminated infeasibility
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs have been set properly
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                for var, val in outputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
 
 if __name__ == "__main__":
     unittest.main()
-    TestProperties().test_dens_mass_skeletal()
