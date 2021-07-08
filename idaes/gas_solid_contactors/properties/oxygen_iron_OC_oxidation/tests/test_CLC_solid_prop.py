@@ -386,5 +386,77 @@ class TestProperties(unittest.TestCase):
                     assert var.value == pytest.approx(value(val), abs=1e-3)
 
 
+    def test_enth(self):
+        m = self._make_model()
+        state = m.fs.state
+
+        n_scen = 4
+        K = pyunits.K
+        state_values = {
+                "flow_mass": [1.0*pyunits.kg/pyunits.s]*n_scen,
+                "temperature": [1000.0*K, 1100*K, 1200*K, 1300*K],
+                "particle_porosity": [0.27]*n_scen,
+                "mass_frac_comp[Fe2O3]": [1.0/3.0]*n_scen,
+                "mass_frac_comp[Fe3O4]": [1.0/3.0]*n_scen,
+                "mass_frac_comp[Al2O3]": [1.0/3.0]*n_scen,
+                }
+        state_values = ComponentMap((state.find_component(name), values)
+                for name, values in state_values.items())
+        kJmol = pyunits.kJ/pyunits.mol
+        kJkg = pyunits.kJ/pyunits.kg
+        target_values = {
+                "enth_mol_comp[Fe2O3]": [
+                    101.043*kJmol,
+                    115.086*kJmol,
+                    129.198*kJmol,
+                    143.385*kJmol,
+                    ],
+                "enth_mol_comp[Fe3O4]": [
+                    147.591*kJmol,
+                    167.674*kJmol,
+                    187.757*kJmol,
+                    207.841*kJmol,
+                    ],
+                "enth_mol_comp[Al2O3]": [
+                    77.925*kJmol,
+                    90.513*kJmol,
+                    103.279*kJmol,
+                    116.199*kJmol,
+                    ],
+                "enth_mass": [
+                    678.156*kJkg,
+                    777.534*kJkg,
+                    877.640*kJkg,
+                    978.408*kJkg,
+                    ],
+                }
+        target_values = ComponentMap((state.find_component(name), values)
+                for name, values in target_values.items())
+
+        # Construct dens_mass_particle and all its prerequisites
+        state.dens_mass_particle
+
+        param_sweeper = ParamSweeper(
+                n_scen,
+                state_values,
+                output_values=target_values,
+                )
+        with param_sweeper:
+            for inputs, outputs in param_sweeper:
+                solve_strongly_connected_components(state)
+
+                # Check that we have eliminated infeasibility
+                assert number_large_residuals(state, tol=1e-8) == 0
+
+                # Sanity check that inputs have been set properly
+                for var, val in inputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+                for var, val in outputs.items():
+                    val = value(pyunits.convert(val, var.get_units()))
+                    assert var.value == pytest.approx(value(val), abs=1e-3)
+
+
 if __name__ == "__main__":
     unittest.main()
