@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 Standard IDAES pressure changer model.
@@ -30,13 +30,15 @@ from idaes.core import (
     EnergyBalanceType,
     MomentumBalanceType,
     MaterialBalanceType,
+    ProcessBlockData,
     UnitModelBlockData,
     useDefault,
 )
+from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.core.util.config import is_physical_parameter_block
 import idaes.logger as idaeslog
 import idaes.core.util.unit_costing as costing
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -48,6 +50,69 @@ class ThermodynamicAssumption(Enum):
     isentropic = 2
     pump = 3
     adiabatic = 4
+
+
+@declare_process_block_class("IsentropicPerformanceCurve")
+class IsentropicPerformanceCurveData(ProcessBlockData):
+    """Block that holds performance curves. Typically these are in the form of
+    constraints that relate head, efficiency, or pressure ratio to volumetric
+    or mass flow.  Additional varaibles can be included if needed, such as
+    speed. For convenience an option is provided to add head expressions to the
+    block. performance curves, and any additional variables, constraints, or
+    expressions can be added to this block either via callback provided to the
+    configuration, or after the model is constructued."""
+
+    CONFIG = ProcessBlockData.CONFIG(
+        doc="Configuration dictionary for the performance curve block.")
+    CONFIG.declare("build_callback", ConfigValue(
+        default=None,
+        doc="Optional callback to add performance curve constraints"))
+    CONFIG.declare("build_head_expressions", ConfigValue(
+        default=True,
+        domain=bool,
+        doc="If true add expressions for 'head' and 'head_isentropic'."
+            " These expressions can be used in performance curve constraints."))
+
+    def has_constraints(self):
+        for o in self.component_data_objects(Constraint):
+            return True
+        return False
+
+    def build(self):
+        super().build()
+        if self.config.build_head_expressions:
+            try:
+                @self.Expression(self.flowsheet().time)
+                def head_isentropic(b, t): # units are energy/mass
+                    b = b.parent_block()
+                    if hasattr(b.control_volume.properties_in[t], "flow_mass"):
+                        return (b.work_isentropic[t] /
+                            b.control_volume.properties_in[t].flow_mass)
+                    else:
+                        return (b.work_isentropic[t] /
+                            b.control_volume.properties_in[t].flow_mol /
+                            b.control_volume.properties_in[t].mw)
+
+                @self.Expression(self.flowsheet().time)
+                def head(b, t): # units are energy/mass
+                    b = b.parent_block()
+                    if hasattr(b.control_volume.properties_in[t], "flow_mass"):
+                        return (b.work_mechanical[t] /
+                            b.control_volume.properties_in[t].flow_mass)
+                    else:
+                        return (b.work_mechanical[t] /
+                            b.control_volume.properties_in[t].flow_mol /
+                            b.control_volume.properties_in[t].mw)
+
+            except PropertyNotSupportedError:
+                _log.exception(
+                    "flow_mass or flow_mol and mw are not supported by the"
+                    " property package but are required for isentropic pressure"
+                    " changer head calculation")
+                raise
+
+        if self.config.build_callback is not None:
+            self.config.build_callback(self)
 
 
 @declare_process_block_class("PressureChanger")
@@ -172,6 +237,20 @@ block(s) and used when constructing these,
 see property package for documentation.}""",
         ),
     )
+    CONFIG.declare(
+        "support_isentropic_performance_curves",
+        ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            doc="Include a block for performance curves, configure via"
+                " isentropic_performance_curves.",
+        ),
+    )
+    CONFIG.declare(
+        "isentropic_performance_curves",
+        IsentropicPerformanceCurveData.CONFIG(),
+        # doc included in IsentropicPerformanceCurveData
+    )
 
     def build(self):
         """
@@ -183,7 +262,7 @@ see property package for documentation.}""",
             None
         """
         # Call UnitModel.build
-        super(PressureChangerData, self).build()
+        super().build()
 
         # Add a control volume to the unit including setting up dynamics.
         self.control_volume = ControlVolume0DBlock(
@@ -242,11 +321,11 @@ see property package for documentation.}""",
 
         # Performance Variables
         self.ratioP = Var(
-            self.flowsheet().config.time, initialize=1.0, doc="Pressure Ratio"
+            self.flowsheet().time, initialize=1.0, doc="Pressure Ratio"
         )
 
         # Pressure Ratio
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
             return (
@@ -281,16 +360,16 @@ see property package for documentation.}""",
         units_meta = self.config.property_package.get_metadata()
 
         self.work_fluid = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=1.0,
             doc="Work required to increase the pressure of the liquid",
             units=units_meta.get_derived_units("power")
         )
         self.efficiency_pump = Var(
-            self.flowsheet().config.time, initialize=1.0, doc="Pump efficiency"
+            self.flowsheet().time, initialize=1.0, doc="Pump efficiency"
         )
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pump fluid work constraint")
         def fluid_work_calculation(b, t):
             return b.work_fluid[t] == (
@@ -303,7 +382,7 @@ see property package for documentation.}""",
 
         # Actual work
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Actual mechanical work calculation"
         )
         def actual_work(b, t):
@@ -328,7 +407,7 @@ see property package for documentation.}""",
         """
         # Isothermal constraint
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="For isothermal condition: Equate inlet and "
             "outlet temperature",
         )
@@ -348,16 +427,9 @@ see property package for documentation.}""",
         Returns:
             None
         """
-        # Isothermal constraint
-        @self.Constraint(
-            self.flowsheet().config.time,
-            doc="For isothermal condition: Equate inlet and outlet enthalpy",
-        )
-        def adiabatic(b, t):
-            return (
-                b.control_volume.properties_in[t].enth_mol
-                == b.control_volume.properties_out[t].enth_mol
-            )
+        @self.Constraint(self.flowsheet().time)
+        def zero_work_equation(b, t):
+            return self.control_volume.work[t] == 0
 
     def add_isentropic(self):
         """
@@ -374,12 +446,12 @@ see property package for documentation.}""",
         # Get indexing sets from control volume
         # Add isentropic variables
         self.efficiency_isentropic = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.8,
             doc="Efficiency with respect to an isentropic process [-]",
         )
         self.work_isentropic = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.0,
             doc="Work input to unit if isentropic process",
             units=units_meta.get_derived_units("power")
@@ -392,14 +464,14 @@ see property package for documentation.}""",
 
         self.properties_isentropic = (
             self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="isentropic properties at outlet",
                 default=tmp_dict)
         )
 
         # Connect isentropic state block properties
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Pressure for isentropic calculations"
         )
         def isentropic_pressure(b, t):
@@ -414,7 +486,7 @@ see property package for documentation.}""",
                                          self.control_volume.properties_out)
 
         # This assumes isentropic entropy is the same as inlet
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Isentropic assumption")
         def isentropic(b, t):
             return (
@@ -424,7 +496,7 @@ see property package for documentation.}""",
 
         # Isentropic work
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Calculate work of isentropic process"
         )
         def isentropic_energy_balance(b, t):
@@ -442,7 +514,7 @@ see property package for documentation.}""",
 
         # Actual work
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Actual mechanical work calculation"
         )
         def actual_work(b, t):
@@ -454,6 +526,10 @@ see property package for documentation.}""",
                 return b.work_mechanical[t] == (
                     b.work_isentropic[t] * b.efficiency_isentropic[t]
                 )
+
+        if self.config.support_isentropic_performance_curves:
+            self.performance_curve = IsentropicPerformanceCurve(
+                default=self.config.isentropic_performance_curves)
 
     def model_check(blk):
         """
@@ -471,13 +547,13 @@ see property package for documentation.}""",
             # Check that pressure does not decrease
             if any(
                 blk.deltaP[t].fixed and (value(blk.deltaP[t]) < 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning("{} Compressor set with negative deltaP."
                              .format(blk.name))
             if any(
                 blk.ratioP[t].fixed and (value(blk.ratioP[t]) < 1.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Compressor set with ratioP less than 1."
@@ -489,7 +565,7 @@ see property package for documentation.}""",
                     value(blk.control_volume.properties_in[t].pressure)
                     > value(blk.control_volume.properties_out[t].pressure)
                 )
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Compressor set with pressure decrease."
@@ -499,7 +575,7 @@ see property package for documentation.}""",
             if any(
                 blk.work_mechanical[t].fixed and (
                     value(blk.work_mechanical[t]) < 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Compressor maybe set with negative work."
@@ -510,7 +586,7 @@ see property package for documentation.}""",
             # Check that pressure does not increase
             if any(
                 blk.deltaP[t].fixed and (value(blk.deltaP[t]) > 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine set with positive deltaP."
@@ -518,7 +594,7 @@ see property package for documentation.}""",
                 )
             if any(
                 blk.ratioP[t].fixed and (value(blk.ratioP[t]) > 1.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine set with ratioP greater "
@@ -530,17 +606,17 @@ see property package for documentation.}""",
                     value(blk.control_volume.properties_in[t].pressure)
                     < value(blk.control_volume.properties_out[t].pressure)
                 )
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
-                    "{} Expander/turbine maybe set with pressure ",
+                    "{} Expander/turbine maybe set with pressure "
                     "increase.".format(blk.name),
                 )
             # Check that work is not positive
             if any(
                 blk.work_mechanical[t].fixed and (
                     value(blk.work_mechanical[t]) > 0.0)
-                for t in blk.flowsheet().config.time
+                for t in blk.flowsheet().time
             ):
                 _log.warning(
                     "{} Expander/turbine set with positive work."
@@ -552,7 +628,7 @@ see property package for documentation.}""",
 
         # Run model checks on isentropic property block
         try:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 blk.properties_in[t].model_check()
         except AttributeError:
             pass
@@ -562,8 +638,8 @@ see property package for documentation.}""",
         state_args=None,
         routine=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg=None,
     ):
         """
         General wrapper for pressure changer initialization routines
@@ -578,9 +654,10 @@ see property package for documentation.}""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -603,9 +680,16 @@ see property package for documentation.}""",
                 solver=solver,
                 optarg=optarg
             )
+        elif routine is ThermodynamicAssumption.adiabatic:
+            blk.init_adiabatic(
+                state_args=state_args,
+                outlvl=outlvl,
+                solver=solver,
+                optarg=optarg
+            )
         else:
             # Call the general initialization routine in UnitModelBlockData
-            super(PressureChangerData, blk).initialize(
+            super().initialize(
                 state_args=state_args,
                 outlvl=outlvl,
                 solver=solver,
@@ -618,9 +702,9 @@ see property package for documentation.}""",
         except AttributeError:
             pass
 
-    def init_isentropic(blk, state_args, outlvl, solver, optarg):
+    def init_adiabatic(blk, state_args, outlvl, solver, optarg):
         """
-        Initialization routine for unit (default solver ipopt)
+        Initialization routine for adiabatic pressure changers.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -628,22 +712,23 @@ see property package for documentation.}""",
                          initialization (see documentation of the specific
                          property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default={})
+            solver : str indicating which solver to use during
+                     initialization (default = None)
 
         Returns:
             None
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         cv = blk.control_volume
-        t0 = blk.flowsheet().config.time.first()
+        t0 = blk.flowsheet().time.first()
         state_args_out = {}
+
         if state_args is None:
             state_args = {}
             state_dict = (
@@ -657,25 +742,154 @@ see property package for documentation.}""",
                 else:
                     state_args[k] = state_dict[k].value
 
-            # Get initialisation guesses for outlet and isentropic states
-            for k in state_args:
-                if k == "pressure":
-                    # Work out how to estimate outlet pressure
-                    if cv.properties_out[t0].pressure.fixed:
-                        # Fixed outlet pressure, use this value
-                        state_args_out[k] = value(
-                            cv.properties_out[t0].pressure)
-                    elif blk.deltaP[t0].fixed:
-                        state_args_out[k] = value(
-                            state_args[k] + blk.deltaP[t0])
-                    elif blk.ratioP[t0].fixed:
-                        state_args_out[k] = value(
-                            state_args[k] * blk.ratioP[t0])
-                    else:
-                        # Not obvious what to do, use inlet state
-                        state_args_out[k] = state_args[k]
+        # Get initialisation guesses for outlet and isentropic states
+        for k in state_args:
+            if k == "pressure" and k not in state_args_out:
+                # Work out how to estimate outlet pressure
+                if cv.properties_out[t0].pressure.fixed:
+                    # Fixed outlet pressure, use this value
+                    state_args_out[k] = value(
+                        cv.properties_out[t0].pressure)
+                elif blk.deltaP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] + blk.deltaP[t0])
+                elif blk.ratioP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] * blk.ratioP[t0])
                 else:
+                    # Not obvious what to do, use inlet state
                     state_args_out[k] = state_args[k]
+            elif k not in state_args_out:
+                state_args_out[k] = state_args[k]
+
+        # Initialize state blocks
+        flags = cv.properties_in.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=True,
+            state_args=state_args,
+        )
+        cv.properties_out.initialize(
+            outlvl=outlvl,
+            optarg=optarg,
+            solver=solver,
+            hold_state=False,
+            state_args=state_args_out,
+        )
+        init_log.info_high("Initialization Step 1 Complete.")
+
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 2 {}."
+                           .format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+            res = opt.solve(blk, tee=slc.tee)
+        init_log.info_high("Initialization Step 3 {}."
+                           .format(idaeslog.condition(res)))
+
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.control_volume.release_state(flags, outlvl)
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
+
+    def init_isentropic(blk, state_args, outlvl, solver, optarg):
+        """
+        Initialization routine for isentropic pressure changers.
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialization routine
+            optarg : solver options dictionary object (default={})
+            solver : str indicating which solver to use during
+                     initialization (default = None)
+
+        Returns:
+            None
+        """
+        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
+        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
+
+        # Create solver
+        opt = get_solver(solver, optarg)
+
+        cv = blk.control_volume
+        t0 = blk.flowsheet().time.first()
+        state_args_out = {}
+
+        # performance curves exist and are active so initialize with them
+        activate_performance_curves = (
+            hasattr(blk, "performance_curve") and
+            blk.performance_curve.has_constraints() and
+            blk.performance_curve.active)
+        if activate_performance_curves:
+            blk.performance_curve.deactivate()
+            # The performance curves will provide (maybe indirectly) efficency
+            # and/or pressure ratio. To get through the standard isentropic
+            # pressure changer init, we'll see if the user provided a guess for
+            # pressure ratio or isentropic efficency and fix them if need. If
+            # not fixed and no guess provided, fill in something reasonable
+            # until the performance curves are turned on.
+            unfix_eff = {}
+            unfix_ratioP = {}
+            for t in blk.flowsheet().time:
+                if not (blk.ratioP[t].fixed or  blk.deltaP[t].fixed or
+                    cv.properties_out[t].pressure.fixed):
+                    if blk.config.compressor:
+                        if not (value(blk.ratioP[t]) >= 1.01 and
+                            value(blk.ratioP[t]) <= 50):
+                            blk.ratioP[t] = 1.8
+                    else:
+                        if not (value(blk.ratioP[t]) >= 0.01 and
+                            value(blk.ratioP[t]) <= 0.999):
+                            blk.ratioP[t] = 0.7
+                    blk.ratioP[t].fix()
+                    unfix_ratioP[t] = True
+                if not blk.efficiency_isentropic[t].fixed:
+                    if not (value(blk.efficiency_isentropic[t]) >= 0.05 and
+                        value(blk.efficiency_isentropic[t]) <= 1.0):
+                        blk.efficiency_isentropic[t] = 0.8
+                    blk.efficiency_isentropic[t].fix()
+                    unfix_eff[t] = True
+
+        if state_args is None:
+            state_args = {}
+            state_dict = (
+                cv.properties_in[t0].define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        # Get initialisation guesses for outlet and isentropic states
+        for k in state_args:
+            if k == "pressure" and k not in state_args_out:
+                # Work out how to estimate outlet pressure
+                if cv.properties_out[t0].pressure.fixed:
+                    # Fixed outlet pressure, use this value
+                    state_args_out[k] = value(
+                        cv.properties_out[t0].pressure)
+                elif blk.deltaP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] + blk.deltaP[t0])
+                elif blk.ratioP[t0].fixed:
+                    state_args_out[k] = value(
+                        state_args[k] * blk.ratioP[t0])
+                else:
+                    # Not obvious what to do, use inlet state
+                    state_args_out[k] = state_args[k]
+            elif k not in state_args_out:
+                state_args_out[k] = state_args[k]
 
         # Initialize state blocks
         flags = cv.properties_in.initialize(
@@ -710,26 +924,26 @@ see property package for documentation.}""",
         # Solve for isothermal conditions
         if isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Var,
         ):
             blk.properties_isentropic[:].temperature.fix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].enth_mol,
+                blk.flowsheet().time.first()].enth_mol,
             Var,
         ):
             blk.properties_isentropic[:].enth_mol.fix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Expression,
         ):
             def tmp_rule(b, t):
                 return blk.properties_isentropic[t].temperature == \
                     blk.control_volume.properties_in[t].temperature
             blk.tmp_init_constraint = Constraint(
-                blk.flowsheet().config.time, rule=tmp_rule)
+                blk.flowsheet().time, rule=tmp_rule)
 
         blk.isentropic.deactivate()
 
@@ -740,19 +954,19 @@ see property package for documentation.}""",
 
         if isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Var,
         ):
             blk.properties_isentropic[:].temperature.unfix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].enth_mol,
+                blk.flowsheet().time.first()].enth_mol,
             Var,
         ):
             blk.properties_isentropic[:].enth_mol.unfix()
         elif isinstance(
             blk.properties_isentropic[
-                blk.flowsheet().config.time.first()].temperature,
+                blk.flowsheet().time.first()].temperature,
             Expression,
         ):
             blk.del_component(blk.tmp_init_constraint)
@@ -766,13 +980,22 @@ see property package for documentation.}""",
         init_log.info_high("Initialization Step 4 {}."
                            .format(idaeslog.condition(res)))
 
+        if activate_performance_curves:
+            blk.performance_curve.activate()
+            for t, v in unfix_eff.items():
+                if v:
+                    blk.efficiency_isentropic[t].unfix()
+            for t, v in unfix_ratioP.items():
+                if v:
+                    blk.ratioP[t].unfix()
+            with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                res = opt.solve(blk, tee=slc.tee)
+            init_log.info_high(f"Initialization Step 5 {idaeslog.condition(res)}.")
+
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.control_volume.release_state(flags, outlvl)
-        init_log.info(
-            "Initialization Complete: {}"
-            .format(idaeslog.condition(res))
-        )
+        init_log.info(f"Initialization Complete: {idaeslog.condition(res)}")
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
@@ -836,7 +1059,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].pressure,
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "fluid_work_calculation"):
             for t, c in self.fluid_work_calculation.items():
@@ -845,7 +1069,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.deltaP[t],
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "actual_work"):
             for t, c in self.actual_work.items():
@@ -854,16 +1079,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.work[t],
                         default=1,
-                        warning=True))
-
-        if hasattr(self, "adiabatic"):
-            for t, c in self.adiabatic.items():
-                iscale.constraint_scaling_transform(
-                    c,
-                    iscale.get_scaling_factor(
-                        self.control_volume.properties_in[t].enth_mol,
-                        default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "isentropic_pressure"):
             for t, c in self.isentropic_pressure.items():
@@ -872,7 +1089,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].pressure,
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "isentropic"):
             for t, c in self.isentropic.items():
@@ -881,7 +1099,8 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.properties_in[t].entr_mol,
                         default=1,
-                        warning=True))
+                        warning=True),
+                    overwrite=False)
 
         if hasattr(self, "isentropic_energy_balance"):
             for t, c in self.isentropic_energy_balance.items():
@@ -890,7 +1109,40 @@ see property package for documentation.}""",
                     iscale.get_scaling_factor(
                         self.control_volume.work[t],
                         default=1,
+                        warning=True),
+                    overwrite=False)
+
+        if hasattr(self, "zero_work_equation"):
+            for t, c in self.zero_work_equation.items():
+                iscale.constraint_scaling_transform(
+                    c,
+                    iscale.get_scaling_factor(
+                        self.control_volume.work[t],
+                        default=1,
                         warning=True))
+
+        if hasattr(self, "state_material_balances"):
+            cvol = self.control_volume
+            phase_list = cvol.properties_in.phase_list
+            phase_component_set = cvol.properties_in.phase_component_set
+            mb_type = cvol._constructed_material_balance_type
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, p, j), c in self.state_material_balances.items():
+                    sf = iscale.get_scaling_factor(
+                        cvol.properties_in[t].get_material_flow_terms(p, j),
+                        default=1,
+                        warning=True)
+                    iscale.constraint_scaling_transform(c, sf)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, j), c in self.state_material_balances.items():
+                    sf = iscale.min_scaling_factor(
+                        [cvol.properties_in[t].get_material_flow_terms(p, j)
+                         for p in phase_list if (p, j) in phase_component_set])
+                    iscale.constraint_scaling_transform(c, sf)
+            else:
+                # There are some other material balance types but they create
+                # constraints with different names.
+                _log.warning(f"Unknown material balance type {mb_type}")
 
         if hasattr(self, "costing"):
             # import costing scaling factors

@@ -1,18 +1,19 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import sys
 import os
 import io
+from unittest.mock import patch
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 from idaes.surrogate.pysmo.kriging import (
     KrigingModel, MyBounds
@@ -23,7 +24,6 @@ from scipy.spatial import distance
 import scipy.optimize as opt
 import scipy.stats as stats
 import pytest
-from mock import patch
 
 class TestKrigingModel:
     y = np.array([[i, j, ((i + 1) ** 2) + ((j + 1) ** 2)] for i in np.linspace(0, 10, 21) for j in np.linspace(0, 10, 21)])

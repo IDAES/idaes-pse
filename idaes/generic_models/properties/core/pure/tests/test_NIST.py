@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for methods from NIST
 
@@ -44,7 +44,7 @@ def frame():
 
     m.params.config = ConfigBlock(implicit=True)
     m.params.config.parameter_data = {
-        "cp_mol_ig_comp_coeff": {'A': 30.09200,
+        "cp_mol_ig_comp_coeff": {'A': 30.09200,  # parameters for water
                                  'B': 6.832514,
                                  'C': 6.793435,
                                  'D': -2.534480,
@@ -109,10 +109,10 @@ def test_cp_mol_ig_comp(frame):
 
     expr = cp_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(35.22, abs=1e-2)
+    assert value(expr) == pytest.approx(35.22, abs=1e-2)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(36.32, abs=1e-2)
+    assert value(expr) == pytest.approx(36.32, abs=1e-2)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol/pyunits.K)
 
@@ -123,10 +123,10 @@ def test_enth_mol_ig_comp(frame):
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(-2130.5 - 241826.4, rel=1e-3)
+    assert value(expr) == pytest.approx(6.92e3 - 241826.4, rel=1e-3)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(1445 - 241826.4, rel=1e-3)
+    assert value(expr) == pytest.approx(10.5e3 - 241826.4, rel=1e-3)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 
@@ -138,10 +138,10 @@ def test_enth_mol_ig_comp_no_formation(frame):
 
     expr = enth_mol_ig_comp.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
-    assert value(expr) == pytest.approx(-2130.5, rel=1e-3)
+    assert value(expr) == pytest.approx(6.92e3, rel=1e-3)  # value from NIST
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(1445, rel=1e-3)
+    assert value(expr) == pytest.approx(10.5e3, rel=1e-3)  # value from NIST
 
     assert_units_equivalent(expr, pyunits.J/pyunits.mol)
 

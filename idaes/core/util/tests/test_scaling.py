@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains tests for scaling.
 """
@@ -99,7 +99,7 @@ def test_map_scaling_factor(caplog):
     assert sc.map_scaling_factor(m.x.values(), warning=True) == 1
     logrec = caplog.records[0]
     assert logrec.levelno == logging.WARNING
-    assert "missing scaling factor" in logrec.message
+    assert "scaling factor" in logrec.message
 
     assert sc.map_scaling_factor(m.x.values(), func=max) == 13
     assert sc.map_scaling_factor(m.x.values(), default=20) == 11
@@ -252,7 +252,7 @@ def test_set_get_unset(caplog):
     for i in [0, 1]: # two calls should be two log records
         logrec = caplog.records[i]
         assert logrec.levelno == logging.WARNING
-        assert "missing scaling factor" in logrec.message
+        assert "scaling factor" in logrec.message
 
     # This one is a bit of a mystery, what do you really expect if you provide
     # a default and ask for an exception.  I'll guess if you provide a default,
@@ -264,7 +264,7 @@ def test_set_get_unset(caplog):
         sc.get_scaling_factor(m.z[1], exception=True)
     logrec = caplog.records[0]
     assert logrec.levelno == logging.ERROR
-    assert "missing scaling factor" in logrec.message
+    assert "scaling factor" in logrec.message
 
     # Okay it's pretty well tested, but make sure it works for constraints and
     # expressions
@@ -411,6 +411,14 @@ class TestSingleConstraintScalingTransform():
         assert model.c2.body() == pytest.approx(model.x.value / 1e3)
         assert model.c2.upper.value == pytest.approx(1)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+
+        # Check overwrite protection
+        sc.constraint_scaling_transform(model.c2, 5, overwrite=False)
+        assert model.c2.lower.value == pytest.approx(1)
+        assert model.c2.body() == pytest.approx(model.x.value / 1e3)
+        assert model.c2.upper.value == pytest.approx(1)
+        assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is 1e-3
+
         sc.constraint_scaling_transform_undo(model.c2)
         assert sc.get_constraint_transform_applied_scaling_factor(model.c2) is None
         assert model.c2.lower.value == pytest.approx(1e3)
@@ -647,6 +655,26 @@ class TestScaleConstraintsPynumero():
 
         assert jac_scaled[c3_row, z_col] == pytest.approx(3e2)
         assert m.scaling_factor[m.c3] == pytest.approx(1e-6)
+
+
+    @pytest.mark.unit
+    def test_condition_number(self):
+        """Calculate the condition number of the Jacobian
+        """
+        m = self.model()
+        m.scaling_factor = pyo.Suffix(direction=pyo.Suffix.EXPORT)
+        m.scaling_factor[m.x] = 1e-3
+        m.scaling_factor[m.y] = 1e-6
+        m.scaling_factor[m.z] = 1e-4
+        m.scaling_factor[m.c1] = 1e-6
+        m.scaling_factor[m.c2] = 1e-6
+        m.scaling_factor[m.c3] = 1e-12
+
+        n = sc.jacobian_cond(m, scaled=True)
+        assert n == pytest.approx(500, abs=200)
+        n = sc.jacobian_cond(m, scaled=False)
+        assert n == pytest.approx(7.5e7, abs=5e6)
+
 
     @pytest.mark.unit
     def test_scale_with_ignore_var_scale_constraint_scale(self):

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Steam turbine inlet stage model.  This model is based on:
 
@@ -19,11 +19,10 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 __Author__ = "John Eslick"
 
-from pyomo.environ import Var, Param, sqrt, value, SolverFactory, units as pyunits
+from pyomo.environ import Var, sqrt, value, SolverFactory, units as pyunits
 from idaes.core import declare_process_block_class
 from idaes.power_generation.unit_models.helm.turbine import HelmIsentropicTurbineData
-from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util import from_json, to_json, StoreSpec, get_solver
 import idaes.logger as idaeslog
 import idaes.core.util.scaling as iscale
 
@@ -42,7 +41,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         super().build()
 
         self.flow_coeff = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=1.053 / 3600.0,
             doc="Turbine flow coefficient [kg*C^0.5/Pa/s]",
             units=pyunits.kg*pyunits.K**0.5/pyunits.Pa/pyunits.s
@@ -76,7 +75,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         self.deltaP[:] = 0  #   to avoid an error later in initialize
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Entering steam velocity calculation [m/s]",
         )
         def steam_entering_velocity(b, t):
@@ -88,14 +87,14 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                 / b.control_volume.properties_in[t].mw
             )
 
-        @self.Expression(self.flowsheet().config.time, doc="Efficiency expression")
+        @self.Expression(self.flowsheet().time, doc="Efficiency expression")
         def efficiency_isentropic_expr(b, t):
             Vr = b.blade_velocity / b.steam_entering_velocity[t]
             R = b.blade_reaction
             return 2*Vr*((sqrt(1 - R) - Vr) + sqrt((sqrt(1 - R) - Vr)**2 + R))
 
         @self.Constraint(
-            self.flowsheet().config.time, doc="Equation: Turbine inlet flow")
+            self.flowsheet().time, doc="Equation: Turbine inlet flow")
         def inlet_flow_constraint(b, t):
             # Some local vars to make the equation more readable
             g = b.control_volume.properties_in[t].heat_capacity_ratio
@@ -110,25 +109,24 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                 cf ** 2 * Pin ** 2 * g / (g - 1)
                     * (Pratio ** (2.0 / g) - Pratio ** ((g + 1) / g)))
 
-        @self.Constraint(self.flowsheet().config.time, doc="Equation: Efficiency")
+        @self.Constraint(self.flowsheet().time, doc="Equation: Efficiency")
         def efficiency_correlation(b, t):
             return b.efficiency_isentropic[t] == b.efficiency_isentropic_expr[t]
 
-        @self.Expression(self.flowsheet().config.time, doc="Thermodynamic power [J/s]")
+        @self.Expression(self.flowsheet().time, doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
 
     def initialize(
         self,
-        state_args={},
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 30},
+        solver=None,
+        optarg=None,
         calculate_cf=False,
     ):
         """
@@ -139,7 +137,6 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         to initializtion.
 
         Args:
-            state_args (dict): Initial state for property initialization
             outlvl (int): Amount of output (0 to 3) 0 is lowest
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -163,7 +160,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         self.inlet.fix()
         self.outlet.unfix()
 
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             self.efficiency_isentropic[t] = 0.9
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
@@ -175,7 +172,7 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
             self.ratioP.fix()
             self.flow_coeff.unfix()
 
-            for t in self.flowsheet().config.time:
+            for t in self.flowsheet().time:
                 g = self.control_volume.properties_in[t].heat_capacity_ratio
                 mw = self.control_volume.properties_in[t].mw
                 flow = self.control_volume.properties_in[t].flow_mol
@@ -188,22 +185,24 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
                     )/Pin
                 )
 
-        slvr = SolverFactory(solver)
-        slvr.options = optarg
+        # Create solver
+        slvr = get_solver(solver, optarg)
+
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
-        init_log.info("Initialization Complete: {}".format(idaeslog.condition(res)))
+        init_log.info("Initialization Complete: {}".format(
+            idaeslog.condition(res)))
         # reload original spec
         if calculate_cf:
             cf = {}
-            for t in self.flowsheet().config.time:
+            for t in self.flowsheet().time:
                 cf[t] = value(self.flow_coeff[t])
 
         from_json(self, sd=istate, wts=sp)
         if calculate_cf:
             # cf was probably fixed, so will have to set the value agian here
             # if you ask for it to be calculated.
-            for t in self.flowsheet().config.time:
+            for t in self.flowsheet().time:
                 self.flow_coeff[t] = cf[t]
 
     def calculate_scaling_factors(self):
@@ -211,4 +210,4 @@ class HelmTurbineInletStageData(HelmIsentropicTurbineData):
         for t, c in self.inlet_flow_constraint.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].flow_mol)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

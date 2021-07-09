@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 This module contains miscellaneous utility functions for use in IDAES models.
@@ -18,15 +18,42 @@ import xml.dom.minidom
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
-from pyomo.core.base.plugin import ModelComponentFactory
+from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
 from pyomo.common.config import ConfigBlock
+from pyomo.network import Port, Arc
 
 import idaes.logger as idaeslog
+import idaes.core.solvers
 
 _log = idaeslog.getLogger(__name__)
+
+
+# Author: Andrew Lee
+def get_solver(solver=None, options=None):
+    """
+    General method for getting a solver object which defaults to the standard
+    IDAES solver (defined in the IDAES configuration).
+
+    Args:
+        solver: string name for desired solver. Default=None, use default solver
+        options: dict of solver options to use, overwrites any settings
+                 provided by IDAES configuration. Default = None, use default
+                 solver options.
+
+    Returns:
+        A Pyomo solver object
+    """
+    if solver is None:
+        solver = "default"
+    solver_obj = idaes.core.solvers.SolverWrapper(solver, register=False)()
+
+    if options is not None:
+        solver_obj.options.update(options)
+
+    return solver_obj
 
 
 # Author: Andrew Lee
@@ -100,7 +127,7 @@ def svg_tag(
     tag_map=None,
     show_tags=False,
     byte_encoding="utf-8",
-    tag_format={},
+    tag_format=None,
     tag_format_default="{:.4e}"
 ):
     """
@@ -131,6 +158,9 @@ def svg_tag(
     Returns:
         SVG String
     """
+    if tag_format is None:
+        tag_format = {}
+
     if isinstance(svg, str):  # assume this is svg content string
         pass
     elif isinstance(svg, bytes):
@@ -197,18 +227,48 @@ def svg_tag(
 
 
 # Author: John Eslick
-def copy_port_values(destination, source):
+def copy_port_values(destination=None, source=None, arc=None):
     """
     Copy the variable values in the source port to the destination port. The
     ports must containt the same variables.
 
     Args:
-        (pyomo.Port): Copy values from this port
-        (pyomo.Port): Copy values to this port
+        destination (Port): Port to copy values to or None if specifying arc
+        source (Port): Port to copy values from or None if specifying arc
+        arc (Arc): If arc is provided, use arc to define source and destination
 
     Returns:
         None
     """
+    # Allow an arc to be passed as a positional arg
+    if destination is not None and source is None and isinstance(destination, Arc):
+        arc = destination
+        destination = None
+    # Check that only arc or source and destination are passed
+    if arc is None and (destination is None or source is None):
+        raise RuntimeError(
+            "In copy_port_values(), must provide source and destination or arc")
+    if arc is not None:
+        if not isinstance(arc, Arc):
+            raise RuntimeError(
+                "In copy_port_values(), arc argument is not an instance of an Arc")
+        if destination is not None or source is not None:
+            raise RuntimeError(
+                "In copy_port_values(), provide only arc or source and destination")
+    if destination is not None:
+        if not isinstance(destination, Port):
+            raise RuntimeError(
+                "In copy_port_values(), destination is not an instance of Port")
+        if not isinstance(source, Port):
+            raise RuntimeError(
+                "In copy_port_values(), source is not an instance of Port")
+
+    # Arc provided so get source and destination from arc
+    if arc is not None:
+        source = arc.source
+        destination = arc.dest
+
+    # Copy values
     for k, v in destination.vars.items():
         if isinstance(v, pyo.Var):
             for i in v:

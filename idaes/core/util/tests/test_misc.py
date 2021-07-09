@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains miscalaneous utility functions for use in IDAES models.
 """
@@ -17,7 +17,7 @@ This module contains miscalaneous utility functions for use in IDAES models.
 import pytest
 
 from pyomo.environ import ConcreteModel, Expression, Set, Block, Var, units
-from pyomo.network import Port
+from pyomo.network import Port, Arc
 from pyomo.common.config import ConfigBlock
 from pyomo.core.base.units_container import UnitsError
 
@@ -70,14 +70,53 @@ def test_port_copy():
     m.b2.port.add(m.b2.x, "x")
     m.b2.port.add(m.b2.y, "y")
     m.b2.port.add(m.b2.z, "z")
+
+    def assert_copied_right():
+        assert(m.b2.x.value == 3)
+        assert(m.b2.y[0].value == 4)
+        assert(m.b2.y[1].value == 5)
+        assert(m.b2.z[0, "A"].value == 6)
+        assert(m.b2.z[0, "B"].value == 7)
+        assert(m.b2.z[1, "A"].value == 8)
+        assert(m.b2.z[1, "B"].value == 9)
+
+    def reset():
+        m.b2.x = 0
+        m.b2.y[0] = 0
+        m.b2.y[1] = 0
+        m.b2.z[0, "A"] = 0
+        m.b2.z[0, "B"] = 0
+        m.b2.z[1, "A"] = 0
+        m.b2.z[1, "B"] = 0
+    m.arc = Arc(source=m.b1.port, dest=m.b2.port)
+
     copy_port_values(m.b2.port, m.b1.port)
-    assert(m.b2.x == 3)
-    assert(m.b2.y[0] == 4)
-    assert(m.b2.y[1] == 5)
-    assert(m.b2.z[0, "A"] == 6)
-    assert(m.b2.z[0, "B"] == 7)
-    assert(m.b2.z[1, "A"] == 8)
-    assert(m.b2.z[1, "B"] == 9)
+    assert_copied_right()
+    reset()
+
+    copy_port_values(source=m.b1.port, destination=m.b2.port)
+    assert_copied_right()
+    reset()
+
+    copy_port_values(m.arc)
+    assert_copied_right()
+    reset()
+
+    copy_port_values(arc=m.arc)
+    assert_copied_right()
+    reset()
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(arc=m.b1.port)
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(source=m.b1.port, destination=m.b2.port, arc=m.arc)
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(source=m.b1.port, arc=m.arc)
+
+    with pytest.raises(RuntimeError):
+        copy_port_values(source=m.b1.port, destination=m.arc)
 
 
 # Author: John Eslick
@@ -96,8 +135,8 @@ def test_tag_reference():
     m.b[0].y = Var(initialize=1)
     m.b[1].y = Var(initialize=2)
     test_tag = TagReference(m.b[:].y, description="y tag")
-    assert(test_tag[0] == 1)
-    assert(test_tag[1] == 2)
+    assert(test_tag[0].value == 1)
+    assert(test_tag[1].value == 2)
     assert(test_tag.description == "y tag")
 
 
@@ -452,7 +491,7 @@ class TestSetParamFromConfig():
         m.b.test_param = Var(initialize=1, units=units.s)
 
         with pytest.raises(UnitsError,
-                           match="Cannot convert None to s. Units "
+                           match="Cannot convert dimensionless to s. Units "
                            "are not compatible."):
             set_param_from_config(m.b, "test_param")
 

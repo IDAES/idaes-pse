@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Multistage steam turbine for power generation.
 
@@ -21,7 +21,7 @@ import copy
 
 import pyomo.environ as pyo
 from pyomo.network import Arc
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList, In
 
 from idaes.core import declare_process_block_class, UnitModelBlockData, useDefault
 from idaes.power_generation.unit_models.helm import (
@@ -38,8 +38,6 @@ from idaes.power_generation.unit_models.helm import HelmValve as SteamValve
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.misc import copy_port_values as copy_port
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
-from idaes.core.util.config import is_physical_parameter_block
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -315,19 +313,24 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                 default=s_sfg_default,
                 initialize=hp_splt_cfg
             )
+        else:
+            self.hp_split = {}
         if config.ip_split_locations:
             self.ip_split = HelmSplitter(
                 config.ip_split_locations,
                 default=s_sfg_default,
                 initialize=ip_splt_cfg
             )
+        else:
+            self.ip_split = {}
         if config.lp_split_locations:
             self.lp_split = HelmSplitter(
                 config.lp_split_locations,
                 default=s_sfg_default,
                 initialize=lp_splt_cfg
             )
-
+        else:
+            self.lp_split = {}
         # Done with unit models.  Adding Arcs (streams).
         # ------------------------------------------------
 
@@ -492,8 +495,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
 
         self.power = pyo.Var(
-            self.flowsheet().config.time, initialize=-1e8, doc="power (W)")
-        @self.Constraint(self.flowsheet().config.time)
+            self.flowsheet().time, initialize=-1e8, doc="power (W)")
+        @self.Constraint(self.flowsheet().time)
         def power_eqn(b, t):
             return (b.power[t] ==
                 b.outlet_stage.control_volume.work[t]*b.outlet_stage.efficiency_mech
@@ -631,9 +634,9 @@ class HelmTurbineMultistageData(UnitModelBlockData):
     def initialize(
         self,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
+        solver=None,
         flow_iterate=2,
-        optarg={"tol": 1e-6, "max_iter": 35},
+        optarg=None,
         copy_disconneted_flow=True,
         copy_disconneted_pressure=True,
         calculate_outlet_cf=False,
@@ -645,11 +648,11 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         Args:
             outlvl: logging level default is NOTSET, which inherits from the
                 parent logger
-            solver: the NL solver, default is "ipopt"
+            solver: the NL solver
             flow_iterate: If not calculating flow coefficients, this is the
                 number of times to update the flow and repeat initialization
                 (1 to 5 where 1 does not update the flow guess)
-            optarg: solver arguments, default is {"tol": 1e-6, "max_iter": 35}
+            optarg: solver arguments, default is None
             copy_disconneted_flow: Copy the flow through the disconnected stages
                 default is True
             copy_disconneted_pressure: Copy the pressure through the disconnected
@@ -676,13 +679,16 @@ class HelmTurbineMultistageData(UnitModelBlockData):
         flow_guess = self.inlet_split.inlet.flow_mol[0].value
 
         for it_count in range(flow_iterate):
-            self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_split.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize valves
             for i in self.inlet_stage_idx:
                 u = self.throttle_valve[i]
-                copy_port(u.inlet, getattr(self.inlet_split, "outlet_{}".format(i)))
-                u.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+                copy_port(u.inlet, getattr(
+                    self.inlet_split, "outlet_{}".format(i)))
+                u.initialize(
+                    outlvl=outlvl, solver=solver, optarg=optarg)
 
             # Initialize turbine
             for i in self.inlet_stage_idx:
@@ -703,7 +709,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
                     self.inlet_stage[i].outlet,
                 )
                 getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
-            self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+            self.inlet_mix.initialize(
+                outlvl=outlvl, solver=solver, optarg=optarg)
             for i in self.inlet_stage_idx:
                 getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
             self.inlet_mix.use_equal_pressure_constraint()
@@ -819,4 +826,5 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             power_scale = iscale.get_scaling_factor(
                 self.power[t], default=1, warning=True)
             # Set power equation scale factor
-            iscale.constraint_scaling_transform(c, power_scale)
+            iscale.constraint_scaling_transform(
+                c, power_scale, overwrite=False)

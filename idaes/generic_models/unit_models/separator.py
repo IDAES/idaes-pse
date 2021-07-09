@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 General purpose separator block for IDAES models
 """
@@ -48,10 +48,12 @@ from idaes.core.util.exceptions import (
     ConfigurationError,
     PropertyNotSupportedError,
 )
+from idaes.core.util import get_solver
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import VarLikeExpression
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
+import idaes.core.util.scaling as iscale
 
 __author__ = "Andrew Lee"
 
@@ -414,7 +416,7 @@ objects linked the mixed state and all outlet states,
         # Create an instance of StateBlock for all outlets
         for o in outlet_list:
             o_obj = self.config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 doc="Material properties at outlet",
                 default=tmp_dict,
             )
@@ -438,7 +440,7 @@ objects linked the mixed state and all outlet states,
         tmp_dict["defined_state"] = True
 
         self.mixed_state = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties of mixed stream",
             default=tmp_dict,
         )
@@ -454,16 +456,18 @@ objects linked the mixed state and all outlet states,
         """
         # Sanity check to make sure method is not called when arg missing
         if self.config.mixed_state_block is None:
-            raise BurntToast(
-                "{} get_mixed_state_block method called when "
-                "mixed_state_block argument is None. This should "
-                "not happen.".format(self.name)
-            )
-
+            try:
+                return self.mixed_state
+            except AttributeError:
+                raise BurntToast(
+                    f"{self.name} get_mixed_state_block method called when the "
+                    "mixed_state_block argument is None, and no mixed_state "
+                    "block is contained in seperator. This should not happen."
+                )
         # Check that the user-provided StateBlock uses the same prop pack
         if (
             self.config.mixed_state_block[
-                self.flowsheet().config.time.first()
+                self.flowsheet().time.first()
             ].config.parameters
             != self.config.property_package
         ):
@@ -522,36 +526,36 @@ objects linked the mixed state and all outlet states,
         pc_set = mixed_block.phase_component_set
 
         if self.config.split_basis == SplittingType.totalFlow:
-            sf_idx = [self.flowsheet().config.time, self.outlet_idx]
-            sf_sum_idx = [self.flowsheet().config.time]
+            sf_idx = [self.flowsheet().time, self.outlet_idx]
+            sf_sum_idx = [self.flowsheet().time]
         elif self.config.split_basis == SplittingType.phaseFlow:
             sf_idx = [
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 mixed_block.phase_list,
             ]
             sf_sum_idx = [
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 mixed_block.phase_list,
             ]
         elif self.config.split_basis == SplittingType.componentFlow:
             sf_idx = [
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 mixed_block.component_list,
             ]
             sf_sum_idx = [
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 mixed_block.component_list,
             ]
         elif self.config.split_basis == SplittingType.phaseComponentFlow:
             sf_idx = [
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 pc_set,
             ]
             sf_sum_idx = [
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 pc_set,
             ]
         else:
@@ -589,7 +593,7 @@ objects linked the mixed state and all outlet states,
 
         mb_type = self.config.material_balance_type
         if mb_type == MaterialBalanceType.useDefault:
-            t_ref = self.flowsheet().config.time.first()
+            t_ref = self.flowsheet().time.first()
             mb_type = mixed_block[t_ref].default_material_balance_type()
 
         if mb_type == MaterialBalanceType.componentPhase:
@@ -597,7 +601,7 @@ objects linked the mixed state and all outlet states,
                 # Get units from property package
                 units_meta = self.config.property_package.get_metadata()
                 flow_basis = mixed_block[
-                    self.flowsheet().config.time.first()].get_material_flow_basis()
+                    self.flowsheet().time.first()].get_material_flow_basis()
                 if flow_basis == MaterialFlowBasis.molar:
                     flow_units = units_meta.get_derived_units("flow_mole")
                 elif flow_basis == MaterialFlowBasis.mass:
@@ -608,7 +612,7 @@ objects linked the mixed state and all outlet states,
 
                 try:
                     self.phase_equilibrium_generation = Var(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         self.outlet_idx,
                         self.config.property_package.phase_equilibrium_idx,
                         domain=Reals,
@@ -646,7 +650,7 @@ objects linked the mixed state and all outlet states,
                     return 0
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 pc_set,
                 doc="Material splitting equations",
@@ -661,7 +665,7 @@ objects linked the mixed state and all outlet states,
         elif mb_type == MaterialBalanceType.componentTotal:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 mixed_block.component_list,
                 doc="Material splitting equations",
@@ -682,7 +686,7 @@ objects linked the mixed state and all outlet states,
         elif mb_type == MaterialBalanceType.total:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 doc="Material splitting equations",
             )
@@ -729,7 +733,7 @@ objects linked the mixed state and all outlet states,
                 EnergySplittingType.equal_temperature:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 doc="Temperature equality constraint",
             )
@@ -741,7 +745,7 @@ objects linked the mixed state and all outlet states,
                 EnergySplittingType.equal_molar_enthalpy:
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 doc="Molar enthalpy equality constraint",
             )
@@ -769,7 +773,7 @@ objects linked the mixed state and all outlet states,
                     return self.split_fraction[t, o, p]
 
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.outlet_idx,
                 doc="Molar enthalpy splitting constraint",
             )
@@ -798,7 +802,7 @@ objects linked the mixed state and all outlet states,
         """
 
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             self.outlet_idx,
             doc="Pressure equality constraint",
         )
@@ -896,7 +900,7 @@ objects linked the mixed state and all outlet states,
         units_meta = self.config.property_package.get_metadata()
 
         flow_basis = mb[
-            self.flowsheet().config.time.first()].get_material_flow_basis()
+            self.flowsheet().time.first()].get_material_flow_basis()
         if flow_basis == MaterialFlowBasis.molar:
             flow_units = units_meta.get_derived_units("flow_mole")
         elif flow_basis == MaterialFlowBasis.mass:
@@ -909,7 +913,7 @@ objects linked the mixed state and all outlet states,
         self.eps = Param(default=1e-8, mutable=True, units=flow_units)
 
         # Get list of port members
-        s_vars = mb[self.flowsheet().config.time.first()].define_port_members()
+        s_vars = mb[self.flowsheet().time.first()].define_port_members()
 
         # Get phase component list(s)
         pc_set = mb.phase_component_set
@@ -961,7 +965,7 @@ objects linked the mixed state and all outlet states,
                                 )
 
                         e_obj = VarLikeExpression(
-                            self.flowsheet().config.time,
+                            self.flowsheet().time,
                             pc_set,
                             rule=e_rule,
                         )
@@ -977,7 +981,7 @@ objects linked the mixed state and all outlet states,
                                 return self.eps
 
                         elif (
-                            self.config.split_basis == 
+                            self.config.split_basis ==
                                 SplittingType.phaseComponentFlow
                         ):
 
@@ -1028,7 +1032,7 @@ objects linked the mixed state and all outlet states,
                                 return self.eps
 
                         e_obj = VarLikeExpression(
-                            self.flowsheet().config.time,
+                            self.flowsheet().time,
                             mb.component_list,
                             rule=e_rule,
                         )
@@ -1059,7 +1063,7 @@ objects linked the mixed state and all outlet states,
                             return self.eps
 
                     e_obj = VarLikeExpression(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         pc_set,
                         rule=e_rule,
                     )
@@ -1114,7 +1118,7 @@ objects linked the mixed state and all outlet states,
                             return self.eps
 
                     e_obj = VarLikeExpression(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         mb.phase_list,
                         rule=e_rule,
                     )
@@ -1170,7 +1174,7 @@ objects linked the mixed state and all outlet states,
                             return self.eps
 
                     e_obj = VarLikeExpression(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         mb.component_list,
                         rule=e_rule,
                     )
@@ -1273,7 +1277,7 @@ objects linked the mixed state and all outlet states,
                                 "equivalent indexed form.".format(self.name, s)
                             )
 
-                    e_obj = VarLikeExpression(self.flowsheet().config.time,
+                    e_obj = VarLikeExpression(self.flowsheet().time,
                                               rule=e_rule)
 
                 # Add Reference/Expression object to Separator model object
@@ -1295,7 +1299,7 @@ objects linked the mixed state and all outlet states,
             None
         """
         # Try property block model check
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             try:
                 if blk.config.mixed_state_block is None:
                     blk.mixed_state[t].model_check()
@@ -1323,19 +1327,17 @@ objects linked the mixed state and all outlet states,
                 )
 
     def initialize(
-        blk, outlvl=idaeslog.NOTSET, optarg={}, state_args=None,
-        solver="ipopt", hold_state=False
+        blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None, hold_state=False
     ):
         """
-        Initialization routine for separator (default solver ipopt)
+        Initialization routine for separator
 
         Keyword Arguments:
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default=None)
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
-            state_args: unused, but retained for consistency with other
-                        initialization methods
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - False. **Valid values:**
@@ -1351,9 +1353,9 @@ objects linked the mixed state and all outlet states,
         """
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # Initialize mixed state block
         if blk.config.mixed_state_block is not None:
@@ -1408,7 +1410,7 @@ objects linked the mixed state and all outlet states,
 
             # Create dict to store fixed status of state variables
             o_flags = {}
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
 
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
@@ -1562,7 +1564,7 @@ objects linked the mixed state and all outlet states,
             )
 
             # Revert fixed status of variables to what they were before
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 s_vars = o_block[t].define_state_vars()
                 for v in s_vars:
                     for k in s_vars[v]:
@@ -1605,6 +1607,55 @@ objects linked the mixed state and all outlet states,
             mblock = blk.config.mixed_state_block
 
         mblock.release_state(flags, outlvl=outlvl)
+
+    def calculate_scaling_factors(self):
+        mb_type = self.config.material_balance_type
+        mixed_state = self.get_mixed_state_block()
+        if mb_type == MaterialBalanceType.useDefault:
+            t_ref = self.flowsheet().time.first()
+            mb_type = mixed_state[t_ref].default_material_balance_type()
+        super().calculate_scaling_factors()
+
+        if hasattr(self, "temperature_equality_eqn"):
+            for (t, i), c in self.temperature_equality_eqn.items():
+                s = iscale.get_scaling_factor(
+                    mixed_state[t].temperature, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "pressure_equality_eqn"):
+            for (t, i), c in self.pressure_equality_eqn.items():
+                s = iscale.get_scaling_factor(
+                    mixed_state[t].pressure, default=1, warning=True)
+                iscale.constraint_scaling_transform(c, s)
+
+        if hasattr(self, "material_splitting_eqn"):
+            if mb_type == MaterialBalanceType.componentPhase:
+                for (t, o, p, j), c in self.material_splitting_eqn.items():
+                    flow_term = mixed_state[t].get_material_flow_terms(p, j)
+                    s = iscale.get_scaling_factor(flow_term, default=1)
+                    iscale.constraint_scaling_transform(c, s)
+            elif mb_type == MaterialBalanceType.componentTotal:
+                for (t, o, j), c in self.material_splitting_eqn.items():
+                    for i, p in enumerate(mixed_state.phase_list):
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
+                    iscale.constraint_scaling_transform(c, s)
+            elif mb_type == MaterialBalanceType.total:
+                pc_set = mixed_state.phase_component_set
+                for (t, o), c in self.material_splitting_eqn.items():
+                    for i, (p, j) in enumerate(pc_set):
+                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        if i == 0:
+                            s = iscale.get_scaling_factor(ft, default=1)
+                        else:
+                            _s = iscale.get_scaling_factor(ft, default=1)
+                            s = _s if _s < s else s
+                    iscale.constraint_scaling_transform(c, s)
+
 
     def _get_performance_contents(self, time_point=0):
         if hasattr(self, "split_fraction"):

@@ -1,19 +1,20 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 from pyomo.environ import Constraint, log
 
 from idaes.generic_models.properties.core.generic.utility import \
         get_method, get_component_object as cobj
+import idaes.core.util.scaling as iscale
 
 
 class IdealBubbleDew():
@@ -70,8 +71,41 @@ class IdealBubbleDew():
             else:
                 return b._mole_frac_tbub[p1, p2, j] == 0
         b.eq_mole_frac_tbub = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_bubble_temp)
+
+    @staticmethod
+    def scale_temperature_bubble(b, overwrite=True):
+        sf_P = iscale.get_scaling_factor(
+            b.pressure, default=1e-5, warning=True)
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            for j in b.component_list:
+                (l_phase,
+                 v_phase,
+                 vl_comps,
+                 l_only_comps,
+                 v_only_comps) = _valid_VL_component_list(b, pp)
+                if l_phase is None or v_phase is None:
+                    continue
+                elif v_only_comps != []:
+                    continue
+
+                if j in vl_comps:
+                    sf = sf_P*sf_mf
+                else:
+                    sf = sf_mf
+
+                iscale.constraint_scaling_transform(
+                    b.eq_temperature_bubble[pp[0], pp[1]],
+                    sf_P,
+                    overwrite=overwrite)
+                iscale.constraint_scaling_transform(
+                    b.eq_mole_frac_tbub[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew temperature methods
@@ -128,8 +162,38 @@ class IdealBubbleDew():
                 return b._mole_frac_tdew[p1, p2, j] == 0
 
         b.eq_mole_frac_tdew = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_dew_temp)
+
+    @staticmethod
+    def scale_temperature_dew(b, overwrite=True):
+        sf_P = iscale.get_scaling_factor(
+            b.pressure, default=1e-5, warning=True)
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            for j in b.component_list:
+                (l_phase,
+                 v_phase,
+                 vl_comps,
+                 l_only_comps,
+                 v_only_comps) = _valid_VL_component_list(b, pp)
+                if l_phase is None or v_phase is None:
+                    continue
+                elif v_only_comps != []:
+                    continue
+
+                if j in vl_comps:
+                    sf = sf_P*sf_mf
+                else:
+                    sf = sf_mf
+
+                # b.eq_temperature_dew is well-scaled by default
+                iscale.constraint_scaling_transform(
+                    b.eq_mole_frac_tdew[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Bubble pressure methods
@@ -186,8 +250,41 @@ class IdealBubbleDew():
                 return b._mole_frac_pbub[p1, p2, j] == 0
 
         b.eq_mole_frac_pbub = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_bubble_press)
+
+    @staticmethod
+    def scale_pressure_bubble(b, overwrite=True):
+        sf_P = iscale.get_scaling_factor(
+            b.pressure, default=1e-5, warning=True)
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            for j in b.component_list:
+                (l_phase,
+                 v_phase,
+                 vl_comps,
+                 l_only_comps,
+                 v_only_comps) = _valid_VL_component_list(b, pp)
+                if l_phase is None or v_phase is None:
+                    continue
+                elif v_only_comps != []:
+                    continue
+
+                if j in vl_comps:
+                    sf = sf_P*sf_mf
+                else:
+                    sf = sf_mf
+
+                iscale.constraint_scaling_transform(
+                    b.eq_pressure_bubble[pp[0], pp[1]],
+                    sf_P,
+                    overwrite=overwrite)
+                iscale.constraint_scaling_transform(
+                    b.eq_mole_frac_pbub[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew pressure methods
@@ -243,8 +340,38 @@ class IdealBubbleDew():
                 return b._mole_frac_pdew[p1, p2, j] == 0
 
         b.eq_mole_frac_pdew = Constraint(b.params._pe_pairs,
-                                         b.params.component_list,
+                                         b.component_list,
                                          rule=rule_mole_frac_dew_press)
+
+    @staticmethod
+    def scale_pressure_dew(b, overwrite=True):
+        sf_P = iscale.get_scaling_factor(
+            b.pressure, default=1e-5, warning=True)
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            for j in b.component_list:
+                (l_phase,
+                 v_phase,
+                 vl_comps,
+                 l_only_comps,
+                 v_only_comps) = _valid_VL_component_list(b, pp)
+                if l_phase is None or v_phase is None:
+                    continue
+                elif v_only_comps != []:
+                    continue
+
+                if j in vl_comps:
+                    sf = sf_P*sf_mf
+                else:
+                    sf = sf_mf
+
+                # b.eq_pressure_dew is well-scaled by default
+                iscale.constraint_scaling_transform(
+                    b.eq_mole_frac_pdew[pp[0], pp[1], j],
+                    sf,
+                    overwrite=overwrite)
 
 
 class LogBubbleDew():
@@ -282,7 +409,7 @@ class LogBubbleDew():
                     return b._mole_frac_tbub[p1, p2, j] == 0
 
             b.eq_temperature_bubble = Constraint(b.params._pe_pairs,
-                                                 b.params.component_list,
+                                                 b.component_list,
                                                  rule=rule_bubble_temp)
         except AttributeError:
             b.del_component(b.eq_temperature_bubble)
@@ -303,10 +430,29 @@ class LogBubbleDew():
                 # Non-condensables present, no bubble point
                 return Constraint.Skip
 
-            return 1e3 == 1e3*sum(b._mole_frac_tbub[p1, p2, j]
-                                  for j in vl_comps)
+            return 1 == sum(b._mole_frac_tbub[p1, p2, j] for j in vl_comps)
         b.eq_mole_frac_tbub = Constraint(b.params._pe_pairs,
                                          rule=rule_mole_frac_bubble_temp)
+
+    @staticmethod
+    def scale_temperature_bubble(b, overwrite=True):
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            (l_phase,
+             v_phase,
+             vl_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, pp)
+            if l_phase is None or v_phase is None:
+                continue
+            elif v_only_comps != []:
+                continue
+
+            # Assume b.eq_temperature_bubble is well-scaled
+            iscale.constraint_scaling_transform(
+                b.eq_mole_frac_tbub[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew temperature methods
@@ -341,7 +487,7 @@ class LogBubbleDew():
                 else:
                     return b._mole_frac_tdew[p1, p2, j] == 0
             b.eq_temperature_dew = Constraint(b.params._pe_pairs,
-                                              b.params.component_list,
+                                              b.component_list,
                                               rule=rule_dew_temp)
         except AttributeError:
             b.del_component(b.eq_temperature_dew)
@@ -362,10 +508,29 @@ class LogBubbleDew():
                 # Non-vaporisables present, no dew point
                 return Constraint.Skip
 
-            return 1e3 == 1e3*sum(b._mole_frac_tdew[p1, p2, j]
-                                  for j in vl_comps)
+            return 1 == sum(b._mole_frac_tdew[p1, p2, j] for j in vl_comps)
         b.eq_mole_frac_tdew = Constraint(b.params._pe_pairs,
                                          rule=rule_mole_frac_dew_temp)
+
+    @staticmethod
+    def scale_temperature_dew(b, overwrite=True):
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            (l_phase,
+             v_phase,
+             vl_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, pp)
+            if l_phase is None or v_phase is None:
+                continue
+            elif v_only_comps != []:
+                continue
+
+            # Assume b.eq_temperature_dew is well-scaled
+            iscale.constraint_scaling_transform(
+                b.eq_mole_frac_tdew[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Bubble pressure methods
@@ -400,7 +565,7 @@ class LogBubbleDew():
                 else:
                     return b._mole_frac_pbub[p1, p2, j] == 0
             b.eq_pressure_bubble = Constraint(b.params._pe_pairs,
-                                              b.params.component_list,
+                                              b.component_list,
                                               rule=rule_bubble_press)
         except AttributeError:
             b.del_component(b.eq_pressure_bubble)
@@ -421,10 +586,29 @@ class LogBubbleDew():
                 # Non-condensables present, no bubble point
                 return Constraint.Skip
 
-            return 1e3 == 1e3*sum(b._mole_frac_pbub[p1, p2, j]
-                                  for j in vl_comps)
+            return 1 == sum(b._mole_frac_pbub[p1, p2, j] for j in vl_comps)
         b.eq_mole_frac_pbub = Constraint(b.params._pe_pairs,
                                          rule=rule_mole_frac_bubble_press)
+
+    @staticmethod
+    def scale_pressure_bubble(b, overwrite=True):
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            (l_phase,
+             v_phase,
+             vl_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, pp)
+            if l_phase is None or v_phase is None:
+                continue
+            elif v_only_comps != []:
+                continue
+
+            # Assume b.eq_pressure_bubble is well-scaled
+            iscale.constraint_scaling_transform(
+                b.eq_mole_frac_pbub[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
     # -------------------------------------------------------------------------
     # Dew pressure methods
@@ -459,7 +643,7 @@ class LogBubbleDew():
                 else:
                     return b._mole_frac_pdew[p1, p2, j] == 0
             b.eq_pressure_dew = Constraint(b.params._pe_pairs,
-                                           b.params.component_list,
+                                           b.component_list,
                                            rule=rule_dew_press)
         except AttributeError:
             b.del_component(b.eq_pressure_dew)
@@ -480,10 +664,29 @@ class LogBubbleDew():
                 # Non-vaporisables present, no dew point
                 return Constraint.Skip
 
-            return 1e3 == 1e3*sum(b._mole_frac_pdew[p1, p2, j]
-                                  for j in vl_comps)
+            return 1 == sum(b._mole_frac_pdew[p1, p2, j] for j in vl_comps)
         b.eq_mole_frac_pdew = Constraint(b.params._pe_pairs,
                                          rule=rule_mole_frac_dew_press)
+
+    @staticmethod
+    def scale_pressure_dew(b, overwrite=True):
+        sf_mf = iscale.get_scaling_factor(
+            b.mole_frac_comp, default=1e3, warning=True)
+
+        for pp in b.params._pe_pairs:
+            (l_phase,
+             v_phase,
+             vl_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, pp)
+            if l_phase is None or v_phase is None:
+                continue
+            elif v_only_comps != []:
+                continue
+
+            # Assume b.eq_pressure_dew is well-scaled
+            iscale.constraint_scaling_transform(
+                b.eq_mole_frac_pdew[pp[0], pp[1]], sf_mf, overwrite=overwrite)
 
 
 def _valid_VL_component_list(blk, pp):
@@ -507,12 +710,12 @@ def _valid_VL_component_list(blk, pp):
     # Only need to do this for V-L pairs, so check
     if l_phase is not None and v_phase is not None:
         for j in blk.params.component_list:
-            if ((l_phase, j) in pparams._phase_component_set and
-                    (v_phase, j) in pparams._phase_component_set):
+            if ((l_phase, j) in blk.phase_component_set and
+                    (v_phase, j) in blk.phase_component_set):
                 vl_comps.append(j)
-            elif (l_phase, j) in pparams._phase_component_set:
+            elif (l_phase, j) in blk.phase_component_set:
                 l_only_comps.append(j)
-            elif (v_phase, j) in pparams._phase_component_set:
+            elif (v_phase, j) in blk.phase_component_set:
                 v_only_comps.append(j)
 
     return l_phase, v_phase, vl_comps, l_only_comps, v_only_comps

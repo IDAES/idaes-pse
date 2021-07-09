@@ -1,22 +1,21 @@
 # -*- coding: UTF-8 -*-
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import (Block, Var, TerminationCondition, SolverFactory,
-        Constraint)
+from pyomo.environ import Block, Var, TerminationCondition, Constraint
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
@@ -24,16 +23,18 @@ from pyomo.core.expr.visitor import identify_variables
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import (get_activity_dict,
-        deactivate_model_at, deactivate_constraints_unindexed_by,
-        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
-        get_implicit_index_of_set)
+from idaes.core.util.dyn_utils import (
+    get_activity_dict,
+    deactivate_model_at, deactivate_constraints_unindexed_by,
+    fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
+    get_implicit_index_of_set)
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 
 
-def fix_state_vars(blk, state_args={}):
+def fix_state_vars(blk, state_args=None):
     """
     Method for fixing state variables within StateBlocks. Method takes an
     optional argument of values to use when fixing variables.
@@ -274,7 +275,7 @@ def initialize_by_time_element(fs, time, **kwargs):
     solver_log = idaeslog.getSolveLogger(__name__, level=outlvl)
 
     ignore_dof = kwargs.pop('ignore_dof', False)
-    solver = kwargs.pop('solver', SolverFactory('ipopt'))
+    solver = kwargs.pop('solver', get_solver())
     fix_diff_only = kwargs.pop('fix_diff_only', True)
     # This option makes the assumption that the only variables that
     # link constraints to previous points in time (which must be fixed)

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 This module contains utility functions for use in testing IDAES models.
@@ -18,7 +18,7 @@ This module contains utility functions for use in testing IDAES models.
 __author__ = "Andrew Lee"
 
 
-from pyomo.environ import Constraint, Set, SolverFactory, units, Var
+from pyomo.environ import Constraint, Set, units, Var
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class,
@@ -37,24 +37,23 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
+from idaes.core.util import get_solver as default_solver
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 def get_default_solver():
     """
-    Tries to set-up the default solver for testing, and returns None if not
-    available
+    Move to idaes.core.util.misc - leaving redirection method here for
+    deprecation warning
     """
-    if SolverFactory('ipopt').available(exception_flag=False):
-        solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6,
-                          'linear_solver': 'ma27'}
-    else:
-        solver = None
-
-    return solver
+    _log.warn("Deprecated: get_default_solve has been moved and can now be "
+              "imported from idaes.core.util")
+    return default_solver()
 
 
-def initialization_tester(m, dof=0, **init_kwargs):
+def initialization_tester(m, dof=0, unit=None, **init_kwargs):
     """
     A method to test initialization methods on IDAES models. This method is
     designed to be used as part of the tests for most models.
@@ -70,6 +69,7 @@ def initialization_tester(m, dof=0, **init_kwargs):
         m: a Concrete mdoel which contains a flowsheet and a model named unit
             (i.e. m.fs.unit) which will be initialized
         dof: expected degrees of freedom during initialization, default=0
+        unit: unit object to test, if None assume m.fs.unit, default='None'
         init_kwargs: model specific arguments to pass to initialize method
                      (e.g. initial guesses for states)
 
@@ -77,32 +77,34 @@ def initialization_tester(m, dof=0, **init_kwargs):
         None
 
     Raises:
-        AssertionErrors is an issue is found
+        AssertionErrors if an issue is found
     """
+    if unit is None:
+        unit = m.fs.unit
     # Add some extra constraints and deactivate them to make sure
     # they remain deactivated
     # Test both indexed and unindexed constraints
-    m.fs.unit.__dummy_var = Var()
-    m.fs.unit.__dummy_equality = Constraint(expr=m.fs.unit.__dummy_var == 5)
-    m.fs.unit.__dummy_inequality = Constraint(expr=m.fs.unit.__dummy_var <= 10)
+    unit.__dummy_var = Var()
+    unit.__dummy_equality = Constraint(expr=unit.__dummy_var == 5)
+    unit.__dummy_inequality = Constraint(expr=unit.__dummy_var <= 10)
 
     def deq_idx(b, i):
-        return m.fs.unit.__dummy_var == 5
-    m.fs.unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
+        return unit.__dummy_var == 5
+    unit.__dummy_equality_idx = Constraint([1], rule=deq_idx)
 
     def dieq_idx(b, i):
-        return m.fs.unit.__dummy_var <= 10
-    m.fs.unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
+        return unit.__dummy_var <= 10
+    unit.__dummy_inequality_idx = Constraint([1], rule=dieq_idx)
 
-    m.fs.unit.__dummy_equality.deactivate()
-    m.fs.unit.__dummy_inequality.deactivate()
-    m.fs.unit.__dummy_equality_idx[1].deactivate()
-    m.fs.unit.__dummy_inequality_idx[1].deactivate()
+    unit.__dummy_equality.deactivate()
+    unit.__dummy_inequality.deactivate()
+    unit.__dummy_equality_idx[1].deactivate()
+    unit.__dummy_inequality_idx[1].deactivate()
 
     orig_fixed_vars = fixed_variables_set(m)
     orig_act_consts = activated_constraints_set(m)
 
-    m.fs.unit.initialize(**init_kwargs)
+    unit.initialize(**init_kwargs)
 
     print(degrees_of_freedom(m))
     assert degrees_of_freedom(m) == dof
@@ -119,16 +121,17 @@ def initialization_tester(m, dof=0, **init_kwargs):
         assert v in orig_fixed_vars
 
     # Check dummy constraints and clean up
-    assert not m.fs.unit.__dummy_equality.active
-    assert not m.fs.unit.__dummy_inequality.active
-    assert not m.fs.unit.__dummy_equality_idx[1].active
-    assert not m.fs.unit.__dummy_inequality_idx[1].active
+    assert not unit.__dummy_equality.active
+    assert not unit.__dummy_inequality.active
+    assert not unit.__dummy_equality_idx[1].active
+    assert not unit.__dummy_inequality_idx[1].active
 
-    m.fs.unit.del_component(m.fs.unit.__dummy_inequality)
-    m.fs.unit.del_component(m.fs.unit.__dummy_equality)
-    m.fs.unit.del_component(m.fs.unit.__dummy_inequality_idx)
-    m.fs.unit.del_component(m.fs.unit.__dummy_equality_idx)
-    m.fs.unit.del_component(m.fs.unit.__dummy_var)
+    unit.del_component(unit.__dummy_inequality)
+    unit.del_component(unit.__dummy_equality)
+    unit.del_component(unit.__dummy_inequality_idx)
+    unit.del_component(unit.__dummy_equality_idx)
+    unit.del_component(unit.__dummy_var)
+
 
 # -----------------------------------------------------------------------------
 # Define some generic PhysicalBlock and ReactionBlock classes for testing
@@ -152,12 +155,24 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
+        # Add inherent reactions for use when needed
+        self.inherent_reaction_idx = Set(initialize=["i1", "i2"])
+        self.inherent_reaction_stoichiometry = {("i1", "p1", "c1"): 1,
+                                                ("i1", "p1", "c2"): 1,
+                                                ("i1", "p2", "c1"): 1,
+                                                ("i1", "p2", "c2"): 1,
+                                                ("i2", "p1", "c1"): 1,
+                                                ("i2", "p1", "c2"): 1,
+                                                ("i2", "p2", "c1"): 1,
+                                                ("i2", "p2", "c2"): 1}
+
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
         self.default_balance_switch = 1
 
         self._state_block_class = TestStateBlock
 
+        self.set_default_scaling("flow_vol", 100)
         self.set_default_scaling("flow_mol", 101)
         self.set_default_scaling("flow_mol_phase_comp", 102)
         self.set_default_scaling("test_var", 103)
@@ -174,7 +189,6 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.set_default_scaling("material_flow_mass", 114)
         self.set_default_scaling("material_dens_mass", 115)
 
-
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': units.s,
@@ -185,13 +199,13 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
 
 class SBlockBase(StateBlock):
-    def initialize(blk, outlvl=0, optarg=None, solver=None,
-                   hold_state=False, **state_args):
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None, solver=None,
+                   hold_state=False, state_args=None):
         for k in blk.keys():
             blk[k].init_test = True
             blk[k].hold_state = hold_state
 
-    def release_state(blk, flags=None, outlvl=0):
+    def release_state(blk, flags=None, outlvl=idaeslog.NOTSET):
         for k in blk.keys():
             blk[k].hold_state = not blk[k].hold_state
 
@@ -241,7 +255,6 @@ class StateTestBlockData(StateBlockData):
             return b.material_dens_mass
         else:
             return b.material_dens_mol
-
 
     def get_enthalpy_flow_terms(b, p):
         return b.enthalpy_flow
@@ -309,6 +322,9 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
+        self.set_default_scaling("reaction_rate", 101, 'r1')
+        self.set_default_scaling("reaction_rate", 102, 'r2')
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': units.s,
@@ -323,7 +339,7 @@ class _ReactionParameterBlock(ReactionParameterBlock):
 
 
 class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=0, optarg=None,
+    def initialize(blk, outlvl=idaeslog.NOTSET, optarg=None,
                    solver=None, state_vars_fixed=False):
         for k in blk.keys():
             blk[k].init_test = True

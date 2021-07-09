@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Watertank model
 The water tank has only one inlet and one outlet
@@ -42,7 +42,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 from idaes.core.util.constants import Constants as const
 
 import idaes.logger as idaeslog
@@ -239,7 +239,7 @@ see property package for documentation.}"""))
         """
 
         # Add performance variables
-        self.tank_level = Var(self.flowsheet().config.time,
+        self.tank_level = Var(self.flowsheet().time,
                               initialize=1.0,
                               doc="Water level from in the tank")
 
@@ -270,13 +270,13 @@ see property package for documentation.}"""))
                 return b.tank_diameter/2
             # Angle of the circular sector used to calculate the area
 
-            @self.Expression(self.flowsheet().config.time,
+            @self.Expression(self.flowsheet().time,
                              doc="Angle of the circular"
                              " sector of liquid level")
             def alpha_tank(b, t):
                 return 2*acos((b.tank_radius-b.tank_level[t])/b.tank_radius)
 
-            @self.Expression(self.flowsheet().config.time,
+            @self.Expression(self.flowsheet().time,
                              doc="Area covered by the liquid level"
                              " at one end of the tank")
             def tank_area(b, t):
@@ -286,7 +286,7 @@ see property package for documentation.}"""))
                        - b.tank_level[t]**2)**0.5
 
         # Constraint for volume of the liquid in tank
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="volume of liquid in the tank")
         def volume_eqn(b, t):
             if self.config.tank_type == "horizontal_cylindrical_tank":
@@ -295,7 +295,7 @@ see property package for documentation.}"""))
                 return b.volume[t] == b.tank_level[t]*b.tank_cross_sect_area
 
         # Pressure change equation due gravity
-        @self.Constraint(self.flowsheet().config.time, doc="pressure drop")
+        @self.Constraint(self.flowsheet().time, doc="pressure drop")
         def pressure_change_eqn(b, t):
             return b.deltaP[t] == \
                 b.control_volume.properties_in[t].dens_mass_phase["Liq"] * \
@@ -308,10 +308,10 @@ see property package for documentation.}"""))
             self.control_volume.material_accumulation[0, :, :].fix(0)
             self.control_volume.energy_accumulation[0, :].fix(0)
 
-    def initialize(blk, state_args={}, outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                   solver=None, optarg=None):
         '''
-        water tank initialization routine.
+        Water tank initialization routine.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -326,9 +326,10 @@ see property package for documentation.}"""))
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
 
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -336,8 +337,8 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         init_log.info_low("Starting initialization...")
 
@@ -348,7 +349,7 @@ see property package for documentation.}"""))
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Fix outlet pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.\
                 fix(value(blk.control_volume.properties_in[t].pressure))
         blk.pressure_change_eqn.deactivate()
@@ -361,7 +362,7 @@ see property package for documentation.}"""))
             )
 
         # Unfix outlet pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.unfix()
         blk.pressure_change_eqn.activate()
 

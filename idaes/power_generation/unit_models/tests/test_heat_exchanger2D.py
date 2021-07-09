@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 The boiler 2D heat exchanger model consist of a cross flow shell and tube
 heat exchanger. 1-D Cross Flow Heat Exchanger Model with wall temperatures,
@@ -36,10 +36,11 @@ from idaes.generic_models.properties import iapws95
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.power_generation.unit_models.boiler_heat_exchanger_2D import \
     HeatExchangerCrossFlow2D_Header
-from idaes.core.util.testing import get_default_solver, initialization_tester
+from idaes.core.util.testing import initialization_tester
+from idaes.core.util import get_solver
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 # -----------------------------------------------------------------------------
 
@@ -102,6 +103,8 @@ def build_unit():
     m.fs.unit.fcorrection_htc_shell.fix(1.0)
     m.fs.unit.fcorrection_dp_tube.fix(1.0)
     m.fs.unit.fcorrection_dp_shell.fix(1.0)
+    m.fs.unit.temperature_ambient.fix(350.0)
+    m.fs.unit.head_insulation_thickness.fix(0.025)
     return m
 
 
@@ -149,10 +152,10 @@ def test_initialize_unit(build_unit):
                     reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 @pytest.mark.component
-def test_run_drum(build_unit):
+def test_run_unit(build_unit):
     m = build_unit
     assert degrees_of_freedom(m) == 0
-    optarg = {"tol": 1e-7,
+    optarg = {"tol": 1e-6,
               "linear_solver": "ma27",
               "max_iter": 40}
     solver.options = optarg

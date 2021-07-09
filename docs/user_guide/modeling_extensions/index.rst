@@ -14,6 +14,8 @@ provided below.
     
     matopt/index
     caprese/index
+    uncertainty_propagation/index
+    diagnostics/index
 
 .. rubric:: ALAMOPY: ALAMO Python
 
@@ -44,7 +46,7 @@ with a set of surrogate modeling tools which supports flowsheeting and direct in
 an equation-oriented modeling framework. It allows users to directly integrate reduced order 
 models with algebraic high-fidelity process models within an single IDAES flowsheet.
 
-.. image:: ../../_images/pysmo-logo.png
+.. image:: /images/pysmo-logo.png
     :width: 500px
     :align: center
     
@@ -55,7 +57,7 @@ provides tools for nanomaterials design using Mathematical Optimization. MatOpt 
 design crystalline nanostructured materials, including but not limited to particles, wires, 
 surfaces, and periodic bulk structures.
 
-.. image:: ../../_images/matopt_logo_full.png
+.. image:: /images/matopt_logo_full.png
     :width: 500px
     :align: center
 
@@ -66,8 +68,16 @@ is a module for the simulation of IDAES flowsheets with nonlinear program (NLP)-
 and estimation strategies, namely Nonlinear Model Predictive Control (NMPC) and Moving Horizon 
 Estimation (MHE).
 
-.. image:: ../../_images/logocappresse-01.png
+.. image:: /images/logocappresse-01.png
     :width: 500px
     :align: center
 
+.. rubric:: Uncertainty Propagation Toolbox
 
+:ref:`uncertainty_propagation<user_guide/modeling_extensions/uncertainty_propagation/index:Uncertainty Propagation Toolbox>`
+is a module for quantifying and propagating parametric uncertainty through an optimization or simulation problem based on an IDAES model.
+
+.. rubric:: Degeneracy Hunter
+
+:ref:`Degeneracy Hunter<user_guide/modeling_extensions/diagnostics/index:Degeneracy Hunter>`
+is coming soon!

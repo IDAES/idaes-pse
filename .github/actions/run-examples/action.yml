@@ -1,0 +1,50 @@
+name: Run IDAES examples
+description: Run IDAES examples
+inputs:
+  git-ref:
+    description: git ref to fetch for the examples
+    required: false
+    default: main
+  working-dir:
+    description: Working directory where the examples will be run
+    required: false
+    default: ${{ runner.temp }}
+  config-file-name:
+    description: >-
+      Name of the build script config file which will be copied to the working dir.
+      The source directory is assumed to be this action's directory.
+    required: false
+    default: build-config-for-idaes-ci.yml 
+
+runs:
+  using: composite
+  steps:
+    - name: Fetch examples
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash
+      run: |
+        rm -rf *
+        git clone https://github.com/IDAES/examples-pse.git --branch ${{ inputs.git-ref }} .
+        git log -n 1
+    - name: Set up config file
+      shell: bash
+      # issue the cp command from the (source) dir where the config file is stored
+      # to avoid issues with path separators on Windows
+      working-directory: ${{ inputs.working-dir }}
+      env:
+        config_file_name: ${{ inputs.config-file-name }}
+      run: |
+        config_file_dst_dir="$PWD"
+        config_file_src_dir="$GITHUB_ACTION_PATH"
+        cd "$config_file_src_dir"
+        ls -la "$PWD"
+        cp "$config_file_name" "$config_file_dst_dir"
+        echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
+    - name: Run build.py script
+      working-directory: ${{ inputs.working-dir }}
+      shell: bash
+      run: |
+        echo "::group::Contents of config file $config_file_name"
+        cat "$config_file_name"
+        echo "::endgroup::"
+        python build.py -v --config "$config_file_name" --test

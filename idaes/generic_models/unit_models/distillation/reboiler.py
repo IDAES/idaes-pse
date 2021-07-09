@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Reboiler model for distillation.
 
@@ -26,7 +26,7 @@ from pandas import DataFrame
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    value, Set
+    value, Set, SolverFactory
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -40,7 +40,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import PropertyPackageError, \
     PropertyNotSupportedError, ConfigurationError
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 
@@ -566,10 +566,7 @@ see property package for documentation.}"""))
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
 
-        if solver is None:
-            init_log.warning("Solver not provided. Default solver(ipopt) "
-                             " being used for initialization.")
-            solver = get_default_solver()
+        solverobj = get_solver(solver, optarg)
 
         # Initialize the inlet and outlet state blocks. Calling the state
         # blocks initialize methods directly so that custom set of state args
@@ -586,26 +583,35 @@ see property package for documentation.}"""))
         # Initialize outlet state block at same conditions of inlet except
         # the temperature. Set the temperature to a temperature guess based
         # on the desired boilup_ratio.
+
+        # Get index for bubble point temperature and and assume it
+        # will have only a single phase equilibrium pair. This is to
+        # support the generic property framework where the T_bubble
+        # is indexed by the phases_in_equilibrium. In distillation,
+        # the assumption is that there will only be a single pair
+        # i.e. vap-liq. 
+        idx = next(iter(self.control_volume.properties_in[0].
+                        temperature_bubble))
         temp_guess = 0.5 * (
-            self.control_volume.properties_in[0].temperature_dew.value -
-            self.control_volume.properties_in[0].
-            temperature_bubble.value) + \
-            self.control_volume.properties_in[0].temperature_bubble.value
+            value(self.control_volume.properties_in[0].temperature_dew[idx]) -
+            value(self.control_volume.properties_in[0].
+                  temperature_bubble[idx])) + \
+            value(self.control_volume.properties_in[0].temperature_bubble[idx])
 
         state_args_outlet = {}
         state_dict_outlet = (
             self.control_volume.properties_in[
-                self.flowsheet().config.time.first()]
+                self.flowsheet().time.first()]
             .define_port_members())
 
         for k in state_dict_outlet.keys():
             if state_dict_outlet[k].is_indexed():
                 state_args_outlet[k] = {}
                 for m in state_dict_outlet[k].keys():
-                    state_args_outlet[k][m] = state_dict_outlet[k][m].value
+                    state_args_outlet[k][m] = value(state_dict_outlet[k][m])
             else:
                 if k != "temperature":
-                    state_args_outlet[k] = state_dict_outlet[k].value
+                    state_args_outlet[k] = value(state_dict_outlet[k])
                 else:
                     state_args_outlet[k] = temp_guess
 
@@ -618,7 +624,7 @@ see property package for documentation.}"""))
 
         if degrees_of_freedom(self) == 0:
             with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                res = solver.solve(self, tee=slc.tee)
+                res = solverobj.solve(self, tee=slc.tee)
             init_log.info(
                 "Initialization Complete, {}.".format(idaeslog.condition(res))
             )

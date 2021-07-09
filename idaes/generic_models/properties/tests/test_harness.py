@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import pytest
 
 from pyomo.environ import (ConcreteModel,
@@ -27,7 +27,7 @@ from idaes.core import (ControlVolume0DBlock,
                         EnergyBalanceType,
                         MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.testing import get_default_solver
+from idaes.core.util import get_solver
 import idaes.core.util.scaling as iscale
 
 
@@ -39,7 +39,7 @@ _scalable = (_VarData, _ParamData, _ExpressionData)
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
@@ -246,10 +246,6 @@ class PropertyTestHarness(object):
     def test_unit_consistency(self, frame):
         assert_units_consistent(frame)
 
-
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, frame):
         frame._init_dof = degrees_of_freedom(frame.fs.props[1])
 
@@ -258,17 +254,13 @@ class PropertyTestHarness(object):
             raise AttributeError(
                 "State Block has not implemented an initialize method.")
 
-        frame._flags = frame.fs.props.initialize(hold_state=True,
-                                                 solver=solver)
+        frame._flags = frame.fs.props.initialize(hold_state=True)
 
         if degrees_of_freedom(frame.fs.props[1]) != 0:
             raise Exception(
                 "initialize did not result in a State BLock with 0 "
                 "degrees of freedom.")
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_release_state(self, frame):
         if not hasattr(frame.fs.props, "release_state") or \
                 not callable(frame.fs.props.release_state):

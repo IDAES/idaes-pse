@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base for IDAES process model objects.
 """
@@ -17,6 +17,8 @@ Base for IDAES process model objects.
 import sys
 import logging
 import textwrap
+
+from pandas import DataFrame
 
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.misc import tabular_writer
@@ -168,21 +170,21 @@ class ProcessBlockData(_BlockData):
                 # Try to fix material_accumulation @ first time point
                 try:
                     obj.material_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
                     obj.element_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix energy_accumulation @ first time point
                 try:
                     obj.energy_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -203,21 +205,21 @@ class ProcessBlockData(_BlockData):
             # Try to unfix material_accumulation @ first time point
             try:
                 obj.material_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
                 obj.element_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix energy_accumulation @ first time point
             try:
                 obj.energy_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
@@ -266,6 +268,9 @@ class ProcessBlockData(_BlockData):
                           f"Activated Blocks: {nb}")
 
         if performance is not None:
+            # PYLINT-WHY: pylint has no way of knowing that performance is supposed to be dict-like
+            # pylint: disable=unsubscriptable-object
+            # PYLINT-TODO: alternatively, have the function return an empty dict and test with `if performance:`
             ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Unit Performance")
             ostream.write("\n"*2)
@@ -324,7 +329,27 @@ class ProcessBlockData(_BlockData):
         return None
 
     def serialize_contents(self, time_point=0):
-        return self._get_performance_contents(time_point), self._get_stream_table_contents(time_point)
+        """
+        Return the performance contents and stream table
+
+        NOTE: There is the possiblity of a ConfigurationError because 
+        the names of the inlets and outlets of the unit model may not be
+        standard. If this occurs then return an empty dataframe
+
+        Args:
+            time_point: The time
+
+        Returns:
+            performance_contents: Pandas dataframe with the performance contents
+            stream_table: Pandas dataframe with the stream table for a unit model
+        """
+        performance_contents = self._get_performance_contents(time_point)
+        try:
+            stream_table = self._get_stream_table_contents(time_point)
+        except ConfigurationError as err:
+            _log.warning(f"Could not serialize stream table: {err}")
+            stream_table = DataFrame()
+        return performance_contents, stream_table
 
     def _setup_dynamics(self):
         """

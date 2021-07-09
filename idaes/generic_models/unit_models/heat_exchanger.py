@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Heat Exchanger Models.
 """
@@ -47,7 +47,7 @@ from idaes.generic_models.unit_models.heater import (
 
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util import scaling as iscale
+from idaes.core.util import get_solver, scaling as iscale
 from idaes.core.util.exceptions import ConfigurationError
 
 _log = idaeslog.getLogger(__name__)
@@ -133,7 +133,7 @@ def delta_temperature_lmtd_callback(b):
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
 
@@ -148,7 +148,7 @@ def delta_temperature_amtd_callback(b):
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] + dT2[t]) * 0.5
 
@@ -173,7 +173,7 @@ def delta_temperature_underwood_callback(b):
         function="cbrt",
         arg_units=[temp_units])
 
-    @b.Expression(b.flowsheet().config.time)
+    @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t])) / 2.0) ** 3 * temp_units
 
@@ -282,7 +282,7 @@ class HeatExchangerData(UnitModelBlockData):
         temp_units = s1_metadata.get_derived_units("temperature")
 
         u = self.overall_heat_transfer_coefficient = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             domain=PositiveReals,
             initialize=100.0,
             doc="Overall heat transfer coefficient",
@@ -295,20 +295,20 @@ class HeatExchangerData(UnitModelBlockData):
             units=a_units
         )
         self.delta_temperature_in = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=10.0,
             doc="Temperature difference at the hot inlet end",
             units=temp_units
         )
         self.delta_temperature_out = Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=10.1,
             doc="Temperature difference at the hot outlet end",
             units=temp_units
         )
         if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc="Factor to adjust coutercurrent flow heat "
                 "transfer calculation for cross flow.",
@@ -360,7 +360,7 @@ class HeatExchangerData(UnitModelBlockData):
         # Add end temperature differnece constraints                           #
         ########################################################################
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def delta_temperature_in_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
@@ -377,7 +377,7 @@ class HeatExchangerData(UnitModelBlockData):
                                       to_units=temp_units)
                 )
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def delta_temperature_out_equation(b, t):
             if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
                 return (
@@ -397,7 +397,7 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         # Add a unit level energy balance                                      #
         ########################################################################
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def unit_heat_balance(b, t):
             return 0 == (hot_side.heat[t] +
                          pyunits.convert(cold_side.heat[t],
@@ -413,7 +413,7 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         deltaT = self.delta_temperature
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
                 return pyunits.convert(self.heat_duty[t], to_units=q_units) == (
@@ -436,8 +436,8 @@ class HeatExchangerData(UnitModelBlockData):
         state_args_1=None,
         state_args_2=None,
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6},
+        solver=None,
+        optarg=None,
         duty=None,
     ):
         """
@@ -451,9 +451,10 @@ class HeatExchangerData(UnitModelBlockData):
                 initialization for the cold side (see documentation of the specific
                 property package) (default = {}).
             outlvl : sets output level of initialization routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
             duty : an initial guess for the amount of heat transfered. This
                 should be a tuple in the form (value, units), (default
                 = (1000 J/s))
@@ -469,8 +470,9 @@ class HeatExchangerData(UnitModelBlockData):
         hot_side = getattr(self, self.config.hot_side_name)
         cold_side = getattr(self, self.config.cold_side_name)
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
+
         flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1
         )
@@ -603,16 +605,18 @@ class HeatExchangerData(UnitModelBlockData):
         sf_a = iscale.get_scaling_factor(self.area, default=1, warning=True)
 
         for t, c in self.heat_transfer_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t]*sf_u[t]*sf_a)
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
 
         for t, c in self.delta_temperature_in_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT1[t])
+            iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
 
         for t, c in self.delta_temperature_out_equation.items():
-            iscale.constraint_scaling_transform(c, sf_dT2[t])
+            iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
 
         if hasattr(self, "costing"):
             # import costing scaling factors

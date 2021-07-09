@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base class for control volumes
 """
@@ -199,7 +199,7 @@ CONFIG_Template.declare("has_work_transfer", ConfigValue(
 CONFIG_Template.declare("has_enthalpy_transfer", ConfigValue(
     default=False,
     domain=In([True, False]),
-    description="Entahlpy transfer term construction flag",
+    description="Enthalpy transfer term construction flag",
     doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
 should be constructed, **default** - False.
 **Valid values** {
@@ -457,6 +457,8 @@ have a config block which derives from CONFIG_Base,
                 should be included in energy balances
             has_work_transfer (bool): whether generic mass transfer terms
                 should be included in energy balances
+            has_enthalpy_transfer (bool): whether generic enthalpy transfer
+                terms should be included in energy balances
             custom_term (Expression): a Pyomo Expression representing custom
                 terms to be included in energy balances
 
@@ -816,7 +818,7 @@ have a config block which derives from CONFIG_Base,
 
     def _get_representative_property_block(self):
         try:
-            t_ref = self.flowsheet().config.time.first()
+            t_ref = self.flowsheet().time.first()
         except AttributeError:
             raise ConfigurationError(
                     "{} control volume does not appear to be part of a "

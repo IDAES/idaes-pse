@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Flowsheet-related classes and functions used by the UI.
 """
@@ -17,11 +17,13 @@ Flowsheet-related classes and functions used by the UI.
 from collections import defaultdict
 import copy
 import json
+import logging
 import re
 from typing import Dict, List, Tuple
 
 # third-party
-from pandas import DataFrame
+import pandas as pd
+import numpy as np
 from pyomo.environ import Block, value
 from pyomo.network import Arc
 from pyomo.network.port import Port
@@ -110,7 +112,10 @@ def validate_flowsheet(fs: Dict) -> Tuple[bool, str]:
     if cell_ids != component_ids:
         missing = component_ids - cell_ids
         sfx = "s" if len(missing) > 1 else ""
-        return False, f"Component id{sfx} {missing} {'are' if sfx else 'is'} not in the layout cells"
+        return (
+            False,
+            f"Component id{sfx} {missing} {'are' if sfx else 'is'} not in the layout cells",
+        )
     return True, ""
 
 
@@ -122,6 +127,7 @@ class FlowsheetSerializer:
     to jointjs. The "cells" section is the jointjs readable code.
     See :py:func:`validate_flowsheet` for details on the format.
     """
+
     #: Regular expression identifying inlets by last component of ports' name
     INLET_REGEX = re.compile(
         r"^in_|^feed_|^inlet_|^in$|^feed$|^inlet$|_in$|_feed$|_inlet$", re.IGNORECASE
@@ -144,7 +150,9 @@ class FlowsheetSerializer:
         """
         # validate, if so directed
         if validate:
-            if not hasattr(flowsheet, "component_objects") or not callable(flowsheet.component_objects):
+            if not hasattr(flowsheet, "component_objects") or not callable(
+                flowsheet.component_objects
+            ):
                 raise ValueError("Flowsheet missing function 'component_objects'")
             try:
                 n_obj = 0
@@ -152,11 +160,15 @@ class FlowsheetSerializer:
                     for obj in flowsheet.component_objects(objtype, descend_into=False):
                         n_obj += 1
                         if not hasattr(obj, "getname") or not callable(obj.getname):
-                            raise ValueError("Flowsheet component missing function 'getname'")
+                            raise ValueError(
+                                "Flowsheet component missing function 'getname'"
+                            )
             except ValueError:
                 raise
             except Exception as err:
-                raise ValueError(f"Flowsheet 'component_objects' cannot be navigated: {err}")
+                raise ValueError(
+                    f"Flowsheet 'component_objects' cannot be navigated: {err}"
+                )
             if n_obj == 0:
                 raise ValueError("Flowsheet has no Arcs or unit Blocks")
         # setup
@@ -166,11 +178,15 @@ class FlowsheetSerializer:
         self.edges = defaultdict(list)  # {name: {"source": unit, "dest": unit}}
         self.orphaned_ports = {}
         self.labels = {}
+        self._stream_table_df = None
         self._out_json = {"model": {}}
-        self.serialized_contents = defaultdict(dict)
+        self._serialized_contents = defaultdict(dict)
         self._used_ports = set()
         self._known_endpoints = set()
         self._unit_name_used_count = defaultdict(lambda: 0)
+        self._sig_figs = (
+            5  # Defines the number of significant figures after the decimal place
+        )
         self._logger = logger.getLogger(__name__)
         self.name = name
         self.flowsheet = flowsheet
@@ -184,7 +200,12 @@ class FlowsheetSerializer:
     def _ingest_flowsheet(self):
         # Stores information on the connectivity and components of the input flowsheet
         self._identify_arcs()
-        self._identify_unit_models()
+
+        # Identify and add unit models
+        unit_models_map = self._identify_unit_models()
+        for model, model_type in unit_models_map.items():
+            self._add_unit_model_with_ports(model, model_type)
+
         self._construct_stream_labels()
         untouched_ports = self._map_edges()
         self._identify_implicit_feeds_and_products(untouched_ports)
@@ -196,27 +217,42 @@ class FlowsheetSerializer:
             self._known_endpoints.add(component.source.parent_block())
             self._known_endpoints.add(component.dest.parent_block())
 
-    def _identify_unit_models(self):
+    def _identify_unit_models(self) -> Dict:
         from idaes.core import UnitModelBlockData  # avoid circular import
+        from idaes.core.property_base import PhysicalParameterBlock, StateBlock
+
+        # Create a map of components to their unit type
+        components = {}
 
         # Identify the unit models and ports and store them
         for component in self.flowsheet.component_objects(Block, descend_into=True):
             if isinstance(component, UnitModelBlockData):
-                self._add_unit_model_with_ports(component)
+                # List of components is the same as the provided one
+                components[component] = self.get_unit_model_type(component)
+            elif isinstance(component, PhysicalParameterBlock) or isinstance(
+                component, StateBlock
+            ):
+                # skip physical parameter / state blocks
+                pass
             else:
-                # some unit models are nested within Indexed blocks
-                component_object_op = getattr(component, "component_object", None)
-                if not callable(component_object_op):
-                    for item in component.parent_component().values():
-                        if isinstance(item, UnitModelBlockData):
-                            if any(
-                                (
-                                    item == arc.source.parent_block()
-                                    or item == arc.dest.parent_block()
-                                )
-                                for arc in self.arcs.values()
+                # Find unit models nested within indexed blocks
+                type_ = self.get_unit_model_type(component)
+                for item in component.parent_component().values():
+                    if isinstance(item, UnitModelBlockData):
+                        # See if this unit is connected to an arc
+                        is_connected = False
+                        for arc in self.arcs.values():
+                            if (
+                                item == arc.source.parent_block()
+                                or item == arc.dest.parent_block()
                             ):
-                                self._add_unit_model_with_ports(item)
+                                is_connected = True
+                                break
+                        # Add to diagram if connected
+                        if is_connected:
+                            components[item] = type_
+
+        return components
 
     def _construct_stream_labels(self):
         # Construct the stream labels
@@ -224,8 +260,9 @@ class FlowsheetSerializer:
             stream_states_dict,
         )  # deferred to avoid circ. import
 
-        # We might have this information from generating self.serialized_components but I (Makayla) don't
-        # know how that connects to the stream names so this will be left alone for now
+        # We might have this information from generating self.serialized_components
+        # but I (Makayla) don't know how that connects to the stream names so this
+        # will be left alone for now
         for stream_name, stream_value in stream_states_dict(self.arcs).items():
             label = ""
             for var, var_value in stream_value.define_display_vars().items():
@@ -233,9 +270,9 @@ class FlowsheetSerializer:
 
                 for k, v in var_value.items():
                     if k is None:
-                        label += f"{var} {value(v)}\n"
+                        label += f"{var} {round(value(v), self._sig_figs)}\n"
                     else:
-                        label += f"{var} {k} {value(v)}\n"
+                        label += f"{var} {k} {round(value(v), self._sig_figs)}\n"
             self.labels[stream_name] = label[:-2]
 
     def _map_edges(self):
@@ -257,13 +294,24 @@ class FlowsheetSerializer:
         # Note we're only using the keys from self.ports, {port: parentcomponent}
         return set(self.ports) - used_ports
 
-    def _add_unit_model_with_ports(self, unit):
+    def _make_valid_json(self, df):
+        """
+        Replacing NaN, Infinity, and Negative Infinity with strings to make valid JSON for front end consumption
+        Args:
+            df: The Pandas dataframe to replace NaN, Infinity, and Negative Infinity with strings
+        Return:
+            The dataframe that now has valid JSON
+        """
+        df = df.replace(np.nan, "NaN").replace(np.inf, "Inf").replace(np.NINF, "-Inf")
+        return df
+
+    def _add_unit_model_with_ports(self, unit, unit_type):
         unit_name = unit.getname()
         if unit.parent_block() == self.flowsheet:
             # The unit is top-level and therefore should be displayed.
             self.unit_models[unit] = {
                 "name": unit_name,
-                "type": self._get_unit_model_type(unit),
+                "type": unit_type,
             }
 
             self._unit_name_used_count[unit_name] += 1
@@ -271,37 +319,39 @@ class FlowsheetSerializer:
                 self.ports[port] = unit
 
             performance_contents, stream_df = unit.serialize_contents()
-
-            if not stream_df.empty:
+            if stream_df is not None and not stream_df.empty:
                 # If there is a stream dataframe then we need to reset the index so we can get the variable names
                 # and then rename the "index"
                 stream_df = stream_df.reset_index().rename(
                     columns={"index": "Variable"}
                 )
-            self.serialized_contents[unit_name]["stream_contents"] = stream_df
+                stream_df = self._make_valid_json(stream_df)
+            self._serialized_contents[unit_name]["stream_contents"] = stream_df
 
-            performance_df = DataFrame()
+            performance_df = pd.DataFrame()
             if performance_contents:
                 # If performance contents is not empty or None then stick it into a dataframe and convert the
                 # GeneralVars to actual values
-                performance_df = DataFrame(
+                performance_df = pd.DataFrame(
                     performance_contents["vars"].items(), columns=["Variable", "Value"]
                 )
-                performance_df["Value"] = performance_df["Value"].map(
-                    lambda v: value(v)
-                )
-            self.serialized_contents[unit_name]["performance_contents"] = performance_df
+                performance_df["Value"] = performance_df["Value"].map(value)
+                performance_df = self._make_valid_json(performance_df)
+            self._serialized_contents[unit_name][
+                "performance_contents"
+            ] = performance_df
 
         elif unit in self._known_endpoints:
-            # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in an indexed block TODO CHECK
-            # Find the top-level parent unit and assign the serialized link to the parent.
+            # Unit is a subcomponent AND it is connected to an Arc. Or maybe it's in
+            # an indexed block. Find the top-level parent unit and assign the
+            # serialized link to the parent.
             parent_unit = unit.parent_block()
             while not parent_unit == self.flowsheet:
                 parent_unit = parent_unit.parent_block()
 
             self.unit_models[parent_unit] = {
                 "name": parent_unit.getname(),
-                "type": self._get_unit_model_type(parent_unit),
+                "type": self.get_unit_model_type(parent_unit),
             }
             for port in unit.component_objects(Port, descend_into=False):
                 self.ports[port] = parent_unit
@@ -313,20 +363,26 @@ class FlowsheetSerializer:
             # The unit is neither top-level nor connected; do not display this unit, since it is a subcomponent.
             pass
 
-    def _get_unit_model_type(self, unit):
-        # Get the unit models type
-        return unit.base_class_module().split(".")[
-            -1
-        ]  # TODO look for/create equivalent getter, as getname() above
+    @staticmethod
+    def get_unit_model_type(unit) -> str:
+        """Get the 'type' of the unit model."""
+        unit_module_type = "unknown"
+        if hasattr(unit, "base_class_module"):
+            unit_module = unit.base_class_module()
+            unit_module_type = unit_module.split(".")[-1]
+        else:
+            if _log.isEnabledFor(logging.DEBUG):
+                _log.debug(f"Could not find type of unit model for: {unit}")
+        return unit_module_type
 
     def _identify_implicit_feeds_and_products(self, untouched_ports):
-        # Identify feeds and products not explicitly defined by the user by examining the names of ports
-        # not connected to arcs
-        # This is intended for use on ports of top level unit models. It is unclear if it works with nested
-        # unit models (probably not)
-        for port in sorted(
-            untouched_ports, key=lambda port: str(port)
-        ):  # Sorting for determinism
+        """Identify feeds and products not explicitly defined by the user by
+        examining the names of ports not connected to arcs.
+
+        This is intended for use on ports of top level unit models.
+        It is unclear if it works with nested unit models (probably not).
+        """
+        for port in sorted(untouched_ports, key=lambda p: str(p)):
             port_name = str(port).split(".")[-1]
             unit_name = self._unique_unit_name(
                 port_name
@@ -336,42 +392,37 @@ class FlowsheetSerializer:
             # then pretend they're unit models
             # then add their edges
             feed_match = self.INLET_REGEX.search(port_name)
-            if feed_match:
-                # name the feed "unit model" and its connecting edge with the name of the port itself
-                feed_port = self._PseudoUnit("Feed", unit_name)
-                self.unit_models[feed_port] = {
-                    "name": feed_port.getname(),
-                    "type": "feed",
-                }
-                self.edges[edge_name] = {"source": feed_port, "dest": self.ports[port]}
-                arc_label = "feed info"
-                self.labels[
-                    edge_name
-                ] = arc_label  # We want the arc label to look identical to that of a user defined feed
-                continue
-
             product_match = self.OUTLET_REGEX.search(port_name)
-            if product_match:
-                prod_port = self._PseudoUnit("Product", unit_name)
-                self.unit_models[prod_port] = {
-                    "name": prod_port.getname(),
-                    "type": "product",
-                }
-                self.edges[edge_name] = {"source": self.ports[port], "dest": prod_port}
-                arc_label = "product info"
-                self.labels[
-                    edge_name
-                ] = arc_label  # We want the arc label to look identical to that of a user defined product
-                continue
-
-            if not feed_match and not product_match:
-                # Just in case there is a disconnected port that doesn't match the regexes display a warning
+            if feed_match and product_match:
                 self._logger.warning(
-                    f"Disconnected port found: {port_name} parent unit model: {self.ports[port].getname()}"
+                    f"Port looks like both a feed and a product: "
+                    f"name={port_name} feed-expr={self.INLET_REGEX} "
+                    f"product-expr={self.OUTLET_REGEX}"
+                )
+            elif feed_match or product_match:
+                type_ = "feed" if feed_match else "product"
+                unit_port = self._PseudoUnit(type_.capitalize(), unit_name)
+                self.unit_models[unit_port] = {
+                    "name": unit_port.getname(),
+                    "type": type_,
+                }
+                # Add edge. src/dst are reversed for feed vs. product
+                src = unit_port if type_ == "feed" else self.ports[port]
+                dst = unit_port if type_ != "feed" else self.ports[port]
+                self.edges[edge_name] = {"source": src, "dest": dst}
+                # Add label
+                self.labels[edge_name] = f"{type_} info"
+            else:
+                self._logger.warning(
+                    f"Port is neither a feed nor a product: "
+                    f"name={port_name} feed-expr={self.INLET_REGEX} "
+                    f"product-expr={self.OUTLET_REGEX}"
                 )
 
     def _unique_unit_name(self, base_name):
-        # Prevent name collisions by simply appending a suffix based on how many times the name's been used
+        """Prevent name collisions by simply appending a suffix based on how many
+        times the name has been used.
+        """
         self._unit_name_used_count[base_name] += 1
         return f"{base_name}_{self._unit_name_used_count[base_name]}"
 
@@ -380,6 +431,35 @@ class FlowsheetSerializer:
         self._construct_jointjs_json()
 
     def _construct_model_json(self):
+        from idaes.core.util.tables import (
+            create_stream_table_dataframe,
+        )  # deferred to avoid circular import
+
+        # Get the stream table and add it to the model json
+        # Change the index of the pandas dataframe to not be the variables
+        self._stream_table_df = (
+            create_stream_table_dataframe(self.arcs)
+            # Change the index of the pandas dataframe to not be the variables
+            .reset_index()
+            .rename(columns={"index": "Variable"})
+            .reset_index()
+            .rename(columns={"index": ""})
+            .applymap(
+                lambda x: round(x, self._sig_figs) if isinstance(x, (int, float)) else x
+            )
+        )
+
+        # Change NaNs to None for JSON
+        self._stream_table_df = self._stream_table_df.where(
+            (pd.notnull(self._stream_table_df)), None
+        )
+
+        # Puts df in this format for easier parsing in the javascript table:
+        # {'index': ["('Liq', 'benzene')", "('Liq', 'toluene')", "('Liq', 'hydrogen')", "('Liq', 'methane')", "('Vap', 'benzene')", "('Vap', 'toluene')", "('Vap', 'hydrogen')", "('Vap', 'methane')", 'temperature', 'pressure'],
+        # 'columns': ['s03', 's04', 's05', 's06', 's08', 's09', 's10'],
+        # 'data': [[0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], [298.15, 298.15, 298.15, 298.15, 298.15, 298.15, 298.15], [101325.0, 101325.0, 101325.0, 101325.0, 101325.0, 101325.0, 101325.0]]}
+        self._out_json["model"]["stream_table"] = self._stream_table_df.to_dict("split")
+
         self._out_json["model"]["id"] = self.name
         self._out_json["model"]["unit_models"] = {}
         self._out_json["model"]["arcs"] = {}
@@ -393,10 +473,18 @@ class FlowsheetSerializer:
                 "type": unit_type,
                 "image": "/images/icons/" + unit_icon.icon,
             }
-            if unit_name in self.serialized_contents:
+            if unit_name in self._serialized_contents:
                 for pfx in "performance", "stream":
                     content_type = pfx + "_contents"
-                    c = self.serialized_contents[unit_name][content_type].to_dict("index")
+                    c = (
+                        self._serialized_contents[unit_name][content_type]
+                        .applymap(
+                            lambda x: round(x, self._sig_figs)
+                            if isinstance(x, (int, float))
+                            else x
+                        )
+                        .to_dict("index")
+                    )
                     # ensure that keys are strings (so it's valid JSON)
                     unit_contents[content_type] = {str(k): v for k, v in c.items()}
 
@@ -481,9 +569,7 @@ class FlowsheetSerializer:
                 self.labels[name],
             )
 
-    def _create_image_jointjs_json(
-        self, x_pos, y_pos, name, image, title, port_groups
-    ):
+    def _create_image_jointjs_json(self, x_pos, y_pos, name, image, title, port_groups):
         # Create the jointjs for a given image
         entry = {}
         entry["type"] = "standard.Image"
@@ -498,7 +584,7 @@ class FlowsheetSerializer:
         entry["angle"] = angle
         entry["id"] = name
         # This defines what layer the icon is on
-        z = (1,)
+        z = 1
         entry["z"] = z
         entry["ports"] = port_groups
         entry["attrs"] = {
@@ -523,7 +609,7 @@ class FlowsheetSerializer:
             "source": {"id": source_id, "port": source_port},
             "target": {"id": dest_id, "port": dest_port},
             "router": {"name": "orthogonal", "padding": padding},
-            "connector": {"name": "normal", "attrs": {"line": {"stroke": "#5c9adb"}}},
+            "connector": {"name": "jumpover", "attrs": {"line": {"stroke": "#5c9adb"}}},
             "id": name,
             "labels": [
                 # This label MUST be first or the show/hide will fail
@@ -578,6 +664,7 @@ class FlowsheetDiff:
         diff =  FlowsheetDiff(saved_flowsheet, new_flowsheet)
         merged_flowsheet = {"model": new_flowsheet["model"], "cells": diff.layout}
     """
+
     def __init__(self, old_flowsheet: Dict, new_flowsheet: Dict, validate=True):
         """Construct with old and new flowsheet, and compute the diff and new layout
 
@@ -613,8 +700,10 @@ class FlowsheetDiff:
         """
         if bool(self):
             result = {
-                "model": copy.deepcopy(self._new["model"]) if do_copy else self._new["model"],
-                "cells": self._layout
+                "model": copy.deepcopy(self._new["model"])
+                if do_copy
+                else self._new["model"],
+                "cells": self._layout,
             }
         else:
             # diff is empty, return 'old' object
@@ -703,7 +792,11 @@ class FlowsheetDiff:
             "labels": [
                 {
                     "attrs": {
-                        "rect": {"fill": "#d7dce0", "stroke": "#FFFFFF", "stroke-width": 1},
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "stroke": "#FFFFFF",
+                            "stroke-width": 1,
+                        },
                         "text": {
                             "text": values["label"],
                             "fill": "black",
@@ -746,5 +839,3 @@ class FlowsheetDiff:
         new_item["attrs"]["image"]["xlinkHref"] = values["image"]
         new_item["attrs"]["root"]["title"] = values["type"]
         return new_item
-
-

@@ -1,22 +1,20 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Common methods used by generic framework
 
 Author: A Lee
 """
-
-import types
 
 from pyomo.environ import units as pyunits
 
@@ -73,14 +71,19 @@ def get_method(self, config_arg, comp=None):
     if c_arg is None:
         raise GenericPropertyPackageError(self, config_arg)
 
-    if isinstance(c_arg, types.ModuleType):
+    # Check to see if c_arg has an attribute with the name of the config_arg
+    # If so, assume c_arg is a class or module holding property subclasses
+    if hasattr(c_arg, config_arg):
         c_arg = getattr(c_arg, config_arg)
 
+    # Try to get the return_expression method from c_arg
+    # Otherwise assume c_arg is the return_expression method
     try:
         mthd = c_arg.return_expression
     except AttributeError:
         mthd = c_arg
 
+    # Call the return_expression method
     if callable(mthd):
         return mthd
     else:

@@ -33,6 +33,11 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
+DEPENDENCIES_FOR_PRERELEASE_VERSION = [
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.1.idaes.2021.06.04.zip",
+]
+
+
 kwargs = dict(
     zip_safe=False,
     name=NAME,
@@ -44,14 +49,13 @@ kwargs = dict(
         # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bunch",
-        "click",
+        "click<=7.1.2", # problems with 8.x
         "colorama",
         "flask",  # for ui/fsvis
         "flask-cors",
         "jupyter",
         "lxml",
         "matplotlib",
-        "mock",
         "nbconvert",
         "nbformat",
         "numpy",
@@ -59,12 +63,12 @@ kwargs = dict(
         "pandas",
         "pint",
         "psutil",
-        "pyutilib>=6.0.0",
-        "pyomo>5.7.1,<6",
+        "pyomo>=6.0",
         "pytest",
         "pyyaml",
         "requests",  # for ui/fsvis
         "python-slugify", # for ui/fsvis
+        "scipy",
         "sympy",
         "tinydb",
         "rbfopt",
@@ -75,29 +79,9 @@ kwargs = dict(
             "idaes = idaes.commands.base:command_base",
         ]
     },
+    # Only installed if [<key>] is added to package name
     extras_require={
-        # For developers. Only installed if [dev] is added to package name
-        "dev": [
-            "alabaster>=0.7.7",
-            # temporarily hold coverage version due to avoid bug in coveralls
-            # -alee 12/20/2019
-            "coverage==4.5.4",
-            "flake8",
-            "jsonschema",
-            "jupyter_contrib_nbextensions",
-            "mock",
-            "pylint",
-            "pytest-cov",
-            "python-coveralls",
-            "snowballstemmer==1.2.1",
-            # temporarily hold sphinx version to avoid bug with 3.x
-            # -dang 4/22/2020
-            "sphinx>=2.4.4,<3.0.0",
-            # note: 4/22/2020, removed the version requirement here
-            "sphinx-rtd-theme",
-            "sphinxcontrib-napoleon>=0.5.0",
-            "sphinx-argparse",
-        ]
+        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
     },
     package_data={
         # If any package contains these files, include them:
@@ -114,6 +98,8 @@ kwargs = dict(
             "*.js",
             "*.css",
             "*.html",
+            "*.json.gz",
+            "*.dat"
         ]
     },
     include_package_data=True,

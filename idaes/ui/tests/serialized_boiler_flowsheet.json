@@ -1,0 +1,2606 @@
+{
+    "cells": [
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "ECON"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            },
+            "id": "ECON",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 0
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 50
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 10,
+                "y": 10
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "PrSH"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            },
+            "id": "PrSH",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 0
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 50
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 110,
+                "y": 110
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "FSH"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            },
+            "id": "FSH",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 0
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 50
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 210,
+                "y": 210
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/default.svg"
+                },
+                "label": {
+                    "text": "RH"
+                },
+                "root": {
+                    "title": "boiler_heat_exchanger"
+                }
+            },
+            "id": "RH",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 0
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 50
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 310,
+                "y": 310
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/heater_2.svg"
+                },
+                "label": {
+                    "text": "PlSH"
+                },
+                "root": {
+                    "title": "heater"
+                }
+            },
+            "id": "PlSH",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 6,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 43,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 410,
+                "y": 410
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/heater_2.svg"
+                },
+                "label": {
+                    "text": "Water_wall"
+                },
+                "root": {
+                    "title": "heater"
+                }
+            },
+            "id": "Water_wall",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 6,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 43,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 510,
+                "y": 510
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/splitter.svg"
+                },
+                "label": {
+                    "text": "Spl1"
+                },
+                "root": {
+                    "title": "separator"
+                }
+            },
+            "id": "Spl1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "right"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 610,
+                "y": 610
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/mixer.svg"
+                },
+                "label": {
+                    "text": "mix1"
+                },
+                "root": {
+                    "title": "mixer"
+                }
+            },
+            "id": "mix1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 710,
+                "y": 710
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/mixer.svg"
+                },
+                "label": {
+                    "text": "ATMP1"
+                },
+                "root": {
+                    "title": "mixer"
+                }
+            },
+            "id": "ATMP1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    },
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    },
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 100,
+                "y": 10
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            },
+            "id": "outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    }
+                ]
+            },
+            "position": {
+                "x": 200,
+                "y": 110
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "side_1_inlet_1"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            },
+            "id": "side_1_inlet_1",
+            "ports": {
+                "groups": {
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 300,
+                "y": 210
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "side_2_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            },
+            "id": "side_2_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    }
+                ]
+            },
+            "position": {
+                "x": 400,
+                "y": 310
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "side_2_inlet_1"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            },
+            "id": "side_2_inlet_1",
+            "ports": {
+                "groups": {
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 500,
+                "y": 410
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/feed.svg"
+                },
+                "label": {
+                    "text": "side_1_inlet_2"
+                },
+                "root": {
+                    "title": "feed"
+                }
+            },
+            "id": "side_1_inlet_2",
+            "ports": {
+                "groups": {
+                    "out": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 48,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "out",
+                        "id": "out"
+                    }
+                ]
+            },
+            "position": {
+                "x": 600,
+                "y": 510
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "angle": 0,
+            "attrs": {
+                "image": {
+                    "xlinkHref": "/images/icons/product.svg"
+                },
+                "label": {
+                    "text": "side_1_outlet_1"
+                },
+                "root": {
+                    "title": "product"
+                }
+            },
+            "id": "side_1_outlet_1",
+            "ports": {
+                "groups": {
+                    "in": {
+                        "attrs": {
+                            "rect": {
+                                "height": 0,
+                                "stroke": "#000000",
+                                "stroke-width": 0,
+                                "width": 0
+                            }
+                        },
+                        "markup": "<g><rect/></g>",
+                        "position": {
+                            "args": {
+                                "dx": 1,
+                                "dy": 1,
+                                "x": 2,
+                                "y": 25
+                            },
+                            "name": "left"
+                        }
+                    }
+                },
+                "items": [
+                    {
+                        "group": "in",
+                        "id": "in"
+                    }
+                ]
+            },
+            "position": {
+                "x": 700,
+                "y": 610
+            },
+            "size": {
+                "height": 50,
+                "width": 50
+            },
+            "type": "standard.Image",
+            "z": 1
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "econ2ww",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "econ2ww"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "ECON",
+                "port": "out"
+            },
+            "target": {
+                "id": "Water_wall",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "ww2prsh",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "ww2prsh"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "Water_wall",
+                "port": "out"
+            },
+            "target": {
+                "id": "PrSH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "prsh2plsh",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "prsh2plsh"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "PrSH",
+                "port": "out"
+            },
+            "target": {
+                "id": "PlSH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "plsh2fsh",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "plsh2fsh"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "PlSH",
+                "port": "out"
+            },
+            "target": {
+                "id": "FSH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "FSHtoATMP1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "FSHtoATMP1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "FSH",
+                "port": "out"
+            },
+            "target": {
+                "id": "ATMP1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "fg_fsh2_separator",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_fsh2_separator"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "FSH",
+                "port": "out"
+            },
+            "target": {
+                "id": "Spl1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "fg_fsh2rh",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_fsh2rh"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "Spl1",
+                "port": "out"
+            },
+            "target": {
+                "id": "RH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "fg_fsh2PrSH",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_fsh2PrSH"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "Spl1",
+                "port": "out"
+            },
+            "target": {
+                "id": "PrSH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "fg_rhtomix",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_rhtomix"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "RH",
+                "port": "out"
+            },
+            "target": {
+                "id": "mix1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "fg_prsh2mix",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_prsh2mix"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "PrSH",
+                "port": "out"
+            },
+            "target": {
+                "id": "mix1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "fg_mix2econ",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "fg_mix2econ"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "mix1",
+                "port": "out"
+            },
+            "target": {
+                "id": "ECON",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_outlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "product info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "ATMP1",
+                "port": "out"
+            },
+            "target": {
+                "id": "outlet_1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_side_1_inlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "feed info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_side_1_inlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "side_1_inlet_1",
+                "port": "out"
+            },
+            "target": {
+                "id": "ECON",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_side_2_outlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "product info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_side_2_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "ECON",
+                "port": "out"
+            },
+            "target": {
+                "id": "side_2_outlet_1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_side_2_inlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "feed info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_side_2_inlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "side_2_inlet_1",
+                "port": "out"
+            },
+            "target": {
+                "id": "FSH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_side_1_inlet_2",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "feed info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_side_1_inlet_2"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "side_1_inlet_2",
+                "port": "out"
+            },
+            "target": {
+                "id": "RH",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        },
+        {
+            "connector": {
+                "attrs": {
+                    "line": {
+                        "stroke": "#5c9adb"
+                    }
+                },
+                "name": "jumpover"
+            },
+            "id": "s_side_1_outlet_1",
+            "labels": [
+                {
+                    "attrs": {
+                        "rect": {
+                            "fill": "#d7dce0",
+                            "fill-opacity": 0,
+                            "stroke": "white",
+                            "stroke-width": 0
+                        },
+                        "text": {
+                            "display": "none",
+                            "fill": "black",
+                            "text": "product info",
+                            "text-anchor": "left"
+                        }
+                    },
+                    "position": {
+                        "distance": 0.66,
+                        "offset": -40
+                    }
+                },
+                {
+                    "attrs": {
+                        "text": {
+                            "text": "s_side_1_outlet_1"
+                        }
+                    }
+                }
+            ],
+            "router": {
+                "name": "orthogonal",
+                "padding": 10
+            },
+            "source": {
+                "id": "RH",
+                "port": "out"
+            },
+            "target": {
+                "id": "side_1_outlet_1",
+                "port": "in"
+            },
+            "type": "standard.Link",
+            "z": 2
+        }
+    ],
+    "model": {
+        "arcs": {
+            "FSHtoATMP1": {
+                "dest": "ATMP1",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "FSH"
+            },
+            "econ2ww": {
+                "dest": "Water_wall",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "ECON"
+            },
+            "fg_fsh2PrSH": {
+                "dest": "PrSH",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "Spl1"
+            },
+            "fg_fsh2_separator": {
+                "dest": "Spl1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "FSH"
+            },
+            "fg_fsh2rh": {
+                "dest": "RH",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "Spl1"
+            },
+            "fg_mix2econ": {
+                "dest": "ECON",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "mix1"
+            },
+            "fg_prsh2mix": {
+                "dest": "mix1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "PrSH"
+            },
+            "fg_rhtomix": {
+                "dest": "mix1",
+                "label": "Flow_mol_comp N2 1.0\nFlow_mol_comp O2 1.0\nFlow_mol_comp NO 1.0\nFlow_mol_comp CO2 1.0\nFlow_mol_comp H2O 1.0\nFlow_mol_comp SO2 1.0\nTemperature 500\nPressure 101325.",
+                "source": "RH"
+            },
+            "plsh2fsh": {
+                "dest": "FSH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "PlSH"
+            },
+            "prsh2plsh": {
+                "dest": "PlSH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "PrSH"
+            },
+            "s_outlet_1": {
+                "dest": "outlet_1",
+                "label": "product info",
+                "source": "ATMP1"
+            },
+            "s_side_1_inlet_1": {
+                "dest": "ECON",
+                "label": "feed info",
+                "source": "side_1_inlet_1"
+            },
+            "s_side_1_inlet_2": {
+                "dest": "RH",
+                "label": "feed info",
+                "source": "side_1_inlet_2"
+            },
+            "s_side_1_outlet_1": {
+                "dest": "side_1_outlet_1",
+                "label": "product info",
+                "source": "RH"
+            },
+            "s_side_2_inlet_1": {
+                "dest": "FSH",
+                "label": "feed info",
+                "source": "side_2_inlet_1"
+            },
+            "s_side_2_outlet_1": {
+                "dest": "side_2_outlet_1",
+                "label": "product info",
+                "source": "ECON"
+            },
+            "ww2prsh": {
+                "dest": "PrSH",
+                "label": "Molar flow (mol/s) 1\nMass flow (kg/s) 0.01802\nT (k) 286.34379\nP (pa) 100000.0\nVapor fraction 0.0\nMolar enthalpy (j/mol) Vap 2168.59605\nMolar enthalpy (j/mol) Liq 1000.",
+                "source": "Water_wall"
+            }
+        },
+        "id": "boiler",
+        "stream_table": {
+            "columns": [
+                "",
+                "Variable",
+                "econ2ww",
+                "ww2prsh",
+                "prsh2plsh",
+                "plsh2fsh",
+                "FSHtoATMP1",
+                "fg_fsh2_separator",
+                "fg_fsh2rh",
+                "fg_fsh2PrSH",
+                "fg_rhtomix",
+                "fg_prsh2mix",
+                "fg_mix2econ"
+            ],
+            "data": [
+                [
+                    0,
+                    "Molar Flow (mol/s)",
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    1,
+                    "Mass Flow (kg/s)",
+                    0.01802,
+                    0.01802,
+                    0.01802,
+                    0.01802,
+                    0.01802,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    2,
+                    "T (K)",
+                    286.34379,
+                    286.34379,
+                    286.34379,
+                    286.34379,
+                    286.34379,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    3,
+                    "P (Pa)",
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    100000.0,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    4,
+                    "Vapor Fraction",
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    5,
+                    "Molar Enthalpy (J/mol) Vap",
+                    2168.59605,
+                    2168.59605,
+                    2168.59605,
+                    2168.59605,
+                    2168.59605,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    6,
+                    "Molar Enthalpy (J/mol) Liq",
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    1000.0,
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-"
+                ],
+                [
+                    7,
+                    "flow_mol_comp N2",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    8,
+                    "flow_mol_comp O2",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    9,
+                    "flow_mol_comp NO",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    10,
+                    "flow_mol_comp CO2",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    11,
+                    "flow_mol_comp H2O",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    12,
+                    "flow_mol_comp SO2",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                [
+                    13,
+                    "temperature",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    500,
+                    500,
+                    500,
+                    500,
+                    500,
+                    500
+                ],
+                [
+                    14,
+                    "pressure",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    "-",
+                    101325.0,
+                    101325.0,
+                    101325.0,
+                    101325.0,
+                    101325.0,
+                    101325.0
+                ]
+            ],
+            "index": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14
+            ]
+        },
+        "unit_models": {
+            "ATMP1": {
+                "image": "/images/icons/mixer.svg",
+                "performance_contents": {},
+                "stream_contents": {
+                    "0": {
+                        "Outlet": 1.0,
+                        "SprayWater": 1.0,
+                        "Steam": 1.0,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Outlet": 0.01802,
+                        "SprayWater": 0.01802,
+                        "Steam": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "2": {
+                        "Outlet": 286.34379,
+                        "SprayWater": 286.34379,
+                        "Steam": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Outlet": 100000.0,
+                        "SprayWater": 100000.0,
+                        "Steam": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Outlet": 0.0,
+                        "SprayWater": 0.0,
+                        "Steam": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Outlet": 2168.59605,
+                        "SprayWater": 2168.59605,
+                        "Steam": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Outlet": 1000.0,
+                        "SprayWater": 1000.0,
+                        "Steam": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    }
+                },
+                "type": "mixer"
+            },
+            "ECON": {
+                "image": "/images/icons/default.svg",
+                "performance_contents": {},
+                "stream_contents": {},
+                "type": "boiler_heat_exchanger"
+            },
+            "FSH": {
+                "image": "/images/icons/default.svg",
+                "performance_contents": {},
+                "stream_contents": {},
+                "type": "boiler_heat_exchanger"
+            },
+            "PlSH": {
+                "image": "/images/icons/heater_2.svg",
+                "performance_contents": {
+                    "0": {
+                        "Value": 0.0,
+                        "Variable": "Heat Duty"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Inlet": 1.0,
+                        "Outlet": 1.0,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Inlet": 0.01802,
+                        "Outlet": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "2": {
+                        "Inlet": 286.34379,
+                        "Outlet": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Inlet": 100000.0,
+                        "Outlet": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Inlet": 0.0,
+                        "Outlet": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Inlet": 2168.59605,
+                        "Outlet": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Inlet": 1000.0,
+                        "Outlet": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    }
+                },
+                "type": "heater"
+            },
+            "PrSH": {
+                "image": "/images/icons/default.svg",
+                "performance_contents": {},
+                "stream_contents": {},
+                "type": "boiler_heat_exchanger"
+            },
+            "RH": {
+                "image": "/images/icons/default.svg",
+                "performance_contents": {},
+                "stream_contents": {},
+                "type": "boiler_heat_exchanger"
+            },
+            "Spl1": {
+                "image": "/images/icons/splitter.svg",
+                "performance_contents": {
+                    "0": {
+                        "Value": 0.5,
+                        "Variable": "Split Fraction [('outlet_2',)]"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Inlet": 1.0,
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "1": {
+                        "Inlet": 1.0,
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "2": {
+                        "Inlet": 1.0,
+                        "Variable": "flow_mol_comp N2"
+                    },
+                    "3": {
+                        "Inlet": 1.0,
+                        "Variable": "flow_mol_comp NO"
+                    },
+                    "4": {
+                        "Inlet": 1.0,
+                        "Variable": "flow_mol_comp O2"
+                    },
+                    "5": {
+                        "Inlet": 1.0,
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "6": {
+                        "Inlet": 101325.0,
+                        "Variable": "pressure"
+                    },
+                    "7": {
+                        "Inlet": 500.0,
+                        "Variable": "temperature"
+                    }
+                },
+                "type": "separator"
+            },
+            "Water_wall": {
+                "image": "/images/icons/heater_2.svg",
+                "performance_contents": {
+                    "0": {
+                        "Value": 0.0,
+                        "Variable": "Heat Duty"
+                    }
+                },
+                "stream_contents": {
+                    "0": {
+                        "Inlet": 1.0,
+                        "Outlet": 1.0,
+                        "Variable": "Molar Flow (mol/s)"
+                    },
+                    "1": {
+                        "Inlet": 0.01802,
+                        "Outlet": 0.01802,
+                        "Variable": "Mass Flow (kg/s)"
+                    },
+                    "2": {
+                        "Inlet": 286.34379,
+                        "Outlet": 286.34379,
+                        "Variable": "T (K)"
+                    },
+                    "3": {
+                        "Inlet": 100000.0,
+                        "Outlet": 100000.0,
+                        "Variable": "P (Pa)"
+                    },
+                    "4": {
+                        "Inlet": 0.0,
+                        "Outlet": 0.0,
+                        "Variable": "Vapor Fraction"
+                    },
+                    "5": {
+                        "Inlet": 2168.59605,
+                        "Outlet": 2168.59605,
+                        "Variable": "Molar Enthalpy (J/mol) Vap"
+                    },
+                    "6": {
+                        "Inlet": 1000.0,
+                        "Outlet": 1000.0,
+                        "Variable": "Molar Enthalpy (J/mol) Liq"
+                    }
+                },
+                "type": "heater"
+            },
+            "mix1": {
+                "image": "/images/icons/mixer.svg",
+                "performance_contents": {},
+                "stream_contents": {
+                    "0": {
+                        "Outlet": 1.0,
+                        "PrSH_out": 1.0,
+                        "Reheat_out": 1.0,
+                        "Variable": "flow_mol_comp N2"
+                    },
+                    "1": {
+                        "Outlet": 1.0,
+                        "PrSH_out": 1.0,
+                        "Reheat_out": 1.0,
+                        "Variable": "flow_mol_comp O2"
+                    },
+                    "2": {
+                        "Outlet": 1.0,
+                        "PrSH_out": 1.0,
+                        "Reheat_out": 1.0,
+                        "Variable": "flow_mol_comp NO"
+                    },
+                    "3": {
+                        "Outlet": 1.0,
+                        "PrSH_out": 1.0,
+                        "Reheat_out": 1.0,
+                        "Variable": "flow_mol_comp CO2"
+                    },
+                    "4": {
+                        "Outlet": 1.0,
+                        "PrSH_out": 1.0,
+                        "Reheat_out": 1.0,
+                        "Variable": "flow_mol_comp H2O"
+                    },
+                    "5": {
+                        "Outlet": 1.0,
+                        "PrSH_out": 1.0,
+                        "Reheat_out": 1.0,
+                        "Variable": "flow_mol_comp SO2"
+                    },
+                    "6": {
+                        "Outlet": 500.0,
+                        "PrSH_out": 500.0,
+                        "Reheat_out": 500.0,
+                        "Variable": "temperature"
+                    },
+                    "7": {
+                        "Outlet": 101325.0,
+                        "PrSH_out": 101325.0,
+                        "Reheat_out": 101325.0,
+                        "Variable": "pressure"
+                    }
+                },
+                "type": "mixer"
+            },
+            "outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            },
+            "side_1_inlet_1": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "side_1_inlet_2": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "side_1_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            },
+            "side_2_inlet_1": {
+                "image": "/images/icons/feed.svg",
+                "type": "feed"
+            },
+            "side_2_outlet_1": {
+                "image": "/images/icons/product.svg",
+                "type": "product"
+            }
+        }
+    }
+}

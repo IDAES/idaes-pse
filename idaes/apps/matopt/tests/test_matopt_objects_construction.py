@@ -1,44 +1,67 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import numpy as np
-
-from idaes.apps.matopt.materials import Atom, Canvas, Design, PlanarTiling, CubicTiling
-from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube
-from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice
+from math import sqrt
+from idaes.apps.matopt.materials import Atom, Canvas, Design, LinearTiling, PlanarTiling, CubicTiling
+from idaes.apps.matopt.materials.geometry import Shape, Cuboctahedron, Parallelepiped, Rhombohedron, RectPrism, Cube, \
+    Cylinder, CylindricalSector
+from idaes.apps.matopt.materials.lattices import FCCLattice, CubicLattice, PerovskiteLattice, DiamondLattice, \
+    WurtziteLattice
 from idaes.apps.matopt.materials.transform_func import ShiftFunc, ScaleFunc, RotateFunc, ReflectFunc
 from idaes.apps.matopt.opt import Coef, LinearExpr, MatOptModel, SumNeighborSites, SumNeighborBonds, SumSites, SumBonds, \
     SumSiteTypes, SumBondTypes, SumSitesAndTypes, SumBondsAndTypes, SumConfs, SumSitesAndConfs, LessThan, EqualTo, \
     GreaterThan, FixedTo, Disallow, PiecewiseLinear, Implies, NegImplies, ImpliesSiteCombination, ImpliesNeighbors
 import pytest
 
+
 @pytest.mark.unit
 def test_construct_FCCLattice():
-    IAD = 2.77
+    IAD = sqrt(2) / 2
+    lattice = FCCLattice.alignedWith100(IAD)
+    lattice = FCCLattice.alignedWith111(IAD)
     lattice = FCCLattice(IAD)
     return lattice
 
 
 @pytest.mark.unit
 def test_construct_CubicLattice():
-    IAD = 2.77
+    IAD = 1.0
     lattice = CubicLattice(IAD)
     return lattice
 
 
 @pytest.mark.unit
 def test_construct_PerovskiteLattice():
-    A, B, C = 4, 4, 4
+    A, B, C = 1.0, 1.0, 1.0
     lattice = PerovskiteLattice(A, B, C)
+    return lattice
+
+
+@pytest.mark.unit
+def test_construct_DiamondLattice():
+    IAD = sqrt(3) / 4
+    lattice = DiamondLattice.alignedWith(IAD, '100')
+    lattice = DiamondLattice.alignedWith(IAD, '110')
+    lattice = DiamondLattice.alignedWith(IAD, '111')
+    lattice = DiamondLattice(IAD)
+    return lattice
+
+
+@pytest.mark.unit
+def test_construct_WurtziteLattice():
+    IAD = sqrt(3 / 8)
+    lattice = WurtziteLattice.alignedWith(IAD, '0001')
+    lattice = WurtziteLattice(IAD)
     return lattice
 
 
@@ -105,6 +128,30 @@ def test_construct_RectPrism():
 def test_construct_Cube():
     shape = Cube(1.0)
     return shape
+
+
+@pytest.mark.unit
+def test_construct_Cylinder():
+    shape = Cylinder(np.zeros(3, dtype=float), 1.0, 1.0)
+    return shape
+
+
+@pytest.mark.unit
+def test_construct_CylindricalSector():
+    shape = CylindricalSector(np.zeros(3, dtype=float), 1.0, 1.0,
+                              np.array([1, 0, 0], dtype=float),
+                              np.array([0, 1, 0], dtype=float),
+                              np.array([0, 0, 1], dtype=float))
+    return shape
+
+
+@pytest.mark.unit
+def test_construct_LinearTiling():
+    parallelepiped = test_construct_Parallelepiped()
+    cylinder = test_construct_Cylinder()
+    tiling = LinearTiling.fromParallelepiped(parallelepiped)
+    tiling = LinearTiling.fromCylindricalShape(cylinder)
+    return tiling
 
 
 @pytest.mark.unit
@@ -277,7 +324,7 @@ def test_construct_Disallow():
 @pytest.mark.unit
 def test_construct_PiecewiseLinear():
     m = test_construct_MatOptModel()
-    rule = PiecewiseLinear([x**2 for x in range(3)],
+    rule = PiecewiseLinear([x ** 2 for x in range(3)],
                            [x for x in range(3)],
                            m.Ci)
     return rule

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 __author__ = "Costing Team (A. Noring and M. Zamarripa)"
 __version__ = "1.0.0"
@@ -27,16 +27,10 @@ import pyomo.environ as pyo
 from idaes.generic_models.properties import iapws95
 from idaes.generic_models.properties import swco2
 from idaes.core import FlowsheetBlock
-
-solver_available = pyo.SolverFactory('ipopt').available()
-prop_available = iapws95.iapws95_available()
-prop2_available = swco2.swco2_available()
+from idaes.core.util import get_solver
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_PP_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -125,7 +119,7 @@ def test_PP_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -214,9 +208,6 @@ def test_PP_costing():
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_power_plant_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -290,7 +281,7 @@ def test_power_plant_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -342,8 +333,6 @@ def test_power_plant_costing():
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_sCO2_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -491,7 +480,7 @@ def test_sCO2_costing():
     costing_initialization(m.fs)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \
@@ -524,8 +513,6 @@ def test_sCO2_costing():
 
 
 @pytest.mark.component
-@pytest.mark.solver
-@pytest.mark.skipif(not solver_available, reason="Solver not available")
 def test_ASU_costing():
     # Create a Concrete Model as the top level object
     m = pyo.ConcreteModel()
@@ -541,7 +528,7 @@ def test_ASU_costing():
     get_ASU_cost(m.fs.ASU, m.fs.ASU.O2_flow)
 
     # try solving
-    solver = pyo.SolverFactory('ipopt')
+    solver = get_solver()
     results = solver.solve(m, tee=True)
 
     assert results.solver.termination_condition == \

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 NTU Condenser model, for use with Helmholtz EOS property packages.
 """
@@ -19,16 +19,18 @@ __author__ = "Jinliang Ma"
 # Import Pyomo libraries
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
-from idaes.core.util import from_json, to_json, StoreSpec
+from idaes.core.util import get_solver, from_json, to_json, StoreSpec
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.generic_models.unit_models.heater import (
     _make_heater_config_block, _make_heater_control_volume)
 import idaes.core.util.unit_costing as costing
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 
@@ -130,7 +132,7 @@ class HelmNtuCondenserData(UnitModelBlockData):
         super().build()
         self._process_config()
         config = self.config
-        time = self.flowsheet().config.time
+        time = self.flowsheet().time
 
         ########################################################################
         # Add control volumes                                                  #
@@ -293,14 +295,14 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
     def set_initial_condition(self):
         if self.config.dynamic is True:
-            hot_side.material_accumulation[:,:,:].value = 0
-            hot_side.energy_accumulation[:,:].value = 0
-            hot_side.material_accumulation[0,:,:].fix(0)
-            hot_side.energy_accumulation[0,:].fix(0)
-            cold_side.material_accumulation[:,:,:].value = 0
-            cold_side.energy_accumulation[:,:].value = 0
-            cold_side.material_accumulation[0,:,:].fix(0)
-            cold_side.energy_accumulation[0,:].fix(0)
+            self.hot_side.material_accumulation[:, :, :].value = 0
+            self.hot_side.energy_accumulation[:, :].value = 0
+            self.hot_side.material_accumulation[0, :, :].fix(0)
+            self.hot_side.energy_accumulation[0, :].fix(0)
+            self.cold_side.material_accumulation[:, :, :].value = 0
+            self.cold_side.energy_accumulation[:, :].value = 0
+            self.cold_side.material_accumulation[0, :, :].fix(0)
+            self.cold_side.energy_accumulation[0, :].fix(0)
 
     def initialize(
         self,
@@ -308,8 +310,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         state_args_2=None,
         unfix='hot_flow',
         outlvl=idaeslog.NOTSET,
-        solver="ipopt",
-        optarg={"tol": 1e-6, "max_iter": 50},
+        solver=None,
+        optarg=None,
     ):
         """
         Condenser initialization method. The initialization routine assumes
@@ -323,9 +325,10 @@ class HelmNtuCondenserData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for cold side (see documentation of the specific
                 property package) (default = None).
-            optarg : solver options dictionary object (default={'tol': 1e-6})
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
             solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -347,8 +350,8 @@ class HelmNtuCondenserData(UnitModelBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        opt = pyo.SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         flags1 = hot_side.initialize(
             outlvl=outlvl, optarg=optarg, solver=solver, state_args=state_args_1)
@@ -433,13 +436,13 @@ class HelmNtuCondenserData(UnitModelBlockData):
 
         for t, c in self.heat_transfer_equation.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.unit_heat_balance.items():
             sf = iscale.get_scaling_factor(self.cold_side.heat[t])
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)
 
         for t, c in self.saturation_eqn.items():
             sf = iscale.get_scaling_factor(
                 self.hot_side.properties_out[t].enth_mol)
-            iscale.constraint_scaling_transform(c, sf)
+            iscale.constraint_scaling_transform(c, sf, overwrite=False)

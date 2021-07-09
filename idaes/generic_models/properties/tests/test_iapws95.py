@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 import pytest
 from pyomo.environ import ConcreteModel, value, Var, units as pyunits
@@ -113,9 +113,30 @@ class TestMixPh(object):
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
-        model.params = iapws95.Iapws95ParameterBlock()
-
+        model.params = iapws95.Iapws95ParameterBlock(default={
+                "temperature_bounds": (249*pyunits.K, 2501*pyunits.K),
+                "pressure_bounds": (0.11*pyunits.Pa, 1.1e9*pyunits.Pa),
+                "enthalpy_mol_bounds": (
+                    0.1*pyunits.J/pyunits.mol, 1.1e5*pyunits.J/pyunits.mol),
+            }
+        )
         return model
+
+    @pytest.mark.unit
+    def test_config_enth_mass(self, model):
+        model = ConcreteModel()
+        l = 0.1/0.018
+        u = 1.1e5/0.018
+        model.params = iapws95.Iapws95ParameterBlock(default={
+                "enthalpy_mass_bounds": (
+                    l*pyunits.J/pyunits.kg,
+                    u*pyunits.J/pyunits.kg)
+            }
+        )
+        assert pytest.approx(0.1, rel=1e-3) == value(
+            model.params.default_enthalpy_bounds[0])
+        assert pytest.approx(1.1e5, rel=1e-3) == value(
+            model.params.default_enthalpy_bounds[1])
 
     @pytest.mark.unit
     def test_config(self, model):
@@ -125,6 +146,19 @@ class TestMixPh(object):
         assert len(model.params.phase_list) == 1
         for i in model.params.phase_list:
             assert i in ["Mix"]
+
+        assert pytest.approx(249) == value(
+            model.params.default_temperature_bounds[0])
+        assert pytest.approx(2501) == value(
+            model.params.default_temperature_bounds[1])
+        assert pytest.approx(0.11) == value(
+            model.params.default_pressure_bounds[0])
+        assert pytest.approx(1.1e9) == value(
+            model.params.default_pressure_bounds[1])
+        assert pytest.approx(0.1) == value(
+            model.params.default_enthalpy_bounds[0])
+        assert pytest.approx(1.1e5) == value(
+            model.params.default_enthalpy_bounds[1])
 
     @pytest.mark.unit
     def test_build(self, model):
@@ -152,8 +186,8 @@ class TestMixPh(object):
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
             assert (
-                model.prop[1].get_enthalpy_flow_terms(p)
-                == model.prop[1].enth_mol * model.prop[1].flow_mol
+                value(model.prop[1].get_enthalpy_flow_terms(p))
+                == value(model.prop[1].enth_mol * model.prop[1].flow_mol)
             )
 
     @pytest.mark.unit
@@ -168,9 +202,9 @@ class TestMixPh(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert (
-                model.prop[1].get_energy_density_terms(p)
-                == model.prop[1].dens_mol * model.prop[1].energy_internal_mol
+            assert value(
+                model.prop[1].get_energy_density_terms(p)) == value(
+                model.prop[1].dens_mol * model.prop[1].energy_internal_mol
             )
 
     @pytest.mark.unit
@@ -223,7 +257,7 @@ class TestMixPh(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+            assert i.name in ["prop[1].enth_mol", "prop[1].pressure"]
 
     @pytest.mark.unit
     def test_model_check(self, model):
@@ -428,15 +462,15 @@ class TestLGPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert (
-                    model.prop[1].get_material_flow_terms(p, j)
-                    == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
+                assert value(
+                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                    model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol_phase[p]
                 * model.prop[1].phase_frac[p]
                 * model.prop[1].flow_mol
@@ -454,7 +488,7 @@ class TestLGPh(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_energy_density_terms(p) == (
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol_phase[p]
                 * model.prop[1].energy_internal_mol_phase[p]
             )
@@ -509,7 +543,7 @@ class TestLGPh(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+            assert i.name in ["prop[1].enth_mol", "prop[1].pressure"]
 
     @pytest.mark.unit
     def test_model_check(self, model):
@@ -714,15 +748,15 @@ class TestLPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert (
-                    model.prop[1].get_material_flow_terms(p, j)
-                    == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
+                assert value(
+                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                    model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol_phase[p]
                 * model.prop[1].phase_frac[p]
                 * model.prop[1].flow_mol
@@ -740,7 +774,7 @@ class TestLPh(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_energy_density_terms(p) == (
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol_phase[p]
                 * model.prop[1].energy_internal_mol_phase[p]
             )
@@ -795,7 +829,7 @@ class TestLPh(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+            assert i.name in ["prop[1].enth_mol", "prop[1].pressure"]
 
     @pytest.mark.unit
     def test_model_check(self, model):
@@ -1000,15 +1034,15 @@ class TestGPh(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert (
-                    model.prop[1].get_material_flow_terms(p, j)
-                    == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
+                assert value(
+                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                    model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol_phase[p]
                 * model.prop[1].phase_frac[p]
                 * model.prop[1].flow_mol
@@ -1026,7 +1060,7 @@ class TestGPh(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_energy_density_terms(p) == (
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol_phase[p]
                 * model.prop[1].energy_internal_mol_phase[p]
             )
@@ -1081,7 +1115,7 @@ class TestGPh(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+            assert i.name in ["prop[1].enth_mol", "prop[1].pressure"]
 
     @pytest.mark.unit
     def test_model_check(self, model):
@@ -1295,9 +1329,9 @@ class TestMixTpx(object):
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert (
-                model.prop[1].get_enthalpy_flow_terms(p)
-                == model.prop[1].enth_mol * model.prop[1].flow_mol
+            assert value(
+                model.prop[1].get_enthalpy_flow_terms(p)) == value(
+                model.prop[1].enth_mol * model.prop[1].flow_mol
             )
 
     @pytest.mark.unit
@@ -1312,9 +1346,9 @@ class TestMixTpx(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert (
-                model.prop[1].get_energy_density_terms(p)
-                == model.prop[1].dens_mol * model.prop[1].energy_internal_mol
+            assert value(
+                model.prop[1].get_energy_density_terms(p)) == value(
+                model.prop[1].dens_mol * model.prop[1].energy_internal_mol
             )
 
     @pytest.mark.unit
@@ -1367,10 +1401,10 @@ class TestMixTpx(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [
-                model.prop[1].temperature,
-                model.prop[1].pressure,
-                model.prop[1].vapor_frac,
+            assert i.name in [
+                "prop[1].temperature",
+                "prop[1].pressure",
+                "prop[1].vapor_frac",
             ]
 
     @pytest.mark.unit
@@ -1612,15 +1646,15 @@ class TestLgTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert (
-                    model.prop[1].get_material_flow_terms(p, j)
-                    == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
+                assert value(
+                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                    model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol_phase[p]
                 * model.prop[1].phase_frac[p]
                 * model.prop[1].flow_mol
@@ -1638,7 +1672,7 @@ class TestLgTpx(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_energy_density_terms(p) == (
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol_phase[p]
                 * model.prop[1].energy_internal_mol_phase[p]
             )
@@ -1693,10 +1727,10 @@ class TestLgTpx(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [
-                model.prop[1].temperature,
-                model.prop[1].pressure,
-                model.prop[1].vapor_frac,
+            assert i.name in [
+                "prop[1].temperature",
+                "prop[1].pressure",
+                "prop[1].vapor_frac",
             ]
 
     @pytest.mark.unit
@@ -1921,15 +1955,15 @@ class TestLTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert (
-                    model.prop[1].get_material_flow_terms(p, j)
-                    == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
+                assert value(
+                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                    model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol_phase[p]
                 * model.prop[1].phase_frac[p]
                 * model.prop[1].flow_mol
@@ -1947,7 +1981,7 @@ class TestLTpx(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_energy_density_terms(p) == (
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol_phase[p]
                 * model.prop[1].energy_internal_mol_phase[p]
             )
@@ -2002,10 +2036,10 @@ class TestLTpx(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [
-                model.prop[1].temperature,
-                model.prop[1].pressure,
-                model.prop[1].vapor_frac,
+            assert i.name in [
+                "prop[1].temperature",
+                "prop[1].pressure",
+                "prop[1].vapor_frac",
             ]
 
     @pytest.mark.unit
@@ -2231,15 +2265,15 @@ class TestGTpx(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert (
-                    model.prop[1].get_material_flow_terms(p, j)
-                    == model.prop[1].flow_mol * model.prop[1].phase_frac[p]
+                assert value(
+                    model.prop[1].get_material_flow_terms(p, j)) == value(
+                    model.prop[1].flow_mol * model.prop[1].phase_frac[p]
                 )
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+            assert value(model.prop[1].get_enthalpy_flow_terms(p)) == value(
                 model.prop[1].enth_mol_phase[p]
                 * model.prop[1].phase_frac[p]
                 * model.prop[1].flow_mol
@@ -2257,7 +2291,7 @@ class TestGTpx(object):
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.prop[1].get_energy_density_terms(p) == (
+            assert value(model.prop[1].get_energy_density_terms(p)) == value(
                 model.prop[1].dens_mol_phase[p]
                 * model.prop[1].energy_internal_mol_phase[p]
             )
@@ -2312,10 +2346,10 @@ class TestGTpx(object):
     @pytest.mark.unit
     def test_intensive_state_vars(self, model):
         for i in model.prop[1].intensive_set:
-            assert i in [
-                model.prop[1].temperature,
-                model.prop[1].pressure,
-                model.prop[1].vapor_frac,
+            assert i.name in [
+                "prop[1].temperature",
+                "prop[1].pressure",
+                "prop[1].vapor_frac",
             ]
 
     @pytest.mark.unit

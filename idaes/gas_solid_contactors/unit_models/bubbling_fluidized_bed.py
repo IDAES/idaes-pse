@@ -1,41 +1,38 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 IDAES Bubbling Fluidized Bed Model.
-
 The 2-region bubbling fluidized bed model is a 1D axially discretized model
 with two phases (gas and solid), and two regions (bubble and emulsion)
 resulting in 3 control volume_1D blocks (bubble, gas_emulsion solid_emulsion).
 The model captures the gas-solid interaction between both phases and regions
 through reaction, mass and heat transfer.
-
 Equations written in this model were derived from:
 A. Lee, D.C. Miller. A one-dimensional (1-D) three-region model for a bubbling
 fluidized-bed Adsorber, Ind. Eng. Chem. Res. 52 (2013) 469–484.
-
 Assumptions:
 Property package contains temperature and pressure variables
 Property package contains minimum fluidization velocity and voidage parameters
 Gas emulsion is at minimum fluidization conditions
 Gas feeds into emulsion region before the excess enters into the bubble region
-
+Solid superficial velocity is constant throughout the bed
 """
 
 # Import Python libraries
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Reals,
+from pyomo.environ import (Var, Param, Reals, SolverFactory,
                            TerminationCondition, Constraint,
                            TransformationFactory, sqrt, value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -51,13 +48,13 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         FlowDirection)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        BurntToast)
+from idaes.core.util.exceptions import (ConfigurationError)
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_min, smooth_max
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Chinedu Okoli"
 
@@ -67,7 +64,9 @@ _log = idaeslog.getLogger(__name__)
 
 @declare_process_block_class("BubblingFluidizedBed")
 class BubblingFluidizedBedData(UnitModelBlockData):
-    """Standard Bubbling Fluidized Bed Unit Model Class."""
+    """
+    Standard Bubbling Fluidized Bed Unit Model Class
+    """
 
     # Create template for unit level config arguments
     CONFIG = UnitModelBlockData.CONFIG()
@@ -231,10 +230,8 @@ see reaction package for documentation.}"""))
     def build(self):
         """
         Begin building model
-
         Args:
             None
-
         Returns:
             None
         """
@@ -460,7 +457,7 @@ see reaction package for documentation.}"""))
             self.solid_emulsion.reactions = (
                 self.config.solid_phase_config.reaction_package.
                 reaction_block_class(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.length_domain,
                     doc="Reaction properties in control volume",
                     default=tmp_dict))
@@ -491,22 +488,22 @@ see reaction package for documentation.}"""))
         # varying solid flow directions (co_current and counter_current)
         self.gas_inlet_block = (
             self.config.gas_phase_config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 default={"defined_state": True}))
 
         self.gas_outlet_block = (
             self.config.gas_phase_config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 default={"defined_state": False}))
 
         self.solid_inlet_block = (
             self.config.solid_phase_config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 default={"defined_state": True}))
 
         self.solid_outlet_block = (
             self.config.solid_phase_config.property_package.build_state_block(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 default={"defined_state": False}))
 
         # Add Ports for gas side
@@ -531,10 +528,8 @@ see reaction package for documentation.}"""))
     def _make_vars_params(self):
         """
         Make model variables and parameters.
-
         Args:
             None
-
         Returns:
             None
         """
@@ -566,70 +561,79 @@ see reaction package for documentation.}"""))
 
         # Velocities
         self.velocity_superficial_gas = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Gas Superficial Velocity [m/s]')
         self.velocity_bubble = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain, domain=Reals,
                 doc='Bubble Velocity [m/s]')
         self.velocity_emulsion_gas = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Emulsion Region Superficial Gas Velocity [m/s]')
+        self.velocity_superficial_solid = Var(
+                self.flowsheet().time,
+                domain=Reals, initialize=0.01,
+                doc='Solid superficial velocity [m/s]')
 
         # Bubble Dimensions and Hydrodynamics
         self.bubble_diameter = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Average Bubble Diameter [m]')
         self.delta = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Volume Fraction Occupied by Bubble Region [m^3/m^3]')
         self.delta_e = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Volume Fraction Occupied by Emulsion Region [m^3/m^3]')
         self.voidage_average = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Cross-Sectional Average Voidage Fraction [m^3/m^3]')
         self.voidage_emulsion = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Emulsion Region Voidage Fraction [m^3/m^3]')
         self.bubble_growth_coeff = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Bubble Growth Coefficient [-]')
         self.bubble_diameter_max = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Maximum Theoretical Bubble Diameter [m]')
         self.velocity_bubble_rise = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Bubble Rise Velocity [m/s]')
+        self.average_gas_density = Var(
+                self.flowsheet().time,
+                self.length_domain,
+                domain=Reals,
+                doc='average gas density [mol/m3]')
 
         # Gas emulsion heterogeneous reaction variable
         self.gas_emulsion_hetero_rxn = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 self.config.gas_phase_config.property_package.component_list,
                 domain=Reals,
@@ -639,14 +643,14 @@ see reaction package for documentation.}"""))
 
         # Mass transfer coefficients
         self.Kbe = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 self.config.gas_phase_config.property_package.component_list,
                 domain=Reals,
                 initialize=1,
                 doc='Bubble to Emulsion Gas Mass Transfer Coefficient [1/s]')
         self.Kgbulk_c = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 self.config.gas_phase_config.property_package.component_list,
                 domain=Reals,
@@ -655,18 +659,18 @@ see reaction package for documentation.}"""))
 
         # Heat transfer coefficients
         self.Hbe = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Bubble to Emulsion Gas Heat Transfer Coefficient'
                     '[kJ/m^3.K.s]')
         self.Hgbulk = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Gas Phase Bulk Enthalpy Transfer Rate [kJ/m.s]')
         self.htc_conv = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Gas to Solid Energy Convective Heat Transfer'
@@ -674,7 +678,7 @@ see reaction package for documentation.}"""))
 
         # Heat transfer terms
         self.ht_conv = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Gas to Solid Convective Enthalpy Transfer in'
@@ -682,13 +686,13 @@ see reaction package for documentation.}"""))
 
         # Reformulation variables
         self._reform_var_1 = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 doc='Reformulation Variable in Bubble'
                     'Diameter Equation [reform var 1]')
         self._reform_var_2 = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 self.config.gas_phase_config.property_package.component_list,
                 domain=Reals,
@@ -696,21 +700,21 @@ see reaction package for documentation.}"""))
                 doc='Bubble to Emulsion Gas Mass Transfer'
                     'Coefficient Reformulation Variable [reform var 2]')
         self._reform_var_3 = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Bubble to Emulsion Gas Mass Transfer'
                     'Coefficient Reformulation Variable [reform var 3]')
         self._reform_var_4 = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
                 doc='Bubble to Emulsion Gas Heat Transfer'
                     'Coefficient Reformulation Variable [reform var 4]')
         self._reform_var_5 = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals,
                 initialize=1,
@@ -786,21 +790,21 @@ see reaction package for documentation.}"""))
                     constants.pi*(0.5*b.bed_diameter)**2)
 
         # Area of bubble, gas_emulsion, solid_emulsion
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Cross-sectional Area Occupied by Bubbles")
         def bubble_area(b, t, x):
             return (b.bubble.area[t, x] ==
                     b.bed_area*b.delta[t, x])
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Cross-sectional Area Occupied by Gas Emulsion")
         def gas_emulsion_area(b, t, x):
             return (b.gas_emulsion.area[t, x] ==
                     b.bed_area*b.delta_e[t, x]*b.voidage_emulsion[t, x])
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Cross-sectional Area Occupied by Solid Emulsion")
         def solid_emulsion_area(b, t, x):
@@ -824,14 +828,14 @@ see reaction package for documentation.}"""))
         # Hydrodynamic contraints
 
         # Emulsion region volume fraction
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Emulsion Region Volume Fraction")
         def emulsion_vol_frac(b, t, x):
             return (b.delta_e[t, x] == 1 - b.delta[t, x])
 
         # Average cross-sectional voidage
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Average Cross-sectional Voidage")
         def average_voidage(b, t, x):
@@ -839,7 +843,7 @@ see reaction package for documentation.}"""))
                     (1 - b.voidage_emulsion[t, x]))
 
         # Bubble growth coefficient
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Bubble Growth Coefficient")
         def bubble_growth_coefficient(b, t, x):
@@ -850,7 +854,7 @@ see reaction package for documentation.}"""))
                         b.bed_diameter/constants.acceleration_gravity))
 
         # Maximum bubble diameter
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Maximum Bubble Diameter")
         def bubble_diameter_maximum(b, t, x):
@@ -861,14 +865,14 @@ see reaction package for documentation.}"""))
                                b.bed_area)**2)
 
         # Bubble diameter reformulation equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Bubble Diameter Reformulation")
         def _reformulation_eqn_1(b, t, x):
             return (b._reform_var_1[t, x]**2 ==
                     b.bed_diameter*b.bubble_diameter[t, x])
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Bubble Diameter")
         def bubble_diameter_eqn(b, t, x):
@@ -886,7 +890,7 @@ see reaction package for documentation.}"""))
                         b.bubble_growth_coeff[t, x]*b._reform_var_1[t, x]))
 
         # Bubble rise velocity
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Bubble Rise Velocity")
         def bubble_velocity_rise(b, t, x):
@@ -895,16 +899,15 @@ see reaction package for documentation.}"""))
                     b.bubble_diameter[t, x])
 
         # Emulsion region voidage - Davidson model
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Emulsion Region Voidage")
         def emulsion_voidage(b, t, x):
             return (b.voidage_emulsion[t, x] ==
-                    b.solid_emulsion.properties[t, x]._params.voidage_mf
-                    )
+                    b.solid_emulsion.properties[t, x]._params.voidage_mf)
 
         # Bubble velocity - Davidson model
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Bubble Velocity")
         def bubble_velocity(b, t, x):
@@ -914,39 +917,58 @@ see reaction package for documentation.}"""))
                 b.solid_emulsion.properties[t, x]._params.velocity_mf +
                 b.velocity_bubble_rise[t, x])
 
-        # Emulsion region gas velocity - Davidson model
-        @self.Constraint(self.flowsheet().config.time,
+        # Average gas density (moles)
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
-                         doc="Emulsion Region Superficial Gas Velocity")
-        def emulsion_gas_velocity(b, t, x):
+                         doc="Average gas density")
+        def average_gas_density_eqn(b, t, x):
             return (
-                b.velocity_emulsion_gas[t, x] ==
-                b.solid_emulsion.properties[t, x]._params.velocity_mf)
+                b.average_gas_density[t, x] *
+                (b.bubble.properties[t, x].flow_mol +
+                 b.gas_emulsion.properties[t, x].flow_mol) ==
+                ((b.bubble.properties[t, x].flow_mol *
+                  b.bubble.properties[t, x].dens_mol) +
+                 (b.gas_emulsion.properties[t, x].flow_mol *
+                  b.gas_emulsion.properties[t, x].dens_mol))
+                )
 
-        # Superficial gas velocity (computes delta at the boundary from
-        # known vg at gas inlet)
-        @self.Constraint(self.flowsheet().config.time,
+        # Superficial gas velocity
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Superficial Gas Velocity")
         def velocity_gas_superficial(b, t, x):
+            return (
+                b.bubble.properties[t, x].flow_mol +
+                b.gas_emulsion.properties[t, x].flow_mol
+                ==
+                b.velocity_superficial_gas[t, x] * b.bed_area *
+                b.average_gas_density[t, x])
+
+        # Bubble volume fraction
+        # This computes delta for emulsion at minimum fluidization velocity
+        @self.Constraint(self.flowsheet().time,
+                         self.length_domain,
+                         doc="volume fraction occupied by bubbles")
+        def bubble_vol_frac_eqn(b, t, x):
             return (b.velocity_superficial_gas[t, x] ==
                     b.velocity_bubble[t, x] * b.delta[t, x] +
-                    b.velocity_emulsion_gas[t, x])
-    
-        # Particle porosity constraint
-        # Particle porosity is assumed constant
-        @self.Constraint(
-            self.flowsheet().config.time,
-            self.length_domain,
-            doc="Constant particle porosity")
-        def particle_porosity_constraint(b, t, x):
-            return (
-                b.solid_emulsion.properties[t, x].particle_porosity ==
-                b.solid_inlet_block[t].particle_porosity)
+                    b.solid_emulsion.properties[t, x]._params.velocity_mf)
+
+        # Solid superficial velocity
+        @self.Constraint(self.flowsheet().time,
+                         self.length_domain,
+                         doc="Solid superficial velocity")
+        # This equation uses inlet values to compute the constant solid
+        # superficial velocity, and then computes the
+        # solid particle density or flowrate through the rest of the bed.
+        def solid_super_vel(b, t, x):
+            return (b.velocity_superficial_solid[t] * b.bed_area *
+                    b.solid_emulsion.properties[t, x].dens_mass_particle ==
+                    b.solid_emulsion.properties[t, x].flow_mass)
 
         # Gas_emulsion pressure drop calculation
         if self.config.has_pressure_change:
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas Emulsion Pressure Drop Calculation")
             def gas_emulsion_pressure_drop(b, t, x):
@@ -960,7 +982,7 @@ see reaction package for documentation.}"""))
 
         elif self.config.has_pressure_change is False:
             # If pressure change is false set pressure drop to zero
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Isobaric Gas emulsion")
             def isobaric_gas_emulsion(b, t, x):
@@ -970,7 +992,7 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Mass transfer constraints
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Bubble to Emulsion Gas Mass Transfer"
@@ -983,7 +1005,7 @@ see reaction package for documentation.}"""))
                     b.gas_emulsion.properties[t, x].diffusion_comp[j]) *
                     constants.acceleration_gravity ** 0.5)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Bubble to Emulsion Gas Mass Transfer"
                              "Coefficient Reformulation [reform eqn 3]")
@@ -992,7 +1014,7 @@ see reaction package for documentation.}"""))
                     1e2*b.bubble_diameter[t, x])
 
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Bubble to Emulsion Gas Mass Transfer Coefficient")
@@ -1005,7 +1027,7 @@ see reaction package for documentation.}"""))
 
         # Bulk gas mass transfer
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Bulk Gas Mass Transfer Between Bubble and Emulsion")
@@ -1023,7 +1045,7 @@ see reaction package for documentation.}"""))
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Bubble to emulsion gas heat transfer coefficient
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Bubble to Emulsion Gas Heat Transfer"
                                  "Coeff. Reformulation Eqn [reform eqn 4]")
@@ -1035,7 +1057,7 @@ see reaction package for documentation.}"""))
                         (constants.acceleration_gravity ** 0.5))
 
             # Convective heat transfer coefficient
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Convective Heat Transfer"
                                  "Coeff. Reformulation Eqn [reform eqn 5]")
@@ -1047,7 +1069,7 @@ see reaction package for documentation.}"""))
                     b.solid_emulsion.properties[t, x]._params.particle_dia *
                     b.gas_emulsion.properties[t, x].dens_mol)
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Bubble to Emulsion Gas Heat Transfer"
                                  "Coefficient")
@@ -1060,7 +1082,7 @@ see reaction package for documentation.}"""))
                     b._reform_var_3[t, x] +
                     b._reform_var_4[t, x])
 
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Convective Heat Transfer Coefficient")
             def convective_heat_trans_coeff(b, t, x):
@@ -1072,7 +1094,7 @@ see reaction package for documentation.}"""))
 
             # Gas to solid convective heat transfer # replaced "ap" with
             # "6/(dp*rho_sol)"
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas to Solid Convective Enthalpy Transfer"
                                  "in Emulsion Region")
@@ -1086,7 +1108,7 @@ see reaction package for documentation.}"""))
                      b.solid_emulsion.properties[t, x].temperature))
 
             # Bulk gas heat transfer
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Bulk Gas Heat Transfer Between"
                                  "Bubble and Emulsion")
@@ -1106,7 +1128,7 @@ see reaction package for documentation.}"""))
 
         # Bubble mass transfer
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Bubble Mass Transfer")
@@ -1125,7 +1147,7 @@ see reaction package for documentation.}"""))
                     if solid_phase.reaction_package else 0)
 
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Gas Emulsion Mass Transfer")
@@ -1141,7 +1163,7 @@ see reaction package for documentation.}"""))
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Bubble - heat transfer
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Bubble - Heat Transfer")
             def bubble_heat_transfer(b, t, x):
@@ -1152,7 +1174,7 @@ see reaction package for documentation.}"""))
                         b.bubble.area[t, x])
 
             # Gas emulsion - heat transfer
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas Emulsion - Heat Transfer")
             def gas_emulsion_heat_transfer(b, t, x):
@@ -1164,7 +1186,7 @@ see reaction package for documentation.}"""))
                         b.ht_conv[t, x] * b.bed_area)
 
             # Solid emulsion - heat transfer
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Solid Emulsion - Heat Transfer")
             def solid_emulsion_heat_transfer(b, t, x):
@@ -1179,7 +1201,7 @@ see reaction package for documentation.}"""))
         if gas_phase.reaction_package is not None:
             # Bubble rate reaction extent
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.reaction_package.rate_reaction_idx,
                 doc="Bubble Rate Reaction Extent")
@@ -1191,7 +1213,7 @@ see reaction package for documentation.}"""))
         if gas_phase.reaction_package is not None:
             # Gas emulsion rate reaction extent
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.reaction_package.rate_reaction_idx,
                 doc="Gas Emulsion Rate Reaction Extent")
@@ -1204,7 +1226,7 @@ see reaction package for documentation.}"""))
         if solid_phase.reaction_package is not None:
             # Solid side rate reaction extent
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 solid_phase.reaction_package.rate_reaction_idx,
                 doc="Solid Emulsion Rate Reaction Extent")
@@ -1216,7 +1238,7 @@ see reaction package for documentation.}"""))
 
             # Gas side heterogeneous rate reaction generation
             @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 gas_phase.property_package.component_list,
                 doc="Gas Emulsion Heterogeneous Rate Reaction Generation")
@@ -1236,7 +1258,7 @@ see reaction package for documentation.}"""))
         # Bubble gas flowrate - this eqn calcs bubble conc. (dens_mol)
         # which is then used to calculate the bubble pressure
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 doc="Bubble Gas Flowrate Constraint")
         def bubble_gas_flowrate(b, t, x):
@@ -1249,7 +1271,7 @@ see reaction package for documentation.}"""))
         # gas_emulsion CV1D.
         # This eqn arises because the emulsion region gas is assumed to be at
         # minimum fluidization conditions (delta varies to account for this)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Emulsion Gas Flowrate Constraint")
         def emulsion_gas_flowrate(b, t, x):
@@ -1262,31 +1284,42 @@ see reaction package for documentation.}"""))
 
         # Gas_emulsion pressure at inlet
         if self.config.has_pressure_change:
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              doc="Gas Emulsion Pressure at Inlet")
             def gas_emulsion_pressure_in(b, t):
                 return (1e2*b.gas_emulsion.properties[t, 0].pressure ==
                         1e2*b.gas_inlet_block[t].pressure - b.deltaP_orifice)
 
         # Total gas balance at inlet
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Total Gas Balance at Inlet")
         def gas_mole_flow_in(b, t):
             return (b.gas_inlet_block[t].flow_mol ==
                     b.bubble.properties[t, 0].flow_mol +
                     b.gas_emulsion.properties[t, 0].flow_mol)
 
-        # Superficial velocity of gas at inlet
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Superficial Velocity of Gas at Inlet")
-        def velocity_superficial_gas_inlet(b, t):
-            return (b.gas_inlet_block[t].flow_mol ==
-                    b.velocity_superficial_gas[t, 0] * b.bed_area *
-                    b.gas_emulsion.properties[t, 0].dens_mol)
+        # Particle porosity at inlet
+        @self.Constraint(
+            self.flowsheet().time,
+            doc="Constant particle porosity")
+        def particle_porosity_in(b, t):
+            x = b.length_domain.first()
+            return (
+                b.solid_emulsion.properties[t, x].particle_porosity ==
+                b.solid_inlet_block[t].particle_porosity)
+
+        # Emulsion region gas velocity at inlet - Davidson model
+        @self.Constraint(self.flowsheet().time,
+                         doc="Emulsion Region Superficial Gas Velocity")
+        def emulsion_gas_velocity_in(b, t):
+            x = self.length_domain.first()
+            return (
+                b.velocity_emulsion_gas[t, x] ==
+                b.solid_emulsion.properties[t, x]._params.velocity_mf)
 
         # Bubble mole frac at inlet
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 gas_phase.property_package.component_list,
                 doc="Bubble Mole Fraction at Inlet")
         def bubble_mole_frac_in(b, t, j):
@@ -1295,7 +1328,7 @@ see reaction package for documentation.}"""))
 
         # Gas_emulsion mole frac at inlet
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 gas_phase.property_package.component_list,
                 doc="Gas Emulsion Mole Fraction at Inlet")
         def gas_emulsion_mole_frac_in(b, t, j):
@@ -1303,7 +1336,7 @@ see reaction package for documentation.}"""))
                     1e2*b.gas_emulsion.properties[t, 0].mole_frac_comp[j])
 
         # Solid emulsion mass flow at inlet
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Solid Emulsion Mass Flow at Inlet")
         def solid_emulsion_mass_flow_in(b, t):
             if (self.config.flow_type == "co_current"):
@@ -1315,7 +1348,7 @@ see reaction package for documentation.}"""))
 
         # Solid emulsion mass frac at inlet
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 solid_phase.property_package.component_list,
                 doc="Solid Emulsion Mass Fraction at Inlet")
         def solid_emulsion_mass_frac_in(b, t, j):
@@ -1330,7 +1363,7 @@ see reaction package for documentation.}"""))
 
         if self.config.energy_balance_type != EnergyBalanceType.none:
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     gas_phase.property_package.phase_list,
                     doc="Gas Inlet Energy Balance")
             def gas_energy_balance_in(b, t, p):
@@ -1340,7 +1373,7 @@ see reaction package for documentation.}"""))
 
             # Gas emulsion temperature at inlet
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     doc="Gas Emulsion Temperature at Inlet")
             def gas_emulsion_temperature_in(b, t):
                 return (b.gas_inlet_block[t].temperature ==
@@ -1348,7 +1381,7 @@ see reaction package for documentation.}"""))
 
             # Solid inlet energy balance
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     doc="Solid Inlet Energy Balance")
             def solid_energy_balance_in(b, t):
                 if (self.config.flow_type == "co_current"):
@@ -1363,7 +1396,7 @@ see reaction package for documentation.}"""))
         elif self.config.energy_balance_type == EnergyBalanceType.none:
             # If energy balance is none fix gas and solid temperatures to inlet
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.length_domain,
                     doc="Isothermal solid emulsion constraint")
             def isothermal_solid_emulsion(b, t, x):
@@ -1372,7 +1405,7 @@ see reaction package for documentation.}"""))
                         b.solid_inlet.temperature[t])
 
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.length_domain,
                     doc="Isothermal gas emulsion constraint")
             def isothermal_gas_emulsion(b, t, x):
@@ -1381,7 +1414,7 @@ see reaction package for documentation.}"""))
                         b.gas_inlet.temperature[t])
 
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.length_domain,
                     doc="Isothermal gas emulsion constraint")
             def isothermal_bubble(b, t, x):
@@ -1392,7 +1425,7 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Outlet boundary Conditions
         # Gas outlet pressure
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Gas Outlet Pressure")
         def gas_pressure_out(b, t):
             return (1e2*b.gas_outlet.pressure[t] ==
@@ -1400,7 +1433,7 @@ see reaction package for documentation.}"""))
 
         # Gas outlet material balance
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 gas_phase.property_package.phase_list,
                 gas_phase.property_package.component_list,
                 doc="Gas Outlet Material Balance")
@@ -1411,7 +1444,7 @@ see reaction package for documentation.}"""))
 
         # Solid outlet material balance
         @self.Constraint(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 solid_phase.property_package.phase_list,
                 solid_phase.property_package.component_list,
                 doc="Solid Outlet Material Balance")
@@ -1425,10 +1458,19 @@ see reaction package for documentation.}"""))
                     b.solid_outlet_block[t].get_material_flow_terms(p, j) ==
                     b.solid_emulsion._flow_terms[t, 0, p, j])
 
+        # Solid outlet particle porosity
+        @self.Constraint(
+                self.flowsheet().time)
+        def solid_particle_porosity_out(b, t):
+            x = b.length_domain.last()
+            return (
+                b.solid_outlet_block[t].particle_porosity ==
+                b.solid_emulsion.properties[t, x].particle_porosity)
+
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Gas outlet energy balance
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     doc="Gas Outlet Energy Balance")
             def gas_energy_balance_out(b, t):
                 return (b.gas_outlet_block[t].get_enthalpy_flow_terms('Vap') ==
@@ -1437,7 +1479,7 @@ see reaction package for documentation.}"""))
 
             # Solid outlet energy balance
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     doc="Solid Outlet Energy Balance")
             def solid_energy_balance_out(b, t):
                 if (self.config.flow_type == "co_current"):
@@ -1454,7 +1496,7 @@ see reaction package for documentation.}"""))
         elif self.config.energy_balance_type == EnergyBalanceType.none:
             # Gas outlet energy balance
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     doc="Gas Outlet Energy Balance")
             def gas_energy_balance_out(b, t):
                 return (b.gas_outlet_block[t].temperature ==
@@ -1462,7 +1504,7 @@ see reaction package for documentation.}"""))
 
             # Solid outlet energy balance
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     doc="Solid Outlet Energy Balance")
             def solid_energy_balance_out(b, t):
                 if (self.config.flow_type == "co_current"):
@@ -1475,26 +1517,25 @@ see reaction package for documentation.}"""))
     # =========================================================================
     # Model initialization routine
 
-    def initialize(blk, gas_phase_state_args={}, solid_phase_state_args={},
-                   outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
         Initialisation routine for Bubbling Fluidized Bed unit
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
+            gas_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            solid_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
             outlvl : sets output level of initialisation routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -1503,9 +1544,8 @@ see reaction package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names
@@ -1609,14 +1649,19 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize hydrodynamics
         # vel_superficial_gas, delta are fixed during this stage
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.length_domain:
                 # Superficial velocity initialized at 3 * min fluidization vel.
                 blk.velocity_superficial_gas[t, x].fix(
-                        value(3 *
-                              blk.solid_inlet_block[t]._params.velocity_mf))
-                blk.velocity_emulsion_gas[t, x] = value(
-                        blk.solid_inlet_block[t]._params.velocity_mf)
+                    value(3 * blk.solid_inlet_block[t]._params.velocity_mf))
+
+                # ve is fixed across all bed during initialization of
+                # hydrodynamic sub-model. It will be unfixed during
+                # the mass balance initialization when
+                # ve = f(gas_emulsion flowrate)
+                # is activated, and the ve=vmf at inlet boundary is activated
+                blk.velocity_emulsion_gas[t, x].fix(value(
+                        blk.solid_inlet_block[t]._params.velocity_mf))
                 blk.bubble_diameter[t, x] = value(
                         1.38 * (constants.acceleration_gravity**(-0.2)) *
                         ((blk.velocity_superficial_gas[t, x] -
@@ -1652,11 +1697,15 @@ see reaction package for documentation.}"""))
                         blk.bubble_diameter[t, x].value)
 
         # Unfix variables to make problem square
+        blk.delta.unfix()
         blk.delta_e.unfix()
         blk.voidage_emulsion.unfix()
         blk.bubble_diameter.unfix()
 
         # Activate relavant constraints
+        blk.bubble_vol_frac_eqn.activate()  # delta
+        blk.average_gas_density_eqn.activate()
+
         blk.emulsion_vol_frac.activate()
         blk.average_voidage.activate()
         blk.bubble_growth_coefficient.activate()
@@ -1666,7 +1715,6 @@ see reaction package for documentation.}"""))
         blk.bubble_velocity_rise.activate()
         blk.bubble_velocity.activate()
         blk.emulsion_voidage.activate()
-        blk.emulsion_gas_velocity.activate()
 
         init_log.info('Initialize Hydrodynamics')
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
@@ -1685,7 +1733,7 @@ see reaction package for documentation.}"""))
         # Initialize mass balance - no reaction
 
         # Initialize variables
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.length_domain:
                 calculate_variable_from_constraint(
                     blk._reform_var_3[t, x],
@@ -1706,7 +1754,7 @@ see reaction package for documentation.}"""))
         blk.solid_emulsion.properties.release_state(
                 solid_emulsion_region_flags)
 
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.length_domain:
                 blk.gas_emulsion.properties[t, x].pressure.fix()
                 blk.bubble.properties[t, x].temperature.fix()
@@ -1716,7 +1764,7 @@ see reaction package for documentation.}"""))
         # Fix reaction rate variables (no rxns assumed)
         # Homogeneous reactions (gas phase rxns)
         if gas_phase.reaction_package is not None:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 bubble_rxn_gen = blk.bubble.rate_reaction_generation
                 gas_emulsion_rxn_gen = (
                     blk.gas_emulsion.rate_reaction_generation)
@@ -1732,7 +1780,7 @@ see reaction package for documentation.}"""))
             # local alias
             solid_emulsion_rxn_gen = (
                 blk.solid_emulsion.rate_reaction_generation)
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 # Solid emulsion region
                 for x in blk.length_domain:
                     for j in solid_phase.property_package.component_list:
@@ -1742,12 +1790,16 @@ see reaction package for documentation.}"""))
                     for j in gas_phase.property_package.component_list:
                         blk.gas_emulsion_hetero_rxn[t, x, j].fix(0.0)
 
-        # Unfix delta and velocity_superficial_gas
+        # Unfix velocity_emulsion_gas
+        blk.velocity_emulsion_gas.unfix()
+
+        # Unfix velocity_superficial_gas
         blk.velocity_superficial_gas.unfix()
-        blk.delta.unfix()
 
         # Activate relevant model level constraints
         blk.velocity_gas_superficial.activate()
+        blk.solid_super_vel.activate()
+
         blk._reformulation_eqn_2.activate()
         blk._reformulation_eqn_3.activate()
         blk.bubble_cloud_mass_trans_coeff.activate()
@@ -1756,15 +1808,15 @@ see reaction package for documentation.}"""))
         blk.gas_emulsion_mass_transfer.activate()
         blk.bubble_gas_flowrate.activate()
         blk.emulsion_gas_flowrate.activate()
-        blk.particle_porosity_constraint.activate()
 
         # Activate relevant boundary constraints
-        blk.velocity_superficial_gas_inlet.activate()
         blk.gas_mole_flow_in.activate()
         blk.bubble_mole_frac_in.activate()
         blk.gas_emulsion_mole_frac_in.activate()
         blk.solid_emulsion_mass_flow_in.activate()
         blk.solid_emulsion_mass_frac_in.activate()
+        blk.particle_porosity_in.activate()
+        blk.emulsion_gas_velocity_in.activate()
 
         # Activate relevant control volume constraints
         blk.bubble.material_balances.activate()
@@ -1778,7 +1830,7 @@ see reaction package for documentation.}"""))
             blk.gas_emulsion_pressure_drop.activate()
             blk.gas_emulsion.pressure_balance.activate()
 
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     blk.gas_emulsion.properties[t, x].pressure.unfix()
                     calculate_variable_from_constraint(
@@ -1788,7 +1840,7 @@ see reaction package for documentation.}"""))
         elif blk.config.has_pressure_change is False:
             blk.isobaric_gas_emulsion.activate()
 
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     blk.gas_emulsion.properties[t, x].pressure.unfix()
 
@@ -1806,9 +1858,6 @@ see reaction package for documentation.}"""))
             init_log.warning('{} Initialisation Step 4a Failed.'
                              .format(blk.name))
 
-        # ---------------------------------------------------------------------
-        # Initialize mass balance - with reactions
-
         # Homogeneous reactions (gas phase rxns)
         if gas_phase.reaction_package is not None:
             # local aliases used to shorten object names
@@ -1821,7 +1870,7 @@ see reaction package for documentation.}"""))
 
             # Initialize, unfix and activate relevant model and CV1D
             # variables and constraints
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     for r in (gas_phase.reaction_package.rate_reaction_idx):
                         calculate_variable_from_constraint(
@@ -1849,7 +1898,7 @@ see reaction package for documentation.}"""))
             blk.bubble.reactions.activate()
             blk.gas_emulsion.reactions.activate()
 
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     bubble = blk.bubble.reactions[t, x]
                     for c in bubble.component_objects(
@@ -1878,7 +1927,7 @@ see reaction package for documentation.}"""))
 
             # Initialize, unfix and activate relevant model and
             # CV1D variables and constraints
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     for j in gas_phase.property_package.component_list:
                         blk.gas_emulsion_hetero_rxn[t, x, j].unfix()
@@ -1892,9 +1941,14 @@ see reaction package for documentation.}"""))
                             blk.solid_emulsion_rxn_ext_constraint[t, x, r])
                     for j in solid_phase.property_package.component_list:
                         solid_emulsion_rxn_gen[t, x, 'Sol', j].unfix()
-                        calculate_variable_from_constraint(
-                            solid_emulsion_rxn_gen[t, x, 'Sol', j],
-                            solid_emulsion_stoichiometry_eqn[t, x, 'Sol', j])
+                        if not ((blk.config.transformation_scheme != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.config.transformation_scheme == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                            calculate_variable_from_constraint(
+                                solid_emulsion_rxn_gen[t, x, 'Sol', j],
+                                solid_emulsion_stoichiometry_eqn[t, x,
+                                                                 'Sol', j])
 
             blk.solid_emulsion_rxn_ext_constraint.activate()
             blk.gas_emulsion_hetero_rxn_eqn.activate()
@@ -1902,7 +1956,7 @@ see reaction package for documentation.}"""))
 
             # Initialize heterogeneous reaction property package
             blk.solid_emulsion.reactions.activate()
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     obj = blk.solid_emulsion.reactions[t, x]
                     for c in obj.component_objects(
@@ -1932,7 +1986,7 @@ see reaction package for documentation.}"""))
         # Initialize energy balance
         if blk.config.energy_balance_type != EnergyBalanceType.none:
             # Initialize relevant heat transfer variables
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     calculate_variable_from_constraint(
                         blk._reform_var_4[t, x],
@@ -1951,7 +2005,7 @@ see reaction package for documentation.}"""))
                         blk.convective_heat_transfer[t, x])
 
             # Unfix temperature variables
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     blk.bubble.properties[t, x].temperature.unfix()
                     blk.gas_emulsion.properties[t, x].temperature.unfix()
@@ -1993,7 +2047,7 @@ see reaction package for documentation.}"""))
 
         # Initialize energy balance
         if blk.config.energy_balance_type == EnergyBalanceType.none:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     blk.bubble.properties[t, x].temperature.unfix()
                     blk.gas_emulsion.properties[t, x].temperature.unfix()
@@ -2025,6 +2079,7 @@ see reaction package for documentation.}"""))
         blk.gas_pressure_out.activate()
         blk.gas_material_balance_out.activate()
         blk.solid_material_balance_out.activate()
+        blk.solid_particle_porosity_out.activate()
 
         blk.gas_energy_balance_out.activate()
         blk.solid_energy_balance_out.activate()
@@ -2096,7 +2151,7 @@ see reaction package for documentation.}"""))
         cet = []
         cbt = []
 
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.gas_emulsion.length_domain:
                 Tge.append(value(
                         blk.gas_emulsion.properties[t, x].temperature))
@@ -2148,7 +2203,7 @@ see reaction package for documentation.}"""))
         plt.ylabel("gas conc. mol/s")
 
         # Gas phase mole composition
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for i in (gas_phase.property_package.component_list):
                 y_b = []
                 for x in blk.gas_emulsion.length_domain:
@@ -2163,7 +2218,7 @@ see reaction package for documentation.}"""))
         plt.ylabel("Gas bubble mole frac. (-)")
 
         # Solid phase mass composition
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for i in (solid_phase.property_package.component_list):
                 x_e = []
                 for x in blk.solid_emulsion.length_domain:

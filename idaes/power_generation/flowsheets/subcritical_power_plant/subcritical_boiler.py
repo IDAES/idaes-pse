@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """
 This is an example of a subcritical boiler recirculation system. This model
@@ -38,6 +38,7 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import model_serializer as ms
 import idaes.core.util.scaling as iscale
+from idaes.core.util import get_solver
 
 # Import Unit Model Modules
 from idaes.generic_models.properties import iapws95
@@ -196,7 +197,7 @@ def initialize(
     init_log = idaeslog.getInitLogger(m.name, outlvl, tag="flowsheet")
     solve_log = idaeslog.getSolveLogger(m.name, outlvl, tag="flowsheet")
 
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver()
     solver.options = optarg
     init_log.info_low("Starting initialization...")
 
@@ -325,7 +326,7 @@ def run_sensitivity():
         iscale.set_scaling_factor(m.fs.Waterwalls[i].heat_flux_conv[0], 1e-5)
     iscale.calculate_scaling_factors(m)
     # solve flowsheet
-    solver = pyo.SolverFactory("ipopt")
+    solver = get_solver()
     solver.options = optarg
     results = solver.solve(m, tee=True)
     print(results)

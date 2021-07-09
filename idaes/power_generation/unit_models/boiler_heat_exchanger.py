@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Power Plant IDAES heat exchanger model.
 
@@ -56,6 +56,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
+from idaes.core.util import get_solver
 
 import idaes.logger as idaeslog
 
@@ -1127,9 +1128,8 @@ constructed,
         blk.side_1.model_check()
         blk.side_2.model_check()
 
-    def initialize(blk, state_args_1={}, state_args_2={},
-                   outlvl=idaeslog.NOTSET, solver='ipopt', optarg={'tol': 1e-6,
-                                                     'max_iter': 100}):
+    def initialize(blk, state_args_1=None, state_args_2=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         '''
         General Heat Exchanger initialisation routine.
 
@@ -1138,22 +1138,17 @@ constructed,
                            package(s) for side 1 of the heat exchanger to
                            provide an initial state for initialization
                            (see documentation of the specific property package)
-                           (default = {}).
+                           (default = None).
             state_args_2 : a dict of arguments to be passed to the property
                            package(s) for side 2 of the heat exchanger to
                            provide an initial state for initialization
                            (see documentation of the specific property package)
-                           (default = {}).
+                           (default = None).
             outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -1162,8 +1157,8 @@ constructed,
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # Initialize inlet property blocks
@@ -1186,12 +1181,14 @@ constructed,
         t2_flags = {}
         for t in blk.flowsheet().time:
             p1_flags[t] = blk.side_1.properties_out[t].pressure.fixed
-            if not blk.side_1.properties_out[t].pressure.fixed:
+            if not blk.side_1.properties_out[t].pressure.fixed \
+                    and blk.config.has_pressure_change:
                 blk.side_1.properties_out[t].pressure.fix(
                         value(blk.side_1.properties_in[t].pressure))
 
             p2_flags[t] = blk.side_2.properties_out[t].pressure.fixed
-            if not blk.side_2.properties_out[t].pressure.fixed:
+            if not blk.side_2.properties_out[t].pressure.fixed \
+                    and blk.config.has_pressure_change:
                 blk.side_2.properties_out[t].pressure.fix(
                         value(blk.side_2.properties_in[t].pressure))
 
@@ -1209,8 +1206,9 @@ constructed,
         blk.heat_transfer_correlation.deactivate()
         blk.LMTD.deactivate()
         blk.energy_balance.deactivate()
-        blk.deltaP_tube_eqn.deactivate()
-        blk.deltaP_shell_eqn.deactivate()
+        if blk.config.has_pressure_change:
+            blk.deltaP_tube_eqn.deactivate()
+            blk.deltaP_shell_eqn.deactivate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -1229,8 +1227,10 @@ constructed,
         blk.heat_transfer_correlation.activate()
         blk.LMTD.activate()
         blk.energy_balance.activate()
-        blk.deltaP_tube_eqn.activate()
-        blk.deltaP_shell_eqn.activate()
+
+        if blk.config.has_pressure_change:
+            blk.deltaP_tube_eqn.activate()
+            blk.deltaP_shell_eqn.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)

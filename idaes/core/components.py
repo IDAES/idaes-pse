@@ -1,22 +1,22 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 IDAES Component objects
 
 @author: alee
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
@@ -54,22 +54,39 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density"))
+    CONFIG.declare("dens_mol_sol_comp", ConfigValue(
+        description="Method to use to calculate solid phase molar density"))
+
     CONFIG.declare("cp_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component specific heats"))
+    CONFIG.declare("cp_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component specific heats"))
     CONFIG.declare("cp_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component specific heats"
         ))
     CONFIG.declare("enth_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar enthalpies"))
+    CONFIG.declare("enth_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component molar enthalpies"))
     CONFIG.declare("enth_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar enthalpies"
         ))
     CONFIG.declare("entr_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component molar entropies"))
+    CONFIG.declare("entr_mol_sol_comp", ConfigValue(
+        description="Method to calculate solid component molar entropies"))
     CONFIG.declare("entr_mol_ig_comp", ConfigValue(
         description="Method to calculate ideal gas component molar entropies"))
+
+    CONFIG.declare("has_vapor_pressure", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Flag indicating whether component has a vapor pressure"))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure"))
+    CONFIG.declare("relative_permittivity_liq_comp", ConfigValue(
+        description=
+        "Method to use to calculate liquid phase relative permittivity"))
 
     CONFIG.declare("phase_equilibrium_form", ConfigValue(
         domain=dict,
@@ -90,7 +107,7 @@ class ComponentData(ProcessBlockData):
             "component_lists needs to be populated."))
 
     def build(self):
-        super(ComponentData, self).build()
+        super().build()
 
         # If the component_list does not exist, add reference to new Component
         # The IF is mostly for backwards compatability, to allow for old-style
@@ -171,8 +188,18 @@ class ComponentData(ProcessBlockData):
         parent._non_aqueous_set.add(self.local_name)
 
     def _is_phase_valid(self, phase):
-        # If no valid phases assigned, assume all are valid
+        # If no valid phases assigned
         if self.config.valid_phase_types is None:
+            try:
+                if phase.is_aqueous_phase():
+                    # If this is an aqueous phase, check for validaity
+                    return self._is_aqueous_phase_valid()
+            except AttributeError:
+                raise TypeError(
+                    "{} Phase {} is not a valid phase object or is undeclared."
+                    " Please check your phase declarations."
+                    .format(self.name, phase))
+            # Otherwise assume all are valid
             return True
 
         # Check for behaviour of phase, and see if that is a valid behaviour
@@ -203,9 +230,10 @@ class ComponentData(ProcessBlockData):
         # General components may not appear in aqueous phases
         return False
 
+
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
-@declare_process_block_class("Solute")
+@declare_process_block_class("Solute", block_class=Component)
 class SoluteData(ComponentData):
     """
     Component type for species which should be considered as solutes in
@@ -234,7 +262,7 @@ class SoluteData(ComponentData):
 
 # TODO : What about LLE systems where a species is a solvent in one liquid
 # phase, but a solute in another?
-@declare_process_block_class("Solvent")
+@declare_process_block_class("Solvent", block_class=Component)
 class SolventData(ComponentData):
     """
     Component type for species which should be considered as solvents in
@@ -261,7 +289,7 @@ class SolventData(ComponentData):
         parent.solvent_set.add(self.local_name)
 
 
-@declare_process_block_class("Ion")
+@declare_process_block_class("Ion", block_class=Component)
 class IonData(SoluteData):
     """
     Component type for ionic species. These can exist only in AqueousPhases,
@@ -271,6 +299,11 @@ class IonData(SoluteData):
 
     # Remove valid_phase_types argument, as ions are aqueous phase only
     CONFIG.__delitem__("valid_phase_types")
+    # Set as not having a vapor pressure
+    has_psat = CONFIG.get("has_vapor_pressure")
+    has_psat.set_value(False)
+    has_psat.set_default_value(False)
+    has_psat.set_domain(In([False]))
 
     CONFIG.declare("charge", ConfigValue(
             domain=int,
@@ -295,7 +328,7 @@ class IonData(SoluteData):
             "directly".format(self.name))
 
 
-@declare_process_block_class("Anion")
+@declare_process_block_class("Anion", block_class=Component)
 class AnionData(IonData):
     """
     Component type for anionic species. These can exist only in AqueousPhases,
@@ -327,7 +360,7 @@ class AnionData(IonData):
         parent.anion_set.add(self.local_name)
 
 
-@declare_process_block_class("Cation")
+@declare_process_block_class("Cation", block_class=Component)
 class CationData(IonData):
     """
     Component type for cationic species. These can exist only in AqueousPhases,
@@ -359,13 +392,20 @@ class CationData(IonData):
         parent.cation_set.add(self.local_name)
 
 
-@declare_process_block_class("Apparent")
+@declare_process_block_class("Apparent", block_class=Component)
 class ApparentData(SoluteData):
     """
     Component type for apparent species. Apparent species are those compunds
     that are not stable in aqueous phases and immediately dissociate, however
     they may be stable in other phases (e.g. salts).
     """
+    CONFIG = SoluteData.CONFIG()
+    CONFIG.declare("dissociation_species", ConfigValue(
+        domain=dict,
+        default=None,
+        description="Dict of dissociation species",
+        doc="Dict of true species that this species will dissociate into "
+        "upon dissolution along with stoichiometric coefficients."))
 
     def _is_aqueous_phase_valid(self):
         return True

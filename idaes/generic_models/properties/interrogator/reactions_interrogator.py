@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tool to interrogate IDAES flowsheets and list the reaction properties
 required to simulate it.
@@ -17,7 +17,7 @@ required to simulate it.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, Var
+from pyomo.environ import Set, Var, units as pyunits
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -54,11 +54,16 @@ class ReactionInterrogatorData(ReactionParameterBlock):
         self._reaction_block_class = InterrogatorReactionBlock
 
         # List of valid phases in property package
-        # TODO : Allow users to define a phase list
-        self.phase_list = Set(initialize=['Liq', 'Vap'])
+        p_list = []
+        for p in self.config.property_package.phase_list:
+            p_list.append(p)
+        self.phase_list = Set(initialize=p_list)
 
         # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['A', 'B'])
+        c_list = []
+        for j in self.config.property_package.component_list:
+            c_list.append(j)
+        self.component_list = Set(initialize=c_list)
 
         # Set up dict to record property calls
         self.required_properties = {}
@@ -67,11 +72,11 @@ class ReactionInterrogatorData(ReactionParameterBlock):
         # Reaction Index
         self.rate_reaction_idx = Set(initialize=["R1"])
 
-        # Reaction Stoichiometry
-        self.rate_reaction_stoichiometry = {("R1", "Liq", "A"): -1,
-                                            ("R1", "Liq", "B"): -1,
-                                            ("R1", "Vap", "A"): 1,
-                                            ("R1", "Vap", "B"): 1}
+        # Reaction Stoichiometry - fake the dict with all 1's
+        self.rate_reaction_stoichiometry = {}
+        for p in p_list:
+            for j in c_list:
+                self.rate_reaction_stoichiometry[("R1", p, j)] = 1
 
     def list_required_properties(self):
         """
@@ -220,13 +225,11 @@ class ReactionInterrogatorData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.kg,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 class _InterrogatorReactionBlock(ReactionBlockBase):

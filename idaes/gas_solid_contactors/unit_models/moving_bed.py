@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 IDAES Moving Bed Model.
 
@@ -36,7 +36,7 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Reals, value,
+from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
                            TransformationFactory, Constraint,
                            TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -60,6 +60,7 @@ from idaes.core.control_volume1d import DistributedVars
 from idaes.core.util.constants import Constants as constants
 from idaes.core.util.math import smooth_abs
 import idaes.logger as idaeslog
+from idaes.core.util import get_solver
 
 __author__ = "Chinedu Okoli", "Anca Ostace"
 
@@ -423,7 +424,7 @@ see reaction package for documentation.}"""))
             self.solid_phase.reactions = (
                     self.config.solid_phase_config.reaction_package.
                     reaction_block_class(
-                        self.flowsheet().config.time,
+                        self.flowsheet().time,
                         self.length_domain,
                         doc="Reaction properties in control volume",
                         default=tmp_dict))
@@ -519,31 +520,31 @@ see reaction package for documentation.}"""))
 
         # Phase specific variables
         self.velocity_superficial_gas = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 self.length_domain,
                 domain=Reals, initialize=0.05,
                 doc='Gas superficial velocity [m/s]')
         self.velocity_superficial_solid = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 domain=Reals, initialize=0.005,
                 doc='Solid superficial velocity [m/s]')
 
         # Dimensionless numbers, mass and heat transfer coefficients
-        self.Re_particle = Var(self.flowsheet().config.time,
+        self.Re_particle = Var(self.flowsheet().time,
                                self.length_domain,
                                domain=Reals, initialize=1.0,
                                doc='Particle Reynolds number [-]')
 
-        self.Pr = Var(self.flowsheet().config.time,
+        self.Pr = Var(self.flowsheet().time,
                       self.length_domain,
                       domain=Reals, initialize=1.0,
                       doc='Prandtl number of gas in bed [-]')
 
-        self.Nu_particle = Var(self.flowsheet().config.time,
+        self.Nu_particle = Var(self.flowsheet().time,
                                self.length_domain,
                                domain=Reals, initialize=1.0,
                                doc='Particle Nusselt number [-]')
-        self.gas_solid_htc = Var(self.flowsheet().config.time,
+        self.gas_solid_htc = Var(self.flowsheet().time,
                                  self.length_domain,
                                  domain=Reals, initialize=1.0,
                                  doc='Gas-solid heat transfer coefficient'
@@ -568,14 +569,14 @@ see reaction package for documentation.}"""))
                     constants.pi*(0.5*b.bed_diameter)**2)
 
         # Area of gas side, and solid side
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Gas side area")
         def gas_phase_area(b, t, x):
             return (b.gas_phase.area[t, x] ==
                     b.bed_area*b.bed_voidage)
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Solid side area")
         def solid_phase_area(b, t, x):
@@ -595,7 +596,7 @@ see reaction package for documentation.}"""))
         # Hydrodynamic contraints
 
         # Gas superficial velocity
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Gas superficial velocity")
         def gas_super_vel(b, t, x):
@@ -604,7 +605,7 @@ see reaction package for documentation.}"""))
                     b.gas_phase.properties[t, x].flow_mol)
 
         # Solid superficial velocity
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.length_domain,
                          doc="Solid superficial velocity")
         # This equation uses inlet values to compute the constant solid
@@ -620,7 +621,7 @@ see reaction package for documentation.}"""))
             self.config.pressure_drop_type ==
                 "simple_correlation"):
             # Simplified pressure drop
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas side pressure drop calculation -"
                                  "simplified pressure drop")
@@ -632,7 +633,7 @@ see reaction package for documentation.}"""))
         elif (self.config.has_pressure_change and
               self.config.pressure_drop_type == "ergun_correlation"):
             # Ergun equation
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas side pressure drop calculation -"
                                  "ergun equation")
@@ -665,7 +666,7 @@ see reaction package for documentation.}"""))
         # Build homogeneous reaction constraints
         if gas_phase.reaction_package is not None:
             # Gas side rate reaction extent
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              gas_phase.reaction_package.rate_reaction_idx,
                              doc="Gas side rate reaction extent")
@@ -677,7 +678,7 @@ see reaction package for documentation.}"""))
         # Build hetereogeneous reaction constraints
         if solid_phase.reaction_package is not None:
             # Solid side rate reaction extent
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              solid_phase.reaction_package.rate_reaction_idx,
                              doc="Solid side rate reaction extent")
@@ -687,7 +688,7 @@ see reaction package for documentation.}"""))
                         b.solid_phase.area[t, x])
 
             # Gas side heterogeneous rate reaction generation
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              gas_phase.property_package.phase_list,
                              gas_phase.property_package.component_list,
@@ -705,7 +706,7 @@ see reaction package for documentation.}"""))
         # ---------------------------------------------------------------------
         if self.config.energy_balance_type != EnergyBalanceType.none:
             # Solid phase - gas to solid heat transfer
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Solid phase - gas to solid heat transfer")
             def solid_phase_heat_transfer(b, t, x):
@@ -718,7 +719,7 @@ see reaction package for documentation.}"""))
 
             # Dimensionless numbers, mass and heat transfer coefficients
             # Particle Reynolds number
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Particle Reynolds number")
             def reynolds_number_particle(b, t, x):
@@ -729,7 +730,7 @@ see reaction package for documentation.}"""))
                         b.gas_phase.properties[t, x].dens_mass)
 
             # Prandtl number
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Prandtl number of gas in bed")
             def prandtl_number(b, t, x):
@@ -739,7 +740,7 @@ see reaction package for documentation.}"""))
                         b.gas_phase.properties[t, x].visc_d)
 
             # Particle Nusselt number
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Particle Nusselt number")
             def nusselt_number_particle(b, t, x):
@@ -749,7 +750,7 @@ see reaction package for documentation.}"""))
                         b.Pr[t, x])
 
             # Gas-solid heat transfer coefficient
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas-solid heat transfer coefficient")
             def gas_solid_htc_eqn(b, t, x):
@@ -759,7 +760,7 @@ see reaction package for documentation.}"""))
                         b.gas_phase.properties[t, x].therm_cond)
 
             # Gas phase - gas to solid heat transfer
-            @self.Constraint(self.flowsheet().config.time,
+            @self.Constraint(self.flowsheet().time,
                              self.length_domain,
                              doc="Gas phase - gas to solid heat transfer")
             def gas_phase_heat_transfer(b, t, x):
@@ -773,7 +774,7 @@ see reaction package for documentation.}"""))
         elif self.config.energy_balance_type == EnergyBalanceType.none:
             # If energy balance is none fix gas and solid temperatures to inlet
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.length_domain,
                     doc="Isothermal gas phase constraint")
             def isothermal_gas_phase(b, t, x):
@@ -785,7 +786,7 @@ see reaction package for documentation.}"""))
                             b.gas_inlet.temperature[t])
 
             @self.Constraint(
-                    self.flowsheet().config.time,
+                    self.flowsheet().time,
                     self.length_domain,
                     doc="Isothermal solid phase constraint")
             def isothermal_solid_phase(b, t, x):
@@ -799,21 +800,25 @@ see reaction package for documentation.}"""))
     # =========================================================================
     # Model initialization routine
 
-    def initialize(blk, gas_phase_state_args={}, solid_phase_state_args={},
-                   outlvl=idaeslog.NOTSET,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, gas_phase_state_args=None, solid_phase_state_args=None,
+                   outlvl=idaeslog.NOTSET, solver=None, optarg=None):
         """
-        Initialisation routine for MB unit (default solver ipopt).
+        Initialisation routine for MB unit.
 
         Keyword Arguments:
-            state_args : a dict of arguments to be passed to the property
-                         package(s) to provide an initial state for
-                         initialization (see documentation of the specific
-                         property package) (default = {}).
+            gas_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
+            solid_phase_state_args : a dict of arguments to be passed to the
+                        property package(s) to provide an initial state for
+                        initialization (see documentation of the specific
+                        property package) (default = None).
             outlvl : sets output level of initialisation routine
-            optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
-                     initialization (default = 'ipopt')
+            optarg : solver options dictionary object (default=None, use
+                     default solver options)
+            solver : str indicating which solver to use during
+                     initialization (default = None, use default solver)
 
         Returns:
             None
@@ -823,9 +828,8 @@ see reaction package for documentation.}"""))
         init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="unit")
 
-        # Set solver options
-        opt = SolverFactory(solver)
-        opt.options = optarg
+        # Create solver
+        opt = get_solver(solver, optarg)
 
         # ---------------------------------------------------------------------
         # local aliases used to shorten object names
@@ -875,7 +879,7 @@ see reaction package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Initialize hydrodynamics (gas velocity)
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.length_domain:
                 calculate_variable_from_constraint(
                     blk.velocity_superficial_gas[t, x],
@@ -905,7 +909,7 @@ see reaction package for documentation.}"""))
                 gas_phase_flags)
         blk.solid_phase.properties.release_state(
                 solid_phase_flags)
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.length_domain:
                 blk.gas_phase.properties[t, x].pressure.fix()
                 blk.gas_phase.properties[t, x].temperature.fix()
@@ -914,7 +918,7 @@ see reaction package for documentation.}"""))
         blk.gas_phase.material_balances.activate()
 
         if gas_phase.reaction_package is not None:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 gas_rxn_gen = blk.gas_phase.rate_reaction_generation
                 for x in blk.length_domain:
                     for p in gas_phase.property_package.phase_list:
@@ -925,7 +929,7 @@ see reaction package for documentation.}"""))
         blk.solid_super_vel.activate()
 
         if solid_phase.reaction_package is not None:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 solid_rxn_gen = blk.solid_phase.rate_reaction_generation
                 for x in blk.length_domain:
                     for p in solid_phase.property_package.phase_list:
@@ -963,7 +967,7 @@ see reaction package for documentation.}"""))
 
             # Initialize reaction property package
             blk.gas_phase.reactions.activate()
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     obj = blk.gas_phase.reactions[t, x]
                     for c in obj.component_objects(
@@ -974,7 +978,7 @@ see reaction package for documentation.}"""))
                                                optarg=optarg,
                                                solver=solver)
 
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     for r in gas_phase.reaction_package.rate_reaction_idx:
                         calculate_variable_from_constraint(
@@ -983,9 +987,16 @@ see reaction package for documentation.}"""))
                     for p in gas_phase.property_package.phase_list:
                         for j in gas_phase.property_package.component_list:
                             (gas_rxn_gen[t, x, p, j].unfix())
-                            calculate_variable_from_constraint(
-                                gas_rxn_gen[t, x, p, j],
-                                gas_phase_stoichiometry_eqn[t, x, p, j])
+                            if not (
+                                (blk.gas_phase.config.transformation_scheme 
+                                    != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.gas_phase.config.transformation_scheme
+                                    == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                                calculate_variable_from_constraint(
+                                    gas_rxn_gen[t, x, p, j],
+                                    gas_phase_stoichiometry_eqn[t, x, p, j])
 
             gas_phase_stoichiometry_eqn.activate()
             blk.gas_phase_config_rxn_ext.activate()
@@ -999,7 +1010,7 @@ see reaction package for documentation.}"""))
 
             # Initialize reaction property package
             blk.solid_phase.reactions.activate()
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     obj = blk.solid_phase.reactions[t, x]
                     for c in obj.component_objects(
@@ -1010,7 +1021,7 @@ see reaction package for documentation.}"""))
                                                  optarg=optarg,
                                                  solver=solver)
 
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     for p in gas_phase.property_package.phase_list:
                         for j in gas_phase.property_package.component_list:
@@ -1026,9 +1037,16 @@ see reaction package for documentation.}"""))
                     for p in solid_phase.property_package.phase_list:
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
-                            calculate_variable_from_constraint(
-                                solid_rxn_gen[t, x, p, j],
-                                solid_phase_stoichiometry_eqn[t, x, p, j])
+                            if not (
+                                (blk.solid_phase.config.transformation_scheme 
+                                    != "FORWARD"
+                                 and x == blk.length_domain.first()) or
+                                (blk.solid_phase.config.transformation_scheme
+                                    == "FORWARD"
+                                 and x == blk.length_domain.last())):
+                                calculate_variable_from_constraint(
+                                    solid_rxn_gen[t, x, p, j],
+                                    solid_phase_stoichiometry_eqn[t, x, p, j])
 
             blk.gas_comp_hetero_rxn.activate()
             blk.solid_phase.rate_reaction_stoichiometry_constraint.activate()
@@ -1051,7 +1069,7 @@ see reaction package for documentation.}"""))
                              .format(blk.name))
 
         # Initialize mass balance - with pressure drop
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.length_domain:
                 # Unfix all pressure variables except at the inlet
                 if (blk.gas_phase.properties[t, x].config.defined_state
@@ -1066,7 +1084,7 @@ see reaction package for documentation.}"""))
         if blk.config.has_pressure_change:
             blk.gas_phase_config_pressure_drop.activate()
 
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     calculate_variable_from_constraint(
                         blk.gas_phase.deltaP[t, x],
@@ -1090,7 +1108,7 @@ see reaction package for documentation.}"""))
         if blk.config.energy_balance_type != EnergyBalanceType.none:
             # Initialize dimensionless numbers,
             # mass and heat transfer coefficients
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     calculate_variable_from_constraint(
                         blk.Re_particle[t, x],
@@ -1112,7 +1130,7 @@ see reaction package for documentation.}"""))
                         blk.solid_phase_heat_transfer[t, x])
 
             # Unfix temperatures
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     # Unfix all gas temperature variables except at the inlet
                     if (blk.gas_phase.properties[t, x].config.defined_state
@@ -1152,7 +1170,7 @@ see reaction package for documentation.}"""))
 
         # Initialize energy balance
         if blk.config.energy_balance_type == EnergyBalanceType.none:
-            for t in blk.flowsheet().config.time:
+            for t in blk.flowsheet().time:
                 for x in blk.length_domain:
                     # Unfix all gas temperature variables except at the inlet
                     if (blk.gas_phase.properties[t, x].config.defined_state
@@ -1209,7 +1227,7 @@ see reaction package for documentation.}"""))
         Mtotal = []
         vg = []
 
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.gas_phase.length_domain:
                 vg.append(value(blk.velocity_superficial_gas[t, x]))
 
@@ -1222,7 +1240,7 @@ see reaction package for documentation.}"""))
         fig_vg.savefig('superficial_vel.png')
 
         # Pressure profile
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.gas_phase.length_domain:
                 P.append(blk.gas_phase.properties[t, x].pressure.value)
 
@@ -1235,7 +1253,7 @@ see reaction package for documentation.}"""))
         fig_P.savefig('Pressure.png')
 
         # Temperature profile
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.gas_phase.length_domain:
                 Tg.append(blk.gas_phase.properties[t, x].temperature.value)
             for x in blk.solid_phase.length_domain:
@@ -1250,7 +1268,7 @@ see reaction package for documentation.}"""))
         fig_T.savefig('Temperature.png')
 
         # Bulk gas phase total molar flow rate
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.gas_phase.length_domain:
                 Ftotal.append(blk.gas_phase.properties[t, x].flow_mol.value)
         fig_Ftotal = plt.figure(4)
@@ -1261,7 +1279,7 @@ see reaction package for documentation.}"""))
         fig_Ftotal.savefig('Total_gas_flow.png')
 
         # Bulk solid phase total mass flow rate
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for x in blk.solid_phase.length_domain:
                 Mtotal.append(blk.solid_phase.properties[t, x].flow_mass.value)
         fig_Mtotal = plt.figure(5)
@@ -1272,7 +1290,7 @@ see reaction package for documentation.}"""))
         fig_Mtotal.savefig('Total_solid_flow.png')
 
         # Gas phase mole fractions
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for j in gas_phase.property_package.component_list:
                 y_frac = []
                 for x in blk.gas_phase.length_domain:
@@ -1287,7 +1305,7 @@ see reaction package for documentation.}"""))
         fig_y.savefig('Gas_mole_fractions.png')
 
         # Solid phase mass fractions
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for j in solid_phase.property_package.component_list:
                 x_frac = []
                 for x in blk.solid_phase.length_domain:
@@ -1303,7 +1321,7 @@ see reaction package for documentation.}"""))
         fig_x.savefig('Solid_mass_fractions.png')
 
         # Gas phase concentrations
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             for j in gas_phase.property_package.component_list:
                 Cg = []
                 for x in blk.gas_phase.length_domain:

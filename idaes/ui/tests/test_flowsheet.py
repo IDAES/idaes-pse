@@ -1,44 +1,40 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import copy
 import json
+import numpy as np
 from pathlib import Path
 
 import pytest
 
 from idaes.ui.flowsheet import FlowsheetSerializer, FlowsheetDiff, validate_flowsheet
 from idaes.generic_models.properties.swco2 import SWCO2ParameterBlock
-from idaes.generic_models.unit_models import Heater, PressureChanger
+from idaes.generic_models.unit_models import Heater, PressureChanger, HeatExchanger
 from idaes.generic_models.unit_models.pressure_changer import ThermodynamicAssumption
 from pyomo.environ import Expression, TransformationFactory, ConcreteModel
 from pyomo.network import Arc
 from idaes.core import FlowsheetBlock
-from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
-    import BTXParameterBlock
+from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE import (
+    BTXParameterBlock,
+)
 from idaes.generic_models.unit_models import Flash, Mixer
+from .shared import dict_diff
 
 # === Sample data ===
 
 test_dir = Path(__file__).parent
 
-base_model = {
-    "model": {
-        "id": "Model1",
-        "unit_models": {},
-        "arcs": {}
-    },
-    "cells": {}
-}
+base_model = {"model": {"id": "Model1", "unit_models": {}, "arcs": {}}, "cells": {}}
 
 
 @pytest.fixture
@@ -55,7 +51,7 @@ def models():
         for unit_num in range(n):
             m["unit_models"][f"U{unit_num}"] = {
                 "type": unit_types[unit_num],
-                "image": unit_types[unit_num] + ".svg"
+                "image": unit_types[unit_num] + ".svg",
             }
         m["arcs"] = {}
         if n > 1:
@@ -64,16 +60,29 @@ def models():
                 m["arcs"][f"A{arc_num}"] = {
                     "source": f"U{unit_num}",
                     "dest": f"U{(unit_num + 1) % n}",
-                    "label": f"stream {arc_num}"
+                    "label": f"stream {arc_num}",
                 }
         # add minimal cells for each unit model and arc
         c = model["cells"] = []
         for key, value in m["unit_models"].items():
-            c.append({"id": key,
-                      "attrs": {"image": {"xlinkHref": "image.svg"}, "root": {"title": "TITLE"}}})
+            c.append(
+                {
+                    "id": key,
+                    "attrs": {
+                        "image": {"xlinkHref": "image.svg"},
+                        "root": {"title": "TITLE"},
+                    },
+                }
+            )
         for key, value in m["arcs"].items():
-            c.append({"id": key, "source": {"id": value["source"]}, "target": {"id": value["dest"]},
-                      "labels": [{"attrs": {"text": {"text": "LABEL"}}}]})
+            c.append(
+                {
+                    "id": key,
+                    "source": {"id": value["source"]},
+                    "target": {"id": value["dest"]},
+                    "labels": [{"attrs": {"text": {"text": "LABEL"}}}],
+                }
+            )
         # done
         models[n] = model
     return models
@@ -81,8 +90,7 @@ def models():
 
 @pytest.fixture(scope="module")
 def demo_flowsheet():
-    """Semi-complicated demonstration flowsheet.
-    """
+    """Semi-complicated demonstration flowsheet."""
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.BT_props = BTXParameterBlock()
@@ -95,37 +103,66 @@ def demo_flowsheet():
 
     m.fs.properties = SWCO2ParameterBlock()
     m.fs.main_compressor = PressureChanger(
-      default={'dynamic': False,
-               'property_package': m.fs.properties,
-               'compressor': True,
-               'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "compressor": True,
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+        }
+    )
 
     m.fs.bypass_compressor = PressureChanger(
-        default={'dynamic': False,
-                 'property_package': m.fs.properties,
-                 'compressor': True,
-                 'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "compressor": True,
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+        }
+    )
 
     m.fs.turbine = PressureChanger(
-      default={'dynamic': False,
-               'property_package': m.fs.properties,
-               'compressor': False,
-               'thermodynamic_assumption': ThermodynamicAssumption.isentropic})
-    m.fs.boiler = Heater(default={'dynamic': False,
-                                  'property_package': m.fs.properties,
-                                  'has_pressure_change': True})
-    m.fs.FG_cooler = Heater(default={'dynamic': False,
-                                     'property_package': m.fs.properties,
-                                     'has_pressure_change': True})
-    m.fs.pre_boiler = Heater(default={'dynamic': False,
-                                      'property_package': m.fs.properties,
-                                      'has_pressure_change': False})
-    m.fs.HTR_pseudo_tube = Heater(default={'dynamic': False,
-                                       'property_package': m.fs.properties,
-                                       'has_pressure_change': True})
-    m.fs.LTR_pseudo_tube = Heater(default={'dynamic': False,
-                                       'property_package': m.fs.properties,
-                                       'has_pressure_change': True})
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "compressor": False,
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+        }
+    )
+    m.fs.boiler = Heater(
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "has_pressure_change": True,
+        }
+    )
+    m.fs.FG_cooler = Heater(
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "has_pressure_change": True,
+        }
+    )
+    m.fs.pre_boiler = Heater(
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "has_pressure_change": False,
+        }
+    )
+    m.fs.HTR_pseudo_tube = Heater(
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "has_pressure_change": True,
+        }
+    )
+    m.fs.LTR_pseudo_tube = Heater(
+        default={
+            "dynamic": False,
+            "property_package": m.fs.properties,
+            "has_pressure_change": True,
+        }
+    )
     return m.fs
 
 
@@ -135,14 +172,18 @@ def flash_flowsheet():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     # Flash properties
-    m.fs.properties = BTXParameterBlock(default={"valid_phase": ('Liq', 'Vap'),
-                                                 "activity_coeff_model": "Ideal",
-                                                 "state_vars": "FTPz"})
+    m.fs.properties = BTXParameterBlock(
+        default={
+            "valid_phase": ("Liq", "Vap"),
+            "activity_coeff_model": "Ideal",
+            "state_vars": "FTPz",
+        }
+    )
     # Flash unit
     m.fs.flash = Flash(default={"property_package": m.fs.properties})
-    m.fs.flash.inlet.flow_mol.fix(1)
-    m.fs.flash.inlet.temperature.fix(368)
-    m.fs.flash.inlet.pressure.fix(101325)
+    m.fs.flash.inlet.flow_mol.fix(np.NINF)
+    m.fs.flash.inlet.temperature.fix(np.inf)
+    m.fs.flash.inlet.pressure.fix(np.nan)
     m.fs.flash.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
     m.fs.flash.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
     m.fs.flash.heat_duty.fix(0)
@@ -163,13 +204,20 @@ def flash_flowsheet_json():
     s = json_file.open().read()
     return s
 
+
+@pytest.fixture(scope="module")
+def serialized_boiler_flowsheet_json():
+    json_file = test_dir / "serialized_boiler_flowsheet.json"
+    s = json_file.open().read()
+    return s
+
+
 # === Tests ===
 
 
 @pytest.mark.unit
 def test_merge(models):
-    """Test the FlowsheetDiff output from the .merge() function.
-    """
+    """Test the FlowsheetDiff output from the .merge() function."""
     num_models = len(models)
 
     # With N models, in increasing complexity, test the results of merging
@@ -259,28 +307,60 @@ def _canonicalize(d):
 
 @pytest.mark.component
 def test_flowsheet_serializer_demo(demo_flowsheet, demo_flowsheet_json):
-    """Simple regression test vs. stored data.
-    """
+    """Simple regression test vs. stored data."""
     test_dict = FlowsheetSerializer(demo_flowsheet, "demo").as_dict()
     stored_dict = json.loads(demo_flowsheet_json)
     _canonicalize(test_dict)
     _canonicalize(stored_dict)
-    assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
+    assert json.dumps(test_dict, sort_keys=True) == json.dumps(
+        stored_dict, sort_keys=True
+    )
+
+
+@pytest.mark.component
+def test_boiler_demo(serialized_boiler_flowsheet_json):
+    import idaes.power_generation.flowsheets.supercritical_power_plant.boiler_subflowsheet_build as blr
+
+    m, solver = blr.main()
+    test_dict = FlowsheetSerializer(m.fs, "boiler").as_dict()
+    stored_dict = json.loads(serialized_boiler_flowsheet_json)
+    _canonicalize(test_dict)
+    _canonicalize(stored_dict)
+    test_json = json.dumps(test_dict, sort_keys=True)
+    stored_json = json.dumps(stored_dict, sort_keys=True)
+    if test_json != stored_json:
+        report_failure(test_dict, stored_dict)
+        pytest.fail("Serialized flowsheet does not match expected")
 
 
 @pytest.mark.unit
 def test_flowsheet_serializer_flash(flash_flowsheet, flash_flowsheet_json):
-    """Simple regression test vs. stored data.
-    """
+    """Simple regression test vs. stored data."""
     test_dict = FlowsheetSerializer(flash_flowsheet, "demo").as_dict()
     stored_dict = json.loads(flash_flowsheet_json)
     _canonicalize(test_dict)
     _canonicalize(stored_dict)
-    assert json.dumps(test_dict, sort_keys=True) == json.dumps(stored_dict, sort_keys=True)
+    test_json = json.dumps(test_dict, sort_keys=True)
+    stored_json = json.dumps(stored_dict, sort_keys=True)
+    if test_json != stored_json:
+        report_failure(test_dict, stored_dict)
+        pytest.fail("Serialized flowsheet does not match expected")
+
+
+def report_failure(test_dict, stored_dict):
+    test_json, stored_json = (json.dumps(d, indent=2) for d in (test_dict, stored_dict))
+    diff = dict_diff(test_dict, stored_dict)
+    print("Diff between generated dict and expected dict:")
+    print(diff)
+   # print("---")
+   # print(f"Generated data (JSON):\n{test_json}")
+   # print("---")
+    # print(f"Expected data (JSON):\n{stored_json}")
 
 
 def _show_json(test=None, stored=None):
     import sys
+
     print("-" * 60)
     print("TEST VALUE")
     json.dump(test, sys.stdout)
@@ -294,3 +374,55 @@ def _show_json(test=None, stored=None):
 def test_flowsheet_serializer_invalid():
     m = ConcreteModel()
     pytest.raises(ValueError, FlowsheetSerializer, m, "bad")
+
+
+@pytest.mark.unit
+def test_flowsheet_serializer_get_unit_model_type():
+    from idaes.core import MaterialBalanceType
+    from idaes.generic_models.unit_models.pressure_changer import (
+        ThermodynamicAssumption,
+    )
+    from idaes.generic_models.unit_models.heat_exchanger import (
+        delta_temperature_underwood_callback,
+    )
+    from idaes.generic_models.properties import iapws95
+    from pyomo.environ import Set
+
+    # flowsheet
+    m = ConcreteModel(name="My Model")
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.prop_water = iapws95.Iapws95ParameterBlock(
+        default={"phase_presentation": iapws95.PhaseType.LG}
+    )
+
+    # add & test scalar unit model
+    m.fs.cond_pump = PressureChanger(
+        default={
+            "property_package": m.fs.prop_water,
+            "material_balance_type": MaterialBalanceType.componentTotal,
+            "thermodynamic_assumption": ThermodynamicAssumption.pump,
+        }
+    )
+    unit_type = FlowsheetSerializer.get_unit_model_type(m.fs.cond_pump)
+    assert unit_type == "pressure_changer"
+
+    # add & test indexed unit model
+    m.set_fwh = Set(initialize=[1, 2, 3, 4, 6, 7, 8])
+    m.fs.fwh = HeatExchanger(
+        m.set_fwh,
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {
+                "property_package": m.fs.prop_water,
+                "material_balance_type": MaterialBalanceType.componentTotal,
+                "has_pressure_change": True,
+            },
+            "tube": {
+                "property_package": m.fs.prop_water,
+                "material_balance_type": MaterialBalanceType.componentTotal,
+                "has_pressure_change": True,
+            },
+        }
+    )
+    unit_type = FlowsheetSerializer.get_unit_model_type(m.fs.fwh)
+    assert unit_type == "heat_exchanger"

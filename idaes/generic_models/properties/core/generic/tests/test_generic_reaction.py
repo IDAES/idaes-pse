@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for generic reaction package core code
 
@@ -24,7 +24,7 @@ from pyomo.environ import (
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
-from idaes.generic_models.properties.core.generic.tests import dummy_eos
+from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
 
 from idaes.generic_models.properties.core.generic.generic_reaction import (
         GenericReactionParameterBlock, ConcentrationForm)
@@ -76,8 +76,8 @@ class TestGenericReactionParameterBlock(object):
         m.params = GenericParameterBlock(default={
                 "components": {"c1": {}, "c2": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -413,8 +413,8 @@ class TestGenericReactionBlock(object):
         m.params = GenericParameterBlock(default={
                 "components": {"c1": {}, "c2": {}},
                 "phases": {
-                    "p1": {"equation_of_state": dummy_eos},
-                    "p2": {"equation_of_state": dummy_eos}},
+                    "p1": {"equation_of_state": DummyEoS},
+                    "p2": {"equation_of_state": DummyEoS}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -453,6 +453,13 @@ class TestGenericReactionBlock(object):
                           "has_equilibrium": True})
 
         return m
+
+    @pytest.mark.unit
+    def test_component_phase_lists(self, model):
+        assert model.rblock[1].component_list is model.params.component_list
+        assert model.rblock[1].phase_list is model.params.phase_list
+        assert model.rblock[1].phase_component_set is \
+            model.params._phase_component_set
 
     @pytest.mark.unit
     def test_dh_rxn(self, model):
@@ -523,3 +530,25 @@ class TestGenericReactionBlock(object):
             value(model.rblock[1].k_eq["e1"] -
                   model.sblock[1].mole_frac_phase_comp["p2", "c1"]**-3 *
                   model.sblock[1].mole_frac_phase_comp["p2", "c2"]**4)
+
+    @pytest.mark.unit
+    def test_basic_scaling(self, model):
+        model.rblock[1].calculate_scaling_factors()
+
+        assert len(model.rblock[1].scaling_factor) == 3
+
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].dh_rxn["e1"]] == 5e-5
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].dh_rxn["r1"]] == 1e-4
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].k_eq["e1"]] == 1e-2
+
+        # Check that scaling factor was added to equilibrium constraint
+        assert str(model.rblock[1].equilibrium_constraint["e1"].body) == \
+            str((model.rblock[1].k_eq["e1"] -
+                 model.sblock[1].mole_frac_phase_comp["p2", "c1"] **
+                 model.rxn_params.reaction_e1.reaction_order["p2", "c1"] *
+                 model.sblock[1].mole_frac_phase_comp["p2", "c2"] **
+                 model.rxn_params.reaction_e1.reaction_order["p2", "c2"]) *
+                0.01)

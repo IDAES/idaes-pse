@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 from copy import deepcopy
 from math import sqrt
 
@@ -19,6 +19,7 @@ from .unit_cell_lattice import UnitCell, UnitCellLattice
 from ..geometry import Cube
 from ..tiling import CubicTiling
 from ..transform_func import ScaleFunc, RotateFunc
+from ...util.util import ListHasPoint
 
 
 class FCCLattice(UnitCellLattice):
@@ -35,19 +36,19 @@ class FCCLattice(UnitCellLattice):
         RefUnitCell = UnitCell(RefUnitCellTiling, RefFracPositions)
         UnitCellLattice.__init__(self, RefUnitCell)
         self._IAD = FCCLattice.RefIAD  # IAD is set correctly after calling applyTransF
-        self._RefNeighborsPattern = [np.array([0.0, -0.5, 0.5]),
-                                     np.array([-0.5, -0.5, 0.0]),
-                                     np.array([-0.5, 0.0, 0.5]),
-                                     np.array([0.5, -0.5, 0.0]),
-                                     np.array([0.0, -0.5, -0.5]),
-                                     np.array([-0.5, 0.0, -0.5]),
-                                     np.array([-0.5, 0.5, 0.0]),
-                                     np.array([0.0, 0.5, 0.5]),
-                                     np.array([0.5, 0.0, 0.5]),
-                                     np.array([0.5, 0.0, -0.5]),
-                                     np.array([0.0, 0.5, -0.5]),
-                                     np.array([0.5, 0.5, 0.0])]
         self.applyTransF(ScaleFunc(IAD / FCCLattice.RefIAD))
+        self._NthNeighbors = [[np.array([0.0, -0.5, 0.5]),
+                               np.array([-0.5, -0.5, 0.0]),
+                               np.array([-0.5, 0.0, 0.5]),
+                               np.array([0.5, -0.5, 0.0]),
+                               np.array([0.0, -0.5, -0.5]),
+                               np.array([-0.5, 0.0, -0.5]),
+                               np.array([-0.5, 0.5, 0.0]),
+                               np.array([0.0, 0.5, 0.5]),
+                               np.array([0.5, 0.0, 0.5]),
+                               np.array([0.5, 0.0, -0.5]),
+                               np.array([0.0, 0.5, -0.5]),
+                               np.array([0.5, 0.5, 0.0])]]
 
     # === CONSTRUCTOR - Aligned with FCC {100}
     @classmethod
@@ -80,13 +81,29 @@ class FCCLattice(UnitCellLattice):
     def areNeighbors(self, P1, P2):
         return np.linalg.norm(P2 - P1) <= self.IAD
 
-    def getNeighbors(self, P):
+    def getNeighbors(self, P, layer=1):
         RefP = self._getConvertToReference(P)
-        result = deepcopy(self._RefNeighborsPattern)
-        for NeighP in result:
+        if layer > len(self._NthNeighbors):
+            self._calculateNeighbors(layer)
+        NBs = deepcopy(self._NthNeighbors[layer - 1])
+        for NeighP in NBs:
             NeighP += RefP
             self._convertFromReference(NeighP)
-        return result
+        return NBs
+
+    def _calculateNeighbors(self, layer):
+        NList = [np.array([0, 0, 0], dtype=float)]
+        for nb in self._NthNeighbors:
+            NList.extend(nb)
+        for _ in range(layer - len(self._NthNeighbors)):
+            tmp = []
+            for P in self._NthNeighbors[len(self._NthNeighbors) - 1]:
+                for Q in self._NthNeighbors[0]:
+                    N = P + Q
+                    if not ListHasPoint(NList, N, 0.001 * FCCLattice.RefIAD):
+                        tmp.append(N)
+                        NList.append(N)
+            self._NthNeighbors.append(tmp)
 
     # === BASIC QUERY METHODS
     @property
@@ -99,8 +116,8 @@ class FCCLattice(UnitCellLattice):
 
     @property
     def FCC100LayerSpacing(self):
-        return self.IAD * 0.5
+        return self.IAD * sqrt(2) / 2
 
     @property
     def FCC110LayerSpacing(self):
-        return self.IAD * sqrt(2) / 2
+        return self.IAD

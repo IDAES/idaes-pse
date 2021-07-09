@@ -1,3 +1,15 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Common Surrogate interface for IDAES.
 """
@@ -182,7 +194,7 @@ class Surrogate:
             Tuple        : Tuple of two elements containing validation data v_in (samples) and v_out (output values).
 
         """
-        return (self._vdata_in, self._vdata.out)
+        return (self._vdata_in, self._vdata_out)
 
     def validation_data(self, v_in, v_out):  # 2D Numparray
         """
@@ -195,7 +207,8 @@ class Surrogate:
         self._vdata_out = v_out
 
     # Using regressed model
-    def calculate_outputs(inputs):  # 2D Numparray, use pyomo expression
+    # PYLINT-TODO: check if adding self as arg to fix pylint "undefined-variable 'self'" is valid
+    def calculate_outputs(self, inputs):  # 2D Numparray, use pyomo expression
         """
         ``calculate_outputs`` evaluates the output predictions from the surrogate for an array of input samples **inputs**
         Args:
@@ -214,7 +227,8 @@ class Surrogate:
     #         return
     #     pass
 
-    def get_validated_metrics(xval, zval):  # 2D, 2D Numparray, use pyomo expression
+    # PYLINT-TODO: check if adding as an argument and using self._b_built in the body is valid
+    def get_validated_metrics(self, xval, zval):  # 2D, 2D Numparray, use pyomo expression
         """
         ``get_validated_metrics`` evaluates the performance metrics for the surrogate model based on a set of off-design points (xval, zval)
         Args:
@@ -226,7 +240,7 @@ class Surrogate:
                 - mean squared error (MSE), and
                 - :math:`R^{2}`of the surrogate fit based on the off-design data points.
         """
-        if not _b_built:
+        if not self._b_built:
             print("Warning: No surrogate model regressed.")
             return
         pass
