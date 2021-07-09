@@ -282,6 +282,10 @@ class EoSBase():
     def gibbs_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "gibbs_mol_phase_comp"))
 
+    @staticmethod
+    def pressure_osmotic_phase(b, p):
+        raise NotImplementedError(_msg(b, "pressure_osmotic_phase"))
+
 
 def _msg(b, attr):
     return ("{} Equation of State module has not implemented a method for {}. "
