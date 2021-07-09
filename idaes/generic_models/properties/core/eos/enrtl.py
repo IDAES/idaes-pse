@@ -587,6 +587,14 @@ class ENRTL(Ideal):
         ln_gamma = getattr(b, p+"_log_gamma_appr")
         return exp(ln_gamma[j])
 
+    @staticmethod
+    def pressure_osmotic_phase(b, p):
+        # TODO: Replace ens_mol_phase with vol_mol_phase
+        return (-ENRTL.gas_constant(b)*b.temperature *
+                log(sum(b.act_phase_comp[p, j]
+                        for j in b.params.solvent_set)) *
+                b.dens_mol_phase[p])
+
 
 def log_gamma_lc(b, pname, s, X, G, tau):
     # General function for calculating local contributions

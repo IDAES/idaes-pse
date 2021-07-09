@@ -500,5 +500,4 @@ def test_pressure_osmotic_phase(m):
         str(m.props[1].temperature*(
             m.props[1].conc_mol_phase_comp["Liq", "b"] +
             m.props[1].conc_mol_phase_comp["Liq", "c"])))
-    m.props[1].pressure_osmotic_phase.display()
     assert len(m.props[1].pressure_osmotic_phase) == 1
