@@ -349,7 +349,7 @@ class IonData(SoluteData):
 
     def _add_to_component_list(self):
         """
-        Ions should not be used outside of electorlyte property methods
+        Ions should not be used outside of electrolyte property methods
         """
         raise PropertyPackageError(
             "{} Ion Component types should only be used with Aqueous "
@@ -452,7 +452,7 @@ class ApparentData(SoluteData):
 
     def _add_to_component_list(self):
         """
-        Ions should not be used outside of electorlyte property methods
+        Ions should not be used outside of electrolyte property methods
         """
         raise PropertyPackageError(
             "{} Apparent Component types should only be used with Aqueous "
