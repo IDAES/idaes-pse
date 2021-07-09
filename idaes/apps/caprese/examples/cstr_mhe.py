@@ -142,13 +142,86 @@ def main(plot_switch=False):
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
     
-    mhe.estimator.initialize_to_initial_conditions()
+    
+    mhe.estimator.MHE_initialize_to_initial_conditions()
+    
+    # This "initialization" really simulates the plant with the new inputs.
+    mhe.plant.initialize_by_solving_elements(solver)
+    mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
+    solver.solve(mhe.plant, tee = True)
+    
+    measurements = mhe.plant.generate_measurements_at_time(p_ts)
+    #apply measurement error here
+    mhe.estimator.load_measurements_for_MHE(measurements)
     
     # Solve the first estimation problem
-    mhe.estimator.check_var_con_dof()
+    mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
     
-    return mhe
+    soi_string = ["S", "E", "C", "P", "Solvent", "Energy"]
+    plant_rec = {}
+    MHE_rec = {}
+    for ss in soi_string:
+        plant_rec[ss] = []
+        MHE_rec[ss] = []
+        
+    cinput1 = [0.5608456705408656, 3.4818166997491384, 5.0, 0.9629431563506397, 2.0623866186035156, 
+               4.9999999797327686, 2.285805028476981, 3.913753219840146, 3.4585265451075538, 5.0]
+    cinput2 = [0.28666548361218924, 0.01, 0.01, 0.01, 0.12654063510571273,
+               0.01, 0.9999996329001195, 0.242203179025321, 0.7110096123027149, 0.01]
+    
+    for i in range(1,11):
+        print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
+        
+        mhe.plant.advance_one_sample()
+        mhe.plant.initialize_to_initial_conditions()
+        #inject inputs here if it's updated
+        cinput = [cinput1[i-1], cinput2[i-1]]
+        mhe.plant.inject_inputs(cinput)
+        
+        mhe.plant.initialize_by_solving_elements(solver)
+        mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
+        solver.solve(mhe.plant)
+        
+        # def save_plant_data(plant, rec_dict):
+        plant_rec["S"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','S'].value)
+        plant_rec["E"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','E'].value)
+        plant_rec["C"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','C'].value)
+        plant_rec["P"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','P'].value)
+        plant_rec["Solvent"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','Solvent'].value)
+        plant_rec["Energy"].append(plant.mod.fs.cstr.control_volume.energy_holdup[p_ts,'aq'].value)
+            
+        measurements = mhe.plant.generate_measurements_at_time(p_ts)
+        #apply measurement error here
+        
+        mhe.estimator.MHE_advance_one_sample()
+        mhe.estimator.load_measurements_for_MHE(measurements)
+        mhe.estimator.load_inputs_for_MHE(cinput)
+        # mhe.estimator.vectors.input[...].fix(cinput[i])
+        
+        mhe.estimator.check_var_con_dof(skip_dof_check = False)
+        # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
+        solver.solve(mhe.estimator, tee=True)
+        
+        tl = mhe.estimator.time.last()
+        MHE_rec["S"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','S'].value)
+        MHE_rec["E"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','E'].value)
+        MHE_rec["C"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','C'].value)
+        MHE_rec["P"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','P'].value)
+        MHE_rec["Solvent"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','Solvent'].value)
+        MHE_rec["Energy"].append(estimator.mod.fs.cstr.control_volume.energy_holdup[tl,'aq'].value)
+    
+    return mhe, plant_rec, MHE_rec
 
 if __name__ == '__main__':
-    mhe = main()
+    mhe, plant_rec, MHE_rec = main()
+    
+    import matplotlib.pyplot as plt
+    soi_string = ["S", "E", "C", "P", "Solvent", "Energy"]
+    for ind, item in enumerate(soi_string):
+        plt.figure(ind)
+        plt.title(item)
+        plt.plot(plant_rec[item], "r")
+        plt.plot(MHE_rec[item], "b")
+        
+    plt.show()

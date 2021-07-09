@@ -136,37 +136,81 @@ def main(plot_switch=False):
     mhe.plant.mod.Tjinb.fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
     
-    # measurements = mhe.plant.generate_measurements_at_time(p_ts)
-    # #apply measurement error here
-    # mhe.estimator.load_measurements_for_MHE(measurements)
+    measurements = mhe.plant.generate_measurements_at_time(p_ts)
+    #apply measurement error here
+    mhe.estimator.load_measurements_for_MHE(measurements)
     
-    # # Solve the first estimation problem
-    # mhe.estimator.check_var_con_dof()
-    # solver.solve(mhe.estimator, tee=True)
+    # Solve the first estimation problem
+    mhe.estimator.check_var_con_dof(skip_dof_check = False)
+    solver.solve(mhe.estimator, tee=True)
+    
+    plant_rec = {"Ca":[],
+                 "T":[],
+                 "Tj":[]}
+    
+    MHE_rec = {"Ca":[],
+                 "T":[],
+                 "Tj":[]}
+    
+    cinput = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(1, 11)}
     
     
-    # for i in range(1,11):
-    #     print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
+    for i in range(1,11):
+        print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
         
-    #     mhe.plant.advance_one_sample()
-    #     mhe.plant.initialize_to_initial_conditions()
-    #     #inject inputs here if it's updated
+        mhe.plant.advance_one_sample()
+        mhe.plant.initialize_to_initial_conditions()
+        #inject inputs here if it's updated
+        inputs = [cinput[i]]
+        mhe.plant.inject_inputs(inputs)
         
-    #     mhe.plant.initialize_by_solving_elements(solver)
-    #     mhe.plant.mod.Tjinb.fix() #Fix the input to solve the plant
-    #     solver.solve(mhe.plant)
+        mhe.plant.initialize_by_solving_elements(solver)
+        mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
+        solver.solve(mhe.plant)
         
-    #     measurements = mhe.plant.generate_measurements_at_time(p_ts)
-    #     #apply measurement error here
+        plant_rec["Ca"].append(mhe.plant.mod.Ca[p_ts].value)
+        plant_rec["T"].append(mhe.plant.mod.Tall[p_ts, "T"].value)
+        plant_rec["Tj"].append(mhe.plant.mod.Tall[p_ts, "Tj"].value)
         
-    #     mhe.estimator.MHE_advance_one_sample()
-    #     mhe.estimator.load_measurements_for_MHE(measurements)
         
-    #     mhe.estimator.check_var_con_dof()
-    #     solver.solve(mhe.estimator, tee=True)
+        measurements = mhe.plant.generate_measurements_at_time(p_ts)
+        #apply measurement error here
+        
+        mhe.estimator.MHE_advance_one_sample()
+        mhe.estimator.load_measurements_for_MHE(measurements)
+        mhe.estimator.load_inputs_for_MHE(inputs)
+        # mhe.estimator.vectors.input[...].fix(cinput[i])
+        
+        mhe.estimator.check_var_con_dof(skip_dof_check = False)
+        # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
+        solver.solve(mhe.estimator, tee=True)
+        
+        tl = mhe.estimator.time.last()
+        MHE_rec["Ca"].append(mhe.estimator.mod.Ca[tl].value)
+        MHE_rec["T"].append(mhe.estimator.mod.Tall[tl, "T"].value)
+        MHE_rec["Tj"].append(mhe.estimator.mod.Tall[tl, "Tj"].value)
         
     
-    return mhe
+    return mhe, plant_rec, MHE_rec
 
 if __name__ == '__main__':
-    mhe = main()
+    mhe, plant_rec, MHE_rec = main()
+    
+    import matplotlib.pyplot as plt
+    plt.figure(1)
+    plt.title("Ca")
+    plt.plot(plant_rec["Ca"], "r")
+    plt.plot(MHE_rec["Ca"], "b")
+    plt.show()
+    
+    plt.figure(2)
+    plt.title("T")
+    plt.plot(plant_rec["T"], "r")
+    plt.plot(MHE_rec["T"], "b")
+    plt.show()
+    
+    plt.figure(3)
+    plt.title("Tj")
+    plt.plot(plant_rec["Tj"], "r")
+    plt.plot(MHE_rec["Tj"], "b")
+    plt.show()

@@ -434,9 +434,10 @@ class _EstimatorBlockData(_DynamicBlockData):
         for var, val in zip(self.ACTUALMEASUREMENT_BLOCK[:].var, measurements):
             var[t_last].fix(val)
         
-    def check_var_con_dof(self):
+    def check_var_con_dof(self, skip_dof_check = False):
         self.vectors.input[...].fix()
         self.vectors.differential[...].unfix()
+        self.vectors.modeldisturbance[:,0].fix(0.0)
         
         for diff_eq in self.con_category_dict[CC.DIFFERENTIAL]:
             diff_eq.deactivate()
@@ -445,8 +446,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         n_steps_in_horizon = len(self.sample_points) - 1
         correct_dof = n_diffvars * (n_steps_in_horizon + 1)
         
-        dof = degrees_of_freedom(self)
-        assert dof == correct_dof
+        if not skip_dof_check:
+            dof = degrees_of_freedom(self)
+            assert dof == correct_dof
      
     #Do not want to change the original one in dynamic_block.py
     def MHE_initialize_to_initial_conditions(self, 
@@ -455,6 +457,22 @@ class _EstimatorBlockData(_DynamicBlockData):
         """ Sets values to initial values for specified variable
         ctypes for all time points.
         """
+        
+        if ActualMeasurementVar in ctype:
+            t0 = self.sample_points[0]
+            
+            for ind in self.MEASUREMENT_SET:
+                actmea_block = self.ACTUALMEASUREMENT_BLOCK[ind]
+                mea_block = self.MEASUREMENT_BLOCK[ind]
+                actmea_block.var[0].set_value(mea_block.var[0].value)           
+            
+            for var in self.component_objects(ctype = ActualMeasurementVar):
+                val = var[t0].value
+                for sampt in self.sample_points:
+                    var[sampt].set_value(val)
+                
+            ctype = tuple(typ for typ in ctype if typ != ActualMeasurementVar)
+
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
@@ -466,6 +484,20 @@ class _EstimatorBlockData(_DynamicBlockData):
                    ActualMeasurementVar, MeasurementErrorVar, ModelDisturbanceVar),
             tolerance=1e-8,
             ):
+        
+        MHE_ctype = [ActualMeasurementVar, MeasurementErrorVar, ModelDisturbanceVar]
+        given_MHE_ctype = tuple(item for item in MHE_ctype if item in ctype)
+        sample_points = self.sample_points
+        for var in self.component_objects(given_MHE_ctype):
+            for i in range(len(sample_points)):
+                if i != 0:
+                    curr_sampt = sample_points[i]
+                    pre_sampt = sample_points[i-1]
+                    var[pre_sampt].set_value(var[curr_sampt].value)
+                    
+        self.vectors.modeldisturbance[:,0].fix(0.0)
+        
+        ctype = tuple(typ for typ in ctype if typ not in MHE_ctype)
         """ Set values for the variables of the specified ctypes
         to their values one sample time in the future.
         """
@@ -475,6 +507,18 @@ class _EstimatorBlockData(_DynamicBlockData):
                 ctype=ctype,
                 tolerance=tolerance,
                 )
+        
+    def load_inputs_for_MHE(self, inputs):
+        
+        last_sampt = self.sample_points[-1]
+        secondlast_sampt = self.sample_points[-2]
+        time_list = [tp for tp in self.time if tp > secondlast_sampt 
+                                                 and tp <= last_sampt]
+        
+        for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
+            for tind in time_list:
+                var[tind].set_value(val)
+            
         
 
 class EstimatorBlock(DynamicBlock):

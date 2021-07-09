@@ -105,13 +105,5 @@ class MHESim(object):
             self.plant.set_sample_time(sample_time)
             self.sample_time = sample_time
             
-        #The following should be organized in a function
-        # self.estimator._add_sample_point_set()
-        # self.estimator._add_actual_measurement_param()
-        # self.estimator._add_measurement_error()
-        # self.estimator._add_measurement_constraint()
-        # self.estimator._add_model_disturbance()
-        # self.estimator._add_disturbance_to_differential_cons()
-        # self.estimator._add_MHE_variables_into_vectors()
         self.estimator._MHE_setup()
 
