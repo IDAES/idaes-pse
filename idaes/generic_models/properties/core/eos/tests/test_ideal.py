@@ -18,14 +18,17 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import ConcreteModel, Var, units as pyunits
+from pyomo.environ import (
+    ConcreteModel, Expression, Var, units as pyunits, value)
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import (declare_process_block_class,
                         LiquidPhase, VaporPhase, SolidPhase)
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
-from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core.util.exceptions import (
+    ConfigurationError, PropertyNotSupportedError)
 from idaes.core.util.constants import Constants as const
 
 
@@ -83,7 +86,7 @@ def m():
 
     # Add common variables
     m.props[1].pressure = Var(initialize=101325)
-    m.props[1].temperature = Var(initialize=300)
+    m.props[1].temperature = Var(initialize=300, units=pyunits.K)
     m.props[1]._teq = Var([("Vap", "Liq")], initialize=300)
     m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
                                           m.params.component_list,
@@ -467,3 +470,35 @@ def test_gibbs_mol_phase_comp(m):
                     m.props[1].enth_mol_phase_comp[p, j] -
                     m.props[1].entr_mol_phase_comp[p, j] *
                     m.props[1].temperature)
+
+
+@pytest.mark.unit
+def test_pressure_osmotic_phase_no_solvent(m):
+    with pytest.raises(
+            ConfigurationError,
+            match="called for pressure_osmotic, but no solvents were "
+            "defined. Osmotic pressure requires at least one component to be "
+            "declared as a solvent."):
+        m.props[1].pressure_osmotic_phase.display()
+
+
+@pytest.mark.unit
+def test_pressure_osmotic_phase(m):
+    # Create a dummy solvent_set
+    m.params.solvent_set = ["a"]
+    m.props[1].dens_mol_phase = Var(
+        m.params.phase_list, initialize=55e3, units=pyunits.mol/pyunits.m**3)
+
+    assert_units_equivalent(m.props[1].pressure_osmotic_phase["Liq"],
+                            pyunits.Pa)
+    assert pytest.approx(value(const.gas_constant*300*55e3),
+                         rel=1e-6) == value(
+        m.props[1].pressure_osmotic_phase["Liq"])
+    assert str(m.props[1].pressure_osmotic_phase["Liq"]._expr) == (
+        'kg*m**2/J/s**2*(' +
+        str(const.gas_constant)+')*' +
+        str(m.props[1].temperature*(
+            m.props[1].conc_mol_phase_comp["Liq", "b"] +
+            m.props[1].conc_mol_phase_comp["Liq", "c"])))
+    m.props[1].pressure_osmotic_phase.display()
+    assert len(m.props[1].pressure_osmotic_phase) == 1
