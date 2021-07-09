@@ -114,7 +114,7 @@ class PhaseData(ProcessBlockData):
                                     ordered=True)
 
 
-@declare_process_block_class("LiquidPhase")
+@declare_process_block_class("LiquidPhase", block_class=Phase)
 class LiquidPhaseData(PhaseData):
     def is_liquid_phase(self):
         return True
@@ -126,7 +126,7 @@ class LiquidPhaseData(PhaseData):
         return False
 
 
-@declare_process_block_class("SolidPhase")
+@declare_process_block_class("SolidPhase", block_class=Phase)
 class SolidPhaseData(PhaseData):
     def is_liquid_phase(self):
         return False
@@ -138,7 +138,7 @@ class SolidPhaseData(PhaseData):
         return False
 
 
-@declare_process_block_class("VaporPhase")
+@declare_process_block_class("VaporPhase", block_class=Phase)
 class VaporPhaseData(PhaseData):
     def is_liquid_phase(self):
         return False
@@ -150,7 +150,7 @@ class VaporPhaseData(PhaseData):
         return True
 
 
-@declare_process_block_class("AqueousPhase")
+@declare_process_block_class("AqueousPhase", block_class=Phase)
 class AqueousPhaseData(LiquidPhaseData):
     # Special phase type for liquid phases involving electrolytes
     # This is used to determine if we need to do the more complex component

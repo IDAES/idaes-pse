@@ -17,7 +17,8 @@ required to simulate it.
 import sys
 
 # Import Pyomo libraries
-from pyomo.environ import Set, Var
+from pyomo.environ import Set, Var, units as pyunits
+from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -28,7 +29,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         UnitModelBlockData,
+                        Phase,
                         LiquidPhase,
+                        SolidPhase,
                         VaporPhase,
                         Component)
 import idaes.logger as idaeslog
@@ -49,6 +52,15 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
     This class contains the methods and attributes for recording and displaying
     the properties requried by the flowsheet.
     """
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("phase_list", ConfigValue(
+        domain=dict,
+        description="User defined phase list. Dict with form {name: Type}"))
+    CONFIG.declare("component_list", ConfigValue(
+        domain=dict,
+        description="User defined component list. Dict with form {name: Type}"
+        ))
 
     def build(self):
         '''
@@ -59,13 +71,29 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         self._state_block_class = InterrogatorStateBlock
 
         # Phase objects
-        # TODO : Allow users to define custom Phase obejcts/phase list
-        self.Liq = LiquidPhase()
-        self.Vap = VaporPhase()
+        if self.config.phase_list is None:
+            self.Liq = LiquidPhase()
+            self.Vap = VaporPhase()
+        else:
+            for p, t in self.config.phase_list.items():
+                if t is None:
+                    t = Phase
+                elif not issubclass(
+                        t, Phase):
+                    raise Exception()
+                self.add_component(p, t())
 
         # Component objects
-        self.A = Component()
-        self.B = Component()
+        if self.config.component_list is None:
+            self.A = Component()
+            self.B = Component()
+        else:
+            for j, t in self.config.component_list.items():
+                if t is None:
+                    t = Component
+                elif not issubclass(t, Component):
+                    raise Exception()
+                self.add_component(j, t())
 
         # Set up dict to record property calls
         self.required_properties = {}
@@ -224,13 +252,11 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.kg,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 class _InterrogatorStateBlock(StateBlock):
