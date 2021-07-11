@@ -25,7 +25,7 @@ from idaes.apps.caprese.common.config import (
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
-        categorize_dae_variables_and_constraints,
+        # categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
 from idaes.apps.caprese.nmpc_var import (
@@ -37,7 +37,6 @@ from idaes.apps.caprese.nmpc_var import (
         InputVar,
         FixedVar,
         MeasuredVar,
-        ActualMeasurementVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -49,7 +48,7 @@ from pyomo.environ import (
         Set,
         ComponentUID,
         Suffix,
-        Constraint,
+        # Constraint,
         )
 from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, SubclassOf
@@ -110,6 +109,11 @@ class _DynamicBlockData(_BlockData):
                 if categ is not VC.MEASUREMENT:
                     # Assume that measurements are duplicates
                     self.dae_vars.extend(varlist)
+                    
+        elif hasattr(self, "already_categorized_for_MHE") and \
+            self.already_categorized_for_MHE: #change the default to "categorize_dae_variables_and_constraints" if don't want this
+            category_dict = self.category_dict #local variable is used in the rest of this function
+            pass
 
         else:
             scalar_vars, dae_vars = flatten_dae_components(
@@ -127,26 +131,9 @@ class _DynamicBlockData(_BlockData):
                     )
             self.category_dict = category_dict
             
-            #Want to replace "categorize_dae_variables" with "categorize_dae_variables_and_constraints",
-            #but MEASUREMENT category disappears in the latter function; check it with Robby.
-            scalar_cons, dae_cons = flatten_dae_components(
-                    model,
-                    time,
-                    ctype=Constraint,
-                    )
-            
-            not_use_category_dict, con_category_dict = categorize_dae_variables_and_constraints(
-                                                                                    model,
-                                                                                    dae_vars,
-                                                                                    dae_cons,
-                                                                                    time,
-                                                                                    )
-            self.con_category_dict = con_category_dict  
-                                                                            
-
         keys = list(category_dict)
         for categ in keys:
-            if not category_dict[categ]:
+            if not self.category_dict[categ]:
                 # Empty categories cause problems for us down the road
                 # due empty (unknown dimension) slices.
                 category_dict.pop(categ)
@@ -170,7 +157,7 @@ class _DynamicBlockData(_BlockData):
         if VC.FIXED in category_dict:
             self.fixed_vars = category_dict[VC.FIXED]
         if VC.MEASUREMENT in category_dict:
-            self.measurement_vars = category_dict.pop(VC.MEASUREMENT) #if it a bug to use pop here?
+            self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
 
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
@@ -183,7 +170,7 @@ class _DynamicBlockData(_BlockData):
                 for var in self.component_objects(SubclassOf(NmpcVar))
                 #for varlist in category_dict.values()
                 #for var in varlist
-                for t in time
+                for t in var.index_set()
                 if var.ctype is not MeasuredVar
                 )
         # NOTE: looking up var[t] instead of iterating over values() 
@@ -191,8 +178,13 @@ class _DynamicBlockData(_BlockData):
 
         # These should be overridden by a call to `set_sample_time`
         # The defaults assume that the entire model is one sample.
-        self.sample_points = [time.first(), time.last()]
-        self.sample_point_indices = [1, len(time)]
+        if self._sample_time is None:
+            self.sample_points = [time.first(), time.last()]
+            self.sample_point_indices = [1, len(time)]
+        # If self._sample_time is not provided, sample_points for the plant and the controller 
+        # will be created in mhe.py or controller.py.
+        # else: 
+        #     self.set_sample_time(self._sample_time)
 
     _var_name = 'var'
     _block_suffix = '_BLOCK'
@@ -780,8 +772,12 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_measurements = Initializer(kwds.pop('measurements', None),
                 treat_sequences_as_mappings=False)
+        self._init_sample_time = Initializer(kwds.pop('sample_time', None),
+                treat_sequences_as_mappings=False)
         self._init_category_dict = Initializer(kwds.pop('category_dict', None),
                 treat_sequences_as_mappings=False)
+        #self._init_con_category_dict = Initializer(kwds.pop('con_category_dict', None),
+        #        treat_sequences_as_mappings=False)
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):
@@ -801,10 +797,20 @@ class DynamicBlock(Block):
         if self._init_measurements is not None:
             block._measurements = self._init_measurements(parent, idx)
 
+        if self._init_sample_time is not None:
+            block._sample_time = self._init_sample_time(parent, idx)
+        else:
+            block._sample_time = None
+
         if self._init_category_dict is not None:
             block._category_dict = self._init_category_dict(parent, idx)
         else:
             block._category_dict = None
+
+        #if self._init_con_category_dict is not None:
+        #    block._con_category_dict = self._init_con_category_dict(parent, idx)
+        #else:
+        #    block._con_category_dict = None
 
         block._construct()
 

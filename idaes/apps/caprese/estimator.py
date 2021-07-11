@@ -23,8 +23,9 @@ __author__ = "Kuan-Han Lin"
 #         )
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
-        # categorize_dae_variables,
+        categorize_dae_variables,
         _identify_derivative_if_differential,
+        categorize_dae_variables_and_constraints,
         # CATEGORY_TYPE_MAP,
         )
 from idaes.apps.caprese.nmpc_var import (
@@ -64,15 +65,18 @@ from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentMap, ComponentSet
 # from pyomo.core.base.range import remainder
 # from pyomo.dae.set_utils import deactivate_model_at
-# from pyomo.dae.flatten import flatten_dae_components
+from pyomo.dae.flatten import (
+        flatten_components_along_sets,
+        flatten_dae_components,
+        )
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 
 import idaes.apps.caprese.nmpc_var as nmpc_var
 # from idaes.apps.caprese.nmpc_var import (
 #         NmpcVar,
 #         )
+from pyomo.dae.contset import ContinuousSet
 
-from pyomo.dae.flatten import flatten_components_along_sets
 
 MHE_CATEGORY_TYPE_MAP = {
     VC.ACTUALMEASUREMENT: nmpc_var.ActualMeasurementVar,
@@ -84,14 +88,108 @@ class _EstimatorBlockData(_DynamicBlockData):
     """ This class adds methods useful for working with dynamic
     models to be used by a estimator. These include methods for
     """
-    
+
     def empty_now(self):
         print("dummy fun = ", 123)
+
+    def _construct(self):
+        if self._sample_time is None:
+            raise RuntimeError("MHE needs the sample time to be provided!")
+        else:
+            sample_time = self._sample_time
+            self.set_sample_time(sample_time)
+            
+        mod = self.mod
+        time = self.time
         
+        try:
+            inputs = self._inputs
+        except AttributeError:
+            inputs = self._inputs = None
+        try:
+            measurements = self._measurements
+        except AttributeError:
+            measurements = self._measurements = None
+        
+        scalar_vars, dae_vars = flatten_dae_components(
+                mod,
+                time,
+                ctype=Var,
+                )
+        self.scalar_vars = scalar_vars
+        self.dae_vars = dae_vars
+        category_dict = categorize_dae_variables(
+                dae_vars,
+                time,
+                inputs,
+                measurements=measurements,
+                )
+        self.category_dict = category_dict
+            
+        scalar_cons, dae_cons = flatten_dae_components(mod, time, ctype = Constraint)
+        #need to add reference if use the following var_cactegory_dict
+        not_use_category_dict, con_category_dict = categorize_dae_variables_and_constraints(
+                                                                                mod,
+                                                                                dae_vars,
+                                                                                dae_cons,
+                                                                                time,
+                                                                                )
+        self.con_category_dict = con_category_dict  
+        
+        self.already_categorized_for_MHE = True
+        
+        
+        # Augment the category dict with MHE components
+        # Call functions to add MHE error variables, etc, based on 
+        # category_dict, add these variables to the category dict
+        #
+        # Modify the user's constraints, add the new constraint
+        # to the con_category_dict
+        # category_dict[VC.ACTUALMEASUREMENT] = [...]
+        
+        
+        
+        self._add_sample_point_set()
+        self.MHE_VARS_CONS_BLOCK = Block()
+        
+        n_measurement = len(category_dict[VC.MEASUREMENT])
+        n_diffvar_con = len(category_dict[VC.DIFFERENTIAL])
+        
+        self.MHE_VARS_CONS_BLOCK.MEASUREMENT_SET = Set(initialize = range(n_measurement))
+        self.MHE_VARS_CONS_BLOCK.DIFFERENTIAL_SET = Set(initialize = range(n_diffvar_con))
+        
+        self._add_actual_measurement_param()
+        self._add_measurement_error()
+        self._add_model_disturbance()
+        
+        self._add_MHE_vars_to_category_dict()
+        
+        super(_EstimatorBlockData, self)._construct()
+        if VC.ACTUALMEASUREMENT in self.category_dict:
+            self.actualmeasurement_vars = category_dict.pop(VC.ACTUALMEASUREMENT)
+        if VC.MEASUREMENTERROR in self.category_dict:
+            self.measurementerror_vars = category_dict.pop(VC.MEASUREMENTERROR)
+        if VC.MODELDISTURBANCE in self.category_dict:
+            self.modeldisturbance_vars = category_dict.pop(VC.MODELDISTURBANCE)
+        
+        
+        self._add_mea_moddis_componentmap()
+        
+        self._add_measurement_constraint()
+        self._add_disturbance_to_differential_cons()
+        
+        #Set initial values for actual measurements
+        for ind in self.MEASUREMENT_SET:
+            init_mea_block = self.MEASUREMENT_BLOCK[ind]
+            init_val = {idx: 0.0 if init_mea_block.var[idx].value is None else init_mea_block.var[idx].value 
+                        for idx in self.SAMPLEPOINT_SET} #Not sure why it doesn't work when the value is None
+            self.ACTUALMEASUREMENT_BLOCK[ind].var.set_values(init_val)
+
     def _add_sample_point_set(self):
         set_name = "SAMPLEPOINT_SET"
-        self.add_component(set_name, Set(initialize = self.sample_points))
+        self.add_component(set_name, ContinuousSet(initialize = self.sample_points))
         
+
     def _add_actual_measurement_param(self):
         """This function creates a indexed block and "fixed" variables to allocate 
         actual measurement measured from the plant. 
@@ -100,18 +198,15 @@ class _EstimatorBlockData(_DynamicBlockData):
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         
         block_name = "ACTUAL_MEASUREMENT_BLOCK"
-        mea_set = self.MEASUREMENT_SET
+        mea_set = MHEBlock.MEASUREMENT_SET
         actmea_block = Block(mea_set)
         MHEBlock.add_component(block_name, actmea_block)
 
         sps_set = self.SAMPLEPOINT_SET       
         for i in mea_set:
             var_name = "actual_measurement"
-            init_mea_block = self.MEASUREMENT_BLOCK[i]
-            init_val = {idx: 0.0 if init_mea_block.var[idx].value is None else init_mea_block.var[idx].value 
-                        for idx in sps_set} #Not sure why it doesn't work when the value is None
-            actmea_block[i].add_component(var_name, Var(sps_set, initialize = init_val))
-            actmea_block[i].find_component(var_name).fix() #This block should always be fixed!
+            actmea_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
+            actmea_block[i].find_component(var_name).fix() #Variables in this block should always be fixed!
     
     def _add_measurement_error(self):
         """This function creates a indexed block, including measurement errors and 
@@ -121,7 +216,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         
         block_name = "MEASUREMENT_ERROR_BLOCK"
-        mea_set = self.MEASUREMENT_SET
+        mea_set = MHEBlock.MEASUREMENT_SET
         meaerr_block = Block(mea_set)
         MHEBlock.add_component(block_name, meaerr_block)
         
@@ -139,7 +234,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         
         block_name = "MODEL_DISTURBANCE_BLOCK"
-        diffvar_set = self.DIFFERENTIAL_SET
+        diffvar_set = MHEBlock.DIFFERENTIAL_SET
         moddis_block = Block(diffvar_set)
         MHEBlock.add_component(block_name, moddis_block)
         
@@ -150,8 +245,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             moddis_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             moddis_block[i].find_component(var_name)[t0].fix(0.0) #fix model disturbance at t = 0 as 0.0
             
-        
-    def _get_MHE_category_dict(self):        
+    def _add_MHE_vars_to_category_dict(self):        
 
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         target_set = ComponentSet((self.SAMPLEPOINT_SET,))        
@@ -171,90 +265,95 @@ class _EstimatorBlockData(_DynamicBlockData):
                 save_list.append(comps_list[0][0])
             MHE_category_list_map[cateitem] = save_list
             
-        MHE_category_dict = {
-            category: [
-                Reference(var, ctype=ctype)
-                for var in MHE_category_list_map[category]
-                ]
-            for category, ctype in MHE_CATEGORY_TYPE_MAP.items()
-                            }
+        # MHE_category_dict = {
+        #     category: [
+        #         Reference(var, ctype=ctype)
+        #         for var in MHE_category_list_map[category]
+        #         ]
+        #     for category, ctype in MHE_CATEGORY_TYPE_MAP.items()
+        #                     }
         
-        self.MHE_category_dict = MHE_category_dict
+        for category, ctype in MHE_CATEGORY_TYPE_MAP.items():
+            for var in MHE_category_list_map[category]:
+                self.category_dict[category] = [Reference(var, ctype=ctype) 
+                                                for var in MHE_category_list_map[category]]
+        
+        # self.MHE_category_dict = MHE_category_dict
         
         
-    def _add_MHE_var_blocks(self):
-        category_dict = self.MHE_category_dict
-        var_name = self._var_name
-        for categ, varlist in category_dict.items():
-            ctype = MHE_CATEGORY_TYPE_MAP.get(categ, NmpcVar)
-            # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
-            # They serve as a way to access all the "differential variables"
-            block_name = self.get_category_block_name(categ)
-            set_name = self.get_category_set_name(categ)
-            set_range = range(len(varlist))
+    # def _add_MHE_var_blocks(self):
+    #     category_dict = self.MHE_category_dict
+    #     var_name = self._var_name
+    #     for categ, varlist in category_dict.items():
+    #         ctype = MHE_CATEGORY_TYPE_MAP.get(categ, NmpcVar)
+    #         # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
+    #         # They serve as a way to access all the "differential variables"
+    #         block_name = self.get_category_block_name(categ)
+    #         set_name = self.get_category_set_name(categ)
+    #         set_range = range(len(varlist))
 
-            # Construct a set that indexes, eg, the "differential variables"
-            category_set = Set(initialize=set_range)
-            self.add_component(set_name, category_set)
+    #         # Construct a set that indexes, eg, the "differential variables"
+    #         category_set = Set(initialize=set_range)
+    #         self.add_component(set_name, category_set)
 
-            # Construct an IndexedBlock, each data object of which
-            # will contain a single reference-to-timeslice of that
-            # category, and with the corresponding custom ctype
-            category_block = Block(category_set)
-            self.add_component(block_name, category_block)
+    #         # Construct an IndexedBlock, each data object of which
+    #         # will contain a single reference-to-timeslice of that
+    #         # category, and with the corresponding custom ctype
+    #         category_block = Block(category_set)
+    #         self.add_component(block_name, category_block)
 
-            # Don't want these blocks sent to any solver.
-            category_block.deactivate()
+    #         # Don't want these blocks sent to any solver.
+    #         category_block.deactivate()
 
-            for i, var in enumerate(varlist):
-                # Add reference-to-timeslices to new blocks:
-                #
-                # Create a new reference if var is not a reference or
-                # it has the wrong ctype...
-                # We may want to reconsider overriding the user's ctype...
-                # We may also want to make sure these references are not
-                # attached to anything. Otherwise we will fail here.
-                ref = var if var.is_reference() and var.ctype is ctype \
-                        else Reference(var, ctype=ctype)
-                category_block[i].add_component(var_name, ref)
-                # These vars were created by the categorizer
-                # and have custom ctypes.
+    #         for i, var in enumerate(varlist):
+    #             # Add reference-to-timeslices to new blocks:
+    #             #
+    #             # Create a new reference if var is not a reference or
+    #             # it has the wrong ctype...
+    #             # We may want to reconsider overriding the user's ctype...
+    #             # We may also want to make sure these references are not
+    #             # attached to anything. Otherwise we will fail here.
+    #             ref = var if var.is_reference() and var.ctype is ctype \
+    #                     else Reference(var, ctype=ctype)
+    #             category_block[i].add_component(var_name, ref)
+    #             # These vars were created by the categorizer
+    #             # and have custom ctypes.
                 
-    def _add_MHE_category_references(self):
-        """ Create a "time-indexed vector" for each category of variables. """
-        category_dict = self.MHE_category_dict
+    # def _add_MHE_category_references(self):
+    #     """ Create a "time-indexed vector" for each category of variables. """
+    #     category_dict = self.MHE_category_dict
 
-        for categ in category_dict:
-            ctype = MHE_CATEGORY_TYPE_MAP.get(categ, NmpcVar)
-            # Get the block that holds this category of var,
-            # and the name of the attribute that holds the
-            # custom-ctype var (this attribute is the same
-            # for all blocks).
-            block_name = self.get_category_block_name(categ)
-            var_name = self._var_name
+    #     for categ in category_dict:
+    #         ctype = MHE_CATEGORY_TYPE_MAP.get(categ, NmpcVar)
+    #         # Get the block that holds this category of var,
+    #         # and the name of the attribute that holds the
+    #         # custom-ctype var (this attribute is the same
+    #         # for all blocks).
+    #         block_name = self.get_category_block_name(categ)
+    #         var_name = self._var_name
 
-            # Get a slice of the block, e.g. self.DIFFERENTIAL_BLOCK[:]
-            block = getattr(self, block_name)
-            _slice = block[:]
-            #_slice = self.__getattribute__(block_name)[:]
-            # Why does this work when self.__getattr__(block_name) does not?
-            # __getattribute__ appears to work just fine...
+    #         # Get a slice of the block, e.g. self.DIFFERENTIAL_BLOCK[:]
+    #         block = getattr(self, block_name)
+    #         _slice = block[:]
+    #         #_slice = self.__getattribute__(block_name)[:]
+    #         # Why does this work when self.__getattr__(block_name) does not?
+    #         # __getattribute__ appears to work just fine...
 
-            # Get a slice of the block and var, e.g.
-            # self.DIFFERENTIAL_BLOCK[:].var[:]
-            _slice = getattr(_slice, var_name)[:]
+    #         # Get a slice of the block and var, e.g.
+    #         # self.DIFFERENTIAL_BLOCK[:].var[:]
+    #         _slice = getattr(_slice, var_name)[:]
 
-            # Add a reference to this slice to the `vectors` block.
-            # This will be, e.g. `self.vectors.differential` and
-            # can be accessed with its two indices, e.g.
-            # `self.vectors.differential[i,t0]`
-            # to get the "ith coordinate" of the vector of differential
-            # variables at time t0.
-            ref = Reference(_slice, ctype=_NmpcVector)
-            self.vectors.add_component(
-                    categ.name.lower(), # Lowercase of the enum name
-                    ref,
-                    )
+    #         # Add a reference to this slice to the `vectors` block.
+    #         # This will be, e.g. `self.vectors.differential` and
+    #         # can be accessed with its two indices, e.g.
+    #         # `self.vectors.differential[i,t0]`
+    #         # to get the "ith coordinate" of the vector of differential
+    #         # variables at time t0.
+    #         ref = Reference(_slice, ctype=_NmpcVector)
+    #         self.vectors.add_component(
+    #                 categ.name.lower(), # Lowercase of the enum name
+    #                 ref,
+    #                 )
             
     def _add_mea_moddis_componentmap(self):
         
@@ -288,7 +387,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         block_name = "MEASUREMENT_CONSTRAINT_BLOCK" 
-        mea_set = self.MEASUREMENT_SET
+        mea_set = MHEBlock.MEASUREMENT_SET
         meacon_block = Block(mea_set)
         MHEBlock.add_component(block_name, meacon_block)
         
@@ -333,14 +432,14 @@ class _EstimatorBlockData(_DynamicBlockData):
             for j in sample_points:
                 if j >= time_pt:
                     return j
-        
+
         #Now, var_category and con_category don't come from the same function.
         #(var_category is from categorize_dae_variables; con_category is from categorize_dae_variables_and_constraints)
         #Thus, the order of differential vars may be different from the order of differential equations.
         #(Note that the order of differential vars, derivative vars, and model disturbances are corresponding.)
         #Use the following function to get the correct model disturbance.
         def find_correspondsing_model_disturbance(curr_difeq, time, derivar_map_moddis):
-                                               
+
             t0 = time.first()
             # check_list = [id(var[t0]) for var in derivativelist]
             is_diff, target_deriv = _identify_derivative_if_differential(curr_difeq[t0], time)
@@ -359,20 +458,32 @@ class _EstimatorBlockData(_DynamicBlockData):
         derivativelist = self.category_dict[VC.DERIVATIVE]
         for i in range(n_diff_equs):
             curr_difeq = diff_equs[i]
+            # Get corresponding disturbance from index i
+            # And gettting the time point is easy.
             mod_dist = find_correspondsing_model_disturbance(curr_difeq, 
                                                              time, 
                                                              self.derivar_map_moddis)
             con_name = "disturbed_diff_con"
-            ddc_block[i].add_component(con_name, Constraint(time))
-            #Here run the iterations to set the constraint expression one by one. Other better way to do that?
-            for tp in time:
+            def _dd_rule(m, tp):
                 curr_sampt = curr_sample_point(tp, sample_points)
                 newbody = (curr_difeq[tp].body - mod_dist[curr_sampt])
                 #Differential constraints are confirmed as equalities in categorize_dae_variables_and_constraints
                 #I just set it equal to the original upper bound for convience.
                 newexpr = newbody == curr_difeq[tp].upper.value 
-                con_attr = ddc_block[i].find_component(con_name)
-                con_attr.add(tp, expr = newexpr)
+                return newexpr
+            _dd_con = Constraint(time, rule=_dd_rule)
+            ddc_block[i].add_component(con_name, _dd_con)
+                
+            # ddc_block[i].add_component(con_name, Constraint(time))
+            # #Here run the iterations to set the constraint expression one by one. Other better way to do that?
+            # for tp in time:
+            #     curr_sampt = curr_sample_point(tp, sample_points)
+            #     newbody = (curr_difeq[tp].body - mod_dist[curr_sampt])
+            #     #Differential constraints are confirmed as equalities in categorize_dae_variables_and_constraints
+            #     #I just set it equal to the original upper bound for convience.
+            #     newexpr = newbody == curr_difeq[tp].upper.value 
+            #     con_attr = ddc_block[i].find_component(con_name)
+            #     con_attr.add(tp, expr = newexpr)
             curr_difeq.deactivate() #deactivate the original/undisturbed differential equs
             
     def _MHE_setup(self):
