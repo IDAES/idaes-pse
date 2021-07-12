@@ -44,6 +44,7 @@ def patterns(package_root):
     return conf_data["patterns"]
 
 
+@pytest.mark.unit
 def test_headers(package_root, patterns):
     if patterns is None:
         print(f"ERROR: Did not get glob patterns: skipping test")
