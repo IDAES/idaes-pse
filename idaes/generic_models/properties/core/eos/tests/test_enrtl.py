@@ -849,18 +849,18 @@ class TestProperties(object):
         return m
 
     @pytest.mark.unit
-    def test_pressure_osmotic_phase(self, model):
+    def test_pressure_osm_phase(self, model):
         model.state[1].dens_mol_phase = Var(model.params.phase_list,
                                             initialize=55e3,
                                             units=pyunits.mol/pyunits.m**3)
 
-        model.state[1].pressure_osmotic_phase.display()
+        model.state[1].pressure_osm_phase.display()
         model.state[1].act_phase_comp.display()
 
-        assert_units_equivalent(model.state[1].pressure_osmotic_phase["Liq"],
+        assert_units_equivalent(model.state[1].pressure_osm_phase["Liq"],
                                 pyunits.Pa)
-        assert len(model.state[1].pressure_osmotic_phase) == 1
+        assert len(model.state[1].pressure_osm_phase) == 1
         assert pytest.approx(value(
             -Constants.gas_constant*300*log(0.1670306)*55e3),
             rel=1e-6) == value(
-                model.state[1].pressure_osmotic_phase["Liq"])
+                model.state[1].pressure_osm_phase["Liq"])

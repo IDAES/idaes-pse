@@ -17,6 +17,7 @@ Currently only supports liquid and vapor phases
 """
 from pyomo.environ import Expression, log
 
+from idaes.core import Apparent
 from idaes.core.util.exceptions import (
     ConfigurationError, PropertyNotSupportedError)
 from idaes.generic_models.properties.core.generic.utility import (
@@ -301,17 +302,23 @@ class Ideal(EoSBase):
                 b.temperature)
 
     @staticmethod
-    def pressure_osmotic_phase(b, p):
+    def pressure_osm_phase(b, p):
         try:
             solvent_set = b.params.solvent_set
         except AttributeError:
             raise ConfigurationError(
-                f"{b.name} called for pressure_osmotic, but no solvents were "
+                f"{b.name} called for pressure_osm, but no solvents were "
                 f"defined. Osmotic pressure requires at least one component "
                 f"to be declared as a solvent.")
-        C = sum(b.conc_mol_phase_comp[p, j] for j in b.component_list
-                if ((p, j) in b.phase_component_set and
-                    j not in solvent_set))
+        C = 0
+        for j in b.component_list:
+            if (p, j) in b.phase_component_set and j not in solvent_set:
+                c_obj = b.params.get_component(j)
+                if isinstance(c_obj, Apparent):
+                    i = sum(c_obj.config.dissociation_species.values())
+                else:
+                    i = 1
+                C += i*b.conc_mol_phase_comp[p, j]
         return Ideal.gas_constant(b)*b.temperature*C
 
 

@@ -912,7 +912,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'},
-             'pressure_osmotic_phase': {'method': '_pressure_osmotic_phase'},
+             'pressure_osm_phase': {'method': '_pressure_osm_phase'},
              'dh_rxn': {'method': '_dh_rxn'}})
 
 
@@ -2530,22 +2530,22 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.mw_phase)
             raise
 
-    def _pressure_osmotic_phase(self):
+    def _pressure_osm_phase(self):
         try:
             def rule_posm_phase(b, p):
                 pobj = b.params.get_phase(p)
                 if isinstance(pobj, LiquidPhase):
                     p_config = pobj.config
-                    return p_config.equation_of_state.pressure_osmotic_phase(
+                    return p_config.equation_of_state.pressure_osm_phase(
                         b, p)
                 else:
                     return Expression.Skip
-            self.pressure_osmotic_phase = Expression(
+            self.pressure_osm_phase = Expression(
                     self.phase_list,
                     doc="Osmotic pressure in each phase",
                     rule=rule_posm_phase)
         except AttributeError:
-            self.del_component(self.pressure_osmotic_phase)
+            self.del_component(self.pressure_osm_phase)
             raise
 
     def _pressure_sat_comp(self):

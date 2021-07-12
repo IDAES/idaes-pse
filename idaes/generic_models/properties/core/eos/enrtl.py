@@ -588,7 +588,7 @@ class ENRTL(Ideal):
         return exp(ln_gamma[j])
 
     @staticmethod
-    def pressure_osmotic_phase(b, p):
+    def pressure_osm_phase(b, p):
         # TODO: Replace ens_mol_phase with vol_mol_phase
         return (-ENRTL.gas_constant(b)*b.temperature *
                 log(sum(b.act_phase_comp[p, j]

@@ -638,22 +638,6 @@ class TestCation():
 
 
 class TestApparent():
-    @pytest.mark.unit
-    def test_not_electrolye(self):
-        m = ConcreteModel()
-
-        m.meta_object = PropertyClassMetadata()
-
-        def get_metadata(self):
-            return m.meta_object
-        m.get_metadata = types.MethodType(get_metadata, m)
-
-        with pytest.raises(
-                PropertyPackageError,
-                match="comp Apparent Component types should only be used with "
-                "Aqueous Phases"):
-            m.comp = Apparent(default={"_electrolyte": False})
-
     @pytest.fixture(scope="class")
     def m(self):
         m = ConcreteModel()
@@ -666,9 +650,45 @@ class TestApparent():
 
         m._apparent_set = Set()
 
-        m.comp = Apparent(default={"_electrolyte": True})
+        m.comp = Apparent(default={"dissociation_species": {"comp": 1},
+                                   "_electrolyte": True})
 
         return m
+
+    @pytest.mark.unit
+    def test_not_electrolye(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        m.comp = Apparent(default={"dissociation_species": {"comp": 1},
+                                   "_electrolyte": False})
+
+        for j in m.component_list:
+            assert j in ["comp"]
+
+        assert m.comp.config.dissociation_species == {"comp": 1}
+
+    @pytest.mark.unit
+    def test_no_dissociation_species(self):
+        m = ConcreteModel()
+
+        m.meta_object = PropertyClassMetadata()
+
+        def get_metadata(self):
+            return m.meta_object
+        m.get_metadata = types.MethodType(get_metadata, m)
+
+        with pytest.raises(
+                ConfigurationError,
+                match="dissoication_species argument was not set. "
+                "Apparent components require the dissociation species to be "
+                "defined."):
+            m.comp = Apparent(default={"_electrolyte": False})
 
     @pytest.mark.unit
     def test_config(self, m):
@@ -699,6 +719,7 @@ class TestApparent():
     def test_is_phase_valid_liquid(self, m):
         m.comp3 = Apparent(default={
             "valid_phase_types": PhaseType.liquidPhase,
+            "dissociation_species": {"comp": 1},
             "_electrolyte": True})
 
         m.Liq = LiquidPhase()
@@ -717,6 +738,7 @@ class TestApparent():
     def test_is_phase_valid_vapor(self, m):
         m.comp4 = Apparent(default={
             "valid_phase_types": PhaseType.vaporPhase,
+            "dissociation_species": {"comp": 1},
             "_electrolyte": True})
 
         assert not m.comp4._is_phase_valid(m.Liq)
@@ -729,6 +751,7 @@ class TestApparent():
     def test_is_phase_valid_solid(self, m):
         m.comp5 = Apparent(default={
             "valid_phase_types": PhaseType.solidPhase,
+            "dissociation_species": {"comp": 1},
             "_electrolyte": True})
 
         assert not m.comp5._is_phase_valid(m.Liq)
@@ -741,6 +764,7 @@ class TestApparent():
     def test_is_phase_valid_aqueous(self, m):
         m.comp6 = Apparent(default={
             "valid_phase_types": PhaseType.aqueousPhase,
+            "dissociation_species": {"comp": 1},
             "_electrolyte": True})
 
         assert not m.comp6._is_phase_valid(m.Liq)
@@ -754,6 +778,7 @@ class TestApparent():
         m.comp7 = Apparent(default={
             "valid_phase_types": [PhaseType.liquidPhase,
                                   PhaseType.vaporPhase],
+            "dissociation_species": {"comp": 1},
             "_electrolyte": True})
 
         assert m.comp7._is_phase_valid(m.Liq)

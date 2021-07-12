@@ -447,16 +447,18 @@ class ApparentData(SoluteData):
         doc="Dict of true species that this species will dissociate into "
         "upon dissolution along with stoichiometric coefficients."))
 
+    def build(self):
+        super().build()
+
+        # Make sure dissoication species were set
+        if self.config.dissociation_species is None:
+            raise ConfigurationError(
+                f"{self.name} dissoication_species argument was not set. "
+                f"Apparent components require the dissociation species to be "
+                f"defined.")
+
     def _is_aqueous_phase_valid(self):
         return True
-
-    def _add_to_component_list(self):
-        """
-        Ions should not be used outside of electrolyte property methods
-        """
-        raise PropertyPackageError(
-            "{} Apparent Component types should only be used with Aqueous "
-            "Phases".format(self.name))
 
     def _add_to_electrolyte_component_list(self):
         """
