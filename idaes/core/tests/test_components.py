@@ -670,6 +670,8 @@ class TestApparent():
 
         for j in m.component_list:
             assert j in ["comp"]
+        for j in m.solute_set:
+            assert j in ["comp"]
 
         assert m.comp.config.dissociation_species == {"comp": 1}
 
