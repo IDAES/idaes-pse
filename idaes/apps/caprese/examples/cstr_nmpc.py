@@ -215,7 +215,9 @@ def main(plot_switch=False):
                 )
 
         nmpc.controller.advance_one_sample()
-        nmpc.controller.load_measurements(measured)
+        nmpc.controller.load_measurements(measured, 
+                                          target = "measurement",
+                                          timepoint = controller.time.first())
 
         solver.solve(nmpc.controller, tee=True)
 
