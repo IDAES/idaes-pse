@@ -854,9 +854,6 @@ class TestProperties(object):
                                             initialize=55e3,
                                             units=pyunits.mol/pyunits.m**3)
 
-        model.state[1].pressure_osm_phase.display()
-        model.state[1].act_phase_comp.display()
-
         assert_units_equivalent(model.state[1].pressure_osm_phase["Liq"],
                                 pyunits.Pa)
         assert len(model.state[1].pressure_osm_phase) == 1
