@@ -143,7 +143,8 @@ def main(plot_switch=False):
                                                measurement_noise_weights)
     
     
-    mhe.estimator.MHE_initialize_to_initial_conditions()
+    mhe.estimator.initialize_actualmeasurements_at_t0()
+    mhe.estimator.initialize_to_initial_conditions()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
@@ -152,7 +153,9 @@ def main(plot_switch=False):
     
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     #apply measurement error here
-    mhe.estimator.load_measurements_for_MHE(measurements)
+    mhe.estimator.load_measurements(measurements,
+                                    target = "actualmeasurement",
+                                    timepoint = estimator.time.last())
     
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
@@ -183,7 +186,6 @@ def main(plot_switch=False):
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant)
         
-        # def save_plant_data(plant, rec_dict):
         plant_rec["S"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','S'].value)
         plant_rec["E"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','E'].value)
         plant_rec["C"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','C'].value)
@@ -194,8 +196,10 @@ def main(plot_switch=False):
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         #apply measurement error here
         
-        mhe.estimator.MHE_advance_one_sample()
-        mhe.estimator.load_measurements_for_MHE(measurements)
+        mhe.estimator.advance_one_sample()
+        mhe.estimator.load_measurements(measurements,
+                                        target = "actualmeasurement",
+                                        timepoint = estimator.time.last())
         mhe.estimator.load_inputs_for_MHE(cinput)
         # mhe.estimator.vectors.input[...].fix(cinput[i])
         
@@ -210,6 +214,7 @@ def main(plot_switch=False):
         MHE_rec["P"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','P'].value)
         MHE_rec["Solvent"].append(estimator.mod.fs.cstr.control_volume.material_holdup[tl,'aq','Solvent'].value)
         MHE_rec["Energy"].append(estimator.mod.fs.cstr.control_volume.energy_holdup[tl,'aq'].value)
+    
     
     return mhe, plant_rec, MHE_rec
 

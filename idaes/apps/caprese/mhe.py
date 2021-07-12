@@ -92,21 +92,13 @@ class MHESim(object):
                 cuid.find_component_on(estimator_model)[c_t0]
                 for cuid in self.input_cuids
                 ]
-        #scalar_vars, dae_vars = flatten_dae_components(m, time, Var)
-        #scalar_cons, dae_cons = flatten_dae_components(m, time, Constraint)
-        #var_cat, con_cat = categorize_dae_variables_and_equations(
-        #    m,
-        #    dae_var,
-        #    dae_cons,
-        #)
+
         self.estimator = EstimatorBlock(
                 model=estimator_model,
                 time=estimator_time_set,
                 inputs=init_estimator_inputs,
                 measurements=measurements,
-                sample_time = sample_time,
-                #category_dict={None: var_cat},
-                #con_category_dict={None: con_cat},
+                sample_time = sample_time, #MHE requires sample time.
                 )
         self.estimator.construct()
 
@@ -115,5 +107,4 @@ class MHESim(object):
             self.plant.set_sample_time(sample_time)
             self.sample_time = sample_time
             
-        # self.estimator._MHE_setup()
 

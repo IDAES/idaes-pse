@@ -37,6 +37,9 @@ from idaes.apps.caprese.nmpc_var import (
         InputVar,
         FixedVar,
         MeasuredVar,
+        ActualMeasurementVar,
+        MeasurementErrorVar,
+        ModelDisturbanceVar,
         )
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -111,8 +114,12 @@ class _DynamicBlockData(_BlockData):
                     self.dae_vars.extend(varlist)
                     
         elif hasattr(self, "already_categorized_for_MHE") and \
-            self.already_categorized_for_MHE: #change the default to "categorize_dae_variables_and_constraints" if don't want this
+            self.already_categorized_for_MHE:
             category_dict = self.category_dict #local variable is used in the rest of this function
+            
+            CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
+            CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
+            CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
             pass
 
         else:
@@ -393,23 +400,45 @@ class _DynamicBlockData(_BlockData):
                 t = time[i]
                 var[t].set_value(var.setpoint)
 
+    # def initialize_sample_to_initial(self,
+    #         sample_idx,
+    #         ctype=(DiffVar, AlgVar, DerivVar),
+    #         ):
+    #     """ Set values to initial values for variables of the
+    #     specified variable ctypes in the specified sample.
+    #     """
+    #     time = self.time
+    #     sample_point_indices = self.sample_point_indices
+    #     i_0 = sample_point_indices[sample_idx-1]
+    #     i_s = sample_point_indices[sample_idx]
+    #     t0 = time[i_0]
+    #     for var in self.component_objects(ctype):
+    #         # Would be nice if I could use a slice with
+    #         # start/stop indices to make this more concise.
+    #         for i in range(i_0+1, i_s+1):
+    #             t = time[i]
+    #             var[t].set_value(var[t0].value)
+                
     def initialize_sample_to_initial(self,
             sample_idx,
             ctype=(DiffVar, AlgVar, DerivVar),
             ):
         """ Set values to initial values for variables of the
         specified variable ctypes in the specified sample.
+        (This version can also handle vars that are indexed by 
+         SAMPLEPOINT_SET.)
         """
-        time = self.time
-        sample_point_indices = self.sample_point_indices
-        i_0 = sample_point_indices[sample_idx-1]
-        i_s = sample_point_indices[sample_idx]
-        t0 = time[i_0]
+        sample_points = self.sample_points
+        start = sample_points[sample_idx -1]
+        end = sample_points[sample_idx]
         for var in self.component_objects(ctype):
-            # Would be nice if I could use a slice with
-            # start/stop indices to make this more concise.
-            for i in range(i_0+1, i_s+1):
-                t = time[i]
+            indexset = var.index_set()
+            start_ind = indexset.find_nearest_index(start)
+            end_ind = indexset.find_nearest_index(end)
+            t0 = indexset[start_ind]
+            range_of_interest = range(start_ind+1, end_ind+1)
+            for i in range_of_interest:
+                t = indexset[i]
                 var[t].set_value(var[t0].value)
 
     def initialize_to_setpoint(self, 
@@ -429,6 +458,9 @@ class _DynamicBlockData(_BlockData):
         """ Sets values to initial values for specified variable
         ctypes for all time points.
         """
+        
+        if ActualMeasurementVar in self.collect_ctypes():
+            ctype += (ActualMeasurementVar,)
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
@@ -570,18 +602,72 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    def load_measurements(self, measured):
-        t0 = self.time.first()
-        if VC.MEASUREMENT in self.categories:
-            # Want: self.measured_vars[:,t0].fix(measured)
-            for var, val in zip(self.MEASUREMENT_BLOCK[:].var, measured):
-                var[t0].fix(val)
+    # def load_measurements(self, measured):
+    #     t0 = self.time.first()
+    #     if VC.MEASUREMENT in self.categories:
+    #         # Want: self.measured_vars[:,t0].fix(measured)
+    #         for var, val in zip(self.MEASUREMENT_BLOCK[:].var, measured):
+    #             var[t0].fix(val)
+    #     else:
+    #         raise RuntimeError(
+    #                 "Trying to set measurement values but no measurement "
+    #                 "category has been specified."
+    #                 )
+            
+    def load_measurements(self, measured, target = None, timepoint = None):
+        '''
+        (This one provides the choices of desired vars and timepoint 
+         to load the measurements to.)
+        '''
+        time = self.time
+        if target is None:
+            print("Desired variables to load measurements to is not given, assuming it's 'measurement'.")
+            target_block = self.MEASUREMENT_BLOCK
+        if timepoint is None:
+            print("Desired time point is not given, assuming it's time.first().")
+            timepoint = time.first()
+            
+        if target == "measurement":
+            target_block = self.MEASUREMENT_BLOCK
+        elif target == "actualmeasurement":
+            target_block = self.ACTUALMEASUREMENT_BLOCK
         else:
-            raise RuntimeError(
-                    "Trying to set measurement values but no measurement "
-                    "category has been specified."
-                    )
-
+            raise RuntimeError("Wrong target variable type is given, \
+                               please use either 'measurement' or 'actualmeasurement'.")
+                               
+        if timepoint not in [time.first(), time.last()]:
+            raise RuntimeError("Wrong time point is given, \
+                               please use either 'time.first()' or 'time.last()'.")
+                               
+        for var, val in zip(target_block[:].var, measured):
+            var[timepoint].fix(val)
+            
+        
+    # def advance_by_time(self,
+    #         t_shift,
+    #         ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
+    #             # Fixed variables are included as I expect disturbances
+    #             # should shift in time as well.
+    #         tolerance=1e-8,
+    #         ):
+    #     """ Set values for the variables of the specified ctypes
+    #     to their values `t_shift` in the future.
+    #     """
+    #     time = self.time
+    #     # The outer loop is over time so we don't have to call
+    #     # `find_nearest_index` for every variable.
+    #     # I am assuming that `find_nearest_index` is slower than
+    #     # accessing `component_objects`
+    #     for t in time:
+    #         ts = t + t_shift
+    #         idx = time.find_nearest_index(ts, tolerance)
+    #         if idx is None:
+    #             # t + sample_time is outside the model's "horizon"
+    #             continue
+    #         ts = time[idx]
+    #         for var in self.component_objects(ctype):
+    #             var[t].set_value(var[ts].value)
+                
     def advance_by_time(self,
             t_shift,
             ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
@@ -591,11 +677,13 @@ class _DynamicBlockData(_BlockData):
             ):
         """ Set values for the variables of the specified ctypes
         to their values `t_shift` in the future.
+        (This version can handle vars that are indexed by SAMPLEPOINT_SET.)
         """
         time = self.time
+        sps_set = self.sample_points
         # The outer loop is over time so we don't have to call
         # `find_nearest_index` for every variable.
-        # I am assuming that `find_nearest_index` is slower than
+        # Following Robby's assumption, assuming that `find_nearest_index` is slower than
         # accessing `component_objects`
         for t in time:
             ts = t + t_shift
@@ -605,8 +693,15 @@ class _DynamicBlockData(_BlockData):
                 continue
             ts = time[idx]
             for var in self.component_objects(ctype):
-                var[t].set_value(var[ts].value)
+                if var.index_set() is time:
+                    var[t].set_value(var[ts].value)
+                elif var.index_set() is not time:
+                    #Additional inner if statement because SimpleDynamicBlock doesn't have SAMPLEPOINT_SET
+                    if var.index_set() is self.SAMPLEPOINT_SET: 
+                        if idx in self.sample_point_indices:
+                            var[t].set_value(var[ts].value)
 
+                
     def advance_one_sample(self,
             ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
             tolerance=1e-8,
@@ -614,6 +709,12 @@ class _DynamicBlockData(_BlockData):
         """ Set values for the variables of the specified ctypes
         to their values one sample time in the future.
         """
+        MHE_ctypes = [ActualMeasurementVar, MeasurementErrorVar, ModelDisturbanceVar]
+        Block_ctypes = self.collect_ctypes()
+        for MHEctype in MHE_ctypes:
+            if MHEctype in Block_ctypes:
+                ctype += (MHEctype,)
+        
         sample_time = self.sample_time
         self.advance_by_time(
                 sample_time,

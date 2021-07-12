@@ -129,16 +129,19 @@ def main(plot_switch=False):
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                 measurement_noise_weights)
     
-    mhe.estimator.MHE_initialize_to_initial_conditions()
+    mhe.estimator.initialize_actualmeasurements_at_t0()
+    mhe.estimator.initialize_to_initial_conditions()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
-    mhe.plant.mod.Tjinb.fix() #Fix the input to solve the plant
+    mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
     
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     #apply measurement error here
-    mhe.estimator.load_measurements_for_MHE(measurements)
+    mhe.estimator.load_measurements(measurements,
+                                    target = "actualmeasurement",
+                                    timepoint = estimator.time.last())
     
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
@@ -166,18 +169,19 @@ def main(plot_switch=False):
         
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
-        solver.solve(mhe.plant)
+        solver.solve(mhe.plant, tee = True)
         
         plant_rec["Ca"].append(mhe.plant.mod.Ca[p_ts].value)
         plant_rec["T"].append(mhe.plant.mod.Tall[p_ts, "T"].value)
         plant_rec["Tj"].append(mhe.plant.mod.Tall[p_ts, "Tj"].value)
         
-        
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         #apply measurement error here
         
-        mhe.estimator.MHE_advance_one_sample()
-        mhe.estimator.load_measurements_for_MHE(measurements)
+        mhe.estimator.advance_one_sample()
+        mhe.estimator.load_measurements(measurements,
+                                        target = "actualmeasurement",
+                                        timepoint = estimator.time.last())
         mhe.estimator.load_inputs_for_MHE(inputs)
         # mhe.estimator.vectors.input[...].fix(cinput[i])
         
