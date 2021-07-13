@@ -38,7 +38,7 @@ class GenericPropertyPackageError(PropertyPackageError):
                f"in the property parameter configuration."
 
 
-def get_method(self, config_arg, comp=None):
+def get_method(self, config_arg, comp=None, phase=None):
     """
     Method to inspect configuration argument and return the user-defined
     construction method associated with it.
@@ -51,6 +51,8 @@ def get_method(self, config_arg, comp=None):
 
     Args:
         config_arg : the configuration argument to look up
+        comp : component name for which argument is to be retrieved
+        phase : phase name indexing argument
 
     Returns:
         A callable method or a ConfigurationError
@@ -75,6 +77,8 @@ def get_method(self, config_arg, comp=None):
     # If so, assume c_arg is a class or module holding property subclasses
     if hasattr(c_arg, config_arg):
         c_arg = getattr(c_arg, config_arg)
+    if phase is not None:
+        c_arg = c_arg[phase]
 
     # Try to get the return_expression method from c_arg
     # Otherwise assume c_arg is the return_expression method

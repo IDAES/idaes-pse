@@ -239,7 +239,7 @@ class TestBuild(object):
 
         assert m.fs.config.dynamic is False
         assert m.fs.config.time is m.s
-        assert not hasattr(m.fs, "time")
+        assert m.fs.time is m.s
         assert m.fs.time_units is None
 
     @pytest.mark.unit
@@ -252,7 +252,7 @@ class TestBuild(object):
 
         assert m.fs.config.dynamic is False
         assert m.fs.config.time is m.s
-        assert not hasattr(m.fs, "time")
+        assert m.fs.time is m.s
         assert m.fs.time_units is None
 
     @pytest.mark.unit
@@ -265,7 +265,7 @@ class TestBuild(object):
 
         assert m.fs.config.dynamic is True
         assert m.fs.config.time is m.s
-        assert not hasattr(m.fs, "time")
+        assert m.fs.time is m.s
         assert m.fs.time_units is None
 
     @pytest.mark.unit
@@ -290,7 +290,7 @@ class TestBuild(object):
 
         assert m.fs.config.dynamic is False
         assert m.fs.config.time is m.s
-        assert not hasattr(m.fs, "time")
+        assert m.fs.time is m.s
         assert m.fs.time_units is None
 
     @pytest.mark.unit
@@ -305,7 +305,7 @@ class TestBuild(object):
 
         assert m.fs.config.dynamic is True
         assert m.fs.config.time is m.s
-        assert not hasattr(m.fs, "time")
+        assert m.fs.time is m.s
         assert m.fs.time_units is None
 
     @pytest.mark.unit

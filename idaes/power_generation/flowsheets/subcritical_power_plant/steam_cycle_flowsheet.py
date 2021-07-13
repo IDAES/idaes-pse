@@ -309,21 +309,21 @@ def add_unit_models(m):
 
     # Important process variables, declared and used in PID controllers
     # Variable for main steam temperature
-    fs.temperature_main_steam = pyo.Var(fs.config.time, initialize=810)
+    fs.temperature_main_steam = pyo.Var(fs.time, initialize=810)
 
     # Constraint to calculate main steam temperature
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def temperature_main_steam_eqn(b, t):
         return b.temperature_main_steam[t] == b.turb.\
             throttle_valve[1].control_volume.properties_in[t].temperature
 
     # Variable for gross power output in MW
-    fs.power_output = pyo.Var(fs.config.time,
+    fs.power_output = pyo.Var(fs.time,
                               initialize=300,
                               doc='gross power output in MW')
 
     # Constraint to calculate gross power output
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def power_output_eqn(b, t):
         return b.power_output[t] == -b.turb.power[t]/1e6
 
@@ -517,14 +517,14 @@ def set_arcs_and_constraints(m):
     #
     # Constraint to set boiler feed water pump work equal to BFPT work
     # Note that there are to unit models for BFPT including an outlet stage
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def constraint_bfp_power(b, t):
         return 0 == (1e-6*fs.bfp.control_volume.work[t]
                      + 1e-6*fs.bfp_turb.control_volume.work[t]
                      + 1e-6*fs.bfp_turb_os.control_volume.work[t])
 
     # Constraint to set IP inlet steam flow equal to HP outlet steam flow
-    @fs.turb.Constraint(fs.config.time)
+    @fs.turb.Constraint(fs.time)
     def constraint_reheat_flow(b, t):
         return b.ip_stages[1].inlet.flow_mol[t] == \
             b.hp_split[14].outlet_1.flow_mol[t]
@@ -537,14 +537,14 @@ def set_arcs_and_constraints(m):
     # Constraint to set the pressure of makeup water to hotwell equal to
     # the pressure of auxiliary condenser, which is usually lower than
     # the pressure of main condenser in this model
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def makeup_water_pressure_constraint(b, t):
         return b.condenser_hotwell.makeup_state[t].pressure*1e-4 == \
             b.condenser_hotwell.aux_condensate_state[t].pressure*1e-4
 
     # Constrait to set the mixed state pressure equal to the pressure of
     # auxiliary condenser
-    @fs.condenser_hotwell.Constraint(fs.config.time)
+    @fs.condenser_hotwell.Constraint(fs.time)
     def mixer_pressure_constraint(b, t):
         return b.aux_condensate_state[t].pressure*1e-4 == \
             b.mixed_state[t].pressure*1e-4
@@ -554,7 +554,7 @@ def set_arcs_and_constraints(m):
     # This constraint determines the steam extraction flow rate and
     # is very important to avoid flash of deaerator tank when load is
     # ramping down, which will causes convergence issue if the flash happens
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def da_outlet_enthalpy_constraint(b, t):
         return 1e-3*b.da_tank.outlet.enth_mol[t] == 1e-3*(
             b.da_tank.control_volume.properties_in[t].
@@ -565,7 +565,7 @@ def set_arcs_and_constraints(m):
     # drain_mix model of the feed water heater is declared with momentum
     # mixing type set to MomentumMixingType.none
     # Constraint for feed water heater 1
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def fwh1_drain_mixer_pressure_eqn(b, t):
         return b.fwh1.drain_mix.drain.pressure[t]*1e-4 == \
             b.fwh1.drain_mix.steam.pressure[t]*1e-4
@@ -575,7 +575,7 @@ def set_arcs_and_constraints(m):
     # drain_mix model of the feed water heater is declared with momentum
     # mixing type set to MomentumMixingType.none
     # Constraint for feed water heater 2
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def fwh2_drain_mixer_pressure_eqn(b, t):
         return b.fwh2.drain_mix.drain.pressure[t]*1e-4 == \
             b.fwh2.drain_mix.steam.pressure[t]*1e-4
@@ -585,14 +585,14 @@ def set_arcs_and_constraints(m):
     # drain_mix model of the feed water heater is declared with momentum
     # mixing type set to MomentumMixingType.none
     # Constraint for feed water heater 5
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def fwh5_drain_mixer_pressure_eqn(b, t):
         return b.fwh5.drain_mix.drain.pressure[t]*1e-5 == \
             b.fwh5.drain_mix.steam.pressure[t]*1e-5
 
     # Add a custom constraint for condensate pump using the pump curve,
     # the relationship between flow rate and pressure increase
-    @fs.cond_pump.Constraint(fs.config.time)
+    @fs.cond_pump.Constraint(fs.time)
     def cond_pump_curve_constraint(b, t):
         return 1e-5*b.deltaP[t] == 1e-5*(
             -5.08e-7*b.inlet.flow_mol[t]**3 + 4.09e-3*b.inlet.flow_mol[t]**2
@@ -600,7 +600,7 @@ def set_arcs_and_constraints(m):
 
     # Add a custom constraint for the booster pump using the pump curve,
     # the relationship between flow rate and pressure increase
-    @fs.booster.Constraint(fs.config.time)
+    @fs.booster.Constraint(fs.time)
     def booster_pump_curve_constraint(b, t):
         return 1e-5*b.deltaP[t] == 1e-5*(
             -2.36e-7*b.inlet.flow_mol[t]**3 + 3.15e-3*b.inlet.flow_mol[t]**2
@@ -610,7 +610,7 @@ def set_arcs_and_constraints(m):
     # steam flow in such that there is makeup flow needed to offset blowdown
     # This constraint will be deactivated when the steam cycle sub-flowsheet
     # is combined with the boiler system sub-flowsheet
-    @fs.Constraint(fs.config.time)
+    @fs.Constraint(fs.time)
     def fw_flow_constraint(b, t):
         return 1e-3*b.da_tank.outlet.flow_mol[t] == \
             1e-3*b.turb.inlet_split.inlet.flow_mol[t]*1.02
@@ -629,11 +629,11 @@ def set_arcs_and_constraints(m):
             - b.cooling.tube.properties_in[t].temperature
         )
 
-    fs.fwh1.dca = pyo.Expression(fs.config.time, rule=rule_dca_no_cool)
-    fs.fwh2.dca = pyo.Expression(fs.config.time, rule=rule_dca)
-    fs.fwh3.dca = pyo.Expression(fs.config.time, rule=rule_dca)
-    fs.fwh5.dca = pyo.Expression(fs.config.time, rule=rule_dca)
-    fs.fwh6.dca = pyo.Expression(fs.config.time, rule=rule_dca)
+    fs.fwh1.dca = pyo.Expression(fs.time, rule=rule_dca_no_cool)
+    fs.fwh2.dca = pyo.Expression(fs.time, rule=rule_dca)
+    fs.fwh3.dca = pyo.Expression(fs.time, rule=rule_dca)
+    fs.fwh5.dca = pyo.Expression(fs.time, rule=rule_dca)
+    fs.fwh6.dca = pyo.Expression(fs.time, rule=rule_dca)
 
     return m
 
@@ -934,7 +934,7 @@ def set_inputs(m):
         fs.spray_ctrl.mv_lb = 0.05
 
         # Set initial conditions for controller errors
-        t0 = fs.config.time.first()
+        t0 = fs.time.first()
         fs.fwh2_ctrl.integral_of_error[t0].fix(0)
         fs.fwh3_ctrl.integral_of_error[t0].fix(0)
         fs.fwh5_ctrl.integral_of_error[t0].fix(0)
@@ -973,7 +973,7 @@ def initialize(m):
     # Set initial condition for dynamic unit models
     t0 = 0
     if m.dynamic is True:
-        t0 = fs.config.time.first()
+        t0 = fs.time.first()
         fs.hotwell_tank.set_initial_condition()
         fs.da_tank.set_initial_condition()
         fs.fwh1.set_initial_condition()
@@ -1533,7 +1533,7 @@ def _add_u_eq(blk, uex=0.8):
     Returns:
         None
     """
-    ti = blk.flowsheet().config.time
+    ti = blk.flowsheet().time
     blk.U0 = pyo.Var(ti)
     blk.f0 = pyo.Var(ti)
     blk.uex = pyo.Var(ti, initialize=uex)
@@ -1617,7 +1617,7 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.fwh6.condense.side_2.heat, 1e-7)
 
     # scaling factor for control valves
-    for t in m.fs_main.config.time:
+    for t in m.fs_main.time:
         iscale.set_scaling_factor(
             fs.spray_valve.control_volume.properties_in[t].flow_mol, 0.05)
         iscale.set_scaling_factor(
@@ -1655,7 +1655,7 @@ def main_dynamic():
     copy_non_time_indexed_values(m_dyn.fs_main, m_ss.fs_main,
                                  copy_fixed=True,
                                  outlvl=idaeslog.ERROR)
-    for t in m_dyn.fs_main.config.time:
+    for t in m_dyn.fs_main.time:
         copy_values_at_time(m_dyn.fs_main, m_ss.fs_main, t, 0.0,
                             copy_fixed=True, outlvl=idaeslog.ERROR)
     t0 = 0
@@ -1791,7 +1791,7 @@ def main_dynamic():
           m_dyn.fs_main.fs_stc.split_attemp.split_fraction[0, "Spray"].value))
 
     # impose step change for dynamic model
-    for t in m_dyn.fs_main.config.time:
+    for t in m_dyn.fs_main.time:
         if t >= 30:
             m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].fix(
                 m_dyn.fs_main.fs_stc.turb.ip_stages[1].
@@ -1825,7 +1825,7 @@ def main_dynamic():
     power_gross = []
     da_level = []
     cond_valve_open = []
-    for t in m_dyn.fs_main.config.time:
+    for t in m_dyn.fs_main.time:
         time.append(t)
         pres_ip.append(
             m_dyn.fs_main.fs_stc.turb.ip_stages[1].inlet.pressure[t].value)

@@ -234,7 +234,7 @@ see property package for documentation.}"""))
                 doc="Length of fin")
         # Thickness of slag layer
         self.slag_thickness = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=0.001,
                 doc="thickness of slag layer")
 
@@ -254,7 +254,7 @@ see property package for documentation.}"""))
         def alpha_tube(b):
             return asin(0.5*b.fin_thickness/b.radius_out)
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Angle at joint of tube "
                          "and fin at outside slag layer")
         def alpha_slag(b, t):
@@ -274,7 +274,7 @@ see property package for documentation.}"""))
         def perimeter_ts(b):
             return const.pi*b.diameter_in
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Perimeter on the outer slag side")
         def perimeter_ss(b, t):
             if self.config.single_side_only:
@@ -296,13 +296,13 @@ see property package for documentation.}"""))
                 + b.fin_thickness * b.fin_length
 
         # Cross section area of slag layer
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Cross section area of slag layer per tube")
         def area_cross_slag(b, t):
             return b.perimeter_if * b.slag_thickness[t]
 
         # Volume constraint
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="waterwall fluid volume of all tubes")
         def volume_eqn(b, t):
             return b.volume[t] == 0.25 * const.pi * b.diameter_in**2 \
@@ -355,39 +355,39 @@ see property package for documentation.}"""))
         # Add performance variables
         # Heat from fire side boiler model
         self.heat_fireside = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1e7,
                 doc='total heat from fire side model for the section')
         # Tube boundary wall temperature
         self.temp_tube_boundary = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=400.0,
                 doc='Temperature of tube boundary wall')
         # Tube center point wall temperature
         self.temp_tube_center = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=450.0,
                 doc='Temperature of tube center wall')
         # Slag boundary wall temperature
         self.temp_slag_boundary = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=600.0,
                 doc='Temperature of slag boundary wall')
         # Slag center point slag wall temperature
         self.temp_slag_center = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=500.0,
                 doc='Temperature of slag layer center point')
 
         # Energy holdup for slag layer
         self.energy_holdup_slag = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc='Energy holdup of slag layer')
 
         # Energy holdup for metal (tube + fin)
         self.energy_holdup_metal = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc='Energy holdup of metal')
 
@@ -395,11 +395,11 @@ see property package for documentation.}"""))
         if self.config.dynamic is True:
             self.energy_accumulation_slag = DerivativeVar(
                     self.energy_holdup_slag,
-                    wrt=self.flowsheet().config.time,
+                    wrt=self.flowsheet().time,
                     doc='Energy accumulation of slag layer')
             self.energy_accumulation_metal = DerivativeVar(
                     self.energy_holdup_metal,
-                    wrt=self.flowsheet().config.time,
+                    wrt=self.flowsheet().time,
                     doc='Energy accumulation of tube and fin metal')
 
         def energy_accumulation_term_slag(b, t):
@@ -410,55 +410,55 @@ see property package for documentation.}"""))
 
         # Velocity of steam
         self.velocity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=3.0,
                 doc='Velocity of steam')
 
         # Reynolds number based on liquid only flow
         self.N_Re = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0e6,
                 doc='Reynolds number')
 
         # Prandtl number of liquid phase
         self.N_Pr = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=2.0,
                 doc='Reynolds number')
 
         # Darcy friction factor
         self.friction_factor_darcy = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=0.01,
                 doc='Darcy friction factor')
 
         # Convective heat transfer coefficient on tube side,
         # typically in range (1000, 5e5)
         self.hconv = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=30000.0,
                 doc='Convective heat transfer coefficient')
 
         # Convective heat flux to fluid
         self.heat_flux_conv = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=7e4,
                 doc='Convective heat flux to fluid')
 
         # Fire-side heat flux
         self.heat_flux_fireside = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=100000.0,
                 doc='Fireside heat flux to slag boundary')
 
         # Slag-tube interface heat flux
         self.heat_flux_interface = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=100000.0,
                 doc='Slag-tube interface heat flux')
 
         # Equation to calculate heat flux to slag boundary
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="heat flux at slag outer layer")
         def heat_flux_fireside_from_boiler_eqn(b, t):
             if self.config.single_side_only:
@@ -469,7 +469,7 @@ see property package for documentation.}"""))
                     * b.perimeter_ss[t] == b.heat_fireside[t] * b.pitch * 2.0
 
         # Equation to calculate slag layer boundary temperature
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="slag layer boundary temperature")
         def slag_layer_boundary_temperature_eqn(b, t):
             return b.heat_flux_fireside[t] * 0.5 * b.slag_thickness[t] == \
@@ -477,7 +477,7 @@ see property package for documentation.}"""))
                                                      - b.temp_slag_center[t])
 
         # Equation to calculate heat flux at the slag-metal interface
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="heat flux at slag-tube interface")
         def heat_flux_interface_eqn(b, t):
             return b.heat_flux_interface[t] * 0.5 * \
@@ -486,7 +486,7 @@ see property package for documentation.}"""))
                    b.temp_slag_center[t] - b.temp_tube_center[t]
 
         # Equation to calculate heat flux at tube boundary
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="convective heat flux at tube boundary")
         def heat_flux_conv_eqn(b, t):
             return b.heat_flux_conv[t] == \
@@ -497,7 +497,7 @@ see property package for documentation.}"""))
                                     temperature)/2.0)
 
         # Equation to calculate tube boundary wall temperature
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="tube bounary wall temperature")
         def temperature_tube_boundary_eqn(b, t):
             return b.heat_flux_conv[t] * 0.5 * b.tube_thickness == \
@@ -505,7 +505,7 @@ see property package for documentation.}"""))
                 * (b.temp_tube_center[t] - b.temp_tube_boundary[t])
 
         # Equation to calculate energy holdup for slag layer per tube length
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="energy holdup for slag layer")
         def energy_holdup_slag_eqn(b, t):
             return b.energy_holdup_slag[t] == \
@@ -514,14 +514,14 @@ see property package for documentation.}"""))
 
         # Equation to calculate energy holdup for metal
         # (tube + fin) per tube length
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="energy holdup for metal")
         def energy_holdup_metal_eqn(b, t):
             return b.energy_holdup_metal[t] == b.temp_tube_center[t] \
                 * b.cp_metal * b.dens_metal * b.area_cross_metal
 
         # Energy balance for slag layer
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="energy balance for slag layer")
         def energy_balance_slag_eqn(b, t):
             return energy_accumulation_term_slag(b, t) == \
@@ -529,7 +529,7 @@ see property package for documentation.}"""))
                  - b.heat_flux_interface[t] * b.perimeter_if)
 
         # Energy balance for metal
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="energy balance for metal")
         def energy_balance_metal_eqn(b, t):
             return energy_accumulation_term_metal(b, t) == (
@@ -537,7 +537,7 @@ see property package for documentation.}"""))
                    b.heat_flux_conv[t] * b.perimeter_ts)
 
         # Expression to calculate slag/tube metal interface wall temperature
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Slag tube interface wall temperature")
         def temp_interface(b, t):
             return b.temp_tube_center[t] + b.heat_flux_interface[t] * 0.5 \
@@ -546,14 +546,14 @@ see property package for documentation.}"""))
         # Equations for calculate pressure drop
         # and convective heat transfer coefficient
         # Equation for calculating velocity
-        @self.Constraint(self.flowsheet().config.time, doc="Vecolity of fluid")
+        @self.Constraint(self.flowsheet().time, doc="Vecolity of fluid")
         def velocity_eqn(b, t):
             return 1e-3*b.velocity[t]*b.area_cross_fluid_total * \
                    b.control_volume.properties_in[t].dens_mol_phase["Vap"] \
                    == 1e-3*b.control_volume.properties_in[t].flow_mol
 
         # Equation for calculating Reynolds number if liquid only
-        @self.Constraint(self.flowsheet().config.time, doc="Reynolds number")
+        @self.Constraint(self.flowsheet().time, doc="Reynolds number")
         def Reynolds_number_eqn(b, t):
             return b.N_Re[t] * \
                    b.control_volume.properties_in[t].visc_d_phase["Vap"] == \
@@ -561,7 +561,7 @@ see property package for documentation.}"""))
                    b.control_volume.properties_in[t].dens_mass
 
         # Friction factor depending on laminar or turbulent flow
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Darcy friction factor")
         def friction_factor_darcy_eqn(b, t):
             return Expr_if(b.N_Re[t] < 1187.384, b.friction_factor_darcy[t]
@@ -570,7 +570,7 @@ see property package for documentation.}"""))
 
         # Pressure change equation due to friction,
         # -1/2*density*velocity^2*fD/diameter*length
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure change due to friction")
         def pressure_change_eqn(b, t):
             return b.deltaP[t] * b.diameter_in == \
@@ -579,14 +579,14 @@ see property package for documentation.}"""))
                 * b.tube_length
 
         # Total heat added to control_volume
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="total heat added to fluid control_volume")
         def heat_eqn(b, t):
             return b.heat_duty[t] == b.number_tubes * b.heat_flux_conv[t] \
                 * b.tube_length * b.perimeter_ts
 
         # Prandtl number of steam
-        @self.Constraint(self.flowsheet().config.time, doc="Prandtl number")
+        @self.Constraint(self.flowsheet().time, doc="Prandtl number")
         def N_Pr_eqn(b, t):
             return b.N_Pr[t] \
                 * b.control_volume.properties_in[t].therm_cond_phase["Vap"] \
@@ -595,7 +595,7 @@ see property package for documentation.}"""))
                 b.control_volume.properties_in[t].visc_d_phase["Vap"]
 
         # Forced convection heat transfer coefficient for liquid only
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="forced convection heat transfer"
                          " coefficient for liquid only")
         def hconv_eqn(b, t):
@@ -655,7 +655,7 @@ see property package for documentation.}"""))
         init_log.info_high("Initialization Step 1 Complete.")
 
         # Fix outlet enthalpy and pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].enth_mol.fix(
                 value(blk.control_volume.properties_in[t].enth_mol) +
                 value(blk.heat_fireside[t]) /
@@ -675,7 +675,7 @@ see property package for documentation.}"""))
             )
 
         # Unfix outlet enthalpy and pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].enth_mol.unfix()
             blk.control_volume.properties_out[t].pressure.unfix()
         blk.heat_eqn.activate()

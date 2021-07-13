@@ -26,6 +26,7 @@ from idaes.core import (ProcessBlockData, declare_process_block_class,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
                                     list_of_floats)
+from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.ui.fsvis.fsvis import visualize
@@ -119,6 +120,11 @@ within this flowsheet if not otherwise specified,
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
+
+    @property
+    def time(self):
+        # _time will be created by the _setup_dynamics method
+        return self._time
 
     @property
     def time_units(self):
@@ -280,6 +286,7 @@ within this flowsheet if not otherwise specified,
                 raise DynamicError(
                         '{} was set as a dynamic flowsheet, but time domain '
                         'provided was not a ContinuousSet.'.format(self.name))
+            add_object_reference(self, "_time", self.config.time)
             self._time_units = self.config.time_units
         else:
             # If no parent flowsheet, set up time domain
@@ -299,16 +306,17 @@ within this flowsheet if not otherwise specified,
                                     "time_set attribute - must have at "
                                     "least two values (start and end).")
                     # For dynamics, need a ContinuousSet
-                    self.time = ContinuousSet(initialize=self.config.time_set)
+                    self._time = ContinuousSet(initialize=self.config.time_set)
                 else:
                     # For steady-state, use an ordered Set
-                    self.time = pe.Set(initialize=self.config.time_set,
-                                       ordered=True)
+                    self._time = pe.Set(initialize=self.config.time_set,
+                                        ordered=True)
                 self._time_units = self.config.time_units
 
                 # Set time config argument as reference to time domain
-                self.config.time = self.time
+                self.config.time = self._time
             else:
                 # Set time config argument to parent time
-                self.config.time = fs.config.time
+                self.config.time = fs.time
+                add_object_reference(self, "_time", fs.time)
                 self._time_units = fs._time_units
