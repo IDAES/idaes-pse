@@ -22,6 +22,7 @@ from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
         _identify_derivative_if_differential,
         categorize_dae_variables_and_constraints,
+        CATEGORY_TYPE_MAP,
         )
 from idaes.apps.caprese.nmpc_var import (
         _NmpcVector,
@@ -73,10 +74,15 @@ MHE_CATEGORY_TYPE_MAP = {
 
 class _EstimatorBlockData(_DynamicBlockData):
     """ This class adds methods useful for working with dynamic
-    models to be used by a estimator. These include methods for
+    models to be used by a estimator. 
     """
 
     def _construct(self):
+        """This function builds some necessary variables and constraints for MHE.
+            e.g. actual measurement, measurement errors, model disturbances
+                error constraints, disturbed differential equations
+        """
+        
         if self._sample_time is None:
             raise RuntimeError("MHE needs the sample time to be provided!")
         else:
@@ -94,37 +100,50 @@ class _EstimatorBlockData(_DynamicBlockData):
             measurements = self._measurements
         except AttributeError:
             measurements = self._measurements = None
-        
-        scalar_vars, dae_vars = flatten_dae_components(
-                mod,
-                time,
-                ctype=Var,
-                )
-        self.scalar_vars = scalar_vars
-        self.dae_vars = dae_vars
-        
-        category_dict = categorize_dae_variables(
-                dae_vars,
-                time,
-                inputs,
-                measurements=measurements,
-                )
-        self.category_dict = category_dict
             
-        scalar_cons, dae_cons = flatten_dae_components(mod, time, ctype = Constraint)
-        #need to add reference if use the following var_cactegory_dict
-        not_use_category_dict, con_category_dict = categorize_dae_variables_and_constraints(
-                                                                                mod,
-                                                                                dae_vars,
-                                                                                dae_cons,
-                                                                                time,
-                                                                                )
-        self.con_category_dict = con_category_dict  
+        
+        # MHE requires not only variable categories but also constraint categories.
+        # This if statement check which is given, which is not.
+        if self._category_dict is not None and self._con_category_dict is not None:
+            self._use_user_given_var_categ_dict(inputs, measurements)
+            self._use_user_given_con_categ_dict()
+            #check orders
+            
+        elif self._category_dict is not None and self._con_category_dict is None:
+            self._use_user_given_var_categ_dict(inputs, measurements)
+            unref_category_dict, unref_con_category_dict = self._categorize_var_con_for_MHE(
+                                                                                            mod, 
+                                                                                            time, 
+                                                                                            inputs, 
+                                                                                            measurements,
+                                                                                            )
+            #check orders
+            
+        elif self._category_dict is None and self._con_category_dict is not None:
+            self._use_user_given_con_categ_dict()
+            unref_category_dict, unref_con_category_dict = self._categorize_var_con_for_MHE(
+                                                                                            mod, 
+                                                                                            time, 
+                                                                                            inputs, 
+                                                                                            measurements,
+                                                                                            )
+            #check orders
+        else:
+            unref_category_dict, unref_con_category_dict = self._categorize_var_con_for_MHE(
+                                                                                            mod, 
+                                                                                            time, 
+                                                                                            inputs, 
+                                                                                            measurements,
+                                                                                            )
+        self.reference_category_dict(unref_category_dict)
+        self.con_category_dict = unref_con_category_dict
+        #at this stage, no need to use reference on constraints
+        
         
         #set a flag so that classification won't do again in _DynamicBlockData
         self.already_categorized_for_MHE = True
+        category_dict = self.category_dict
         
-
         self._add_sample_point_set()
         self.MHE_VARS_CONS_BLOCK = Block()
         
@@ -159,6 +178,76 @@ class _EstimatorBlockData(_DynamicBlockData):
             init_val = {idx: 0.0 if init_mea_block.var[idx].value is None else init_mea_block.var[idx].value 
                         for idx in self.SAMPLEPOINT_SET} #Not sure why it doesn't work when the value is None
             self.ACTUALMEASUREMENT_BLOCK[ind].var.set_values(init_val)
+            
+            
+    def _use_user_given_var_categ_dict(self, inputs, measurements):
+        category_dict = self.category_dict = self._category_dict
+        if (VC.INPUT not in category_dict and inputs is not None):
+            self.category_dict[VC.INPUT] = inputs
+        if (VC.MEASUREMENT not in category_dict and measurements is not None):
+            self.category_dict[VC.MEASUREMENT] = measurements
+        self.dae_vars = []
+        for categ, varlist in category_dict.items():
+            if categ is not VC.MEASUREMENT:
+                # Assume that measurements are duplicates
+                self.dae_vars.extend(varlist)
+                
+                
+    def _use_user_given_con_categ_dict(self):
+        con_category_dict = self.con_category_dict = self._con_cateogry_dict
+        
+        
+    def _categorize_var_con_for_MHE(self, mod, time, inputs, measurements):
+        t0 = time.first()
+        
+        scalar_vars, dae_vars = flatten_dae_components(mod, time, ctype=Var)
+        self.scalar_vars = scalar_vars
+        self.dae_vars = dae_vars
+        
+        scalar_cons, dae_cons = flatten_dae_components(mod, time, ctype = Constraint)
+        
+        #change items in inputs and measurements to IndexedVar with only time index
+        dae_map = ComponentMap((var[t0], var) for var in dae_vars)
+        t0_vardata = list(dae_map.keys())
+        input_set = ComponentSet(inputs)
+        measurement_set = ComponentSet(measurements)
+        input_vars = []
+        measurement_vars = []
+        #This loop is important in order to maintain the same order of 
+        #measurements and inputs between MHE and plant
+        for var0 in t0_vardata: 
+            if var0 in input_set:
+                time_slice = dae_map[var0]
+                input_vars.append(time_slice)
+            if var0 in measurement_set:
+                time_slice = dae_map[var0]
+                measurement_vars.append(time_slice)
+
+        unref_category_dict, unref_con_category_dict = categorize_dae_variables_and_constraints(
+                                                                                    mod,
+                                                                                    dae_vars,
+                                                                                    dae_cons,
+                                                                                    time,
+                                                                                    input_vars = input_vars,
+                                                                                    )
+        
+        unref_category_dict[VC.MEASUREMENT] = measurement_vars
+        
+        return unref_category_dict, unref_con_category_dict
+    
+    
+    def reference_category_dict(self, unref_category_dict):
+        category_dict = {
+                        category: [
+                            Reference(ref.referent, ctype=ctype)
+                            for ref in unref_category_dict[category]
+                            ]
+                        for category, ctype in CATEGORY_TYPE_MAP.items()
+                        if category in unref_category_dict #skip disturbance and unused
+                        }
+        
+        self.category_dict = category_dict
+        
 
     def _add_sample_point_set(self):
         set_name = "SAMPLEPOINT_SET"
@@ -181,6 +270,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             var_name = "actual_measurement"
             actmea_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             actmea_block[i].find_component(var_name).fix() #Variables in this block should always be fixed!
+            
     
     def _add_measurement_error(self):
         """This function creates a indexed block, including measurement errors and 
@@ -217,6 +307,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             moddis_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             moddis_block[i].find_component(var_name)[t0].fix(0.0) #fix model disturbance at t = 0 as 0.0
             
+            
     def _add_MHE_vars_to_category_dict(self):        
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         target_set = ComponentSet((self.SAMPLEPOINT_SET,))        
@@ -239,7 +330,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         for category, ctype in MHE_CATEGORY_TYPE_MAP.items():
             self.category_dict[category] = [Reference(var, ctype=ctype) 
                                             for var in MHE_category_list_map[category]]
-        
+            
             
     def _add_mea_moddis_componentmap(self):
         
@@ -314,33 +405,13 @@ class _EstimatorBlockData(_DynamicBlockData):
             for j in sample_points:
                 if j >= time_pt:
                     return j
-
-        #Now, var_category and con_category don't come from the same function.
-        #(var_category is from categorize_dae_variables; con_category is from categorize_dae_variables_and_constraints)
-        #Thus, the order of differential vars may be different from the order of differential equations.
-        #(Note that the order of differential vars, derivative vars, and model disturbances are corresponding.)
-        #Use the following function to get the correct model disturbance.
-        def find_correspondsing_model_disturbance(curr_difeq, time, derivar_map_moddis):
-            t0 = time.first()
-            is_diff, target_deriv = _identify_derivative_if_differential(curr_difeq[t0], time)
-            if not is_diff:
-                raise RuntimeError(
-                "Fail to find the corresponding model disturbance from a differential equation."
-                )
-            return derivar_map_moddis[target_deriv]
-        #if var_category and con_category are all from "categorize_dae_variables_and_constraints",
-        #"find_correspondsing_model_disturbance" can be removed!
                 
         time = self.time
         sample_points = self.sample_points
-        derivativelist = self.category_dict[VC.DERIVATIVE]
+        moddistlist = self.category_dict[VC.MODELDISTURBANCE]
         for i in range(n_diff_equs):
             curr_difeq = diff_equs[i]
-            # Get corresponding disturbance from index i
-            # And gettting the time point is easy.
-            mod_dist = find_correspondsing_model_disturbance(curr_difeq, 
-                                                             time, 
-                                                             self.derivar_map_moddis)
+            mod_dist = moddistlist[i]
             con_name = "disturbed_diff_con"
             def _dd_rule(m, tp):
                 curr_sampt = curr_sample_point(tp, sample_points)

@@ -97,11 +97,21 @@ class _DynamicBlockData(_BlockData):
             measurements = self._measurements
         except AttributeError:
             measurements = self._measurements = None
+            
+            
+        if hasattr(self, "already_categorized_for_MHE") and \
+            self.already_categorized_for_MHE:
+            category_dict = self.category_dict #local variable is used in the rest of this function
+            
+            CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
+            CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
+            CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
+            pass
 
         # TODO: Give the user the option to provide their own
         # category_dict (they know the structure of their model
         # better than I do...)
-        if self._category_dict is not None:
+        elif self._category_dict is not None:
             category_dict = self.category_dict = self._category_dict
             if (VC.INPUT not in category_dict and inputs is not None):
                 self.category_dict[VC.INPUT] = inputs
@@ -112,15 +122,6 @@ class _DynamicBlockData(_BlockData):
                 if categ is not VC.MEASUREMENT:
                     # Assume that measurements are duplicates
                     self.dae_vars.extend(varlist)
-                    
-        elif hasattr(self, "already_categorized_for_MHE") and \
-            self.already_categorized_for_MHE:
-            category_dict = self.category_dict #local variable is used in the rest of this function
-            
-            CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
-            CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
-            CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
-            pass
 
         else:
             scalar_vars, dae_vars = flatten_dae_components(
@@ -877,8 +878,8 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_category_dict = Initializer(kwds.pop('category_dict', None),
                 treat_sequences_as_mappings=False)
-        #self._init_con_category_dict = Initializer(kwds.pop('con_category_dict', None),
-        #        treat_sequences_as_mappings=False)
+        self._init_con_category_dict = Initializer(kwds.pop('con_category_dict', None),
+                treat_sequences_as_mappings=False)
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):
@@ -908,10 +909,10 @@ class DynamicBlock(Block):
         else:
             block._category_dict = None
 
-        #if self._init_con_category_dict is not None:
-        #    block._con_category_dict = self._init_con_category_dict(parent, idx)
-        #else:
-        #    block._con_category_dict = None
+        if self._init_con_category_dict is not None:
+            block._con_category_dict = self._init_con_category_dict(parent, idx)
+        else:
+            block._con_category_dict = None
 
         block._construct()
 

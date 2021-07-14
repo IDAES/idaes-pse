@@ -184,7 +184,7 @@ def main(plot_switch=False):
         
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
-        solver.solve(mhe.plant)
+        solver.solve(mhe.plant, tee = True)
         
         plant_rec["S"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','S'].value)
         plant_rec["E"].append(plant.mod.fs.cstr.control_volume.material_holdup[p_ts,'aq','E'].value)
