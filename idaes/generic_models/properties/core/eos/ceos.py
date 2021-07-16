@@ -35,7 +35,8 @@ from idaes.core.util.math import safe_log
 from .eos_base import EoSBase
 from idaes import bin_directory
 import idaes.logger as idaeslog
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import \
+    BurntToast, ConfigurationError, PropertyNotSupportedError
 
 
 # Set up logger
@@ -83,6 +84,19 @@ class Cubic(EoSBase):
 
     @staticmethod
     def common(b, pobj):
+        # TODO: determine if Henry's Law applies to Cubic EoS systems
+        # For now, raise an exception if found
+        # Follow on questions:
+        # If Henry's law is used for a component, how does that effect
+        # calculating A, B and phi?
+        for j in b.component_list:
+            cobj = b.params.get_component(j)
+            if (cobj.config.henry_component is not None and
+                    pobj.local_name in cobj.config.henry_component):
+                raise PropertyNotSupportedError(
+                    "{} Cubic equations of state do not support Henry's "
+                    "components [{}, {}].".format(b.name, pobj.local_name, j))
+
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
 
@@ -566,7 +580,7 @@ class Cubic(EoSBase):
         return exp(_log_fug_coeff_phase_comp_eq(blk, p, j, pp))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Tbub(blk, p, j, pp):
+    def log_fug_phase_comp_Tbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -616,10 +630,16 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk._mole_frac_tbub[pp[0], pp[1], j]
+        else:
+            mole_frac = blk.mole_frac_comp[j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure/blk.pressure._units))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Tdew(blk, p, j, pp):
+    def log_fug_phase_comp_Tdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -669,10 +689,16 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk.mole_frac_comp[j]
+        else:
+            mole_frac = blk._mole_frac_tdew[pp[0], pp[1], j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure/blk.pressure._units))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Pbub(blk, p, j, pp):
+    def log_fug_phase_comp_Pbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -715,10 +741,17 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk._mole_frac_pbub[pp[0], pp[1], j]
+        else:
+            mole_frac = blk.mole_frac_comp[j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure_bubble[pp] /
+                                     blk.pressure_bubble._units))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Pdew(blk, p, j, pp):
+    def log_fug_phase_comp_Pdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -760,7 +793,14 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk.mole_frac_comp[j]
+        else:
+            mole_frac = blk._mole_frac_pdew[pp[0], pp[1], j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure_dew[pp] /
+                                     blk.pressure_dew._units))
 
     @staticmethod
     def gibbs_mol_phase(b, p):
