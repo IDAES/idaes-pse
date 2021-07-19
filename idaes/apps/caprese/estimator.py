@@ -55,6 +55,7 @@ from pyomo.environ import (
         Block,
         Reference,
         Set,
+        TerminationCondition,
         )
 from pyomo.core.base.block import _BlockData
 from pyomo.common.collections import ComponentMap, ComponentSet
@@ -64,6 +65,8 @@ from pyomo.dae.flatten import (
         )
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.dae.contset import ContinuousSet
+from pyomo.dae.set_utils import deactivate_model_at
+from idaes.apps.caprese.data_manager import EstimatorDataManger
 
 
 MHE_CATEGORY_TYPE_MAP = {
@@ -194,7 +197,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                 
                 
     def _use_user_given_con_categ_dict(self):
-        con_category_dict = self.con_category_dict = self._con_cateogry_dict
+        con_category_dict = self.con_category_dict = self._con_cateogory_dict
         
         
     def _categorize_var_con_for_MHE(self, mod, time, inputs, measurements):
@@ -425,6 +428,94 @@ class _EstimatorBlockData(_DynamicBlockData):
                 
             curr_difeq.deactivate() #deactivate the original/undisturbed differential equs
             
+    def add_steady_state_objective(self, desired_ss, ss_weights):
+        vardata_map = self.vardata_map
+        for vardata, weight in ss_weights:
+            nmpc_var = vardata_map[vardata]
+            nmpc_var.weight = weight
+
+        weight_vector = []
+        for vardata, sp in desired_ss:
+            nmpc_var = vardata_map[vardata]
+            if nmpc_var.weight is None:
+                self.logger.warning('Weight not supplied for %s' % var.name)
+                nmpc_var.weight = 1.0
+            weight_vector.append(nmpc_var.weight)
+
+        obj_expr = sum(
+            weight_vector[i]*(var - sp)**2 for
+            i, (var, sp) in enumerate(desired_ss))
+        self.steadystate_objective = Objective(expr=obj_expr)
+        
+    def solve_steady_state(self, solver, **kwargs):
+        
+        require_steady = kwargs.pop('require_steady', True)
+        config = self.CONFIG(kwargs)
+        model = self.mod
+        time = self.time
+        t0 = time.first()
+        
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+                model.component_data_objects((Constraint, Block))])
+        non_initial_time = list(time)[1:]
+        deactivated = deactivate_model_at(
+                model,
+                time,
+                non_initial_time,
+                allow_skip=True,
+                suppress_warnings=True,
+                )
+        
+        self.vectors.differential[:, t0].unfix()
+        self.vectors.input[:, t0].unfix()
+        self.vectors.derivative[:, t0].fix(0.)
+        self.MHE_VARS_CONS_BLOCK.deactivate()
+        for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
+            indexcon[t0].activate()
+            
+        self.steadystate_objective.activate()
+        
+        dof = degrees_of_freedom(model)
+        assert dof == len(self.INPUT_SET)
+        
+        results = solver.solve(self, tee=config.tee)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            pass
+        else:
+            msg = 'Failed to solve for full state setpoint values'
+            raise RuntimeError(msg)
+
+        self.steadystate_objective.deactivate()
+        
+        for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
+            indexcon[t0].deactivate()
+        self.MHE_VARS_CONS_BLOCK.activate()
+        self.vectors.derivative[:, t0].unfix()
+        self.vectors.input[:, t0].fix()
+        self.vectors.differential[:, t0].fix()
+        
+        for t, complist in deactivated.items():
+            for comp in complist:
+                if was_originally_active[comp]:
+                    comp.activate()
+        
+    def initialize_past_info_with_steady_state(self, 
+                                               desired_ss, 
+                                               ss_weights, 
+                                               solver):
+        self.add_steady_state_objective(desired_ss, ss_weights)
+        self.solve_steady_state(solver)
+        
+        self.initialize_actualmeasurements_at_t0()
+        self.initialize_to_initial_conditions(ctype=(DiffVar, AlgVar, DerivVar, InputVar,))
+    #     self.initialize_inputs_to_initial_conditions()
+    
+    # def initialize_inputs_to_initial_conditions(self):
+    #     input_block = self.INPUT_BLOCK
+    #     for ind in self.INPUT_SET:
+            
+                
+          
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,
                                      measurement_noise_weights):
@@ -512,10 +603,11 @@ class EstimatorBlock(DynamicBlock):
         return super(EstimatorBlock, cls).__new__(target_cls)
 
 
-class SimpleEstimatorBlock(_EstimatorBlockData, EstimatorBlock):
+class SimpleEstimatorBlock(_EstimatorBlockData, EstimatorBlock, EstimatorDataManger):
     def __init__(self, *args, **kwds):
         _EstimatorBlockData.__init__(self, component=self)
         EstimatorBlock.__init__(self, *args, **kwds)
+        EstimatorDataManger.__init__(self)
 
     # Pick up the display() from Block and not BlockData
     display = EstimatorBlock.display

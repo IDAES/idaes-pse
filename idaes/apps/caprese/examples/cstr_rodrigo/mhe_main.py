@@ -21,7 +21,6 @@ from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from cstr_rodrigo_model2 import make_model
 import pandas as pd
-import matplotlib.pyplot as plt
 
 __author__ = "Kuan-Han Lin"
 
@@ -39,37 +38,9 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-class PlotData(object):
-    def __init__(self, group, location, name=None, t_switch=None):
-        # Would really like a PlotData class that is constructed based on an
-        # NMPCVar object that contains necessary setpoint/reference
-        # information, instead of having to access that in the NMPCVarGroup
-        time = group.index_set
-        if t_switch == None:
-            t_switch = group.t0
 
-        self.name = name
-
-        var = group.varlist[location]
-        initial = group.reference[location]
-        setpoint = group.setpoint[location]
-        self.data_series = pd.Series(
-                [var[t].value for t in time],
-                index=[t for t in time])
-        self.setpoint_series = pd.Series(
-                [initial if t < t_switch else setpoint for t in time])
-
-    def plot(self):
-        # fig, ax can be formatted to the user's liking
-        fig, ax = plt.subplots()
-        if self.name is not None:
-            self.data_series.plot(label=self.name)
-        else:
-            self.data_series.plot()
-        return fig, ax
-
-def main(plot_switch=False):
-    m_estimator = make_model(horizon=4., ntfe=4, ntcp=2, bounds=True)
+def main():
+    m_estimator = make_model(horizon=10., ntfe=10, ntcp=2, bounds=True)
     sample_time = 2.
     m_plant = make_model(horizon=sample_time, ntfe=2, ntcp=2, bounds = True)
     time_plant = m_plant.t
@@ -111,8 +82,10 @@ def main(plot_switch=False):
     c_ts = mhe.estimator.sample_points[1]
 
     solve_consistent_initial_conditions(plant, plant.time, solver)
-    #measurement_error_constraints are only defined at sample points
-    solve_consistent_initial_conditions(estimator, estimator.time, solver, suppress_warnings = True)
+    
+    desired_ss = [(estimator.mod.Ca[0], 0.021)]
+    ss_weights = [(estimator.mod.Ca[0], 1.)]
+    mhe.estimator.initialize_past_info_with_steady_state(desired_ss, ss_weights, solver)
         
     # Now we are ready to construct the objective function for MHE
     model_disturbance_weights = [
@@ -127,33 +100,31 @@ def main(plot_switch=False):
             ]   
     
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
-                                                measurement_noise_weights)
+                                               measurement_noise_weights)
     
-    mhe.estimator.initialize_actualmeasurements_at_t0()
-    mhe.estimator.initialize_to_initial_conditions()
+    mhe.plant.initialize_plant_dataframe()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
     
+    mhe.plant.record_plant_data()
+    
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     #apply measurement error here
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
+    mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.Tjinb[p_ts].value])
+    
+    mhe.estimator.initialize_estimator_dataframe()
     
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
     
-    plant_rec = {"Ca":[],
-                 "T":[],
-                 "Tj":[]}
-    
-    MHE_rec = {"Ca":[],
-                 "T":[],
-                 "Tj":[]}
+    mhe.estimator.record_estimator_data()
     
     cinput = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(1, 11)}
     
@@ -163,17 +134,13 @@ def main(plot_switch=False):
         
         mhe.plant.advance_one_sample()
         mhe.plant.initialize_to_initial_conditions()
-        #inject inputs here if it's updated
         inputs = [cinput[i]]
         mhe.plant.inject_inputs(inputs)
         
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
-        
-        plant_rec["Ca"].append(mhe.plant.mod.Ca[p_ts].value)
-        plant_rec["T"].append(mhe.plant.mod.Tall[p_ts, "T"].value)
-        plant_rec["Tj"].append(mhe.plant.mod.Tall[p_ts, "Tj"].value)
+        mhe.plant.record_plant_data()
         
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         #apply measurement error here
@@ -183,38 +150,18 @@ def main(plot_switch=False):
                                         target = "actualmeasurement",
                                         timepoint = estimator.time.last())
         mhe.estimator.load_inputs_for_MHE(inputs)
-        # mhe.estimator.vectors.input[...].fix(cinput[i])
         
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
-        
-        tl = mhe.estimator.time.last()
-        MHE_rec["Ca"].append(mhe.estimator.mod.Ca[tl].value)
-        MHE_rec["T"].append(mhe.estimator.mod.Tall[tl, "T"].value)
-        MHE_rec["Tj"].append(mhe.estimator.mod.Tall[tl, "Tj"].value)
+        mhe.estimator.record_estimator_data()
         
     
-    return mhe, plant_rec, MHE_rec
+    return mhe
 
 if __name__ == '__main__':
-    mhe, plant_rec, MHE_rec = main()
-    
-    import matplotlib.pyplot as plt
-    plt.figure(1)
-    plt.title("Ca")
-    plt.plot(plant_rec["Ca"], "r")
-    plt.plot(MHE_rec["Ca"], "b")
-    plt.show()
-    
-    plt.figure(2)
-    plt.title("T")
-    plt.plot(plant_rec["T"], "r")
-    plt.plot(MHE_rec["T"], "b")
-    plt.show()
-    
-    plt.figure(3)
-    plt.title("Tj")
-    plt.plot(plant_rec["Tj"], "r")
-    plt.plot(MHE_rec["Tj"], "b")
-    plt.show()
+    mhe = main()
+    vars_soi = (mhe.plant.mod.Ca[:], 
+                mhe.plant.mod.Tall[:, "T"], 
+                mhe.plant.mod.Tall[:, "Tj"],)
+    mhe.plot_estimation_result(vars_soi, xlabel = "time",)

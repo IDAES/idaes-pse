@@ -107,6 +107,7 @@ def main(plot_switch=False):
     plant = nmpc.plant
     controller = nmpc.controller
     
+    
     p_t0 = nmpc.plant.time.first()
     c_t0 = nmpc.controller.time.first()
     p_ts = nmpc.plant.sample_points[1]
@@ -135,10 +136,14 @@ def main(plot_switch=False):
     
     nmpc.controller.initialize_to_initial_conditions()
     
+    nmpc.controller.initialize_controller_dataframe()
+    
     # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
     solver.solve(nmpc.controller, tee=True)
+    
+    nmpc.controller.record_controller_data()
     
     #-------------------------------------------------------------------------
     #noise for measurements
@@ -167,12 +172,15 @@ def main(plot_switch=False):
     # Extract inputs from controller and inject them into plant
     inputs = controller.generate_inputs_at_time(c_ts)
     plant.inject_inputs(inputs)
+    
+    nmpc.plant.initialize_plant_dataframe()
 
     # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
     nmpc.plant.mod.Tjinb.fix() #Fix the input to solve the plant
     solver.solve(nmpc.plant, tee = True)
-
+    nmpc.plant.record_plant_data()
+    
     for i in range(1, n_samples_to_simulate +1):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
         measured = nmpc.plant.generate_measurements_at_time(p_ts)
@@ -191,6 +199,7 @@ def main(plot_switch=False):
                                           timepoint = controller.time.first())
 
         solver.solve(nmpc.controller, tee=True)
+        nmpc.controller.record_controller_data()
 
         inputs = controller.generate_inputs_at_time(c_ts)
         inputs = apply_noise_with_bounds(
@@ -204,8 +213,14 @@ def main(plot_switch=False):
         nmpc.plant.initialize_by_solving_elements(solver)
         nmpc.plant.mod.Tjinb.fix() #Fix the input to solve the plant
         solver.solve(nmpc.plant, tee = True)    
+        nmpc.plant.record_plant_data()
         
     return nmpc
     
 if __name__ == '__main__':
     nmpc = main()
+    states_soi = (nmpc.plant.mod.Ca[:],
+                  nmpc.plant.mod.Tall[:, "T"])
+    nmpc.plot_setpoint_tracking_result(states_soi, xlabel = "time")
+    inputs_soi = (nmpc.plant.mod.Tjinb[:],)
+    nmpc.plot_control_input(inputs_soi, xlabel = "iterations")

@@ -160,10 +160,14 @@ def main(plot_switch=False):
     
     nmpc.controller.initialize_to_initial_conditions()
     
+    nmpc.controller.initialize_controller_dataframe()
+    
     # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
     solver.solve(nmpc.controller, tee=True)
+    
+    nmpc.controller.record_controller_data()
 
     # For a proper NMPC simulation, we must have noise.
     # We do this by treating inputs and measurements as Gaussian random
@@ -197,12 +201,15 @@ def main(plot_switch=False):
     # Extract inputs from controller and inject them into plant
     inputs = controller.generate_inputs_at_time(c_ts)
     plant.inject_inputs(inputs)
+    
+    nmpc.plant.initialize_plant_dataframe()
 
     # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
     solver.solve(nmpc.plant)
+    nmpc.plant.record_plant_data()
 
-    for i in range(1,11):
+    for i in range(1, 11):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
         measured = nmpc.plant.generate_measurements_at_time(p_ts)
         nmpc.plant.advance_one_sample()
@@ -220,6 +227,7 @@ def main(plot_switch=False):
                                           timepoint = controller.time.first())
 
         solver.solve(nmpc.controller, tee=True)
+        nmpc.controller.record_controller_data()
 
         inputs = controller.generate_inputs_at_time(c_ts)
         inputs = apply_noise_with_bounds(
@@ -232,8 +240,21 @@ def main(plot_switch=False):
         
         nmpc.plant.initialize_by_solving_elements(solver)
         solver.solve(nmpc.plant)
+        nmpc.plant.record_plant_data()
 
+    return nmpc
 
 if __name__ == '__main__':
-    main()
+    nmpc = main()
+    states_soi = (nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
+                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
+                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],
+                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P'],
+                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent'],
+                  nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq'],
+                  )
+    nmpc.plot_setpoint_tracking_result(states_soi, xlabel = "time")
+    inputs_soi = (nmpc.plant.mod.fs.mixer.S_inlet_state[:].flow_vol,
+                  nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol,)
+    nmpc.plot_control_input(inputs_soi, xlabel = "time")
 

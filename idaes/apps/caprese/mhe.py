@@ -31,11 +31,14 @@ from idaes.apps.caprese.dynamic_block import (
 from idaes.apps.caprese.estimator import (
         EstimatorBlock,
         )
+from idaes.apps.caprese.plotlibrary import(
+        MHE_PlotLibrary,
+        )
 
 __author__ = "Kuan-Han Lin"
 
 
-class MHESim(object):
+class MHESim(MHE_PlotLibrary):
     """
     This is a user-facing class to perform MHE simulations with Pyomo
     models for both plant and estimator. The user must provide the
