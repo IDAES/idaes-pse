@@ -31,9 +31,9 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         Phase,
                         LiquidPhase,
-                        SolidPhase,
                         VaporPhase,
                         Component)
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -78,9 +78,10 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             for p, t in self.config.phase_list.items():
                 if t is None:
                     t = Phase
-                elif not issubclass(
-                        t, Phase):
-                    raise Exception()
+                elif not issubclass(t, Phase):
+                    raise ConfigurationError(
+                        f"{self.name} invalid phase type {t} (for phase {p})."
+                        f" Type must be a subclass of Phase.")
                 self.add_component(p, t())
 
         # Component objects
@@ -92,7 +93,10 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
                 if t is None:
                     t = Component
                 elif not issubclass(t, Component):
-                    raise Exception()
+                    raise ConfigurationError(
+                        f"{self.name} invalid component type {t} (for "
+                        f"component {j}). Type must be a subclass of "
+                        f"Component.")
                 self.add_component(j, t())
 
         # Set up dict to record property calls
