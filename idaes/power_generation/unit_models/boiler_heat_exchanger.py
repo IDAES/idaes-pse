@@ -41,7 +41,7 @@ from enum import Enum
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Additional import for the unit operation
 from pyomo.environ import SolverFactory, value, Var, Param, exp, sqrt,\
-    log, PositiveReals, NonNegativeReals, units as pyunits
+    log, PositiveReals, NonNegativeReals, ExternalFunction, units as pyunits
 from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
@@ -57,6 +57,8 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
+from idaes.core.util.functions import functions_lib
+
 
 import idaes.logger as idaeslog
 
@@ -174,8 +176,12 @@ see property package for documentation.}"""))
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
+    CONFIG.declare("underwood", ConfigValue(
         default=False,
+        domain=In([True, False]),
+        description="Use the Underwood LMTD approximation"))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=True,
         domain=In([True, False]),
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
@@ -775,31 +781,39 @@ constructed,
                  b.temperature_driving_force[t]) / 1e6
 
         # Driving force
-        @self.Constraint(self.flowsheet().time,
-                         doc="Simplified Log mean temperature "
-                         "difference calculation")
+        self.cbrt = ExternalFunction(
+            library=functions_lib(),
+            function="cbrt",
+            arg_units=[pyunits.K])
+        @self.Constraint(
+            self.flowsheet().time, doc="Log mean temperature diff approximation")
         def LMTD(b, t):
-            return b.temperature_driving_force[t] == \
-                ((b.deltaT_1[t]**0.3241 +
-                  b.deltaT_2[t]**0.3241)/1.99996)**(1/0.3241)
+            if self.config.underwood:
+                return b.temperature_driving_force[t] == \
+                    ((b.cbrt(b.deltaT_1[t]) + b.cbrt(b.deltaT_2[t])) / 2.0) ** 3
+            else:
+                return b.temperature_driving_force[t] == \
+                    ((b.deltaT_1[t]**0.3241 +
+                      b.deltaT_2[t]**0.3241)/1.99996)**(1/0.3241)
+
 
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
         # Velocity on tube side
-        self.v_tube = Var(self.flowsheet().time,
-                          initialize=1.0,
-                          doc="Velocity on tube side - m/s",
-                          units=pyunits.m/pyunits.s)
+        #self.v_tube = Var(self.flowsheet().time,
+        #                  initialize=1.0,
+        #                  doc="Velocity on tube side - m/s",
+        #                  units=pyunits.m/pyunits.s)
 
         # Reynalds number on tube side
-        self.N_Re_tube = Var(self.flowsheet().time,
-                             initialize=10000.0,
-                             doc="Reynolds number on tube side")
+        #self.N_Re_tube = Var(self.flowsheet().time,
+        #                     initialize=10000.0,
+        #                     doc="Reynolds number on tube side")
         if self.config.has_pressure_change is True:
             # Friction factor on tube side
-            self.friction_factor_tube = Var(self.flowsheet().time,
-                                            initialize=1.0,
-                                            doc='Friction factor on tube side')
+            #self.friction_factor_tube = Var(self.flowsheet().time,
+            #                                initialize=1.0,
+            #                                doc='Friction factor on tube side')
 
             # Pressure drop due to friction on tube side
             self.deltaP_tube_friction = Var(
@@ -816,40 +830,38 @@ constructed,
                 units=pyunits.Pa)
 
         # Prandtl number on tube side
-        self.N_Pr_tube = Var(self.flowsheet().time, initialize=1,
-                             doc="Prandtl number on tube side")
+        #self.N_Pr_tube = Var(self.flowsheet().time, initialize=1,
+        #                     doc="Prandtl number on tube side")
 
         # Nusselt number on tube side
-        self.N_Nu_tube = Var(self.flowsheet().time, initialize=1,
-                             doc="Nusselts number on tube side")
+        #self.N_Nu_tube = Var(self.flowsheet().time, initialize=1,
+        #                     doc="Nusselts number on tube side")
 
         # Velocity equation
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Tube side velocity equation - m/s")
-        def v_tube_eqn(b, t):
-            return (b.v_tube[t] * b.area_flow_tube *
+        def v_tube(b, t):
+            return (b.side_1.properties_in[t].flow_mol /
+                    b.area_flow_tube /
                     b.side_1.properties_in[t].dens_mol_phase[
-                        self.side_1_fluid_phase] ==
-                    b.side_1.properties_in[t].flow_mol)
+                        self.side_1_fluid_phase])
 
         # Reynolds number
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Reynolds number equation on tube side")
-        def N_Re_tube_eqn(b, t):
-            return (b.N_Re_tube[t] *
-                    b.side_1.properties_in[t].visc_d_phase[
-                        self.side_1_fluid_phase] ==
-                    b.tube_di * b.v_tube[t] *
+        def N_Re_tube(b, t):
+            return (b.tube_di * b.v_tube[t] *
                     b.side_1.properties_in[t].dens_mass_phase[
+                        self.side_1_fluid_phase] /
+                    b.side_1.properties_in[t].visc_d_phase[
                         self.side_1_fluid_phase])
 
         if self.config.has_pressure_change is True:
             # Friction factor
-            @self.Constraint(self.flowsheet().time,
+            @self.Expression(self.flowsheet().time,
                              doc="Darcy friction factor on tube side")
-            def friction_factor_tube_eqn(b, t):
-                return b.friction_factor_tube[t]*b.N_Re_tube[t]**0.25 == \
-                    0.3164*b.fcorrection_dp_tube
+            def friction_factor_tube(b, t):
+                return 0.3164*b.fcorrection_dp_tube / b.N_Re_tube[t]**0.25
 
             # Pressure drop due to friction
             @self.Constraint(self.flowsheet().time,
@@ -883,24 +895,22 @@ constructed,
                             self.side_1_fluid_phase]) / 2.0)
 
         # Prandtl number
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Prandtl number equation on tube side")
-        def N_Pr_tube_eqn(b, t):
-            return (b.N_Pr_tube[t] *
-                    b.side_1.properties_in[t].therm_cond_phase[
-                        self.side_1_fluid_phase] *
-                    b.side_1.properties_in[t].mw ==
-                    b.side_1.properties_in[t].cp_mol_phase[
+        def N_Pr_tube(b, t):
+            return (b.side_1.properties_in[t].cp_mol_phase[
                         self.side_1_fluid_phase] *
                     b.side_1.properties_in[t].visc_d_phase[
-                        self.side_1_fluid_phase])
+                        self.side_1_fluid_phase] /
+                    b.side_1.properties_in[t].therm_cond_phase[
+                        self.side_1_fluid_phase] /
+                    b.side_1.properties_in[t].mw)
 
         # Nusselts number
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Nusselts number equation on tube side")
-        def N_Nu_tube_eqn(b, t):
-            return b.N_Nu_tube[t] == \
-                0.023 * b.N_Re_tube[t]**0.8 * b.N_Pr_tube[t]**0.4
+        def N_Nu_tube(b, t):
+            return 0.023 * b.N_Re_tube[t]**0.8 * b.N_Pr_tube[t]**0.4
 
         # Heat transfer coefficient
         @self.Constraint(self.flowsheet().time,
@@ -924,64 +934,61 @@ constructed,
         else:
             raise Exception('tube arrangement type not supported')
         # Velocity on shell side
-        self.v_shell = Var(self.flowsheet().time,
-                           initialize=1.0,
-                           doc="Velocity on shell side - m/s",
-                           units=pyunits.m/pyunits.s)
+        #self.v_shell = Var(self.flowsheet().time,
+        #                   initialize=1.0,
+        #                   doc="Velocity on shell side - m/s",
+        #                   units=pyunits.m/pyunits.s)
 
         # Reynalds number on shell side
-        self.N_Re_shell = Var(self.flowsheet().time,
-                              initialize=10000.0,
-                              doc="Reynolds number on shell side")
+        #self.N_Re_shell = Var(self.flowsheet().time,
+        #                      initialize=10000.0,
+        #                      doc="Reynolds number on shell side")
 
         # Friction factor on shell side
-        self.friction_factor_shell = Var(self.flowsheet().time,
-                                         initialize=1.0,
-                                         doc='Friction factor on shell side')
+        #self.friction_factor_shell = Var(self.flowsheet().time,
+        #                                 initialize=1.0,
+        #                                 doc='Friction factor on shell side')
 
         # Prandtl number on shell side
-        self.N_Pr_shell = Var(self.flowsheet().time,
-                              initialize=1,
-                              doc="Prandtl number on shell side")
+        #self.N_Pr_shell = Var(self.flowsheet().time,
+        #                      initialize=1,
+        #                      doc="Prandtl number on shell side")
 
         # Nusselt number on shell side
-        self.N_Nu_shell = Var(self.flowsheet().time,
-                              initialize=1,
-                              doc="Nusselts number on shell side")
+        #self.N_Nu_shell = Var(self.flowsheet().time,
+        #                      initialize=1,
+        #                      doc="Nusselts number on shell side")
 
         # Velocity equation on shell side
-        @self.Constraint(self.flowsheet().time, doc="Velocity on shell side")
-        def v_shell_eqn(b, t):
-            return b.v_shell[t] * \
-                b.side_2.properties_in[t].dens_mol_phase["Vap"] * \
-                b.area_flow_shell == \
-                sum(b.side_2.properties_in[t].flow_mol_comp[j]
-                    for j in b.side_2.properties_in[t].params.component_list)
+        @self.Expression(self.flowsheet().time, doc="Velocity on shell side")
+        def v_shell(b, t):
+            return sum(b.side_2.properties_in[t].flow_mol_comp[j]
+                    for j in b.side_2.properties_in[t].params.component_list) / \
+                b.side_2.properties_in[t].dens_mol_phase["Vap"] / \
+                b.area_flow_shell
 
         # Reynolds number
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Reynolds number equation on shell side")
-        def N_Re_shell_eqn(b, t):
-            return b.N_Re_shell[t] * b.side_2.properties_in[t].visc_d == \
-                b.do_tube * b.v_shell[t] \
-                * b.side_2.properties_in[t].dens_mol_phase["Vap"] *\
+        def N_Re_shell(b, t):
+            return b.do_tube * b.v_shell[t] \
+                * b.side_2.properties_in[t].dens_mol_phase["Vap"] * \
                    sum(b.side_2.properties_in[t].mw_comp[c]
                        * b.side_2.properties_in[t].mole_frac_comp[c]
-                       for c in b.side_2.properties_in[t].
-                       params.component_list)
+                       for c in
+                       b.side_2.properties_in[t].params.component_list) / \
+                b.side_2.properties_in[t].visc_d
 
         if self.config.has_pressure_change is True:
             # Friction factor on shell side
             if self.config.tube_arrangement == TubeArrangement.inLine:
-                @self.Constraint(self.flowsheet().time,
+                @self.Expression(self.flowsheet().time,
                                  doc="In-line friction factor on shell side")
-                def friction_factor_shell_eqn(b, t):
-                    return b.friction_factor_shell[t] \
-                        * b.N_Re_shell[t]**0.15 == \
-                        (0.044 + 0.08 * b.pitch_x_to_do
+                def friction_factor_shell(b, t):
+                    return (0.044 + 0.08 * b.pitch_x_to_do
                          / (b.pitch_y_to_do - 1.0)**(0.43 + 1.13
                                                      / b.pitch_x_to_do)
-                         ) * b.fcorrection_dp_shell
+                         ) * b.fcorrection_dp_shell / b.N_Re_shell[t]**0.15
 
             elif self.config.tube_arrangement == TubeArrangement.staggered:
                 @self.Constraint(self.flowsheet().time,
@@ -1008,22 +1015,22 @@ constructed,
                     b.v_shell[t]**2)
 
         # Prandtl number
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Prandtl number equation on shell side")
-        def N_Pr_shell_eqn(b, t):
-            return b.N_Pr_shell[t] * b.side_2.properties_in[t].therm_cond \
-                * sum(b.side_2.properties_in[t].mw_comp[c]
-                      * b.side_2.properties_in[t].mole_frac_comp[c]
-                      for c in b.side_2.properties_in[t].
-                      params.component_list) == \
-                b.side_2.properties_in[t].cp_mol * \
-                b.side_2.properties_in[t].visc_d
+        def N_Pr_shell(b, t):
+            return b.side_2.properties_in[t].cp_mol * \
+                b.side_2.properties_in[t].visc_d / \
+                (b.side_2.properties_in[t].therm_cond \
+                    * sum(b.side_2.properties_in[t].mw_comp[c]
+                          * b.side_2.properties_in[t].mole_frac_comp[c]
+                          for c in b.side_2.properties_in[t].
+                          params.component_list))
 
         # Nusselt number, currently assume Re>300
-        @self.Constraint(self.flowsheet().time,
+        @self.Expression(self.flowsheet().time,
                          doc="Nusselts number equation on shell side")
-        def N_Nu_shell_eqn(b, t):
-            return b.N_Nu_shell[t] == b.f_arrangement * 0.33 \
+        def N_Nu_shell(b, t):
+            return b.f_arrangement * 0.33 \
                 * b.N_Re_shell[t]**0.6 * b.N_Pr_shell[t]**0.333333
 
         # Convective heat transfer coefficient on shell side due to convection

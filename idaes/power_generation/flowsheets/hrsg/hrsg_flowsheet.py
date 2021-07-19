@@ -60,7 +60,8 @@ from idaes.power_generation.unit_models.helm import (
     )
 from idaes.generic_models.unit_models.heat_exchanger import (
     HeatExchanger,
-    HeatExchangerFlowPattern)
+    HeatExchangerFlowPattern,
+    delta_temperature_underwood_callback)
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
@@ -97,7 +98,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # Mixer for LP_ECON outlet and Preheater streams
     fs.Mixer1 = HelmMixer(
@@ -113,6 +115,7 @@ def add_unit_models(m):
     fs.LP_EVAP = HeatExchanger(default={
         "shell": {"property_package": m.fs.prop_gas},
         "tube": {"property_package": m.fs.prop_water},
+        "delta_temperature_callback":delta_temperature_underwood_callback,
         "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
     m.fs.LP_FGsplit = Splitter(default={"property_package": m.fs.prop_gas,
@@ -131,7 +134,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # LP DRUM LIQUID Outlet - Liquid Stream to IP and HP pumps
     m.fs.Splitter1 = HelmSplitter(
@@ -166,7 +170,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # IP ECON Splitter 1, IP ECON outlet to IP ECON 2 and NG preheater (NGPH)
     m.fs.IP_Splitter1 = HelmSplitter(
@@ -184,12 +189,14 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     fs.IP_EVAP = HeatExchanger(default={
         "shell": {"property_package": m.fs.prop_gas},
         "tube": {"property_package": m.fs.prop_water,
                  "has_pressure_change": True},
+        "delta_temperature_callback":delta_temperature_underwood_callback,
         "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
     # IP SH = Low pressure superheater
@@ -201,7 +208,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # Mixer for LP_ECON outlet and Preheater streams
     fs.IP_Mixer1 = HelmMixer(
@@ -228,7 +236,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # IP SH3 = Intermediate pressure superheater3 and reheater 2
     fs.IP_SH3 = BoilerHeatExchanger(default={
@@ -239,7 +248,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
     # -------------------------------------------------------------------------
     # High Pressure System ====================================================
     # inlet from # High Pressure Pump (m.fs.HP_pump.outlet)
@@ -252,7 +262,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_ECON2 = ECONOMIZER 2
     fs.HP_ECON2 = BoilerHeatExchanger(default={
@@ -263,7 +274,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_ECON3 = ECONOMIZER 3
     fs.HP_ECON3 = BoilerHeatExchanger(default={
@@ -274,7 +286,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_ECON4 = ECONOMIZER 4
     fs.HP_ECON4 = BoilerHeatExchanger(default={
@@ -285,7 +298,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_ECON5 = ECONOMIZER 5
     fs.HP_ECON5 = BoilerHeatExchanger(default={
@@ -296,11 +310,13 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Liq",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     fs.HP_EVAP = HeatExchanger(default={
         "shell": {"property_package": m.fs.prop_gas},
         "tube": {"property_package": m.fs.prop_water},
+        "delta_temperature_callback":delta_temperature_underwood_callback,
         "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
     # HP_SH1 = superheater 1
@@ -312,7 +328,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_SH2 = superheater 2
     fs.HP_SH2 = BoilerHeatExchanger(default={
@@ -323,7 +340,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_SH3 = superheater 3
     fs.HP_SH3 = BoilerHeatExchanger(default={
@@ -334,7 +352,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # HP_SH4 = superheater 4
     fs.HP_SH4 = BoilerHeatExchanger(default={
@@ -345,7 +364,8 @@ def add_unit_models(m):
         "delta_T_method": DeltaTMethod.counterCurrent,
         "tube_arrangement": TubeArrangement.inLine,
         "side_1_water_phase": "Vap",
-        "has_radiation": False})
+        "has_radiation": False,
+        "underwood":True,})
 
     # Low Pressure Evaporator Performance must be fixed to ~18 % of water inlet
     m.fs.LP_EVAP.vapor_frac_control = pyo.Var(initialize=0.18,
@@ -356,9 +376,10 @@ def add_unit_models(m):
     def vap_fraceq(b, t):
         return b.tube.properties_out[0].vapor_frac == \
             m.fs.LP_EVAP.vapor_frac_control
+    m.fs.LP_EVAP.heat_transfer_equation.deactivate()
     # unfixing U to calculate UA lumped parameter
-    m.fs.LP_EVAP.overall_heat_transfer_coefficient.unfix()
-    m.fs.LP_EVAP.overall_heat_transfer_coefficient.setub(250)
+    #m.fs.LP_EVAP.overall_heat_transfer_coefficient.unfix()
+    #m.fs.LP_EVAP.overall_heat_transfer_coefficient.setub(250)
 
     # IP Inlet must be vaporized
     @m.fs.IP_EVAP.Constraint(m.fs.config.time)
@@ -1480,8 +1501,6 @@ def set_arcs(m):
         source=m.fs.IP_ECON1.side_1_outlet, destination=m.fs.IP_Splitter1.inlet
     )
 
-    pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
-
     # IP_splitter_1 to IP_ECON2
     m.fs.IP_Splitter1_to_IP_ECON2 = Arc(
         source=m.fs.IP_Splitter1.toIP_ECON2,
@@ -1819,6 +1838,32 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(unit.heat_transfer_correlation, 1e-8)
         iscale.set_scaling_factor(unit.side_1.heat, 1e-6)
         iscale.set_scaling_factor(unit.side_2.heat, 1e-6)
+        iscale.set_scaling_factor(unit.side_1.volume, 1)
+        iscale.set_scaling_factor(unit.side_2.volume, 1)
+
+
+    fs = m.fs
+
+    iscale.set_scaling_factor(fs.LP_EVAP.shell.heat, 1e-8)
+    iscale.set_scaling_factor(fs.LP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.LP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.LP_EVAP.area, 1e-4)
+    iscale.set_scaling_factor(fs.LP_EVAP.overall_heat_transfer_coefficient, 1e-2)
+
+    iscale.set_scaling_factor(fs.IP_EVAP.shell.heat, 1e-8)
+    iscale.set_scaling_factor(fs.IP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.IP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.IP_EVAP.area, 1e-4)
+    iscale.set_scaling_factor(fs.IP_EVAP.overall_heat_transfer_coefficient, 1e-2)
+
+    iscale.set_scaling_factor(fs.IP_pump.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(fs.HP_pump.control_volume.work, 1e-7)
+
+    iscale.set_scaling_factor(fs.HP_EVAP.shell.heat, 1e-8)
+    iscale.set_scaling_factor(fs.HP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.HP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.HP_EVAP.area, 1e-4)
+    iscale.set_scaling_factor(fs.HP_EVAP.overall_heat_transfer_coefficient, 1e-2)
 
     # Calculate calculated scaling factors
     iscale.calculate_scaling_factors(m)
@@ -2027,9 +2072,11 @@ def print_results(m):
     m.fs.LP_ECON.side_2.properties_out[0].temperature.display()
 
 
-def get_model(init=True):
-    m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+def get_model(m=None, init=True):
+    if m is None:
+        m = pyo.ConcreteModel()
+    if not hasattr(m, "fs"):
+        m.fs = FlowsheetBlock(default={"dynamic": False})
     # add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs.prop_gas = FlueGasParameterBlock()
@@ -2038,11 +2085,11 @@ def get_model(init=True):
     m = add_unit_models(m)
     # fixing unit design variables
     m = set_inputs(m)
-
-    init_fname = 'hrsg_init.json'
+    set_scaling_factors(m)
+    init_fname = 'hrsg_init.json.gz'
     if os.path.exists(init_fname):
         print('loading initial conditions')
-        ms.from_json(m, fname=init_fname)
+        ms.from_json(m, fname=init_fname, wts=ms.StoreSpec(suffix=False))
         m = set_arcs(m)
 
     else:
