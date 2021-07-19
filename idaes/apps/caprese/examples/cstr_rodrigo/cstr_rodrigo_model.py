@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Test for Cappresse's module for NMPC.
+Caprese example for NMPC with Rodrigo's CSTR model
 """
 
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
@@ -66,15 +66,15 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
     m.Er = Param(initialize=lambda m: (value(m.E) / value(m.R)))
     m.dH = Param(initialize=596619.)
 
-    m.F = Param(m.t, mutable=True, default=1.2000000000000000E+02)
-    m.Fw = Param(m.t, mutable=True, default=3.0000000000000000E+01)
+    m.F = Param(m.t, mutable=True, default=1.20E+02)
+    m.Fw = Param(m.t, mutable=True, default=3.00E+01)
     
     #States
-    m.Ca = Var(m.t,  initialize=1.60659680385930765667001907104350E-02)
+    m.Ca = Var(m.t,  initialize=1.61E-02)
     m.Tall = Var(m.t, m.T_ind)
     
     #Algebraic var
-    m.k = Var(m.t,  initialize=4.70706140E+02)
+    m.k = Var(m.t,  initialize=4.71E+02)
     
     #Controls
     m.Tjinb = Var(m.t, initialize=250)
@@ -86,7 +86,7 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
         m.Cadot.fix()
         m.Talldot.fix()
     else:
-        m.Cadot = DerivativeVar(m.Ca, initialize=-3.58709135E+01)
+        m.Cadot = DerivativeVar(m.Ca, initialize=-3.59E+01)
         m.Talldot = DerivativeVar(m.Tall, wrt = m.t)
         
     #Constraint rules
@@ -121,16 +121,16 @@ def make_model(horizon=10, ntfe=5, ntcp=3, steady=False, bounds=False):
         disc.apply_to(m, wrt=m.t, nfe=ntfe, ncp=ntcp, scheme='LAGRANGE-RADAU')
         
     # Set initialize values for IndexedVar with string index
-    m.Tall[:, "T"] = 3.92336059452774350120307644829154E+02
-    m.Tall[:, "Tj"] = 3.77995395658401662331016268581152E+02
-    m.Talldot[:, "T"] = 5.19191848E+03
-    m.Talldot[:, "Tj"] = -9.70467399E+02
+    m.Tall[:, "T"] = 3.92E+02
+    m.Tall[:, "Tj"] = 3.78E+02
+    m.Talldot[:, "T"] = 5.19E+03
+    m.Talldot[:, "Tj"] = -9.7E+02
     
     #Set initial conditions for states
     if not steady:
-        m.Ca[0].fix(1.9193793974995963E-02)
-        m.Tall[0, "T"].fix(3.8400724261199036E+02)
-        m.Tall[0, "Tj"].fix(3.7127352272578315E+02)
+        m.Ca[0].fix(1.92E-02)
+        m.Tall[0, "T"].fix(3.84E+02)
+        m.Tall[0, "Tj"].fix(3.71E+02)
     
     #Fix input here to pass dof check 
     #(not necessary for running nmpc; it will be fixed if it's not fix here)
