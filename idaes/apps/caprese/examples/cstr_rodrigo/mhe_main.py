@@ -15,11 +15,11 @@ Example for Caprese's module for MHE.
 """
 import random
 from idaes.apps.caprese.mhe import MHESim
-# from idaes.apps.caprese.util import apply_noise_with_bounds
+from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
-from cstr_rodrigo_model2 import make_model
+from cstr_rodrigo_model import make_model
 import pandas as pd
 
 __author__ = "Kuan-Han Lin"
@@ -102,6 +102,20 @@ def main():
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
     
+    #-------------------------------------------------------------------------
+    #noise for measurements
+    variance = [
+        (mhe.estimator.mod.Tall[0, "T"], 0.05),
+        # (mhe.estimator.mod.Tall[0, "Tj"], 0.02),
+        (mhe.estimator.mod.Ca[0], 1.0E-2),
+        ]
+    mhe.estimator.set_variance(variance)
+    measurement_variance = [v.variance for v in estimator.measurement_vars]
+    measurement_noise_bounds = [
+            (var[c_t0].lb, var[c_t0].ub) for var in estimator.measurement_vars
+            ]
+    #-------------------------------------------------------------------------
+    
     mhe.plant.initialize_plant_dataframe()
     
     # This "initialization" really simulates the plant with the new inputs.
@@ -130,7 +144,7 @@ def main():
     
     
     for i in range(1,11):
-        print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
+        print('\nENTERING MHE LOOP ITERATION %s\n' % i)
         
         mhe.plant.advance_one_sample()
         mhe.plant.initialize_to_initial_conditions()
@@ -143,7 +157,12 @@ def main():
         mhe.plant.record_plant_data()
         
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
-        #apply measurement error here
+        measurements = apply_noise_with_bounds(
+                    measurements,
+                    measurement_variance,
+                    random.gauss,
+                    measurement_noise_bounds,
+                    )
         
         mhe.estimator.advance_one_sample()
         mhe.estimator.load_measurements(measurements,

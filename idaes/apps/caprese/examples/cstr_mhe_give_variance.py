@@ -108,39 +108,31 @@ def main():
     mhe.estimator.initialize_past_info_with_steady_state(desired_ss, ss_weights, solver)
     
     # Now we are ready to construct the objective function for MHE
-    model_disturbance_weights = [
-            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','S'], 0.1),
-            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','E'], 0.1),
-            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','C'], 0.1),
-            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','P'], 0.1),
-            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','Solvent'], 0.1),
-            (estimator.mod.fs.cstr.control_volume.energy_holdup[0,'aq'], 0.1),
+    model_disturbance_variances = [
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','S'], 1.),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','E'], 1.),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','C'], 1.),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','P'], 1.),
+            (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','Solvent'], 1.),
+            (estimator.mod.fs.cstr.control_volume.energy_holdup[0,'aq'], 1.),
             ]
 
-    measurement_noise_weights = [
-            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'C'], 10.),
-            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'E'], 10.),
-            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'S'], 10.),
-            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 10.),
-            (estimator.mod.fs.cstr.outlet.temperature[0], 100.),
-            (estimator.mod.fs.cstr.volume[0], 1.),
+    measurement_noise_variances = [
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'C'], 0.01),
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'E'], 0.05),
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'S'], 0.02),
+            (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 0.05),
+            (estimator.mod.fs.cstr.outlet.temperature[0], 0.1),
+            (estimator.mod.fs.cstr.volume[0], 0.05),
             ]   
     
-    mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
-                                               measurement_noise_weights)
+    mhe.estimator.add_noise_minimize_objective(model_disturbance_variances,
+                                               measurement_noise_variances,
+                                               givenform = "variance")
     
     #-------------------------------------------------------------------------
     #noise for measurements
-    cstr = mhe.estimator.mod.fs.cstr
-    variance = [
-            (cstr.outlet.conc_mol[0.0, 'S'], 0.2),
-            (cstr.outlet.conc_mol[0.0, 'E'], 0.05),
-            (cstr.outlet.conc_mol[0.0, 'C'], 0.1),
-            (cstr.outlet.conc_mol[0.0, 'P'], 0.05),
-            (cstr.outlet.temperature[0.0], 5.),
-            (cstr.volume[0.0], 0.05),
-            ]
-    mhe.estimator.set_variance(variance)
+    mhe.estimator.set_variance(measurement_noise_variances)
     measurement_variance = [v.variance for v in estimator.measurement_vars]
     measurement_noise_bounds = [
             (0.0, var[c_t0].ub) for var in estimator.measurement_vars
@@ -157,7 +149,6 @@ def main():
     mhe.plant.record_plant_data()
     
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
-    #apply measurement error here
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
@@ -192,11 +183,11 @@ def main():
             
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
-                   measurements,
-                   measurement_variance,
-                   random.gauss,
-                   measurement_noise_bounds,
-                   )
+                    measurements,
+                    measurement_variance,
+                    random.gauss,
+                    measurement_noise_bounds,
+                    )
         
         mhe.estimator.advance_one_sample()
         mhe.estimator.load_measurements(measurements,

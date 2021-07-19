@@ -518,16 +518,36 @@ class _EstimatorBlockData(_DynamicBlockData):
           
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,
-                                     measurement_noise_weights):
+                                     measurement_noise_weights,
+                                     givenform = "weight"):
         
-        #give weights or variances?
-        for var, val in model_disturbance_weights:
-            self.diffvar_map_moddis[var].weight = val
-            
+        if givenform not in ["weight", "variance"]:
+            raise RuntimeError("Wrong argument 'givenform' is given. "
+                   "Please assign either 'weight' or 'variance'.")
+        
+        diff_id_list = [id(var[0]) for var in self.differential_vars]
+        for var, val in model_disturbance_weights:  
+            #check if the given variable is declared as a measurement before
+            if id(var) not in diff_id_list:
+                raise RuntimeError(var.name, 
+                                   " is not a differential variable.")
+                
+            if givenform == "weight":
+                self.diffvar_map_moddis[var].weight = val
+            elif givenform == "variance":
+                self.diffvar_map_moddis[var].weight = 1./val
+
+        mea_id_list = [id(var[0]) for var in self.measurement_vars]
         for var, val in measurement_noise_weights:
-            self.meavar_map_meaerr[var].weight = val
-            
-        #check if given measurement is not declared as measurement before
+            #check if the given variable is declared as a measurement before
+            if id(var) not in mea_id_list:
+                raise RuntimeError(var.name, 
+                                   " is not declared as a measurement.")
+                
+            if givenform == "weight":
+                self.meavar_map_meaerr[var].weight = val
+            elif givenform == "variance":
+                self.meavar_map_meaerr[var].weight = 1./val
         
         moddis_block = self.MODELDISTURBANCE_BLOCK
         moddis_list = [moddis_block[ind].var for ind in self.DIFFERENTIAL_SET]
