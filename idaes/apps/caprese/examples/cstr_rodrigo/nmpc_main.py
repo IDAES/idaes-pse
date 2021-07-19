@@ -20,8 +20,7 @@ from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 import idaes.logger as idaeslog
-# from idaes.apps.caprese.examples.cstr_model import make_model
-from cstr_rodrigo_model2 import make_model
+from cstr_rodrigo_model import make_model
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -41,36 +40,7 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-class PlotData(object):
-    def __init__(self, group, location, name=None, t_switch=None):
-        # Would really like a PlotData class that is constructed based on an
-        # NMPCVar object that contains necessary setpoint/reference
-        # information, instead of having to access that in the NMPCVarGroup
-        time = group.index_set
-        if t_switch == None:
-            t_switch = group.t0
-
-        self.name = name
-
-        var = group.varlist[location]
-        initial = group.reference[location]
-        setpoint = group.setpoint[location]
-        self.data_series = pd.Series(
-                [var[t].value for t in time],
-                index=[t for t in time])
-        self.setpoint_series = pd.Series(
-                [initial if t < t_switch else setpoint for t in time])
-
-    def plot(self):
-        # fig, ax can be formatted to the user's liking
-        fig, ax = plt.subplots()
-        if self.name is not None:
-            self.data_series.plot(label=self.name)
-        else:
-            self.data_series.plot()
-        return fig, ax
-
-def main(plot_switch=False):
+def main():
     m_controller = make_model(horizon=10, ntfe=5, ntcp=2, bounds=True)
     sample_time = 2.
     m_plant = make_model(horizon=sample_time, ntfe=2, ntcp=2, bounds = True)
