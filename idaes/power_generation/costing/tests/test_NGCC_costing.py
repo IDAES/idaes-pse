@@ -12,7 +12,9 @@
 ##############################################################################
 """
 Case B31A - Natural Gas Combined Cycle (NGCC) plant_gross_power
-Reference: NETL Baseline Report Rev 4
+Reference: NETL-PUB-22638
+Cost and Performance Baseline for Fossil Energy Plants Volume 1:
+Bituminous Coal and Natural Gas to Electricity; https://doi.org/10.2172/1569246
 Author: A. Deshpande and M. Zamarripa
 """
 import pytest
@@ -29,60 +31,45 @@ from idaes.core.util import get_solver
 solver = get_solver()
 
 
+@pytest.fixture(scope="module")
+def build_costing():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.get_costing(year='2018')
+
+    return m
+
+
 @pytest.mark.unit
-def test_get_costing():
-    # Create a Concrete Model as the top level object
-    m = pyo.ConcreteModel()
-
-    # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.get_costing(year='2018')
-
+def test_get_costing(build_costing):
+    m = build_costing
+    assert hasattr(m.fs.costing, "CE_index")
     # Accounts with Feedwater Flow to HP section of HRSG, as the
     # reference/scaling parameter - Exhibit 5-15
     FW_accounts = ['3.1', '3.3', '8.4']
 
-    m.fs.unit = pyo.Block()
-    m.fs.unit.feedwater_flowrate = pyo.Var(initialize=1085751)  # lb/hr
-    m.fs.unit.feedwater_flowrate.fix()
-    get_PP_costing(m.fs.unit, FW_accounts,
-                   m.fs.unit.feedwater_flowrate, 'lb/hr', 6)
-    assert isinstance(m.fs.unit.costing.total_plant_cost, pyo.Var)
-    assert hasattr(m.fs.unit.costing, "bare_erected_cost")
-    assert isinstance(m.fs.unit.costing.total_plant_cost_eq, pyo.Constraint)
-    assert degrees_of_freedom(m) == 0
-
-
-@pytest.mark.solver
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-@pytest.mark.component
-def test_get_ngcc_costing():
-    # Create a Concrete Model as the top level object
-    m = pyo.ConcreteModel()
-
-    # Add a flowsheet object to the model
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.get_costing(year='2018')
-
-    # Accounts corresponding to each component of the NGCC plant
-    # Reference - Exhibit 5-17, NETL Baseline Report Rev 4
-    NGCC_accounts = ['3.1', '3.2', '3.3', '3.4', '3.5', '3.6', '3.7', '3.9',
-                     '6.1', '6.3', '6.4', '6.5', '7.1', '7.2', '7.3', '7.4',
-                     '7.5', '7.6', '8.1', '8.2', '8.3', '8.4', '8.5', '9.1',
-                     '9.2', '9.3', '9.4', '9.5', '9.6', '9.7', '11.1', '11.2',
-                     '11.3', '11.4', '11.5', '11.6', '11.7', '11.8', '11.9',
-                     '12.1', '12.2', '12.3', '12.4', '12.5', '12.6', '12.7',
-                     '12.8', '12.9', '13.1', '13.2', '13.3', '14.1', '14.3',
-                     '14.4', '14.5', '14.6', '14.7', '14.8', '14.9', '14.10']
-    # Accounts with Feedwater Flow to HP section of HRSG, as the
-    # reference/scaling parameter - Exhibit 5-15
-    FW_accounts = ['3.1', '3.3', '8.4']
     m.fs.b1 = pyo.Block()
-
     m.fs.b1.feedwater_flowrate = pyo.Var(initialize=1085751)  # lb/hr
     m.fs.b1.feedwater_flowrate.fix()
     get_PP_costing(m.fs.b1, FW_accounts,
                    m.fs.b1.feedwater_flowrate, 'lb/hr', 6)
+    assert isinstance(m.fs.b1.costing.total_plant_cost, pyo.Var)
+    assert hasattr(m.fs.b1.costing, "bare_erected_cost")
+    assert isinstance(m.fs.b1.costing.total_plant_cost_eq, pyo.Constraint)
+    assert degrees_of_freedom(m) == 0
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_units1_costing(build_costing):
+    m = build_costing
+
+    # Accounts with Feedwater Flow to HP section of HRSG, as the
+    # reference/scaling parameter - Exhibit 5-15
+    FW_accounts = ['3.1', '3.3', '8.4']
 
     # Accounts with Raw water withdrawal as the reference/scaling parameter
     # Exhibit 5-14
@@ -116,6 +103,35 @@ def test_get_ngcc_costing():
     get_PP_costing(m.fs.b4, PW_discharge_accounts,
                    m.fs.b4.process_water_discharge, 'gpm', 6)
 
+    # Initialize costing
+    costing_initialization(m.fs)
+    assert degrees_of_freedom(m) == 0
+
+    # Solve the model
+    results = solver.solve(m, tee=True)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
+
+     # Accounts with raw water withdrawal as reference parameter
+    assert pytest.approx(26.435, abs=0.5) \
+        == sum(pyo.value(m.fs.b2.costing.total_plant_cost[ac])
+               for ac in RW_withdraw_accounts)
+    # Accounts with fuel gas as reference parameter
+    assert pytest.approx(158.415, abs=0.5) \
+        == sum(pyo.value(m.fs.b3.costing.total_plant_cost[ac])
+               for ac in FuelG_accounts)
+
+    # Accounts with process water discharge as reference parameter
+    assert pytest.approx(11.608, abs=0.5) \
+        == sum(pyo.value(m.fs.b4.costing.total_plant_cost[ac])
+               for ac in PW_discharge_accounts)
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_units2_costing(build_costing):
+    m = build_costing
     # Accounts with flue gas flowrate as the reference/scaling parameter
     # Exhibit 5-15 stream 3, Exhibit 5-8
     FG_accounts = ['7.6']
@@ -165,6 +181,25 @@ def test_get_ngcc_costing():
     get_PP_costing(m.fs.b8, Stack_flow_gas_accounts,
                    m.fs.b8.stack_flow_gas, 'acfm', 6)
 
+    # Initialize costing
+    costing_initialization(m.fs)
+    assert degrees_of_freedom(m) == 0
+
+    # Solve the model
+    results = solver.solve(m, tee=True)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
+    # Accounts with HRSG duty as reference parameter
+    assert pytest.approx(90.794, abs=0.1) \
+        == sum(pyo.value(m.fs.b7.costing.total_plant_cost[ac])
+               for ac in HRSG_duty_accounts)
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_units3_costing(build_costing):
+    m = build_costing
     # Accounts with steam turbine gross power as the reference/scaling
     # parameter
     # Exhibit 5-9
@@ -268,6 +303,31 @@ def test_get_ngcc_costing():
     get_PP_costing(m.fs.b16, gasturbine_accounts,
                    m.fs.b16.gas_turbine_power, 'kW', 6)
 
+    # Initialize costing
+    costing_initialization(m.fs)
+    assert degrees_of_freedom(m) == 0
+
+    # Solve the model
+    results = solver.solve(m, tee=True)
+    assert results.solver.termination_condition == \
+        pyo.TerminationCondition.optimal
+    assert results.solver.status == pyo.SolverStatus.ok
+
+    # Accounts with condenser duty as reference parameter
+    assert pytest.approx(14.27, abs=0.1) \
+        == sum(pyo.value(m.fs.b10.costing.total_plant_cost[ac])
+               for ac in Condenser_duty_accounts)
+
+    # Accounts with cooling tower duty as reference parameter
+    assert pytest.approx(14.73, abs=0.2) \
+        == sum(pyo.value(m.fs.b11.costing.total_plant_cost[ac])
+               for ac in Cooling_tower_accounts)
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+@pytest.mark.component
+def test_flowsheet_costing(build_costing):
+    m = build_costing
     # Build cost constraints
     build_flowsheet_cost_constraint(m)
 
@@ -281,72 +341,5 @@ def test_get_ngcc_costing():
         pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
 
-    # Obtain the total plant costs for each account
-    TPC_components = []
-    TPC_components.append(sum(pyo.value(m.fs.b1.costing.total_plant_cost[ac])
-                              for ac in FW_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b2.costing.total_plant_cost[ac])
-                              for ac in RW_withdraw_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b3.costing.total_plant_cost[ac])
-                              for ac in FuelG_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b4.costing.total_plant_cost[ac])
-                              for ac in PW_discharge_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b5.costing.total_plant_cost[ac])
-                              for ac in FG_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b6.costing.total_plant_cost[ac])
-                              for ac in CT_grosspower_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b7.costing.total_plant_cost[ac])
-                              for ac in HRSG_duty_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b8.costing.total_plant_cost[ac])
-                              for ac in Stack_flow_gas_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b9.costing.total_plant_cost[ac])
-                              for ac in Steam_turbine_gross_power_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b10.costing.total_plant_cost[ac])
-                              for ac in Condenser_duty_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b11.costing.total_plant_cost[ac])
-                              for ac in Cooling_tower_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b12.costing.total_plant_cost[ac])
-                              for ac in Circ_water_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b13.costing.total_plant_cost[ac])
-                              for ac in plant_gross_power_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b14.costing.total_plant_cost[ac])
-                              for ac in auxilliary_load_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b15.costing.total_plant_cost[ac])
-                              for ac in stg_ctg_accounts))
-    TPC_components.append(sum(pyo.value(m.fs.b16.costing.total_plant_cost[ac])
-                              for ac in gasturbine_accounts))
-
-    assert pytest.approx(sum(TPC_components), abs=0.5) == 574.85
-
-    #  Testing cost component values for some accounts against the
-    #  NETL baseline report revision 4
-
-    # Accounts with raw water withdrawal as reference parameter
-    assert pytest.approx(sum(pyo.value(m.fs.b2.costing.total_plant_cost[ac])
-                             for ac in RW_withdraw_accounts), abs=0.5) \
-        == 26.435
-
-    # Accounts with fuel gas as reference parameter
-    assert pytest.approx(sum(pyo.value(m.fs.b3.costing.total_plant_cost[ac])
-                             for ac in FuelG_accounts), abs=0.5) \
-        == 158.415
-
-    # Accounts with process water discharge as reference parameter
-    assert pytest.approx(sum(pyo.value(m.fs.b4.costing.total_plant_cost[ac])
-                             for ac in PW_discharge_accounts), abs=0.5) \
-        == 11.608
-
-    # Accounts with HRSG duty as reference parameter
-    assert pytest.approx(sum(pyo.value(m.fs.b7.costing.total_plant_cost[ac])
-                             for ac in HRSG_duty_accounts), abs=0.5) \
-        == 90.794
-
-    # Accounts with condenser duty as reference parameter
-    assert pytest.approx(sum(pyo.value(m.fs.b10.costing.total_plant_cost[ac])
-                             for ac in Condenser_duty_accounts), abs=0.5) \
-        == 14.27
-
-    # Accounts with cooling tower duty as reference parameter
-    assert pytest.approx(sum(pyo.value(m.fs.b11.costing.total_plant_cost[ac])
-                             for ac in Cooling_tower_accounts), abs=0.5) \
-        == 14.73
+    # Verify total plant costs
+    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.flowsheet_cost)
