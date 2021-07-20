@@ -15,6 +15,7 @@ Tool to interrogate IDAES flowsheets and list the physical properties
 required to simulate it.
 """
 import sys
+from inspect import isclass
 
 # Import Pyomo libraries
 from pyomo.environ import Set, Var, units as pyunits
@@ -78,7 +79,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             for p, t in self.config.phase_list.items():
                 if t is None:
                     t = Phase
-                elif not issubclass(t, Phase):
+                elif not isclass(t) or not issubclass(t, Phase):
                     raise ConfigurationError(
                         f"{self.name} invalid phase type {t} (for phase {p})."
                         f" Type must be a subclass of Phase.")
@@ -92,7 +93,7 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
             for j, t in self.config.component_list.items():
                 if t is None:
                     t = Component
-                elif not issubclass(t, Component):
+                elif not isclass(t) or not issubclass(t, Component):
                     raise ConfigurationError(
                         f"{self.name} invalid component type {t} (for "
                         f"component {j}). Type must be a subclass of "
