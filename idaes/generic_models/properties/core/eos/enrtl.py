@@ -36,7 +36,7 @@ from idaes.generic_models.properties.core.generic.utility import (
 from idaes.generic_models.properties.core.generic.generic_property import \
     StateIndex
 from idaes.core.util.constants import Constants
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 import idaes.logger as idaeslog
 
 
@@ -200,11 +200,11 @@ class ENRTL(Ideal):
         def rule_vol_mol_solvent(b):  # Eqn 77
             if len(b.params.solvent_set) == 1:
                 s = b.params.solvent_set.first()
-                return 1/get_method(b, "dens_mol_liq_comp", s)(
+                return get_method(b, "vol_mol_liq_comp", s)(
                     b, cobj(b, s), b.temperature)
             else:
-                return (sum(b.mole_frac_phase_comp_true[pname, s] /
-                            get_method(b, "dens_mol_liq_comp", s)(
+                return (sum(b.mole_frac_phase_comp_true[pname, s] *
+                            get_method(b, "vol_mol_liq_comp", s)(
                                 b, cobj(b, s), b.temperature)
                             for s in b.params.solvent_set) /
                         sum(b.mole_frac_phase_comp_true[pname, s]
@@ -589,11 +589,37 @@ class ENRTL(Ideal):
 
     @staticmethod
     def pressure_osm_phase(b, p):
-        # TODO: Replace ens_mol_phase with vol_mol_phase
         return (-ENRTL.gas_constant(b)*b.temperature *
                 log(sum(b.act_phase_comp[p, j]
-                        for j in b.params.solvent_set)) *
-                b.dens_mol_phase[p])
+                        for j in b.params.solvent_set)) /
+                b.vol_mol_phase[p])
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        # eNRTL model uses apparent species for calculating molar volume
+        # TODO : Need something more rigorus to handle concentrated solutions
+        v_expr = 0
+        for j in b.params.apparent_species_set:
+            # First try to get a method for vol_mol
+            try:
+                v_comp = get_method(b, "vol_mol_liq_comp", j)(
+                    b, cobj(b, j), b.temperature)
+            except (AttributeError, ConfigurationError):
+                # Does not have vol_mol, try dens_mol
+                try:
+                    v_comp = 1/get_method(b, "dens_mol_liq_comp", j)(
+                        b, cobj(b, j), b.temperature)
+                except (AttributeError, ConfigurationError):
+                    # Does not have either vol_mol or dens_mol
+                    raise ConfigurationError(
+                        f"{b.name} does not have a method defined to use "
+                        f"when calculating molar volume and density for "
+                        f"component {j} in phase {p}. Each component must "
+                        f"define a method for either vol_mol_liq_comp or "
+                        f"dens_mol_liq_comp.")
+            v_expr += b.mole_frac_phase_comp_apparent[p, j]*v_comp
+
+        return v_expr
 
 
 def log_gamma_lc(b, pname, s, X, G, tau):
