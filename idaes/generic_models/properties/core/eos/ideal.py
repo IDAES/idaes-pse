@@ -132,18 +132,8 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return b.pressure/(Ideal.gas_constant(b)*b.temperature)
-        elif pobj.is_liquid_phase():
-            return sum(b.get_mole_frac()[p, j] *
-                       get_method(b, "dens_mol_liq_comp", j)(
-                           b, cobj(b, j), b.temperature)
-                       for j in b.components_in_phase(p))
-        elif pobj.is_solid_phase():
-            return sum(b.get_mole_frac()[p, j] *
-                       get_method(b, "dens_mol_sol_comp", j)(
-                           b, cobj(b, j), b.temperature)
-                       for j in b.components_in_phase(p))
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            return 1/b.vol_mol_phase[p]
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
@@ -370,6 +360,41 @@ class Ideal(EoSBase):
                     i = 1
                 C += i*b.conc_mol_phase_comp[p, j]
         return Ideal.gas_constant(b)*b.temperature*C
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return Ideal.gas_constant(b)*b.temperature/b.pressure
+        elif pobj.is_liquid_phase():
+            suffix = "_liq_comp"
+        elif pobj.is_solid_phase():
+            suffix = "_sol_comp"
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+        v_expr = 0
+        for j in b.components_in_phase(p):
+            # First try to get a method for vol_mol
+            try:
+                v_comp = get_method(b, "vol_mol"+suffix, j)(
+                    b, cobj(b, j), b.temperature)
+            except (AttributeError, ConfigurationError):
+                # Does not have vol_mol, try dens_mol
+                try:
+                    v_comp = 1/get_method(b, "dens_mol"+suffix, j)(
+                        b, cobj(b, j), b.temperature)
+                except (AttributeError, ConfigurationError):
+                    # Does not have either vol_mol or dens_mol
+                    raise ConfigurationError(
+                        f"{b.name} does not have a method defined to use "
+                        f"when calculating molar volume and density for "
+                        f"component {j} in phase {p}. Each component must "
+                        f"define a method for either vol_mol{suffix} or "
+                        f"dens_mol{suffix}.")
+            v_expr += b.get_mole_frac()[p, j]*v_comp
+
+        return v_expr
 
 
 def _invalid_phase_msg(name, phase):

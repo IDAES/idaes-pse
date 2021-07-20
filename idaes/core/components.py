@@ -52,10 +52,22 @@ class ComponentData(ProcessBlockData):
             doc="Dict indicating phases in which component follows Henry's "
                 "Law (keys) with values indicating form of law."))
 
+    CONFIG.declare("vol_mol_liq_comp", ConfigValue(
+        description="Method to use to calculate liquid phase molar volume",
+        doc="Method to use to calculate liquid phase molar volume. Users "
+        "need only define one of vol_mol_liq_comp and dens_mol_liq_comp."))
+    CONFIG.declare("vol_mol_sol_comp", ConfigValue(
+        description="Method to use to calculate solid phase molar volume",
+        doc="Method to use to calculate solid phase molar volume. Users "
+        "need only define one of vol_mol_sol_comp and dens_mol_sol_comp."))
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
-        description="Method to use to calculate liquid phase molar density"))
+        description="Method to use to calculate liquid phase molar density",
+        doc="Method to use to calculate liquid phase molar density. Users "
+        "need only define one of vol_mol_liq_comp and dens_mol_liq_comp."))
     CONFIG.declare("dens_mol_sol_comp", ConfigValue(
-        description="Method to use to calculate solid phase molar density"))
+        description="Method to use to calculate solid phase molar density",
+        doc="Method to use to calculate solid phase molar density. Users "
+        "need only define one of vol_mol_sol_comp and dens_mol_sol_comp."))
 
     CONFIG.declare("cp_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component specific heats"))

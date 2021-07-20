@@ -910,10 +910,11 @@ class GenericParameterData(PhysicalParameterBlock):
              'mw_phase': {'method': '_mw_phase'},
              'pressure_bubble': {'method': '_pressure_bubble'},
              'pressure_dew': {'method': '_pressure_dew'},
+             'pressure_osm_phase': {'method': '_pressure_osm_phase'},
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'},
-             'pressure_osm_phase': {'method': '_pressure_osm_phase'},
+             'vol_mol_phase': {'method': '_vol_mol_phase'},
              'dh_rxn': {'method': '_dh_rxn'}})
 
 
@@ -2664,6 +2665,19 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_pressure_sat_comp)
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
+            raise
+
+    def _vol_mol_phase(self):
+        try:
+            def rule_vol_mol_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.vol_mol_phase(b, p)
+            self.vol_mol_phase = Expression(
+                    self.phase_list,
+                    doc="Molar volume of each phase",
+                    rule=rule_vol_mol_phase)
+        except AttributeError:
+            self.del_component(self.vol_mol_phase)
             raise
 
     def _dh_rxn(self):

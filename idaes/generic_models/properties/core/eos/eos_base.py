@@ -286,6 +286,10 @@ class EoSBase():
     def pressure_osm_phase(b, p):
         raise NotImplementedError(_msg(b, "pressure_osm_phase"))
 
+    @staticmethod
+    def vol_mol_phase(b, p):
+        raise NotImplementedError(_msg(b, "vol_mol_phase"))
+
 
 def _msg(b, attr):
     return ("{} Equation of State module has not implemented a method for {}. "
