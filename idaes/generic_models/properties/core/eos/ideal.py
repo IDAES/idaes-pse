@@ -367,31 +367,16 @@ class Ideal(EoSBase):
         if pobj.is_vapor_phase():
             return Ideal.gas_constant(b)*b.temperature/b.pressure
         elif pobj.is_liquid_phase():
-            suffix = "_liq_comp"
+            ptype = "liq"
         elif pobj.is_solid_phase():
-            suffix = "_sol_comp"
+            ptype = "sol"
         else:
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
         v_expr = 0
         for j in b.components_in_phase(p):
             # First try to get a method for vol_mol
-            try:
-                v_comp = get_method(b, "vol_mol"+suffix, j)(
-                    b, cobj(b, j), b.temperature)
-            except (AttributeError, ConfigurationError):
-                # Does not have vol_mol, try dens_mol
-                try:
-                    v_comp = 1/get_method(b, "dens_mol"+suffix, j)(
-                        b, cobj(b, j), b.temperature)
-                except (AttributeError, ConfigurationError):
-                    # Does not have either vol_mol or dens_mol
-                    raise ConfigurationError(
-                        f"{b.name} does not have a method defined to use "
-                        f"when calculating molar volume and density for "
-                        f"component {j} in phase {p}. Each component must "
-                        f"define a method for either vol_mol{suffix} or "
-                        f"dens_mol{suffix}.")
+            v_comp = Ideal.get_vol_mol_pure(b, ptype, j, b.temperature)
             v_expr += b.get_mole_frac()[p, j]*v_comp
 
         return v_expr

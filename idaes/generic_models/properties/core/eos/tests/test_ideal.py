@@ -505,6 +505,7 @@ def test_pressure_osm_phase(m):
             m.props[1].conc_mol_phase_comp["Liq", "c"])))
     assert len(m.props[1].pressure_osm_phase) == 1
 
+
 @pytest.mark.unit
 def test_pressure_osm_phase_w_apparent_component():
     m = ConcreteModel()
@@ -562,11 +563,10 @@ def test_pressure_osm_phase_w_apparent_component():
 @pytest.mark.unit
 def test_vol_mol_phase_no_methods(m):
     with pytest.raises(ConfigurationError,
-                       match="props\[1\] does not have a method defined to "
-                       "use when calculating molar volume and density for "
-                       "component a in phase Liq. Each component must "
-                       "define a method for either vol_mol_liq_comp or "
-                       "dens_mol_liq_comp."):
+                       match="does not have a method defined to use when "
+                       "calculating molar volume and density for component a "
+                       "in phase liq. Each component must define a method for "
+                       "either vol_mol_liq_comp or dens_mol_liq_comp."):
         Ideal.vol_mol_phase(m.props[1], "Liq")
 
 

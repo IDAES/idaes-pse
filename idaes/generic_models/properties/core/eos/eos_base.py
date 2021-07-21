@@ -52,6 +52,27 @@ class EoSBase():
         raise NotImplementedError(_msg(b, "build_parameters"))
 
     @staticmethod
+    def get_vol_mol_pure(b, phase, comp, temperature):
+        try:
+            vol_mol = get_method(b, "vol_mol_"+phase+"_comp", comp)(
+                                 b, cobj(b, comp), temperature)
+        except (AttributeError, ConfigurationError):
+            # vol_mol not defined, try for dens_mol instead
+            try:
+                vol_mol = 1/get_method(b, "dens_mol_"+phase+"_comp", comp)(
+                                       b, cobj(b, comp), temperature)
+            except (AttributeError, ConfigurationError):
+                # Does not have either vol_mol or dens_mol
+                suffix = "_"+phase+"_comp"
+                raise ConfigurationError(
+                    f"{b.name} does not have a method defined to use "
+                    f"when calculating molar volume and density for "
+                    f"component {comp} in phase {phase}. Each component "
+                    f"must define a method for either vol_mol{suffix} or "
+                    f"dens_mol{suffix}.")
+        return vol_mol
+
+    @staticmethod
     def act_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "act_phase_comp"))
 

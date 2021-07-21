@@ -200,12 +200,10 @@ class ENRTL(Ideal):
         def rule_vol_mol_solvent(b):  # Eqn 77
             if len(b.params.solvent_set) == 1:
                 s = b.params.solvent_set.first()
-                return get_method(b, "vol_mol_liq_comp", s)(
-                    b, cobj(b, s), b.temperature)
+                return ENRTL.get_vol_mol_pure(b, "liq", s, b.temperature)
             else:
                 return (sum(b.mole_frac_phase_comp_true[pname, s] *
-                            get_method(b, "vol_mol_liq_comp", s)(
-                                b, cobj(b, s), b.temperature)
+                            ENRTL.get_vol_mol_pure(b, "liq", s, b.temperature)
                             for s in b.params.solvent_set) /
                         sum(b.mole_frac_phase_comp_true[pname, s]
                             for s in b.params.solvent_set))
@@ -600,23 +598,7 @@ class ENRTL(Ideal):
         # TODO : Need something more rigorus to handle concentrated solutions
         v_expr = 0
         for j in b.params.apparent_species_set:
-            # First try to get a method for vol_mol
-            try:
-                v_comp = get_method(b, "vol_mol_liq_comp", j)(
-                    b, cobj(b, j), b.temperature)
-            except (AttributeError, ConfigurationError):
-                # Does not have vol_mol, try dens_mol
-                try:
-                    v_comp = 1/get_method(b, "dens_mol_liq_comp", j)(
-                        b, cobj(b, j), b.temperature)
-                except (AttributeError, ConfigurationError):
-                    # Does not have either vol_mol or dens_mol
-                    raise ConfigurationError(
-                        f"{b.name} does not have a method defined to use "
-                        f"when calculating molar volume and density for "
-                        f"component {j} in phase {p}. Each component must "
-                        f"define a method for either vol_mol_liq_comp or "
-                        f"dens_mol_liq_comp.")
+            v_comp = ENRTL.get_vol_mol_pure(b, "liq", j, b.temperature)
             v_expr += b.mole_frac_phase_comp_apparent[p, j]*v_comp
 
         return v_expr
