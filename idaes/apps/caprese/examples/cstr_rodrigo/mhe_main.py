@@ -83,19 +83,20 @@ def main():
 
     solve_consistent_initial_conditions(plant, plant.time, solver)
     
+    # Here we solve for a steady state and use it to fill in past measurements
     desired_ss = [(estimator.mod.Ca[0], 0.021)]
     ss_weights = [(estimator.mod.Ca[0], 1.)]
     mhe.estimator.initialize_past_info_with_steady_state(desired_ss, ss_weights, solver)
         
     # Now we are ready to construct the objective function for MHE
     model_disturbance_weights = [
-            (estimator.mod.Ca[0], 0.1),
-            (estimator.mod.Tall[0, "T"], 0.2),
-            (estimator.mod.Tall[0, "Tj"], 0.3),
+            (estimator.mod.Ca[0], 1.),
+            (estimator.mod.Tall[0, "T"], 1.),
+            (estimator.mod.Tall[0, "Tj"], 1.),
             ]
 
     measurement_noise_weights = [
-            (estimator.mod.Ca[0], 10.),
+            (estimator.mod.Ca[0], 100.),
             (estimator.mod.Tall[0, "T"], 20.),
             ]   
     
@@ -103,10 +104,9 @@ def main():
                                                measurement_noise_weights)
     
     #-------------------------------------------------------------------------
-    #noise for measurements
+    # Set up measurement noises that will be applied to measurements
     variance = [
         (mhe.estimator.mod.Tall[0, "T"], 0.05),
-        # (mhe.estimator.mod.Tall[0, "Tj"], 0.02),
         (mhe.estimator.mod.Ca[0], 1.0E-2),
         ]
     mhe.estimator.set_variance(variance)
@@ -116,28 +116,28 @@ def main():
             ]
     #-------------------------------------------------------------------------
     
+    # Set up pandas dataframe to save plant data
     mhe.plant.initialize_plant_dataframe()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
-    
     mhe.plant.record_plant_data()
     
+    # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
-    #apply measurement error here
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
     mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.Tjinb[p_ts].value])
     
+    # Set up pandas dataframe to save estimation results
     mhe.estimator.initialize_estimator_dataframe()
     
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
-    
     mhe.estimator.record_estimator_data()
     
     cinput = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(1, 11)}
@@ -180,6 +180,8 @@ def main():
 
 if __name__ == '__main__':
     mhe = main()
+    
+    # Plot the estiamtion result (estimated states vs. real states)
     vars_soi = (mhe.plant.mod.Ca[:], 
                 mhe.plant.mod.Tall[:, "T"], 
                 mhe.plant.mod.Tall[:, "Tj"],)

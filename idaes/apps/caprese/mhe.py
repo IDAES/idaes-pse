@@ -101,7 +101,7 @@ class MHESim(MHE_PlotLibrary):
                 time=estimator_time_set,
                 inputs=init_estimator_inputs,
                 measurements=measurements,
-                sample_time = sample_time, #MHE requires sample time.
+                sample_time = sample_time, #MHE requires the sample time.
                 )
         self.estimator.construct()
 

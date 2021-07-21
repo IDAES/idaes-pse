@@ -89,6 +89,7 @@ def main():
     
     estimator.mod.fs.cstr.volume[0].unfix()
     
+    # Here we solve for a steady state and use it to fill in past measurements
     desired_ss = [
         (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 0.4),
         (estimator.mod.fs.cstr.outlet.conc_mol[0, 'S'], 0.0),
@@ -131,7 +132,7 @@ def main():
                                                givenform = "variance")
     
     #-------------------------------------------------------------------------
-    #noise for measurements
+    # Set up measurement noises that will be applied to measurements
     mhe.estimator.set_variance(measurement_noise_variances)
     measurement_variance = [v.variance for v in estimator.measurement_vars]
     measurement_noise_bounds = [
@@ -139,15 +140,16 @@ def main():
             ]
     #-------------------------------------------------------------------------
     
+    # Set up pandas dataframe to save plant data
     mhe.plant.initialize_plant_dataframe()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
-    
     mhe.plant.record_plant_data()
     
+    # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
@@ -155,12 +157,12 @@ def main():
     mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.fs.mixer.S_inlet.flow_vol[p_ts].value,
                                        mhe.plant.mod.fs.mixer.E_inlet.flow_vol[p_ts].value])
     
+    # Set up pandas dataframe to save estimation results
     mhe.estimator.initialize_estimator_dataframe()
     
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
-    
     mhe.estimator.record_estimator_data()
         
     cinput1 = [0.5608456705408656, 3.4818166997491384, 5.0, 0.9629431563506397, 2.0623866186035156, 
@@ -205,6 +207,8 @@ def main():
 
 if __name__ == '__main__':
     mhe = main() 
+
+    # Plot the estiamtion result (estimated states vs. real states)
     vars_soi = (mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
                 mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
                 mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],

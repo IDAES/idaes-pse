@@ -17,9 +17,8 @@
 __author__ = "Kuan-Han Lin"
 
 # import idaes.logger as idaeslog
-from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
-        categorize_dae_variables,
+        # categorize_dae_variables,
         _identify_derivative_if_differential,
         categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
@@ -47,7 +46,6 @@ from idaes.apps.caprese.common.config import (
         VariableCategory as VC,
         ConstraintCategory as CC,
         )
-
 from pyomo.environ import (
         Var,
         Objective,
@@ -76,15 +74,16 @@ MHE_CATEGORY_TYPE_MAP = {
                         }
 
 class _EstimatorBlockData(_DynamicBlockData):
-    """ This class adds methods useful for working with dynamic
-    models to be used by a estimator. 
+    """ This class adds methods for building MHE and for working with dynamic
+    models. 
     """
 
     def _construct(self):
-        """This function builds some necessary variables and constraints for MHE.
-            e.g. actual measurement, measurement errors, model disturbances
+        """This function builds necessary variables and constraints for MHE.
+            e.g. actual measurements, measurement errors, model disturbances
                 error constraints, disturbed differential equations
         """
+        
         
         if self._sample_time is None:
             raise RuntimeError("MHE needs the sample time to be provided!")
@@ -107,6 +106,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         # MHE requires not only variable categories but also constraint categories.
         # This if statement check which is given, which is not.
+        # TODO: shall we check the user given categories???
         if self._category_dict is not None and self._con_category_dict is not None:
             self._use_user_given_var_categ_dict(inputs, measurements)
             self._use_user_given_con_categ_dict()
@@ -131,6 +131,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                                                                                             measurements,
                                                                                             )
             #check orders
+        # This is the case that I expect to be most often.
         else:
             unref_category_dict, unref_con_category_dict = self._categorize_var_con_for_MHE(
                                                                                             mod, 
@@ -138,16 +139,16 @@ class _EstimatorBlockData(_DynamicBlockData):
                                                                                             inputs, 
                                                                                             measurements,
                                                                                             )
-        self.reference_category_dict(unref_category_dict)
-        self.con_category_dict = unref_con_category_dict
+        self.reference_var_category_dict(unref_category_dict)
         #at this stage, no need to use reference on constraints
-        
+        self.con_category_dict = unref_con_category_dict
         
         #set a flag so that classification won't do again in _DynamicBlockData
         self.already_categorized_for_MHE = True
         category_dict = self.category_dict
         
         self._add_sample_point_set()
+        # Variables and constraints for MHE will be added under this block.
         self.MHE_VARS_CONS_BLOCK = Block()
         
         n_measurement = len(category_dict[VC.MEASUREMENT])
@@ -171,9 +172,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         self._add_mea_moddis_componentmap()
         
-        # Add the new constraint to the con_category_dict?
         self._add_measurement_constraint()
         self._add_disturbance_to_differential_cons()
+        # at this stage, we don't need to add new constraints to con_categ_dict
         
         #Set initial values for actual measurements
         for ind in self.MEASUREMENT_SET:
@@ -201,6 +202,12 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         
     def _categorize_var_con_for_MHE(self, mod, time, inputs, measurements):
+        '''This function category variables and constraints for MHE.
+        1. Flatten vars and constraints
+        2. Convert the given _GeneralVarData in inputs and measurements to IndexedVar
+        3. Categorize variables and constraints
+        '''
+        
         t0 = time.first()
         
         scalar_vars, dae_vars = flatten_dae_components(mod, time, ctype=Var)
@@ -239,7 +246,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         return unref_category_dict, unref_con_category_dict
     
     
-    def reference_category_dict(self, unref_category_dict):
+    def reference_var_category_dict(self, unref_category_dict):
         category_dict = {
                         category: [
                             Reference(ref.referent, ctype=ctype)
@@ -259,7 +266,7 @@ class _EstimatorBlockData(_DynamicBlockData):
 
     def _add_actual_measurement_param(self):
         """This function creates a indexed block and "fixed" variables to allocate 
-        actual measurement measured from the plant. 
+        actual measurements come from the plant. 
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         
@@ -276,8 +283,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             
     
     def _add_measurement_error(self):
-        """This function creates a indexed block, including measurement errors and 
-        measurement constraints: actual mea = measured state + mea_err
+        """This function creates a indexed block for measurement errors.
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         
@@ -293,7 +299,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             
         
     def _add_model_disturbance(self):
-        """This function creates a indexed block, including model disturbances.
+        """This function creates a indexed block for model disturbances.
         The order of disturbances is the same as differential vars and derivative vars.
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
@@ -318,24 +324,27 @@ class _EstimatorBlockData(_DynamicBlockData):
                     MHEBlock.MEASUREMENT_ERROR_BLOCK, 
                     MHEBlock.MODEL_DISTURBANCE_BLOCK]
         cate_list = [VC.ACTUALMEASUREMENT, 
-                     VC.MEASUREMENTERROR, 
-                     VC.MODELDISTURBANCE]
-        MHE_category_list_map = {}
-        for bloitem, cateitem in zip(blo_list, cate_list):
+                      VC.MEASUREMENTERROR, 
+                      VC.MODELDISTURBANCE]
+        MCTM = MHE_CATEGORY_TYPE_MAP
+        for bloitem, category, ctype in zip(blo_list, MCTM.keys(), MCTM.values()):
             save_list = []
             for ind in bloitem.index_set():
                 sets_list, comps_list = flatten_components_along_sets(bloitem[ind], 
                                                                       target_set, 
                                                                       Var)
                 save_list.append(comps_list[0][0])
-            MHE_category_list_map[cateitem] = save_list
-            
-        for category, ctype in MHE_CATEGORY_TYPE_MAP.items():
             self.category_dict[category] = [Reference(var, ctype=ctype) 
-                                            for var in MHE_category_list_map[category]]
+                                            for var in save_list]
             
             
     def _add_mea_moddis_componentmap(self):
+        '''Add component map for:
+            1. diffvar @ t0 --> model disturbance var
+            2. derivar @ t0 --> model disturbance var
+            3. meavar @ t0 --> measurement error var
+            4. meavar @ t0 --> actual measurement var
+        '''
         
         t0 = self.time.first()
         
@@ -363,6 +372,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         
     def _add_measurement_constraint(self):
+        '''
+        This function creates a indexed block, containing measurement error equations.
+        '''
         
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         block_name = "MEASUREMENT_CONSTRAINT_BLOCK" 
@@ -375,6 +387,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         sample_points = self.sample_points
         for i in mea_set:
             def _con_mea_err(m, s):
+                # measurement equations only defined at sample points
                 if s not in sample_points:
                     return Constraint.Skip
                 else:
@@ -391,7 +404,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         
     def _add_disturbance_to_differential_cons(self):
         """
-        This function creates a indexed block, including model differential equations
+        This function creates a indexed block, containing model differential equations
         with model disturbances.
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
@@ -448,7 +461,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.steadystate_objective = Objective(expr=obj_expr)
         
     def solve_steady_state(self, solver, **kwargs):
-        
         require_steady = kwargs.pop('require_steady', True)
         config = self.CONFIG(kwargs)
         model = self.mod
@@ -467,8 +479,9 @@ class _EstimatorBlockData(_DynamicBlockData):
                 )
         
         self.vectors.differential[:, t0].unfix()
-        self.vectors.input[:, t0].unfix()
+        self.vectors.input[:, t0].unfix() #dof
         self.vectors.derivative[:, t0].fix(0.)
+        # Solving for steady state doesn't need MHE block.
         self.MHE_VARS_CONS_BLOCK.deactivate()
         for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
             indexcon[t0].activate()
@@ -482,7 +495,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
         else:
-            msg = 'Failed to solve for full state setpoint values'
+            msg = 'Failed to solve for full steady state values'
             raise RuntimeError(msg)
 
         self.steadystate_objective.deactivate()
@@ -498,28 +511,38 @@ class _EstimatorBlockData(_DynamicBlockData):
             for comp in complist:
                 if was_originally_active[comp]:
                     comp.activate()
+                    
+    def initialize_actualmeasurements_at_t0(self):
+        t0 = self.sample_points[0]
+        for ind in self.MEASUREMENT_SET:
+            actmea_block = self.ACTUALMEASUREMENT_BLOCK[ind]
+            mea_block = self.MEASUREMENT_BLOCK[ind]
+            actmea_block.var[0].set_value(mea_block.var[0].value)  
         
     def initialize_past_info_with_steady_state(self, 
                                                desired_ss, 
                                                ss_weights, 
                                                solver):
+        '''
+        Before running MHE, we need to set up past measurements. 
+        Here we solve for a steady state and set it as past measurements.
+
+        '''
         self.add_steady_state_objective(desired_ss, ss_weights)
         self.solve_steady_state(solver)
         
         self.initialize_actualmeasurements_at_t0()
         self.initialize_to_initial_conditions(ctype=(DiffVar, AlgVar, DerivVar, InputVar,))
-    #     self.initialize_inputs_to_initial_conditions()
-    
-    # def initialize_inputs_to_initial_conditions(self):
-    #     input_block = self.INPUT_BLOCK
-    #     for ind in self.INPUT_SET:
-            
-                
+
           
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,
                                      measurement_noise_weights,
                                      givenform = "weight"):
+        '''
+        Set up the objective function for MHE. The given form can be either 'weight'
+        or 'variance'.
+        '''
         
         if givenform not in ["weight", "variance"]:
             raise RuntimeError("Wrong argument 'givenform' is given. "
@@ -527,7 +550,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         diff_id_list = [id(var[0]) for var in self.differential_vars]
         for var, val in model_disturbance_weights:  
-            #check if the given variable is declared as a measurement before
+            #check if the given variable is classified under diffvar
             if id(var) not in diff_id_list:
                 raise RuntimeError(var.name, 
                                    " is not a differential variable.")
@@ -559,7 +582,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             moddis.weight * moddis[sampt]**2
             for moddis in moddis_list
             for sampt in self.sample_points
-            if sampt != self.time.first()
+            if sampt != self.time.first() #skip model disturbnace at time.first()
             )
         
         vRv = sum(
@@ -571,6 +594,10 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.noise_minimize_objective = Objective(expr = (wQw) + (vRv))  
         
     def check_var_con_dof(self, skip_dof_check = False):
+        '''This function does the final check for fixed and unfixed variables
+        as well as the deactivated differential equations. Then check the degree of freedom.
+        '''
+        
         self.vectors.input[...].fix()
         self.vectors.differential[...].unfix()
         self.vectors.modeldisturbance[:,0].fix(0.0)
@@ -584,17 +611,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         if not skip_dof_check:
             dof = degrees_of_freedom(self)
-            assert dof == correct_dof
-     
-    def initialize_actualmeasurements_at_t0(self):
-        t0 = self.sample_points[0]
-        for ind in self.MEASUREMENT_SET:
-            actmea_block = self.ACTUALMEASUREMENT_BLOCK[ind]
-            mea_block = self.MEASUREMENT_BLOCK[ind]
-            actmea_block.var[0].set_value(mea_block.var[0].value)    
+            assert dof == correct_dof  
         
     def load_inputs_for_MHE(self, inputs):
-        
         last_sampt = self.sample_points[-1]
         secondlast_sampt = self.sample_points[-2]
         time_list = [tp for tp in self.time if tp > secondlast_sampt 

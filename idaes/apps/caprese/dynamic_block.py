@@ -99,7 +99,9 @@ class _DynamicBlockData(_BlockData):
         except AttributeError:
             measurements = self._measurements = None
             
-            
+        
+        # Categorization has already been done in estimator.py, 
+        # so we don't do it again here.
         if hasattr(self, "already_categorized_for_MHE") and \
             self.already_categorized_for_MHE:
             category_dict = self.category_dict #local variable is used in the rest of this function
@@ -190,7 +192,7 @@ class _DynamicBlockData(_BlockData):
         if self._sample_time is None:
             self.sample_points = [time.first(), time.last()]
             self.sample_point_indices = [1, len(time)]
-        # If self._sample_time is not provided, sample_points for the plant and the controller 
+        # If self._sample_time is provided, sample_points for the plant and the controller 
         # will be created in mhe.py or controller.py.
         # else: 
         #     self.set_sample_time(self._sample_time)
