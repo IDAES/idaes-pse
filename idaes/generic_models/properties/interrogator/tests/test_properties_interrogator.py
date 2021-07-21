@@ -30,6 +30,7 @@ from idaes.generic_models.unit_models.separator import \
     Separator, SplittingType
 from idaes.generic_models.properties.interrogator import \
     PropertyInterrogatorBlock
+from idaes.core.util.exceptions import ConfigurationError
 
 
 @pytest.mark.unit
@@ -518,3 +519,28 @@ def test_interrogator_state_block_methods_custom_phase_comps():
             "material density terms": ["fs.props"],
             "enthalpy flow terms": ["fs.props"],
             "energy density terms": ["fs.props"]}
+
+
+@pytest.mark.unit
+def test_interrogator_parameter_block_custom_phase_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.params invalid phase type foo \(for phase "
+                       "P1\). Type must be a subclass of Phase."):
+        m.fs.params = PropertyInterrogatorBlock(default={
+            "phase_list": {"P1": "foo", "P2": None}})
+
+
+@pytest.mark.unit
+def test_interrogator_parameter_block_custom_comp_error():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    with pytest.raises(ConfigurationError,
+                       match="fs.params invalid component type foo \(for "
+                       "component c1\). Type must be a subclass of "
+                       "Component."):
+        m.fs.params = PropertyInterrogatorBlock(default={
+            "component_list": {"c1": "foo", "c2": None}})
