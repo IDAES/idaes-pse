@@ -397,7 +397,7 @@ if __name__ == "__main__":
     @m.fs.Expression(m.fs.config.time)
     def aux_compression(b, t): #scale to flue gas flow
         return 1e3*17090* \
-            (b.gts2.control_volume.properties_out[t].flow_mass/1090.759)
+            (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]/1547.75)
 
     @m.fs.Expression(m.fs.config.time)
     def aux_transformer(b, t): # scale to gross power
@@ -459,6 +459,10 @@ if __name__ == "__main__":
     else:
         ms.to_json(m, fname="init_reboiler_heat.json.gz")
 
+
+    m.fs.LP_FGsplit.split_fraction[:, "toLP_SH"].fix(0.55)
+    solver.solve(m, tee=True)
+
     print("")
     print("")
     power = pyo.value(-m.fs.net_power[0]/1e6) #MW
@@ -485,7 +489,7 @@ if __name__ == "__main__":
 
     gt_power = [477, 475, 470, 465, 450, 455, 450, 445, 440, 435, 430, 425, 420, 415, 410, 405, 400, 395, 390, 385, 380, 375, 370, 365, 360, 355, 350,
         345, 340, 335, 330, 325, 320, 315, 310, 305, 300, 295, 290, 285, 280, 275, 270, 265, 260, 255, 250, 245, 240, 235, 230, 225, 220, 215, 210, 205,
-        200, 195, 190, 185, 180, 175, 170, 165, 160, 155, 150, 145, 140, 135, 130, 125, 120, 115, 110, 100, 90]
+        200, 195, 190, 185, 180, 175, 170, 165, 160, 155, 150, 145, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55]
     for p in gt_power:
         m.fs.gt_power[0].fix(-p*1e6)
         sf = f"state_ngcc_state_{p}.json.gz"
@@ -500,7 +504,10 @@ if __name__ == "__main__":
         eff_lhv = pyo.value(m.fs.lhv_efficiency[0]*100) #%
         st_pow = pyo.value(-m.fs.steam_turbine.power[0]/1e6) #MW
         gt_pow = pyo.value(-m.fs.gt_power[0]/1e6)
-        print(f"{power}, {gt_pow}, {st_pow}, {fuel}, {eff_lhv}")
+        rduty = pyo.value(m.fs.reboiler_duty_expr[0]/1e3) #kW
+        co2_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"])
+        fg_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol)
+        print(f"{power}, {gt_pow}, {st_pow}, {fuel}, {eff_lhv}, {rduty}, {co2_flow}, {fg_flow}")
         gas_turbine.write_pfd_results(f"pfd_results_gt_{p}.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
         sturb_module.write_pfd_results(f"pfd_results_st_{p}.svg", m.tags, m.tag_format)
         hrsg_module.pfd_result(f"pfd_results_hrsg_{p}.svg", m)
