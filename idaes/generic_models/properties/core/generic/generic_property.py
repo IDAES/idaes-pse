@@ -55,7 +55,7 @@ import idaes.core.util.scaling as iscale
 from idaes.generic_models.properties.core.generic.generic_reaction import \
     equil_rxn_config
 from idaes.generic_models.properties.core.generic.utility import (
-    get_method, GenericPropertyPackageError)
+    get_method, get_phase_method, GenericPropertyPackageError)
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
     LogBubbleDew
 
@@ -883,6 +883,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'cv_mol': {'method': '_cv_mol'},
              'cv_mol_phase': {'method': '_cv_mol_phase'},
              'cv_mol_phase_comp': {'method': '_cv_mol_phase_comp'},
+             'diffus_phase_comp': {'method': '_diffus_phase_comp'},
              'heat_capacity_ratio_phase': {
                  'method': '_heat_capacity_ratio_phase'},
              'dens_mass': {'method': '_dens_mass'},
@@ -914,6 +915,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'},
+             'visc_d_phase': {'method': '_visc_d_phase'},
              'vol_mol_phase': {'method': '_vol_mol_phase'},
              'dh_rxn': {'method': '_dh_rxn'}})
 
@@ -2200,6 +2202,18 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.dens_mol_phase)
             raise
 
+    def _diffus_phase_comp(self):
+        try:
+            def rule_diffus_phase_comp(b, p, j):
+                return get_phase_method(b, "diffus_phase_comp", p)(b, p, j)
+            self.diffus_phase_comp = Expression(
+                    self.phase_component_set,
+                    doc="Diffusivity for each phase-component pair",
+                    rule=rule_diffus_phase_comp)
+        except AttributeError:
+            self.del_component(self.diffus_phase_comp)
+            raise
+
     def _energy_internal_mol(self):
         try:
             def rule_energy_internal_mol(b):
@@ -2665,6 +2679,18 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_pressure_sat_comp)
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
+            raise
+
+    def _visc_d_phase(self):
+        try:
+            def rule_visc_d_phase(b, p):
+                return get_phase_method(b, "visc_d_phase", p)(b, p)
+            self.visc_d_phase = Expression(
+                    self.phase_list,
+                    doc="Dynamic viscosity for each phase",
+                    rule=rule_visc_d_phase)
+        except AttributeError:
+            self.del_component(self.visc_d_phase)
             raise
 
     def _vol_mol_phase(self):

@@ -1071,3 +1071,27 @@ class TestGenericStateBlock(object):
             pytest.approx(100*0.75*(2*0.1 + 3*0.2 + 4*0.7), rel=1e-4)
         assert value(frame.props[1].flow_mass_phase["p2"]) == \
             pytest.approx(100*0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
+
+    class dummy_prop():
+        def return_expression(*args, **kwargs):
+            return 4
+
+    @pytest.mark.unit
+    def test_diffus_phase_comp(self, frame):
+        frame.params.p1.config.diffus_phase_comp = \
+            TestGenericStateBlock.dummy_prop
+        frame.params.p2.config.diffus_phase_comp = \
+            TestGenericStateBlock.dummy_prop
+
+        for p, j in frame.props[1].phase_component_set:
+            assert value(frame.props[1].diffus_phase_comp[p, j]) == 4
+
+    @pytest.mark.unit
+    def test_vics_d_phase(self, frame):
+        frame.params.p1.config.visc_d_phase = \
+            TestGenericStateBlock.dummy_prop
+        frame.params.p2.config.visc_d_phase = \
+            TestGenericStateBlock.dummy_prop
+
+        for p in frame.props[1].phase_list:
+            assert value(frame.props[1].visc_d_phase[p]) == 4
