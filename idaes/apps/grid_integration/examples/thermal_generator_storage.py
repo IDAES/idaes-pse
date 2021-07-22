@@ -211,8 +211,26 @@ class ThermalGeneratorStorageIES:
 
         return
 
-    def update_model(self):
-        pass
+    @staticmethod
+    def _update_SOC(m,implemented_SOC):
+
+        for unit in m.UNITS:
+            m.pre_SOC[unit] = round(implemented_SOC[unit][-1],2)
+
+        return
+
+    def update_model(self, \
+                     implemented_shut_down, \
+                     implemented_start_up, \
+                     implemented_power_output, \
+                     implemented_SOC):
+
+        m = self.model
+        self.thermal_generator_object._update_UT_DT(m, implemented_shut_down, implemented_start_up)
+        self.thermal_generator_object._update_power(m, implemented_power_output)
+        self._update_SOC(m, implemented_SOC)
+
+        return
 
     def record_results(self, date = None, hour = None, **kwargs, **kwargs):
 
