@@ -52,7 +52,7 @@ class ControlPenaltyType(enum.Enum):
     NONE = 43
 
 
-class VariableCategory(ConfigEnum):
+class VariableCategory(enum.Enum):
     DIFFERENTIAL = 1
     ALGEBRAIC = 2
     DERIVATIVE = 3
@@ -64,7 +64,7 @@ class VariableCategory(ConfigEnum):
     MEASUREMENT = 9
 
 
-class ConstraintCategory(ConfigEnum):
+class ConstraintCategory(enum.Enum):
     DIFFERENTIAL = 1
     ALGEBRAIC = 2
     DISCRETIZATION = 3
