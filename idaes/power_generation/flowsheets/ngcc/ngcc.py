@@ -105,9 +105,9 @@ if __name__ == "__main__":
     m.fs.fg_translate = gum.Translator(default={
         "inlet_property_package": m.fs.gas_prop_params,
         "outlet_property_package": m.fs.prop_gas})
-    m.fs.g09 = Arc(
+    m.fs.g08t = Arc(
         source=m.fs.exhaust_1.inlet, destination=m.fs.fg_translate.inlet)
-    m.fs.g09tofg = Arc(
+    m.fs.g08t_tofg = Arc(
         source=m.fs.fg_translate.outlet, destination=m.fs.HP_SH4.side_2_inlet)
     expand_arcs.apply_to(m)
 
