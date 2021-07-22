@@ -35,6 +35,7 @@ def phase_equil(b, phase_pair):
     (l_phase,
      v_phase,
      vl_comps,
+     henry_comps,
      l_only_comps,
      v_only_comps) = _valid_VL_component_list(b, phase_pair)
 
