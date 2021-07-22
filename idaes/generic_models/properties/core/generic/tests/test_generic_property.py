@@ -1087,7 +1087,7 @@ class TestGenericStateBlock(object):
             assert value(frame.props[1].diffus_phase_comp[p, j]) == 4
 
     @pytest.mark.unit
-    def test_vics_d_phase(self, frame):
+    def test_visc_d_phase(self, frame):
         frame.params.p1.config.visc_d_phase = \
             TestGenericStateBlock.dummy_prop
         frame.params.p2.config.visc_d_phase = \
