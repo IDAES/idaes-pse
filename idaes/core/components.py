@@ -63,11 +63,11 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
         description="Method to use to calculate liquid phase molar density",
         doc="Method to use to calculate liquid phase molar density. Users "
-        "need only define one of vol_mol_liq_comp and dens_mol_liq_comp."))
+        "need only define either vol_mol_liq_comp or dens_mol_liq_comp."))
     CONFIG.declare("dens_mol_sol_comp", ConfigValue(
         description="Method to use to calculate solid phase molar density",
         doc="Method to use to calculate solid phase molar density. Users "
-        "need only define one of vol_mol_sol_comp and dens_mol_sol_comp."))
+        "need only define either vol_mol_sol_comp or dens_mol_sol_comp."))
 
     CONFIG.declare("cp_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component specific heats"))
