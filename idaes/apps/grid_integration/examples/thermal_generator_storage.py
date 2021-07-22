@@ -28,6 +28,8 @@ class ThermalGeneratorStorageIES:
                                                        storage_size_hour = storage_size_hour, \
                                                        round_trip_efficiency = round_trip_efficiency)
 
+        self.result_list = []
+
     def _add_IES_params(self,IES_data):
 
         m = self.model
@@ -212,83 +214,76 @@ class ThermalGeneratorStorageIES:
     def update_model(self):
         pass
 
-    def record_results(self, m, time, **kwargs):
+    def record_results(self, date = None, hour = None, **kwargs, **kwargs):
 
         '''
-        market_signals: {generator: {DA_dispatches: [], RT_dispatches; [], DA_LMP: [], RT_LMP; []}}
-        use queues, so we can pop the first one
+        Record the operations stats for the model.
+
+        Arguments:
+
+            date: current simulation date
+            hour: current simulation hour
+
+        Returns:
+            None
+
         '''
 
         m = self.model
 
         df_list = []
         for generator in m.UNITS:
-
-            # upack things
-            DA_dispatches = market_signals[generator]['DA_dispatches']
-            RT_dispatches = market_signals[generator]['RT_dispatches']
-            DA_LMP = market_signals[generator]['DA_LMP']
-            RT_LMP = market_signals[generator]['RT_LMP']
-
             for t in m.HOUR:
+                for k in m.SCENARIOS:
 
-                result_dict = {}
-                result_dict['Generator'] = generator
-                result_dict['Time [hr]'] = time
+                    result_dict = {}
+                    result_dict['Generator'] = generator
+                    result_dict['Date'] = date
+                    result_dict['Hour'] = hour
 
-                # simulation inputs
-                result_dict['Horizon [hr]'] = int(t)
-                result_dict['DA Dispatch [MW]'] = float(round(DA_dispatches[t],2))
-                result_dict['RT Dispatch [MW]'] = float(round(RT_dispatches[t],2))
-                result_dict['DA Commitment [bin]'] = int(result_dict['DA Dispatch [MW]'] > 0)
-                result_dict['RT Commitment [bin]'] = int(result_dict['RT Dispatch [MW]'] > 0)
-                result_dict['DA LMP [$/MWh]'] = float(round(DA_LMP[t],2))
-                result_dict['RT LMP [$/MWh]'] = float(round(RT_LMP[t],2))
+                    # model vars
+                    result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[generator,t,k]),2))
+                    result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t,k]),2))
+                    result_dict['Thermal Power to Storage [MW]'] = float(round(pyo.value(m.P_E[generator,t,k]),2))
+                    result_dict['Thermal Power to Market [MW]'] = float(round(pyo.value(m.P_G[generator,t,k]),2))
+                    result_dict['Storage Power to Thermal [MW]'] = float(round(pyo.value(m.P_S[generator,t,k]),2))
+                    result_dict['Total Thermal Side Power to Market [MW]'] = float(round(pyo.value(m.P_R[generator,t,k]),2))
+                    result_dict['Charge Power [MW]'] = float(round(pyo.value(m.P_C[generator,t,k]),2))
+                    result_dict['Disharge Power [MW]'] = float(round(pyo.value(m.P_D[generator,t,k]),2))
+                    result_dict['State of Charge [MWh]'] = float(round(pyo.value(m.S_SOC[generator,t,k]),2))
 
-                # model vars
-                result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[generator,t]),2))
-                result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t]),2))
-                result_dict['Thermal Power to Storage [MW]'] = float(round(pyo.value(m.P_E[generator,t]),2))
-                result_dict['Thermal Power to Market [MW]'] = float(round(pyo.value(m.P_G[generator,t]),2))
-                result_dict['Storage Power to Thermal [MW]'] = float(round(pyo.value(m.P_S[generator,t]),2))
-                result_dict['Total Thermal Side Power to Market [MW]'] = float(round(pyo.value(m.P_R[generator,t]),2))
-                result_dict['Charge Power [MW]'] = float(round(pyo.value(m.P_C[generator,t]),2))
-                result_dict['Disharge Power [MW]'] = float(round(pyo.value(m.P_D[generator,t]),2))
-                result_dict['State of Charge [MWh]'] = float(round(pyo.value(m.S_SOC[generator,t]),2))
+                    result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t,k])))
+                    result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t,k])))
+                    result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t,k])))
+                    result_dict['Storage to Thermal [bin]'] = int(round(pyo.value(m.y_S[generator,t,k])))
+                    result_dict['Thermal to Storage [bin]'] = int(round(pyo.value(m.y_E[generator,t,k])))
+                    result_dict['Charge [bin]'] = int(round(pyo.value(m.y_C[generator,t,k])))
+                    result_dict['Dicharge [bin]'] = int(round(pyo.value(m.y_D[generator,t,k])))
 
-                result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t])))
-                result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t])))
-                result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t])))
-                result_dict['Storage to Thermal [bin]'] = int(round(pyo.value(m.y_S[generator,t])))
-                result_dict['Thermal to Storage [bin]'] = int(round(pyo.value(m.y_E[generator,t])))
-                result_dict['Charge [bin]'] = int(round(pyo.value(m.y_C[generator,t])))
-                result_dict['Dicharge [bin]'] = int(round(pyo.value(m.y_D[generator,t])))
+                    result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t,k]),2))
+                    result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t,k]),2))
+                    result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t,k]),2))
 
-                result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t]),2))
-                result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t]),2))
-                result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t]),2))
-                result_dict['DA Revenue [$]'] = float(round(DA_dispatches[t] * DA_LMP[t],2))
-                result_dict['RT Revenue [$]'] = float(round((RT_dispatches[t] - DA_dispatches[t]) * RT_LMP[t],2))
-                result_dict['Total Revenue [$]'] = float(round(result_dict['DA Revenue [$]'] + result_dict['RT Revenue [$]'],2))
-                result_dict['One-settlement Profit [$]'] = float(round(result_dict['RT Revenue [$]'] - result_dict['Total Cost [$]'],2))
-                result_dict['Two-settlement Profit [$]'] = float(round(result_dict['Total Revenue [$]'] - result_dict['Total Cost [$]'],2))
+                    # result_dict['Periodic Boundary Slack [MWh]'] = float(round(pyo.value(m.pbc_slack[generator,t]),2))
+                    # result_dict['Power Output Slack [MW]'] = float(round(pyo.value(m.slack_var_power[generator,t]),2))
 
-                result_dict['Periodic Boundary Slack [MWh]'] = float(round(pyo.value(m.pbc_slack[generator,t]),2))
-                result_dict['Power Output Slack [MW]'] = float(round(pyo.value(m.slack_var_power[generator,t]),2))
+                    # calculate mileage
+                    if t == 0:
+                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.pre_P_T[generator])),2))
+                    else:
+                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.P_T[generator,t-1])),2))
 
-                # calculate mileage
-                if t == 0:
-                    result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.pre_P_T[generator])),2))
-                else:
-                    result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.P_T[generator,t-1])),2))
+                    for key in kwargs:
+                        result_dict[key] = kwargs[key]
 
-                for key in kwargs:
-                    result_dict[key] = kwargs[key]
+                    result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
+                    df_list.append(result_df.T)
 
-                result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
-                df_list.append(result_df.T)
+        # save the result to object property
+        # wait to be written when simulation ends
+        self.result_list.append(pd.concat(df_list))
 
-        return pd.concat(df_list)
+        return
 
 def _check_number_of_None(ls):
 

@@ -463,11 +463,10 @@ class ThermalGenerator:
     def record_results(self, date = None, hour = None, **kwargs):
 
         '''
-        Record the operations stats for the tracking model.
+        Record the operations stats for the model.
 
         Arguments:
-            m: tracking model
-            market_signals: market_signals: the market signal to track
+
             date: current simulation date
             hour: current simulation hour
 
