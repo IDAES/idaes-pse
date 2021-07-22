@@ -15,6 +15,28 @@ class ThermalGeneratorStorageIES:
                  round_trip_efficiency = None,\
                  IES_mode = '1a'):
 
+        '''
+        Initializes the class object by building the IES model.
+
+        Arguments:
+            rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
+            horizon: the length of the planning horizon of the model.
+            n_scenario: number of uncertain scenarios.
+            generators: a list of generators in RTS-GMLC
+            storage_pmax_ratio: a list of ratios between storage Pmax and thermal
+                                generator Pmax.
+            storage_size_hour: a list of storage size in hour.
+            round_trip_efficiency: a list of storage system round-trip efficiency
+            IES_mode: the operation mode of the IES, in {'1a': hide the storage,
+                      i.e., cannot charge/discharge from/to market,
+                      '1b': hide the storage, i.e., it can only charge from the
+                      market, '2': storage and generators are independent,
+                      '3a': storage cannot charge from the market}.
+
+        Returns:
+            None
+        '''
+
         # create thermal generator object
         self.thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
                                                          horizon = horizon,\
@@ -33,6 +55,18 @@ class ThermalGeneratorStorageIES:
         self.result_list = []
 
     def _add_IES_params(self,model_data):
+        '''
+        This function adds the IES/storage constraints to the existing thermal
+        generator model.
+
+        Arguments:
+            model_data: a dictionary which has this structure
+            {data type name: {generator name: value}}. It contains the IES-related
+            parameter values.
+
+        Returns:
+            None
+        '''
 
         m = self.model
 
@@ -56,6 +90,17 @@ class ThermalGeneratorStorageIES:
         return
 
     def _add_IES_vars(self):
+
+        '''
+        This function adds the IES/storage variables to the existing thermal
+        generator model.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         m = self.model
 
@@ -97,6 +142,17 @@ class ThermalGeneratorStorageIES:
         return
 
     def _add_IES_constraints(self):
+
+        '''
+        This function adds the IES/storage constraints to the existing thermal
+        generator model.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         m = self.model
 
@@ -183,6 +239,26 @@ class ThermalGeneratorStorageIES:
                            storage_pmax_ratio, \
                            storage_size_hour, \
                            round_trip_efficiency):
+        '''
+        This function assembles the parameter data to build the IES model given
+        a list of generator names.
+
+        Arguments:
+            generators: a list of generator names in RTS-GMLC dataset.
+            storage_pmax_ratio: a list of ratios between storage Pmax and thermal
+                                generator Pmax.
+            storage_size_hour: a list of storage size in hour.
+            round_trip_efficiency: a list of storage system round-trip efficiency
+            IES_mode: the operation mode of the IES, in {'1a': hide the storage,
+                      i.e., cannot charge/discharge from/to market,
+                      '1b': hide the storage, i.e., it can only charge from the
+                      market, '2': storage and generators are independent,
+                      '3a': storage cannot charge from the market}.
+
+        Returns:
+            model_data: a dictionary which has this structure
+            {data type name: {generator name: value}}.
+        '''
 
         model_data = {}
 
@@ -197,6 +273,20 @@ class ThermalGeneratorStorageIES:
         return model_data
 
     def switch_model_mode(self,mode = '1a'):
+
+        '''
+        Switch the operation mode of the IES.
+
+        Arguments:
+            mode: the operation mode of the IES, in {'1a': hide the storage,
+                  i.e., cannot charge/discharge from/to market,
+                  '1b': hide the storage, i.e., it can only charge from the
+                  market, '2': storage and generators are independent,
+                  '3a': storage cannot charge from the market}.
+
+        Returns:
+            None
+        '''
 
         # tag the model by the mode
         m = self.model
@@ -244,6 +334,27 @@ class ThermalGeneratorStorageIES:
                                                   storage_size_hour, \
                                                   round_trip_efficiency,\
                                                   IES_mode):
+
+        '''
+        This function augments the given thermal generators to build the IES
+        model.
+
+        Arguments:
+            generators: a list of generators in RTS-GMLC
+            storage_pmax_ratio: a list of ratios between storage Pmax and thermal
+                                generator Pmax.
+            storage_size_hour: a list of storage size in hour.
+            round_trip_efficiency: a list of storage system round-trip efficiency
+            IES_mode: the operation mode of the IES, in {'1a': hide the storage,
+                      i.e., cannot charge/discharge from/to market,
+                      '1b': hide the storage, i.e., it can only charge from the
+                      market, '2': storage and generators are independent,
+                      '3a': storage cannot charge from the market}.
+
+        Returns:
+            None
+        '''
+
         # prepare model data
         IES_data = self._assemble_IES_data(generators, \
                                            storage_pmax_ratio, \
@@ -260,6 +371,17 @@ class ThermalGeneratorStorageIES:
     @staticmethod
     def _update_SOC(m,implemented_SOC):
 
+        '''
+        This method updates the parameters in the energy balance constraint
+        based on the realized state-of-charge profile.
+
+        Arguments:
+            implemented_SOC: realized state-of-charge profile: {unit: []}
+
+         Returns:
+             None
+        '''
+
         for unit in m.UNITS:
             m.pre_SOC[unit] = round(implemented_SOC[unit][-1],2)
 
@@ -270,6 +392,21 @@ class ThermalGeneratorStorageIES:
                      implemented_start_up, \
                      implemented_power_output, \
                      implemented_SOC):
+
+        '''
+        This method updates the parameters in the model based on
+        the implemented power outputs, state-of-charge, shut down and start up
+        events.
+
+        Arguments:
+            implemented_power_output: realized power outputs: {unit: []}
+            implemented_shut_down: realized shut down events: {unit: []}.
+            implemented_start_up: realized start up events: {unit: []}
+            implemented_SOC: realized state-of-charge profile: {unit: []}
+
+         Returns:
+             None
+        '''
 
         m = self.model
         self.thermal_generator_object._update_UT_DT(m, implemented_shut_down, implemented_start_up)
@@ -304,6 +441,7 @@ class ThermalGeneratorStorageIES:
                     result_dict['Generator'] = generator
                     result_dict['Date'] = date
                     result_dict['Hour'] = hour
+                    result_dict['Scenario'] = int(k)
 
                     # model vars
                     result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[generator,t,k]),2))

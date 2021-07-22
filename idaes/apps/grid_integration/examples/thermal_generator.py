@@ -7,7 +7,7 @@ class ThermalGenerator:
     def __init__(self, rts_gmlc_dataframe, horizon = 48,generators = None, n_scenario = 10):
 
         '''
-        Initializes the class object by doing building the bidding model.
+        Initializes the class object by building the thermal generator model.
 
         Arguments:
             rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
@@ -18,6 +18,7 @@ class ThermalGenerator:
         Returns:
             None
         '''
+
         self.n_scenario = n_scenario
 
         self.model_data = self.assemble_model_data(generator_names = generators, \
@@ -30,7 +31,7 @@ class ThermalGenerator:
     def assemble_model_data(generator_names, gen_params, **kwargs):
 
         '''
-        This function assembles the parameter data to build the bidding generator
+        This function assembles the parameter data to build the thermal generator
         model, given a list of generator names and the RTS-GMLC data directory.
 
         Arguments:
