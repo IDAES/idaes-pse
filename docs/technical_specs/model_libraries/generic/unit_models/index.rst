@@ -20,6 +20,7 @@ Unit Models
     product
     pump
     separator
+    skeleton_unit
     statejunction
     stoichiometric_reactor
     translator

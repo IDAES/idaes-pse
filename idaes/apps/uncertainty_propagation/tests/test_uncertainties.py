@@ -58,7 +58,7 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
-
+    @pytest.mark.component
     def test_quantify_propagate_uncertainty2(self):
         '''
         This is the same test as test_quantify_propagate_uncertainty1,
@@ -88,7 +88,7 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
-
+    @pytest.mark.component
     def test_propagate_uncertainty(self):
         '''
         It tests the function propagate_uncertainty with rooney & biegler's model.
@@ -116,6 +116,7 @@ class TestUncertaintyPropagation:
         assert list(propagate_results.propagation_c) == []
         assert propagate_results.propagation_f == pytest.approx(5.45439337747349)
 
+    @pytest.mark.component
     def test_propagate_uncertainty1(self):
         '''
         It tests the function propagate_uncertainty with
@@ -305,6 +306,7 @@ class TestUncertaintyPropagation:
         # Check the uncertainty propagation results for the objective matches
         assert results.propagation_f == pytest.approx(sigma_f)
 
+    @pytest.mark.component
     def test_propagate_uncertainty_error(self):
         '''
         It tests a TypeError when the modle_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
@@ -326,7 +328,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             propagate_results =  propagate_uncertainty(1, theta, cov, variable_name)
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_quantify_propagate_uncertainty_NRTL(self):
         '''
         It tests the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -347,9 +349,8 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.gradient_f[0], [-0.19649493])
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
         assert results.propagation_f == pytest.approx(0.0021199499778127204)
-        
 
-    @pytest.mark.unit
+    @pytest.mark.integration
     def test_quantify_propagate_uncertainty_NRTL_exception(self):
         '''
         It tests an exception error when the ipopt fails for the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -367,7 +368,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(Exception):
             results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt_infeasible, data, variable_name, SSE)
 
-
+    @pytest.mark.unit
     def test_Exception1(self):
         '''
         It tests an ValueError when the tee is not bool for the function quantify_propagate_uncertainty with rooney & biegler's model.
@@ -383,7 +384,6 @@ class TestUncertaintyPropagation:
         tee = 1
         with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee)
-
 
     @pytest.mark.unit
     def test_Exception2(self):
@@ -402,7 +402,6 @@ class TestUncertaintyPropagation:
         diagnostic_mode = 1
         with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode)
-
 
     @pytest.mark.unit
     def test_Exception3(self):
@@ -423,6 +422,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode,solver_options)
 
+    @pytest.mark.unit
     def test_clean_variable_name1(self):
         '''
         It tests the function clean_variable_name when variable names contain ' and spaces.
@@ -439,7 +439,8 @@ class TestUncertaintyPropagation:
         assert len(theta_names) == len(var_dic.values())
         assert all([a == b for a, b in zip(sorted(theta_names), sorted(var_dic.values()))])
         assert clean == True
-     
+
+    @pytest.mark.unit
     def test_clean_variable_name2(self):
         '''
         It tests the function clean_variable_name when variable names do not contain any ' and spaces.

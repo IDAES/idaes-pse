@@ -135,7 +135,7 @@ def tag_model(m):
     return tags, tag_format
 
 
-def write_pfd_results(filename, tags, tag_format):
+def write_pfd_results(filename, tags, tag_format, infilename=None):
     """
     Write simulation results in a template PFD in svg format and save as
     filename.
@@ -144,11 +144,14 @@ def write_pfd_results(filename, tags, tag_format):
         filename: (str) file namd for output
         tags: (dict) tag keys and expression values
         tag_format: (dict) tag keys and format string values
+        infilename: input file name, if you want to use an alternative diagram
 
     Returns:
         None
     """
-    with open(os.path.join(this_file_dir(), "gas_turbine.svg"), "r") as f:
+    if infilename is None:
+        infilename = os.path.join(this_file_dir(), "gas_turbine.svg")
+    with open(infilename, "r") as f:
         iutil.svg_tag(
             svg=f,
             tags=tags,
@@ -180,7 +183,7 @@ def performance_curves(m, flow_scale=0.896):
     # pylint: disable=function-redefined
 
     # Efficiency curves for three stages
-    @m.fs.gts1.performance_curve.Constraint(m.fs.config.time)
+    @m.fs.gts1.performance_curve.Constraint(m.fs.time)
     def eff_isen_eqn(b, t):
         f = fscale*b.parent_block().control_volume.properties_in[t].flow_vol
         return b.parent_block().efficiency_isentropic[t] == 1.02*(
@@ -190,7 +193,7 @@ def performance_curves(m, flow_scale=0.896):
             3.1728E-05*f**2 +
             7.7846E-03*f +
             1.0724E-01)
-    @m.fs.gts2.performance_curve.Constraint(m.fs.config.time)
+    @m.fs.gts2.performance_curve.Constraint(m.fs.time)
     def eff_isen_eqn(b, t):
         f = fscale*b.parent_block().control_volume.properties_in[t].flow_vol
         return b.parent_block().efficiency_isentropic[t] == 1.02*(
@@ -200,7 +203,7 @@ def performance_curves(m, flow_scale=0.896):
             6.4156E-06*f**2 +
             3.5005E-03*f +
             1.0724E-01)
-    @m.fs.gts3.performance_curve.Constraint(m.fs.config.time)
+    @m.fs.gts3.performance_curve.Constraint(m.fs.time)
     def eff_isen_eqn(b, t):
         f = fscale*b.parent_block().control_volume.properties_in[t].flow_vol
         return b.parent_block().efficiency_isentropic[t] == 1.02*(
@@ -211,19 +214,19 @@ def performance_curves(m, flow_scale=0.896):
             1.6310E-03*f +
             1.0724E-01)
     # Head curves for three stages
-    @m.fs.gts1.performance_curve.Constraint(m.fs.config.time)
+    @m.fs.gts1.performance_curve.Constraint(m.fs.time)
     def head_isen_eqn(b, t):
         f = pyo.log(
             fscale*b.parent_block().control_volume.properties_in[t].flow_vol)
         return b.head_isentropic[t] == -(
             -2085.1*f**3 + 38433*f**2 - 150764*f + 422313)
-    @m.fs.gts2.performance_curve.Constraint(m.fs.config.time)
+    @m.fs.gts2.performance_curve.Constraint(m.fs.time)
     def head_isen_eqn(b, t):
         f = pyo.log(
             fscale*b.parent_block().control_volume.properties_in[t].flow_vol)
         return b.head_isentropic[t] == -(
             -1676.3*f**3 + 34916*f**2 - 173801*f + 456957)
-    @m.fs.gts3.performance_curve.Constraint(m.fs.config.time)
+    @m.fs.gts3.performance_curve.Constraint(m.fs.time)
     def head_isen_eqn(b, t):
         f = pyo.log(
             fscale*b.parent_block().control_volume.properties_in[t].flow_vol)
@@ -279,6 +282,9 @@ def main(
         "H2":1000,
         "CO":1000,
         "C2H4":1000,
+        "C2H6":1000,
+        "C3H8":1000,
+        "C4H10":1000,
         "CO2":1000}
     for c, s in _mf_scale.items():
         m.fs.gas_prop_params.set_default_scaling(
@@ -292,7 +298,7 @@ def main(
         default=get_rxn(m.fs.gas_prop_params, rxns))
     # Variable for mole-fraction of O2 in the flue gas.  To initialize the model
     # will use a fixed value here.
-    m.fs.cmbout_o2_mol_frac = pyo.Var(m.fs.config.time, initialize=0.1157)
+    m.fs.cmbout_o2_mol_frac = pyo.Var(m.fs.time, initialize=0.1157)
     m.fs.cmbout_o2_mol_frac.fix()
     #
     # Unit models
@@ -367,22 +373,22 @@ def main(
     # and forget the opening
     m.fs.vsv.pressure_flow_equation.deactivate()
     # O2 fraction in combustor constraint (to set var)
-    @m.fs.Constraint(m.fs.config.time)
+    @m.fs.Constraint(m.fs.time)
     def o2_flow(b, t):
         return m.fs.cmb1.control_volume.properties_out[t].mole_frac_comp["O2"] \
             == m.fs.cmbout_o2_mol_frac[t]
     # Fuel injector pressure is the air pressure. This lumps in the gas valve
-    @m.fs.inject1.Constraint(m.fs.config.time)
+    @m.fs.inject1.Constraint(m.fs.time)
     def mxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.air_state[t].pressure
     # The pressure drop in the cumbustor is just a fixed 5%.
-    @m.fs.cmb1.Constraint(m.fs.config.time)
+    @m.fs.cmb1.Constraint(m.fs.time)
     def pressure_drop_eqn(b, t):
         return (0.95 ==
             b.control_volume.properties_out[t].pressure /
             b.control_volume.properties_in[t].pressure)
     # Constraints for complete combustion, use key compoents and 100% conversion
-    @m.fs.cmb1.Constraint(m.fs.config.time, rxns.keys())
+    @m.fs.cmb1.Constraint(m.fs.time, rxns.keys())
     def reaction_extent(b, t, r):
         k = rxns[r]
         prp = b.control_volume.properties_in[t]
@@ -390,7 +396,7 @@ def main(
         extent = b.rate_reaction_extent[t, r]
         return extent == prp.flow_mol*prp.mole_frac_comp[k]/stc
     # Calculate the total gas turnine gross power output.
-    @m.fs.Expression(m.fs.config.time)
+    @m.fs.Expression(m.fs.time)
     def gt_power_expr(b, t):
         return (
             m.fs.cmp1.control_volume.work[t] +
@@ -399,8 +405,8 @@ def main(
             m.fs.gts3.control_volume.work[t])
     # Add a varable and constraint for gross power.  This allows fixing power
     # for simulations where a specific power output is desired.
-    m.fs.gt_power = pyo.Var(m.fs.config.time)
-    @m.fs.Constraint(m.fs.config.time)
+    m.fs.gt_power = pyo.Var(m.fs.time)
+    @m.fs.Constraint(m.fs.time)
     def gt_power_eqn(b, t):
         return b.gt_power[t] == b.gt_power_expr[t]
     #

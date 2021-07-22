@@ -205,7 +205,7 @@ def set_scaling_factors(m):
     iscale.set_scaling_factor(fs.fwh6.condense.side_2.heat, 1e-7)
 
     # scaling factor for control valves
-    for t in m.fs_main.config.time:
+    for t in m.fs_main.time:
         iscale.set_scaling_factor(
             fs.spray_valve.control_volume.properties_in[t].flow_mol, 0.05)
         iscale.set_scaling_factor(
@@ -516,7 +516,7 @@ def main_dynamic():
     m_dyn = model_list[0]
 
     # Copy steady-state results to dynamic model for time-indexed vars
-    for t in m_dyn.fs_main.config.time:
+    for t in m_dyn.fs_main.time:
         copy_values_at_time(m_dyn.fs_main, m_ss.fs_main,
                             t, 0.0, copy_fixed=True, outlvl=idaeslog.ERROR)
 
@@ -526,7 +526,7 @@ def main_dynamic():
     # For bounded controllers, error is zero and integral error is non-zero
     #
     # Controllers on the steam cycle sub-flowsheet
-    t0 = m_dyn.fs_main.config.time.first()
+    t0 = m_dyn.fs_main.time.first()
     m_dyn.fs_main.fs_stc.fwh2_ctrl.mv_ref.value = \
         m_dyn.fs_main.fs_stc.fwh2_valve.valve_opening[t0].value
     m_dyn.fs_main.fs_stc.fwh3_ctrl.mv_ref.value = \
@@ -586,11 +586,11 @@ def main_dynamic():
     run_dynamic(m_dyn, ss_value, tstart[0], plot_data, solver)
 
     # Loop for remaining time periods
-    tlast = m_dyn.fs_main.config.time.last()
+    tlast = m_dyn.fs_main.time.last()
     m_prev = m_dyn
     for i in range(1, nperiod):
         m_dyn = model_list[i]
-        for t in m_dyn.fs_main.config.time:
+        for t in m_dyn.fs_main.time:
             if itype_list[i] != itype_list[i-1] or t != tlast:
                 # Copy results from previous time period to current period as
                 # initial condition and guess
@@ -622,7 +622,7 @@ def main_dynamic():
             i, tstart[i]))
         # Solve dynamic case for current period of time
         run_dynamic(m_dyn, ss_value, tstart[i], plot_data, solver)
-        tlast = m_dyn.fs_main.config.time.last()
+        tlast = m_dyn.fs_main.time.last()
         _log.info('spray flow={}'.format(
             m_dyn.fs_main.fs_stc.spray_valve.outlet.flow_mol[tlast].value))
         m_prev = m_dyn
@@ -664,13 +664,13 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
     # Declare a variable for main steam pressure in MPa
     # Used as boiler master process variable
     m.fs_main.main_steam_pressure = pyo.Var(
-        m.fs_main.config.time,
+        m.fs_main.time,
         initialize=13,
         doc="main steam pressure in MPa for boiler master controller"
     )
 
     # Constraint for main steam pressure in MPa
-    @m.fs_main.Constraint(m.fs_main.config.time,
+    @m.fs_main.Constraint(m.fs_main.time,
                           doc="main steam pressure in MPa")
     def main_steam_pressure_eqn(b, t):
         return b.main_steam_pressure[t] == \
@@ -681,7 +681,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         # master level control output
         # desired feed water flow rate adjustment due to level deviation
         m.fs_main.flow_level_ctrl_output = pyo.Var(
-            m.fs_main.config.time,
+            m.fs_main.time,
             initialize=0,
             doc="feed water flow demand from drum level master controller"
         )
@@ -715,11 +715,11 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.discretizer = pyo.TransformationFactory('dae.finite_difference')
         m.discretizer.apply_to(m,
                                nfe=nstep,
-                               wrt=m.fs_main.config.time,
+                               wrt=m.fs_main.time,
                                scheme="BACKWARD")
 
         # desired sliding pressure in MPa as a function of power demand in MW
-        @m.fs_main.Expression(m.fs_main.config.time,
+        @m.fs_main.Expression(m.fs_main.time,
                               doc="Sliding pressure as a function"
                               " of power output scheduled for controller")
         def sliding_pressure(b, t):
@@ -727,7 +727,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
 
         # Constraint for setpoint of the slave controller of
         # three-element drum level controller
-        @m.fs_main.Constraint(m.fs_main.config.time,
+        @m.fs_main.Constraint(m.fs_main.time,
                               doc="Set point of drum level slave control")
         def drum_level_control_setpoint_eqn(b, t):
             return b.drum_slave_ctrl.setpoint[t] == (
@@ -736,7 +736,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
                 + b.fs_blr.blowdown_split.FW_Blowdown.flow_mol[t])
 
         # Constraint for setpoint of boiler master
-        @m.fs_main.Constraint(m.fs_main.config.time,
+        @m.fs_main.Constraint(m.fs_main.time,
                               doc="Set point of boiler master")
         def boiler_master_setpoint_eqn(b, t):
             return b.boiler_master_ctrl.setpoint[t] == (
@@ -744,7 +744,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
                       - b.fs_stc.power_output[t]) + b.sliding_pressure[t])
 
         # Constraint for setpoint of boiler master
-        @m.fs_main.Constraint(m.fs_main.config.time,
+        @m.fs_main.Constraint(m.fs_main.time,
                               doc="dry O2 in flue gas in dynamic mode")
         def dry_o2_in_flue_gas_dyn_eqn(b, t):
             return b.fs_blr.aBoiler.fluegas_o2_pct_dry[t] == (
@@ -775,14 +775,14 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
         m.fs_main.boiler_master_ctrl.gain_i.fix(0.25)
         m.fs_main.boiler_master_ctrl.mv_ref.fix(29.0)
 
-        t0 = m.fs_main.config.time.first()
+        t0 = m.fs_main.time.first()
         m.fs_main.drum_master_ctrl.integral_of_error[t0].fix(0)
         m.fs_main.drum_slave_ctrl.integral_of_error[t0].fix(0)
         m.fs_main.turbine_master_ctrl.integral_of_error[t0].fix(0)
         m.fs_main.boiler_master_ctrl.integral_of_error[t0].fix(0)
         m.fs_main.flow_level_ctrl_output.value = 0
     else:
-        @m.fs_main.Constraint(m.fs_main.config.time,
+        @m.fs_main.Constraint(m.fs_main.time,
                               doc="sliding pressure in MPa")
         def sliding_pressure_eqn(b, t):
             return b.main_steam_pressure[t] == 14.4 \
@@ -1093,7 +1093,7 @@ def get_model(dynamic=True, time_set=None, nstep=None, init=True):
             pyo.value(m.fs_main.gross_heat_rate[0])))
     else:
         m.fs_main.fs_blr.dry_o2_in_flue_gas_eqn.deactivate()
-        t0 = m.fs_main.config.time.first()
+        t0 = m.fs_main.time.first()
         m.fs_main.fs_stc.fwh2.condense.level[t0].fix()
         m.fs_main.fs_stc.fwh3.condense.level[t0].fix()
         m.fs_main.fs_stc.fwh5.condense.level[t0].fix()
@@ -1120,7 +1120,7 @@ def run_dynamic(m, x0, t0, pd, solver):
     """Function to solve dynamic model for a given period of time"""
     # Set input profile of load demand
     i = 0
-    for t in m.fs_main.config.time:
+    for t in m.fs_main.time:
         power_demand = input_profile(t0+t, x0)
         m.fs_main.turbine_master_ctrl.setpoint[t].value = power_demand
         _log.info('Point {}, time {}, power demand={}'.format(
@@ -1132,7 +1132,7 @@ def run_dynamic(m, x0, t0, pd, solver):
     print(results)
 
     # append results
-    for t in m.fs_main.config.time:
+    for t in m.fs_main.time:
         if t == 0 and len(pd['time']) > 0:
             continue
         pd['time'].append(t+t0)
