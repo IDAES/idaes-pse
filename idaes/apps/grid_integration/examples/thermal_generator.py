@@ -13,6 +13,7 @@ class ThermalGenerator:
             rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
             horizon: the length of the planning horizon of the model.
             generators: a list of generators in RTS-GMLC
+            n_scenario: number of uncertain scenarios.
 
         Returns:
             None
@@ -185,7 +186,7 @@ class ThermalGenerator:
                                       segment_number = 4):
 
         '''
-        This function builds the bidding model for a thermal generator.
+        This function builds the model for a thermal generator.
 
         Arguments:
             plan_horizon: the length of the planning horizon of the model.
