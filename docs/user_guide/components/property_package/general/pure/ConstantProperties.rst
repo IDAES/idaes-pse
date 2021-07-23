@@ -24,7 +24,7 @@ The ideal liquid molar heat capacity is defined as follows:
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Units", "Description"
 
-   ":math:`C_1`", "cp_mol_ig_comp_coeff", "Units are defined based on the user's input", ""
+   ":math:`C_1`", "cp_mol_liq_comp_coeff", "Units are defined based on the user's input", ""
 
 
 Ideal Liquid Molar Enthalpy
@@ -46,7 +46,7 @@ Ideal Liquid Molar Entropy
 
 The correlation for the ideal liquid molar entropy is derived from the correlation for the molar heat capacity and is given below:
 
-.. math:: s_{\text{liq}} - s_{\text{liq ref}} = c_{\text{p liq}} \times ln(T/T_{ref}) + s_{\text{form, Liq}}
+.. math:: s_{\text{liq}} - s_{\text{liq ref}} = c_{\text{p liq}} \times ln(T/T_{ref}) + s_{\text{form, liq}}
 
 Units are defined based on the user's input.
 
@@ -111,3 +111,61 @@ Units are defined based on the user's input.
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity.
     Units of molar entropy of formation will be derived from the base units defined for the property package.
+
+
+Ideal Solid Molar Heat Capacity (Constant Pressure)
+---------------------------------------------------
+
+The ideal solid molar heat capacity is defined as follows:
+
+.. math:: c_{\text{p sol}} = C_1
+
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Units", "Description"
+
+   ":math:`C_1`", "cp_mol_sol_comp_coeff", "Units are defined based on the user's input", ""
+
+
+Ideal Solid Molar Enthalpy
+--------------------------
+
+The equation for the ideal solid molar enthalpy is given below:
+
+.. math:: h_{\text{sol}} - h_{\text{sol ref}} = c_{\text{p sol}} \times (T-T_{ref}) + \Delta h_{\text{form, sol}}
+
+Units are defined based on the user's input.
+
+.. note::
+    This correlation uses the same parameters as the ideal solid heat capacity.
+    Units of molar heat of formation will be derived from the base units defined for the property package.
+
+
+Ideal Solid Molar Entropy
+-------------------------
+
+The correlation for the ideal solid molar entropy is derived from the correlation for the molar heat capacity and is given below:
+
+.. math:: s_{\text{sol}} - s_{\text{sol ref}} = c_{\text{p sol}} \times ln(T/T_{ref}) + s_{\text{form, sol}}
+
+Units are defined based on the user's input.
+
+.. note::
+    This correlation uses the same parameters as the ideal solid heat capacity.
+    Units of molar entropy of formation will be derived from the base units defined for the property package.
+
+
+Solid Molar Density
+-------------------
+
+The solid molar density is defined as follows:
+
+.. math:: \rho_{sol} = C_1
+
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Units", "Description"
+
+   ":math:`C_1`", "dens_mol_sol_comp_coeff", "Units are defined based on the user's input", ""
