@@ -48,7 +48,7 @@ from pyomo.environ import (
         ComponentUID,
         Suffix,
         )
-from pyomo.core.base.util import Initializer
+from pyomo.core.base.initializer import Initializer
 from pyomo.core.base.block import _BlockData
 from pyomo.core.base.indexed_component import UnindexedComponent_set
 from pyomo.common.collections import ComponentMap
