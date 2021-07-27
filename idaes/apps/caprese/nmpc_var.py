@@ -77,7 +77,7 @@ class ActualMeasurementVar(NmpcVar):
     _attr = 'actualmeasurement'
     
 class MeasurementErrorVar(NmpcVar):
-    _attr = 'meaerror'
+    _attr = 'measurementerror'
 
 class ModelDisturbanceVar(NmpcVar):
     _attr = 'modeldisturbance'

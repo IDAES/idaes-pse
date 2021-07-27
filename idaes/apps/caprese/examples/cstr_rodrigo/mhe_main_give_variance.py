@@ -16,11 +16,11 @@ Example for Caprese's module for MHE.
 import random
 from idaes.apps.caprese.mhe import MHESim
 from idaes.apps.caprese.util import apply_noise_with_bounds
-from pyomo.environ import SolverFactory
+from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from cstr_rodrigo_model import make_model
-import pandas as pd
+from idaes.apps.caprese.data_manager import EstimatorDataManager
 
 __author__ = "Kuan-Han Lin"
 
@@ -42,7 +42,7 @@ else:
 def main():
     m_estimator = make_model(horizon=10., ntfe=10, ntcp=2, bounds=True)
     sample_time = 2.
-    m_plant = make_model(horizon=sample_time, ntfe=2, ntcp=2, bounds = True)
+    m_plant = make_model(horizon=sample_time, ntfe=4, ntcp=2, bounds = True)
     time_plant = m_plant.t
 
     simulation_horizon = 20
@@ -80,7 +80,18 @@ def main():
     c_t0 = mhe.estimator.time.first()
     p_ts = mhe.plant.sample_points[1]
     c_ts = mhe.estimator.sample_points[1]
+    #--------------------------------------------------------------------------
+    # Declare variables of interest for plotting.
+    # It's ok not declaring anything. The data manager will still save some 
+    # important data, but the user should use the default string of CUID for plotting afterward.
+    states_of_interest = [Reference(mhe.plant.mod.Ca[:]),
+                          Reference(mhe.plant.mod.Tall[:, "T"])]
 
+    # Set up data manager to save estimation data
+    data_manager = EstimatorDataManager(plant, 
+                                       estimator,
+                                       states_of_interest,)
+    #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
     
     # Here we solve for a steady state and use it to fill in past measurements
@@ -113,14 +124,13 @@ def main():
             ]
     #-------------------------------------------------------------------------
     
-    # Set up pandas dataframe to save plant data
-    mhe.plant.initialize_plant_dataframe()
+    data_manager.save_initial_plant_data()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
-    mhe.plant.record_plant_data()
+    data_manager.save_plant_data(iteration = 0)
     
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
@@ -129,13 +139,10 @@ def main():
                                     timepoint = estimator.time.last())
     mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.Tjinb[p_ts].value])
     
-    # Set up pandas dataframe to save estimation results
-    mhe.estimator.initialize_estimator_dataframe()
-    
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
-    mhe.estimator.record_estimator_data()
+    data_manager.save_estimator_data(iteration = 0)
     
     cinput = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(1, 11)}
     
@@ -151,7 +158,7 @@ def main():
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
-        mhe.plant.record_plant_data()
+        data_manager.save_plant_data(iteration = i)
         
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
@@ -170,16 +177,10 @@ def main():
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
-        mhe.estimator.record_estimator_data()
+        data_manager.save_estimator_data(iteration = i)
         
-    
-    return mhe
+    data_manager.plot_estimation_results(states_of_interest)
+    return mhe, data_manager
 
 if __name__ == '__main__':
-    mhe = main()
-
-    # Plot the estiamtion result (estimated states vs. real states)
-    vars_soi = (mhe.plant.mod.Ca[:], 
-                mhe.plant.mod.Tall[:, "T"], 
-                mhe.plant.mod.Tall[:, "Tj"],)
-    mhe.plot_estimation_result(vars_soi, xlabel = "time",)
+    mhe, data_manager = main()

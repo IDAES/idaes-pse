@@ -16,12 +16,14 @@ Example for Caprese's module for NMPC.
 import random
 from idaes.apps.caprese.nmpc import NMPCSim
 from idaes.apps.caprese.util import apply_noise_with_bounds
-from pyomo.environ import SolverFactory
+from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
 import pandas as pd
 import matplotlib.pyplot as plt
+from idaes.apps.caprese.data_manager import (
+                    ControllerDataManager,)
 
 __author__ = "Robert Parker"
 
@@ -38,37 +40,7 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-class PlotData(object):
-    def __init__(self, group, location, name=None, t_switch=None):
-        # Would really like a PlotData class that is constructed based on an
-        # NMPCVar object that contains necessary setpoint/reference
-        # information, instead of having to access that in the NMPCVarGroup
-        time = group.index_set
-        if t_switch == None:
-            t_switch = group.t0
-
-        self.name = name
-
-        var = group.varlist[location]
-        initial = group.reference[location]
-        setpoint = group.setpoint[location]
-        self.data_series = pd.Series(
-                [var[t].value for t in time],
-                index=[t for t in time])
-        self.setpoint_series = pd.Series(
-                [initial if t < t_switch else setpoint for t in time])
-
-    def plot(self):
-        # fig, ax can be formatted to the user's liking
-        fig, ax = plt.subplots()
-        if self.name is not None:
-            self.data_series.plot(label=self.name)
-        else:
-            self.data_series.plot()
-        return fig, ax
-
-def main(plot_switch=False):
-
+def main():
     # This tests the same model constructed in the test_nmpc_constructor_1 file
     m_controller = make_model(horizon=3, ntfe=30, ntcp=2, bounds=True)
     sample_time = 0.5
@@ -115,6 +87,28 @@ def main(plot_switch=False):
     p_ts = nmpc.plant.sample_points[1]
     c_ts = nmpc.controller.sample_points[1]
 
+    #--------------------------------------------------------------------------
+    # Declare variables of interest for plotting.
+    # It's ok not declaring anything. The data manager will still save some 
+    # important data, but the user should use the default string of CUID for plotting afterward.
+    states_of_interest = [nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
+                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
+                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],
+                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P'],
+                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent'],
+                          nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq'],
+                          ]
+    ref_soi = [Reference(var) for var in states_of_interest]
+    
+    inputs_of_interest = [Reference(nmpc.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
+                          Reference(nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),]
+    
+    data_manager = ControllerDataManager(plant, 
+                                        controller,
+                                        ref_soi,
+                                        inputs_of_interest,)
+    #--------------------------------------------------------------------------
+    
     solve_consistent_initial_conditions(plant, plant.time, solver)
     solve_consistent_initial_conditions(controller, controller.time, solver)
 
@@ -160,14 +154,13 @@ def main(plot_switch=False):
     
     nmpc.controller.initialize_to_initial_conditions()
     
-    nmpc.controller.initialize_controller_dataframe()
     
     # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
     solver.solve(nmpc.controller, tee=True)
-    
-    nmpc.controller.record_controller_data()
+    data_manager.save_controller_data(iteration = 0)
+
 
     # For a proper NMPC simulation, we must have noise.
     # We do this by treating inputs and measurements as Gaussian random
@@ -202,12 +195,12 @@ def main(plot_switch=False):
     inputs = controller.generate_inputs_at_time(c_ts)
     plant.inject_inputs(inputs)
     
-    nmpc.plant.initialize_plant_dataframe()
+    data_manager.save_initial_plant_data()
 
     # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
     solver.solve(nmpc.plant)
-    nmpc.plant.record_plant_data()
+    data_manager.save_plant_data(iteration = 0)
 
     for i in range(1, 11):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
@@ -227,7 +220,7 @@ def main(plot_switch=False):
                                           timepoint = controller.time.first())
 
         solver.solve(nmpc.controller, tee=True)
-        nmpc.controller.record_controller_data()
+        data_manager.save_controller_data(iteration = i)
 
         inputs = controller.generate_inputs_at_time(c_ts)
         inputs = apply_noise_with_bounds(
@@ -240,21 +233,12 @@ def main(plot_switch=False):
         
         nmpc.plant.initialize_by_solving_elements(solver)
         solver.solve(nmpc.plant)
-        nmpc.plant.record_plant_data()
+        data_manager.save_plant_data(iteration = i)
 
-    return nmpc
+    data_manager.plot_setpoint_tracking_results(ref_soi)
+    data_manager.plot_control_input(inputs_of_interest)
+
+    return nmpc, data_manager
 
 if __name__ == '__main__':
-    nmpc = main()
-    states_soi = (nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
-                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
-                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],
-                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P'],
-                  nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent'],
-                  nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq'],
-                  )
-    nmpc.plot_setpoint_tracking_result(states_soi, xlabel = "time")
-    inputs_soi = (nmpc.plant.mod.fs.mixer.S_inlet_state[:].flow_vol,
-                  nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol,)
-    nmpc.plot_control_input(inputs_soi, xlabel = "time")
-
+    nmpc, data_manager = main()

@@ -16,11 +16,11 @@ Example for Caprese's module for MHE.
 import random
 from idaes.apps.caprese.mhe import MHESim
 from idaes.apps.caprese.util import apply_noise_with_bounds
-from pyomo.environ import SolverFactory
+from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
-import pandas as pd
+from idaes.apps.caprese.data_manager import EstimatorDataManager
 
 __author__ = "Kuan-Han Lin"
 
@@ -84,7 +84,23 @@ def main():
     c_t0 = mhe.estimator.time.first()
     p_ts = mhe.plant.sample_points[1]
     c_ts = mhe.estimator.sample_points[1]
+    #--------------------------------------------------------------------------
+    # Declare variables of interest for plotting.
+    # It's ok not declaring anything. The data manager will still save some 
+    # important data, but the user should use the default string of CUID for plotting afterward.
+    states_of_interest = (Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
+                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
+                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
+                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
+                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
+                        Reference(mhe.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
+                        )
 
+    # Set up data manager to save estimation data
+    data_manager = EstimatorDataManager(plant, 
+                                       estimator,
+                                       states_of_interest,)
+    #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
     
     estimator.mod.fs.cstr.volume[0].unfix()
@@ -140,14 +156,13 @@ def main():
             ]
     #-------------------------------------------------------------------------
     
-    # Set up pandas dataframe to save plant data
-    mhe.plant.initialize_plant_dataframe()
+    data_manager.save_initial_plant_data()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
-    mhe.plant.record_plant_data()
+    data_manager.save_plant_data(iteration = 0)
     
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
@@ -156,14 +171,11 @@ def main():
                                     timepoint = estimator.time.last())
     mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.fs.mixer.S_inlet.flow_vol[p_ts].value,
                                        mhe.plant.mod.fs.mixer.E_inlet.flow_vol[p_ts].value])
-    
-    # Set up pandas dataframe to save estimation results
-    mhe.estimator.initialize_estimator_dataframe()
-    
+        
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
-    mhe.estimator.record_estimator_data()
+    data_manager.save_estimator_data(iteration = 0)
         
     cinput1 = [0.5608456705408656, 3.4818166997491384, 5.0, 0.9629431563506397, 2.0623866186035156, 
                4.9999999797327686, 2.285805028476981, 3.913753219840146, 3.4585265451075538, 5.0]
@@ -181,7 +193,7 @@ def main():
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
-        mhe.plant.record_plant_data()
+        data_manager.save_plant_data(iteration = i)
             
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
@@ -200,20 +212,10 @@ def main():
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
-        mhe.estimator.record_estimator_data()
+        data_manager.save_estimator_data(iteration = i)
         
-        
-    return mhe
+    data_manager.plot_estimation_results(states_of_interest)
+    return mhe, data_manager
 
 if __name__ == '__main__':
-    mhe = main() 
-
-    # Plot the estiamtion result (estimated states vs. real states)
-    vars_soi = (mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
-                mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
-                mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],
-                mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P'],
-                mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent'],
-                mhe.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq'],
-                )
-    mhe.plot_estimation_result(vars_soi, xlabel = "time",)
+    mhe, data_manager = main()

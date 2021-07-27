@@ -28,14 +28,14 @@ from idaes.apps.caprese.dynamic_block import (
 from idaes.apps.caprese.controller import (
         ControllerBlock,
         )
-from idaes.apps.caprese.plotlibrary import(
-        NMPC_PlotLibrary,
-        )
+# from idaes.apps.caprese.plotlibrary import(
+#         NMPC_PlotLibrary,
+#         )
 
 __author__ = "Robert Parker and David Thierry"
 
 
-class NMPCSim(NMPC_PlotLibrary):
+class NMPCSim(object):
     """
     This is a user-facing class to perform NMPC simulations with Pyomo
     models for both plant and controller. The user must provide the

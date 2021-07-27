@@ -17,12 +17,14 @@ Main script for running the example.
 import random
 from idaes.apps.caprese.nmpc import NMPCSim
 from idaes.apps.caprese.util import apply_noise_with_bounds
-from pyomo.environ import SolverFactory
+from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 import idaes.logger as idaeslog
 from cstr_rodrigo_model import make_model
 import pandas as pd
 import matplotlib.pyplot as plt
+from idaes.apps.caprese.data_manager import (
+                    ControllerDataManager,)
 
 __author__ = "Kuan-Han Lin"
 
@@ -77,12 +79,25 @@ def main():
     plant = nmpc.plant
     controller = nmpc.controller
     
-    
     p_t0 = nmpc.plant.time.first()
     c_t0 = nmpc.controller.time.first()
     p_ts = nmpc.plant.sample_points[1]
     c_ts = nmpc.controller.sample_points[1]
-
+    
+    #--------------------------------------------------------------------------
+    # Declare variables of interest for plotting.
+    # It's ok not declaring anything. The data manager will still save some 
+    # important data, but the user should use the default string of CUID for plotting afterward.
+    states_of_interest = [Reference(nmpc.plant.mod.Ca[:]),
+                          Reference(nmpc.plant.mod.Tall[:, "T"])]
+    inputs_of_interest = [Reference(nmpc.plant.mod.Tjinb[...])]
+    
+    data_manager = ControllerDataManager(plant, 
+                                        controller,
+                                        states_of_interest,
+                                        inputs_of_interest,)
+    #--------------------------------------------------------------------------
+    
     solve_consistent_initial_conditions(plant, plant.time, solver)
     solve_consistent_initial_conditions(controller, controller.time, solver)
     
@@ -106,14 +121,12 @@ def main():
     
     nmpc.controller.initialize_to_initial_conditions()
     
-    nmpc.controller.initialize_controller_dataframe()
     
     # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
     solver.solve(nmpc.controller, tee=True)
-    
-    nmpc.controller.record_controller_data()
+    data_manager.save_controller_data(iteration = 0)
     
     #-------------------------------------------------------------------------
     #noise for measurements
@@ -143,13 +156,13 @@ def main():
     inputs = controller.generate_inputs_at_time(c_ts)
     plant.inject_inputs(inputs)
     
-    nmpc.plant.initialize_plant_dataframe()
+    data_manager.save_initial_plant_data()
 
     # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
-    nmpc.plant.mod.Tjinb.fix() #Fix the input to solve the plant
+    nmpc.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(nmpc.plant, tee = True)
-    nmpc.plant.record_plant_data()
+    data_manager.save_plant_data(iteration = 0)
     
     for i in range(1, n_samples_to_simulate +1):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
@@ -169,7 +182,7 @@ def main():
                                           timepoint = controller.time.first())
 
         solver.solve(nmpc.controller, tee=True)
-        nmpc.controller.record_controller_data()
+        data_manager.save_controller_data(iteration = i)
 
         inputs = controller.generate_inputs_at_time(c_ts)
         inputs = apply_noise_with_bounds(
@@ -181,16 +194,14 @@ def main():
         plant.inject_inputs(inputs)
         
         nmpc.plant.initialize_by_solving_elements(solver)
-        nmpc.plant.mod.Tjinb.fix() #Fix the input to solve the plant
+        nmpc.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(nmpc.plant, tee = True)    
-        nmpc.plant.record_plant_data()
+        data_manager.save_plant_data(iteration = i)
         
-    return nmpc
+    data_manager.plot_setpoint_tracking_results(states_of_interest)
+    data_manager.plot_control_input(inputs_of_interest)
+        
+    return nmpc, data_manager
     
 if __name__ == '__main__':
-    nmpc = main()
-    states_soi = (nmpc.plant.mod.Ca[:],
-                  nmpc.plant.mod.Tall[:, "T"])
-    nmpc.plot_setpoint_tracking_result(states_soi, xlabel = "time")
-    inputs_soi = (nmpc.plant.mod.Tjinb[:],)
-    nmpc.plot_control_input(inputs_soi, xlabel = "iterations")
+    nmpc, data_manager = main()

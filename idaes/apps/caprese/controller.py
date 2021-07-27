@@ -52,7 +52,6 @@ from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
 from pyomo.core.base.indexed_component import UnindexedComponent_set
-from idaes.apps.caprese.data_manager import ControllerDataManger
 
 
 def pwc_rule(ctrl, i, t):
@@ -326,11 +325,10 @@ class ControllerBlock(DynamicBlock):
         return super(ControllerBlock, cls).__new__(target_cls)
 
 
-class SimpleControllerBlock(_ControllerBlockData, ControllerBlock, ControllerDataManger):
+class SimpleControllerBlock(_ControllerBlockData, ControllerBlock):
     def __init__(self, *args, **kwds):
         _ControllerBlockData.__init__(self, component=self)
         ControllerBlock.__init__(self, *args, **kwds)
-        ControllerDataManger.__init__(self)
 
     # Pick up the display() from Block and not BlockData
     display = ControllerBlock.display

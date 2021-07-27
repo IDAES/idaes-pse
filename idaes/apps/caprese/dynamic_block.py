@@ -61,7 +61,6 @@ from pyomo.common.config import ConfigDict, ConfigValue
 from pyomo.core.base.range import remainder
 from pyomo.dae.set_utils import deactivate_model_at
 from pyomo.dae.flatten import flatten_dae_components
-from idaes.apps.caprese.data_manager import PlantDataManger
 
 class _DynamicBlockData(_BlockData):
     """ This class adds methods and data structures that are useful
@@ -920,11 +919,10 @@ class DynamicBlock(Block):
         block._construct()
 
 
-class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock, PlantDataManger):
+class SimpleDynamicBlock(_DynamicBlockData, DynamicBlock):
     def __init__(self, *args, **kwds):
         _DynamicBlockData.__init__(self, component=self)
         DynamicBlock.__init__(self, *args, **kwds)
-        PlantDataManger.__init__(self)
 
     # Pick up the display() from Block and not BlockData
     display = DynamicBlock.display
