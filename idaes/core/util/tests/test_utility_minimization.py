@@ -11,37 +11,24 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-This module contains heat utility minimization functions for use in IDAES models.
+This module contains heat utility minimization functions for use in
+IDAES models.
 """
 
 __author__ = "Alejandro Garciadiego"
 
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           Expression,
                            Objective,
-                           Set,
                            SolverStatus,
                            TerminationCondition,
-                           value,
-                           Var,
                            units as pyunits)
-from idaes.core.util.model_statistics import (degrees_of_freedom,
-                                              fixed_variables_set,
-                                              activated_constraints_set)
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util import get_solver
-import idaes.logger as idaeslog
 
-from idaes.core import LiquidPhase, VaporPhase, Component
-from idaes.core.phases import PhaseType as PT
+from idaes.core import VaporPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
-        IdealBubbleDew
-from idaes.generic_models.properties.core.phase_equil.forms import \
-        fugacity, log_fugacity
 import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 
 from idaes.generic_models.unit_models import Heater
@@ -55,6 +42,9 @@ from idaes.core.util.utility_minimization import \
 
 
 # -----------------------------------------------------------------------------
+# [1] systematic Methods of Chemical Process Design (1997)
+#     Chemical Engineering Series - L. T. Biegler, I. E. Grossmann,
+#     A. W. Westerberg, page 529, Example 16.1
 # Get default solver for testing
 solver = get_solver()
 
@@ -63,17 +53,18 @@ solver = get_solver()
 def test_PinchDataClass():
 
     PD = PinchDataClass(100, 80)
-    PD.initQAh = {'fs.H101': 540756, 'fs.H102': 719998, \
-    'fs.H103': 0, 'fs.H104': 59787}
-    PD.initQAc = {'fs.H101': 477515, 'fs.H102': 554999, \
-    'fs.H103': 29875, 'fs.H104': 119502}
+    PD.initQAh = {'fs.H101': 540756, 'fs.H102': 719998,
+                  'fs.H103': 0, 'fs.H104': 59787}
+    PD.initQAc = {'fs.H101': 477515, 'fs.H102': 554999,
+                  'fs.H103': 29875, 'fs.H104': 119502}
 
     assert PD.initQs == 100
     assert PD.initQw == 80
-    assert PD.initQAh == {'fs.H101': 540756, 'fs.H102': 719998, \
-    'fs.H103': 0, 'fs.H104': 59787}
-    assert PD.initQAc == {'fs.H101': 477515, 'fs.H102': 554999, \
-    'fs.H103': 29875, 'fs.H104': 119502}
+    assert PD.initQAh == {'fs.H101': 540756, 'fs.H102': 719998,
+                          'fs.H103': 0, 'fs.H104': 59787}
+    assert PD.initQAc == {'fs.H101': 477515, 'fs.H102': 554999,
+                          'fs.H103': 29875, 'fs.H104': 119502}
+
 
 # Author: Alejandro Garciadiego
 class TestStateBlock(object):
@@ -84,22 +75,22 @@ class TestStateBlock(object):
             "components": {
 
                 'A': {"type": Component,
-                            "enth_mol_ig_comp": RPP4,
-                            "entr_mol_ig_comp": RPP4,
-                            "parameter_data": {
-                                "mw": (2.016E-3, pyunits.kg/pyunits.mol),  # [1]
-                                "pressure_crit": (12.9e5, pyunits.Pa),  # [1]
-                                "temperature_crit": (33.2, pyunits.K),  # [1]
-                                "omega": -0.218,
-                                "cp_mol_ig_comp_coeff": {
-                                    "A": (1000000, pyunits.J/pyunits.mol/pyunits.K),  # [1]
-                                    "B": (0, pyunits.J/pyunits.mol/pyunits.K**2),
-                                    "C": (0, pyunits.J/pyunits.mol/pyunits.K**3),
-                                    "D": (0, pyunits.J/pyunits.mol/pyunits.K**4)},
-                                "entr_mol_form_vap_comp_ref": (
-                                    0, pyunits.J/pyunits.mol/pyunits.K),
-                                "enth_mol_form_vap_comp_ref": (
-                                    0.0, pyunits.J/pyunits.mol)}}},
+                      "enth_mol_ig_comp": RPP4,
+                      "entr_mol_ig_comp": RPP4,
+                      "parameter_data": {
+                        "mw": (2.016E-3, pyunits.kg/pyunits.mol),  # [1]
+                        "pressure_crit": (12.9e5, pyunits.Pa),  # [1]
+                        "temperature_crit": (33.2, pyunits.K),  # [1]
+                        "omega": -0.218,
+                        "cp_mol_ig_comp_coeff": {
+                            "A": (1000000, pyunits.J/pyunits.mol/pyunits.K),
+                            "B": (0, pyunits.J/pyunits.mol/pyunits.K**2),
+                            "C": (0, pyunits.J/pyunits.mol/pyunits.K**3),
+                            "D": (0, pyunits.J/pyunits.mol/pyunits.K**4)},
+                        "entr_mol_form_vap_comp_ref": (
+                            0, pyunits.J/pyunits.mol/pyunits.K),
+                        "enth_mol_form_vap_comp_ref": (
+                            0.0, pyunits.J/pyunits.mol)}}},
 
             # Specifying phases
             "phases":  {'Vap': {"type": VaporPhase,
@@ -120,7 +111,8 @@ class TestStateBlock(object):
             "pressure_ref": (1e5, pyunits.Pa),
             "temperature_ref": (300, pyunits.K)}
 
-        # Create the ConcreteModel and the FlowsheetBlock, and attach the flowsheet block to it.
+        # Create the ConcreteModel and the FlowsheetBlock, and attach the
+        # flowsheet block to it.
         model = ConcreteModel()
 
         model.fs = FlowsheetBlock(default={"dynamic": False})
@@ -131,20 +123,20 @@ class TestStateBlock(object):
         # Create an instance of the units, attaching them to the flowsheet
         # Specify that the property package to be used with with eash unit.
         model.fs.H101 = Heater(default={"property_package": model.fs.props,
-                                    "has_pressure_change": False,
-                                    "has_phase_equilibrium": False})
+                                        "has_pressure_change": False,
+                                        "has_phase_equilibrium": False})
 
         model.fs.H102 = Heater(default={"property_package": model.fs.props,
-                                    "has_pressure_change": False,
-                                    "has_phase_equilibrium": False})
+                                        "has_pressure_change": False,
+                                        "has_phase_equilibrium": False})
 
         model.fs.H103 = Heater(default={"property_package": model.fs.props,
-                                    "has_pressure_change": False,
-                                    "has_phase_equilibrium": False})
+                                        "has_pressure_change": False,
+                                        "has_phase_equilibrium": False})
 
         model.fs.H104 = Heater(default={"property_package": model.fs.props,
-                                    "has_pressure_change": False,
-                                    "has_phase_equilibrium": False})
+                                        "has_pressure_change": False,
+                                        "has_phase_equilibrium": False})
 
         model.fs.H101.inlet.mole_frac_comp[0, "A"].fix(1)
         model.fs.H101.inlet.flow_mol[0].fix(1.5)
@@ -182,8 +174,8 @@ class TestStateBlock(object):
     def test_dof(self, model):
 
         # add heat integration constraints
-        min_utility(model.fs,[model.fs.H101,model.fs.H102],
-                    [model.fs.H103,model.fs.H104],20)
+        min_utility(model.fs, [model.fs.H101, model.fs.H102],
+                    [model.fs.H103, model.fs.H104], 20)
 
         assert degrees_of_freedom(model) == 1
 
@@ -229,11 +221,11 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_heat_ex_data(self, model):
 
-        CD = heat_ex_data(model.fs,[model.fs.H101,model.fs.H102],
-                            [model.fs.H103,model.fs.H104])
+        CD = heat_ex_data(model.fs, [model.fs.H101, model.fs.H102],
+                          [model.fs.H103, model.fs.H104])
 
         assert CD.Cooling_Tin[0] == 401
-        assert CD.Cooling_Tin[1] ==341
+        assert CD.Cooling_Tin[1] == 341
         assert CD.Cooling_Tout[0] == 120
         assert CD.Cooling_Tout[1] == 120
         assert CD.Cooling_Q[0] == -280
