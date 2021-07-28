@@ -387,11 +387,7 @@ class ThermalGeneratorStorageIES:
 
         return
 
-    def update_model(self, \
-                     implemented_shut_down, \
-                     implemented_start_up, \
-                     implemented_power_output, \
-                     implemented_SOC):
+    def update_model(self, last_implemented_time_step):
 
         '''
         This method updates the parameters in the model based on
@@ -407,6 +403,16 @@ class ThermalGeneratorStorageIES:
          Returns:
              None
         '''
+
+        implemented_shut_down = self.thermal_generator_object.get_implemented_profile(model_var = self.model.shut_dw,\
+                                                                                      last_implemented_time_step = last_implemented_time_step)
+        implemented_start_up = self.thermal_generator_object.get_implemented_profile(model_var = self.model.start_up,\
+                                                                                     last_implemented_time_step = last_implemented_time_step)
+        implemented_power_output = self.thermal_generator_object.get_implemented_profile(model_var = self.model.P_T,\
+                                                                                         last_implemented_time_step = last_implemented_time_step)
+        implemented_SOC = self.thermal_generator_object.get_implemented_profile(model_var = self.model.S_SOC,\
+                                                                                last_implemented_time_step = last_implemented_time_step)
+
 
         m = self.model
         self.thermal_generator_object._update_UT_DT(m, implemented_shut_down, implemented_start_up)

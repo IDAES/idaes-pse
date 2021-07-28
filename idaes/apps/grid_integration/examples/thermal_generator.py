@@ -442,10 +442,7 @@ class ThermalGenerator:
 
         return
 
-    def update_model(self,
-                     implemented_power_output,
-                     implemented_shut_down,
-                     implemented_start_up):
+    def update_model(self,last_implemented_time_step):
 
         '''
         This method updates the parameters in the model based on
@@ -460,10 +457,25 @@ class ThermalGenerator:
              None
         '''
 
+        implemented_shut_down = self.get_implemented_profile(model_var = self.model.shut_dw,\
+                                                             last_implemented_time_step = last_implemented_time_step)
+        implemented_start_up = self.get_implemented_profile(model_var = self.model.start_up,\
+                                                            last_implemented_time_step = last_implemented_time_step)
+        implemented_power_output = self.get_implemented_profile(model_var = self.model.P_T,\
+                                                                last_implemented_time_step = last_implemented_time_step)
+
         self._update_UT_DT(self.model,implemented_shut_down, implemented_start_up)
         self._update_power(self.model,implemented_power_output)
 
         return
+
+    def get_implemented_profile(self, model_var, last_implemented_time_step):
+
+        profile = {}
+        for g in self.model.UNITS:
+            profile[g] = [pyo.value(model_var[g,t,0]) for t in range(last_implemented_time_step + 1)]
+
+        return profile
 
     def record_results(self, date = None, hour = None, **kwargs):
 
@@ -544,9 +556,15 @@ if __name__ == "__main__":
                                                 generators = ["102_STEAM_3"], \
                                                 n_scenario = 1)
 
-    solver = pyo.SolverFactory('gurobi')
+    solver = pyo.SolverFactory('cbc')
 
     # make a tracker
     thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
                               n_tracking_hour = 1, \
                               solver = solver)
+
+    market_dispatch = {"102_STEAM_3": [30, 40 , 50, 70]}
+
+    thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
+                                          date = "2021-07-26", \
+                                          hour = '17:00')
