@@ -9,15 +9,36 @@ class Tracker:
 
     def __init__(self, tracking_model_object, n_tracking_hour, solver):
 
+        '''
+        Initializes the tracker object.
+
+        Arguments:
+            tracking_model_object: the initialized model object for tracking
+            n_tracking_hour: number of implemented hours after each solve
+            solver: a Pyomo mathematical programming solver object
+
+        Returns:
+            None
+        '''
+
         self.tracking_model_object = tracking_model_object
         self.n_tracking_hour = n_tracking_hour
         self.solver = solver
-
         self.model = self.tracking_model_object.model
-
         self.formulate_tracking_problem()
 
     def formulate_tracking_problem(self):
+
+        '''
+        Formulate the tracking optimization problem by adding necessary
+        parameters, constraints, and objective function.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         # get the sets needed for the tracking problem
         self.tracking_set = self._get_tracking_sets()
@@ -30,6 +51,16 @@ class Tracker:
 
     def _get_tracking_sets(self):
 
+        '''
+        Get the necessary index sets for tracking, i.e., generator names and
+        time.
+
+        Arguments:
+            None
+
+        Returns:
+            tracking_set: a list that contains the necessary Pyomo set objects.
+        '''
 
         tracking_set = []
 
@@ -43,19 +74,51 @@ class Tracker:
 
     def _add_tracking_params(self):
 
+        '''
+        Add necessary tracking parameters to the model, i.e., market dispatch
+        signal.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         # add params to the model
         self.model.power_dispatch = pyo.Param(*self.tracking_set, \
                                               initialize = 0, \
                                               mutable = True)
-
         return
 
     def _add_tracking_constraints(self):
+
+        '''
+        Add necessary tracking constraints to the model, e.g., power output needs
+        to follow market dispatch signals.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         self._add_tracking_dispatch_constraints()
         return
 
     def _add_tracking_dispatch_constraints(self):
+
+        '''
+        Add tracking constraints to the model, i.e., power output needs
+        to follow market dispatch signals.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         # declare a constraint list
         self.model.tracking_dispatch_constraints = pyo.ConstraintList()
@@ -94,6 +157,17 @@ class Tracker:
 
     def _add_tracking_objective(self):
 
+        '''
+        Add EMPC objective function to the model, i.e., minimizing different costs
+        of the energy system.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         # declare an empty objective
         self.model.obj = pyo.Objective(expr = 0, sense = pyo.minimize)
 
@@ -127,6 +201,20 @@ class Tracker:
 
     def track_market_dispatch(self, market_dispatch, date, hour):
 
+        '''
+        Solve the model to track the market dispatch signals. After solving,
+        record the results from the solve and update the model.
+
+        Arguments:
+            market_dispatch: a dictionary that contains the market dispatch signals
+                             that we want to track. {generator name: [float]}
+            date: current simulation date
+            hour: current simulation hour
+
+        Returns:
+            None
+        '''
+
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
@@ -138,6 +226,17 @@ class Tracker:
 
     def _pass_market_dispatch(self, market_dispatch):
 
+        '''
+        Pass the received market signals into model parameters.
+
+        Arguments:
+            market_dispatch: a dictionary that contains the market dispatch signals
+                             that we want to track. {generator name: [float]}
+
+        Returns:
+            None
+        '''
+
         set1 = self.tracking_set[0]
         set2 = self.tracking_set[1]
 
@@ -148,10 +247,23 @@ class Tracker:
                     self.model.power_dispatch[s1,s2] = market_dispatch[s2][s1]
                 else:
                     self.model.power_dispatch[s1,s2] = market_dispatch[s1][s2]
-                    
+
         return
 
     def record_results(self, **kwargs):
+
+        '''
+        Record the operations stats for the model.
+
+        Arguments:
+            kwargs: key word arguments that can be passed into tracking model
+                    object's record result function.
+
+        Returns:
+            None
+
+        '''
+
         self.tracking_model_object.record_results(**kwargs)
 
 
