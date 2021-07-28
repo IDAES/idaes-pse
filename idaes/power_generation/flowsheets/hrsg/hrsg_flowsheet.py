@@ -60,7 +60,8 @@ from idaes.power_generation.unit_models.helm import (
     )
 from idaes.generic_models.unit_models.heat_exchanger import (
     HeatExchanger,
-    HeatExchangerFlowPattern)
+    HeatExchangerFlowPattern,
+    delta_temperature_underwood_callback)
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.boiler_heat_exchanger import (
     BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
@@ -113,6 +114,7 @@ def add_unit_models(m):
     fs.LP_EVAP = HeatExchanger(default={
         "shell": {"property_package": m.fs.prop_gas},
         "tube": {"property_package": m.fs.prop_water},
+        "delta_temperature_callback":delta_temperature_underwood_callback,
         "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
     m.fs.LP_FGsplit = Splitter(default={"property_package": m.fs.prop_gas,
@@ -190,6 +192,7 @@ def add_unit_models(m):
         "shell": {"property_package": m.fs.prop_gas},
         "tube": {"property_package": m.fs.prop_water,
                  "has_pressure_change": True},
+        "delta_temperature_callback":delta_temperature_underwood_callback,
         "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
     # IP SH = Low pressure superheater
@@ -301,6 +304,7 @@ def add_unit_models(m):
     fs.HP_EVAP = HeatExchanger(default={
         "shell": {"property_package": m.fs.prop_gas},
         "tube": {"property_package": m.fs.prop_water},
+        "delta_temperature_callback":delta_temperature_underwood_callback,
         "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
     # HP_SH1 = superheater 1
@@ -356,9 +360,10 @@ def add_unit_models(m):
     def vap_fraceq(b, t):
         return b.tube.properties_out[0].vapor_frac == \
             m.fs.LP_EVAP.vapor_frac_control
+    m.fs.LP_EVAP.heat_transfer_equation.deactivate()
     # unfixing U to calculate UA lumped parameter
-    m.fs.LP_EVAP.overall_heat_transfer_coefficient.unfix()
-    m.fs.LP_EVAP.overall_heat_transfer_coefficient.setub(250)
+    #m.fs.LP_EVAP.overall_heat_transfer_coefficient.unfix()
+    #m.fs.LP_EVAP.overall_heat_transfer_coefficient.setub(250)
 
     # IP Inlet must be vaporized
     @m.fs.IP_EVAP.Constraint(m.fs.config.time)
@@ -1429,12 +1434,12 @@ def set_arcs(m):
     # LP_ECON to LP DRUM - steam - to LP EVAP, LP EVAP to LP SH
     # LP EVAP - liq outlet - to Pumps (HP and IP)
     # Mixer to LP_ECON
-    m.fs.LPECON_to_Mix = Arc(
+    m.fs.lp02 = Arc(
         source=m.fs.LP_ECON.side_1_outlet, destination=m.fs.Mixer1.LP_ECON
     )
 
     # LP_ECON to LP_Mixer then LP_Mixer to LP_EVAP
-    m.fs.Mixer_to_LP_EVAP = Arc(
+    m.fs.lp04 = Arc(
         source=m.fs.Mixer1.outlet, destination=m.fs.LP_EVAP.tube_inlet
     )
     m.fs.LP_EVAP.tube_inlet.flow_mol[0].unfix()
@@ -1443,12 +1448,12 @@ def set_arcs(m):
 
     # LP_DRUM STEAM OUTLET: inlet to evaporator
     # LP_DRUM to LP_EVAP
-    m.fs.LP_EVAP_to_LP_DRUM = Arc(
+    m.fs.lp05 = Arc(
         source=m.fs.LP_EVAP.tube_outlet, destination=m.fs.LP_DRUM.inlet
     )
 
     # LP_EVAP to LP_SH (superheater)
-    m.fs.LP_DRUM_to_LP_SH = Arc(
+    m.fs.lp10 = Arc(
         source=m.fs.LP_DRUM.vap_outlet, destination=m.fs.LP_SH.side_1_inlet
     )
     m.fs.LP_SH.side_1_inlet.flow_mol[0].unfix()
@@ -1456,34 +1461,32 @@ def set_arcs(m):
     m.fs.LP_SH.side_1_inlet.pressure[0].unfix()
     # LP_DRUM LIQUID OUTLET: inlet to splitters
     # Arc to connect liquid outlet LP evap to splitter
-    m.fs.LP_DRUM_to_Splitter1 = Arc(
+    m.fs.lp06 = Arc(
         source=m.fs.LP_DRUM.liq_outlet, destination=m.fs.Splitter1.inlet
     )
 
     # arc to connect splitter to IP Pump
-    m.fs.LP_DRUM_to_IP_pump = Arc(
+    m.fs.lp08 = Arc(
         source=m.fs.Splitter1.toIP, destination=m.fs.IP_pump.inlet
     )
 
     # arc to connect splitter to HP pump
-    m.fs.LP_DRUM_to_HP_pump = Arc(
+    m.fs.lp09 = Arc(
         source=m.fs.Splitter1.toHP, destination=m.fs.HP_pump.inlet
     )
 
     # IP Section --------------------------------------------------------------
     # arc to connect IP Pump to IP_ECON1
-    m.fs.IP_pump_to_IP_ECON1 = Arc(
+    m.fs.ip01 = Arc(
         source=m.fs.IP_pump.outlet, destination=m.fs.IP_ECON1.side_1_inlet
     )
     # IP_ECON1 to IP_splitter 1
-    m.fs.IP_ECON1_to_IP_Splitter1 = Arc(
+    m.fs.ip02 = Arc(
         source=m.fs.IP_ECON1.side_1_outlet, destination=m.fs.IP_Splitter1.inlet
     )
 
-    pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
-
     # IP_splitter_1 to IP_ECON2
-    m.fs.IP_Splitter1_to_IP_ECON2 = Arc(
+    m.fs.ip03 = Arc(
         source=m.fs.IP_Splitter1.toIP_ECON2,
         destination=m.fs.IP_ECON2.side_1_inlet)
     m.fs.IP_ECON2.side_1_inlet.flow_mol[0].unfix()
@@ -1491,7 +1494,7 @@ def set_arcs(m):
     m.fs.IP_ECON2.side_1_inlet.pressure[0].unfix()
 
     # IP_ECON2 to IP_EVAP
-    m.fs.IP_ECON2_to_IP_EVAP = Arc(
+    m.fs.ip05 = Arc(
         source=m.fs.IP_ECON2.side_1_outlet,
         destination=m.fs.IP_EVAP.tube_inlet)
     m.fs.IP_EVAP.tube_inlet.flow_mol[0].unfix()
@@ -1499,7 +1502,7 @@ def set_arcs(m):
     m.fs.IP_EVAP.tube_inlet.enth_mol[0].unfix()
 
     # IP_EVAP to IP_SH1
-    m.fs.IP_EVAP_to_IP_SH1 = Arc(
+    m.fs.ip06 = Arc(
         source=m.fs.IP_EVAP.tube_outlet,
         destination=m.fs.IP_SH1.side_1_inlet)
     m.fs.IP_SH1.side_1_inlet.flow_mol[0].unfix()
@@ -1507,12 +1510,12 @@ def set_arcs(m):
     m.fs.IP_SH1.side_1_inlet.pressure[0].unfix()
 
     # IP_SH1 to IP_Mixer1
-    m.fs.IP_SH1_to_Mixer = Arc(
+    m.fs.ip07 = Arc(
         source=m.fs.IP_SH1.side_1_outlet,
         destination=m.fs.IP_Mixer1.IP_SH1)
 
     # cold reheat to IP_Mixer1
-    m.fs.Cold_reheat_to_Mixer = Arc(
+    m.fs.ip15 = Arc(
         source=m.fs.IP_Splitter2.Cold_reheat,
         destination=m.fs.IP_Mixer1.Cold_reheat)
     m.fs.IP_Mixer1.IP_SH1.flow_mol[0].unfix()
@@ -1523,7 +1526,7 @@ def set_arcs(m):
     m.fs.IP_Mixer1.Cold_reheat.pressure[0].unfix()
 
     # IP_Mixer1 to IP_SH2
-    m.fs.IP_Mixer_to_IP_SH2 = Arc(
+    m.fs.ip08 = Arc(
         source=m.fs.IP_Mixer1.outlet,
         destination=m.fs.IP_SH2.side_1_inlet)
     m.fs.IP_SH2.side_1_inlet.flow_mol[0].unfix()
@@ -1531,7 +1534,7 @@ def set_arcs(m):
     m.fs.IP_SH2.side_1_inlet.pressure[0].unfix()
 
     # IP_SH2 to IP_SH3
-    m.fs.IP_SH2_to_IP_SH3 = Arc(
+    m.fs.ip09 = Arc(
         source=m.fs.IP_SH2.side_1_outlet,
         destination=m.fs.IP_SH3.side_1_inlet)
     m.fs.IP_SH3.side_1_inlet.flow_mol[0].unfix()
@@ -1539,7 +1542,7 @@ def set_arcs(m):
     m.fs.IP_SH3.side_1_inlet.pressure[0].unfix()
 
     # HP_pump to HP_ECON1
-    m.fs.HP_Pump_to_HP_ECON1 = Arc(
+    m.fs.hp01 = Arc(
         source=m.fs.HP_pump.outlet,
         destination=m.fs.HP_ECON1.side_1_inlet)
     m.fs.HP_ECON1.side_1_inlet.flow_mol[0].unfix()
@@ -1547,7 +1550,7 @@ def set_arcs(m):
     m.fs.HP_ECON1.side_1_inlet.pressure[0].unfix()
 
     # HP_ECON1 to HP_ECON2
-    m.fs.HP_ECON1_to_HP_ECON2 = Arc(
+    m.fs.hp02 = Arc(
         source=m.fs.HP_ECON1.side_1_outlet,
         destination=m.fs.HP_ECON2.side_1_inlet)
     m.fs.HP_ECON2.side_1_inlet.flow_mol[0].unfix()
@@ -1555,7 +1558,7 @@ def set_arcs(m):
     m.fs.HP_ECON2.side_1_inlet.pressure[0].unfix()
 
     # HP_ECON2 to HP_ECON3
-    m.fs.HP_ECON2_to_HP_ECON3 = Arc(
+    m.fs.hp03 = Arc(
         source=m.fs.HP_ECON2.side_1_outlet,
         destination=m.fs.HP_ECON3.side_1_inlet)
     m.fs.HP_ECON3.side_1_inlet.flow_mol[0].unfix()
@@ -1563,7 +1566,7 @@ def set_arcs(m):
     m.fs.HP_ECON3.side_1_inlet.pressure[0].unfix()
 
     # HP_ECON3 to HP_ECON4
-    m.fs.HP_ECON3_to_HP_ECON4 = Arc(
+    m.fs.hp04 = Arc(
         source=m.fs.HP_ECON3.side_1_outlet,
         destination=m.fs.HP_ECON4.side_1_inlet)
     m.fs.HP_ECON4.side_1_inlet.flow_mol[0].unfix()
@@ -1571,7 +1574,7 @@ def set_arcs(m):
     m.fs.HP_ECON4.side_1_inlet.pressure[0].unfix()
 
     # HP_ECON4 to HP_ECON5
-    m.fs.HP_ECON4_to_HP_ECON5 = Arc(
+    m.fs.hp05 = Arc(
         source=m.fs.HP_ECON4.side_1_outlet,
         destination=m.fs.HP_ECON5.side_1_inlet)
     m.fs.HP_ECON5.side_1_inlet.flow_mol[0].unfix()
@@ -1579,7 +1582,7 @@ def set_arcs(m):
     m.fs.HP_ECON5.side_1_inlet.pressure[0].unfix()
 
     # HP_ECON5 to HP_EVAP
-    m.fs.HP_ECON5_to_HP_EVAP = Arc(
+    m.fs.hp06 = Arc(
         source=m.fs.HP_ECON5.side_1_outlet, destination=m.fs.HP_EVAP.tube_inlet
     )
     m.fs.HP_EVAP.tube_inlet.flow_mol[0].unfix()
@@ -1587,7 +1590,7 @@ def set_arcs(m):
     m.fs.HP_EVAP.tube_inlet.pressure[0].unfix()
 
     # HP_EVAP to HP_SH1
-    m.fs.HP_EVAP_to_HP_SH1 = Arc(
+    m.fs.hp07 = Arc(
         source=m.fs.HP_EVAP.tube_outlet, destination=m.fs.HP_SH1.side_1_inlet
     )
     m.fs.HP_SH1.side_1_inlet.flow_mol[0].unfix()
@@ -1595,7 +1598,7 @@ def set_arcs(m):
     m.fs.HP_SH1.side_1_inlet.pressure[0].unfix()
 
     # HP_SH1 to HP_SH2
-    m.fs.HP_SH1_to_HP_SH2 = Arc(
+    m.fs.hp08 = Arc(
         source=m.fs.HP_SH1.side_1_outlet, destination=m.fs.HP_SH2.side_1_inlet
     )
     m.fs.HP_SH2.side_1_inlet.flow_mol[0].unfix()
@@ -1603,7 +1606,7 @@ def set_arcs(m):
     m.fs.HP_SH2.side_1_inlet.pressure[0].unfix()
 
     # HP_SH2 to HP_SH3
-    m.fs.HP_SH2_to_HP_SH3 = Arc(
+    m.fs.hp09 = Arc(
         source=m.fs.HP_SH2.side_1_outlet, destination=m.fs.HP_SH3.side_1_inlet
     )
     m.fs.HP_SH3.side_1_inlet.flow_mol[0].unfix()
@@ -1611,7 +1614,7 @@ def set_arcs(m):
     m.fs.HP_SH3.side_1_inlet.pressure[0].unfix()
 
     # HP_SH3 to HP_SH4
-    m.fs.HP_SH3_to_HP_SH4 = Arc(
+    m.fs.hp10 = Arc(
         source=m.fs.HP_SH3.side_1_outlet, destination=m.fs.HP_SH4.side_1_inlet
     )
     m.fs.HP_SH4.side_1_inlet.flow_mol[0].unfix()
@@ -1620,14 +1623,14 @@ def set_arcs(m):
 
     # Flue Gas Route ----------------------------------------------------------
     # HP_SH4 to IP_SH3 or IP_Reheater 2
-    m.fs.FG_HP_SH4_to_IP_SH3 = Arc(
+    m.fs.g09 = Arc(
         source=m.fs.HP_SH4.side_2_outlet, destination=m.fs.IP_SH3.side_2_inlet)
     m.fs.IP_SH3.side_2_inlet.flow_mol_comp[:, :].unfix()
     m.fs.IP_SH3.side_2_inlet.pressure[0].unfix()
     m.fs.IP_SH3.side_2_inlet.temperature[0].unfix()
 
     # IP_SH3 to HP_SH3
-    m.fs.FG_IP_SH3_to_HP_SH3 = Arc(
+    m.fs.g10 = Arc(
         source=m.fs.IP_SH3.side_2_outlet,
         destination=m.fs.HP_SH3.side_2_inlet)
     m.fs.HP_SH3.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1635,7 +1638,7 @@ def set_arcs(m):
     m.fs.HP_SH3.side_2_inlet.temperature[0].unfix()
 
     # HP_SH3 to HP_SH2
-    m.fs.FG_HP_SH3_to_HP_SH2 = Arc(
+    m.fs.g11 = Arc(
         source=m.fs.HP_SH3.side_2_outlet,
         destination=m.fs.HP_SH2.side_2_inlet)
     m.fs.HP_SH2.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1643,7 +1646,7 @@ def set_arcs(m):
     m.fs.HP_SH2.side_2_inlet.temperature[0].unfix()
 
     # HP_SH2 to IP_SH2
-    m.fs.FG_HP_SH2_to_IP_SH2 = Arc(
+    m.fs.g12 = Arc(
         source=m.fs.HP_SH2.side_2_outlet,
         destination=m.fs.IP_SH2.side_2_inlet)
     m.fs.IP_SH2.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1651,7 +1654,7 @@ def set_arcs(m):
     m.fs.IP_SH2.side_2_inlet.temperature[0].unfix()
 
     # IP_SH2 to HP_SH1
-    m.fs.FG_IP_SH2_to_HP_SH1 = Arc(
+    m.fs.g13 = Arc(
         source=m.fs.IP_SH2.side_2_outlet,
         destination=m.fs.HP_SH1.side_2_inlet)
     m.fs.HP_SH1.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1659,7 +1662,7 @@ def set_arcs(m):
     m.fs.HP_SH1.side_2_inlet.temperature[0].unfix()
 
     # HP_SH1 to HP_EVAP
-    m.fs.FG_HP_SH1_to_HP_EVAP = Arc(
+    m.fs.g14 = Arc(
         source=m.fs.HP_SH1.side_2_outlet,
         destination=m.fs.HP_EVAP.shell_inlet)
 
@@ -1669,7 +1672,7 @@ def set_arcs(m):
     # m.fs.HP_EVAP.overall_heat_transfer_coefficient.fix(150)
 
     # HP_EVAP to HP_ECON5
-    m.fs.HP_EVAP_to_HP_ECON5 = Arc(
+    m.fs.g15 = Arc(
         source=m.fs.HP_EVAP.shell_outlet,
         destination=m.fs.HP_ECON5.side_2_inlet)
     m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1677,7 +1680,7 @@ def set_arcs(m):
     m.fs.HP_ECON5.side_2_inlet.temperature[0].unfix()
 
     # HP_ECON5 to IP_SH1
-    m.fs.HP_ECON5_to_IP_SH1 = Arc(
+    m.fs.g16 = Arc(
         source=m.fs.HP_ECON5.side_2_outlet,
         destination=m.fs.IP_SH1.side_2_inlet)
     m.fs.IP_SH1.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1685,7 +1688,7 @@ def set_arcs(m):
     m.fs.IP_SH1.side_2_inlet.temperature[0].unfix()
 
     # IP_SH1 to HP_ECON4
-    m.fs.IP_SH1_to_HP_ECON4 = Arc(
+    m.fs.g17 = Arc(
         source=m.fs.IP_SH1.side_2_outlet,
         destination=m.fs.HP_ECON4.side_2_inlet)
     m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1693,7 +1696,7 @@ def set_arcs(m):
     m.fs.HP_ECON4.side_2_inlet.temperature[0].unfix()
 
     # IP_SH1 to HP_ECON3
-    m.fs.HP_ECON4_to_HP_ECON3 = Arc(
+    m.fs.g18 = Arc(
         source=m.fs.HP_ECON4.side_2_outlet,
         destination=m.fs.HP_ECON3.side_2_inlet)
     m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1701,26 +1704,26 @@ def set_arcs(m):
     m.fs.HP_ECON3.side_2_inlet.temperature[0].unfix()
 
     # HP_ECON3 to LP_SH ** fix splitter before LP_SH, Mix after LP_SH
-    m.fs.HP_ECON3_to_LP_split = Arc(
+    m.fs.g19 = Arc(
         source=m.fs.HP_ECON3.side_2_outlet,
         destination=m.fs.LP_FGsplit.inlet)
     m.fs.LP_FGsplit.inlet.flow_mol_comp[:, :].unfix()
     m.fs.LP_FGsplit.inlet.pressure[0].unfix()
     m.fs.LP_FGsplit.inlet.temperature[0].unfix()
 
-    m.fs.LP_split_to_LP_SH = Arc(
+    m.fs.g20 = Arc(
         source=m.fs.LP_FGsplit.toLP_SH,
         destination=m.fs.LP_SH.side_2_inlet)
     m.fs.LP_SH.side_2_inlet.flow_mol_comp[:, :].unfix()
     m.fs.LP_SH.side_2_inlet.pressure[0].unfix()
     m.fs.LP_SH.side_2_inlet.temperature[0].unfix()
 
-    m.fs.LP_SH_to_FGmix = Arc(
+    m.fs.g21 = Arc(
         source=m.fs.LP_SH.side_2_outlet,
         destination=m.fs.LP_Mixer2.fromLP_SH)
 
     # splitter to mixer
-    m.fs.LP_FGsplit_to_LP_Mixer2 = Arc(
+    m.fs.g22 = Arc(
         source=m.fs.LP_FGsplit.toMixer,
         destination=m.fs.LP_Mixer2.bypass)
     m.fs.LP_FGsplit.inlet.flow_mol_comp[:, :].unfix()
@@ -1728,7 +1731,7 @@ def set_arcs(m):
     m.fs.LP_FGsplit.inlet.temperature[0].unfix()
 
     # LP_SH to IP_EVAP splitter and mixer to bypass
-    m.fs.Mixer2_to_IP_EVAP = Arc(
+    m.fs.g23 = Arc(
         source=m.fs.LP_Mixer2.outlet,
         destination=m.fs.IP_EVAP.shell_inlet)
     m.fs.IP_EVAP.shell_inlet.flow_mol_comp[:, :].unfix()
@@ -1736,7 +1739,7 @@ def set_arcs(m):
     m.fs.IP_EVAP.shell_inlet.temperature[0].unfix()
 
     # IP_EVAP to IP_ECON2
-    m.fs.IP_EVAP_to_IP_ECON2 = Arc(
+    m.fs.g24 = Arc(
         source=m.fs.IP_EVAP.shell_outlet,
         destination=m.fs.IP_ECON2.side_2_inlet)
     m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1744,7 +1747,7 @@ def set_arcs(m):
     m.fs.IP_ECON2.side_2_inlet.temperature[0].unfix()
 
     # IP_ECON2 to HP_ECON2
-    m.fs.IP_ECON2_to_HP_ECON2 = Arc(
+    m.fs.g25 = Arc(
         source=m.fs.IP_ECON2.side_2_outlet,
         destination=m.fs.HP_ECON2.side_2_inlet)
     m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1752,7 +1755,7 @@ def set_arcs(m):
     m.fs.HP_ECON2.side_2_inlet.temperature[0].unfix()
 
     # HP_ECON2 to IP_ECON1
-    m.fs.HP_ECON2_to_IP_ECON1 = Arc(
+    m.fs.g26 = Arc(
         source=m.fs.HP_ECON2.side_2_outlet,
         destination=m.fs.IP_ECON1.side_2_inlet)
     m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1760,7 +1763,7 @@ def set_arcs(m):
     m.fs.IP_ECON1.side_2_inlet.temperature[0].unfix()
 
     # IP_ECON1 to HP_ECON1
-    m.fs.IP_ECON1_to_HP_ECON1 = Arc(
+    m.fs.g27 = Arc(
         source=m.fs.IP_ECON1.side_2_outlet,
         destination=m.fs.HP_ECON1.side_2_inlet)
     m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1768,7 +1771,7 @@ def set_arcs(m):
     m.fs.HP_ECON1.side_2_inlet.temperature[0].unfix()
 
     # # HP_ECON1 to LP_EVAP
-    m.fs.HP_ECON1_to_LP_EVAP = Arc(
+    m.fs.g28 = Arc(
         source=m.fs.HP_ECON1.side_2_outlet,
         destination=m.fs.LP_EVAP.shell_inlet)
     m.fs.LP_EVAP.shell_inlet.flow_mol_comp[:, :].unfix()
@@ -1777,7 +1780,7 @@ def set_arcs(m):
 
 
     # LP_EVAP to LP_ECON1
-    m.fs.LP_EVAP_to_LP_ECON = Arc(
+    m.fs.g29 = Arc(
         source=m.fs.LP_EVAP.shell_outlet,
         destination=m.fs.LP_ECON.side_2_inlet)
     m.fs.LP_ECON.side_2_inlet.flow_mol_comp[:, :].unfix()
@@ -1819,55 +1822,113 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(unit.heat_transfer_correlation, 1e-8)
         iscale.set_scaling_factor(unit.side_1.heat, 1e-6)
         iscale.set_scaling_factor(unit.side_2.heat, 1e-6)
+        iscale.set_scaling_factor(unit.side_1.volume, 1)
+        iscale.set_scaling_factor(unit.side_2.volume, 1)
+
+
+    fs = m.fs
+
+    iscale.set_scaling_factor(fs.LP_EVAP.shell.heat, 1e-8)
+    iscale.set_scaling_factor(fs.LP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.LP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.LP_EVAP.area, 1e-4)
+    iscale.set_scaling_factor(fs.LP_EVAP.overall_heat_transfer_coefficient, 1e-2)
+
+    iscale.set_scaling_factor(fs.IP_EVAP.shell.heat, 1e-8)
+    iscale.set_scaling_factor(fs.IP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.IP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.IP_EVAP.area, 1e-4)
+    iscale.set_scaling_factor(fs.IP_EVAP.overall_heat_transfer_coefficient, 1e-2)
+
+    iscale.set_scaling_factor(fs.IP_pump.control_volume.work, 1e-6)
+    iscale.set_scaling_factor(fs.HP_pump.control_volume.work, 1e-7)
+
+    iscale.set_scaling_factor(fs.HP_EVAP.shell.heat, 1e-8)
+    iscale.set_scaling_factor(fs.HP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.HP_EVAP.tube.heat, 1e-8)
+    iscale.set_scaling_factor(fs.HP_EVAP.area, 1e-4)
+    iscale.set_scaling_factor(fs.HP_EVAP.overall_heat_transfer_coefficient, 1e-2)
 
     # Calculate calculated scaling factors
     iscale.calculate_scaling_factors(m)
 
 
+def tag_model(m):
+    """
+    Create to dictionaries. One is called tags with tags for keys and expressions
+    for values. The second is called tag_format with tags for keys and a
+    formatting string.  The formating string controls the number format and can
+    be used to add additional text, to report units for example. The two
+    dictionaries are returned, and also attached to the model.
+
+    Args:
+        m: (ConcreteModel) model to tag
+
+    Returns:
+        (dict) tags, (dict) tag_format
+    """
+    tags = {} # dict of with tag keys and expressions for their values
+    tag_format = {} # format string for the tags
+    def new_tag(name, expr, format):
+        # funcion to keep it more compact
+        tags[name] = expr
+        tag_format[name] = format
+    # Create a dict with Arc name keys and state block values
+    stream_states = ta.stream_states_dict(
+        ta.arcs_to_stream_dict(
+            m.fs,
+            descend_into=False,
+            additional={
+                "lp01": m.fs.LP_ECON.side_1_inlet,
+                "lp03": m.fs.Mixer1.Preheater,
+                "ip04": m.fs.IP_Splitter1.toNGPH,
+                "lp11": m.fs.LP_SH.side_1_outlet,
+                "hp11": m.fs.HP_SH4.side_1_outlet,
+                "ip10": m.fs.IP_SH3.side_1_outlet,
+                "ip11": m.fs.IP_Splitter2.inlet,
+                "ip15": m.fs.IP_Splitter2.Cold_reheat,
+                "ip13": m.fs.IP_Splitter2.toReclaimer,
+                "ip12": m.fs.IP_Splitter2.toEjector,
+                "ip14": m.fs.IP_Splitter2.toDryer,
+                "g30": m.fs.LP_ECON.side_2_outlet,
+                "g19": m.fs.HP_ECON3.side_2_outlet,}))
+    for i, s in stream_states.items(): # create the tags for steam quantities
+        new_tag(f"{i}_Fvol", expr=s.flow_vol, format="{:.1f} m^3/s")
+        new_tag(f"{i}_Fmol", expr=s.flow_mol/1000, format="{:.3f} kmol/s")
+        new_tag(f"{i}_F", expr=s.flow_mass, format="{:.3f} kg/s")
+        new_tag(f"{i}_P", expr=s.pressure/1000, format="{:.2f} kPa")
+        new_tag(f"{i}_T", expr=s.temperature, format="{:.2f} K")
+        try:
+            new_tag(f"{i}_H", expr=s.enth_mol/1000, format="{:.2f} kJ/mol")
+        except:
+            pass
+        try:
+            new_tag(f"{i}_X", expr=s.vapor_frac*100, format="{:.2f} %")
+        except:
+            pass
+        try:
+            for c in s.mole_frac_comp:
+                new_tag(f"{i}_y{c}", expr=s.mole_frac_comp[c]*100, format="{:.3f}%")
+        except:
+            pass
+    if hasattr(m, "tags"):
+        m.tags.update(tags)
+        m.tag_format.update(tag_format)
+    else:
+        m.tags = tags
+        m.tag_format = tag_format
+    return tags, tag_format
+
+
 def pfd_result(outfile, m):
     # Add tags and data parameters
-    stream_dict = ta.arcs_to_stream_dict(
-        m,
-        additional={
-            "BFW": m.fs.LP_ECON.side_1_inlet,
-            "NG_Preheater": m.fs.Mixer1.Preheater,
-            "ToNGPreheat": m.fs.IP_Splitter1.toNGPH,
-            "FlueGasIn": m.fs.HP_SH4.side_2_inlet,
-            "LP_steam": m.fs.LP_SH.side_1_outlet,
-            "HP_steam": m.fs.HP_SH4.side_1_outlet,
-            "cold_reheat": m.fs.IP_Splitter2.inlet,
-            "splitter_1": m.fs.IP_Splitter2.Cold_reheat,
-            "splitter_2": m.fs.IP_Splitter2.toReclaimer,
-            "splitter_3": m.fs.IP_Splitter2.toEjector,
-            "splitter_4": m.fs.IP_Splitter2.toDryer,
-            "FG_exit": m.fs.LP_ECON.side_2_outlet,
-            "2HPECON3_out_T": m.fs.HP_ECON3.side_2_outlet,
-        },
-        sort=True,
-    )
-    state_dict = ta.stream_states_dict(stream_dict, time_point=0)
-    m.data_tags = ta.tag_state_quantities(
-        blocks=state_dict,
-        attributes=(
-            "flow_mass",
-            "flow_mol",
-            "enth_mol",
-            "temperature",
-            "pressure",
-            ("flow_mol_comp", "O2"),
-            ("flow_mol_comp", "NO"),
-            ("flow_mol_comp", "N2"),
-            ("flow_mol_comp", "SO2"),
-            ("flow_mol_comp", "CO2"),
-            ("flow_mol_comp", "H2O"),
-        ),
-        labels=("_Fm", "_F", "_h", "_T", "_P", "_F[O2]", "_F[NO]",
-                "_F[N2]", "_F[SO2]", "_F[CO2]", "_F[H2O]"),
-    )
-    original_svg_file = os.path.join(this_file_dir(), "HRSG_PFD_v2.svg")
-    with open(original_svg_file, "r") as f:
-        s = svg_tag(svg=f, tags={"subtitle": "Initialized Model"})
-        s = svg_tag(svg=s, tags=m.data_tags, outfile=outfile)
+    template = os.path.join(this_file_dir(), "hrsg_template.svg")
+    with open(template, "r") as f:
+        svg_tag(
+            svg=f,
+            tags=m.tags,
+            outfile=outfile,
+            tag_format=m.tag_format)
 
 
 def print_results(m):
@@ -2027,9 +2088,11 @@ def print_results(m):
     m.fs.LP_ECON.side_2.properties_out[0].temperature.display()
 
 
-def get_model(init=True):
-    m = pyo.ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+def get_model(m=None, init=True):
+    if m is None:
+        m = pyo.ConcreteModel()
+    if not hasattr(m, "fs"):
+        m.fs = FlowsheetBlock(default={"dynamic": False})
     # add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
     m.fs.prop_gas = FlueGasParameterBlock()
@@ -2038,11 +2101,11 @@ def get_model(init=True):
     m = add_unit_models(m)
     # fixing unit design variables
     m = set_inputs(m)
-
-    init_fname = 'hrsg_init.json'
+    set_scaling_factors(m)
+    init_fname = 'hrsg_init.json.gz'
     if os.path.exists(init_fname):
         print('loading initial conditions')
-        ms.from_json(m, fname=init_fname)
+        ms.from_json(m, fname=init_fname, wts=ms.StoreSpec(suffix=False))
         m = set_arcs(m)
 
     else:
@@ -2066,7 +2129,7 @@ def get_model(init=True):
         solver.solve(m, tee=True)
         print('saving init file')
         ms.to_json(m, fname=init_fname)
-
+    tag_model(m)
     return m
 
 

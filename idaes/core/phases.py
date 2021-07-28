@@ -150,7 +150,7 @@ class VaporPhaseData(PhaseData):
         return True
 
 
-@declare_process_block_class("AqueousPhase", block_class=Phase)
+@declare_process_block_class("AqueousPhase", block_class=LiquidPhase)
 class AqueousPhaseData(LiquidPhaseData):
     # Special phase type for liquid phases involving electrolytes
     # This is used to determine if we need to do the more complex component
