@@ -1,6 +1,10 @@
 import pyomo.environ as pyo
 from collections import deque, OrderedDict
 import pandas as pd
+# from idaes.apps.grid_integration.tracker import Tracker
+import sys
+sys.path.append('../')
+from tracker import Tracker
 
 class ThermalGenerator:
 
@@ -536,6 +540,13 @@ if __name__ == "__main__":
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
-                                                horizon = 24, \
+                                                horizon = 4, \
                                                 generators = ["102_STEAM_3"], \
                                                 n_scenario = 1)
+
+    solver = pyo.SolverFactory('gurobi')
+
+    # make a tracker
+    thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
+                              n_tracking_hour = 1, \
+                              solver = solver)
