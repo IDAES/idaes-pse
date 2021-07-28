@@ -568,8 +568,7 @@ def print_HX_results(blk, exchanger_list):
     Tin_ = {}
     Tout_ = {}
     f_ = {}
-    Q_ = {}
-    
+    Q_ = {}  
 
     # Loop over heat exchangers
     for i in exchangerdict.keys():
@@ -577,7 +576,6 @@ def print_HX_results(blk, exchanger_list):
         Tout_[i] = value(exchangerdict[i].control_volume.properties_out[0].temperature)
         f_[i] = value(exchangerdict[i].control_volume.properties_out[0].flow_mol)
         Q_[i] = value(exchangerdict[i].control_volume.heat[0])
-        
         T_units = pyunits.get_units(exchangerdict[i].control_volume.properties_in[0].temperature)
         DG_units = pyunits.get_units(exchangerdict[i].heat_duty[0])
 
@@ -587,9 +585,9 @@ def print_HX_results(blk, exchanger_list):
     # Print Inlet Temperature, Outlet Temperature and Heat
     for i in exchangerdict.keys():
         print("Heat exchanger: ", exchangerdict[i])
-        print(f'Inlet T:{" "*3} {Tin_[i]:0.3f}, '+str(T_units))
-        print(f'Outlet T:{" "*2} {Tout_[i]:0.3f}, '+str(T_units))
-        print(f'Q:{" "*9} {Q_[i]:0.3f}, '+str(DG_units))
+        print(f'Inlet T: {" "*3} {Tin_[i] : 0.3f} {T_units}')
+        print(f'Outlet T: {" "*2} {Tout_[i] : 0.3f} {T_units}')
+        print(f'Q : {" "*9} {Q_[i]: 0.3f} {DG_units}')
 
 
 def unique(list1):
