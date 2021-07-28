@@ -313,7 +313,7 @@ class ThermalGenerator:
         # ramp up limits
         def ramp_up_fun(m,j,h,k):
             '''
-            j,h stand for unit, hour,scenario respectively.
+            j,h,k stand for unit, hour,scenario respectively.
             '''
             if h==0:
                 return m.P_T[j,h,k] <= m.pre_P_T[j] \
@@ -328,7 +328,7 @@ class ThermalGenerator:
         # ramp shut down limits
         def ramp_shut_dw_fun(m,j,h,k):
             '''
-            j,h stand for unit, hour,scenario respectively.
+            j,h,k stand for unit, hour,scenario respectively.
             '''
             if h==0:
                 return m.pre_P_T[j] <= m.Pmax[j]*m.on_off[j,h,k] + m.ramp_shut_dw[j] * m.shut_dw[j,h,k]
@@ -339,7 +339,7 @@ class ThermalGenerator:
         # ramp down limits
         def ramp_dw_fun(m,j,h,k):
             '''
-            j,h stand for unit, hour,scenario respectively.
+            j,h,k stand for unit, hour,scenario respectively.
             '''
             if h == 0:
                 return m.pre_P_T[j] - m.P_T[j,h,k] <= m.ramp_dw[j] * m.on_off[j,h,k]\
@@ -519,6 +519,18 @@ class ThermalGenerator:
         self.result_list.append(pd.concat(df_list))
 
         return
+
+    @property
+    def power_output(self):
+        return self.model.P_T
+
+    @property
+    def production_cost(self):
+        return self.model.tot_cost
+
+    @property
+    def indices(self):
+        return {self.model.UNITS: 'Generators', self.model.HOUR: 'Time', self.model.SCENARIOS: 'LMP Scenarios'}
 
 if __name__ == "__main__":
 

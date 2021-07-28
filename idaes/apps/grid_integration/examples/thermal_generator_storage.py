@@ -487,6 +487,18 @@ class ThermalGeneratorStorageIES:
 
         return
 
+    @property
+    def power_output(self):
+        return self.model.P_total
+
+    @property
+    def production_cost(self):
+        return self.model.tot_cost
+
+    @property
+    def indices(self):
+        return {self.model.UNITS: 'Generators', self.model.HOUR: 'Time', self.model.SCENARIOS: 'LMP Scenarios'}
+
 if __name__ == "__main__":
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
