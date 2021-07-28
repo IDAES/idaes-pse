@@ -128,7 +128,7 @@ def min_utility(blk, heating, cooling, DTmin, eps=1e-6,
 
     # Define expression for pinch candidate temperature
     def T_(blk, i):
-        return (pinch_streamsdict[i].control_volume.properties_in[0].temperature 
+        return (pinch_streamsdict[i].control_volume.properties_in[0].temperature
                 + dT[i])
     blk.T_ = Expression(pinch_streamsdict.keys(),
                         rule=T_,
@@ -401,7 +401,7 @@ def generate_curves(CD):
     # Plot values for cold streams
     plt.plot((Qcold + value(Qw)), Tcold, color="b",
              label="Cold Streams / Streams that are Heated")
-    plt.xlabel("Cumulative Process-Wide Heat Exchange [" + 
+    plt.xlabel("Cumulative Process-Wide Heat Exchange [" +
                str(CD.Q_unit) + "]", fontsize=18)
     plt.ylabel("Temperature [" + str(CD.T_unit) + "]", fontsize=18)
     plt.title('Composite Curves for minimum utilities', size=20)
@@ -569,12 +569,17 @@ def print_HX_results(blk, exchanger_list):
     Tout_ = {}
     f_ = {}
     Q_ = {}
+    
+
     # Loop over heat exchangers
     for i in exchangerdict.keys():
         Tin_[i] = value(exchangerdict[i].control_volume.properties_in[0].temperature)
         Tout_[i] = value(exchangerdict[i].control_volume.properties_out[0].temperature)
         f_[i] = value(exchangerdict[i].control_volume.properties_out[0].flow_mol)
         Q_[i] = value(exchangerdict[i].control_volume.heat[0])
+        
+        T_units = pyunits.get_units(exchangerdict[i].control_volume.properties_in[0].temperature)
+        DG_units = pyunits.get_units(exchangerdict[i].heat_duty[0])
 
     # Print the header
     print("Heat Exchanger Summary: ")
@@ -582,12 +587,9 @@ def print_HX_results(blk, exchanger_list):
     # Print Inlet Temperature, Outlet Temperature and Heat
     for i in exchangerdict.keys():
         print("Heat exchanger: ", exchangerdict[i])
-        print('{0:>{1}s}'.format("Inlet T: ", 16),
-              '{0:0.3f}'.format(Tin_[i], 3), end=' K\n')
-        print('{0:>{1}s}'.format("Outlet T: ", 16),
-              '{0:0.3f}'.format(Tout_[i], 3), end=' K\n')
-        print('{0:>{1}s}'.format("Q: ", 16),
-              '{0:0.3f}'.format(Q_[i], 3), end=' J/s\n')
+        print(f'Inlet T:{" "*3} {Tin_[i]:0.3f}, '+str(T_units))
+        print(f'Outlet T:{" "*2} {Tout_[i]:0.3f}, '+str(T_units))
+        print(f'Q:{" "*9} {Q_[i]:0.3f}, '+str(DG_units))
 
 
 def unique(list1):
