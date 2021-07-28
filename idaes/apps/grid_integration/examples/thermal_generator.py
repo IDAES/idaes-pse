@@ -525,8 +525,8 @@ class ThermalGenerator:
         return self.model.P_T
 
     @property
-    def production_cost(self):
-        return self.model.tot_cost
+    def total_cost(self):
+        return {self.model.tot_cost: 1}
 
     @property
     def indices(self):
