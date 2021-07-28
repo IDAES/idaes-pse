@@ -23,6 +23,7 @@ from pyomo.environ import (ConcreteModel,
                            log,
                            Set,
                            units as pyunits,
+                           value,
                            Var)
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -276,7 +277,7 @@ class TestStateBlockSymmetric(object):
 
         m.state = m.params.build_state_block([1])
 
-        # Need to set a vlue of T for checking expressions later
+        # Need to set a value of T for checking expressions later
         m.state[1].temperature.set_value(300)
 
         return m
@@ -832,3 +833,31 @@ class TestStateBlockSymmetric(object):
         assert ("Cl-", "OH-") not in model.state[1].Liq_tau
         assert ("OH-", "Cl-") not in model.state[1].Liq_tau
         assert ("OH-", "OH-") not in model.state[1].Liq_tau
+
+
+class TestProperties(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        m = ConcreteModel()
+        m.params = GenericParameterBlock(default=configuration)
+
+        m.state = m.params.build_state_block([1])
+
+        # Need to set a value of T for checking expressions later
+        m.state[1].temperature.set_value(300)
+
+        return m
+
+    @pytest.mark.unit
+    def test_pressure_osm_phase(self, model):
+        model.state[1].vol_mol_phase = Var(model.params.phase_list,
+                                           initialize=18e-6,
+                                           units=pyunits.m**3/pyunits.mol)
+
+        assert_units_equivalent(model.state[1].pressure_osm_phase["Liq"],
+                                pyunits.Pa)
+        assert len(model.state[1].pressure_osm_phase) == 1
+        assert pytest.approx(value(
+            -Constants.gas_constant*300*log(0.1670306)/18e-6),
+            rel=1e-6) == value(
+                model.state[1].pressure_osm_phase["Liq"])
