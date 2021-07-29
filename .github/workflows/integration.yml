@@ -146,6 +146,7 @@ jobs:
           install-target: -r requirements-dev.txt
       - name: Run pytest (integration)
         run: pytest -m integration
+
   examples:
     name: Run examples (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.os }}
