@@ -28,10 +28,12 @@ on:
 env:
   # default Python version to use for checks that do not require multiple versions
   DEFAULT_PYTHON_VERSION: '3.7'
+  IDAES_CONDA_ENV_NAME_DEV: idaes-pse-dev
 
 defaults:
   run:
-    shell: bash
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
 
 jobs:
   pytest:
@@ -52,9 +54,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/display-debug-info
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
         with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
@@ -72,9 +75,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
         with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Set up idaes
         uses: ./.github/actions/setup-idaes
@@ -93,9 +97,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
+      # as it doesn't need to run on Windows or use the setup-idaes local action,
+      # but we do it for consistency with the other jobs
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
         with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
       - name: Run pylint
         uses: ./.github/actions/pylint
