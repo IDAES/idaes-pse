@@ -7,6 +7,7 @@ runs:
     - name: Install pylint dependencies
       shell: bash -l {0}
       run: |
+        which python
         PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
         echo "::group::Output of pip install commands"
         $PIP_INSTALL --upgrade pip setuptools wheel
@@ -20,11 +21,15 @@ runs:
         echo "::group::Display pylint version"
         pip show pylint astroid
         echo "::endgroup::"
+    - name: Display Python version when running with default shell
+      shell: bash
+      run: which python
     - name: Run pylint (errors only)
       # bash custom options used here should allow the rest of the script to continue in case a command fails
       # (the default causes the step to fail immediately for any non-zero return code of intermediate commands)
       shell: bash -l {0}
       run: |
+        which python
         pylint_target_dir="idaes/"
         echo "::group::Real-time pylint log"
         pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
