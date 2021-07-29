@@ -17,7 +17,7 @@ runs:
       shell: bash -l {0}
       run: |
         echo '::group::Output of "conda install" command'
-        conda install --yes --quiet --update-all pip setuptools wheel
+        conda install --yes --quiet --update-all pip=21.2 setuptools wheel
         conda list
         echo '::endgroup::'
     - name: Install idaes and dependencies
