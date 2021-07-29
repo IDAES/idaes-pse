@@ -124,11 +124,8 @@ jobs:
       - name: Generate pylint report on failure
         if: failure()
         run: |
-          # render report
           base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
-          echo "::group::Rendered pylint report"
           python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
-          echo "::endgroup::"
       - name: Show PYLINT-TODO comments left in the codebase
         if: always()
         run: |
