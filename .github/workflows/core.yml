@@ -66,7 +66,7 @@ jobs:
       - name: Run pytest (not integration) with coverage
         run: |
           which python
-          pytest -m not integration --cov
+          pytest -m "not integration" --cov
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v1
   build-docs:
