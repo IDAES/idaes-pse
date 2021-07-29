@@ -64,10 +64,9 @@ jobs:
         with:
           install-target: -r requirements-dev.txt
       - name: Run pytest (not integration) with coverage
-        uses: ./.github/actions/pytest
-        with:
-          markexpr: not integration
-          extra-args: --cov
+        run: |
+          which python
+          pytest -m not integration --cov
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v1
   build-docs:
@@ -85,6 +84,10 @@ jobs:
         with:
           install-target: -r requirements-dev.txt
       - name: Build Sphinx docs
+        run: |
+          which python
+          cd docs/
+          python build.py
         uses: ./.github/actions/build-docs
       - name: Publish built docs
         uses: actions/upload-artifact@v2
