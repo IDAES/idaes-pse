@@ -97,6 +97,10 @@ jobs:
   pylint:
     name: pylint (errors only)
     runs-on: ubuntu-latest
+    env:
+      pylint_target_dir: idaes/
+      pylint_output_path: pylint.json
+      pylint_todo_sentinel: PYLINT-TODO
     steps:
       - uses: actions/checkout@v2
       # NOTE: using Conda instead of actions/setup-python in this job is not strictly necessary
@@ -107,5 +111,33 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup-idaes
+        with:
+          install-target: -r requirements-dev.txt
       - name: Run pylint
-        uses: ./.github/actions/pylint
+        run: |
+          echo "::group::Display pylint version"
+          pip show pylint astroid
+          echo "::endgroup::"
+          echo "::group::Real-time pylint log"
+          pylint --rcfile=./.pylint/pylintrc --disable=W,C,R,I --output-format=idaes_reporters.MultiReporter "$pylint_target_dir"
+          pylint_exit_status=$?
+          echo "::endgroup::"
+          echo "::warning ::pylint exit status: $pylint_exit_status"
+
+          # render report
+          base_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blame/$GITHUB_SHA"
+          echo "::group::Rendered pylint report"
+          python .pylint/render_report.py --base-url="$base_url" "$pylint_output_path"
+          echo "::endgroup::"
+
+          # show PYLINT-TODO left in the codebase
+          # use a bash array to save options containing quotes to a variable, then use the double-quoted array expansion "${arr[@]}"
+          grep_opts=( --recursive --include '*.py' --color=always --after-context=2 --line-number --initial-tab )
+
+          echo "::group::Show pylint \"$pylint_todo_sentinel\" sentinel comments in the codebase"
+          grep "$pylint_todo_sentinel" "${grep_opts[@]}" "$pylint_target_dir" || echo "No \"$pylint_todo_sentinel\" comments found in $pylint_target_dir"
+          echo "::endgroup::"
+
+          exit "$pylint_exit_status"
