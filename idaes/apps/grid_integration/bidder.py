@@ -8,64 +8,151 @@ import os
 from collections import deque, OrderedDict
 from itertools import combinations
 
-def get_data_given(df, bus=None, date=None, hour=None, generator=None, fuel_type=None):
+class Bidder:
 
-    '''
-    This function gets the data out of a pandas dataframe given one or more
-    options, e.g. time.
+    bidding_set_names = ['Time','LMP Scenarios']
 
-    Arguments:
-        df: the dataframe we are interested in
-        bus: the bus ID we want [int]/ the bus name we want [str]
-        date: the date we want [str]
-        hour: the hour we want [int]
-        generator: the generator ID [str]
-        fuel_type: generator fuel, e.g. Coal [str]
-    Returns:
-        df: a dataframe that has the information we specified.
-    '''
+    def __init__(self, bidding_model_object, solver):
 
-    # get data given bus id
-    if bus is not None:
-        # in the original rts-gmlc dataset there is a Bus ID col
-        if 'Bus ID' in df.columns:
-            df = df.loc[(df['Bus ID'] == bus)]
+        self.bidding_model_object = bidding_model_object
+        self.solver = solver
+        self.model = self.bidding_model_object.model
+        self.formulate_bidding_problem()
 
-        # in the prescient result data we have to extract bus id from other col
-        # e.g. gennerator name col
-        elif 'Generator' in df.columns:
-            # convert the type to str
-            bus = str(bus)
-            # find the rows that starts with the bus name
-            searchrows = df['Generator'].str.startswith(bus)
-            df = df.loc[searchrows,:]
+    def formulate_bidding_problem(self):
 
-        elif 'Bus' in df.columns:
-            df = df.loc[(df['Bus'] == bus)]
+        '''
+        Formulate the tracking optimization problem by adding necessary
+        parameters, constraints, and objective function.
 
-    # get data given date
-    if date is not None:
-        df = df.loc[(df['Date'] == date)]
+        Arguments:
+            None
 
-    # get data given hour
-    if hour is not None:
-        df = df.loc[(df['Hour'] == hour)]
+        Returns:
+            None
+        '''
 
-    # get data given hour
-    if generator is not None:
+        # get the sets needed for the tracking problem
+        self.bidding_set = self._get_bidding_sets()
 
-        # Similarly this is for Prescient result data
-        if 'Generator' in df.columns:
-            df = df.loc[(df['Generator'] == generator)]
-        # this is for rts-gmlc dataset
-        elif 'GEN UID' in df.columns:
-            df = df.loc[(df['GEN UID'] == generator)]
+        self._add_bidding_params()
+        self._add_bidding_constraints()
+        self._add_bidding_objective()
 
-    # get data given fuel
-    if fuel_type is not None:
-        df = df.loc[df['Fuel'] == fuel_type]
+        return
 
-    return df
+    def _get_tracking_sets(self):
+
+        '''
+        Get the necessary index sets for bidding, i.e., price scenarios and
+        time.
+
+        Arguments:
+            None
+
+        Returns:
+            bidding_set: a list that contains the necessary Pyomo set objects.
+        '''
+
+        bidding_set = []
+
+        model_sets = self.bidding_model_object.indices
+
+        for s, n in model_sets.items():
+            if n in self.bidding_set_names:
+                bidding_set.append(s)
+
+        return bidding_set
+
+    def _add_bidding_params(self):
+
+        '''
+        Add necessary bidding parameters to the model, i.e., market energy price.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
+        # add params to the model
+        self.model.energy_price = pyo.Param(*self.bidding_set, \
+                                              initialize = 0, \
+                                              mutable = True)
+        return
+
+    def _add_bidding_constraints(self):
+        pass
+
+    def _add_bidding_objective(self):
+
+        # declare an empty objective
+        self.model.obj = pyo.Objective(expr = 0, sense = pyo.maximize)
+
+        # unpack things
+        model_sets = self.tracking_model_object.indices
+        set_ls = list(model_sets.keys())
+
+        total_cost = self.tracking_model_object.total_cost
+        cost_ls = list(total_cost.keys())
+
+        def dfs_sum_costs(cost, set_idx, indices):
+
+            # traveled all the sets, and now we can add the constraint
+            if set_idx == len(set_ls):
+                weight = total_cost[cost]
+                self.model.obj.expr -= weight * cost[tuple(indices)]
+                return
+
+            for idx in set_ls[set_idx]:
+
+                indices.append(idx)
+                # recursion
+                dfs_sum_costs(cost, set_idx + 1, indices)
+                # backtrack
+                indices.pop()
+
+        def dfs_sum_revenue(set_idx, indices, bidding_indices):
+
+             # traveled all the sets, and now we can add the constraint
+             if set_idx == len(set_ls):
+                 self.model.obj.expr += power_output[tuple(indices)] * energy_price[tuple(bidding_indices)])
+                 return
+
+             for idx in set_ls[set_idx]:
+
+                 indices.append(idx)
+                 if model_sets[set_ls[set_idx]] in self.bidding_set_names:
+                     bidding_indices.append(idx)
+
+                 # recursion
+                 dfs_sum_revenue(set_idx + 1, indices, bidding_indices)
+
+                 # backtrack
+                 indices.pop()
+                 if model_sets[set_ls[set_idx]] in self.bidding_set_names:
+                     bidding_indices.pop()
+
+        for cost in cost_ls:
+            dfs_sum_costs(cost = cost, set_idx = 0, indices = [])
+        dfs_sum_revenue(set_idx = 0, indices = [])
+
+    def compute_bids(self, price_forecasts, date, hour):
+
+        # update the price forecasts
+        self._pass_price_forecasts(price_forecasts)
+        self.solver.solve(self.model,tee=True)
+        self.record_bids(date = date, hour = hour)
+
+        ## TODO: when to update bidding model??
+
+    def _pass_price_forecasts(self, price_forecasts):
+        pass
+
+    def record_bids(self, **kwargs):
+        pass
+
 
 class DAM_thermal_bidding:
 
