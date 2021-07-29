@@ -88,7 +88,6 @@ jobs:
           which python
           cd docs/
           python build.py
-        uses: ./.github/actions/build-docs
       - name: Publish built docs
         uses: actions/upload-artifact@v2
         with:
