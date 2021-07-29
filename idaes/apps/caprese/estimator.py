@@ -145,6 +145,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         self._add_MHE_vars_to_category_dict()
         
+        CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
+        CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
+        CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
         super(_EstimatorBlockData, self)._construct()
         if VC.ACTUALMEASUREMENT in self.category_dict:
             self.actualmeasurement_vars = category_dict[VC.ACTUALMEASUREMENT]
@@ -158,6 +161,12 @@ class _EstimatorBlockData(_DynamicBlockData):
         self._add_measurement_constraint()
         self._add_disturbance_to_differential_cons()
         # at this stage, we don't need to add new constraints to con_categ_dict
+        
+        # Pop the mhe categories. This is important if any plant or controller is
+        # defined afterward.
+        CATEGORY_TYPE_MAP.pop(VC.ACTUALMEASUREMENT)
+        CATEGORY_TYPE_MAP.pop(VC.MEASUREMENTERROR)
+        CATEGORY_TYPE_MAP.pop(VC.MODELDISTURBANCE)
         
         #Set initial values for actual measurements
         # for ind in self.MEASUREMENT_SET:
@@ -323,8 +332,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                 newvars.append(Reference(varlist[0], ctype=ctype))
             self.category_dict[category] = newvars
 
-            
-            
+
     def _add_mea_moddis_componentmap(self):
         '''Add component map for:
             1. diffvar @ t0 --> model disturbance var

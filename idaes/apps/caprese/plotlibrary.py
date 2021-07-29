@@ -18,7 +18,6 @@ from pyomo.environ import (
     ComponentUID,
     Reference,
     )
-from pyomo.util.slices import slice_component_along_sets
 
 __author__ = "Kuan-Han Lin"
 
@@ -40,12 +39,15 @@ class NMPC_PlotLibrary(object):
             controller_dataframe = self.get_controller_dataframe()
         
         if varslist is None:
-            raise RuntimeError("No specific differential variable is declared."
-                               "Please declare some differential variables for plotting.")
+            raise RuntimeError("No specific state is declared. "
+                               "Please declare some states for plotting.")
         
         for ind, var in enumerate(varslist):
             str_cuid = str(ComponentUID(var.referent))
             plant_xaxis = plant_dataframe.index
+            if str_cuid not in plant_dataframe.columns:
+                print("Given state ", var.name, " is not saved in the dataframe. ")
+                continue
             real_state = plant_dataframe[str_cuid]
             controller_xaxis = controller_dataframe.index
             state_setpoint = controller_dataframe[str_cuid + "_setpoint"]

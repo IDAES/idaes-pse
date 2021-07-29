@@ -105,9 +105,9 @@ class _DynamicBlockData(_BlockData):
             self.already_categorized_for_MHE:
             category_dict = self.category_dict #local variable is used in the rest of this function
             
-            CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
-            CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
-            CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
+            # CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
+            # CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
+            # CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
             pass
 
         # TODO: Give the user the option to provide their own

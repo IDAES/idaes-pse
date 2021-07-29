@@ -35,6 +35,20 @@ __author__ = "Robert Parker and Kuan-Han Lin"
 
 
 def empty_dataframe_from_variables(variables, rename_map=None):
+    '''
+    This function creates a pandas dataframe with variables in columns.
+
+    Parameters
+    ----------
+    variables : list of variables of interest
+    rename_map : dictionary or componentmap that maps the variable to a 
+                    specific name string.
+        
+    Returns
+    -------
+    dataframe : pandas dataframe
+
+    '''
     if rename_map is None:
         # Sometimes we construct a variable with a programatically
         # generated name that is not that meaningful to th user, e.g.
@@ -46,7 +60,8 @@ def empty_dataframe_from_variables(variables, rename_map=None):
     var_dict["iteration"] = []
     for var in variables:
         # TODO: In this case, do we need to make sure we have the
-        # same indexing sets?
+        # same indexing sets? 
+        # KHL:I think we can leave the check alone here and do it when adding values. 
         #
         #idx_set = var.index_set()
         #set_hash = hash(tuple(idx_set))
@@ -65,7 +80,7 @@ def empty_dataframe_from_variables(variables, rename_map=None):
                 key = str(ComponentUID(var))
         var_dict[key] = []
         dataframe = pd.DataFrame(var_dict)
-        # Change the type of iteration column to integer
+        # Change the type of iteration column from float to integer
         dataframe["iteration"] = dataframe["iteration"].astype(int)
     return dataframe
 
@@ -79,6 +94,21 @@ def add_variable_values_to_dataframe(
         initial_time=None,
         time_map=None,
         ):
+    '''
+    This function appends data to the dataframe. 
+
+    Parameters
+    ----------
+    dataframe : pandas dataframe that we want to append the data to.
+    variables : list of variables of interest.
+    iteration : current iteration.
+    time_subset : time indices of interset in the variables.
+    rename_map : dictionary or componentmap that maps the variable to a 
+                    specific name string.
+    initial_time : initial time for this data saving process.
+    time_map : map the time in time_subset to real time points
+    '''
+    
     if rename_map is None:
         rename_map = ComponentMap()
     
@@ -118,27 +148,49 @@ def add_variable_values_to_dataframe(
         df_map[key] = [var[t].value for t in time_subset] # Values to append for each variable
 
     if time_map:
-        time_points = time_map.values()
+        time_points = [time_map[t] for t in time_subset]
     else:
         time_points = [initial_time + t for t in time_subset]
+        
     df = pd.DataFrame(df_map, index=time_points)
     
     return dataframe.append(df)
 
+
 def add_setpoint_column_into_dataframe(dataframe, variables):
+    '''
+    This function adds additional columns to save the setpoint of states for NMPC 
+    right after the dataframe is constructed.
+    
+    parameters
+    -------------
+    dataframe: constructed dataframe
+    variables: list of variables that their setpoints will be saved in the dataframe
+    '''
+    
     for var in variables:
         column_name = str(ComponentUID(var.referent)) + "_setpoint"
         dataframe[column_name] = []
     return dataframe
 
-def add_variable_setpoints_to_dataframe(dataframe, variables, time_subset, map_for_user_given_vars = None):
+def add_variable_setpoints_to_dataframe(dataframe, 
+                                        variables, 
+                                        time_subset, 
+                                        map_for_user_given_vars = None):
+    '''
+    Save the setpoints for states of interest in nmpc's dataframe.
+    '''
+    
     for var in variables:
         column_name = str(ComponentUID(var.referent)) + "_setpoint"
+        # Get column index for "iat", which is used later
         column_ind = dataframe.columns.get_loc(column_name)
         start_row_ind = len(dataframe.index) - len(time_subset)
         for pt in range(len(time_subset)):
             row_ind = start_row_ind + pt
             if var in map_for_user_given_vars:
+                # User given variables are not nmpc_var, so they don't have setpoint attribute.
+                # User a componentmap to get corresponding nmpc_var.
                 dataframe.iat[row_ind, column_ind] = map_for_user_given_vars[var].setpoint
             else:
                 dataframe.iat[row_ind, column_ind] = var.setpoint
@@ -148,28 +200,27 @@ def add_variable_setpoints_to_dataframe(dataframe, variables, time_subset, map_f
 class PlantDataManager(object):
     def __init__(self, 
                  plantblock,
-                 states_of_interest = [],
-                 inputs_of_interest = []):
+                 user_interested_states = [],
+                 user_interested_inputs = []):
                 
-        # vardatamap = self.plantblock.vardata_map
-        # t0 = self.plantblock.time.first()
-        if states_of_interest != []:
-            cuid_states = [ComponentUID(var.referent) for var in states_of_interest]
-            self.plant_states_of_interest = [cuid.find_component_on(plantblock)
-                                             for cuid in cuid_states]
+        # Make sure given variables are all in plantblock
+        if user_interested_states != []:
+            cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
+            self.plant_user_interested_states = [cuid.find_component_on(plantblock)
+                                                 for cuid in cuid_states]
         else:
-            self.plant_states_of_interest = []
+            self.plant_user_interested_states = []
             
-        if inputs_of_interest != []:
-            cuid_inputs = [ComponentUID(var.referent) for var in inputs_of_interest]
-            self.plant_inputs_of_interest = [cuid.find_component_on(plantblock)
-                                             for cuid in cuid_inputs]
+        if user_interested_inputs != []:
+            cuid_inputs = [ComponentUID(var.referent) for var in user_interested_inputs]
+            self.plant_user_interested_inputs = [cuid.find_component_on(plantblock)
+                                                 for cuid in cuid_inputs]
         else:
-            self.plant_inputs_of_interest = []
+            self.plant_user_interested_inputs = []
         
         self.plantblock = plantblock
-        self.plant_vars_of_interest = self.plant_states_of_interest + \
-                                        self.plant_inputs_of_interest + \
+        self.plant_vars_of_interest = self.plant_user_interested_states + \
+                                        self.plant_user_interested_inputs + \
                                             self.plantblock.differential_vars + \
                                                 self.plantblock.input_vars
 
@@ -179,7 +230,7 @@ class PlantDataManager(object):
         return self.plant_df
         
     def save_initial_plant_data(self):
-        plant_states_to_save = self.plant_states_of_interest + self.plantblock.differential_vars
+        plant_states_to_save = self.plant_user_interested_states + self.plantblock.differential_vars
         self.plant_df = add_variable_values_to_dataframe(self.plant_df,
                                                          plant_states_to_save, #no inputs
                                                          iteration = 0,
@@ -198,38 +249,45 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
     def __init__(self, 
                  plantblock, 
                  controllerblock, 
-                 states_of_interest = [],
-                 inputs_of_interest = []):
+                 user_interested_states = [],
+                 user_interested_inputs = []):
         super(ControllerDataManager, self).__init__(plantblock, 
-                                                   states_of_interest, 
-                                                   inputs_of_interest,)
+                                                    user_interested_states, 
+                                                    user_interested_inputs,)
         
         self.controllerblock = controllerblock
         # Convert vars in plant to vars in controller
-        if states_of_interest != []:
-            cuid_states = [ComponentUID(var.referent) for var in states_of_interest]
-            controller_states_of_interest = [cuid.find_component_on(controllerblock)
-                                             for cuid in cuid_states]
+        if user_interested_states != []:
+            cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
+            self.controller_user_interested_states = [cuid.find_component_on(controllerblock)
+                                                      for cuid in cuid_states]
         else:
-            controller_states_of_interest = []
+            self.controller_user_interested_states = []
             
-        if inputs_of_interest != []:
-            cuid_inputs = [ComponentUID(var.referent) for var in inputs_of_interest]
-            controller_inputs_of_interest = [cuid.find_component_on(controllerblock)
-                                             for cuid in cuid_inputs]
+        if user_interested_inputs != []:
+            cuid_inputs = [ComponentUID(var.referent) for var in user_interested_inputs]
+            self.controller_user_interested_inputs = [cuid.find_component_on(controllerblock)
+                                                      for cuid in cuid_inputs]
         else:
-            controller_inputs_of_interest = []
+            self.controller_user_interested_inputs = []
         
         
-        self.controller_vars_of_interest = controller_inputs_of_interest + controllerblock.input_vars   
+        self.controller_vars_of_interest = self.controller_user_interested_inputs + \
+                                                controllerblock.input_vars   
         self.controller_df = empty_dataframe_from_variables(self.controller_vars_of_interest)
         
-        self.states_need_setpoints = controller_states_of_interest + controllerblock.differential_vars
+        self.states_need_setpoints = self.controller_user_interested_states + \
+                                        controllerblock.differential_vars
         self.controller_df = add_setpoint_column_into_dataframe(self.controller_df, 
                                                                 self.states_need_setpoints)
+        
+        # Important!!!
+        # User given variables are not nmpc_var, so they don't have setpoitn attribute.
+        # Create this componentmap to map the given vars to corresponding nmpc_vars.
         vardata_map = self.controllerblock.vardata_map
         t0 = self.controllerblock.time.first()
-        self.user_given_vars_map_nmpcvar = ComponentMap((var, vardata_map[var[t0]]) for var in controller_states_of_interest)
+        self.user_given_vars_map_nmpcvar = ComponentMap((var, vardata_map[var[t0]]) 
+                                                        for var in self.controller_user_interested_states)
 
   
     def get_controller_dataframe(self):
@@ -255,18 +313,19 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
     def __init__(self, 
                  plantblock, 
                  estimatorblock, 
-                 states_of_interest = [],):
+                 user_interested_states = [],):
         super(EstimatorDataManager, self).__init__(plantblock, 
-                                                   states_of_interest,)
+                                                   user_interested_states,)
         
         self.estimatorblock = estimatorblock
-        # Convert vars in plant to vars in controller
-        if states_of_interest != []:
-            cuid_states = [ComponentUID(var.referent) for var in states_of_interest]
-            estimator_states_of_interest = [cuid.find_component_on(estimatorblock)
-                                            for cuid in cuid_states]
+        # Convert vars in plant to vars in estimator
+        if user_interested_states != []:
+            cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
+            self.estimator_user_interested_states = [cuid.find_component_on(estimatorblock)
+                                                     for cuid in cuid_states]
             
-        self.estimator_vars_of_interest = estimator_states_of_interest + estimatorblock.differential_vars
+        self.estimator_vars_of_interest = self.estimator_user_interested_states + \
+                                                estimatorblock.differential_vars
         self.estimator_df = empty_dataframe_from_variables(self.estimator_vars_of_interest)
         
     def get_estimator_dataframe(self):
@@ -275,145 +334,10 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
     def save_estimator_data(self, iteration):
         time = self.estimatorblock.time
         t_last = time.last()
+        # Estimation starts from the very first sample time.
         time_map = OrderedDict([(t_last, (iteration+1)*self.estimatorblock.sample_time),])
         self.estimator_df = add_variable_values_to_dataframe(self.estimator_df,
                                                              self.estimator_vars_of_interest,
                                                              iteration,
                                                              time_subset = [t_last],
                                                              time_map = time_map,)
-        
-        
-#-----------------------------------------------------------------------------------------------------
-def get_cuid_from_nmpcvar_list(var_list, cs):
-    cuid_list = []
-    str_list = []
-    for var in var_list:
-        t0 = cs.first()
-        sliced_set = slice_component_along_sets(var[cs.first()], (cs,))
-        cuid = ComponentUID(sliced_set)
-        cuid_list.append(cuid)
-        str_list.append(str(cuid))
-    return cuid_list, str_list
-
-
-class DynamicDataManger(object):
-    def __init__(self):
-        diffvar_cuid_list, diffvar_str_list = get_cuid_from_nmpcvar_list(self.category_dict[VC.DIFFERENTIAL],
-                                                                         self.time)
-        inputvar_cuid_list, inputvar_str_list = get_cuid_from_nmpcvar_list(self.category_dict[VC.INPUT],
-                                                                           self.time)
-        meavar_cuid_list, meavar_str_list = get_cuid_from_nmpcvar_list(self.measurement_vars,
-                                                                       self.time)
-        self.diffvar_cuid = diffvar_cuid_list
-        self.diffvar_str = diffvar_str_list
-        self.inputvar_cuid = inputvar_cuid_list
-        self.inputvar_str = inputvar_str_list
-        self.meavar_cuid = meavar_cuid_list
-        self.meavar_str = meavar_str_list
-        
-    def save_data_in_dataframe(self, dynamic_data):
-        rowind = len(self.dataframe.index)
-        curr_time = rowind * self.sample_time
-        curr_data = [curr_time] + dynamic_data
-        self.dataframe.loc[rowind] = curr_data
-        
-        
-# class PlantDataManger(DynamicDataManger):
-#     def __init__(self):
-#         print("Save plant states and control inputs in plant's attribute 'dataframe'")
-        
-#     def construct_plant_dataframe(self):
-#         super(PlantDataManger, self).__init__()
-
-#         columns = ["time"] + self.diffvar_str + self.inputvar_str
-#         self.dataframe = pd.DataFrame(columns = columns)
-        
-#     def initialize_plant_dataframe(self, skip_t0 = False):
-#         self.construct_plant_dataframe()
-        
-#         if not skip_t0:
-#             t0 = self.time.first()
-#             diffvar_list = [self.DIFFERENTIAL_BLOCK[bind].var[t0].value 
-#                             for bind in self.DIFFERENTIAL_SET]
-#             inputvar_list = [np.nan for var in range(len(self.INPUT_SET))]
-#             row0 = [t0] + diffvar_list + inputvar_list
-            
-#             rowind = len(self.dataframe.index)
-#             self.dataframe.loc[rowind] = row0
-        
-#     def record_plant_data(self):
-#         t_sp = self.sample_points[1]
-#         inputvar_list = [self.INPUT_BLOCK[bind].var[t_sp].value
-#                          for bind in self.INPUT_SET]
-#         diffvar_list = [self.DIFFERENTIAL_BLOCK[bind].var[t_sp].value 
-#                         for bind in self.DIFFERENTIAL_SET]
-#         plant_data = diffvar_list + inputvar_list
-#         self.save_data_in_dataframe(plant_data)
-    
-    
-# class ControllerDataManger(DynamicDataManger):
-#     def __init__(self):
-#         print("Save initial states, setpoints, and control inputs in controller's attribute 'dataframe'")
-        
-#     def construct_controller_dataframe(self):
-#         super(ControllerDataManger, self).__init__()
-        
-#         diffvar_ic_columns = [item+"_ic" for item in self.diffvar_str]
-#         diffvar_setpoint_columns = [item+"_setpoint" for item in self.diffvar_str]
-        
-#         columns = ["time"] + diffvar_ic_columns +  diffvar_setpoint_columns + self.inputvar_str
-#         self.dataframe = pd.DataFrame(columns = columns)
-        
-#     def initialize_controller_dataframe(self, skip_t0 = False):
-#         self.construct_controller_dataframe()
-        
-#         if not skip_t0:
-#             row0 = [np.nan for ind in range(len(self.dataframe.columns))]
-#             rowind = len(self.dataframe.index)
-#             self.dataframe.loc[rowind] = row0
-        
-#     def record_controller_data(self):
-#         t0 = self.time.first()
-#         t_sp = self.sample_points[1]
-        
-#         diffvar_ic_list = [self.DIFFERENTIAL_BLOCK[bind].var[t0].value
-#                            for bind in self.DIFFERENTIAL_SET]
-#         diffvar_sp_list = [self.DIFFERENTIAL_BLOCK[bind].var.setpoint
-#                            for bind in self.DIFFERENTIAL_SET]
-#         inputvar_list = [self.INPUT_BLOCK[bind].var[t_sp].value
-#                          for bind in self.INPUT_SET]
-#         nmpc_data = diffvar_ic_list + diffvar_sp_list + inputvar_list
-#         self.save_data_in_dataframe(nmpc_data)
-        
-    
-# class EstimatorDataManger(DynamicDataManger):
-#     def __init__(self):
-#         print("Save estimated states and actual measurements in estimator's attribute 'dataframe'")
-        
-#     def construct_estimator_dataframe(self):
-#         super(EstimatorDataManger, self).__init__()
-
-#         actualmeas_columns = [item+"_actualmeas" for item in self.meavar_str]
-        
-#         columns = ["time"] + self.diffvar_str + actualmeas_columns
-#         self.dataframe = pd.DataFrame(columns = columns)
-        
-#     def initialize_estimator_dataframe(self, skip_t0 = False):
-#         self.construct_estimator_dataframe()
-        
-#         if not skip_t0:
-#             row0 = [np.nan for ind in range(len(self.dataframe.columns))]
-#             rowind = len(self.dataframe.index)
-#             self.dataframe.loc[rowind] = row0
-        
-#     def record_estimator_data(self):
-#         tlast = self.time.last()
-        
-#         diffvar_tlast_list = [self.DIFFERENTIAL_BLOCK[bind].var[tlast].value
-#                              for bind in self.DIFFERENTIAL_SET]
-#         actualmeavar_tlast_list = [self.ACTUALMEASUREMENT_BLOCK[bind].var[tlast].value
-#                                   for bind in self.ACTUALMEASUREMENT_SET]
-#         mhe_data = diffvar_tlast_list + actualmeavar_tlast_list
-#         self.save_data_in_dataframe(mhe_data)
-        
-        
