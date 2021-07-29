@@ -5,7 +5,7 @@ runs:
   using: "composite"
   steps:
     - name: Install pylint dependencies
-      shell: bash
+      shell: bash -l {0}
       run: |
         PIP_INSTALL="pip --no-cache-dir install --progress-bar off"
         echo "::group::Output of pip install commands"
@@ -18,8 +18,9 @@ runs:
         pip show pylint astroid
         echo "::endgroup::"
     - name: Run pylint (errors only)
-      # use custom options for bash since the default causes the step to fail immediately for any non-zero return code of intermediate commands
-      shell: bash --noprofile --norc {0}
+      # bash custom options used here should allow the rest of the script to continue in case a command fails
+      # (the default causes the step to fail immediately for any non-zero return code of intermediate commands)
+      shell: bash -l {0}
       run: |
         pylint_target_dir="idaes/"
         echo "::group::Real-time pylint log"
