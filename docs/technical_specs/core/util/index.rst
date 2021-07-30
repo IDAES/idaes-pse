@@ -3,7 +3,7 @@
 
 .. toctree::
     :maxdepth: 1
-    
+
     dyn_utils
     homotopy
     initialization
@@ -12,6 +12,6 @@
     model_statistics
     phase_equilibria
     scaling
-    tables    
+    tables
     unit_costing
-
+    utility_minimization

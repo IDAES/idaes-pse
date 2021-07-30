@@ -39,8 +39,10 @@ known_binary_platform = {
     "auto":"Auto-select windows, darwin or linux",
     "windows":"Microsoft Windows (built on verion 1909)",
     "darwin": "OSX (currently not available)",
-    "linux": f"Linux (auto select distribution or fall back on "
-        f"{binary_platform_map['linux']})",
+    "linux": (
+            f"Linux (auto select distribution or fall back on "
+            f"{binary_platform_map['linux']})"
+        ),
     "centos7": "CentOS 7",
     "centos8": "CentOS 8",
     "rhel7": "Red Hat Enterprise Linux 7",
