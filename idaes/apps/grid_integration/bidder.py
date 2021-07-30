@@ -10,7 +10,7 @@ from itertools import combinations
 
 class Bidder:
 
-    bidding_set_names = ['Time','LMP Scenarios']
+    bidding_set_names = ['Time','LMP Scenarios','Generators']
 
     def __init__(self, bidding_model_object, solver):
 
@@ -18,6 +18,8 @@ class Bidder:
         self.solver = solver
         self.model = self.bidding_model_object.model
         self.formulate_bidding_problem()
+
+        self.bids_result_list = []
 
     def formulate_bidding_problem(self):
 
@@ -209,15 +211,188 @@ class Bidder:
         # update the price forecasts
         self._pass_price_forecasts(price_forecasts)
         self.solver.solve(self.model,tee=True)
-        self.record_bids(date = date, hour = hour)
+        bids = self._assemble_bids()
+        self.record_bids(bids, date = date, hour = hour)
 
         ## TODO: when to update bidding model??
 
-    def _pass_price_forecasts(self, price_forecasts):
-        pass
+        return bids
 
-    def record_bids(self, **kwargs):
-        pass
+    def _pass_price_forecasts(self, price_forecasts):
+
+        model_sets = self.bidding_model_object.indices
+        energy_price = self.model.energy_price
+
+        aux_dict = {'Generators': None, 'Time': None, 'LMP Scenarios': None}
+
+        for idx1 in self.bidding_set[0]:
+            for idx2 in self.bidding_set[1]:
+                for idx3 in self.bidding_set[2]:
+
+                    aux_dict[model_sets[self.bidding_set[0]]] = idx1
+                    aux_dict[model_sets[self.bidding_set[1]]] = idx2
+                    aux_dict[model_sets[self.bidding_set[2]]] = idx3
+
+                    energy_price[idx1,idx2,idx3] = price_forecasts[aux_dict['Generators']][aux_dict['LMP Scenarios']][aux_dict['Time']]
+
+        return
+
+    def _assemble_bids(self):
+
+        '''
+        This methods extract the bids out of the stochastic programming model and
+        organize them.
+
+        Arguments:
+
+        Returns:
+            bids: the bid we computed. It is a dictionary that has this structure
+            {t: {gen:{power: cost}}}.
+        '''
+
+        model_sets = self.bidding_model_object.indices
+        model_sets_inverse = {}
+        for s, n in model_sets.items():
+            model_sets_inverse[n] = s
+
+        # unpack things
+        model_sets = self.bidding_model_object.indices
+        set_ls = list(model_sets.keys())
+
+        power_output = self.bidding_model_object.power_output
+        energy_price = self.model.energy_price
+
+        bids = {}
+        def dfs_extract_bids(set_idx, indices, bidding_indices, t, gen):
+
+            # traveled all the sets, and now we can add the objective
+            if set_idx == len(set_ls):
+                power = round(pyo.value(power_output[tuple(indices)]),2)
+                marginal_cost = round(pyo.value(energy_price[tuple(bidding_indices)]),2)
+
+                if t not in bids:
+                    bids[t] = {}
+
+                if gen not in bids[t]:
+                    bids[t][gen] = {}
+
+                # add without duplicate
+                if power in bids[t][gen]:
+                    bids[t][gen][power] = min(bids[t][gen][power], marginal_cost)
+                else:
+                    bids[t][gen][power] = marginal_cost
+
+                return
+
+            for idx in set_ls[set_idx]:
+
+                if model_sets[set_ls[set_idx]] == 'Time':
+                    t = idx
+                if model_sets[set_ls[set_idx]] == 'Generators':
+                    gen = idx
+
+                indices.append(idx)
+                if model_sets[set_ls[set_idx]] in self.bidding_set_names:
+                    bidding_indices.append(idx)
+
+                # recursion
+                dfs_extract_bids(set_idx + 1, indices, bidding_indices, t, gen)
+
+                # backtrack
+                indices.pop()
+                if model_sets[set_ls[set_idx]] in self.bidding_set_names:
+                    bidding_indices.pop()
+
+        dfs_extract_bids(set_idx = 0, \
+                         indices = [], \
+                         bidding_indices = [], \
+                         t = None,\
+                         gen = None)
+
+        for t in model_sets_inverse['Time']:
+            for gen in model_sets_inverse['Generators']:
+
+                # make sure the orignal points in the bids
+                for power, marginal_cost in self.default_bids[gen].items():
+                    if power not in bids[t][gen]:
+                        bids[t][gen][power] = marginal_cost
+
+                pmin = self.bidding_model_object.pmin[gen]
+
+                # sort the curves by power
+                temp_bids = OrderedDict(sorted(temp_bids.items()))
+
+                # make sure the curve is nondecreasing
+                pre_power = pmin
+                for power, marginal_cost in temp_bids.items():
+
+                    # ignore pmin, because min load cost is special
+                    if pre_power == pmin:
+                        pre_power = power
+                        continue
+                    bids[t][gen][power] = max(bids[t][gen][power],bids[t][gen][pre_power])
+
+                # calculate the actual cost
+                pre_power = 0
+                pre_cost = 0
+                for power, marginal_cost in bids[t][gen].items():
+
+                    delta_p = power - pre_power
+                    bids[t][gen][power] = pre_cost + marginal_cost * delta_p
+                    pre_power = power
+                    pre_cost += marginal_cost * delta_p
+
+        return bids
+
+    def record_bids(self, bids, date, hour, **kwargs):
+
+        '''
+        This function records the bids we computed for the given date into a
+        DataFrame. This DataFrame has the following columns: gen, date, hour,
+        power 1, ..., power n, price 1, ..., price n. And concatenate the
+        DataFrame into a class property 'bids_result_list'.
+
+        Arguments:
+            date: the date we bid into
+            bids: the obtained bids for this date.
+
+        Returns:
+            None
+
+        '''
+
+        df_list = []
+        for t in bids:
+            for gen in bids[t]:
+
+                result_dict = {}
+                result_dict['Generator'] = gen
+                result_dict['Date'] = date
+                result_dict['Hour'] = t
+
+                pair_cnt = 0
+                for power, cost in bids[t][gen].items():
+                    result_dict['Power {} [MW]'.format(pair_cnt)] = power
+                    result_dict['Cost {} [$]'.format(pair_cnt)] = cost
+
+                    pair_cnt += 1
+
+                # place holder, in case different len of bids
+                while pair_cnt < self.n_scenario:
+
+                    result_dict['Power {} [MW]'.format(pair_cnt)] = None
+                    result_dict['Cost {} [$]'.format(pair_cnt)] = None
+
+                    pair_cnt += 1
+
+                result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
+                df_list.append(result_df.T)
+
+        # save the result to object property
+        # wait to be written when simulation ends
+        self.bids_result_list.append(pd.concat(df_list))
+
+        return
 
 
 class DAM_thermal_bidding:
