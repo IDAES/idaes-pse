@@ -549,6 +549,14 @@ class ThermalGenerator:
     def indices(self):
         return {self.model.UNITS: 'Generators', self.model.HOUR: 'Time', self.model.SCENARIOS: 'LMP Scenarios'}
 
+    @property
+    def default_bids(self):
+        return {gen: self.model_data['Original Marginal Cost Curve'][gen] for gen in self.model.UNITS}
+
+    @property
+    def pmin(self):
+        return {gen: self.model_data['Pmin'][gen] for gen in self.model.UNITS}
+
 if __name__ == "__main__":
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
