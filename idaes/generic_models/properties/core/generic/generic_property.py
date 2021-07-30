@@ -20,6 +20,7 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Constraint,
+                           exp,
                            Expression,
                            Set,
                            Param,
@@ -894,7 +895,11 @@ class GenericParameterData(PhysicalParameterBlock):
              'temperature_dew': {'method': '_temperature_dew'},
              'visc_d_phase': {'method': '_visc_d_phase'},
              'vol_mol_phase': {'method': '_vol_mol_phase'},
-             'dh_rxn': {'method': '_dh_rxn'}})
+             'dh_rxn': {'method': '_dh_rxn'},
+             'log_conc_mol_phase_comp': {
+                 'method': '_log_conc_mol_phase_comp'},
+             'log_mole_frac_phase_comp': {
+                 'method': '_log_mole_frac_phase_comp'}})
 
 
 class _GenericStateBlock(StateBlock):
@@ -1718,6 +1723,31 @@ class GenericStateBlockData(StateBlockData):
                     iscale.set_scaling_factor(v, sf_mf[i])
             self.params.config.bubble_dew_method.scale_pressure_dew(
                 self, overwrite=False)
+
+        if self.is_property_constructed("log_conc_mol_phase_comp"):
+            for (p, j), v in self.log_conc_mole_phase_comp_eq.items():
+                sf_dens_mol = iscale.get_scaling_factor(
+                    self.dens_mol_phase[p],
+                    default=55e3,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp")
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_dens_mol*sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_mole_frac_phase_comp"):
+            for (p, j), v in self.log_mole_frac_phase_comp_eq.items():
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_mole_frac_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_x, overwrite=False)
 
     def components_in_phase(self, phase):
         """
@@ -2699,6 +2729,47 @@ class GenericStateBlockData(StateBlockData):
             self.params.inherent_reaction_idx,
             doc="Specific heat of reaction for inherent reactions",
             rule=dh_rule)
+
+    def _log_conc_mol_phase_comp(self):
+        try:
+            self.log_conc_mol_phase_comp = Var(
+                self.phase_component_set,
+                initialize=1,
+                units=pyunits.dimensionless,
+                doc="Log of molar concentration of component by phase")
+
+            def rule_log_conc_mol_phase_comp(b, p, j):
+                return exp(b.log_conc_mol_phase_comp[p, j]) == (
+                    b.conc_mol_phase_comp[p, j] /
+                    pyunits.get_units(b.conc_mol_phase_comp[p, j]))
+            self.log_conc_mol_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_conc_mol_phase_comp,
+                doc="Constraint for log of molar concentration")
+        except AttributeError:
+            self.del_component(self.log_conc_mol_phase_comp)
+            self.del_component(self.log_conc_mol_phase_comp_eq)
+            raise
+
+    def _log_mole_frac_phase_comp(self):
+        try:
+            self.log_mole_frac_phase_comp = Var(
+                self.phase_component_set,
+                initialize=1,
+                units=pyunits.dimensionless,
+                doc="Log of mole fractions of component by phase")
+
+            def rule_log_mole_frac_phase_comp(b, p, j):
+                return exp(b.log_mole_frac_phase_comp[p, j]) == (
+                    b.mole_frac_phase_comp[p, j])
+            self.log_mole_frac_phase_comp_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_mole_frac_phase_comp,
+                doc="Constraint for log of mole fractions")
+        except AttributeError:
+            self.del_component(self.log_mole_frac_phase_comp)
+            self.del_component(self.log_mole_frac_phase_comp_eq)
+            raise
 
 
 def _valid_VL_component_list(blk, pp):

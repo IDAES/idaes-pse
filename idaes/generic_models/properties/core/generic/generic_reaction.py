@@ -108,6 +108,48 @@ def get_concentration_term(blk, r_idx):
     return conc_term
 
 
+def get_log_concentration_term(blk, r_idx):
+    if "rate_reactions" in blk.params.config:
+        try:
+            conc_form = blk.params.config.rate_reactions[r_idx].concentration_form
+        except KeyError:
+            conc_form = blk.params.config.equilibrium_reactions[r_idx].concentration_form
+        state = blk.state_ref
+    else:
+        conc_form = blk.params.config.inherent_reactions[r_idx].concentration_form
+        state = blk
+
+    if hasattr(state.params, "_electrolyte") and state.params._electrolyte:
+        sub = "_true"
+    else:
+        sub = ""
+
+    if conc_form is None:
+        raise ConfigurationError(
+            "{} concentration_form configuration argument was not set. "
+            "Please ensure that this argument is included in your "
+            "configuration dict.".format(blk.name))
+    elif conc_form == ConcentrationForm.molarity:
+        conc_term = getattr(state, "log_conc_mol_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.activity:
+        conc_term = getattr(state, "log_act_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.molality:
+        conc_term = getattr(state, "log_molality_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.moleFraction:
+        conc_term = getattr(state, "log_mole_frac_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.massFraction:
+        conc_term = getattr(state, "log_mass_frac_phase_comp"+sub)
+    elif conc_form == ConcentrationForm.partialPressure:
+        conc_term = getattr(state, "log_partial_pressure"+sub)
+    else:
+        raise BurntToast(
+            "{} get_log_concentration_term received unrecognised "
+            "ConcentrationForm ({}). This should not happen - please contact "
+            "the IDAES developers with this bug.".format(blk.name, conc_form))
+
+    return conc_term
+
+
 rxn_config = ConfigBlock()
 rxn_config.declare("stoichiometry", ConfigValue(
     domain=dict,

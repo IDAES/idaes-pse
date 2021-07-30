@@ -184,6 +184,7 @@ def test_log_power_law_equil_no_order():
     m.pparams.sol = SolidPhase()
 
     m.thermo = m.pparams.build_state_block([1])
+    m.thermo[1].log_mole_frac_phase_comp = Var(m.pparams._phase_component_set)
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(default={
@@ -235,11 +236,9 @@ def test_log_power_law_equil_no_order():
     assert str(rform) == str(
         safe_log(m.rxn[1].k_eq["r1"], eps=m.rparams.reaction_r1.eps) ==
         m.rparams.reaction_r1.reaction_order["p1", "c1"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["p1", "c1"],
-                 eps=m.rparams.reaction_r1.eps) +
+        m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] +
         m.rparams.reaction_r1.reaction_order["p1", "c2"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["p1", "c2"],
-                 eps=m.rparams.reaction_r1.eps))
+        m.thermo[1].log_mole_frac_phase_comp["p1", "c2"])
 
 
 @pytest.mark.unit
@@ -253,6 +252,7 @@ def test_log_power_law_equil_with_order():
     m.pparams.sol = SolidPhase()
 
     m.thermo = m.pparams.build_state_block([1])
+    m.thermo[1].log_mole_frac_phase_comp = Var(m.pparams._phase_component_set)
 
     # Create a dummy reaction parameter block
     m.rparams = GenericReactionParameterBlock(default={
@@ -309,23 +309,17 @@ def test_log_power_law_equil_with_order():
     assert str(rform) == str(
         safe_log(m.rxn[1].k_eq["r1"], eps=m.rparams.reaction_r1.eps) ==
         m.rparams.reaction_r1.reaction_order["p1", "c1"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["p1", "c1"],
-                 eps=m.rparams.reaction_r1.eps) +
+        m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] +
         m.rparams.reaction_r1.reaction_order["p1", "c2"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["p1", "c2"],
-                 eps=m.rparams.reaction_r1.eps) +
+        m.thermo[1].log_mole_frac_phase_comp["p1", "c2"] +
         m.rparams.reaction_r1.reaction_order["p2", "c1"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["p2", "c1"],
-                 eps=m.rparams.reaction_r1.eps) +
+        m.thermo[1].log_mole_frac_phase_comp["p2", "c1"] +
         m.rparams.reaction_r1.reaction_order["p2", "c2"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["p2", "c2"],
-                 eps=m.rparams.reaction_r1.eps) +
+        m.thermo[1].log_mole_frac_phase_comp["p2", "c2"] +
         m.rparams.reaction_r1.reaction_order["sol", "c1"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["sol", "c1"],
-                 eps=m.rparams.reaction_r1.eps) +
+        m.thermo[1].log_mole_frac_phase_comp["sol", "c1"] +
         m.rparams.reaction_r1.reaction_order["sol", "c2"] *
-        safe_log(m.thermo[1].mole_frac_phase_comp["sol", "c2"],
-                 eps=m.rparams.reaction_r1.eps))
+        m.thermo[1].log_mole_frac_phase_comp["sol", "c2"])
 
 
 @pytest.mark.unit
