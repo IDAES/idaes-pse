@@ -22,6 +22,7 @@ from pyomo.environ import (Block,
                            Constraint,
                            exp,
                            Expression,
+                           log,
                            Set,
                            Param,
                            value,
@@ -921,6 +922,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'dh_rxn': {'method': '_dh_rxn'},
              'log_conc_mol_phase_comp': {
                  'method': '_log_conc_mol_phase_comp'},
+             'log_conc_mol_phase_comp_true': {
+                 'method': '_log_conc_mol_phase_comp_true'},
              'log_mole_frac_phase_comp': {
                  'method': '_log_mole_frac_phase_comp'}})
 
@@ -1203,6 +1206,28 @@ class _GenericStateBlock(StateBlock):
                         blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
+            if blk[k].is_property_constructed("log_conc_mol_phase_comp"):
+                print("1")
+                for (p, j), v in blk[k].log_conc_mol_phase_comp.items():
+                    c = value(blk[k].conc_mol_phase_comp[p, j])
+                    if c == 0:
+                        c = 1e-8
+                    lc = log(c)
+                    v.set_value(value(lc))
+
+            if blk[k].is_property_constructed("log_conc_mol_phase_comp_true"):
+                print("2")
+                for (p, j), v in blk[k].log_conc_mol_phase_comp_true.items():
+                    c = value(blk[k].conc_mol_phase_comp_true[p, j])
+                    if c == 0:
+                        c = 1e-8
+                    lc = log(c)
+                    v.set_value(value(lc))
+
+            if blk[k].is_property_constructed("log_mole_frac_phase_comp"):
+                print("3")
+                for (p, j), v in blk[k].log_conc_mol_phase_comp.items():
+                    v.set_value(value(log(blk[k].mole_frac_phase_comp[p, j])))
 
         n_cons = 0
         skip = False
@@ -1745,7 +1770,7 @@ class GenericStateBlockData(StateBlockData):
                 self, overwrite=False)
 
         if self.is_property_constructed("log_conc_mol_phase_comp"):
-            for (p, j), v in self.log_conc_mole_phase_comp_eq.items():
+            for (p, j), v in self.log_conc_mol_phase_comp_eq.items():
                 sf_dens_mol = iscale.get_scaling_factor(
                     self.dens_mol_phase[p],
                     default=55e3,
@@ -1756,6 +1781,21 @@ class GenericStateBlockData(StateBlockData):
                     default=1,
                     warning=True,
                     hint="for log_conc_mol_phase_comp")
+                iscale.constraint_scaling_transform(
+                    v, sf_dens_mol*sf_x, overwrite=False)
+
+        if self.is_property_constructed("log_conc_mol_phase_comp_true"):
+            for (p, j), v in self.log_conc_mol_phase_comp_true_eq.items():
+                sf_dens_mol = iscale.get_scaling_factor(
+                    self.dens_mol_phase[p],
+                    default=55e3,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp_true")
+                sf_x = iscale.get_scaling_factor(
+                    self.mole_frac_phase_comp_true[p, j],
+                    default=1,
+                    warning=True,
+                    hint="for log_conc_mol_phase_comp_true")
                 iscale.constraint_scaling_transform(
                     v, sf_dens_mol*sf_x, overwrite=False)
 
@@ -2769,6 +2809,27 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.log_conc_mol_phase_comp)
             self.del_component(self.log_conc_mol_phase_comp_eq)
+            raise
+
+    def _log_conc_mol_phase_comp_true(self):
+        try:
+            self.log_conc_mol_phase_comp_true = Var(
+                self.phase_component_set,
+                initialize=1,
+                units=pyunits.dimensionless,
+                doc="Log of molar concentration of component by phase")
+
+            def rule_log_conc_mol_phase_comp_true(b, p, j):
+                return exp(b.log_conc_mol_phase_comp_true[p, j]) == (
+                    b.conc_mol_phase_comp_true[p, j] /
+                    pyunits.get_units(b.conc_mol_phase_comp_true[p, j]))
+            self.log_conc_mol_phase_comp_true_eq = Constraint(
+                self.phase_component_set,
+                rule=rule_log_conc_mol_phase_comp_true,
+                doc="Constraint for log of molar concentration")
+        except AttributeError:
+            self.del_component(self.log_conc_mol_phase_comp_true)
+            self.del_component(self.log_conc_mol_phase_comp_true_eq)
             raise
 
     def _log_mole_frac_phase_comp(self):
