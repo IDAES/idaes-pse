@@ -5,6 +5,7 @@ import pandas as pd
 import sys
 sys.path.append('../')
 from tracker import Tracker
+from bidder import Bidder
 
 class ThermalGenerator:
 
@@ -554,17 +555,26 @@ if __name__ == "__main__":
     thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
                                                 horizon = 4, \
                                                 generators = ["102_STEAM_3"], \
-                                                n_scenario = 1)
+                                                n_scenario = 3)
 
     solver = pyo.SolverFactory('cbc')
 
-    # make a tracker
-    thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
-                              n_tracking_hour = 1, \
-                              solver = solver)
+    run_bidder = True
+    run_tracker = False
 
-    market_dispatch = {"102_STEAM_3": [30, 40 , 50, 70]}
+    if run_tracker:
+        # make a tracker
+        thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
+                                  n_tracking_hour = 1, \
+                                  solver = solver)
 
-    thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
-                                          date = "2021-07-26", \
-                                          hour = '17:00')
+        market_dispatch = {"102_STEAM_3": [30, 40 , 50, 70]}
+
+        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
+                                              date = "2021-07-26", \
+                                              hour = '17:00')
+
+    if run_bidder:
+
+        thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
+                                 solver = solver)

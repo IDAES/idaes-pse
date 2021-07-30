@@ -95,7 +95,7 @@ class Bidder:
         modified_set_ls = list(modified_model_sets.keys())
 
         # unpack
-        power_output = self.tracking_model_object.power_output
+        power_output = self.bidding_model_object.power_output
         energy_price = self.model.energy_price
 
         # declare a constraint list
@@ -155,10 +155,12 @@ class Bidder:
         self.model.obj = pyo.Objective(expr = 0, sense = pyo.maximize)
 
         # unpack things
-        model_sets = self.tracking_model_object.indices
+        model_sets = self.bidding_model_object.indices
         set_ls = list(model_sets.keys())
 
-        total_cost = self.tracking_model_object.total_cost
+        total_cost = self.bidding_model_object.total_cost
+        power_output = self.bidding_model_object.power_output
+        energy_price = self.model.energy_price
         cost_ls = list(total_cost.keys())
 
         def dfs_sum_costs(cost, set_idx, indices):
@@ -181,7 +183,7 @@ class Bidder:
 
              # traveled all the sets, and now we can add the objective
              if set_idx == len(set_ls):
-                 self.model.obj.expr += power_output[tuple(indices)] * energy_price[tuple(bidding_indices)])
+                 self.model.obj.expr += power_output[tuple(indices)] * energy_price[tuple(bidding_indices)]
                  return
 
              for idx in set_ls[set_idx]:
@@ -200,7 +202,7 @@ class Bidder:
 
         for cost in cost_ls:
             dfs_sum_costs(cost = cost, set_idx = 0, indices = [])
-        dfs_sum_revenue(set_idx = 0, indices = [])
+        dfs_sum_revenue(set_idx = 0, indices = [], bidding_indices = [])
 
     def compute_bids(self, price_forecasts, date, hour):
 
