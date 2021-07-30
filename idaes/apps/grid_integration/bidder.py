@@ -41,7 +41,7 @@ class Bidder:
 
         return
 
-    def _get_tracking_sets(self):
+    def _get_bidding_sets(self):
 
         '''
         Get the necessary index sets for bidding, i.e., price scenarios and
@@ -83,7 +83,71 @@ class Bidder:
         return
 
     def _add_bidding_constraints(self):
-        pass
+
+        model_sets = self.bidding_model_object.indices
+        modified_model_sets = {}
+
+        for s, n in model_sets.items():
+            if n == 'LMP Scenarios':
+                modified_model_sets[tuple(combinations(s,2))] = n
+            else:
+                modified_model_sets[s] = n
+        modified_set_ls = list(modified_model_sets.keys())
+
+        # unpack
+        power_output = self.tracking_model_object.power_output
+        energy_price = self.model.energy_price
+
+        # declare a constraint list
+        self.model.bidding_constraints = pyo.ConstraintList()
+
+        # dfs
+        def dfs_add_bidding_constraints(set_idx, indices_1, indices_2, bidding_indices_1, bidding_indices_2):
+
+             # traveled all the sets
+             # add the bidding constraints
+             if set_idx == len(modified_set_ls):
+                 self.model.bidding_constraints.add((power_output[tuple(indices_1)] - \
+                                                     power_output[tuple(indices_2)]) * \
+                                                     (energy_price[tuple(bidding_indices_1)] -\
+                                                     energy_price[tuple(bidding_indices_2)]) >= 0)
+                 return
+
+             for idx in modified_set_ls[set_idx]:
+
+                 if modified_model_sets[modified_set_ls[set_idx]] == 'LMP Scenarios':
+                     indices_1.append(idx[0])
+                     indices_2.append(idx[1])
+                     bidding_indices_1.append(idx[0])
+                     bidding_indices_2.append(idx[1])
+
+                 elif modified_model_sets[modified_set_ls[set_idx]] in self.bidding_set_names:
+                     indices_1.append(idx)
+                     indices_2.append(idx)
+                     bidding_indices_1.append(idx)
+                     bidding_indices_2.append(idx)
+                 else:
+                     indices_1.append(idx)
+                     indices_2.append(idx)
+
+                 # recursion
+                 dfs_add_bidding_constraints(set_idx + 1, indices_1, indices_2, bidding_indices_1, bidding_indices_2)
+
+                 # backtrack
+                 if modified_model_sets[modified_set_ls[set_idx]] in self.bidding_set_names:
+                     indices_1.pop()
+                     indices_2.pop()
+                     bidding_indices_1.pop()
+                     bidding_indices_2.pop()
+                 else:
+                     indices_1.pop()
+                     indices_2.pop()
+
+        dfs_add_bidding_constraints(set_idx = 0, \
+                                    indices_1 = [], \
+                                    indices_2 = [], \
+                                    bidding_indices_1 = [], \
+                                    bidding_indices_2 = [])
 
     def _add_bidding_objective(self):
 
@@ -99,7 +163,7 @@ class Bidder:
 
         def dfs_sum_costs(cost, set_idx, indices):
 
-            # traveled all the sets, and now we can add the constraint
+            # traveled all the sets, and now we can add the objective
             if set_idx == len(set_ls):
                 weight = total_cost[cost]
                 self.model.obj.expr -= weight * cost[tuple(indices)]
@@ -115,7 +179,7 @@ class Bidder:
 
         def dfs_sum_revenue(set_idx, indices, bidding_indices):
 
-             # traveled all the sets, and now we can add the constraint
+             # traveled all the sets, and now we can add the objective
              if set_idx == len(set_ls):
                  self.model.obj.expr += power_output[tuple(indices)] * energy_price[tuple(bidding_indices)])
                  return
