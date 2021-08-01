@@ -14,6 +14,17 @@ class Bidder:
 
     def __init__(self, bidding_model_object, solver):
 
+        '''
+        Initializes the bidder object.
+
+        Arguments:
+            bidding_model_object: the initialized model object for bidding
+            solver: a Pyomo mathematical programming solver object
+
+        Returns:
+            None
+        '''
+
         self.bidding_model_object = bidding_model_object
         self.solver = solver
         self.model = self.bidding_model_object.model
@@ -24,7 +35,7 @@ class Bidder:
     def formulate_bidding_problem(self):
 
         '''
-        Formulate the tracking optimization problem by adding necessary
+        Formulate the bidding optimization problem by adding necessary
         parameters, constraints, and objective function.
 
         Arguments:
@@ -85,6 +96,17 @@ class Bidder:
         return
 
     def _add_bidding_constraints(self):
+
+        '''
+        Add bidding constraints to the model, i.e., the bid curves need to be
+        nondecreasing.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         model_sets = self.bidding_model_object.indices
         modified_model_sets = {}
@@ -153,6 +175,17 @@ class Bidder:
 
     def _add_bidding_objective(self):
 
+        '''
+        Add objective function to the model, i.e., maximizing the expected profit
+        of the energy system.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         # declare an empty objective
         self.model.obj = pyo.Objective(expr = 0, sense = pyo.maximize)
 
@@ -208,6 +241,20 @@ class Bidder:
 
     def compute_bids(self, price_forecasts, date, hour):
 
+        '''
+        Solve the model to bid into the markets. After solving, record the bids
+        from the solve.
+
+        Arguments:
+            price_forecasts: price forecasts needed to solve the bidding problem.
+                            {gen: {LMP scenario: [forecast timeseries] }}
+            date: current simulation date
+            hour: current simulation hour
+
+        Returns:
+            None
+        '''
+
         # update the price forecasts
         self._pass_price_forecasts(price_forecasts)
         self.solver.solve(self.model,tee=True)
@@ -219,6 +266,17 @@ class Bidder:
         return bids
 
     def _pass_price_forecasts(self, price_forecasts):
+
+        '''
+        Pass the price forecasts into model parameters.
+
+        Arguments:
+            price_forecasts: price forecasts needed to solve the bidding problem.
+                             {generator: {LMP scenario: [forecast timeseries] }}
+
+        Returns:
+            None
+        '''
 
         model_sets = self.bidding_model_object.indices
         energy_price = self.model.energy_price
