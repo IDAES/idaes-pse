@@ -313,18 +313,18 @@ class Bidder:
             for gen in model_sets_inverse['Generators']:
 
                 # make sure the orignal points in the bids
-                for power, marginal_cost in self.default_bids[gen].items():
+                for power, marginal_cost in self.bidding_model_object.default_bids[gen].items():
                     if power not in bids[t][gen]:
                         bids[t][gen][power] = marginal_cost
 
                 pmin = self.bidding_model_object.pmin[gen]
 
                 # sort the curves by power
-                temp_bids = OrderedDict(sorted(temp_bids.items()))
+                bids[t][gen] = dict(sorted(bids[t][gen].items()))
 
                 # make sure the curve is nondecreasing
                 pre_power = pmin
-                for power, marginal_cost in temp_bids.items():
+                for power, marginal_cost in bids[t][gen].items():
 
                     # ignore pmin, because min load cost is special
                     if pre_power == pmin:
@@ -378,7 +378,7 @@ class Bidder:
                     pair_cnt += 1
 
                 # place holder, in case different len of bids
-                while pair_cnt < self.n_scenario:
+                while pair_cnt < self.bidding_model_object.n_scenario:
 
                     result_dict['Power {} [MW]'.format(pair_cnt)] = None
                     result_dict['Cost {} [$]'.format(pair_cnt)] = None

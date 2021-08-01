@@ -559,11 +559,15 @@ class ThermalGenerator:
 
 if __name__ == "__main__":
 
+    generator = "102_STEAM_3"
+    horizon = 4
+    n_scenario = 3
+
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
-                                                horizon = 4, \
-                                                generators = ["102_STEAM_3"], \
-                                                n_scenario = 3)
+                                                horizon = horizon, \
+                                                generators = [generator], \
+                                                n_scenario = n_scenario)
 
     solver = pyo.SolverFactory('cbc')
 
@@ -576,7 +580,7 @@ if __name__ == "__main__":
                                   n_tracking_hour = 1, \
                                   solver = solver)
 
-        market_dispatch = {"102_STEAM_3": [30, 40 , 50, 70]}
+        market_dispatch = {generator: [30, 40 , 50, 70]}
 
         thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
                                               date = "2021-07-26", \
@@ -586,3 +590,10 @@ if __name__ == "__main__":
 
         thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
                                  solver = solver)
+
+        price_forecasts = {generator:{0:[25,15,20,10], \
+                                      1:[20,12,22,13], \
+                                      2:[22,13,28,14]}}
+        date = "2021-08-01"
+        hour = "13:00"
+        bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
