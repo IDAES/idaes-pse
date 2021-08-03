@@ -89,22 +89,22 @@ def main():
     # Declare variables of interest for plotting.
     # It's ok not declaring anything. The data manager will still save some 
     # important data, but the user should use the default string of CUID for plotting afterward.
-    states_of_interest = [nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
-                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
-                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],
-                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P'],
-                          nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent'],
-                          nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq'],
+    states_of_interest = [Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
+                          Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
+                          # Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
+                          # Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
+                          # Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
+                          Reference(nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
                           ]
-    ref_soi = [Reference(var) for var in states_of_interest]
     
     inputs_of_interest = [Reference(nmpc.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
-                          Reference(nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),]
+                          # Reference(nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
+                          ]
     
     data_manager = ControllerDataManager(plant, 
-                                        controller,
-                                        ref_soi,
-                                        inputs_of_interest,)
+                                         controller,
+                                         states_of_interest,
+                                         inputs_of_interest,)
     #--------------------------------------------------------------------------
     
     solve_consistent_initial_conditions(plant, plant.time, solver)
@@ -231,7 +231,7 @@ def main():
         solver.solve(nmpc.plant)
         data_manager.save_plant_data(iteration = i)
 
-    data_manager.plot_setpoint_tracking_results(ref_soi)
+    data_manager.plot_setpoint_tracking_results(states_of_interest)
     data_manager.plot_control_input(inputs_of_interest)
 
     return nmpc, data_manager

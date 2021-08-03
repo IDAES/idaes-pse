@@ -127,7 +127,13 @@ def main():
     
     dyna.controller.initialize_to_initial_conditions()
     
-    # Controller noises--------------------------------------------------------
+    # Set up input noises that will be applied to control inputs
+    variance = [
+        (plant.mod.Tjinb[0], 0.01),
+        ]
+    dyna.plant.set_variance(variance)
+    input_variance = [v.variance for v in plant.input_vars]
+    input_noise_bounds = [(var[p_t0].lb, var[p_t0].ub) for var in plant.input_vars]
     #--------------------------------------------------------------------------
 
     
@@ -152,7 +158,17 @@ def main():
     dyna.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                 measurement_noise_weights)
     
-    # Measurement errors-------------------------------------------------------
+    # Set up measurement noises that will be applied to measurements
+    variance = [
+        (dyna.estimator.mod.Tall[0, "T"], 0.05),
+        (dyna.estimator.mod.Ca[0], 1.0E-2),
+        ]
+    dyna.estimator.set_variance(variance)
+    measurement_variance = [v.variance for v in estimator.measurement_vars]
+    measurement_noise_bounds = [
+            (var[e_t0].lb, var[e_t0].ub) for var in estimator.measurement_vars
+            ]
+    random.seed(246)
     #--------------------------------------------------------------------------
 
     dyna_data.save_initial_plant_data()    
@@ -199,6 +215,12 @@ def main():
         dyna.plant.advance_one_sample()
         dyna.plant.initialize_to_initial_conditions()
         inputs = controller.generate_inputs_at_time(c_ts)
+        inputs = apply_noise_with_bounds(
+                inputs,
+                input_variance,
+                random.gauss,
+                input_noise_bounds,
+                )
         plant.inject_inputs(inputs)
         
         dyna.plant.initialize_by_solving_elements(solver)
@@ -207,6 +229,12 @@ def main():
         dyna_data.save_plant_data(iteration = i)
     
         measurements = dyna.plant.generate_measurements_at_time(p_ts)
+        measurements = apply_noise_with_bounds(
+                    measurements,
+                    measurement_variance,
+                    random.gauss,
+                    measurement_noise_bounds,
+                    )
         dyna.estimator.advance_one_sample()
         dyna.estimator.load_measurements(measurements,
                                          target = "actualmeasurement",

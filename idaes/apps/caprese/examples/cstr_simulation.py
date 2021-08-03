@@ -76,14 +76,16 @@ def main():
     # It's ok not declaring anything. The data manager will still save some 
     # important data, but the user should use the default string of CUID for plotting afterward.
     states_of_interest = [Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
-                        Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
-                        Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
-                        Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
-                        Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
-                        Reference(simulator.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
-                        ]   
+                          Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
+                          # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
+                          # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
+                          # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
+                          Reference(simulator.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
+                          ]   
+    
     inputs_of_interest = [Reference(simulator.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
-                          Reference(simulator.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),]
+                          # Reference(simulator.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
+                          ]
     
     # Set up data manager to save plant data
     data_manager = PlantDataManager(plant, 

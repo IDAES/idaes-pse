@@ -46,8 +46,8 @@ from idaes.apps.caprese.common.config import (
         InputOption,
         )
 VC = VariableCategory
-from idaes.apps.caprese.nmpc_var import (
-        NmpcVar,
+from idaes.apps.caprese.dynamic_var import (
+        DynamicVar,
         DiffVar,
         DerivVar,
         AlgVar,
@@ -55,6 +55,7 @@ from idaes.apps.caprese.nmpc_var import (
         FixedVar,
         MeasuredVar,
         )
+from idaes.apps.caprese.tests.test_estimator import TestEstimatorBlock
 import idaes.logger as idaeslog
 import random
 import pytest
@@ -1026,7 +1027,7 @@ class TestDynamicBlock(object):
         t0 = time.first()
 
         variance_list = [(var[t0], 0.05)
-                for var in blk.component_objects(SubclassOf(NmpcVar))]
+                for var in blk.component_objects(SubclassOf(DynamicVar))]
         blk.set_variance(variance_list)
 
         for var in blk.DIFFERENTIAL_BLOCK[:].var:
@@ -1078,13 +1079,20 @@ class TestDynamicBlock(object):
 
     @pytest.mark.unit
     def test_load_measurements(self):
-        blk = self.make_block()
+        instance = TestEstimatorBlock()
+        blk = instance.make_estimator()
         time = blk.time
         t0 = time.first()
-        vals = list(0.25*i for i in blk.MEASUREMENT_SET)
-        blk.load_measurements(vals)
+        vals = [0.25]
+        blk.load_measurements(vals, target = "measurement", timepoint = t0)        
         for b, val in zip(blk.MEASUREMENT_BLOCK.values(), vals):
             assert b.var[t0].value == val
+            
+        vals2 = [0.75]
+        t_last = time.last()
+        blk.load_measurements(vals2, target = "actualmeasurement", timepoint = t_last)        
+        for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals2):
+            assert b.var[t_last].value == val
 
     @pytest.mark.unit
     def test_categories_only_measurement_input(self):
@@ -1218,3 +1226,4 @@ class TestDynamicBlock(object):
         # over, e.g., vectors.algebraic[:, :] would
         # fail due to inconsistent dimension.
         assert VC.ALGEBRAIC not in db.category_dict
+        

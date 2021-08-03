@@ -22,7 +22,7 @@ import pandas as pd
 from idaes.apps.caprese.dynamic_block import DynamicBlock
 from idaes.apps.caprese.controller import ControllerBlock
 from idaes.apps.caprese.estimator import EstimatorBlock
-from idaes.apps.caprese.nmpc_var import DiffVar
+from idaes.apps.caprese.dynamic_var import DiffVar
 from idaes.apps.caprese.tests.test_simple_model import (
         make_model,
         initialize_t0,

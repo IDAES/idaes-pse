@@ -89,12 +89,12 @@ def main():
     # It's ok not declaring anything. The data manager will still save some 
     # important data, but the user should use the default string of CUID for plotting afterward.
     states_of_interest = (Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
-                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
-                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
-                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
-                        Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
-                        Reference(mhe.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
-                        )
+                          Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
+                          # Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
+                          # Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
+                          # Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
+                          Reference(mhe.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
+                          )
 
     # Set up data manager to save estimation data
     data_manager = EstimatorDataManager(plant, 

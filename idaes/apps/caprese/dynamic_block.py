@@ -25,7 +25,6 @@ from idaes.apps.caprese.common.config import (
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
-        # categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
 from idaes.apps.caprese.dynamic_var import (
@@ -51,7 +50,6 @@ from pyomo.environ import (
         Set,
         ComponentUID,
         Suffix,
-        # Constraint,
         )
 from pyomo.core.base.util import Initializer, ConstantInitializer
 from pyomo.core.base.block import _BlockData, SubclassOf
@@ -401,25 +399,6 @@ class _DynamicBlockData(_BlockData):
                 # but include last time point of sample.
                 t = time[i]
                 var[t].set_value(var.setpoint)
-
-    # def initialize_sample_to_initial(self,
-    #         sample_idx,
-    #         ctype=(DiffVar, AlgVar, DerivVar),
-    #         ):
-    #     """ Set values to initial values for variables of the
-    #     specified variable ctypes in the specified sample.
-    #     """
-    #     time = self.time
-    #     sample_point_indices = self.sample_point_indices
-    #     i_0 = sample_point_indices[sample_idx-1]
-    #     i_s = sample_point_indices[sample_idx]
-    #     t0 = time[i_0]
-    #     for var in self.component_objects(ctype):
-    #         # Would be nice if I could use a slice with
-    #         # start/stop indices to make this more concise.
-    #         for i in range(i_0+1, i_s+1):
-    #             t = time[i]
-    #             var[t].set_value(var[t0].value)
                 
     def initialize_sample_to_initial(self,
             sample_idx,
@@ -606,17 +585,6 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    # def load_measurements(self, measured):
-    #     t0 = self.time.first()
-    #     if VC.MEASUREMENT in self.categories:
-    #         # Want: self.measured_vars[:,t0].fix(measured)
-    #         for var, val in zip(self.MEASUREMENT_BLOCK[:].var, measured):
-    #             var[t0].fix(val)
-    #     else:
-    #         raise RuntimeError(
-    #                 "Trying to set measurement values but no measurement "
-    #                 "category has been specified."
-    #                 )
             
     def load_measurements(self, measured, target = None, timepoint = None):
         '''
@@ -627,11 +595,32 @@ class _DynamicBlockData(_BlockData):
             
         if target is None:
             print("Desired variables to load measurements to is not given, assuming it's 'measurement'.")
-            target_block = self.MEASUREMENT_BLOCK
+            if VC.MEASUREMENT in self.categories:
+                target_block = self.MEASUREMENT_BLOCK
+            else:
+                raise RuntimeError(
+                        "Trying to set measurement values but no measurement "
+                        "category has been specified."
+                        )
+        
         elif target == "measurement":
-            target_block = self.MEASUREMENT_BLOCK
+            if VC.MEASUREMENT in self.categories:
+                target_block = self.MEASUREMENT_BLOCK
+            else:
+                raise RuntimeError(
+                        "Trying to set measurement values but no measurement "
+                        "category has been specified."
+                        )
+                
         elif target == "actualmeasurement":
-            target_block = self.ACTUALMEASUREMENT_BLOCK
+            if VC.ACTUALMEASUREMENT in self.categories:
+                target_block = self.ACTUALMEASUREMENT_BLOCK
+            else:
+                raise RuntimeError(
+                        "Trying to set measurement values but no measurement "
+                        "category has been specified."
+                        )
+                
         else:
             raise RuntimeError("Wrong target variable type is given, "
                                "please use either 'measurement' or 'actualmeasurement'.")
@@ -646,31 +635,6 @@ class _DynamicBlockData(_BlockData):
         for var, val in zip(target_block[:].var, measured):
             var[timepoint].fix(val)
             
-        
-    # def advance_by_time(self,
-    #         t_shift,
-    #         ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
-    #             # Fixed variables are included as I expect disturbances
-    #             # should shift in time as well.
-    #         tolerance=1e-8,
-    #         ):
-    #     """ Set values for the variables of the specified ctypes
-    #     to their values `t_shift` in the future.
-    #     """
-    #     time = self.time
-    #     # The outer loop is over time so we don't have to call
-    #     # `find_nearest_index` for every variable.
-    #     # I am assuming that `find_nearest_index` is slower than
-    #     # accessing `component_objects`
-    #     for t in time:
-    #         ts = t + t_shift
-    #         idx = time.find_nearest_index(ts, tolerance)
-    #         if idx is None:
-    #             # t + sample_time is outside the model's "horizon"
-    #             continue
-    #         ts = time[idx]
-    #         for var in self.component_objects(ctype):
-    #             var[t].set_value(var[ts].value)
                 
     def advance_by_time(self,
             t_shift,

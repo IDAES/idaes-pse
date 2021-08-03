@@ -14,41 +14,44 @@
 """
 
 import pyomo.environ as pyo
-from idaes.apps.caprese.nmpc_var import (
-        NmpcVar,
-        _NmpcVector,
+from idaes.apps.caprese.dynamic_var import (
+        DynamicVar,
+        _DynamicVector,
         DiffVar,
         DerivVar,
         AlgVar,
         InputVar,
         FixedVar,
         MeasuredVar,
+        ActualMeasurementVar,
+        MeasurementErrorVar,
+        ModelDisturbanceVar,
         )
 import pytest
 
 
 @pytest.mark.unit
-def test_NmpcVar():
+def test_DynamicVar():
     m = pyo.ConcreteModel()
 
     with pytest.raises(NotImplementedError,
             match=r".*component must be indexed.*"):
-        m.v = NmpcVar()
+        m.v = DynamicVar()
 
     m.s1 = pyo.Set(initialize=[0,1,2,3])
     m.s2 = pyo.Set(initialize=[2,4,6,8])
 
-    m.v0 = NmpcVar(m.s1)
+    m.v0 = DynamicVar(m.s1)
     assert m.v0.setpoint is None
     assert m.v0.weight is None
     assert m.v0.nominal is None
     assert m.v0.variance is None
 
-    assert m.v0.ctype is NmpcVar
-    for v in m.component_objects(NmpcVar):
+    assert m.v0.ctype is DynamicVar
+    for v in m.component_objects(DynamicVar):
         assert v is m.v0
 
-    m.v1 = NmpcVar(
+    m.v1 = DynamicVar(
             m.s1,
             setpoint=1.,
             weight=2.,
@@ -60,7 +63,7 @@ def test_NmpcVar():
     assert m.v1.variance == 3.
     assert m.v1.nominal == 4.
 
-    m.v2 = NmpcVar(m.s1, m.s2)
+    m.v2 = DynamicVar(m.s1, m.s2)
     for i, j in m.s1*m.s2:
         assert (i,j) in m.v2
 
@@ -89,27 +92,39 @@ def test_custom_vars():
     m.meas = MeasuredVar(m.s)
     assert m.meas.ctype == MeasuredVar
     assert m.meas._attr == 'measurement'
+    
+    m.actmeas = ActualMeasurementVar(m.s)
+    assert m.actmeas.ctype == ActualMeasurementVar
+    assert m.actmeas._attr == 'actualmeasurement'
+
+    m.measerror = MeasurementErrorVar(m.s)
+    assert m.measerror.ctype == MeasurementErrorVar
+    assert m.measerror._attr == 'measurementerror'
+    
+    m.moddistur = ModelDisturbanceVar(m.s)
+    assert m.moddistur.ctype == ModelDisturbanceVar
+    assert m.moddistur._attr == 'modeldisturbance'
 
 
 @pytest.mark.unit
-def test_NmpcVector():
+def test_DynamicVector():
     m = pyo.ConcreteModel()
     m.coords = pyo.Set(initialize=[0, 1, 2, 3])
     m.time = pyo.Set(initialize=[0.0, 0.5, 1.0, 1.5, 2.0])
 
     @m.Block(m.coords)
     def b(b, i):
-        b.var = NmpcVar(m.time)
+        b.var = DynamicVar(m.time)
 
-    m.vector = pyo.Reference(m.b[:].var[:], ctype=_NmpcVector)
+    m.vector = pyo.Reference(m.b[:].var[:], ctype=_DynamicVector)
 
-    assert type(m.vector) is _NmpcVector
+    assert type(m.vector) is _DynamicVector
 
     # Test that `vector` is a proper reference
     for i, t in m.coords * m.time:
         assert m.vector[i, t] is m.b[i].var[t]
 
-    # Test that we can generate the underlying NmpcVars
+    # Test that we can generate the underlying DynamicVars
     for v, i in zip(m.vector._generate_referenced_vars(), m.coords):
         assert v is m.b[i].var
 

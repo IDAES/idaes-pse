@@ -22,9 +22,7 @@ from idaes.apps.caprese.categorize import (
 
 from idaes.apps.caprese.tests.test_simple_model import (
         make_model,
-        # make_small_model,
         initialize_t0,
-        # copy_values_forward,
         )
 
 from idaes.apps.caprese.estimator import (
@@ -37,8 +35,7 @@ from idaes.apps.caprese.common.config import (
         VariableCategory,
         ConstraintCategory,
         )
-from idaes.apps.caprese.nmpc_var import (
-        # NmpcVar,
+from idaes.apps.caprese.dynamic_var import (
         DiffVar,
         DerivVar,
         AlgVar,
@@ -796,6 +793,18 @@ class TestEstimatorBlock(object):
         check_t_list = [tp for tp in time if tp > time[spi[-2]] and tp <= time[spi[-1]]]
         for tp in check_t_list:
             assert pyo.value(estimator.vectors.input[0, tp]) == 100.
+    
+    @pytest.mark.unit
+    def test_generate_estimates_at_time(self):
+        estimator = self.make_estimator()
+        time = estimator.time
+        t0 = time.first()
+        tlast = time.last()
         
-abc = TestEstimatorBlock()
-abc.test_add_disturbance_to_differential_cons()
+        # Re-set values for differential variables
+        estimator.vectors.differential[0,tlast].set_value(105.)
+        estimator.vectors.differential[1,tlast].set_value(205.)
+
+        estimates = estimator.generate_estimates_at_time(tlast)
+        assert estimates == [105., 205.]
+        

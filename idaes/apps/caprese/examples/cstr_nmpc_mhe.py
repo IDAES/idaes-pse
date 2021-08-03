@@ -94,22 +94,22 @@ def main():
     # Declare variables of interest for plotting.
     # It's ok not declaring anything. The data manager will still save some 
     # important data, but the user should use the default string of CUID for plotting afterward.
-    states_of_interest = [dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S'],
-                          dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E'],
-                          dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C'],
-                          dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P'],
-                          dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent'],
-                          dyna.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq'],
+    states_of_interest = [Reference(dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
+                          Reference(dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
+                          # Reference(dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
+                          # Reference(dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
+                          # Reference(dyna.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
+                          Reference(dyna.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
                           ]
-    ref_soi = [Reference(var) for var in states_of_interest]
     
     inputs_of_interest = [Reference(dyna.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
-                          Reference(dyna.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),]
+                          # Reference(dyna.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
+                          ]
     
     dyna_data = DynamicDataManager(plantblock = plant, 
                                    controllerblock = controller,
                                    estimatorblock = estimator,
-                                   user_interested_states = ref_soi,
+                                   user_interested_states = states_of_interest,
                                    user_interested_inputs = inputs_of_interest,)
     #--------------------------------------------------------------------------
     # Plant setup
@@ -273,9 +273,9 @@ def main():
         solver.solve(dyna.estimator, tee = True)
         dyna_data.save_estimator_data(iteration = i)
         
-    dyna_data.plot_setpoint_tracking_results(ref_soi)
+    dyna_data.plot_setpoint_tracking_results(states_of_interest)
     dyna_data.plot_control_input(inputs_of_interest)
-    dyna_data.plot_estimation_results(ref_soi)
+    dyna_data.plot_estimation_results(states_of_interest)
     
     return dyna, dyna_data
 

@@ -28,7 +28,7 @@ from idaes.apps.caprese.controller import (
         SimpleControllerBlock,
         IndexedControllerBlock,
         )
-from idaes.apps.caprese.nmpc_var import (
+from idaes.apps.caprese.dynamic_var import (
         DiffVar,
         AlgVar,
         InputVar,
@@ -112,6 +112,7 @@ class TestControllerBlock(object):
                 )
         controller.construct()
         controller.set_sample_time(sample_time)
+        controller.estimator_is_existing = False
         return controller
 
     @pytest.mark.unit
@@ -327,3 +328,62 @@ class TestControllerBlock(object):
             inputs = controller.vectors.input
             pred_expr = (inputs[i, tn] - inputs[i, t] == 0.)
             assert pwc_expr.to_string() == pred_expr.to_string()
+            
+    @pytest.mark.unit
+    def test_load_estimates(self):
+        controller = self.make_controller()
+        time = controller.time
+        t0 = time.first()
+        
+        estimates = [100., 200.]
+        controller.load_estimates(estimates)
+        
+        assert controller.vectors.differential[0, t0].value == 100.
+        assert controller.vectors.differential[1, t0].value == 200.
+        
+    @pytest.mark.unit
+    def test_load_initial_conditions(self):
+        model = make_model(horizon=1., nfe=2)
+        sample_time = 0.5
+        time = model.time
+        t0 = time.first()
+        inputs = [model.flow_in[t0]]
+        measurements = [model.flow_out[t0], model.conc[t0, "A"]]
+        controller = ControllerBlock(
+                model=model,
+                time=time,
+                inputs=inputs,
+                measurements=measurements,
+                )
+        controller.construct()
+        controller.set_sample_time(sample_time)
+
+        #case 1: estimator doesn't exist
+        controller.estimator_is_existing = False
+        ics = [10., 20.]
+        controller.load_initial_conditions(ics)
+
+        assert controller.vectors.measurement[0, t0].value == 10.
+        assert controller.vectors.measurement[1, t0].value == 20.
+        
+        #case 2: estimator does exist
+        controller.estimator_is_existing = True
+        ics = [11., 21.]
+        controller.load_initial_conditions(ics)
+
+        assert controller.vectors.differential[0, t0].value == 11.
+        assert controller.vectors.differential[1, t0].value == 21.
+        
+        #case 3: type of ics is declared => "measurement"
+        ics = [12., 22.]
+        controller.load_initial_conditions(ics, "measurement")
+
+        assert controller.vectors.measurement[0, t0].value == 12.
+        assert controller.vectors.measurement[1, t0].value == 22.
+        
+        #case 3: type of ics is declared => "estimates"
+        ics = [13., 23.]
+        controller.load_initial_conditions(ics, "estimate")
+
+        assert controller.vectors.differential[0, t0].value == 13.
+        assert controller.vectors.differential[1, t0].value == 23.
