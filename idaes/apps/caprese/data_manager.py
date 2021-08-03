@@ -28,6 +28,7 @@ from pyomo.common.collections import ComponentMap
 import pandas as pd
 from collections import OrderedDict
 from idaes.apps.caprese.plotlibrary import (
+                        PLANT_PlotLibrary,
                         NMPC_PlotLibrary,
                         MHE_PlotLibrary,)
 
@@ -197,7 +198,7 @@ def add_variable_setpoints_to_dataframe(dataframe,
     return dataframe
         
 
-class PlantDataManager(object):
+class PlantDataManager(PLANT_PlotLibrary):
     def __init__(self, 
                  plantblock,
                  user_interested_states = [],
@@ -251,9 +252,11 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
                  controllerblock, 
                  user_interested_states = [],
                  user_interested_inputs = []):
-        super(ControllerDataManager, self).__init__(plantblock, 
-                                                    user_interested_states, 
-                                                    user_interested_inputs,)
+        
+        if not hasattr(self, "plant_df"):
+            super(ControllerDataManager, self).__init__(plantblock, 
+                                                        user_interested_states, 
+                                                        user_interested_inputs,)
         
         self.controllerblock = controllerblock
         # Convert vars in plant to vars in controller
@@ -314,8 +317,10 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
                  plantblock, 
                  estimatorblock, 
                  user_interested_states = [],):
-        super(EstimatorDataManager, self).__init__(plantblock, 
-                                                   user_interested_states,)
+        
+        if not hasattr(self, "plant_df"):
+            super(EstimatorDataManager, self).__init__(plantblock, 
+                                                       user_interested_states,)
         
         self.estimatorblock = estimatorblock
         # Convert vars in plant to vars in estimator
@@ -341,3 +346,25 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
                                                              iteration,
                                                              time_subset = [t_last],
                                                              time_map = time_map,)
+        
+class DynamicDataManager(ControllerDataManager, EstimatorDataManager):
+    def __init__(self,
+                 plantblock,
+                 controllerblock,
+                 estimatorblock,
+                 user_interested_states = [],
+                 user_interested_inputs = [],):
+        
+        # Create plant dataframe
+        super(EstimatorDataManager, self).__init__(plantblock,
+                                                   user_interested_states,
+                                                   user_interested_inputs,)
+        # Create estimator dataframe
+        super(ControllerDataManager, self).__init__(plantblock = None, # plant dataframe is already there
+                                                    estimatorblock = estimatorblock,
+                                                    user_interested_states = user_interested_states,)
+        # Create controller dataframe
+        super(DynamicDataManager, self).__init__(plantblock = None, # plant dataframe is already there
+                                                 controllerblock = controllerblock,
+                                                 user_interested_states = user_interested_states,
+                                                 user_interested_inputs = user_interested_inputs,)

@@ -15,16 +15,13 @@ Example for Caprese's module for NMPC.
 Main script for running the example.
 """
 import random
-from idaes.apps.caprese.nmpc import NMPCSim
+from idaes.apps.caprese.dynamic_builder import DynamicSim
 from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 import idaes.logger as idaeslog
 from cstr_rodrigo_model import make_model
-import pandas as pd
-import matplotlib.pyplot as plt
-from idaes.apps.caprese.data_manager import (
-                    ControllerDataManager,)
+from idaes.apps.caprese.data_manager import ControllerDataManager
 
 __author__ = "Kuan-Han Lin"
 
@@ -60,19 +57,19 @@ def main():
             m_plant.Tjinb[0],
             ]
     measurements = [
-            m_controller.Tall[0, "T"],
-            m_controller.Tall[0, "Tj"],
-            m_controller.Ca[0],
+            m_plant.Tall[0, "T"],
+            m_plant.Tall[0, "Tj"],
+            m_plant.Ca[0],
             ]
     
     # Construct the "NMPC simulator" object
-    nmpc = NMPCSim(
+    nmpc = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.t,
             controller_model=m_controller, 
             controller_time_set=m_controller.t,
             inputs_at_t0=inputs,
-            measurements=measurements,
+            measurements_at_t0=measurements,
             sample_time=sample_time,
             )
 
@@ -177,9 +174,7 @@ def main():
                 )
 
         nmpc.controller.advance_one_sample()
-        nmpc.controller.load_measurements(measured, 
-                                          target = "measurement",
-                                          timepoint = controller.time.first())
+        nmpc.controller.load_initial_conditions(measured)    
 
         solver.solve(nmpc.controller, tee=True)
         data_manager.save_controller_data(iteration = i)

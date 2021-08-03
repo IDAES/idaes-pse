@@ -21,10 +21,61 @@ from pyomo.environ import (
 
 __author__ = "Kuan-Han Lin"
 
-class NMPC_PlotLibrary(object):    
+
+class PLANT_PlotLibrary(object):
     def get_plant_dataframe(self):
         raise NotImplementedError("Must implement a method to get plant data")
         
+    def plot_plant_state_evolution(self,
+                                   varslist = None,
+                                   plant_dataframe = None,):
+        
+        if plant_dataframe is None:
+            plant_dataframe = self.get_plant_dataframe()
+            
+        if varslist is None:
+            raise RuntimeError("No specific state is declared. "
+                               "Please declare some states for plotting.")
+
+        for ind, var in enumerate(varslist):
+            str_cuid = str(ComponentUID(var.referent))
+            plant_xaxis = plant_dataframe.index
+            if str_cuid not in plant_dataframe.columns:
+                print("Given state ", var.name, " is not saved in the dataframe. ")
+                continue
+            plant_state = plant_dataframe[str_cuid]
+            
+            title = "Simulation result: "+ str_cuid
+            plt.figure(title)
+            plt.plot(plant_xaxis, plant_state)#, label = "Real state")
+            # plt.legend()
+            plt.xlabel("time")
+            plt.title(title)
+        plt.show()
+                    
+    def plot_control_input(self, 
+                           inputs = None, 
+                           dataframe=None):
+        if dataframe is None:
+            dataframe = self.get_plant_dataframe()
+            
+        if inputs is None:
+            raise RuntimeError("No specific input is declared."
+                               "Please declare some control inputs for plotting.")
+        
+        for ind, var in enumerate(inputs):
+            str_cuid = str(ComponentUID(var.referent))
+            input_data = dataframe[str_cuid]
+            
+            title = "Control input: " + str_cuid
+            plt.figure(title)
+            plt.plot(dataframe.index, input_data, "r")
+            plt.xlabel("time")
+            plt.title(title)
+        plt.show()
+
+
+class NMPC_PlotLibrary(PLANT_PlotLibrary):    
     def get_controller_dataframe(self):
         raise NotImplementedError("Must implement a method to get controller data")
         
@@ -52,39 +103,18 @@ class NMPC_PlotLibrary(object):
             controller_xaxis = controller_dataframe.index
             state_setpoint = controller_dataframe[str_cuid + "_setpoint"]
             
-            plt.figure(str_cuid)
+            
+            title = "Setpoint tracking result: "+ str_cuid
+            plt.figure(title)
             plt.plot(plant_xaxis, real_state, label = "Real state")
             plt.plot(controller_xaxis, state_setpoint, label = "Setpoint")
             plt.legend()
             plt.xlabel("time")
-            plt.title("Setpoint tracking result: "+ str_cuid)
+            plt.title(title)
         plt.show()
         
-    def plot_control_input(self, 
-                           inputs = None, 
-                           dataframe=None):
-        if dataframe is None:
-            dataframe = self.get_plant_dataframe()
-            
-        if inputs is None:
-            raise RuntimeError("No specific input is declared."
-                               "Please declare some control inputs for plotting.")
-        
-        for ind, var in enumerate(inputs):
-            str_cuid = str(ComponentUID(var.referent))
-            input_data = dataframe[str_cuid]
 
-            plt.figure(str_cuid)
-            plt.plot(dataframe.index, input_data, "r")
-            plt.xlabel("time")
-            plt.title("Control input: " + str_cuid)
-        plt.show()
-
-#--------------------------------------------------------------------------
-class MHE_PlotLibrary(object):
-    def get_plant_dataframe(self):
-        raise NotImplementedError("Must implement a method to get plant data")
-        
+class MHE_PlotLibrary(PLANT_PlotLibrary):
     def get_estimator_dataframe(self):
         raise NotImplementedError("Must implement a method to get estimator data")
     
@@ -110,11 +140,11 @@ class MHE_PlotLibrary(object):
             estimator_xaxis = estimator_dataframe.index
             estimate = estimator_dataframe[str_cuid]
             
-            plt.figure(str_cuid)
+            title = "Estimation result: "+ str_cuid
+            plt.figure(title)
             plt.plot(plant_xaxis, real_state, label = "Real state")
             plt.plot(estimator_xaxis, estimate, "o",label = "estimate")
             plt.legend()
             plt.xlabel("time")
-            plt.title("Estimation result: "+ str(str_cuid))
+            plt.title(title)
         plt.show()
-            

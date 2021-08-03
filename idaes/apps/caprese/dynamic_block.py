@@ -28,9 +28,9 @@ from idaes.apps.caprese.categorize import (
         # categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
-from idaes.apps.caprese.nmpc_var import (
-        NmpcVar,
-        _NmpcVector,
+from idaes.apps.caprese.dynamic_var import (
+        DynamicVar,
+        _DynamicVector,
         DiffVar,
         DerivVar,
         AlgVar,
@@ -108,7 +108,6 @@ class _DynamicBlockData(_BlockData):
             # CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
             # CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
             # CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
-            pass
 
         # TODO: Give the user the option to provide their own
         # category_dict (they know the structure of their model
@@ -174,10 +173,10 @@ class _DynamicBlockData(_BlockData):
         # vardata map, which maps each vardata to a unique component indexed
         # only by time.
 
-        # Maps each vardata (of a time-indexed var) to the NmpcVar
+        # Maps each vardata (of a time-indexed var) to the DynamicVar
         # that contains it.
         self.vardata_map = ComponentMap((var[t], var) 
-                for var in self.component_objects(SubclassOf(NmpcVar))
+                for var in self.component_objects(SubclassOf(DynamicVar))
                 #for varlist in category_dict.values()
                 #for var in varlist
                 for t in var.index_set()
@@ -217,7 +216,7 @@ class _DynamicBlockData(_BlockData):
         category_dict = self.category_dict
         var_name = self._var_name
         for categ, varlist in category_dict.items():
-            ctype = CATEGORY_TYPE_MAP.get(categ, NmpcVar)
+            ctype = CATEGORY_TYPE_MAP.get(categ, DynamicVar)
             # These names are e.g. 'DIFFERENTIAL_BLOCK', 'DIFFERENTIAL_SET'
             # They serve as a way to access all the "differential variables"
             block_name = self.get_category_block_name(categ)
@@ -257,7 +256,7 @@ class _DynamicBlockData(_BlockData):
         """ Create a "time-indexed vector" for each category of variables. """
         category_dict = self.category_dict
 
-        # Add a deactivated block to store all my `_NmpcVector`s
+        # Add a deactivated block to store all my `_DynamicVector`s
         # These be will vars, named by category, indexed by the index
         # into the list of that category and by time. E.g.
         # self.vectors.differential
@@ -265,7 +264,7 @@ class _DynamicBlockData(_BlockData):
         self.vectors.deactivate()
 
         for categ in category_dict:
-            ctype = CATEGORY_TYPE_MAP.get(categ, NmpcVar)
+            ctype = CATEGORY_TYPE_MAP.get(categ, DynamicVar)
             # Get the block that holds this category of var,
             # and the name of the attribute that holds the
             # custom-ctype var (this attribute is the same
@@ -290,7 +289,7 @@ class _DynamicBlockData(_BlockData):
             # `self.vectors.differential[i,t0]`
             # to get the "ith coordinate" of the vector of differential
             # variables at time t0.
-            ref = Reference(_slice, ctype=_NmpcVector)
+            ref = Reference(_slice, ctype=_DynamicVector)
             self.vectors.add_component(
                     categ.name.lower(), # Lowercase of the enum name
                     ref,
@@ -392,7 +391,7 @@ class _DynamicBlockData(_BlockData):
         i_0 = sample_point_indices[sample_idx-1]
         i_s = sample_point_indices[sample_idx]
         for var in self.component_objects(ctype):
-            # `type(var)` is a subclass of `NmpcVar`, so I can
+            # `type(var)` is a subclass of `DynamicVar`, so I can
             # access the `setpoint` attribute.
             #
             # Would like:
@@ -548,7 +547,7 @@ class _DynamicBlockData(_BlockData):
                         )
 
     def set_variance(self, variance_list):
-        """ Set variance for corresponding NmpcVars to the values provided
+        """ Set variance for corresponding DynamicVars to the values provided
 
         Arguments:
             variance_list: List of vardata, value tuples. The vardatas
@@ -570,8 +569,9 @@ class _DynamicBlockData(_BlockData):
 
     def generate_inputs_at_time(self, t):
         if VC.INPUT in self.categories:
-            for val in self.vectors.input[:,t].value:
-                yield val
+            return [val for val in self.vectors.input[:,t].value]
+            # for val in self.vectors.input[:,t].value:
+            #     yield val
         else:
             raise RuntimeError(
                     "Trying to generate inputs but no input "
@@ -580,8 +580,9 @@ class _DynamicBlockData(_BlockData):
 
     def generate_measurements_at_time(self, t):
         if VC.MEASUREMENT in self.categories:
-            for val in self.vectors.measurement[:,t].value:
-                yield val
+            return [val for val in self.vectors.measurement[:,t].value]
+            # for val in self.vectors.measurement[:,t].value:
+            #     yield val
         else:
             raise RuntimeError(
                     "Trying to generate measurements but no measurement "

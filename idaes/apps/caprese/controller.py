@@ -24,8 +24,8 @@ from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
         CATEGORY_TYPE_MAP,
         )
-from idaes.apps.caprese.nmpc_var import (
-        NmpcVar,
+from idaes.apps.caprese.dynamic_var import (
+        DynamicVar,
         DiffVar,
         AlgVar,
         InputVar,
@@ -89,6 +89,18 @@ class _ControllerBlockData(_DynamicBlockData):
         model = self.mod
         time = self.time
         t0 = time.first()
+        
+        # Determine initial conditions depend on measurements or differential variables
+        if self.estimator_is_existing:
+            # In this case, the number of measurements may be smaller than the 
+            # number differential variables.
+            ics_vector_var = self.vectors.differential
+            ictype = VC.DIFFERENTIAL
+        else:
+            # In this case, the number of measurements is required to equal to 
+            # the number of differential variables. 
+            ics_vector_var = self.vectors.measurement
+            ictype = VC.MEASUREMENT
 
         was_originally_active = ComponentMap([(comp, comp.active) for comp in 
                 model.component_data_objects((Constraint, Block))])
@@ -105,14 +117,14 @@ class _ControllerBlockData(_DynamicBlockData):
         # Cache "important" values to re-load after solve
         init_input = list(self.vectors.input[:, t0].value) \
                 if VC.INPUT in self.categories else []
-        init_meas = list(self.vectors.measurement[:, t0].value) \
-                if VC.MEASUREMENT in self.categories else []
+        init_ics = list(ics_vector_var[:, t0].value) \
+                if ictype in self.categories else []
 
         # Fix/unfix variables as appropriate
         # Order matters here. If a derivative is used as an IC, we still want
         # it to be fixed if steady state is required.
-        if VC.MEASUREMENT in self.categories:
-            self.vectors.measurement[:,t0].unfix()
+        if ictype in self.categories:
+            ics_vector_var[:,t0].unfix()
 
         if VC.INPUT in self.categories:
             input_vars = self.vectors.input
@@ -149,8 +161,8 @@ class _ControllerBlockData(_DynamicBlockData):
         if VC.DERIVATIVE in self.categories:
             if require_steady == True:
                 self.vectors.derivative[:,t0].unfix()
-        if VC.MEASUREMENT in self.categories:
-            self.vectors.measurement[:,t0].fix()
+        if ictype in self.categories:
+            ics_vector_var[:,t0].fix()
 
         # Reactivate components that were deactivated
         for t, complist in deactivated.items():
@@ -172,8 +184,8 @@ class _ControllerBlockData(_DynamicBlockData):
         # Restore cached values
         if VC.INPUT in self.categories:
             self.vectors.input.values = init_input
-        if VC.MEASUREMENT in self.categories:
-            self.vectors.measurement.values = init_meas
+        if ictype in self.categories:
+            ics_vector_var.values = init_ics
 
     def add_setpoint_objective(self, 
             setpoint,
@@ -221,7 +233,7 @@ class _ControllerBlockData(_DynamicBlockData):
             objective_weight=1.0,
             ):
         """ This method constructs a tracking objective based on existing
-        `setpoint` attributes of this block's `NmpcVar`s and adds it to the
+        `setpoint` attributes of this block's `DynamicVar`s and adds it to the
         block. Only specific ctypes listed in `state_ctypes` are directly
         penalized in the objective. These should be the differential variables
         or the measurements, for traditional NMPC.
@@ -305,6 +317,43 @@ class _ControllerBlockData(_DynamicBlockData):
                     "Trying to add constraints on inputs but no input "
                     "variables have been specified."
                     )
+            
+    def load_estimates(self, estimates):
+        tp = self.time.first()
+        for var, val in zip(self.DIFFERENTIAL_BLOCK[:].var, estimates):
+            var[tp].fix(val)
+            
+    def load_initial_conditions(self, ics, type_of_ics = None):
+        '''
+        Load initial conditions for the NMPC controller. 
+        If MHE exists, initial conditions should be the estimates from MHE.
+        If MHE doesn't exist, initial conditions are the measurements directly
+        from the plant.
+
+        Parameters
+        ----------
+        ics : list of initial conditions.
+        '''
+        
+        if type_of_ics is None:
+            print("Loading type of initial conditions is not declared. \n"
+                  "Determine the type by checking whether MHE exists or not.")
+            if self.estimator_is_existing:
+                type_of_ics = "estimate"
+            else:
+                type_of_ics = "measurement"
+                
+        if type_of_ics == "estimate":
+            self.load_estimates(ics)
+        elif type_of_ics == "measurement":
+            self.load_measurements(ics, 
+                                   target = "measurement",
+                                   timepoint = self.time.first())                     
+        else:
+            raise RuntimeError("Declared type of initial conditions does not support."
+                               "Please use either 'measurement' or 'estimate'.")            
+        
+        
 
 
 class ControllerBlock(DynamicBlock):

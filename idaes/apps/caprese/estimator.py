@@ -23,9 +23,9 @@ from idaes.apps.caprese.categorize import (
         categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
-from idaes.apps.caprese.nmpc_var import (
-        _NmpcVector,
-        NmpcVar,
+from idaes.apps.caprese.dynamic_var import (
+        DynamicVar,
+        _DynamicVector,
         DiffVar,
         AlgVar,
         InputVar,
@@ -660,6 +660,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
             for tind in time_list:
                 var[tind].set_value(val)
+                
+    def generate_estimates_at_time(self, t):
+        return [val for val in self.vectors.differential[:, t].value]
                     
 
 class EstimatorBlock(DynamicBlock):

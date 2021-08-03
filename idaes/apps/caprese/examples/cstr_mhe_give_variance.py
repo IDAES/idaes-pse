@@ -14,7 +14,7 @@
 Example for Caprese's module for MHE.
 """
 import random
-from idaes.apps.caprese.mhe import MHESim
+from idaes.apps.caprese.dynamic_builder import DynamicSim
 from idaes.apps.caprese.util import apply_noise_with_bounds
 from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
@@ -58,22 +58,22 @@ def main():
             m_plant.fs.mixer.E_inlet.flow_vol[0],
             ]
     measurements = [
-            m_estimator.fs.cstr.outlet.conc_mol[0, 'C'],
-            m_estimator.fs.cstr.outlet.conc_mol[0, 'E'],
-            m_estimator.fs.cstr.outlet.conc_mol[0, 'S'],
-            m_estimator.fs.cstr.outlet.conc_mol[0, 'P'],
-            m_estimator.fs.cstr.outlet.temperature[0],
-            m_estimator.fs.cstr.volume[0],
+            m_plant.fs.cstr.outlet.conc_mol[0, 'C'],
+            m_plant.fs.cstr.outlet.conc_mol[0, 'E'],
+            m_plant.fs.cstr.outlet.conc_mol[0, 'S'],
+            m_plant.fs.cstr.outlet.conc_mol[0, 'P'],
+            m_plant.fs.cstr.outlet.temperature[0],
+            m_plant.fs.cstr.volume[0],
             ]
     
     # Construct the "MHE simulator" object
-    mhe = MHESim(
+    mhe = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.fs.time,
             estimator_model=m_estimator, 
             estimator_time_set=m_estimator.fs.time,
             inputs_at_t0=inputs,
-            measurements=measurements,
+            measurements_at_t0=measurements,
             sample_time=sample_time,
             )
     

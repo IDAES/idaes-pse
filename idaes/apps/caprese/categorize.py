@@ -25,7 +25,7 @@ from pyomo.util.slices import slice_component_along_sets
 from pyomo.core.expr.visitor import identify_variables
 from pyomo.contrib.incidence_analysis.interface import IncidenceGraphInterface
 
-import idaes.apps.caprese.nmpc_var as nmpc_var
+import idaes.apps.caprese.dynamic_var as dynamic_var
 from idaes.apps.caprese.common.config import (
         VariableCategory,
         ConstraintCategory,
@@ -34,12 +34,12 @@ VC = VariableCategory
 CC = ConstraintCategory
 
 CATEGORY_TYPE_MAP = {
-        VariableCategory.DIFFERENTIAL: nmpc_var.DiffVar,
-        VariableCategory.ALGEBRAIC: nmpc_var.AlgVar,
-        VariableCategory.DERIVATIVE: nmpc_var.DerivVar,
-        VariableCategory.INPUT: nmpc_var.InputVar,
-        VariableCategory.FIXED: nmpc_var.FixedVar,
-        VariableCategory.MEASUREMENT: nmpc_var.MeasuredVar,
+        VariableCategory.DIFFERENTIAL: dynamic_var.DiffVar,
+        VariableCategory.ALGEBRAIC: dynamic_var.AlgVar,
+        VariableCategory.DERIVATIVE: dynamic_var.DerivVar,
+        VariableCategory.INPUT: dynamic_var.InputVar,
+        VariableCategory.FIXED: dynamic_var.FixedVar,
+        VariableCategory.MEASUREMENT: dynamic_var.MeasuredVar,
         }
 
 def _is_derivative_wrt(var, time):
