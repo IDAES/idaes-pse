@@ -19,7 +19,7 @@ from idaes.core.util.math import safe_log, smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
 from idaes.generic_models.properties.core.generic.generic_reaction import \
-    get_concentration_term, get_log_concentration_term
+    get_concentration_term
 
 
 # Smooth parameter to use in safe_log approximations
@@ -83,11 +83,11 @@ class log_power_law_equil():
 
             if e is None and o.value != 0:
                 # Need to strip units from concentration term (if applicable)
-                c = get_log_concentration_term(b, r_idx)[p, j]
+                c = get_concentration_term(b, r_idx, log=True)[p, j]
                 e = o*c
             elif e is not None and o.value != 0:
                 # Need to strip units from concentration term (if applicable)
-                c = get_log_concentration_term(b, r_idx)[p, j]
+                c = get_concentration_term(b, r_idx, log=True)[p, j]
                 e = e + o*c
 
         # Need to check units on k_eq as well
