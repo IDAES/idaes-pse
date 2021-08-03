@@ -22,20 +22,14 @@ from pyomo.environ import (
 from pyomo.util.slices import slice_component_along_sets
 from pyomo.common.config import ConfigDict, ConfigValue
 
-from idaes.apps.caprese.dynamic_block import (
-        DynamicBlock,
-        )
-from idaes.apps.caprese.controller import (
-        ControllerBlock,
-        )
-from idaes.apps.caprese.estimator import (
-        EstimatorBlock,
-        )
+from idaes.apps.caprese.dynamic_block import DynamicBlock
+from idaes.apps.caprese.controller import ControllerBlock
+from idaes.apps.caprese.estimator import EstimatorBlock
 from idaes.apps.caprese.common.config import VariableCategory as VC
 
 __author__ = "Robert Parker, David Thierry, and Kuan-Han Lin"
 
-# put this function in utils?
+
 def use_CUID_to_capture_vars_t0_in_given_model(cuid_list, 
                                                target_t0,
                                                target_mod):
@@ -151,7 +145,7 @@ class DynamicSim(object):
             self.sample_time = sample_time
             
 
-        #check number of measurements and differential vars if no mhe
+        #check number of measurements and differential vars if there is no mhe
         if self.controller_is_existing and not self.estimator_is_existing:
             if len(measurements_at_t0) != \
                 len(self.controller.differential_vars):
@@ -170,6 +164,3 @@ class DynamicSim(object):
             controller_t0 = self.controller.time.first()
             self.controller.vectors.measurement[:, controller_t0].unfix()
             self.controller.vectors.differential[:, controller_t0].fix()
-            
-            # ok: TODO: walk through codes to make sure not using measurements
-            # TODO: avoid users misuse (needs more thinking)
