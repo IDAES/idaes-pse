@@ -17,43 +17,42 @@ A module of functions and classes for configuring NMPC/MHE problems
 import enum
 from pyomo.environ import SolverFactory
 from pyomo.core.base.var import _GeneralVarData
-from pyomo.common.config import ConfigEnum
 
 
-class ControlInitOption(ConfigEnum):
+class ControlInitOption(enum.Enum):
     FROM_PREVIOUS = 11
     BY_TIME_ELEMENT = 12
     FROM_INITIAL_CONDITIONS = 13
     SETPOINT = 14
 
 
-class ElementInitializationInputOption(ConfigEnum):
+class ElementInitializationInputOption(enum.Enum):
     SETPOINT = 21
     INITIAL = 22
     CURRENT_VALUES = 23
 
 
-class InputOption(ConfigEnum):
+class InputOption(enum.Enum):
     CURRENT = 20
     INITIAL = 21
     SETPOINT = 22
     # TODO: PREVIOUS = 23
 
 
-class TimeResolutionOption(ConfigEnum):
+class TimeResolutionOption(enum.Enum):
     COLLOCATION_POINTS = 31
     FINITE_ELEMENTS = 32
     SAMPLE_POINTS = 33
     INITIAL_POINT = 34
 
 
-class ControlPenaltyType(ConfigEnum):
+class ControlPenaltyType(enum.Enum):
     ERROR = 41
     ACTION = 42
     NONE = 43
 
 
-class VariableCategory(ConfigEnum):
+class VariableCategory(enum.Enum):
     DIFFERENTIAL = 1
     ALGEBRAIC = 2
     DERIVATIVE = 3
@@ -69,7 +68,7 @@ class VariableCategory(ConfigEnum):
     MODELDISTURBANCE = 12
 
 
-class ConstraintCategory(ConfigEnum):
+class ConstraintCategory(enum.Enum):
     DIFFERENTIAL = 1
     ALGEBRAIC = 2
     DISCRETIZATION = 3
@@ -82,13 +81,13 @@ class ConstraintCategory(ConfigEnum):
     INEQUALITY = 10
 
 
-class NoiseBoundOption(ConfigEnum):
+class NoiseBoundOption(enum.Enum):
     FAIL = 60
     DISCARD = 61
     PUSH = 62
 
 
-class PlantHorizonType(ConfigEnum):
+class PlantHorizonType(enum.Enum):
     FULL = 71
     ROLLING = 72
 
