@@ -76,6 +76,8 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "rbfopt",
+        "xlrd",     # for DMF read of old .xls Excel files
+        "openpyxl"  # for DMF read of new .xls Excel files
     ],
     entry_points={
         "console_scripts": [
@@ -103,7 +105,9 @@ kwargs = dict(
             "*.css",
             "*.html",
             "*.json.gz",
-            "*.dat"
+            "*.dat",
+            "*.xls",
+            "*.xlsx"
         ]
     },
     include_package_data=True,
