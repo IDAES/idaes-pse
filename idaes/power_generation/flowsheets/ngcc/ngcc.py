@@ -12,7 +12,8 @@
 ##############################################################################
 
 import os
-
+import csv
+from collections import OrderedDict
 import numpy as np
 
 import pyomo.environ as pyo
@@ -34,7 +35,7 @@ import idaes.core.util.tables as tables
 from ngcc_costing import get_ngcc_costing, build_ngcc_OM_costs
 from pyomo.environ import units as pyunits
 
-def main():
+def ge_model():
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
@@ -466,22 +467,37 @@ def main():
     else:
         ms.to_json(m, fname="init_reboiler_heat.json.gz")
 
-
+    print("Add costing and net power")
     m.fs.LP_FGsplit.split_fraction[:, "toLP_SH"].fix(0.55)
     m.fs.net_power_mw = pyo.Var(m.fs.config.time, initialize=600)
     @m.fs.Constraint(m.fs.config.time)
     def net_power_constraint(b, t):
         return b.net_power_mw[t]/100.0 == -b.net_power[t]/1e6/100.0
-    solver.solve(m, tee=True)
-
     # adding Total Plant Cost and Fixed and Variable O&M costs
     get_ngcc_costing(m, evaluate_cost=True)
+    build_ngcc_OM_costs(m)
+    @m.fs.Constraint(m.fs.time)
+    def eq1(c, t):
+        return m.fs.natural_gas[t] == pyunits.convert(
+            m.fs.inject1.gas_state[t].flow_mass*m.fs.fuel_lhv,
+            pyunits.MBtu/pyunits.day)
+    m.fs.natural_gas.unfix()
+    @m.fs.Constraint(m.fs.time)
+    def eq2(c, t):
+        return m.fs.net_power_cost[t] == m.fs.net_power_mw[t]
+    m.fs.net_power_cost.unfix()
 
+    if not os.path.isfile("init_add_costing.json.gz"):
+        solver.solve(m, tee=True)
+    if os.path.isfile("init_add_costing.json.gz"):
+        ms.from_json(m, fname="init_add_costing.json.gz", wts=ms.StoreSpec(suffix=False))
+    else:
+        ms.to_json(m, fname="init_add_costing.json.gz")
 
     return m, solver
 
 if __name__ == "__main__":
-    m, solver = main()
+    m, solver = get_model()
 
     print("")
     print("")
@@ -511,8 +527,23 @@ if __name__ == "__main__":
     #m.fs.target_net_power = pyo.Param(mutable=True)
     #m.obj = pyo.Objective(expr=(m.fs.net_power[0]/1e6 + m.fs.target_net_power)**2)
     netpow = np.linspace(650, 150, 50).tolist()
+    tab_out = OrderedDict([
+        ("Net Power (MW)", -m.fs.net_power[0]/1e6),
+        ("Fuel Flow (kg/s)", m.fs.inject1.gas_state[0].flow_mass),
+        ("Gas Turbine Power (MW)", -m.fs.gt_power[0]/1e6),
+        ("Steam Turbine Power (MW)", -m.fs.steam_turbine.power[0]/1e6),
+        ("LHV Efficiency (%)", m.fs.lhv_efficiency[0]*100),
+        ("Capture Reboiler Duty (MW)", m.fs.reboiler_duty_expr[0]/1e6),
+        ("Total Plant Cost ($/hr)", m.fs.costing.total_TPC/365/24*1e6),
+        ("Fixed O&M Cost ($/hr)", m.fs.costing.total_fixed_OM_cost/365/24*1e6),
+        ("Variable O&M Cost ($/hr)", m.fs.costing.total_variable_OM_cost[0]*(-m.fs.net_power[0]/1e6)),
+    ])
+    with open("series.csv", "w", newline='') as f:
+        w = csv.writer(f)
+        w.writerow(list(tab_out.keys()))
     for p in netpow:
         p = int(p)
+        print(f"Start Net Power {p} Run")
         #m.fs.gt_power.fix(-p*1e6)
         #m.fs.target_net_power.value = p
         m.fs.net_power_mw.fix(p)
@@ -522,16 +553,9 @@ if __name__ == "__main__":
             ms.to_json(m, fname=sf)
         else:
             ms.from_json(m, fname=sf, wts=ms.StoreSpec(suffix=False))
-
-        power = pyo.value(-m.fs.net_power[0]/1e6) #MW
-        fuel = pyo.value(m.tags['fuel01_F']) #kg/s
-        eff_lhv = pyo.value(m.fs.lhv_efficiency[0]*100) #%
-        st_pow = pyo.value(-m.fs.steam_turbine.power[0]/1e6) #MW
-        gt_pow = pyo.value(-m.fs.gt_power[0]/1e6)
-        rduty = pyo.value(m.fs.reboiler_duty_expr[0]/1e3) #kW
-        co2_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"])
-        fg_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol)
-        print(f"{power}, {gt_pow}, {st_pow}, {fuel}, {eff_lhv}, {rduty}, {co2_flow}, {fg_flow}")
+        with open("series.csv", "a", newline='') as f:
+            w = csv.writer(f)
+            w.writerow([pyo.value(x) for x in tab_out.values()])
         gas_turbine.write_pfd_results(f"pfd_results_gt_{p}.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
         sturb_module.write_pfd_results(f"pfd_results_st_{p}.svg", m.tags, m.tag_format)
         hrsg_module.pfd_result(f"pfd_results_hrsg_{p}.svg", m)
