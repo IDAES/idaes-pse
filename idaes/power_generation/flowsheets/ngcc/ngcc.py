@@ -31,7 +31,8 @@ import idaes.core.util.model_serializer as ms
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.unit_models import HeatExchanger, Heater
 import idaes.core.util.tables as tables
-
+from ngcc_costing import get_ngcc_costing, build_ngcc_OM_costs
+from pyomo.environ import units as pyunits
 
 def main():
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
@@ -424,7 +425,8 @@ def main():
             b.aux_transformer[t] +
             b.aux_misc[t])
 
-    m.fs.fuel_lhv = pyo.Var(units=pyunits.J/pyunits.kg) # J/kg
+    m.fs.fuel_lhv = pyo.Var(initialize=47.2e6,
+                            units=pyunits.J/pyunits.kg) # J/kg
     m.fs.fuel_lhv.fix(47.2e6)
 
     @m.fs.Expression(m.fs.config.time)
@@ -472,6 +474,8 @@ def main():
         return b.net_power_mw[t]/100.0 == -b.net_power[t]/1e6/100.0
     solver.solve(m, tee=True)
 
+    # adding Total Plant Cost and Fixed and Variable O&M costs
+    get_ngcc_costing(m, evaluate_cost=True)
 
 
     return m, solver
