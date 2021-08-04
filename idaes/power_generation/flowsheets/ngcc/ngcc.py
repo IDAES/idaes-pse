@@ -16,6 +16,7 @@ import os
 import numpy as np
 
 import pyomo.environ as pyo
+from pyomo.environ import units as pyunits
 from pyomo.network import Arc
 
 import idaes
@@ -32,7 +33,7 @@ from idaes.generic_models.unit_models import HeatExchanger, Heater
 import idaes.core.util.tables as tables
 
 
-if __name__ == "__main__":
+def main():
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
@@ -423,8 +424,12 @@ if __name__ == "__main__":
             b.aux_transformer[t] +
             b.aux_misc[t])
 
-    m.fs.fuel_lhv = pyo.Var() # J/kg
+    m.fs.fuel_lhv = pyo.Var(units=pyunits.J/pyunits.kg) # J/kg
     m.fs.fuel_lhv.fix(47.2e6)
+
+    @m.fs.Expression(m.fs.config.time)
+    def fuel_thermal_in_mbtu(b, t):
+        return pyunits.convert(m.fs.fuel_lhv*m.fs.inject1.gas_state[t].flow_mass, pyunits.MBtu/pyunits.hr)
 
     @m.fs.Expression(m.fs.config.time)
     def lhv_efficiency(b, t):
@@ -461,7 +466,18 @@ if __name__ == "__main__":
 
 
     m.fs.LP_FGsplit.split_fraction[:, "toLP_SH"].fix(0.55)
+    m.fs.net_power_mw = pyo.Var(m.fs.config.time, initialize=600)
+    @m.fs.Constraint(m.fs.config.time)
+    def net_power_constraint(b, t):
+        return b.net_power_mw[t]/100.0 == -b.net_power[t]/1e6/100.0
     solver.solve(m, tee=True)
+
+
+
+    return m, solver
+
+if __name__ == "__main__":
+    m, solver = main()
 
     print("")
     print("")
@@ -481,17 +497,21 @@ if __name__ == "__main__":
     print(f"LHV = {lhv:.2f} MJ/kg")
     print(f"Fuel flow = {fuel:.2f} kg/s")
     print(f"LHV Eff = {eff_lhv:.2f} %")
+    print(f"LHV Fuel thermal in = {pyo.value(m.fs.fuel_thermal_in_mbtu[0]):.2f} MBtu/hr")
     print(f"Reboiler Duty = {pyo.value(-m.fs.reboiler.control_volume.heat[0]/1e6)} MW")
     gas_turbine.write_pfd_results("pfd_results_gt.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
     sturb_module.write_pfd_results("pfd_results_st.svg", m.tags, m.tag_format)
     hrsg_module.pfd_result("pfd_results_hrsg.svg", m)
 
-
-    gt_power = [477, 475, 470, 465, 450, 455, 450, 445, 440, 435, 430, 425, 420, 415, 410, 405, 400, 395, 390, 385, 380, 375, 370, 365, 360, 355, 350,
-        345, 340, 335, 330, 325, 320, 315, 310, 305, 300, 295, 290, 285, 280, 275, 270, 265, 260, 255, 250, 245, 240, 235, 230, 225, 220, 215, 210, 205,
-        200, 195, 190, 185, 180, 175, 170, 165, 160, 155, 150, 145, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55]
-    for p in gt_power:
-        m.fs.gt_power[0].fix(-p*1e6)
+    m.fs.gt_power.unfix()
+    #m.fs.target_net_power = pyo.Param(mutable=True)
+    #m.obj = pyo.Objective(expr=(m.fs.net_power[0]/1e6 + m.fs.target_net_power)**2)
+    netpow = np.linspace(650, 150, 50).tolist()
+    for p in netpow:
+        p = int(p)
+        #m.fs.gt_power.fix(-p*1e6)
+        #m.fs.target_net_power.value = p
+        m.fs.net_power_mw.fix(p)
         sf = f"state_ngcc_state_{p}.json.gz"
         if not os.path.isfile(sf):
             solver.solve(m, tee=True)
