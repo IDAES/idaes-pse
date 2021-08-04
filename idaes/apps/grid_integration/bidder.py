@@ -466,6 +466,10 @@ class Bidder:
         model_sets = self.bidding_model_object.indices
         energy_price = self.model.energy_price
 
+        # because we do not neccesarily know which set in the bidding sets
+        # corresponds to generators, time, and lmp scenarios, I construct an
+        # auxillary dictionary. So we can easily fetch the value from
+        # 'price_forecasts', which has a fixed structure.
         aux_dict = {'Generators': None, 'Time': None, 'LMP Scenarios': None}
 
         for idx1 in self.bidding_set[0]:
