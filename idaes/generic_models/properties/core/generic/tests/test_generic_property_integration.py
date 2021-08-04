@@ -38,8 +38,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
     power_law_equil
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-        ConcentrationForm)
+from idaes.generic_models.properties.core.generic.utility import (
+    ConcentrationForm)
 
 from idaes.generic_models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom
