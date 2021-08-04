@@ -30,7 +30,8 @@ import idaes.core.util.model_serializer as ms
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.unit_models import HeatExchanger, Heater
 import idaes.core.util.tables as tables
-
+from ngcc_costing import get_ngcc_costing, build_ngcc_OM_costs
+from pyomo.environ import units as pyunits
 
 if __name__ == "__main__":
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
@@ -423,7 +424,8 @@ if __name__ == "__main__":
             b.aux_transformer[t] +
             b.aux_misc[t])
 
-    m.fs.fuel_lhv = pyo.Var() # J/kg
+    m.fs.fuel_lhv = pyo.Var(initialize=47.2e6,
+                            units=pyunits.J/pyunits.kg) # J/kg
     m.fs.fuel_lhv.fix(47.2e6)
 
     @m.fs.Expression(m.fs.config.time)
@@ -486,28 +488,66 @@ if __name__ == "__main__":
     sturb_module.write_pfd_results("pfd_results_st.svg", m.tags, m.tag_format)
     hrsg_module.pfd_result("pfd_results_hrsg.svg", m)
 
+    # adding Total Plant Cost and Fixed and Variable O&M costs
+    get_ngcc_costing(m, evaluate_cost=True)
 
-    gt_power = [477, 475, 470, 465, 450, 455, 450, 445, 440, 435, 430, 425, 420, 415, 410, 405, 400, 395, 390, 385, 380, 375, 370, 365, 360, 355, 350,
-        345, 340, 335, 330, 325, 320, 315, 310, 305, 300, 295, 290, 285, 280, 275, 270, 265, 260, 255, 250, 245, 240, 235, 230, 225, 220, 215, 210, 205,
-        200, 195, 190, 185, 180, 175, 170, 165, 160, 155, 150, 145, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55]
-    for p in gt_power:
-        m.fs.gt_power[0].fix(-p*1e6)
-        sf = f"state_ngcc_state_{p}.json.gz"
-        if not os.path.isfile(sf):
-            solver.solve(m, tee=True)
-            ms.to_json(m, fname=sf)
-        else:
-            ms.from_json(m, fname=sf, wts=ms.StoreSpec(suffix=False))
+    build_ngcc_OM_costs(m)
 
-        power = pyo.value(-m.fs.net_power[0]/1e6) #MW
-        fuel = pyo.value(m.tags['fuel01_F']) #kg/s
-        eff_lhv = pyo.value(m.fs.lhv_efficiency[0]*100) #%
-        st_pow = pyo.value(-m.fs.steam_turbine.power[0]/1e6) #MW
-        gt_pow = pyo.value(-m.fs.gt_power[0]/1e6)
-        rduty = pyo.value(m.fs.reboiler_duty_expr[0]/1e3) #kW
-        co2_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"])
-        fg_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol)
-        print(f"{power}, {gt_pow}, {st_pow}, {fuel}, {eff_lhv}, {rduty}, {co2_flow}, {fg_flow}")
-        gas_turbine.write_pfd_results(f"pfd_results_gt_{p}.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
-        sturb_module.write_pfd_results(f"pfd_results_st_{p}.svg", m.tags, m.tag_format)
-        hrsg_module.pfd_result(f"pfd_results_hrsg_{p}.svg", m)
+    @m.fs.Constraint(m.fs.time)
+    def eq1(c, t):
+        return m.fs.natural_gas[t] == pyunits.convert(m.fs.inject1.gas_state[t].flow_mass*m.fs.fuel_lhv, pyunits.MBtu/pyunits.day)
+    m.fs.natural_gas.unfix()
+
+    @m.fs.Constraint(m.fs.time)
+    def eq2(c, t):
+        return m.fs.net_power_cost[t] == m.fs.net_power[t]/1e6*(-1)
+    m.fs.net_power_cost.unfix()
+
+    @m.fs.Expression(m.fs.config.time)
+    def total_system_cost(b, t):
+        return m.fs.costing.total_variable_OM_cost
+        # return m.fs.costing.total_TPC[t]/365/24/650 + m.fs.costing.total_fixed_OM_cost/365/24/650 + m.fs.costing.total_variable_OM_cost
+                        #  $/year to $/MWh                      $/year --> $/MWh                          $/MWh
+    solver.solve(m, tee=True)
+
+    print('\n Soln with TPC and Fixed and Variable O&M costs')
+    print(f"Net Power = {power:.2f} MW")
+    print(f"Gross Power = {gross_power:.2f} MW")
+    print(f"GT Power = {gt_pow:.2f} MW")
+    print(f"ST Power = {st_pow:.2f} MW")
+    print(f"HP Steam T = {pyo.value(m.fs.hp_steam_temperature[0])} K")
+    print(f"LHV = {lhv:.2f} MJ/kg")
+    print(f"Fuel flow = {fuel:.2f} kg/s")
+    print(f"LHV Eff = {eff_lhv:.2f} %")
+    print(f"Reboiler Duty = {pyo.value(-m.fs.reboiler.control_volume.heat[0]/1e6)} MW")
+    gas_turbine.write_pfd_results("pfd_results_gt.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
+    sturb_module.write_pfd_results("pfd_results_st.svg", m.tags, m.tag_format)
+    hrsg_module.pfd_result("pfd_results_hrsg.svg", m)
+
+    # gt_power = [477, 475, 470, 465, 450, 455, 450, 445, 440, 435]#, 430, 425, 420, 415, 410, 405, 400, 395, 390, 385, 380, 375, 370, 365, 360, 355, 350,
+    #     # 345, 340, 335, 330, 325, 320, 315, 310, 305, 300, 295, 290, 285, 280, 275, 270, 265, 260, 255, 250, 245, 240, 235, 230, 225, 220, 215, 210, 205,
+    #     # 200, 195, 190, 185, 180, 175, 170, 165, 160, 155, 150, 145, 140, 135, 130, 125, 120, 115, 110, 105, 100, 95, 90, 85, 80, 75, 70, 65, 60, 55]
+    # cost = []
+    # for p in gt_power:
+    #     m.fs.gt_power[0].fix(-p*1e6)
+    #     sf = f"state_ngcc_state_{p}.json.gz"
+    #     if not os.path.isfile(sf):
+    #         solver.solve(m, tee=True)
+    #     #     ms.to_json(m, fname=sf)
+    #     # else:
+    #     #     ms.from_json(m, fname=sf, wts=ms.StoreSpec(suffix=False))
+
+    #     power = pyo.value(-m.fs.net_power[0]/1e6) #MW
+    #     fuel = pyo.value(m.tags['fuel01_F']) #kg/s
+    #     eff_lhv = pyo.value(m.fs.lhv_efficiency[0]*100) #%
+    #     st_pow = pyo.value(-m.fs.steam_turbine.power[0]/1e6) #MW
+    #     gt_pow = pyo.value(-m.fs.gt_power[0]/1e6)
+    #     rduty = pyo.value(m.fs.reboiler_duty_expr[0]/1e3) #kW
+    #     co2_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"])
+    #     fg_flow = pyo.value(m.fs.gts2.control_volume.properties_out[0].flow_mol)
+    #     cost_v = pyo.value(m.fs.flowsheet_cost)
+    #     cost.append(cost_v)
+    #     print(f"{power}, {cost}, {gt_pow}, {st_pow}, {fuel}, {eff_lhv}, {rduty}, {co2_flow}, {fg_flow}")
+    #     # gas_turbine.write_pfd_results(f"pfd_results_gt_{p}.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
+    #     # sturb_module.write_pfd_results(f"pfd_results_st_{p}.svg", m.tags, m.tag_format)
+    #     # hrsg_module.pfd_result(f"pfd_results_hrsg_{p}.svg", m)

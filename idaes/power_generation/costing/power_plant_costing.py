@@ -34,11 +34,18 @@ __author__ = "Costing Team (A. Noring and M. Zamarripa)"
 __version__ = "1.0.0"
 
 from pyomo.environ import Param, Var, Block, Constraint, Expression, value, \
-    Expr_if
+    Expr_if, units as pyunits
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.costing.costing_dictionaries import \
     BB_costing_exponents, BB_costing_params, sCO2_costing_params
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
+
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
+
+pyunits.load_definitions_from_strings(['USD = [currency]'])
 
 # -----------------------------------------------------------------------------
 # Power Plant Costing Library
@@ -116,7 +123,7 @@ def get_PP_costing(self, cost_accounts,
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2018')
 
@@ -304,7 +311,7 @@ def get_PP_costing(self, cost_accounts,
         return sum(costing.total_plant_cost[i] for i in cost_accounts)
     self.costing.total_plant_cost_sum = Expression(rule=TPC_sum_rule)
 
-    #  # add variable and constraint scaling
+    # add variable and constraint scaling
     for i in cost_accounts:
         iscale.set_scaling_factor(self.costing.bare_erected_cost[i], 1)
         iscale.set_scaling_factor(self.costing.total_plant_cost[i], 1)
@@ -351,7 +358,7 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2017')
 
@@ -529,7 +536,7 @@ def get_ASU_cost(self, scaled_param):
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2017')
 
@@ -594,6 +601,312 @@ def get_ASU_cost(self, scaled_param):
         self.costing.bare_erected_cost_eq, 1e-3, overwrite=False)
     iscale.constraint_scaling_transform(
         self.costing.total_plant_cost_eq, 1, overwrite=False)
+
+# -----------------------------------------------------------------------------
+# Operation & Maintenance Costing Library
+# -----------------------------------------------------------------------------
+
+
+def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
+                       labor_burden=30, operators_per_shift=6, tech=1,
+                       fixed_TPC=None):
+    """
+    Creates constraints for the following fixed O&M costs:
+        1. Annual operating labor
+        2. Maintenance labor
+        3. Admin and support labor
+        4. Property taxes and insurance
+        5. Total fixed O&M cost
+        6. Maintenance materials (actually a variable cost, but scales off TPC)
+    These costs apply to the project as a whole and are scaled based on the
+    total TPC.
+    Args:
+        m: pyomo concrete model
+        nameplate_capacity: rated plant output in MW
+        labor_rate: hourly rate of plant operators in project dollar year
+        labor_burden: a percentage multiplier used to estimate non-salary
+        labor expenses
+        operators_per_shift: average number of operators per shift
+        tech: int 1-7 representing the catagories in get_PP_costing, used to
+        determine maintenance costs
+        TPC_value: The TPC in $MM that will be used to determine fixed O&M
+        costs. If the value is None, the function will try to use the TPC
+        calculated from the individual units.
+
+    Returns:
+        None
+    """
+    # check if flowsheet level costing block exists
+    if not hasattr(m.fs, "costing"):
+        m.fs.get_costing(year='2018')
+
+    # create and fix total_TPC if it does not exist yet
+    if not hasattr(m.fs.costing, "total_TPC"):
+        m.fs.costing.total_TPC = Var(initialize=0,
+                                     bounds=(0, 1e4),
+                                     doc="total TPC in $MM")
+        if fixed_TPC is None:
+            m.fs.costing.total_TPC.fix(100)
+            _log.warning("m.fs.costing.total_TPC does not exist and a value "
+                         "for fixed_TPC was not specified, total_TPC will be "
+                         "fixed to 100 MM$")
+        else:
+            m.fs.costing.total_TPC.fix(fixed_TPC)
+    else:
+        if fixed_TPC is not None:
+            _log.warning("m.fs.costing.total_TPC already exists, the value "
+                         "passed for fixed_TPC will be ignored.")
+
+    # make params
+    m.fs.costing.labor_rate = Param(
+        initialize=labor_rate,
+        mutable=True)
+    m.fs.costing.labor_burden = Param(
+        initialize=labor_burden,
+        mutable=True)
+    m.fs.costing.operators_per_shift = Param(
+        initialize=operators_per_shift,
+        mutable=True)
+
+    maintenance_percentages = {1: [0.4, 0.016],
+                               2: [0.4, 0.016],
+                               3: [0.35, 0.03],
+                               4: [0.35, 0.03],
+                               5: [0.35, 0.03],
+                               6: [0.4, 0.019],
+                               7: [0.4, 0.016]}
+
+    m.fs.costing.maintenance_labor_TPC_split = Param(
+        initialize=maintenance_percentages[tech][0],
+        mutable=True)
+    m.fs.costing.maintenance_labor_percent = Param(
+        initialize=maintenance_percentages[tech][1],
+        mutable=True)
+    m.fs.costing.maintenance_material_TPC_split = Param(
+        initialize=(1 - maintenance_percentages[tech][0]),
+        mutable=True)
+    m.fs.costing.maintenance_material_percent = Param(
+        initialize=maintenance_percentages[tech][1],
+        mutable=True)
+
+    # make vars
+    m.fs.costing.annual_operating_labor_cost = Var(
+        initialize=1,
+        bounds=(0, 100),
+        doc="annual labor cost in $MM/yr")
+    m.fs.costing.maintenance_labor_cost = Var(
+        initialize=1,
+        bounds=(0, 100),
+        doc="maintenance labor cost in $MM/yr")
+    m.fs.costing.admin_and_support_labor_cost = Var(
+        initialize=1,
+        bounds=(0, 100),
+        doc="admin and support labor cost in $MM/yr")
+    m.fs.costing.property_taxes_and_insurance = Var(
+        initialize=1,
+        bounds=(0, 100),
+        doc="property taxes and insurance cost in $MM/yr")
+    m.fs.costing.total_fixed_OM_cost = Var(
+        initialize=4,
+        bounds=(0, 100),
+        doc="total fixed O&M costs in $MM/yr")
+    # maintenance material cost is technically a variable cost, but it makes
+    # more sense to include with the fixed costs becuase it uses TPC
+    m.fs.costing.maintenance_material_cost = Var(
+        initialize=5,
+        bounds=(0, 100),
+        doc="cost of maintenance materials in $/MWh")
+
+    # create constraints
+    TPC = m.fs.costing.total_TPC  # quick reference to total_TPC
+
+    # calculated from labor rate, labor burden, and operators per shift
+    @m.fs.costing.Constraint()
+    def annual_labor_cost_rule(c):
+        return c.annual_operating_labor_cost*1e6 == \
+            (c.operators_per_shift *
+             c.labor_rate*(1 + c.labor_burden/100)*8760)
+
+    # technology specific percentage of TPC
+    @m.fs.costing.Constraint()
+    def maintenance_labor_cost_rule(c):
+        return c.maintenance_labor_cost == (TPC *
+                                            c.maintenance_labor_TPC_split
+                                            * c.maintenance_labor_percent)
+
+    # 25% of the sum of annual operating labor and maintenance labor
+    @m.fs.costing.Constraint()
+    def admin_and_support_labor_cost_rule(c):
+        return c.admin_and_support_labor_cost == \
+            (0.25 * (c.annual_operating_labor_cost + c.maintenance_labor_cost))
+
+    # 2% of TPC
+    @m.fs.costing.Constraint()
+    def taxes_and_insurance_cost_rule(c):
+        return c.property_taxes_and_insurance == 0.02*TPC
+
+    # sum of fixed O&M costs
+    @m.fs.costing.Constraint()
+    def total_fixed_OM_cost_rule(c):
+        return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
+                                         c.maintenance_labor_cost +
+                                         c.admin_and_support_labor_cost +
+                                         c.property_taxes_and_insurance)
+
+    # technology specific percentage of TPC
+    @m.fs.costing.Constraint()
+    def maintenance_material_cost_rule(c):
+        return c.maintenance_material_cost == \
+            (TPC * 1e6 * c.maintenance_material_TPC_split *
+             c.maintenance_material_percent/0.85/nameplate_capacity/8760)
+
+
+def get_variable_OM_costs(m, net_power, resources, rates, prices="default"):
+    """
+    This function calculates the $/MWh price of resources used by the plant.
+    The function is structured to allow the user to generate all fuel,
+    consumable, and waste disposal costs at once.
+    It also creates a total variable cost for each point in m.fs.time.
+    Args:
+        m: pyomo concrete model
+        net_power: pyomo var indexed by m.fs.time representing net system power
+        resources: a list of strings for the resorces to be costed
+        rates: a list of pyomo vars for resource consumption rates
+        prices: a list of resource prices. If default is selected the function
+        will try to get prices from a premade dictionary.
+
+    Returns:
+        None.
+
+    """
+    # assert arguments are lists
+    if type(resources) is not list:
+        raise TypeError("resources argument must be a list")
+    if type(rates) is not list:
+        raise TypeError("rates argument must be a list")
+    if prices != "default" and type(prices) is not list:
+        raise TypeError("prices argument must be a list")
+
+    # assert lists are the same length
+    if len(resources) != len(rates):
+        raise Exception("resources and rates must be lists of the same length")
+    if prices != "default" and len(resources) != len(prices):
+        raise Exception("resources and prices must "
+                        "be lists of the same length")
+
+    # check if flowsheet level costing block exists
+    if not hasattr(m.fs, "costing"):
+        m.fs.get_costing(year='2018')
+
+    # dictionary of default prices
+    default_prices = {
+        "natural gas": 4.42*pyunits.USD/pyunits.MBtu,  # $/MMbtu
+        "coal": 51.96*pyunits.USD/pyunits.ton,
+        "water": 1.90e-3*pyunits.USD/pyunits.gallon,
+        "water treatment chemicals": 550*pyunits.USD/pyunits.ton,
+        "ammonia": 300*pyunits.USD/pyunits.ton,
+        "SCR catalyst": 150*pyunits.USD/pyunits.ft**3,
+        "triethylene glycol": 6.80*pyunits.USD/pyunits.gallon,
+        "SCR catalyst waste": 2.50*pyunits.USD/pyunits.ft**3,
+        "triethylene glycol waste": 0.35*pyunits.USD/pyunits.gallon,
+        "amine purification unit waste": 38*pyunits.USD/pyunits.ton,
+        "thermal reclaimer unit waste": 38*pyunits.USD/pyunits.ton
+        }
+
+    if prices == "default":
+        # raise error if the user includes resources not in default_prices
+        if not set(resources).issubset(default_prices.keys()):
+            raise Exception("A resource was included that does not contain a "
+                            "default price. Default prices exist for the "
+                            "following resources: "
+                            "{}".format(list(default_prices.keys())))
+        # create list of prices
+        prices = [default_prices[r] for r in resources]
+
+    # zip rates and prices into a dict accessible by resource
+    resource_rates = dict(zip(resources, rates))
+    resource_prices = dict(zip(resources, prices))
+
+    # make vars
+    m.fs.costing.variable_operating_costs = Var(
+        m.fs.time,
+        resources,
+        doc="variable operating costs in $/MWh")
+
+    m.fs.costing.other_variable_costs = Var(
+        m.fs.time,
+        initialize=0,
+        doc="a variable to include non-standard O&M costs in $/MWh")
+    # assume the user is not using this
+    m.fs.costing.other_variable_costs.fix(0)
+
+    m.fs.costing.total_variable_OM_cost = Var(
+        m.fs.time,
+        doc="total variable operating and maintenance costs in $/MWh")
+
+    # make constraints
+    @m.fs.costing.Constraint(m.fs.time, resources)
+    def variable_cost_rule(c, t, r):
+        return c.variable_operating_costs[t, r] == (pyunits.convert(
+                (resource_prices[r] * resource_rates[r][t] / net_power[t]),
+                (pyunits.USD/pyunits.MWh)))
+
+    if hasattr(m.fs.costing, "maintenance_material_cost"):
+        @m.fs.costing.Constraint(m.fs.time)
+        def total_variable_cost_rule(c, t):
+            return (c.total_variable_OM_cost[t] ==
+                    sum(c.variable_operating_costs[t, r] for r in resources) +
+                    c.maintenance_material_cost +
+                    c.other_variable_costs[t])
+    else:
+        @m.fs.costing.Constraint(m.fs.time)
+        def total_variable_cost_rule(c, t):
+            return (c.total_variable_OM_cost[t] ==
+                    sum(c.variable_operating_costs[t, r] for r in resources) +
+                    c.other_variable_costs[t])
+
+        _log.warning("The variable m.fs.costing.maintenance_material_cost "
+                     "could not be found, total_variable_cost_rule was "
+                     "constructed without in. get_fixed_OM_costs should be "
+                     "called before get_variable_OM_costs")
+
+
+def initialize_fixed_OM_costs(m):
+    calculate_variable_from_constraint(
+        m.fs.costing.annual_operating_labor_cost,
+        m.fs.costing.annual_labor_cost_rule)
+
+    calculate_variable_from_constraint(
+        m.fs.costing.maintenance_labor_cost,
+        m.fs.costing.maintenance_labor_cost_rule)
+
+    calculate_variable_from_constraint(
+        m.fs.costing.admin_and_support_labor_cost,
+        m.fs.costing.admin_and_support_labor_cost_rule)
+
+    calculate_variable_from_constraint(
+        m.fs.costing.property_taxes_and_insurance,
+        m.fs.costing.taxes_and_insurance_cost_rule)
+
+    calculate_variable_from_constraint(
+        m.fs.costing.total_fixed_OM_cost,
+        m.fs.costing.total_fixed_OM_cost_rule)
+
+    calculate_variable_from_constraint(
+        m.fs.costing.maintenance_material_cost,
+        m.fs.costing.maintenance_material_cost_rule)
+
+
+def initialize_variable_OM_costs(m):
+    for key in m.fs.costing.variable_operating_costs.keys():
+        calculate_variable_from_constraint(
+            m.fs.costing.variable_operating_costs[key],
+            m.fs.costing.variable_cost_rule[key])
+
+    for t in m.fs.costing.total_variable_OM_cost.keys():
+        calculate_variable_from_constraint(
+            m.fs.costing.total_variable_OM_cost[t],
+            m.fs.costing.total_variable_cost_rule[t])
 
 
 # -----------------------------------------------------------------------------
@@ -668,6 +981,23 @@ def display_equipment_costs(fs):
                                          value(o.costing.equipment_cost)))
 
 
+def get_total_TPC(m):
+    TPC_list = []
+    for o in m.fs.component_objects(descend_into=False):
+        # look for costing blocks
+        if hasattr(o, 'costing'):
+            for key in o.costing.total_plant_cost.keys():
+                TPC_list.append(o.costing.total_plant_cost[key])
+
+    m.fs.costing.total_TPC = Var(initialize=0,
+                                 bounds=(0, 1e4),
+                                 doc='total TPC in $MM')
+
+    @m.fs.costing.Constraint()
+    def total_TPC_eq(c):
+        return c.total_TPC == sum(TPC_list)
+
+
 def build_flowsheet_cost_constraint(m):
     total_cost_list = []
     for o in m.fs.component_objects(descend_into=False):
@@ -689,7 +1019,7 @@ def build_flowsheet_cost_constraint(m):
 def display_flowsheet_cost(m):
     print('\n')
     print('Total flowsheet cost: $%.3f Million' %
-          value(m.fs.flowsheet_cost_exp))
+          value(m.fs.flowsheet_cost))
 
 
 def check_sCO2_costing_bounds(fs):
