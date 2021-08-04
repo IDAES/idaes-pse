@@ -18,7 +18,7 @@ from pyomo.environ import Param, units as pyunits
 from idaes.core.util.math import safe_log, smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.generic_models.properties.core.generic.utility import \
     get_concentration_term
 
 

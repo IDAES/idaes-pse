@@ -15,7 +15,7 @@ Methods for calculating equilibrium constants
 """
 from pyomo.environ import exp, Var, units as pyunits, value
 
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.generic_models.properties.core.generic.utility import \
     ConcentrationForm
 from .dh_rxn import constant_dh_rxn
 from idaes.core.util.misc import set_param_from_config
@@ -68,9 +68,9 @@ class ConstantKeq():
                 c_units = units["pressure"]
             else:
                 raise BurntToast(
-                    "{} get_concentration_term received unrecognised "
-                    "ConcentrationForm ({}). This should not happen - please "
-                    "contact the IDAES developers with this bug."
+                    "{} received unrecognised ConcentrationForm ({}). "
+                    "This should not happen - please contact the IDAES "
+                    "developers with this bug."
                     .format(rblock.name, c_form))
 
             e_units = c_units**order
@@ -134,9 +134,9 @@ class van_t_hoff():
                 c_units = units["pressure"]
             else:
                 raise BurntToast(
-                    "{} get_concentration_term received unrecognised "
-                    "ConcentrationForm ({}). This should not happen - please "
-                    "contact the IDAES developers with this bug."
+                    "{} received unrecognised ConcentrationForm ({}). "
+                    "This should not happen - please contact the IDAES "
+                    "developers with this bug."
                     .format(rblock.name, c_form))
 
             e_units = c_units**order

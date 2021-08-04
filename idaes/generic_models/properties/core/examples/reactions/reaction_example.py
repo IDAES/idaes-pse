@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-Example of defining a reaction package for the follwoing reaction system:
+Example of defining a reaction package for the following reaction system:
 
 R1)  A + B --> 2C  Power law rate reaction
 R2)  B + C <-> D  Power law equilibrium reaction
@@ -25,7 +25,7 @@ from idaes.core import LiquidPhase, Component
 from idaes.generic_models.properties.core.state_definitions import FcTP
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 
-from idaes.generic_models.properties.core.generic.generic_reaction import (
+from idaes.generic_models.properties.core.generic.utility import (
         ConcentrationForm)
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
