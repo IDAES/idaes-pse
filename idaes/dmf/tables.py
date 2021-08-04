@@ -41,8 +41,8 @@ class Table:
 
     def read_csv(self, filepath, **kwargs) -> None:
         """Read the table from a CSV file using pandas' `read_csv()`.
-        See `Pandas docs
-        https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html`_
+        See `Pandas read_csv docs
+        <https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html>`_
         for details.
 
         Existing table will be replaced.
@@ -60,8 +60,8 @@ class Table:
 
     def read_excel(self, filepath, **kwargs) -> None:
         """Read the table from a CSV file using pandas' `read_excel()`.
-        See `Pandas docs
-        https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html`_
+        See `Pandas read_excel docs
+        <https://pandas.pydata.org/docs/reference/api/pandas.read_excel.html>`_
         for details.
 
         Existing table will be replaced.

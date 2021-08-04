@@ -1,9 +1,8 @@
 ﻿Tutorials and Examples
 ======================
-
-Viewing online
---------------
-Tutorials and examples for IDAES are located on the |examples-site|.
+In addition to the short examples in the :doc:`Examples <examples/index>` section,
+longer examples and tutorials are available on a separate set of pages
+at |examples-site|.
 If you are new to IDAES, it is strongly recommended to start with the tutorials.
 There are also pre-recorded tutorial videos on the `IDAES page on YouTube <https://www.youtube.com/channel/UCpp3J_990C0Oz_CbxRDfr6g>`_.
 

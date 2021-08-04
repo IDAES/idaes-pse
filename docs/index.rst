@@ -46,6 +46,7 @@ Contents
     getting_started/index
     user_guide/index
     advanced_user_guide/index
+    examples/index
     tutorials_examples
     technical_specs/index
     related_packages/index
