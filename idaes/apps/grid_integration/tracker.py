@@ -132,6 +132,62 @@ class Tracker:
 
         def dfs_add_constraints(set_idx, indices, tracking_indices):
 
+            '''
+            This function use depth first search (DFS) to traverse the inexplicit
+            sets the model has. When all sets have one entry in the indices, we
+            add the constraint to track the dispatch signals, i.e., power output
+            == dispatch.
+
+            The DFS algorithm will be expalined by the following example. For
+            example, the arbitary model is indexed by 3 sets:
+                set_1 = {1,2}
+                set_2 = {a,b}
+                set_3 = {y,z}
+
+            So we have the following search tree:
+                                   Dummy  Node
+                                   /          \
+            Level 1 (set_1)        1           2
+                                 /  \        /  \
+            Level 2 (set_2)     a    b      a    b
+                               / \  / \    / \  / \
+            Level 3 (set_3)   y  z  y  z   y  z y  z
+
+            To search all possible indices the variables in the model have, we
+            need to use DFS. At each level we append the index from the
+            corresponding set to our list.
+
+            E.g.,
+            Before the algorithm, indices = []
+            Dive to the first level, indices = [1]
+            Dive to the second level, indices = [1,a]
+            Dive to the third level, indices = [1,a,y]
+
+            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
+            We add the constraints/objective with these indices.
+
+            But we haven't enumerated all combinations of indices in the model,
+            we need to go back up a level in the search tree -- backtrack. And
+            then keep searching.
+
+            E.g.,
+            Before backtrack, indices = [1,a,y]
+            After backtrack we are at level 2, indices = [1,a]
+            Keep searching and dive to the third level, indices = [1,a,z]
+
+            So in this way we can find all valid collection of indices and add
+            constraints/objective accordingly.
+
+            Arguments:
+                set_idx: an index that points to a set in a list of sets.
+                indices: a list to store the current traversed indices
+                tracking_indices: a list to store the current traversed indices
+                                  for the tracking problem.
+
+            Returns:
+                None
+            '''
+
             # traveled all the sets, and now we can add the constraint
             if set_idx == len(set_ls):
                 self.model.tracking_dispatch_constraints.add(power_output[tuple(indices)] == power_dispatch[tuple(tracking_indices)])
@@ -179,6 +235,61 @@ class Tracker:
         cost_ls = list(total_cost.keys())
 
         def dfs_sum_costs(cost, set_idx, indices):
+
+            '''
+            This function use depth first search (DFS) to traverse the inexplicit
+            sets the model has. When all sets have one entry in the indices, we
+            add the cost associated to these indices to the objective function.
+
+            The DFS algorithm will be expalined by the following example. For
+            example, the arbitary model is indexed by 3 sets:
+                set_1 = {1,2}
+                set_2 = {a,b}
+                set_3 = {y,z}
+
+            So we have the following search tree:
+                                   Dummy  Node
+                                   /          \
+            Level 1 (set_1)        1           2
+                                 /  \        /  \
+            Level 2 (set_2)     a    b      a    b
+                               / \  / \    / \  / \
+            Level 3 (set_3)   y  z  y  z   y  z y  z
+
+            To search all possible indices the variables in the model have, we
+            need to use DFS. At each level we append the index from the
+            corresponding set to our list.
+
+            E.g.,
+            Before the algorithm, indices = []
+            Dive to the first level, indices = [1]
+            Dive to the second level, indices = [1,a]
+            Dive to the third level, indices = [1,a,y]
+
+            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
+            We add the constraints/objective with these indices.
+
+            But we haven't enumerated all combinations of indices in the model,
+            we need to go back up a level in the search tree -- backtrack. And
+            then keep searching.
+
+            E.g.,
+            Before backtrack, indices = [1,a,y]
+            After backtrack we are at level 2, indices = [1,a]
+            Keep searching and dive to the third level, indices = [1,a,z]
+
+            So in this way we can find all valid collection of indices and add
+            constraints/objective accordingly.
+
+            Arguments:
+                cost: one certain type of cost the model has. It is Pyomo expression
+                      and/or variable
+                set_idx: an index that points to a set in a list of sets.
+                indices: a list to store the current traversed indices
+
+            Returns:
+                None
+            '''
 
             # traveled all the sets, and now we can add the constraint
             if set_idx == len(set_ls):
