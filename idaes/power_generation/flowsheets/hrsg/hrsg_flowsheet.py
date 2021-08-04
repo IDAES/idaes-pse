@@ -64,7 +64,8 @@ from idaes.generic_models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback)
 import idaes.core.util.scaling as iscale
 from idaes.power_generation.unit_models.boiler_heat_exchanger import (
-    BoilerHeatExchanger, TubeArrangement, DeltaTMethod)
+    BoilerHeatExchanger, TubeArrangement, DeltaTMethod,
+    delta_temperature_underwood_callback as bh_delta_temperature_underwood_callback)
 from idaes.power_generation.unit_models.helm.phase_separator import \
     HelmPhaseSeparator
 
@@ -91,6 +92,7 @@ def add_unit_models(m):
     # -------------------------------------------------------------------------
     # Low Pressure System: 1 economizer, 1 evaporator, 1 superheater
     fs.LP_ECON = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": False,
@@ -126,6 +128,7 @@ def add_unit_models(m):
 
     # LP SH = Low pressure superheater
     fs.LP_SH = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": False,
@@ -161,6 +164,7 @@ def add_unit_models(m):
     # IP ECON
     # Low Pressure System: 1 economizer, 1 evaporator, 1 superheater
     fs.IP_ECON1 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -179,6 +183,7 @@ def add_unit_models(m):
     )
     # IP ECON2 (from splitter)
     fs.IP_ECON2 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -197,6 +202,7 @@ def add_unit_models(m):
 
     # IP SH = Low pressure superheater
     fs.IP_SH1 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -224,6 +230,7 @@ def add_unit_models(m):
 
     # IP SH2 = Intermediate pressure superheater2 and reheater 1
     fs.IP_SH2 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -235,6 +242,7 @@ def add_unit_models(m):
 
     # IP SH3 = Intermediate pressure superheater3 and reheater 2
     fs.IP_SH3 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -248,6 +256,7 @@ def add_unit_models(m):
     # inlet from # High Pressure Pump (m.fs.HP_pump.outlet)
     # HP_ECON1 = ECONOMIZER 1
     fs.HP_ECON1 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -259,6 +268,7 @@ def add_unit_models(m):
 
     # HP_ECON2 = ECONOMIZER 2
     fs.HP_ECON2 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -270,6 +280,7 @@ def add_unit_models(m):
 
     # HP_ECON3 = ECONOMIZER 3
     fs.HP_ECON3 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -281,6 +292,7 @@ def add_unit_models(m):
 
     # HP_ECON4 = ECONOMIZER 4
     fs.HP_ECON4 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -292,6 +304,7 @@ def add_unit_models(m):
 
     # HP_ECON5 = ECONOMIZER 5
     fs.HP_ECON5 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -309,6 +322,7 @@ def add_unit_models(m):
 
     # HP_SH1 = superheater 1
     fs.HP_SH1 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -320,6 +334,7 @@ def add_unit_models(m):
 
     # HP_SH2 = superheater 2
     fs.HP_SH2 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -331,6 +346,7 @@ def add_unit_models(m):
 
     # HP_SH3 = superheater 3
     fs.HP_SH3 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
@@ -342,6 +358,7 @@ def add_unit_models(m):
 
     # HP_SH4 = superheater 4
     fs.HP_SH4 = BoilerHeatExchanger(default={
+        "delta_temperature_callback": bh_delta_temperature_underwood_callback,
         "side_1_property_package": fs.prop_water,
         "side_2_property_package": fs.prop_gas,
         "has_pressure_change": True,
