@@ -665,3 +665,13 @@ def test_conf_set(runner):
     _tst(["--global", "--file", fname, "--file_as_global"])
     _tst(["--local", "--file", fname, "--file_as_local"])
     _tst(["--file", fname])
+
+
+##############
+# env info   #
+##############
+
+@pytest.mark.unit
+def test_env_info1(runner):
+    result = runner.invoke(env_info.environment_info)
+    assert result.exit_code == 0
