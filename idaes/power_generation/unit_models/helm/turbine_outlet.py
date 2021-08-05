@@ -60,16 +60,29 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.flow_coeff.fix()
         self.efficiency_mech.fix()
 
+
+        self.tel_c0 = Var(initialize=0.0064)
+        self.tel_c1 = Var(initialize=-0.0328)
+        self.tel_c2 = Var(initialize=0.0638)
+        self.tel_c3 = Var(initialize=-0.0542)
+        self.tel_c4 = Var(initialize=0.022)
+        self.tel_c5 = Var(initialize=-0.0035)
+        self.tel_c0.fix()
+        self.tel_c1.fix()
+        self.tel_c2.fix()
+        self.tel_c3.fix()
+        self.tel_c4.fix()
+        self.tel_c5.fix()
         @self.Expression(self.flowsheet().time, doc="Eff. fact. correlation")
         def tel(b, t):
             f = b.control_volume.properties_out[t].flow_vol / b.design_exhaust_flow_vol
             return 1e6 * (
-                -0.0035 * f ** 5
-                + 0.022 * f ** 4
-                - 0.0542 * f ** 3
-                + 0.0638 * f ** 2
-                - 0.0328 * f
-                + 0.0064
+                + self.tel_c5 * f ** 5
+                + self.tel_c4 * f ** 4
+                + self.tel_c3 * f ** 3
+                + self.tel_c2 * f ** 2
+                + self.tel_c1 * f
+                + self.tel_c0
             )*pyunits.J/pyunits.mol
 
         @self.Constraint(self.flowsheet().time, doc="Stodola eq. choked flow")
