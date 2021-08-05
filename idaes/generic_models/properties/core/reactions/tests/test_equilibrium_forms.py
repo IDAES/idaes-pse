@@ -209,11 +209,7 @@ def test_log_power_law_equil_no_order():
     add_object_reference(m.rxn[1], "params", m.rparams)
     add_object_reference(m.rxn[1], "state_ref", m.thermo[1])
 
-    m.rxn[1].k_eq = Var(["r1"], initialize=1)
-
-    log_power_law_equil.build_parameters(
-        m.rparams.reaction_r1,
-        m.rparams.config.equilibrium_reactions["r1"])
+    m.rxn[1].log_k_eq = Var(["r1"], initialize=1)
 
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
@@ -226,15 +222,13 @@ def test_log_power_law_equil_no_order():
     # Solids should have zero order, as they are excluded
     assert m.rparams.reaction_r1.reaction_order["sol", "c1"].value == 0
     assert m.rparams.reaction_r1.reaction_order["sol", "c2"].value == 0
-    assert isinstance(m.rparams.reaction_r1.eps, Param)
-    assert m.rparams.reaction_r1.eps.value == 1e-15
 
     # Check reaction form
     rform = log_power_law_equil.return_expression(
         m.rxn[1], m.rparams.reaction_r1, "r1", 300)
 
     assert str(rform) == str(
-        safe_log(m.rxn[1].k_eq["r1"], eps=m.rparams.reaction_r1.eps) ==
+        m.rxn[1].log_k_eq["r1"] ==
         m.rparams.reaction_r1.reaction_order["p1", "c1"] *
         m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] +
         m.rparams.reaction_r1.reaction_order["p1", "c2"] *
@@ -284,11 +278,7 @@ def test_log_power_law_equil_with_order():
     add_object_reference(m.rxn[1], "params", m.rparams)
     add_object_reference(m.rxn[1], "state_ref", m.thermo[1])
 
-    m.rxn[1].k_eq = Var(["r1"], initialize=1)
-
-    log_power_law_equil.build_parameters(
-        m.rparams.reaction_r1,
-        m.rparams.config.equilibrium_reactions["r1"])
+    m.rxn[1].log_k_eq = Var(["r1"], initialize=1)
 
     # Check parameter construction
     assert isinstance(m.rparams.reaction_r1.reaction_order, Var)
@@ -299,15 +289,13 @@ def test_log_power_law_equil_with_order():
     assert m.rparams.reaction_r1.reaction_order["p2", "c2"].value == 4
     assert m.rparams.reaction_r1.reaction_order["sol", "c1"].value == 5
     assert m.rparams.reaction_r1.reaction_order["sol", "c2"].value == 6
-    assert isinstance(m.rparams.reaction_r1.eps, Param)
-    assert m.rparams.reaction_r1.eps.value == 1e-15
 
     # Check reaction form
     rform = log_power_law_equil.return_expression(
         m.rxn[1], m.rparams.reaction_r1, "r1", 300)
 
     assert str(rform) == str(
-        safe_log(m.rxn[1].k_eq["r1"], eps=m.rparams.reaction_r1.eps) ==
+        m.rxn[1].log_k_eq["r1"] ==
         m.rparams.reaction_r1.reaction_order["p1", "c1"] *
         m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] +
         m.rparams.reaction_r1.reaction_order["p1", "c2"] *

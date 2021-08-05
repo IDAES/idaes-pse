@@ -1073,7 +1073,7 @@ class TestGenericStateBlock(object):
                     frame.props[1],
                     frame.params.get_metadata().properties[p]["method"])
                 continue
-            elif p == "dh_rxn":
+            elif p in ["dh_rxn", "log_k_eq"]:
                 # Not testing inherent reactions here either
                 # Check that method exists and continue
                 assert hasattr(

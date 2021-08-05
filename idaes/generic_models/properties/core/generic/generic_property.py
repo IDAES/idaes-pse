@@ -941,7 +941,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'log_pressure_phase_comp_apparent': {
                  'method': '_log_pressure_phase_comp_apparent'},
              'log_pressure_phase_comp_true': {
-                 'method': '_log_pressure_phase_comp_true'}})
+                 'method': '_log_pressure_phase_comp_true'},
+             'log_k_eq': {'method': '_log_k_eq'}})
 
 
 class _GenericStateBlock(StateBlock):
@@ -1247,8 +1248,8 @@ class _GenericStateBlock(StateBlock):
                 if blk[k].is_property_constructed("log_"+prop):
                     comp = getattr(blk[k], prop)
                     lcomp = getattr(blk[k], "log_"+prop)
-                    for (p, j), v in lcomp.items():
-                        c = value(comp[p, j])
+                    for k, v in lcomp.items():
+                        c = value(comp[k])
                         if c == 0:
                             c = 1e-8
                         lc = log(c)
@@ -3264,6 +3265,29 @@ class GenericStateBlockData(StateBlockData):
         except AttributeError:
             self.del_component(self.log_pressure_phase_comp_true)
             self.del_component(self.log_pressure_phase_comp_true_eq)
+            raise
+
+    def _log_k_eq(self):
+        try:
+            self.log_k_eq = Var(
+                self.params.inherent_reaction_idx,
+                initialize=1,
+                doc="Log of equilibrium constant for inherent reactions")
+
+            def rule_log_k_eq(b, r):
+                rblock = getattr(b.params, "reaction_"+r)
+
+                carg = b.params.config.inherent_reactions[r]
+                return carg["equilibrium_constant"].return_log_expression(
+                    b, rblock, r, b.temperature)
+
+            self.log_k_eq_constraint = Constraint(
+                self.params.inherent_reaction_idx,
+                rule=rule_log_k_eq,
+                doc="Constraint for log of equilibrium constant")
+        except AttributeError:
+            self.del_component(self.log_k_eq)
+            self.del_component(self.log_k_eq_constraint)
             raise
 
 
