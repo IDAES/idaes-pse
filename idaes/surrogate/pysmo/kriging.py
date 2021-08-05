@@ -53,13 +53,13 @@ class KrigingModel:
     **KrigingModel** is able to generate either an interpolating or a regressing Kriging model depending on the settings used during initialization..
 
     **Example:**
-    
+
     .. code-block:: python
-    
-        # Initialize the class 
+
+        # Initialize the class
         >>> d = KrigingModel(training_data, numerical_gradients=True, regularization=True))
         >>> p = d.get_feature_vector()
-        
+
         # Train Kriging model and predict output for an test data x_test
         >>> d.training()
         >>> predictions = d.predict_output(x_test)
@@ -99,9 +99,9 @@ class KrigingModel:
             Exception:  - regularization is not boolean
 
         **Example:**
-    
+
         .. code-block:: python
-        
+
                 # Initialize Kriging class with no numerical gradients - solution algorithm will be Basinhopping
                 >>> d = KrigingModel(XY_data, numerical_gradients=False)
 
@@ -541,7 +541,7 @@ class KrigingModel:
 
         Returns:
             Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
-            
+
         See equation (2.40) in XYZ
 
         """
@@ -560,7 +560,7 @@ class KrigingModel:
         kriging_expr += sum(w * t for w, t in zip(np.nditer(phi_inv_times_y_mu), np.nditer(phi_var_array, flags=['refs_ok']) ))
         return kriging_expr
 
-   def generate_expression_st_dev(self, variable_list):
+   # def generate_expression_st_dev(self, variable_list):
         """
         The ``generate_expression_st_dev`` method returns the Pyomo expression for the Kriging model trained prediction standard deviation.
 
@@ -571,13 +571,13 @@ class KrigingModel:
 
         Returns:
             Pyomo Expression              : Pyomo expression of the Kriging model based on the variables provided in **variable_list**
-            
+
         See equation (2.40) in XYZ
-        
+
         This function was contributed by Elvis Eugene, Jialu Wang, and Alex Dowling at the University of Notre Dame with support from NSF grant CBET-1941596.
         """
 
-    
+
     def get_feature_vector(self):
         """
 
@@ -684,4 +684,3 @@ class KrigingModel:
     def _repr_pretty_(self, p, cycle=False):
         s = self._report()
         p.text(s)
-

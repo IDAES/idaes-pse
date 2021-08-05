@@ -134,3 +134,4 @@ docs/apidoc/
 # Mac OSX
 .DS_Store
 
+scripts/workshops/install_idaes_workshop_materials.py
