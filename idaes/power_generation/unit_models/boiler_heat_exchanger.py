@@ -1616,7 +1616,10 @@ constructed,
 
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
-        sf_a = iscale.get_scaling_factor(self.area, default=0.001, warning=True)
+        sf_a = iscale.get_scaling_factor(
+            self.area,
+            default=pyo.value(1/self.area),
+            warning=False)
 
         for t, c in self.heat_transfer_correlation.items():
             iscale.constraint_scaling_transform(
