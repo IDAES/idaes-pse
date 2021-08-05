@@ -1060,15 +1060,28 @@ class TestGenericStateBlock(object):
             if p.endswith(("apparent", "true")):
                 # True and apparent properties require electrolytes, which are
                 # not tested here
+                # Check that method exists and continue
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p]["method"])
                 continue
             elif p.endswith(("bubble", "dew")):
                 # Bubble and dew properties require phase equilibria, which are
                 # not tested here
+                # Check that method exists and continue
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p]["method"])
                 continue
             elif p == "dh_rxn":
                 # Not testing inherent reactions here either
+                # Check that method exists and continue
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p]["method"])
                 continue
-            assert hasattr(frame.props[1], p)
+            else:
+                assert hasattr(frame.props[1], p)
 
     @pytest.mark.unit
     def test_flows(self, frame):
