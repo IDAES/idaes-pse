@@ -1007,10 +1007,13 @@ constructed,
         # Energy balance equation
         @self.Constraint(self.flowsheet().time, doc="Energy balance between two sides")
         def energy_balance(b, t):
-            return b.side_1.heat[t] / 1e6 == -b.side_2.heat[t] / 1e6
+            return b.side_1.heat[t] == -b.side_2.heat[t]
 
         # Driving force
         self.config.delta_temperature_callback(self)
+        @self.Expression(self.flowsheet().time)
+        def LMTD(b, t):
+            return b.delta_temperature[t]
 
         # Heat transfer correlation
         @self.Constraint(self.flowsheet().time, doc="Heat transfer correlation")
@@ -1587,3 +1590,51 @@ constructed,
         blk.side_2.release_state(flags2, outlvl)
 
         init_log.info("{} Initialisation Complete.".format(blk.name))
+
+    def calculate_scaling_factors(self):
+        super().calculate_scaling_factors()
+
+        # We have a pretty good idea that the delta Ts will be between about
+        # 1 and 100 regardless of process of temperature units, so a default
+        # should be fine, so don't warn.  Guessing a typical delta t around 10
+        # the default scaling factor is set to 0.1
+        sf_dT1 = dict(zip(
+            self.deltaT_1.keys(),
+            [iscale.get_scaling_factor(v, default=0.1)
+                for v in self.deltaT_1.values()]))
+        sf_dT2 = dict(zip(
+            self.deltaT_2.keys(),
+            [iscale.get_scaling_factor(v, default=0.1)
+                for v in self.deltaT_2.values()]))
+
+        # U depends a lot on the process and units of measure so user should set
+        # this one.
+        sf_u = dict(zip(
+            self.overall_heat_transfer_coefficient.keys(),
+            [iscale.get_scaling_factor(v, default=0.01, warning=True)
+                for v in self.overall_heat_transfer_coefficient.values()]))
+
+        # Since this depends on the process size this is another scaling factor
+        # the user should always set.
+        sf_a = iscale.get_scaling_factor(
+            self.area,
+            default=pyo.value(1/self.area),
+            warning=False)
+
+        for t, c in self.heat_transfer_correlation.items():
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
+
+        for t, c in self.energy_balance.items():
+            iscale.constraint_scaling_transform(
+                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
+
+        for t, c in self.temperature_difference_1.items():
+            iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
+
+        for t, c in self.temperature_difference_2.items():
+            iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
+
+        if hasattr(self, "costing"):
+            # import costing scaling factors
+            costing.calculate_scaling_factors(self.costing)
