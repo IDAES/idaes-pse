@@ -510,9 +510,7 @@ class TestGenericReactionBlock(object):
 
         assert isinstance(model.rblock[1].k_eq, Expression)
         assert len(model.rblock[1].k_eq) == 1
-        assert value(model.rblock[1].k_eq["e1"]) == value(
-            100*exp(-(-20000/constants.gas_constant) *
-                    (1/model.sblock[1].temperature - 1/350)))
+        assert value(model.rblock[1].k_eq["e1"]) == value(exp(1))
 
     @pytest.mark.unit
     def test_equilibrium_form(self, model):

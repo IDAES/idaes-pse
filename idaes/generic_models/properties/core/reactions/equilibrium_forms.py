@@ -13,18 +13,13 @@
 """
 Methods for defining equilibrium reactions
 """
-from pyomo.environ import Param, units as pyunits
+from pyomo.environ import Param
 
-from idaes.core.util.math import safe_log, smooth_max
+from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 
 from idaes.generic_models.properties.core.generic.utility import \
     get_concentration_term
-
-
-# Smooth parameter to use in safe_log approximations
-# Needs to be small due to small magnitude of many equilibrium constants
-EPS = 1e-15
 
 
 # ----------------------------------------------------------------------------
@@ -61,13 +56,6 @@ class power_law_equil():
 
 # ----------------------------------------------------------------------------
 class log_power_law_equil():
-
-    @staticmethod
-    def build_parameters(rblock, config):
-        rblock.eps = Param(default=EPS,
-                           mutable=True,
-                           doc="Smoothing factor for safe log function")
-
     @staticmethod
     def return_expression(b, rblock, r_idx, T):
         e = None
@@ -82,24 +70,13 @@ class log_power_law_equil():
             o = rblock.reaction_order[p, j]
 
             if e is None and o.value != 0:
-                # Need to strip units from concentration term (if applicable)
                 c = get_concentration_term(b, r_idx, log=True)[p, j]
                 e = o*c
             elif e is not None and o.value != 0:
-                # Need to strip units from concentration term (if applicable)
                 c = get_concentration_term(b, r_idx, log=True)[p, j]
                 e = e + o*c
 
-        # Need to check units on k_eq as well
-        u = pyunits.get_units(b.k_eq[r_idx])
-        if u is not None:
-            # Has units, so divide k_eq by units
-            expr = b.k_eq[r_idx]/u
-        else:
-            # Units is None, so just use k_eq
-            expr = b.k_eq[r_idx]
-
-        return safe_log(expr, eps=rblock.eps) == e
+        return b.log_k_eq[r_idx] == e
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):

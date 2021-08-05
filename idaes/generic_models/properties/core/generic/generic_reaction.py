@@ -18,6 +18,7 @@ from pyomo.environ import (Block,
                            Constraint,
                            Expression,
                            Set,
+                           units as pyunits,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.core.base.units_container import _PyomoUnit
@@ -434,6 +435,7 @@ class GenericReactionParameterData(ReactionParameterBlock):
         obj.add_properties({
                 'dh_rxn': {'method': '_dh_rxn'},
                 'k_eq': {'method': '_k_eq'},
+                'log_k_eq': {'method': '_log_k_eq'},
                 'k_rxn': {'method': '_k_rxn'},
                 'reaction_rate': {'method': "_reaction_rate"}
                 })
@@ -577,6 +579,25 @@ class GenericReactionBlockData(ReactionBlockDataBase):
         self.k_eq = Expression(self.params.equilibrium_reaction_idx,
                                doc="Equilibrium constant",
                                rule=keq_rule)
+
+    def _log_k_eq(self):
+        def log_keq_rule(b, r):
+            rblock = getattr(b.params, "reaction_"+r)
+
+            carg = b.params.config.equilibrium_reactions[r]
+
+            return carg["equilibrium_constant"].return_log_expression(
+                b, rblock, r, b.state_ref.temperature)
+
+        self.log_k_eq = Var(self.params.equilibrium_reaction_idx,
+                            initialize=1,
+                            doc="Log of equilibrium constant",
+                            units=pyunits.dimensionless)
+
+        self.log_k_eq_constraint = Constraint(
+            self.params.equilibrium_reaction_idx,
+            rule=log_keq_rule,
+            doc="Constraint for log of K_eq")
 
     def _equilibrium_constraint(self):
         def equil_rule(b, r):
