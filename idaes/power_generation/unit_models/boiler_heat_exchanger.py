@@ -1652,7 +1652,3 @@ constructed,
 
         for t, c in self.temperature_difference_2.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
-
-        if hasattr(self, "costing"):
-            # import costing scaling factors
-            costing.calculate_scaling_factors(self.costing)
