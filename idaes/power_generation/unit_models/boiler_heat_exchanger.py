@@ -1011,7 +1011,7 @@ constructed,
 
         # Driving force
         self.config.delta_temperature_callback(self)
-        @m.fs.Expression(self.flowsheet().time)
+        @self.Expression(self.flowsheet().time)
         def LMTD(b, t):
             return b.delta_temperature[t]
 
