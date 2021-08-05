@@ -1223,28 +1223,36 @@ class _GenericStateBlock(StateBlock):
                         blk[k].params.config
                         .state_definition.do_not_initialize):
                     c.activate()
-            if blk[k].is_property_constructed("log_conc_mol_phase_comp"):
-                print("1")
-                for (p, j), v in blk[k].log_conc_mol_phase_comp.items():
-                    c = value(blk[k].conc_mol_phase_comp[p, j])
-                    if c == 0:
-                        c = 1e-8
-                    lc = log(c)
-                    v.set_value(value(lc))
 
-            if blk[k].is_property_constructed("log_conc_mol_phase_comp_true"):
-                print("2")
-                for (p, j), v in blk[k].log_conc_mol_phase_comp_true.items():
-                    c = value(blk[k].conc_mol_phase_comp_true[p, j])
-                    if c == 0:
-                        c = 1e-8
-                    lc = log(c)
-                    v.set_value(value(lc))
+            # Initialize log-form variables
+            # Activity is handled separately
+            log_form_vars = [
+                "conc_mol_phase_comp",
+                "conc_mol_phase_comp_apparent",
+                "conc_mol_phase_comp_true",
+                "mass_frac_phase_comp",
+                "mass_frac_phase_comp_apparent",
+                "mass_frac_phase_comp_true",
+                "molality_phase_comp",
+                "molality_phase_comp_apparent",
+                "molality_phase_comp_true",
+                "mole_frac_phase_comp",
+                "mole_frac_phase_comp_apparent",
+                "mole_frac_phase_comp_true",
+                "pressure_phase_comp",
+                "pressure_phase_comp_apparent",
+                "pressure_phase_comp_true"]
 
-            if blk[k].is_property_constructed("log_mole_frac_phase_comp"):
-                print("3")
-                for (p, j), v in blk[k].log_conc_mol_phase_comp.items():
-                    v.set_value(value(log(blk[k].mole_frac_phase_comp[p, j])))
+            for prop in log_form_vars:
+                if blk[k].is_property_constructed("log_"+prop):
+                    comp = getattr(blk[k], prop)
+                    lcomp = getattr(blk[k], "log_"+prop)
+                    for (p, j), v in lcomp.items():
+                        c = value(comp[p, j])
+                        if c == 0:
+                            c = 1e-8
+                        lc = log(c)
+                        v.set_value(value(lc))
 
         n_cons = 0
         skip = False
