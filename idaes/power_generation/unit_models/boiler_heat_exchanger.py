@@ -71,6 +71,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
 
@@ -1011,6 +1012,7 @@ constructed,
 
         # Driving force
         self.config.delta_temperature_callback(self)
+
         @self.Expression(self.flowsheet().time)
         def LMTD(b, t):
             return b.delta_temperature[t]
@@ -1598,36 +1600,52 @@ constructed,
         # 1 and 100 regardless of process of temperature units, so a default
         # should be fine, so don't warn.  Guessing a typical delta t around 10
         # the default scaling factor is set to 0.1
-        sf_dT1 = dict(zip(
-            self.deltaT_1.keys(),
-            [iscale.get_scaling_factor(v, default=0.1)
-                for v in self.deltaT_1.values()]))
-        sf_dT2 = dict(zip(
-            self.deltaT_2.keys(),
-            [iscale.get_scaling_factor(v, default=0.1)
-                for v in self.deltaT_2.values()]))
+        sf_dT1 = dict(
+            zip(
+                self.deltaT_1.keys(),
+                [
+                    iscale.get_scaling_factor(v, default=0.1)
+                    for v in self.deltaT_1.values()
+                ],
+            )
+        )
+        sf_dT2 = dict(
+            zip(
+                self.deltaT_2.keys(),
+                [
+                    iscale.get_scaling_factor(v, default=0.1)
+                    for v in self.deltaT_2.values()
+                ],
+            )
+        )
 
         # U depends a lot on the process and units of measure so user should set
         # this one.
-        sf_u = dict(zip(
-            self.overall_heat_transfer_coefficient.keys(),
-            [iscale.get_scaling_factor(v, default=0.01, warning=True)
-                for v in self.overall_heat_transfer_coefficient.values()]))
+        sf_u = dict(
+            zip(
+                self.overall_heat_transfer_coefficient.keys(),
+                [
+                    iscale.get_scaling_factor(v, default=0.01, warning=True)
+                    for v in self.overall_heat_transfer_coefficient.values()
+                ],
+            )
+        )
 
         # Since this depends on the process size this is another scaling factor
         # the user should always set.
         sf_a = iscale.get_scaling_factor(
-            self.area,
-            default=pyo.value(1/self.area),
-            warning=False)
+            self.area_heat_transfer, default=1e-4, warning=True
+        )
 
         for t, c in self.heat_transfer_correlation.items():
             iscale.constraint_scaling_transform(
-                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
+                c, sf_dT1[t] * sf_u[t] * sf_a, overwrite=False
+            )
 
         for t, c in self.energy_balance.items():
             iscale.constraint_scaling_transform(
-                c, sf_dT1[t]*sf_u[t]*sf_a, overwrite=False)
+                c, sf_dT1[t] * sf_u[t] * sf_a, overwrite=False
+            )
 
         for t, c in self.temperature_difference_1.items():
             iscale.constraint_scaling_transform(c, sf_dT1[t], overwrite=False)
