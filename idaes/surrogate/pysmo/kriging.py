@@ -560,7 +560,7 @@ class KrigingModel:
         kriging_expr += sum(w * t for w, t in zip(np.nditer(phi_inv_times_y_mu), np.nditer(phi_var_array, flags=['refs_ok']) ))
         return kriging_expr
 
-   # def generate_expression_st_dev(self, variable_list):
+   def generate_expression_st_dev(self, variable_list):
         """
         The ``generate_expression_st_dev`` method returns the Pyomo expression for the Kriging model trained prediction standard deviation.
 
@@ -576,6 +576,16 @@ class KrigingModel:
 
         This function was contributed by Elvis Eugene, Jialu Wang, and Alex Dowling at the University of Notre Dame with support from NSF grant CBET-1941596.
         """
+        t1 = np.array([variable_list])
+        phi_var = []
+        for i in range(0, self.x_data.shape[0]):
+            curr_term = sum(self.optimal_weights[j] * ( ((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j] - self.x_data_min[0, j])) - self.x_data_scaled[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
+
+            curr_term = exp(-curr_term)
+            phi_var.append(curr_term)
+        phi_var_array = np.asarray(phi_var)
+
+        return phi_var_array, self.covariance_matrix_inverse        
 
 
     def get_feature_vector(self):
