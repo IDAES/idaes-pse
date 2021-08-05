@@ -64,33 +64,33 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.tel_c0 = Var(
             initialize=0.0064*1e6,
             units=pyunits.J/pyunits.mol,
-            doc="c0 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
-                "of exhaust volumetric flow to design exhaust volumetric flow)")
+            doc="c0 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c1 = Var(
             initialize=-0.0328*1e6,
             units=pyunits.J/pyunits.mol,
-            doc="c1 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
-                "of exhaust volumetric flow to design exhaust volumetric flow)")
+            doc="c1 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c2 = Var(
             initialize=0.0638*1e6,
             units=pyunits.J/pyunits.mol,
-            doc="c2 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
-                "of exhaust volumetric flow to design exhaust volumetric flow)")
+            doc="c2 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c3 = Var(
             initialize=-0.0542*1e6,
             units=pyunits.J/pyunits.mol,
-            doc="c3 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
-                "of exhaust volumetric flow to design exhaust volumetric flow)")
+            doc="c3 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c4 = Var(
             initialize=0.022*1e6,
             units=pyunits.J/pyunits.mol,
-            doc="c4 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
-                "of exhaust volumetric flow to design exhaust volumetric flow)")
+            doc="c4 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c5 = Var(
             initialize=-0.0035*1e6,
             units=pyunits.J/pyunits.mol,
-            doc="c5 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
-                "of exhaust volumetric flow to design exhaust volumetric flow)")
+            doc="c5 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c0.fix()
         self.tel_c1.fix()
         self.tel_c2.fix()
