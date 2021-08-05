@@ -1836,12 +1836,12 @@ def set_scaling_factors(m):
                m.fs.HP_SH3,
                m.fs.HP_SH4]
     for unit in hx_list:
-        iscale.set_scaling_factor(unit.heat_transfer_correlation, 1e-8)
         iscale.set_scaling_factor(unit.side_1.heat, 1e-6)
         iscale.set_scaling_factor(unit.side_2.heat, 1e-6)
         iscale.set_scaling_factor(unit.side_1.volume, 1)
         iscale.set_scaling_factor(unit.side_2.volume, 1)
-
+        iscale.set_scaling_factor(unit.overall_heat_transfer_coefficient, 1e-5)
+        iscale.set_scaling_factor(unit.area_heat_transfer, 1e-2)
 
     fs = m.fs
 
