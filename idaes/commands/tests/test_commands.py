@@ -28,7 +28,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence, config
+from idaes.commands import examples, extensions, convergence, config, env_info
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 import idaes
