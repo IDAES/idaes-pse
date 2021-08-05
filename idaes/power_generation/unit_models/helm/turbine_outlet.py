@@ -61,29 +61,53 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.efficiency_mech.fix()
 
 
-        self.tel_c0 = Var(initialize=0.0064)
-        self.tel_c1 = Var(initialize=-0.0328)
-        self.tel_c2 = Var(initialize=0.0638)
-        self.tel_c3 = Var(initialize=-0.0542)
-        self.tel_c4 = Var(initialize=0.022)
-        self.tel_c5 = Var(initialize=-0.0035)
+        self.tel_c0 = Var(
+            initialize=0.0064*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c0 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
+                "of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c1 = Var(
+            initialize=-0.0328*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c1 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
+                "of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c2 = Var(
+            initialize=0.0638*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c2 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
+                "of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c3 = Var(
+            initialize=-0.0542*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c3 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
+                "of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c4 = Var(
+            initialize=0.022*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c4 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
+                "of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c5 = Var(
+            initialize=-0.0035*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c5 in c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is the ratio "
+                "of exhaust volumetric flow to design exhaust volumetric flow)")
         self.tel_c0.fix()
         self.tel_c1.fix()
         self.tel_c2.fix()
         self.tel_c3.fix()
         self.tel_c4.fix()
         self.tel_c5.fix()
-        @self.Expression(self.flowsheet().time, doc="Eff. fact. correlation")
+        @self.Expression(self.flowsheet().time, doc="Total exhaust loss curve")
         def tel(b, t):
             f = b.control_volume.properties_out[t].flow_vol / b.design_exhaust_flow_vol
-            return 1e6 * (
+            return (
                 + self.tel_c5 * f ** 5
                 + self.tel_c4 * f ** 4
                 + self.tel_c3 * f ** 3
                 + self.tel_c2 * f ** 2
                 + self.tel_c1 * f
                 + self.tel_c0
-            )*pyunits.J/pyunits.mol
+            )
 
         @self.Constraint(self.flowsheet().time, doc="Stodola eq. choked flow")
         def stodola_equation(b, t):
