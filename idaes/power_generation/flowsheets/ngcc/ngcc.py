@@ -38,7 +38,7 @@ from idaes.generic_models.unit_models import HeatExchanger, Heater
 import idaes.core.util.tables as tables
 from pyomo.environ import units as pyunits
 
-def ge_model():
+def get_model():
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
