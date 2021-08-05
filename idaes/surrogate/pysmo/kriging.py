@@ -591,7 +591,7 @@ class KrigingModel:
 
         covar_expr = self.optimal_variance * corr_expr
 
-        return covar_expr
+        return covar_expr[0][0]
 
     def get_feature_vector(self):
         """
