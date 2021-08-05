@@ -1011,6 +1011,9 @@ constructed,
 
         # Driving force
         self.config.delta_temperature_callback(self)
+        @m.fs.Expression(self.flowsheet().time)
+        def LMTD(b, t):
+            return b.delta_temperature[t]
 
         # Heat transfer correlation
         @self.Constraint(self.flowsheet().time, doc="Heat transfer correlation")
