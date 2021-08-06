@@ -132,18 +132,8 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return b.pressure/(Ideal.gas_constant(b)*b.temperature)
-        elif pobj.is_liquid_phase():
-            return sum(b.get_mole_frac()[p, j] *
-                       get_method(b, "dens_mol_liq_comp", j)(
-                           b, cobj(b, j), b.temperature)
-                       for j in b.components_in_phase(p))
-        elif pobj.is_solid_phase():
-            return sum(b.get_mole_frac()[p, j] *
-                       get_method(b, "dens_mol_sol_comp", j)(
-                           b, cobj(b, j), b.temperature)
-                       for j in b.components_in_phase(p))
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            return 1/b.vol_mol_phase[p]
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
@@ -370,6 +360,26 @@ class Ideal(EoSBase):
                     i = 1
                 C += i*b.conc_mol_phase_comp[p, j]
         return Ideal.gas_constant(b)*b.temperature*C
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return Ideal.gas_constant(b)*b.temperature/b.pressure
+        elif pobj.is_liquid_phase():
+            ptype = "liq"
+        elif pobj.is_solid_phase():
+            ptype = "sol"
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+        v_expr = 0
+        for j in b.components_in_phase(p):
+            # First try to get a method for vol_mol
+            v_comp = Ideal.get_vol_mol_pure(b, ptype, j, b.temperature)
+            v_expr += b.get_mole_frac()[p, j]*v_comp
+
+        return v_expr
 
 
 def _invalid_phase_msg(name, phase):
