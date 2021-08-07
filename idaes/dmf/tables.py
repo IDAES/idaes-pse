@@ -76,6 +76,18 @@ class Table:
         Raises:
             ValueError, if more than one Excel sheet is returned
         """
+        # Workaround for older versions of Python/Pandas (python 3.6):
+        # set engine explicitly to openpyxl for *.xlsx files
+        v = [int(_) for _ in pd.__version__.split(".")]
+        if v[0] <= 1 and v[1] <= 1:  # version < 1.2.0
+            from io import BufferedIOBase, RawIOBase
+            import os
+            # if it's a file and has xlsx extension, set engine
+            if not isinstance(filepath, (BufferedIOBase, RawIOBase)):
+                ext = os.path.splitext(str(filepath))[-1]
+                if ext == ".xlsx":
+                    kwargs["engine"] = "openpyxl"
+
         data = pd.read_excel(filepath, **kwargs)
         if isinstance(data, dict):
             raise ValueError(f"Read from excel file must return a single sheet, "
