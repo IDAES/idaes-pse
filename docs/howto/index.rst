@@ -1,7 +1,7 @@
-Examples
+How-to
 =========
 
-.. note:: This is a new examples section.
+.. note:: This is a new section.
 
 This section has examples of using the IDAES APIs. See also :doc:`../tutorials_examples`.
 
