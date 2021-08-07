@@ -11,7 +11,19 @@
 # license information.
 ###############################################################################
 """
-Table handling for DMF
+Table handling for DMF.
+
+Tables are expected to have a header row with optional units,
+encoded in [square brackets]. Whitespace is ignored between the column
+name and the units. For example::
+
+    T [C], P [bar], G0/RT H2O [-], G0/RT NaCl [-], A phi [(kg/mol^0.5]
+    0, 1, -23.4638, -13.836, 0.3767
+
+To use the API, create an instance of the :class:`Table` class.
+Then (or previously) use the DMF's :class:`idaes.dmf.resource.Resource` class
+to create a resource object, and call :meth:`Table.add_to_resource()` to add
+the table to the resource.
 """
 # stdlib
 from typing import List, Tuple, Dict
@@ -27,17 +39,34 @@ class Table:
     """Represent a table stored in the DMF.
     """
     def __init__(self):
+        """Create new, empty, table.
+
+        Use :meth:`read_csv` or :meth:`read_excel` to populate the table with data.
+        """
         self._data = pd.DataFrame({})
         self._units = {}
         self._filepath = None
 
     @property
     def data(self) -> pd.DataFrame:
+        """Pandas dataframe for data.
+        """
         return self._data
 
     @property
-    def units(self) -> Dict[str, str]:
+    def units_dict(self) -> Dict[str, str]:
+        """Units as a dict keyed by table column name.
+        """
         return self._units.copy()
+
+    @property
+    def units_list(self) -> List[str]:
+        """Units in order of table columns.
+        """
+        return [self._units[c] for c in self._data.columns]
+
+    #: Shorthand for getting list of units
+    units = units_list
 
     def read_csv(self, filepath, **kwargs) -> None:
         """Read the table from a CSV file using pandas' `read_csv()`.
@@ -108,14 +137,23 @@ class Table:
         self._data.rename(columns=new_names, inplace=True)
         self._units = units_dict
 
-    @staticmethod
-    def _split_units(name) -> Tuple[str, str]:
-        m = re.match(r"(.*)\s*(\(.*\)|\[.*])", name)
+    UNITS_REGEX = r"""
+        (?P<name>[^[]+) # column name
+        (?:\s*\[        # start of [units] section
+        (?P<units>.*?)  # column units
+        \])?            # end of [units] section, which is optional
+        """
+
+    @classmethod
+    def _split_units(cls, name) -> Tuple[str, str]:
+        m = re.match(cls.UNITS_REGEX, name, flags=re.X)
         if m is None:
             return name, ""
         else:
-            new_name = m.group(1).strip()
-            unit = m.group(2)[1:-1]  # strip parentheses
+            new_name = m.group("name")
+            unit = m.group("units")
+            if unit == "-":
+                unit = ""  # normalize empty units to empty string
             return new_name, unit
 
     def add_to_resource(self, rsrc):

@@ -25,7 +25,7 @@ from idaes.dmf import resource, DMF
 DATA_DIR = Path(__file__).parent / "data_files"
 
 SIMPLE_CSV_DATA = [
-    "C1 (m/s),C2[mol/L],C3 (m^3/kg)",
+    "C1 [m/s],C2[mol/L],C3 [(m^3)/kg]",
     "1,1.0,2.0",
     "2,2.0,4.0"
 ]
@@ -127,8 +127,9 @@ def validate_example_data(t):
     """
     input_data_columns = [f"C{num}" for num in range(1, 4)]
     assert list(t.data.columns) == input_data_columns
-    input_data_units = ["m/s", "mol/L", "m^3/kg"]
-    assert t.units == {input_data_columns[i]: input_data_units[i]
-                       for i in range(len(input_data_columns))}
+    input_data_units = ["m/s", "mol/L", "(m^3)/kg"]
+    assert t.units_dict == {input_data_columns[i]: input_data_units[i]
+                            for i in range(len(input_data_columns))}
+    assert t.units_list == [input_data_units[i] for i in range(len(input_data_columns))]
 
 
