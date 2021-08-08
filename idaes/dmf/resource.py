@@ -1,4 +1,4 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
@@ -9,7 +9,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 Resource representaitons.
 """
@@ -275,7 +275,7 @@ class Dict(dict):
         return self._dirty
 
 
-class Resource(object):
+class Resource:
     """Core object for the Data Management Framework.
     """
 
@@ -283,23 +283,23 @@ class Resource(object):
     ID_LENGTH = 32  #: Full-length of identifier
     TYPE_FIELD = "type"  #: Resource type field name constant
 
-    def __init__(self, value: dict = None, type_: str = None):
+    def __init__(self, value: dict = None, type_: str = None, name: str = None):
         if type_ is None:
             type_ = ResourceTypes.other
-        self._set_defaults(type_)
+        self._set_defaults(type_, name)
         if value:
             self.set_values(value)
         self._validator = jsonschema.Draft4Validator(RESOURCE_SCHEMA)
         self._validations = 0  # count validations; mostly for testing
         self.do_copy = self.is_tmp = False  # flags for copying datafiles
 
-    def _set_defaults(self, t):
+    def _set_defaults(self, t, nm):
         now = datetime.now().timestamp()
         self.v = Dict(
             {
                 self.ID_FIELD: identifier_str(),
                 self.TYPE_FIELD: t,
-                "aliases": [],
+                "aliases": [] if nm is None else [nm],
                 "collaborators": [],
                 "created": now,
                 "modified": now,

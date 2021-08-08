@@ -1,4 +1,4 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
@@ -9,7 +9,7 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 Data Management Framework
 """
@@ -172,8 +172,14 @@ class DMF(workspace.Workspace, HasTraits):
     }
 
     def __init__(
-        self, path: Union[pathlib.Path, str] = "", name=None, desc=None, create=False,
-            existing_ok=True, save_path=False, **ws_kwargs
+        self,
+        path: Union[pathlib.Path, str] = "",
+        name=None,
+        desc=None,
+        create=False,
+        existing_ok=True,
+        save_path=False,
+        **ws_kwargs,
     ):
         """Create or load DMF workspace.
 
@@ -298,8 +304,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     @staticmethod
     def _get_logger(name=None):
-        """Get a logger by absolute or short-hand name.
-        """
+        """Get a logger by absolute or short-hand name."""
         if name is None:
             fullname = "idaes"
         # idaes.<whatever> just use name as-is
@@ -324,7 +329,7 @@ class DMF(workspace.Workspace, HasTraits):
             #     'this path, set "{}" in the DMF configuration file.'.format(
             #         self.CONF_HELP_PATH
             #     )
-            #)
+            # )
             pass
 
     @default(CONF_DB_FILE)
@@ -348,8 +353,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     @property
     def workspace_path(self) -> pathlib.Path:
-        """Path to workspace directory.
-        """
+        """Path to workspace directory."""
         return pathlib.Path(self.root)
 
     def new(
@@ -630,9 +634,9 @@ class DMF(workspace.Workspace, HasTraits):
             Resource, or None or an empty list.
         """
         attach_to_dmf = True
-        if 'attach' in kwargs:
-            attach_to_dmf = kwargs['attach']
-            del kwargs['attach']
+        if "attach" in kwargs:
+            attach_to_dmf = kwargs["attach"]
+            del kwargs["attach"]
         results = self.find(*args, **kwargs)
         if results is None:
             return None
@@ -645,12 +649,9 @@ class DMF(workspace.Workspace, HasTraits):
         return result
 
     def find_by_id(self, identifier: str, id_only=False) -> Generator:
-        """Find resources by their identifier or identifier prefix.
-        """
+        """Find resources by their identifier or identifier prefix."""
         if len(identifier) == Resource.ID_LENGTH:
-            for rsrc in self._db.find(
-                {Resource.ID_FIELD: identifier}, id_only=id_only
-            ):
+            for rsrc in self._db.find({Resource.ID_FIELD: identifier}, id_only=id_only):
                 yield rsrc
         else:
             regex, flags = f"{identifier}[a-z]*", re.IGNORECASE
@@ -680,6 +681,7 @@ class DMF(workspace.Workspace, HasTraits):
             `meta` is a dict of metadata for the endpoint of the relation
             (the object if outgoing=True, the subject if outgoing=False)
             for the fields provided in the `meta` parameter.
+
         Raises:
             NoSuchResourceError: if the starting resource is not found
         """
@@ -703,6 +705,30 @@ class DMF(workspace.Workspace, HasTraits):
             )
         except KeyError:
             raise errors.NoSuchResourceError(id_=rsrc.id)
+
+    def find_related_resources(
+        self, rsrc: Resource, predicate: str = None, **kwargs
+    ) -> Generator[Resource, None, None]:
+        """Wrapper for :meth:`find_related` that retrieves the full DMF resource
+        for each found item.
+
+        Args:
+            rsrc: Resource starting point
+            predicate: If given, restrict to relations with this predicate
+            kwargs: Passed to :meth:`find_related`
+
+        Returns:
+            Generator for Resource objects
+
+        Raises:
+            NoSuchResourceError: if the starting resource is not found
+        """
+        for depth, triple, meta in self.find_related(rsrc, **kwargs):
+            if predicate is not None and triple.predicate != predicate:
+                continue
+            id_ = meta[Resource.ID_FIELD]
+            for r in self.find_by_id(id_):
+                yield r
 
     def remove(self, identifier=None, filter_dict=None, update_relations=True):
         """Remove one or more resources, from its identifier or a filter.
@@ -840,8 +866,7 @@ class DMF(workspace.Workspace, HasTraits):
 
     @property
     def resource_count(self) -> int:
-        """How many resources have been added to this instance of the DMF.
-        """
+        """How many resources have been added to this instance of the DMF."""
         return len(self._resources)
 
 
