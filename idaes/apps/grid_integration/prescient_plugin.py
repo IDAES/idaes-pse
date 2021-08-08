@@ -118,13 +118,13 @@ class DoubleLoopCoordinator:
         prescient.plugins.register_initialization_callback(self.initialize_tracking_object)
 
     def _register_before_ruc_solve_callbacks(self):
-        prescient.plugins.register_before_ruc_solve_callback(bid_into_DAM)
+        prescient.plugins.register_before_ruc_solve_callback(self.bid_into_DAM)
 
     def _register_before_operations_solve_callbacks(self):
-        prescient.plugins.register_before_operations_solve_callback(bid_into_RTM)
+        prescient.plugins.register_before_operations_solve_callback(self.bid_into_RTM)
 
     def _register_after_operations_callbacks(self):
-        prescient.plugins.register_after_operations_callback(track_sced_signal)
+        prescient.plugins.register_after_operations_callback(self.track_sced_signal)
 
     def _register_update_operations_stats_callbacks(self):
         prescient.plugins.register_update_operations_stats_callback(self.update_observed_thermal_dispatch)
