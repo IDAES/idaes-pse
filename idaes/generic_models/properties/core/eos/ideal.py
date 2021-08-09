@@ -17,7 +17,9 @@ Currently only supports liquid and vapor phases
 """
 from pyomo.environ import Expression, log
 
-from idaes.core.util.exceptions import PropertyNotSupportedError
+from idaes.core import Apparent
+from idaes.core.util.exceptions import (
+    ConfigurationError, PropertyNotSupportedError)
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
 from .eos_base import EoSBase
@@ -130,18 +132,8 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
             return b.pressure/(Ideal.gas_constant(b)*b.temperature)
-        elif pobj.is_liquid_phase():
-            return sum(b.get_mole_frac()[p, j] *
-                       get_method(b, "dens_mol_liq_comp", j)(
-                           b, cobj(b, j), b.temperature)
-                       for j in b.components_in_phase(p))
-        elif pobj.is_solid_phase():
-            return sum(b.get_mole_frac()[p, j] *
-                       get_method(b, "dens_mol_sol_comp", j)(
-                           b, cobj(b, j), b.temperature)
-                       for j in b.components_in_phase(p))
         else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+            return 1/b.vol_mol_phase[p]
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
@@ -348,6 +340,46 @@ class Ideal(EoSBase):
         return (b.enth_mol_phase_comp[p, j] -
                 b.entr_mol_phase_comp[p, j] *
                 b.temperature)
+
+    @staticmethod
+    def pressure_osm_phase(b, p):
+        try:
+            solvent_set = b.params.solvent_set
+        except AttributeError:
+            raise ConfigurationError(
+                f"{b.name} called for pressure_osm, but no solvents were "
+                f"defined. Osmotic pressure requires at least one component "
+                f"to be declared as a solvent.")
+        C = 0
+        for j in b.component_list:
+            if (p, j) in b.phase_component_set and j not in solvent_set:
+                c_obj = b.params.get_component(j)
+                if isinstance(c_obj, Apparent):
+                    i = sum(c_obj.config.dissociation_species.values())
+                else:
+                    i = 1
+                C += i*b.conc_mol_phase_comp[p, j]
+        return Ideal.gas_constant(b)*b.temperature*C
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase():
+            return Ideal.gas_constant(b)*b.temperature/b.pressure
+        elif pobj.is_liquid_phase():
+            ptype = "liq"
+        elif pobj.is_solid_phase():
+            ptype = "sol"
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+        v_expr = 0
+        for j in b.components_in_phase(p):
+            # First try to get a method for vol_mol
+            v_comp = Ideal.get_vol_mol_pure(b, ptype, j, b.temperature)
+            v_expr += b.get_mole_frac()[p, j]*v_comp
+
+        return v_expr
 
 
 def _invalid_phase_msg(name, phase):

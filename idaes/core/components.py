@@ -23,7 +23,7 @@ from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 from .phases import PhaseType as PT
 from .util.config import list_of_phase_types
-from .util.exceptions import ConfigurationError
+from .util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
 
@@ -49,13 +49,25 @@ class ComponentData(ProcessBlockData):
     CONFIG.declare("henry_component", ConfigValue(
             domain=dict,
             description="Phases in which component follows Henry's Law",
-            doc="Dict indicating phases in which component follows Herny's "
+            doc="Dict indicating phases in which component follows Henry's "
                 "Law (keys) with values indicating form of law."))
 
+    CONFIG.declare("vol_mol_liq_comp", ConfigValue(
+        description="Method to use to calculate liquid phase molar volume",
+        doc="Method to use to calculate liquid phase molar volume. Users "
+        "need only define either vol_mol_liq_comp or dens_mol_liq_comp."))
+    CONFIG.declare("vol_mol_sol_comp", ConfigValue(
+        description="Method to use to calculate solid phase molar volume",
+        doc="Method to use to calculate solid phase molar volume. Users "
+        "need only define either vol_mol_sol_comp or dens_mol_sol_comp."))
     CONFIG.declare("dens_mol_liq_comp", ConfigValue(
-        description="Method to use to calculate liquid phase molar density"))
+        description="Method to use to calculate liquid phase molar density",
+        doc="Method to use to calculate liquid phase molar density. Users "
+        "need only define either vol_mol_liq_comp or dens_mol_liq_comp."))
     CONFIG.declare("dens_mol_sol_comp", ConfigValue(
-        description="Method to use to calculate solid phase molar density"))
+        description="Method to use to calculate solid phase molar density",
+        doc="Method to use to calculate solid phase molar density. Users "
+        "need only define either vol_mol_sol_comp or dens_mol_sol_comp."))
 
     CONFIG.declare("cp_mol_liq_comp", ConfigValue(
         description="Method to calculate liquid component specific heats"))
@@ -115,7 +127,7 @@ class ComponentData(ProcessBlockData):
         # need to add new Component objects
         if not self.config._component_list_exists:
             if not self.config._electrolyte:
-                self.__add_to_component_list()
+                self._add_to_component_list()
             else:
                 self._add_to_electrolyte_component_list()
 
@@ -164,7 +176,7 @@ class ComponentData(ProcessBlockData):
             "Use a Solvent or Solute Component instead."
             .format(self.name))
 
-    def __add_to_component_list(self):
+    def _add_to_component_list(self):
         """
         Method to add reference to new Component in component_list
         """
@@ -249,6 +261,22 @@ class SoluteData(ComponentData):
     def _is_aqueous_phase_valid(self):
         return True
 
+    def _add_to_component_list(self):
+        """
+        Method to add reference to new Component in component_list
+        """
+        super()._add_to_component_list()
+
+        # Also add to solute_set
+        parent = self.parent_block()
+        try:
+            comp_list = getattr(parent, "solute_set")
+            comp_list.add(self.local_name)
+        except AttributeError:
+            # Parent does not have a solute_set yet, so create one
+            parent.solute_set = Set(initialize=[self.local_name],
+                                    ordered=True)
+
     def _add_to_electrolyte_component_list(self):
         """
         Special case method for adding references to new Component in
@@ -277,6 +305,22 @@ class SolventData(ComponentData):
 
     def _is_aqueous_phase_valid(self):
         return True
+
+    def _add_to_component_list(self):
+        """
+        Method to add reference to new Component in component_list
+        """
+        super()._add_to_component_list()
+
+        # Also add to solvent_set
+        parent = self.parent_block()
+        try:
+            comp_list = getattr(parent, "solvent_set")
+            comp_list.add(self.local_name)
+        except AttributeError:
+            # Parent does not have a solvent_list yet, so create one
+            parent.solvent_set = Set(initialize=[self.local_name],
+                                     ordered=True)
 
     def _add_to_electrolyte_component_list(self):
         """
@@ -315,6 +359,14 @@ class IonData(SoluteData):
     def _is_aqueous_phase_valid(self):
         return True
 
+    def _add_to_component_list(self):
+        """
+        Ions should not be used outside of electrolyte property methods
+        """
+        raise PropertyPackageError(
+            "{} Ion Component types should only be used with Aqueous "
+            "Phases".format(self.name))
+
     def _add_to_electrolyte_component_list(self):
         """
         Special case method for adding references to new Component in
@@ -323,7 +375,7 @@ class IonData(SoluteData):
         New Component types should overload this method
         """
         raise NotImplementedError(
-            "{} The IonData component class is inteded as a base class for "
+            "{} The IonData component class is intended as a base class for "
             "the AnionData and CationData classes, and should not be used "
             "directly".format(self.name))
 
@@ -406,6 +458,16 @@ class ApparentData(SoluteData):
         description="Dict of dissociation species",
         doc="Dict of true species that this species will dissociate into "
         "upon dissolution along with stoichiometric coefficients."))
+
+    def build(self):
+        super().build()
+
+        # Make sure dissoication species were set
+        if self.config.dissociation_species is None:
+            raise ConfigurationError(
+                f"{self.name} dissoication_species argument was not set. "
+                f"Apparent components require the dissociation species to be "
+                f"defined.")
 
     def _is_aqueous_phase_valid(self):
         return True
