@@ -8,7 +8,6 @@ class ThermalGeneratorStorageIES:
     def __init__(self, \
                  rts_gmlc_dataframe, \
                  horizon = 48, \
-                 n_scenario = 10, \
                  generators = None, \
                  storage_pmax_ratio = None,\
                  storage_size_hour = None,\
@@ -40,21 +39,19 @@ class ThermalGeneratorStorageIES:
         # create thermal generator object
         self.thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
                                                          horizon = horizon,\
-                                                         generators = generators,\
-                                                         n_scenario = n_scenario)
+                                                         generators = generators)
+        self.model_dict = self.thermal_generator_object.model_dict
 
-        self.model = self.thermal_generator_object.model
+        self.model_data = self._assemble_IES_data(storage_pmax_ratio, \
+                                                  storage_size_hour, \
+                                                  round_trip_efficiency)
 
         # add IES variable & constraints
-        self.build_thermal_generator_storage_IES_model(generators = generators,\
-                                                       storage_pmax_ratio = storage_pmax_ratio,\
-                                                       storage_size_hour = storage_size_hour, \
-                                                       round_trip_efficiency = round_trip_efficiency,\
-                                                       IES_mode = IES_mode)
+        self.build_thermal_generator_storage_IES_model(IES_mode = IES_mode)
 
         self.result_list = []
 
-    def _add_IES_params(self,model_data):
+    def _add_IES_params(self,g):
         '''
         This function adds the IES/storage constraints to the existing thermal
         generator model.
@@ -68,28 +65,29 @@ class ThermalGeneratorStorageIES:
             None
         '''
 
-        m = self.model
+        m = self.model_dict[g]
+        model_data = self.model_data[g]
 
         # storage size in MWH
-        m.storage_size = pyo.Param(m.UNITS,initialize=model_data['Storage Size'],mutable = False)
+        m.storage_size = pyo.Param(initialize=model_data['Storage Size'],mutable = False)
 
         # storage size in hr
-        m.storage_size_hour = pyo.Param(m.UNITS,initialize=model_data['Storage Size Hour'],mutable = False)
+        m.storage_size_hour = pyo.Param(initialize=model_data['Storage Size Hour'],mutable = False)
 
         # initial soc of the storage
-        def pre_soc_init(m,j):
-            return m.storage_size[j]/2
-        m.pre_SOC = pyo.Param(m.UNITS,initialize = pre_soc_init, mutable = True)
+        def pre_soc_init(m):
+            return m.storage_size/2
+        m.pre_SOC = pyo.Param(initialize = pre_soc_init, mutable = True)
 
         # pmax of storage
-        m.pmax_storage = pyo.Param(m.UNITS,initialize = model_data['Storage Pmax'], mutable = False)
+        m.pmax_storage = pyo.Param(initialize = model_data['Storage Pmax'], mutable = False)
 
         # storage efficiency
-        m.round_trip_eff = pyo.Param(m.UNITS,initialize = model_data['Storage Round-trip Efficiency'], mutable = False)
+        m.round_trip_eff = pyo.Param(initialize = model_data['Storage Round-trip Efficiency'], mutable = False)
 
         return
 
-    def _add_IES_vars(self):
+    def _add_IES_vars(self, g):
 
         '''
         This function adds the IES/storage variables to the existing thermal
@@ -102,46 +100,46 @@ class ThermalGeneratorStorageIES:
             None
         '''
 
-        m = self.model
+        m = self.model_dict[g]
 
         # define a rule for storage size
-        def storage_power_bnd_rule(m,j,h,k):
-            return (0,m.pmax_storage[j])
+        def storage_power_bnd_rule(m,h):
+            return (0,m.pmax_storage)
 
-        def storage_size_bnd_rule(m,j,h,k):
-            return (0,m.storage_size[j])
+        def storage_size_bnd_rule(m,h):
+            return (0,m.storage_size)
 
         # power to charge the storage by generator
-        m.P_E = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,bounds = storage_power_bnd_rule)
+        m.P_E = pyo.Var(m.HOUR, bounds = storage_power_bnd_rule)
 
         # power to the market by generator
-        m.P_G = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.NonNegativeReals)
+        m.P_G = pyo.Var(m.HOUR, within = pyo.NonNegativeReals)
 
         # storage power (MW) to merge with thermal power
-        m.P_S = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,bounds = storage_power_bnd_rule) #discharge
+        m.P_S = pyo.Var(m.HOUR, bounds = storage_power_bnd_rule) #discharge
 
         # storage power (MW) interacting with the market
-        m.P_D = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,bounds = storage_power_bnd_rule) #discharge
-        m.P_C = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,bounds = storage_power_bnd_rule) #charge
+        m.P_D = pyo.Var(m.HOUR, bounds = storage_power_bnd_rule) #discharge
+        m.P_C = pyo.Var(m.HOUR, bounds = storage_power_bnd_rule) #charge
 
         # storage SOC
-        m.S_SOC = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,bounds = storage_size_bnd_rule)
+        m.S_SOC = pyo.Var(m.HOUR, bounds = storage_size_bnd_rule)
 
         # total power to the grid from the generator side
-        m.P_R = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.NonNegativeReals)
+        m.P_R = pyo.Var(m.HOUR, within = pyo.NonNegativeReals)
 
         # total power to the grid
-        m.P_total = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.NonNegativeReals)
+        m.P_total = pyo.Var(m.HOUR, within = pyo.NonNegativeReals)
 
         # charge or discharge binary var
-        m.y_S = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.Binary)
-        m.y_E = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.Binary)
-        m.y_D = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.Binary)
-        m.y_C = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.Binary)
+        m.y_S = pyo.Var(m.HOUR, within = pyo.Binary)
+        m.y_E = pyo.Var(m.HOUR, within = pyo.Binary)
+        m.y_D = pyo.Var(m.HOUR, within = pyo.Binary)
+        m.y_C = pyo.Var(m.HOUR, within = pyo.Binary)
 
         return
 
-    def _add_IES_constraints(self):
+    def _add_IES_constraints(self, g):
 
         '''
         This function adds the IES/storage constraints to the existing thermal
@@ -154,88 +152,85 @@ class ThermalGeneratorStorageIES:
             None
         '''
 
-        m = self.model
+        m = self.model_dict[g]
 
         ## convex hull constraints on storage power
         def convex_hull_on_storage_pow_con_rules(m):
-            for j in m.UNITS:
-                for h in m.HOUR:
-                    for k in m.SCENARIOS:
-                        yield m.P_S[j,h,k]<= m.pmax_storage[j] * m.y_S[j,h,k]
-                        yield m.P_E[j,h,k]<= m.pmax_storage[j] * m.y_E[j,h,k]
-                        yield m.P_D[j,h,k]<= m.pmax_storage[j] * m.y_D[j,h,k]
-                        yield m.P_C[j,h,k]<= m.pmax_storage[j] * m.y_C[j,h,k]
+            for h in m.HOUR:
+                yield m.P_S[h]<= m.pmax_storage * m.y_S[h]
+                yield m.P_E[h]<= m.pmax_storage * m.y_E[h]
+                yield m.P_D[h]<= m.pmax_storage * m.y_D[h]
+                yield m.P_C[h]<= m.pmax_storage * m.y_C[h]
         m.UB_on_storage_pow_con = pyo.ConstraintList(rule = convex_hull_on_storage_pow_con_rules)
 
-        def charge_or_discharge_fun3(m,j,h,k):
-            return m.y_E[j,h,k] + m.y_S[j,h,k]<=1
-        m.discharge_con3 = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = charge_or_discharge_fun3)
+        def charge_or_discharge_fun3(m,h):
+            return m.y_E[h] + m.y_S[h]<=1
+        m.discharge_con3 = pyo.Constraint(m.HOUR, rule = charge_or_discharge_fun3)
 
-        def charge_or_discharge_fun4(m,j,h,k):
-            return m.y_D[j,h,k] + m.y_C[j,h,k]<=1
-        m.discharge_con4 = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = charge_or_discharge_fun4)
+        def charge_or_discharge_fun4(m,h):
+            return m.y_D[h] + m.y_C[h]<=1
+        m.discharge_con4 = pyo.Constraint(m.HOUR, rule = charge_or_discharge_fun4)
 
-        def discharge_only_when_unit_on_fun(m,j,h,k):
-            return 1-m.y_S[j,h,k] + m.on_off[j,h,k] >= 1
-        m.discharge_only_when_unit_on = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = discharge_only_when_unit_on_fun)
+        def discharge_only_when_unit_on_fun(m,h):
+            return 1-m.y_S[h] + m.on_off[h] >= 1
+        m.discharge_only_when_unit_on = pyo.Constraint(m.HOUR, rule = discharge_only_when_unit_on_fun)
         m.discharge_only_when_unit_on.deactivate()
 
-        def charge_rate_exp(m,j,h,k):
-            return m.P_E[j,h,k] + m.P_C[j,h,k]
-        m.charge_rate = pyo.Expression(m.UNITS,m.HOUR,m.SCENARIOS,rule = charge_rate_exp)
+        def charge_rate_exp(m,h):
+            return m.P_E[h] + m.P_C[h]
+        m.charge_rate = pyo.Expression(m.HOUR, rule = charge_rate_exp)
 
-        def discharge_rate_exp(m,j,h,k):
-            return m.P_S[j,h,k] + m.P_D[j,h,k]
-        m.discharge_rate = pyo.Expression(m.UNITS,m.HOUR,m.SCENARIOS,rule = discharge_rate_exp)
+        def discharge_rate_exp(m,h):
+            return m.P_S[h] + m.P_D[h]
+        m.discharge_rate = pyo.Expression(m.HOUR, rule = discharge_rate_exp)
 
         # charging rate Constraints
-        def charge_rate_fun(m,j,h,k):
-            return m.charge_rate[j,h,k] <= m.pmax_storage[j]
-        m.charge_rate_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = charge_rate_fun)
+        def charge_rate_fun(m,h):
+            return m.charge_rate[h] <= m.pmax_storage
+        m.charge_rate_con = pyo.Constraint(m.HOUR, rule = charge_rate_fun)
 
-        def discharge_rate_fun(m,j,h,k):
-            return m.discharge_rate[j,h,k] <= m.pmax_storage[j]
-        m.discharge_rate_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = discharge_rate_fun)
+        def discharge_rate_fun(m,h):
+            return m.discharge_rate[h] <= m.pmax_storage
+        m.discharge_rate_con = pyo.Constraint(m.HOUR, rule = discharge_rate_fun)
 
         # thermal generator power balance
-        def therm_pow_balance(m,j,h,k):
-            return m.P_T[j,h,k] == m.P_E[j,h,k] + m.P_G[j,h,k]
-        m.thermal_pow_balance_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = therm_pow_balance)
+        def therm_pow_balance(m,h):
+            return m.P_T[h] == m.P_E[h] + m.P_G[h]
+        m.thermal_pow_balance_con = pyo.Constraint(m.HOUR, rule = therm_pow_balance)
 
         # total power to the grid
-        def total_gen_pow_G_fun(m,j,h,k):
-            return m.P_R[j,h,k] == m.P_G[j,h,k] + m.P_S[j,h,k]
-        m.total_pow_G_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = total_gen_pow_G_fun)
+        def total_gen_pow_G_fun(m,h):
+            return m.P_R[h] == m.P_G[h] + m.P_S[h]
+        m.total_pow_G_con = pyo.Constraint(m.HOUR, rule = total_gen_pow_G_fun)
 
         # storage energy balance
-        def EnergyBalance(m,j,h,k):
+        def EnergyBalance(m,h):
             if h == 0 :
-                return m.S_SOC[j,h,k] == m.pre_SOC[j] + m.charge_rate[j,h,k]\
-                *m.round_trip_eff[j]**0.5 - m.discharge_rate[j,h,k]/m.round_trip_eff[j]**0.5
+                return m.S_SOC[h] == m.pre_SOC + m.charge_rate[h]\
+                *m.round_trip_eff**0.5 - m.discharge_rate[h]/m.round_trip_eff**0.5
             else :
-                return m.S_SOC[j,h,k] == m.S_SOC[j,h-1,k] + m.charge_rate[j,h,k]\
-                *m.round_trip_eff[j]**0.5 - m.discharge_rate[j,h,k]/m.round_trip_eff[j]**0.5
-        m.EnergyBalance_Con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = EnergyBalance)
+                return m.S_SOC[h] == m.S_SOC[h-1] + m.charge_rate[h]\
+                *m.round_trip_eff**0.5 - m.discharge_rate[h]/m.round_trip_eff**0.5
+        m.EnergyBalance_Con = pyo.Constraint(m.HOUR,rule = EnergyBalance)
 
         # constrain state of charge at end time
-        def SOC_endtime_fun(m,j,h,k):
+        def SOC_endtime_fun(m,h):
             if h == len(m.HOUR) - 1:
-                return  m.S_SOC[j,h,k] == m.pre_SOC[j]
+                return  m.S_SOC[h] == m.pre_SOC
             else:
                 return pyo.Constraint.Skip
-        m.SOC_endtime_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = SOC_endtime_fun)
+        m.SOC_endtime_con = pyo.Constraint(m.HOUR,rule = SOC_endtime_fun)
         if len(m.HOUR)%24 != 0:
             m.SOC_endtime_con.deactivate()
 
         # energy generated by all the units
-        def total_power_fun(m,j,h,k):
-            return m.P_total[j,h,k] == m.P_R[j,h,k] + m.P_D[j,h,k] - m. P_C[j,h,k]
-        m.tot_power = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = total_power_fun)
+        def total_power_fun(m,h):
+            return m.P_total[h] == m.P_R[h] + m.P_D[h] - m. P_C[h]
+        m.tot_power = pyo.Constraint(m.HOUR,rule = total_power_fun)
 
         return
 
     def _assemble_IES_data(self,
-                           generators, \
                            storage_pmax_ratio, \
                            storage_size_hour, \
                            round_trip_efficiency):
@@ -256,23 +251,22 @@ class ThermalGeneratorStorageIES:
                       '3a': storage cannot charge from the market}.
 
         Returns:
-            model_data: a dictionary which has this structure
-            {data type name: {generator name: value}}.
+            None
         '''
 
-        model_data = {}
+        model_data = self.thermal_generator_object.model_data
+        for g in model_data:
+            model_data[g]['Storage Pmax Ratio'] = storage_pmax_ratio[g]
+            model_data[g]['Storage Size Hour'] = storage_size_hour[g]
+            model_data[g]['Storage Round-trip Efficiency'] = round_trip_efficiency[g]
 
-        model_data['Storage Pmax Ratio'] = dict(zip(generators,storage_pmax_ratio))
-        model_data['Storage Size Hour'] = dict(zip(generators,storage_size_hour))
-        model_data['Storage Round-trip Efficiency'] = dict(zip(generators,round_trip_efficiency))
-
-        model_data['Storage Pmax'] = {gen: pyo.value(self.model.Pmax[gen]) * model_data['Storage Pmax Ratio'][gen] for gen in generators}
-        model_data['Storage Size'] = {gen: model_data['Storage Size Hour'][gen] * model_data['Storage Pmax'][gen] for gen in generators}
-        model_data['Storage Size Ratio'] = {gen: model_data['Storage Size'][gen] / pyo.value(self.model.Pmax[gen]) for gen in generators}
+            model_data[g]['Storage Pmax'] = model_data[g]['Storage Pmax Ratio'] * model_data[g]['PMax MW']
+            model_data[g]['Storage Size'] = model_data[g]['Storage Size Hour'] * model_data[g]['Storage Pmax']
+            model_data[g]['Storage Size Ratio'] = model_data[g]['Storage Size'] / model_data[g]['PMax MW']
 
         return model_data
 
-    def switch_model_mode(self,mode = '1a'):
+    def switch_model_mode(self, g, mode = '1a'):
 
         '''
         Switch the operation mode of the IES.
@@ -288,8 +282,7 @@ class ThermalGeneratorStorageIES:
             None
         '''
 
-        # tag the model by the mode
-        m = self.model
+        m = self.model_dict[g]
 
         # first unfix all the vars we care, in case the model is switched before
         m.P_D.unfix()
@@ -329,10 +322,6 @@ class ThermalGeneratorStorageIES:
         return
 
     def build_thermal_generator_storage_IES_model(self, \
-                                                  generators, \
-                                                  storage_pmax_ratio, \
-                                                  storage_size_hour, \
-                                                  round_trip_efficiency,\
                                                   IES_mode):
 
         '''
@@ -355,16 +344,12 @@ class ThermalGeneratorStorageIES:
             None
         '''
 
-        # prepare model data
-        IES_data = self._assemble_IES_data(generators, \
-                                           storage_pmax_ratio, \
-                                           storage_size_hour, \
-                                           round_trip_efficiency)
+        for g in self.model_dict:
 
-        self._add_IES_params(IES_data)
-        self._add_IES_vars()
-        self._add_IES_constraints()
-        self.switch_model_mode(mode = IES_mode)
+            self._add_IES_params(g)
+            self._add_IES_vars(g)
+            self._add_IES_constraints(g)
+            self.switch_model_mode(g, mode = IES_mode)
 
         return
 
@@ -450,27 +435,27 @@ class ThermalGeneratorStorageIES:
                     result_dict['Scenario'] = int(k)
 
                     # model vars
-                    result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[generator,t,k]),2))
-                    result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t,k]),2))
-                    result_dict['Thermal Power to Storage [MW]'] = float(round(pyo.value(m.P_E[generator,t,k]),2))
-                    result_dict['Thermal Power to Market [MW]'] = float(round(pyo.value(m.P_G[generator,t,k]),2))
-                    result_dict['Storage Power to Thermal [MW]'] = float(round(pyo.value(m.P_S[generator,t,k]),2))
-                    result_dict['Total Thermal Side Power to Market [MW]'] = float(round(pyo.value(m.P_R[generator,t,k]),2))
-                    result_dict['Charge Power [MW]'] = float(round(pyo.value(m.P_C[generator,t,k]),2))
-                    result_dict['Disharge Power [MW]'] = float(round(pyo.value(m.P_D[generator,t,k]),2))
-                    result_dict['State of Charge [MWh]'] = float(round(pyo.value(m.S_SOC[generator,t,k]),2))
+                    result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[generator,t]),2))
+                    result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t]),2))
+                    result_dict['Thermal Power to Storage [MW]'] = float(round(pyo.value(m.P_E[generator,t]),2))
+                    result_dict['Thermal Power to Market [MW]'] = float(round(pyo.value(m.P_G[generator,t]),2))
+                    result_dict['Storage Power to Thermal [MW]'] = float(round(pyo.value(m.P_S[generator,t]),2))
+                    result_dict['Total Thermal Side Power to Market [MW]'] = float(round(pyo.value(m.P_R[generator,t]),2))
+                    result_dict['Charge Power [MW]'] = float(round(pyo.value(m.P_C[generator,t]),2))
+                    result_dict['Disharge Power [MW]'] = float(round(pyo.value(m.P_D[generator,t]),2))
+                    result_dict['State of Charge [MWh]'] = float(round(pyo.value(m.S_SOC[generator,t]),2))
 
-                    result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t,k])))
-                    result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t,k])))
-                    result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t,k])))
-                    result_dict['Storage to Thermal [bin]'] = int(round(pyo.value(m.y_S[generator,t,k])))
-                    result_dict['Thermal to Storage [bin]'] = int(round(pyo.value(m.y_E[generator,t,k])))
-                    result_dict['Charge [bin]'] = int(round(pyo.value(m.y_C[generator,t,k])))
-                    result_dict['Dicharge [bin]'] = int(round(pyo.value(m.y_D[generator,t,k])))
+                    result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t])))
+                    result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t])))
+                    result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t])))
+                    result_dict['Storage to Thermal [bin]'] = int(round(pyo.value(m.y_S[generator,t])))
+                    result_dict['Thermal to Storage [bin]'] = int(round(pyo.value(m.y_E[generator,t])))
+                    result_dict['Charge [bin]'] = int(round(pyo.value(m.y_C[generator,t])))
+                    result_dict['Dicharge [bin]'] = int(round(pyo.value(m.y_D[generator,t])))
 
-                    result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t,k]),2))
-                    result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t,k]),2))
-                    result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t,k]),2))
+                    result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t]),2))
+                    result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t]),2))
+                    result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t]),2))
 
                     # result_dict['Periodic Boundary Slack [MWh]'] = float(round(pyo.value(m.pbc_slack[generator,t]),2))
                     # result_dict['Power Output Slack [MW]'] = float(round(pyo.value(m.slack_var_power[generator,t]),2))
@@ -510,11 +495,10 @@ if __name__ == "__main__":
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     IES_object = ThermalGeneratorStorageIES(rts_gmlc_dataframe = rts_gmlc_dataframe, \
                                             horizon = 2, \
-                                            n_scenario = 1,\
                                             generators = ["102_STEAM_3"], \
-                                            storage_pmax_ratio = [0.1],\
-                                            storage_size_hour = [4],\
-                                            round_trip_efficiency = [0.88])
+                                            storage_pmax_ratio = {"102_STEAM_3": 0.1},\
+                                            storage_size_hour = {"102_STEAM_3": 4},\
+                                            round_trip_efficiency = {"102_STEAM_3": 0.88})
 
 # def _check_number_of_None(ls):
 #

@@ -1,5 +1,5 @@
 import pyomo.environ as pyo
-from collections import deque, OrderedDict
+from collections import deque
 import pandas as pd
 # from idaes.apps.grid_integration.tracker import Tracker
 import sys
