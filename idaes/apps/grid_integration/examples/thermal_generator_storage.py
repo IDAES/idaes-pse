@@ -54,12 +54,10 @@ class ThermalGeneratorStorageIES:
     def _add_IES_params(self,g):
         '''
         This function adds the IES/storage constraints to the existing thermal
-        generator model.
+        generator models.
 
         Arguments:
-            model_data: a dictionary which has this structure
-            {data type name: {generator name: value}}. It contains the IES-related
-            parameter values.
+            g: generator name in str.
 
         Returns:
             None
@@ -94,7 +92,7 @@ class ThermalGeneratorStorageIES:
         generator model.
 
         Arguments:
-            None
+            g: generator name in str.
 
         Returns:
             None
@@ -146,7 +144,7 @@ class ThermalGeneratorStorageIES:
         generator model.
 
         Arguments:
-            None
+            g: generator name in str.
 
         Returns:
             None
@@ -272,6 +270,7 @@ class ThermalGeneratorStorageIES:
         Switch the operation mode of the IES.
 
         Arguments:
+            g: generator name in str.
             mode: the operation mode of the IES, in {'1a': hide the storage,
                   i.e., cannot charge/discharge from/to market,
                   '1b': hide the storage, i.e., it can only charge from the
@@ -321,19 +320,14 @@ class ThermalGeneratorStorageIES:
 
         return
 
-    def build_thermal_generator_storage_IES_model(self, \
-                                                  IES_mode):
+    def build_thermal_generator_storage_IES_model(self, IES_mode):
 
         '''
         This function augments the given thermal generators to build the IES
         model.
 
         Arguments:
-            generators: a list of generators in RTS-GMLC
-            storage_pmax_ratio: a list of ratios between storage Pmax and thermal
-                                generator Pmax.
-            storage_size_hour: a list of storage size in hour.
-            round_trip_efficiency: a list of storage system round-trip efficiency
+
             IES_mode: the operation mode of the IES, in {'1a': hide the storage,
                       i.e., cannot charge/discharge from/to market,
                       '1b': hide the storage, i.e., it can only charge from the
@@ -379,10 +373,8 @@ class ThermalGeneratorStorageIES:
         events.
 
         Arguments:
-            implemented_power_output: realized power outputs: {unit: []}
-            implemented_shut_down: realized shut down events: {unit: []}.
-            implemented_start_up: realized start up events: {unit: []}
-            implemented_SOC: realized state-of-charge profile: {unit: []}
+            last_implemented_time_step: time index for the last implemented time
+                                        step
 
          Returns:
              None

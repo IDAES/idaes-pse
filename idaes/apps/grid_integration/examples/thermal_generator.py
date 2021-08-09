@@ -18,7 +18,6 @@ class ThermalGenerator:
             rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
             horizon: the length of the planning horizon of the model.
             generators: a list of generators in RTS-GMLC
-            n_scenario: number of uncertain scenarios.
 
         Returns:
             None
@@ -35,7 +34,7 @@ class ThermalGenerator:
         self.result_list = []
 
     @staticmethod
-    def assemble_model_data(generator_names, gen_params, **kwargs):
+    def assemble_model_data(generator_names, gen_params):
 
         '''
         This function assembles the parameter data to build the thermal generator
@@ -43,7 +42,7 @@ class ThermalGenerator:
 
         Arguments:
             generator_names: a list of generator names in RTS-GMLC dataset.
-            rts_gmlc_data_dir: the RTS-GMLC data directory.
+            gen_params: the RTS-GMLC generator data in Pandas DataFrame
 
         Returns:
             model_data: a dictionary which has this structure
@@ -139,6 +138,7 @@ class ThermalGenerator:
         This function builds the model for a thermal generator.
 
         Arguments:
+            generator: generator name in str.
             plan_horizon: the length of the planning horizon of the model.
             segment_number: number of segments used in the piecewise linear
             production model.
@@ -331,9 +331,7 @@ class ThermalGenerator:
         pre_shut_down_trajectory_copy = {}
         pre_start_up_trajectory_copy = {}
 
-        for g in self.generators:
-
-            m = self.model_dict[g]
+        for g,m in self.model_dict.items():
 
             pre_shut_down_trajectory_copy[g] = deque([])
             pre_start_up_trajectory_copy[g] = deque([])
@@ -375,8 +373,7 @@ class ThermalGenerator:
              None
         '''
 
-        for g in self.generators:
-            m = self.model_dict[g]
+        for g, m in self.model_dict.items():
             m.pre_P_T = round(implemented_power_output[g][-1],2)
             m.pre_on_off = round(int(implemented_power_output[g][-1] > 1e-3))
 
@@ -389,9 +386,8 @@ class ThermalGenerator:
         the implemented power outputs, shut down and start up events.
 
         Arguments:
-            implemented_power_output: realized power outputs: {unit: []}
-            implemented_shut_down: realized shut down events: {unit: []}.
-            implemented_start_up: realized start up events: {unit: []}
+            last_implemented_time_step: time index for the last implemented time
+                                        step
 
          Returns:
              None
@@ -410,6 +406,19 @@ class ThermalGenerator:
         return
 
     def get_implemented_profile(self, model_var, last_implemented_time_step):
+
+        '''
+        This method gets the implemented variable profiles in the last optimization
+        solve.
+
+        Arguments:
+            model_var: intended variable name in str
+            last_implemented_time_step: time index for the last implemented time
+                                        step
+
+         Returns:
+             profile: the intended profile, {unit: [...]}
+        '''
 
         profile = {}
         for g in self.generators:
