@@ -435,8 +435,7 @@ class ThermalGenerator:
 
         df_list = []
 
-        for g in self.generators:
-            m = self.model_dict[g]
+        for g, m in self.model_dict.items():
             for t in m.HOUR:
 
                 result_dict = {}

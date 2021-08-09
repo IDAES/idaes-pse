@@ -353,8 +353,7 @@ class ThermalGeneratorStorageIES:
 
         return
 
-    @staticmethod
-    def _update_SOC(m,implemented_SOC):
+    def _update_SOC(self, implemented_SOC):
 
         '''
         This method updates the parameters in the energy balance constraint
@@ -367,8 +366,8 @@ class ThermalGeneratorStorageIES:
              None
         '''
 
-        for unit in m.UNITS:
-            m.pre_SOC[unit] = round(implemented_SOC[unit][-1],2)
+        for g, m in self.model_dict.items():
+            m.pre_SOC = round(implemented_SOC[g][-1],2)
 
         return
 
@@ -389,20 +388,18 @@ class ThermalGeneratorStorageIES:
              None
         '''
 
-        implemented_shut_down = self.thermal_generator_object.get_implemented_profile(model_var = self.model.shut_dw,\
-                                                                                      last_implemented_time_step = last_implemented_time_step)
-        implemented_start_up = self.thermal_generator_object.get_implemented_profile(model_var = self.model.start_up,\
-                                                                                     last_implemented_time_step = last_implemented_time_step)
-        implemented_power_output = self.thermal_generator_object.get_implemented_profile(model_var = self.model.P_T,\
-                                                                                         last_implemented_time_step = last_implemented_time_step)
-        implemented_SOC = self.thermal_generator_object.get_implemented_profile(model_var = self.model.S_SOC,\
-                                                                                last_implemented_time_step = last_implemented_time_step)
+        implemented_shut_down = self.thermal_generator_object.get_implemented_profile(model_var = 'shut_dw',\
+                                                             last_implemented_time_step = last_implemented_time_step)
+        implemented_start_up = self.thermal_generator_object.get_implemented_profile(model_var = 'start_up',\
+                                                            last_implemented_time_step = last_implemented_time_step)
+        implemented_power_output = self.thermal_generator_object.get_implemented_profile(model_var = 'P_T',\
+                                                                last_implemented_time_step = last_implemented_time_step)
+        implemented_SOC = self.thermal_generator_object.get_implemented_profile(model_var = 'S_SOC',\
+                                                                last_implemented_time_step = last_implemented_time_step)
 
-
-        m = self.model
-        self.thermal_generator_object._update_UT_DT(m, implemented_shut_down, implemented_start_up)
-        self.thermal_generator_object._update_power(m, implemented_power_output)
-        self._update_SOC(m, implemented_SOC)
+        self.thermal_generator_object._update_UT_DT(implemented_shut_down, implemented_start_up)
+        self.thermal_generator_object._update_power(implemented_power_output)
+        self._update_SOC(implemented_SOC)
 
         return
 
@@ -421,56 +418,55 @@ class ThermalGeneratorStorageIES:
 
         '''
 
-        m = self.model
-
         df_list = []
-        for generator in m.UNITS:
+        for g, m in self.model_dict.items():
             for t in m.HOUR:
-                for k in m.SCENARIOS:
 
-                    result_dict = {}
-                    result_dict['Generator'] = generator
-                    result_dict['Date'] = date
-                    result_dict['Hour'] = hour
-                    result_dict['Scenario'] = int(k)
+                result_dict = {}
+                result_dict['Generator'] = g
+                result_dict['Date'] = date
+                result_dict['Hour'] = hour
 
-                    # model vars
-                    result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[generator,t]),2))
-                    result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t]),2))
-                    result_dict['Thermal Power to Storage [MW]'] = float(round(pyo.value(m.P_E[generator,t]),2))
-                    result_dict['Thermal Power to Market [MW]'] = float(round(pyo.value(m.P_G[generator,t]),2))
-                    result_dict['Storage Power to Thermal [MW]'] = float(round(pyo.value(m.P_S[generator,t]),2))
-                    result_dict['Total Thermal Side Power to Market [MW]'] = float(round(pyo.value(m.P_R[generator,t]),2))
-                    result_dict['Charge Power [MW]'] = float(round(pyo.value(m.P_C[generator,t]),2))
-                    result_dict['Disharge Power [MW]'] = float(round(pyo.value(m.P_D[generator,t]),2))
-                    result_dict['State of Charge [MWh]'] = float(round(pyo.value(m.S_SOC[generator,t]),2))
+                # simulation inputs
+                result_dict['Horizon [hr]'] = int(t)
 
-                    result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t])))
-                    result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t])))
-                    result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t])))
-                    result_dict['Storage to Thermal [bin]'] = int(round(pyo.value(m.y_S[generator,t])))
-                    result_dict['Thermal to Storage [bin]'] = int(round(pyo.value(m.y_E[generator,t])))
-                    result_dict['Charge [bin]'] = int(round(pyo.value(m.y_C[generator,t])))
-                    result_dict['Dicharge [bin]'] = int(round(pyo.value(m.y_D[generator,t])))
+                # model vars
+                result_dict['Total Power Output [MW]'] = float(round(pyo.value(m.P_total[t]),2))
+                result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[t]),2))
+                result_dict['Thermal Power to Storage [MW]'] = float(round(pyo.value(m.P_E[t]),2))
+                result_dict['Thermal Power to Market [MW]'] = float(round(pyo.value(m.P_G[t]),2))
+                result_dict['Storage Power to Thermal [MW]'] = float(round(pyo.value(m.P_S[t]),2))
+                result_dict['Total Thermal Side Power to Market [MW]'] = float(round(pyo.value(m.P_R[t]),2))
+                result_dict['Charge Power [MW]'] = float(round(pyo.value(m.P_C[t]),2))
+                result_dict['Disharge Power [MW]'] = float(round(pyo.value(m.P_D[t]),2))
+                result_dict['State of Charge [MWh]'] = float(round(pyo.value(m.S_SOC[t]),2))
 
-                    result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t]),2))
-                    result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t]),2))
-                    result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t]),2))
+                result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[t])))
+                result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[t])))
+                result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[t])))
+                result_dict['Storage to Thermal [bin]'] = int(round(pyo.value(m.y_S[t])))
+                result_dict['Thermal to Storage [bin]'] = int(round(pyo.value(m.y_E[t])))
+                result_dict['Charge [bin]'] = int(round(pyo.value(m.y_C[t])))
+                result_dict['Dicharge [bin]'] = int(round(pyo.value(m.y_D[t])))
 
-                    # result_dict['Periodic Boundary Slack [MWh]'] = float(round(pyo.value(m.pbc_slack[generator,t]),2))
-                    # result_dict['Power Output Slack [MW]'] = float(round(pyo.value(m.slack_var_power[generator,t]),2))
+                result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[t]),2))
+                result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[t]),2))
+                result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[t]),2))
 
-                    # calculate mileage
-                    if t == 0:
-                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.pre_P_T[generator])),2))
-                    else:
-                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.P_T[generator,t-1])),2))
+                # result_dict['Periodic Boundary Slack [MWh]'] = float(round(pyo.value(m.pbc_slack[g]),2))
+                # result_dict['Power Output Slack [MW]'] = float(round(pyo.value(m.slack_var_power[g]),2))
 
-                    for key in kwargs:
-                        result_dict[key] = kwargs[key]
+                # calculate mileage
+                if t == 0:
+                    result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[t] - m.pre_P_T)),2))
+                else:
+                    result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[t] - m.P_T[t-1])),2))
 
-                    result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
-                    df_list.append(result_df.T)
+                for key in kwargs:
+                    result_dict[key] = kwargs[key]
+
+                result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
+                df_list.append(result_df.T)
 
         # save the result to object property
         # wait to be written when simulation ends
@@ -480,15 +476,19 @@ class ThermalGeneratorStorageIES:
 
     @property
     def power_output(self):
-        return self.model.P_total
+        return {g: m.P_total for g, m in self.model_dict.items()}
 
     @property
     def total_cost(self):
-        return {self.model.tot_cost: 1}
+        return {g: (m.tot_cost,1) for g, m in self.model_dict.items()}
 
     @property
-    def indices(self):
-        return {self.model.UNITS: 'Generators', self.model.HOUR: 'Time', self.model.SCENARIOS: 'LMP Scenarios'}
+    def default_bids(self):
+        return {g: self.model_data[g]['Original Marginal Cost Curve'] for g in self.model_dict}
+
+    @property
+    def pmin(self):
+        return {g: self.model_data[g]['PMin MW'] for g in self.model_dict}
 
 if __name__ == "__main__":
 
