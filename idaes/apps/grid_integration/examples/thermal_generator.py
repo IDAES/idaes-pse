@@ -9,7 +9,7 @@ from bidder import Bidder
 
 class ThermalGenerator:
 
-    def __init__(self, rts_gmlc_dataframe, horizon = 48,generators = None, n_scenario = 10):
+    def __init__(self, rts_gmlc_dataframe, horizon = 48, generators = None):
 
         '''
         Initializes the class object by building the thermal generator model.
@@ -24,12 +24,13 @@ class ThermalGenerator:
             None
         '''
 
-        self.n_scenario = n_scenario
-
         self.model_data = self.assemble_model_data(generator_names = generators, \
                                                    gen_params = rts_gmlc_dataframe)
-        self.model = self.build_thermal_generator_model(plan_horizon = horizon,
-                                                        segment_number = 4)
+        self.model_dict = {}
+        for g in generators:
+            self.model_dict[g] = self.build_thermal_generator_model(generator = g,
+                                                                    plan_horizon = horizon,
+                                                                    segment_number = 4)
         self.result_list = []
 
     @staticmethod
@@ -48,97 +49,38 @@ class ThermalGenerator:
             {data type name: {generator name: value}}.
         '''
 
-        # read data
-        gen_params = gen_params[gen_params['GEN UID'].isin(generator_names)]
+        gen_params.set_index('GEN UID',inplace = True)
+        properties = ['PMin MW', 'PMax MW', 'Min Up Time Hr', 'Min Down Time Hr',\
+                      'Ramp Rate MW/Min', 'Start Heat Warm MBTU', 'Fuel Price $/MMBTU',\
+                      'HR_avg_0', 'HR_incr_1', 'HR_incr_2', 'HR_incr_3',\
+                      'Output_pct_1','Output_pct_2','Output_pct_3']
 
-        model_data = {}
+        # to dict
+        model_data = gen_params.loc[generator_names, properties].to_dict('index')
 
-        # generator names
-        model_data['Generator'] = generator_names
+        # customize data
+        for g in generator_names:
 
-        # Pmin [MW]
-        model_data['Pmin'] = dict(zip(generator_names,gen_params['PMin MW']))
+            model_data[g]['RU'] = model_data[g]['Ramp Rate MW/Min'] * 60
+            model_data[g]['RD'] = model_data[g]['RU']
+            model_data[g]['SU'] = min(model_data[g]['PMin MW'], model_data[g]['RU'])
+            model_data[g]['SD'] = min(model_data[g]['PMin MW'], model_data[g]['RD'])
+            model_data[g]['SU Cost'] = model_data[g]['Start Heat Warm MBTU'] * model_data[g]['Fuel Price $/MMBTU']
 
-        # Pmax [MW]
-        model_data['Pmax'] = dict(zip(generator_names,gen_params['PMax MW']))
+            model_data[g]['Min Load Cost'] = model_data[g]['HR_avg_0']/1000 * \
+                                             model_data[g]['Fuel Price $/MMBTU'] *\
+                                             model_data[g]['PMin MW']
 
-        # minimum up time [MW/hr]
-        model_data['UT'] = dict(zip(generator_names,gen_params['Min Up Time Hr'].astype(int)))
+            model_data[g]['Power Segments'] = {}
+            model_data[g]['Marginal Costs'] = {}
 
-        # minimum down time [hr]
-        model_data['DT'] = dict(zip(generator_names,gen_params['Min Down Time Hr'].astype(int)))
-
-        ## ramp rates [MW/hr]
-        ramp_rates = gen_params['Ramp Rate MW/Min'].values * 60
-
-        # ramp up rate [MW/hr]
-        model_data['RU'] = dict(zip(generator_names,ramp_rates))
-
-        # ramp down rate [MW/hr]
-        model_data['RD'] = dict(zip(generator_names,ramp_rates))
-
-        # ramp start up [MW/hr]
-        model_data['SU'] = {gen: min(model_data['Pmin'][gen],model_data['RU'][gen]) for gen in generator_names}
-
-        # ramp shut down [MW/hr] (will use pmin for now)
-        model_data['SD'] = {gen: min(model_data['Pmin'][gen],model_data['RD'][gen]) for gen in generator_names}
-
-        # start up cost [$/SU] (will use the warm start up cost for now)
-        start_up_cost = gen_params['Start Heat Warm MBTU'] * gen_params['Fuel Price $/MMBTU']
-        model_data['SU Cost'] = dict(zip(generator_names,start_up_cost))
-
-        ## production cost
-
-        # power segments and marginal costs
-        model_data['Power Segments'] = {}
-        model_data['Marginal Costs'] = {}
-
-        model_data['Min Load Cost'] = dict(zip(generator_names,gen_params['HR_avg_0']/1000 * gen_params['Fuel Price $/MMBTU'] * gen_params['PMin MW']))
-        gen_params.set_index('GEN UID',inplace=True)
-        for gen in generator_names:
-            for l in range(1,4):
-                # power segements
-                model_data['Power Segments'][(gen,l)] = gen_params.loc[gen,'Output_pct_{}'.format(l)] * gen_params.loc[gen,'PMax MW']
-
-                # segment marginal cost
-                model_data['Marginal Costs'][(gen,l)] = gen_params.loc[gen,'HR_incr_{}'.format(l)]/1000 * gen_params.loc[gen,'Fuel Price $/MMBTU']
-
-        gen_params.reset_index(inplace=True)
-
-        # get the original cost curve
-        model_data['Original Cost Curve'] = {}
-        for gen in generator_names:
-            model_data['Original Cost Curve'][gen] = OrderedDict()
-
-            pmin = round(model_data['Pmin'][gen],2)
-            model_data['Original Cost Curve'][gen][pmin] = model_data['Min Load Cost'][gen]
-
-            old_p = pmin
-            old_cost = model_data['Original Cost Curve'][gen][pmin]
-            for l in range(1,4):
-
-                new_p = round(model_data['Power Segments'][(gen,l)],2)
-                delta_p = new_p - old_p
-
-                increased_cost = delta_p * model_data['Marginal Costs'][(gen,l)]
-                model_data['Original Cost Curve'][gen][new_p] = old_cost + increased_cost
-
-                old_cost += increased_cost
-                old_p = new_p
-
-        model_data['Original Marginal Cost Curve'] = {}
-        for gen in generator_names:
-            model_data['Original Marginal Cost Curve'][gen] = OrderedDict()
-
-            pmin = round(model_data['Pmin'][gen],2)
-            model_data['Original Marginal Cost Curve'][gen][pmin] = model_data['Min Load Cost'][gen]/pmin
+            model_data[g]['Original Marginal Cost Curve'] = {}
+            model_data[g]['Original Marginal Cost Curve'][model_data[g]['PMin MW']] = model_data[g]['Min Load Cost']/model_data[g]['PMin MW']
 
             for l in range(1,4):
-                new_p = round(model_data['Power Segments'][(gen,l)],2)
-                model_data['Original Marginal Cost Curve'][gen][new_p] = model_data['Marginal Costs'][(gen,l)]
-
-        for key in kwargs:
-            model_data[key] = {gen: kwargs[key] for gen in generator_names}
+                model_data[g]['Power Segments'][l] = model_data[g]['Output_pct_{}'.format(l)] * model_data[g]['PMax MW']
+                model_data[g]['Marginal Costs'][l] = model_data[g]['HR_incr_{}'.format(l)]/1000 * model_data[g]['Fuel Price $/MMBTU']
+                model_data[g]['Original Marginal Cost Curve'][model_data[g]['Power Segments'][l]] = model_data[g]['Marginal Costs'][l]
 
         return model_data
 
@@ -159,35 +101,36 @@ class ThermalGenerator:
         '''
 
         def pre_shut_down_trajectory_set_rule(m):
-            return ((j,t) for j in m.UNITS for t in range(-pyo.value(m.min_dw_time[j]) + 1,0))
-        m.pre_shut_down_trajectory_set = pyo.Set(dimen = 2,initialize = pre_shut_down_trajectory_set_rule, ordered = True)
+            return (t for t in range(-pyo.value(m.min_dw_time) + 1,0))
+        m.pre_shut_down_trajectory_set = pyo.Set(dimen = 1,initialize = pre_shut_down_trajectory_set_rule, ordered = True)
 
         def pre_start_up_trajectory_set_rule(m):
-            return ((j,t) for j in m.UNITS for t in range(-pyo.value(m.min_up_time[j]) + 1,0))
-        m.pre_start_up_trajectory_set = pyo.Set(dimen = 2,initialize = pre_start_up_trajectory_set_rule, ordered = True)
+            return (t for t in range(-pyo.value(m.min_up_time) + 1,0))
+        m.pre_start_up_trajectory_set = pyo.Set(dimen = 1,initialize = pre_start_up_trajectory_set_rule, ordered = True)
 
         m.pre_shut_down_trajectory = pyo.Param(m.pre_shut_down_trajectory_set, initialize = 0, mutable = True)
         m.pre_start_up_trajectory = pyo.Param(m.pre_start_up_trajectory_set, initialize = 0, mutable = True)
 
-        def min_down_time_rule(m,j,h,k):
-            if h < pyo.value(m.min_dw_time[j]):
-                return sum(m.pre_shut_down_trajectory[j,h0] for h0 in range(h - pyo.value(m.min_dw_time[j]) + 1,0)) \
-                       + sum(m.shut_dw[j,h0,k] for h0 in range(h + 1)) <= 1 - m.on_off[j,h,k]
+        def min_down_time_rule(m,h):
+            if h < pyo.value(m.min_dw_time):
+                return sum(m.pre_shut_down_trajectory[h0] for h0 in range(h - pyo.value(m.min_dw_time) + 1,0)) \
+                       + sum(m.shut_dw[h0] for h0 in range(h + 1)) <= 1 - m.on_off[h]
             else:
-                return sum(m.shut_dw[j,h0,k] for h0 in range(h - pyo.value(m.min_dw_time[j]) + 1, h + 1)) <= 1 - m.on_off[j,h,k]
-        m.min_down_time_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = min_down_time_rule)
+                return sum(m.shut_dw[h0] for h0 in range(h - pyo.value(m.min_dw_time) + 1, h + 1)) <= 1 - m.on_off[h]
+        m.min_down_time_con = pyo.Constraint(m.HOUR,rule = min_down_time_rule)
 
-        def min_up_time_rule(m,j,h,k):
-            if h < pyo.value(m.min_up_time[j]):
-                return sum(m.pre_start_up_trajectory[j,h0] for h0 in range(h - pyo.value(m.min_up_time[j]) + 1,0)) \
-                       + sum(m.start_up[j,h0,k] for h0 in range(h + 1)) <= m.on_off[j,h,k]
+        def min_up_time_rule(m,h):
+            if h < pyo.value(m.min_up_time):
+                return sum(m.pre_start_up_trajectory[h0] for h0 in range(h - pyo.value(m.min_up_time) + 1,0)) \
+                       + sum(m.start_up[h0] for h0 in range(h + 1)) <= m.on_off[h]
             else:
-                return sum(m.start_up[j,h0,k] for h0 in range(h - pyo.value(m.min_up_time[j]) + 1, h + 1)) <= m.on_off[j,h,k]
-        m.min_up_time_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = min_up_time_rule)
+                return sum(m.start_up[h0] for h0 in range(h - pyo.value(m.min_up_time) + 1, h + 1)) <= m.on_off[h]
+        m.min_up_time_con = pyo.Constraint(m.HOUR,rule = min_up_time_rule)
 
         return
 
     def build_thermal_generator_model(self,
+                                      generator = None,
                                       plan_horizon = 48,
                                       segment_number = 4):
 
@@ -203,175 +146,170 @@ class ThermalGenerator:
             m: the constructed model.
         '''
 
-        model_data = self.model_data
+        model_data = self.model_data[generator]
         m = pyo.ConcreteModel()
 
         ## define the sets
         m.HOUR = pyo.Set(initialize = range(plan_horizon))
         m.SEGMENTS = pyo.Set(initialize = range(1, segment_number))
-        m.UNITS = pyo.Set(initialize = model_data['Generator'], ordered = True)
-        m.SCENARIOS = pyo.Set(initialize = range(self.n_scenario))
 
         ## define the parameters
 
-        m.start_up_cost = pyo.Param(m.UNITS,initialize = model_data['SU Cost'],mutable = False)
+        m.start_up_cost = pyo.Param(initialize = model_data['SU Cost'],mutable = False)
 
         # capacity of generators: upper bound (MW)
-        m.Pmax = pyo.Param(m.UNITS,initialize = model_data['Pmax'], mutable = False)
+        m.Pmax = pyo.Param(initialize = model_data['PMax MW'], mutable = False)
 
         # minimum power of generators: lower bound (MW)
-        m.Pmin = pyo.Param(m.UNITS,initialize = model_data['Pmin'], mutable = False)
+        m.Pmin = pyo.Param(initialize = model_data['PMin MW'], mutable = False)
 
-        m.power_segment_bounds = pyo.Param(m.UNITS,m.SEGMENTS,initialize = model_data['Power Segments'], mutable = False)
+        m.power_segment_bounds = pyo.Param(m.SEGMENTS,initialize = model_data['Power Segments'], mutable = False)
 
         # get the cost slopes
-        m.F = pyo.Param(m.UNITS,m.SEGMENTS,initialize = model_data['Marginal Costs'], mutable = False)
+        m.F = pyo.Param(m.SEGMENTS,initialize = model_data['Marginal Costs'], mutable = False)
 
-        m.min_load_cost = pyo.Param(m.UNITS,initialize = model_data['Min Load Cost'], mutable = False)
+        m.min_load_cost = pyo.Param(initialize = model_data['Min Load Cost'], mutable = False)
 
         # Ramp up limits (MW/h)
-        m.ramp_up = pyo.Param(m.UNITS,initialize = model_data['RU'], mutable = False)
+        m.ramp_up = pyo.Param(initialize = model_data['RU'], mutable = False)
 
         # Ramp down limits (MW/h)
-        m.ramp_dw = pyo.Param(m.UNITS,initialize = model_data['RD'], mutable = False)
+        m.ramp_dw = pyo.Param(initialize = model_data['RD'], mutable = False)
 
         # start up ramp limit
-        m.ramp_start_up = pyo.Param(m.UNITS,initialize = model_data['SU'], mutable = False)
+        m.ramp_start_up = pyo.Param(initialize = model_data['SU'], mutable = False)
 
         # shut down ramp limit
-        m.ramp_shut_dw = pyo.Param(m.UNITS,initialize = model_data['SD'], mutable = False)
+        m.ramp_shut_dw = pyo.Param(initialize = model_data['SD'], mutable = False)
 
         # minimum down time [hr]
-        m.min_dw_time = pyo.Param(m.UNITS,initialize = model_data['DT'], mutable = False)
+        m.min_dw_time = pyo.Param(initialize = int(model_data['Min Down Time Hr']), mutable = False)
 
         # minimum up time [hr]
-        m.min_up_time = pyo.Param(m.UNITS,initialize = model_data['UT'], mutable = False)
-
-        # power from the previous day (MW)
-        # need to assume the power output is at least always at the minimum pow output
+        m.min_up_time = pyo.Param(initialize = int(model_data['Min Up Time Hr']), mutable = False)
 
         # on/off status from previous day
-        m.pre_on_off = pyo.Param(m.UNITS,within = pyo.Binary,default= 1,mutable = True)
+        m.pre_on_off = pyo.Param(within = pyo.Binary,default= 1,mutable = True)
 
         # define a function to initialize the previous power params
-        def init_pre_pow_fun(m,j):
-            return m.pre_on_off[j]*m.Pmin[j]
-        m.pre_P_T = pyo.Param(m.UNITS,initialize = init_pre_pow_fun, mutable = True)
+        def init_pre_pow_fun(m):
+            return m.pre_on_off*m.Pmin
+        m.pre_P_T = pyo.Param(initialize = init_pre_pow_fun, mutable = True)
 
         ## define the variables
 
         # generator power (MW)
 
         # power generated by thermal generator
-        m.P_T = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,within = pyo.NonNegativeReals)
+        m.P_T = pyo.Var(m.HOUR,within = pyo.NonNegativeReals)
 
         # binary variables indicating on/off
-        m.on_off = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,initialize = True, within = pyo.Binary)
+        m.on_off = pyo.Var(m.HOUR,initialize = True, within = pyo.Binary)
 
         # binary variables indicating  start_up
-        m.start_up = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,initialize = False, within = pyo.Binary)
+        m.start_up = pyo.Var(m.HOUR,initialize = False, within = pyo.Binary)
 
         # binary variables indicating shut down
-        m.shut_dw = pyo.Var(m.UNITS,m.HOUR,m.SCENARIOS,initialize = False, within = pyo.Binary)
+        m.shut_dw = pyo.Var(m.HOUR,initialize = False, within = pyo.Binary)
 
         # power produced in each segment
-        m.power_segment = pyo.Var(m.UNITS,m.HOUR,m.SEGMENTS, m.SCENARIOS, within = pyo.NonNegativeReals)
+        m.power_segment = pyo.Var(m.HOUR,m.SEGMENTS, within = pyo.NonNegativeReals)
 
         ## Constraints
 
         # bounds on gen_pow
-        def lhs_bnd_gen_pow_fun(m,j,h,k):
-            return m.on_off[j,h,k] * m.Pmin[j] <= m.P_T[j,h,k]
-        m.lhs_bnd_gen_pow = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = lhs_bnd_gen_pow_fun)
+        def lhs_bnd_gen_pow_fun(m,h):
+            return m.on_off[h] * m.Pmin <= m.P_T[h]
+        m.lhs_bnd_gen_pow = pyo.Constraint(m.HOUR,rule = lhs_bnd_gen_pow_fun)
 
-        def rhs_bnd_gen_pow_fun(m,j,h,k):
-            return m.P_T[j,h,k] <= m.on_off[j,h,k] * m.Pmax[j]
-        m.rhs_bnd_gen_pow = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = rhs_bnd_gen_pow_fun)
+        def rhs_bnd_gen_pow_fun(m,h):
+            return m.P_T[h] <= m.on_off[h] * m.Pmax
+        m.rhs_bnd_gen_pow = pyo.Constraint(m.HOUR,rule = rhs_bnd_gen_pow_fun)
 
         # linearized power
-        def linear_power_fun(m,j,h,k):
-            return m.P_T[j,h,k] == \
-            sum(m.power_segment[j,h,l,k] for l in m.SEGMENTS) + m.Pmin[j]*m.on_off[j,h,k]
-        m.linear_power = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = linear_power_fun)
+        def linear_power_fun(m,h):
+            return m.P_T[h] == \
+            sum(m.power_segment[h,l] for l in m.SEGMENTS) + m.Pmin*m.on_off[h]
+        m.linear_power = pyo.Constraint(m.HOUR,rule = linear_power_fun)
 
         # bounds on segment power
-        def seg_pow_bnd_fun(m,j,h,l,k):
+        def seg_pow_bnd_fun(m,h,l):
             if l == 1:
-                return m.power_segment[j,h,l,k]<= (m.power_segment_bounds[j,l] - m.Pmin[j]) * m.on_off[j,h,k]
+                return m.power_segment[h,l]<= (m.power_segment_bounds[l] - m.Pmin) * m.on_off[h]
             else:
-                return m.power_segment[j,h,l,k]<= (m.power_segment_bounds[j,l] - m.power_segment_bounds[j,l-1]) * m.on_off[j,h,k]
-        m.seg_pow_bnd = pyo.Constraint(m.UNITS,m.HOUR,m.SEGMENTS,m.SCENARIOS,rule = seg_pow_bnd_fun)
+                return m.power_segment[h,l]<= (m.power_segment_bounds[l] - m.power_segment_bounds[l-1]) * m.on_off[h]
+        m.seg_pow_bnd = pyo.Constraint(m.HOUR,m.SEGMENTS,rule = seg_pow_bnd_fun)
 
         # start up and shut down logic (Arroyo and Conejo 2000)
-        def start_up_shut_dw_fun(m,j,h,k):
+        def start_up_shut_dw_fun(m,h):
             if h == 0:
-                return m.start_up[j,h,k] - m.shut_dw[j,h,k] == m.on_off[j,h,k] - m.pre_on_off[j]
+                return m.start_up[h] - m.shut_dw[h] == m.on_off[h] - m.pre_on_off
             else:
-                return m.start_up[j,h,k] - m.shut_dw[j,h,k] == m.on_off[j,h,k] - m.on_off[j,h-1,k]
-        m.start_up_shut_dw = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = start_up_shut_dw_fun)
+                return m.start_up[h] - m.shut_dw[h] == m.on_off[h] - m.on_off[h-1]
+        m.start_up_shut_dw = pyo.Constraint(m.HOUR,rule = start_up_shut_dw_fun)
 
         # either start up or shut down
-        def start_up_or_shut_dw_fun(m,j,h,k):
-            return m.start_up[j,h,k] + m.shut_dw[j,h,k] <= 1
-        m.start_up_or_shut_dw = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = start_up_or_shut_dw_fun)
+        def start_up_or_shut_dw_fun(m,h):
+            return m.start_up[h] + m.shut_dw[h] <= 1
+        m.start_up_or_shut_dw = pyo.Constraint(m.HOUR,rule = start_up_or_shut_dw_fun)
 
         # ramp up limits
-        def ramp_up_fun(m,j,h,k):
+        def ramp_up_fun(m,h):
             '''
-            j,h,k stand for unit, hour,scenario respectively.
+            h stand for hour
             '''
             if h==0:
-                return m.P_T[j,h,k] <= m.pre_P_T[j] \
-                + m.ramp_up[j]*m.pre_on_off[j]\
-                + m.ramp_start_up[j]*m.start_up[j,h,k]
+                return m.P_T[h] <= m.pre_P_T \
+                + m.ramp_up*m.pre_on_off\
+                + m.ramp_start_up*m.start_up[h]
             else:
-                return m.P_T[j,h,k] <= m.P_T[j,h-1,k] \
-                + m.ramp_up[j]*m.on_off[j,h-1,k]\
-                + m.ramp_start_up[j]*m.start_up[j,h,k]
-        m.ramp_up_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = ramp_up_fun)
+                return m.P_T[h] <= m.P_T[h-1] \
+                + m.ramp_up*m.on_off[h-1]\
+                + m.ramp_start_up*m.start_up[h]
+        m.ramp_up_con = pyo.Constraint(m.HOUR,rule = ramp_up_fun)
 
         # ramp shut down limits
-        def ramp_shut_dw_fun(m,j,h,k):
+        def ramp_shut_dw_fun(m,h):
             '''
-            j,h,k stand for unit, hour,scenario respectively.
+            h stand for hour.
             '''
             if h==0:
-                return m.pre_P_T[j] <= m.Pmax[j]*m.on_off[j,h,k] + m.ramp_shut_dw[j] * m.shut_dw[j,h,k]
+                return m.pre_P_T <= m.Pmax*m.on_off[h] + m.ramp_shut_dw * m.shut_dw[h]
             else:
-                return m.P_T[j,h-1,k] <= m.Pmax[j]*m.on_off[j,h,k] + m.ramp_shut_dw[j] * m.shut_dw[j,h,k]
-        m.ramp_shut_dw_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = ramp_shut_dw_fun)
+                return m.P_T[h-1] <= m.Pmax*m.on_off[h] + m.ramp_shut_dw * m.shut_dw[h]
+        m.ramp_shut_dw_con = pyo.Constraint(m.HOUR,rule = ramp_shut_dw_fun)
 
         # ramp down limits
-        def ramp_dw_fun(m,j,h,k):
+        def ramp_dw_fun(m,h):
             '''
-            j,h,k stand for unit, hour,scenario respectively.
+            h stand for hour.
             '''
             if h == 0:
-                return m.pre_P_T[j] - m.P_T[j,h,k] <= m.ramp_dw[j] * m.on_off[j,h,k]\
-                + m.ramp_shut_dw[j] * m.shut_dw[j,h,k]
+                return m.pre_P_T - m.P_T[h] <= m.ramp_dw * m.on_off[h]\
+                + m.ramp_shut_dw * m.shut_dw[h]
             else:
-                return m.P_T[j,h-1,k] - m.P_T[j,h,k] <= m.ramp_dw[j] * m.on_off[j,h,k]\
-                + m.ramp_shut_dw[j] * m.shut_dw[j,h,k]
-        m.ramp_dw_con = pyo.Constraint(m.UNITS,m.HOUR,m.SCENARIOS,rule = ramp_dw_fun)
+                return m.P_T[h-1] - m.P_T[h] <= m.ramp_dw * m.on_off[h]\
+                + m.ramp_shut_dw * m.shut_dw[h]
+        m.ramp_dw_con = pyo.Constraint(m.HOUR,rule = ramp_dw_fun)
 
         ## add min up and down time constraints
         self._add_UT_DT_constraints(m)
 
         ## Expression
-        def prod_cost_fun(m,j,h,k):
-            return m.min_load_cost[j] * m.on_off[j,h,k] \
-            + sum(m.F[j,l]*m.power_segment[j,h,l,k] for l in m.SEGMENTS)
-        m.prod_cost_approx = pyo.Expression(m.UNITS,m.HOUR,m.SCENARIOS,rule = prod_cost_fun)
+        def prod_cost_fun(m,h):
+            return m.min_load_cost * m.on_off[h] \
+            + sum(m.F[l]*m.power_segment[h,l] for l in m.SEGMENTS)
+        m.prod_cost_approx = pyo.Expression(m.HOUR,rule = prod_cost_fun)
 
         # start up costs
-        def start_cost_fun(m,j,h,k):
-            return m.start_up_cost[j]*m.start_up[j,h,k]
-        m.start_up_cost_expr = pyo.Expression(m.UNITS,m.HOUR,m.SCENARIOS,rule = start_cost_fun)
+        def start_cost_fun(m,h):
+            return m.start_up_cost * m.start_up[h]
+        m.start_up_cost_expr = pyo.Expression(m.HOUR,rule = start_cost_fun)
 
         # total cost
-        def tot_cost_fun(m,j,h,k):
-            return m.prod_cost_approx[j,h,k] + m.start_up_cost_expr[j,h,k]
-        m.tot_cost = pyo.Expression(m.UNITS,m.HOUR,m.SCENARIOS,rule = tot_cost_fun)
+        def tot_cost_fun(m,h):
+            return m.prod_cost_approx[h] + m.start_up_cost_expr[h]
+        m.tot_cost = pyo.Expression(m.HOUR,rule = tot_cost_fun)
 
         return m
 
@@ -509,21 +447,21 @@ class ThermalGenerator:
                     result_dict['Scenario'] = int(k)
 
                     # model vars
-                    result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t,k]),2))
+                    result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(m.P_T[generator,t]),2))
 
-                    result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t,k])))
-                    result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t,k])))
-                    result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t,k])))
+                    result_dict['On/off [bin]'] = int(round(pyo.value(m.on_off[generator,t])))
+                    result_dict['Start Up [bin]'] = int(round(pyo.value(m.start_up[generator,t])))
+                    result_dict['Shut Down [bin]'] = int(round(pyo.value(m.shut_dw[generator,t])))
 
-                    result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t,k]),2))
-                    result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t,k]),2))
-                    result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t,k]),2))
+                    result_dict['Production Cost [$]'] = float(round(pyo.value(m.prod_cost_approx[generator,t]),2))
+                    result_dict['Start-up Cost [$]'] = float(round(pyo.value(m.start_up_cost_expr[generator,t]),2))
+                    result_dict['Total Cost [$]'] = float(round(pyo.value(m.tot_cost[generator,t]),2))
 
                     # calculate mileage
                     if t == 0:
-                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t,k] - m.pre_P_T[generator])),2))
+                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.pre_P_T[generator])),2))
                     else:
-                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t,k] - m.P_T[generator,t-1,k])),2))
+                        result_dict['Mileage [MW]'] = float(round(abs(pyo.value(m.P_T[generator,t] - m.P_T[generator,t-1])),2))
 
                     for key in kwargs:
                         result_dict[key] = kwargs[key]
@@ -561,39 +499,37 @@ if __name__ == "__main__":
 
     generator = "102_STEAM_3"
     horizon = 4
-    n_scenario = 3
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
                                                 horizon = horizon, \
-                                                generators = [generator], \
-                                                n_scenario = n_scenario)
+                                                generators = [generator])
 
-    solver = pyo.SolverFactory('cbc')
-
-    run_bidder = True
-    run_tracker = False
-
-    if run_tracker:
-        # make a tracker
-        thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
-                                  n_tracking_hour = 1, \
-                                  solver = solver)
-
-        market_dispatch = {generator: [30, 40 , 50, 70]}
-
-        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
-                                              date = "2021-07-26", \
-                                              hour = '17:00')
-
-    if run_bidder:
-
-        thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
-                                 solver = solver)
-
-        price_forecasts = {generator:{0:[25,15,20,10], \
-                                      1:[20,12,22,13], \
-                                      2:[22,13,28,14]}}
-        date = "2021-08-01"
-        hour = "13:00"
-        bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
+    # solver = pyo.SolverFactory('cbc')
+    #
+    # run_bidder = True
+    # run_tracker = False
+    #
+    # if run_tracker:
+    #     # make a tracker
+    #     thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
+    #                               n_tracking_hour = 1, \
+    #                               solver = solver)
+    #
+    #     market_dispatch = {generator: [30, 40 , 50, 70]}
+    #
+    #     thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
+    #                                           date = "2021-07-26", \
+    #                                           hour = '17:00')
+    #
+    # if run_bidder:
+    #
+    #     thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
+    #                              solver = solver)
+    #
+    #     price_forecasts = {generator:{0:[25,15,20,10], \
+    #                                   1:[20,12,22,13], \
+    #                                   2:[22,13,28,14]}}
+    #     date = "2021-08-01"
+    #     hour = "13:00"
+    #     bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
