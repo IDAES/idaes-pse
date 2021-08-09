@@ -1,0 +1,4 @@
+# Flowsheet naming convention
+# [flowsheet_state/steady state(ss) or dynamic(dyn)]_[flowsheet_descriptor] i.e.
+# ss_BFB_methane_combustion
+

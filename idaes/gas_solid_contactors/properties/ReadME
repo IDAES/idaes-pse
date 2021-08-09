@@ -1,0 +1,4 @@
+# Property package folder naming convention
+# [fuel_type]_[oxygen carrier]_[OC reaction type (reduction/oxidation)] i.e.
+# methane_iron_OC_reduction
+
