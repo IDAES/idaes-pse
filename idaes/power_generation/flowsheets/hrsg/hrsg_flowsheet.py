@@ -922,9 +922,7 @@ def init_function(m):
     m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.LP_ECON.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.LP_ECON.side_2_inlet.temperature[0].fix(433)  # 878.15)  # K
     m.fs.LP_ECON.side_2_inlet.pressure[0].fix(103421)  # Pa
     fs.LP_ECON.initialize(outlvl=outlvl)
@@ -958,9 +956,7 @@ def init_function(m):
     m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.LP_EVAP.shell_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.LP_EVAP.shell_inlet.temperature[0].fix(543.31)  # K
     m.fs.LP_EVAP.shell_inlet.pressure[0].fix(103421)  # Pa
     m.fs.LP_EVAP.overall_heat_transfer_coefficient.fix(212)
@@ -1007,9 +1003,7 @@ def init_function(m):
     m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.LP_FGsplit.inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.LP_FGsplit.inlet.temperature[0].fix(640.15)  # K
     m.fs.LP_FGsplit.inlet.pressure[0].fix(103421)  # Pa
     m.fs.LP_FGsplit.split_fraction[0, 'toLP_SH'].fix(0.5)
@@ -1030,9 +1024,7 @@ def init_function(m):
     # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    # m.fs.LP_SH.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     # m.fs.LP_SH.side_2_inlet.temperature[0].fix(640.15)  # 648.35 # K
     # m.fs.LP_SH.side_2_inlet.pressure[0].fix(103421)  # Pa
 
@@ -1063,9 +1055,7 @@ def init_function(m):
     m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.IP_ECON1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.IP_ECON1.side_2_inlet.temperature[0].fix(579.46)  # K
     m.fs.IP_ECON1.side_2_inlet.pressure[0].fix(103421)  # Pa
     fs.IP_ECON1.initialize()
@@ -1098,9 +1088,7 @@ def init_function(m):
     m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.IP_ECON2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.IP_ECON2.side_2_inlet.temperature[0].fix(607)  # K
     m.fs.IP_ECON2.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.IP_ECON2.initialize()
@@ -1115,9 +1103,7 @@ def init_function(m):
     m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.IP_EVAP.shell_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.IP_EVAP.shell_inlet.temperature[0].fix(618.0)  # K
     m.fs.IP_EVAP.shell_inlet.pressure[0].fix(103421)  # Pa
     m.fs.IP_EVAP.sat_vap_eqn.deactivate()
@@ -1141,9 +1127,7 @@ def init_function(m):
     m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.IP_SH1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.IP_SH1.side_2_inlet.temperature[0].fix(668.15)  # 623)  # K
     m.fs.IP_SH1.side_2_inlet.pressure[0].fix(103421)  # Pa
     fs.IP_SH1.initialize()
@@ -1188,9 +1172,7 @@ def init_function(m):
     m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.IP_SH2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.IP_SH2.side_2_inlet.temperature[0].fix(802.35)  # 878.15)  # K
     m.fs.IP_SH2.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.IP_SH2.initialize()
@@ -1209,9 +1191,7 @@ def init_function(m):
     m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.IP_SH3.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.IP_SH3.side_2_inlet.temperature[0].fix(868.35)  # 878.15)  # K
     m.fs.IP_SH3.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.IP_SH3.initialize()
@@ -1233,9 +1213,7 @@ def init_function(m):
     m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_ECON1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_ECON1.side_2_inlet.temperature[0].fix(566.35)  # K
     m.fs.HP_ECON1.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_ECON1.initialize()
@@ -1254,9 +1232,7 @@ def init_function(m):
     m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_ECON2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_ECON2.side_2_inlet.temperature[0].fix(596.35)   # K
     m.fs.HP_ECON2.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_ECON2.initialize()
@@ -1275,9 +1251,7 @@ def init_function(m):
     m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_ECON3.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_ECON3.side_2_inlet.temperature[0].fix(667.35)  # 878.15)  # K
     m.fs.HP_ECON3.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_ECON3.initialize()
@@ -1296,9 +1270,7 @@ def init_function(m):
     m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_ECON4.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_ECON4.side_2_inlet.temperature[0].fix(624.35)  # K
     m.fs.HP_ECON4.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_ECON4.initialize()
@@ -1317,9 +1289,7 @@ def init_function(m):
     m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_ECON5.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_ECON5.side_2_inlet.temperature[0].fix(631.15)  # K
     m.fs.HP_ECON5.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_ECON5.initialize()
@@ -1342,9 +1312,7 @@ def init_function(m):
     m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_EVAP.shell_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_EVAP.shell_inlet.temperature[0].fix(729.15)  # K
     m.fs.HP_EVAP.shell_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_EVAP.sat_vap_eqn2.deactivate()
@@ -1365,9 +1333,7 @@ def init_function(m):
     m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_SH1.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_SH1.side_2_inlet.temperature[0].fix(760.35)  # K
     m.fs.HP_SH1.side_2_inlet.pressure[0].fix(103421)  # Pa
     fs.HP_SH1.initialize()
@@ -1386,9 +1352,7 @@ def init_function(m):
     m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_SH2.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_SH2.side_2_inlet.temperature[0].fix(806.35)  # 878.15)  # K
     m.fs.HP_SH2.side_2_inlet.pressure[0].fix(103421)  # Pa
     fs.HP_SH2.initialize()
@@ -1407,9 +1371,7 @@ def init_function(m):
     m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_SH3.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_SH3.side_2_inlet.temperature[0].fix(835.35)  # 878.15)  # K
     m.fs.HP_SH3.side_2_inlet.pressure[0].fix(103421)  # Pa
     m.fs.HP_SH3.initialize()
@@ -1428,9 +1390,7 @@ def init_function(m):
     m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "H2O"].fix(FGrate*0.0875)
     m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "CO2"].fix(FGrate*0.0408)
     m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "N2"].fix(FGrate*0.75)
-    m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.12)
-    m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "NO"].fix(FGrate*0.001)
-    m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "SO2"].fix(FGrate*0.0007)
+    m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "O2"].fix(FGrate*0.1217)
     m.fs.HP_SH4.side_2_inlet.temperature[0].fix(878.15)  # 878.15)  # K
     m.fs.HP_SH4.side_2_inlet.pressure[0].fix(103421)  # Pa
     fs.HP_SH4.initialize()
@@ -1840,8 +1800,23 @@ def set_scaling_factors(m):
         iscale.set_scaling_factor(unit.side_2.heat, 1e-6)
         iscale.set_scaling_factor(unit.side_1.volume, 1)
         iscale.set_scaling_factor(unit.side_2.volume, 1)
-        iscale.set_scaling_factor(unit.overall_heat_transfer_coefficient, 1e-5)
-        iscale.set_scaling_factor(unit.area_heat_transfer, 1e-2)
+        iscale.set_scaling_factor(unit.overall_heat_transfer_coefficient, 1e-2)
+        iscale.set_scaling_factor(unit.area_heat_transfer, 1e-5)
+        iscale.set_scaling_factor(unit.area_heat_transfer, 1e-5)
+        iscale.set_scaling_factor(unit.N_Re_tube, 1e-5)
+        iscale.set_scaling_factor(unit.N_Nu_tube, 1e-2)
+        iscale.set_scaling_factor(unit.N_Re_shell, 1e-4)
+        iscale.set_scaling_factor(unit.N_Nu_shell, 1e-2)
+        iscale.set_scaling_factor(unit.hconv_tube, 1e-3)
+        iscale.set_scaling_factor(unit.hconv_shell_conv, 1e-2)
+        iscale.set_scaling_factor(unit.hconv_shell_total, 1e-2)
+        iscale.set_scaling_factor(unit.rcond_wall, 1e5)
+        if hasattr(unit, "deltaP_tube_friction"):
+            iscale.set_scaling_factor(unit.deltaP_tube_friction, 1e-4)
+            iscale.set_scaling_factor(unit.friction_factor_tube, 1e3)
+            iscale.set_scaling_factor(unit.friction_factor_shell, 1e3)
+        if hasattr(unit, "deltaP_tube_uturn"):
+            iscale.set_scaling_factor(unit.deltaP_tube_uturn, 1e-2)
 
     fs = m.fs
 
@@ -2112,7 +2087,8 @@ def get_model(m=None, init=True):
         m.fs = FlowsheetBlock(default={"dynamic": False})
     # add property packages to flowsheet library
     m.fs.prop_water = iapws95.Iapws95ParameterBlock()
-    m.fs.prop_gas = FlueGasParameterBlock()
+    m.fs.prop_gas = FlueGasParameterBlock(
+        default={"components":["N2", "O2", "CO2", "H2O"]})
 
     # adding unit models
     m = add_unit_models(m)
@@ -2167,11 +2143,7 @@ def flow_sensitivity(m):
         m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "N2"].\
             fix(FGrate * change[i] * 0.75)
         m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "O2"].\
-            fix(FGrate * change[i] * 0.12)
-        m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "NO"].\
-            fix(FGrate * change[i] * 0.001)
-        m.fs.HP_SH4.side_2_inlet.flow_mol_comp[0, "SO2"].\
-            fix(FGrate * change[i] * 0.0007)
+            fix(FGrate * change[i] * 0.1217)
         solver.solve(m, tee=True)
         steam_flow.append(pyo.value(m.fs.LP_DRUM.vap_state[0].flow_mol))
         print(steam_flow)

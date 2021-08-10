@@ -1023,7 +1023,7 @@ constructed,
             u = b.overall_heat_transfer_coefficient[t]
             a = b.area_heat_transfer
             deltaT = b.delta_temperature[t]
-            return b.heat_duty[t] / u / a == deltaT
+            return b.heat_duty[t] == deltaT * u  * a
 
         # Tube side heat transfer coefficient and pressure drop
         # -----------------------------------------------------
@@ -1115,13 +1115,15 @@ constructed,
             )
             def deltaP_tube_friction_eqn(b, t):
                 return (
-                    b.deltaP_tube_friction[t] * b.tube_di * b.nrow_inlet
+                    b.deltaP_tube_friction[t]
                     == -0.5
                     * b.side_1.properties_in[t].dens_mass_phase[self.side_1_fluid_phase]
                     * b.v_tube[t] ** 2
                     * b.friction_factor_tube[t]
                     * b.tube_length
                     * b.tube_nrow
+                    / b.tube_di
+                    / b.nrow_inlet
                 )
 
             # Pressure drop due to u-turn
@@ -1178,7 +1180,7 @@ constructed,
         )
         def N_Nu_tube_eqn(b, t):
             return (
-                b.N_Nu_tube[t] == 0.023 * b.N_Re_tube[t] ** 0.8 * b.N_Pr_tube[t] ** 0.4
+                b.N_Nu_tube[t] == 0.023 * b.N_Re_tube[t] ** 0.8 * abs(b.N_Pr_tube[t]) ** 0.4
             )
 
         # Heat transfer coefficient
@@ -1652,3 +1654,86 @@ constructed,
 
         for t, c in self.temperature_difference_2.items():
             iscale.constraint_scaling_transform(c, sf_dT2[t], overwrite=False)
+
+
+        for t, c in self.v_shell_eqn.items():
+            s = iscale.min_scaling_factor(
+                self.side_2.properties_in[t].flow_mol_comp,
+                default=0,
+                warning=False,
+                hint=None
+            )
+            if s == 0:
+                s = iscale.get_scaling_factor(
+                    self.side_2.properties_in[t].flow_mol,
+                    default=1,
+                    warning=True
+                )
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        for t, c in self.v_tube_eqn.items():
+            s = iscale.min_scaling_factor(
+                self.side_1.properties_in[t].flow_mol_comp,
+                default=0,
+                warning=False,
+                hint=None
+            )
+            if s == 0:
+                s = iscale.get_scaling_factor(
+                    self.side_1.properties_in[t].flow_mol,
+                    default=1,
+                    warning=True
+                )
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        for t, c in self.N_Nu_tube_eqn.items():
+            s = iscale.get_scaling_factor(
+                self.N_Nu_tube[t],
+                default=1,
+                warning=True
+            )
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+
+        for t, c in self.N_Nu_shell_eqn.items():
+            s = iscale.get_scaling_factor(
+                self.N_Nu_shell[t],
+                default=1,
+                warning=True
+            )
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        for t, c in self.hconv_shell_total_eqn.items():
+            s = iscale.get_scaling_factor(
+                self.hconv_shell_total[t],
+                default=1,
+                warning=True
+            )
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        if hasattr(self, "deltaP_shell_eqn"):
+            for t, c in self.deltaP_shell_eqn.items():
+                s = iscale.get_scaling_factor(
+                    self.deltaP_shell[t],
+                    default=1,
+                    warning=True
+                )
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        if hasattr(self, "deltaP_tube_eqn"):
+            for t, c in self.deltaP_tube_eqn.items():
+                s = iscale.get_scaling_factor(
+                    self.deltaP_tube[t],
+                    default=1,
+                    warning=True
+                )
+                iscale.constraint_scaling_transform(c, s, overwrite=False)
+
+        if hasattr(self, "deltaP_tube_friction_eqn"):
+            for t, c in self.deltaP_tube_friction_eqn.items():
+                s = iscale.get_scaling_factor(
+                    self.deltaP_tube_friction[t],
+                    default=1,
+                    warning=True
+                )
+                iscale.constraint_scaling_transform(c, s, overwrite=False)

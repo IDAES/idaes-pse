@@ -367,8 +367,12 @@ def constraint_scaling_transform(c, s, overwrite=True):
         st = 1
 
     v = s/st
-    c.set_value(
-        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
+    if c.upper is c.lower:
+        ul = __none_mult(c.lower, v)
+        c.set_value((ul, __none_mult(c.body, v), ul))
+    else:
+        c.set_value(
+            (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v)))
     __set_constraint_transform_applied_scaling_factor(c, s)
 
 
@@ -386,8 +390,12 @@ def constraint_scaling_transform_undo(c):
     v = get_constraint_transform_applied_scaling_factor(c)
     if v is None:
         return # hasn't been transformed, so nothing to do.
-    c.set_value(
-        (__none_mult(c.lower, 1/v), __none_mult(c.body, 1/v), __none_mult(c.upper, 1/v)))
+    if c.upper is c.lower:
+        ul = __none_mult(c.lower, v)
+        c.set_value((ul, __none_mult(c.body, 1/v), ul))
+    else:
+        c.set_value(
+            (__none_mult(c.lower, 1/v), __none_mult(c.body, 1/v), __none_mult(c.upper, 1/v)))
     __unset_constraint_transform_applied_scaling_factor(c)
 
 
