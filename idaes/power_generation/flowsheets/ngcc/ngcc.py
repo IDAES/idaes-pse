@@ -714,5 +714,5 @@ if __name__ == "__main__":
     solver.solve(m, tee=True)
     write_pfds(m)
     result_summary(m)
-    #check_scaling(m)
-    run_opt_series(m)
+    check_scaling(m)
+    #run_opt_series(m)

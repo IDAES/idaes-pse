@@ -15,25 +15,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-NGCC HRSG Subsystem for a 690MWe plant
-Three Pressure level heat exchanger network:
-
-Water/Steam Route:
-* LP Steam: FWH - LP ECON, ECON out + Nat Gas Pre heat - LP EVAP - LP SH
-* IP Steam: LP EVAP to IP pump -> IP ECON1 -> IP Splitter1 -> IP ECON 2 -> IP EVAP -> IP SH1 -> IP SH1 + Cold reheat to IP Mixer -> IP SH2/RH1 -> IP SH3/RH2
-                                                           -> Nat Gas Preheat
-* HP Steam: LP EVAP to HP pump -> HP ECON1 -> ... -> HP ECON5 -> HP EVAP -> HP SH1 -> HP SH2 -> HP SH3 -> HP SH4
-
-
-Flue Gas Route:
-Nat Gas Turbine -> HP SH4 -> IP SH3 -> HP SH3 -> HP SH2 -> IP SH2 -> HP SH1 ->*
-* HP EVAP -> HP ECON5 -> IP SH1 -> HP ECON4 -> HP ECON3 -> LP SH -> IP EVAP ->*
-* IP ECON2 -> HP ECON 2 -> IP ECON1 -> HP ECON1 -> LP EVAP -> LP ECON
-
-ECON - Economizer
-SH - Super Heater
-EVAP - Evaporator
-FWH - Feed Water Heater
+NGCC HRSG Subsystem for a 690MWe
 """
 
 # Import Pyomo libraries
