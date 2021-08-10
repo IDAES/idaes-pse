@@ -13,12 +13,6 @@
 """
 Table handling for DMF.
 
-Tables are expected to have a header row with optional units,
-encoded in [square brackets]. Whitespace is ignored between the column
-name and the units. For example::
-
-    T [C], P [bar], G0/RT H2O [-], G0/RT NaCl [-], A phi [(kg/mol^0.5]
-    0, 1, -23.4638, -13.836, 0.3767
 
 To use the API, create an instance of the :class:`Table` class.
 Then (or previously) use the DMF's :class:`idaes.dmf.resource.Resource` class
@@ -43,6 +37,13 @@ class DataFormatError(Exception):
 
 class Table:
     """Represent a table stored in the DMF.
+
+    Tables are expected to have a header row with optional units,
+    encoded in [square brackets]. Whitespace is ignored between the column
+    name and the units. For example::
+
+            T [C], P [bar], G0/RT H2O [-], G0/RT NaCl [-], A phi [(kg/mol^0.5]
+            0, 1, -23.4638, -13.836, 0.3767
     """
     def __init__(self):
         """Create new, empty, table.
@@ -84,7 +85,7 @@ class Table:
 
         Args:
             filepath: Any valid first argument to pandas `read_csv`
-            kwwargs: Keyword arguments passed to pandas `read_csv`
+            kwargs: Keyword arguments passed to pandas `read_csv`
 
         Returns:
             None
