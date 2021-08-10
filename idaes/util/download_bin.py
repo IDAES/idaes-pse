@@ -27,7 +27,15 @@ class UnsupportedPlatformError(RuntimeError):
     pass
 
 
-def _hash(fname):
+def hash_file_sha256(fname):
+    """Calculate sha256 hash of potentially large files.
+
+    Args:
+        fname: path to file to hash
+
+    Returns:
+        hash as a string
+    """
     with open(fname, 'rb') as f:
         fh = hashlib.sha256()
         while True:
@@ -37,6 +45,7 @@ def _hash(fname):
             fh.update(fb)
     return str(fh.hexdigest())
 
+_hash = hash_file_sha256
 
 def _get_file_downloader(insecure, cacert):
     fd = FileDownloader(insecure=insecure, cacert=cacert)
@@ -124,7 +133,10 @@ def download_binaries(
     nochecksum=False,
     library_only=False,
     no_download=False,
-    to_path=None):
+    extras_only=False,
+    extra=(),
+    to_path=None,
+    ):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
     to supply either local or url argument.
@@ -155,53 +167,48 @@ def download_binaries(
     url, checksum = _get_release_url_and_checksum(
         fd, to_path, release, url, nochecksum)
     # Set the binary file destinations
-    solvers_tar = os.path.join(to_path, "idaes-solvers.tar.gz")
-    libs_tar = os.path.join(to_path, "idaes-lib.tar.gz")
-    # Set the binary file download locations
-    solvers_from = "/".join([url, f"idaes-solvers-{platform}-{arch[1]}.tar.gz"])
-    libs_from = "/".join([url, f"idaes-lib-{platform}-{arch[1]}.tar.gz"])
+    pname = []
+    ptar = []
+    ftar = []
+    furl = []
+    def _add_pack(name):
+        f = f"idaes-{name}-{platform}-{arch[1]}.tar.gz"
+        ftar.append(f)
+        ptar.append(os.path.join(to_path, f))
+        pname.append(name)
+        furl.append("/".join([url, f]))
+
+    for e in extra:
+        _add_pack(e) # you have to explicitly ask for extras so assume you want
+    if not extras_only:
+        _add_pack("lib")
+    if not library_only and not extras_only:
+        _add_pack("solvers")
 
     if no_download:
         d = {
             "release": release,
             "platform": platform,
             "bits": arch[1],
-            "libs_only": library_only,
-            "libs_from": libs_from,
-            "libs_to": libs_tar,
         }
-        if not library_only:
-            d["solvers_from"] = solvers_from
-            d["solvers_to"] = solvers_tar
+        for n, p, u in zip(pname, ptar, furl):
+            d[u] = p
         return d
 
-    if not library_only:
-        _download_package(
-            fd, "solvers", frm=solvers_from, to=solvers_tar, platform=platform)
-    _download_package(
-        fd, "libraries", frm=libs_from, to=libs_tar, platform=platform)
+    # download packages
+    for n, p, u in zip(pname, ptar, furl):
+        _download_package(fd, n, frm=u, to=p, platform=platform)
 
     # If release checksum is not empty, nochecksum opt allows hash to be ignored
     if checksum:
-        # Check solvers package hash
-        if not library_only:
-            hash_s = _hash(solvers_tar)
-            _log.debug("Solvers Hash {}".format(hash_s))
-            if checksum.get(
-                f"idaes-solvers-{platform}-{arch[1]}.tar.gz", "") != hash_s:
-                raise Exception("Solver package hash does not match expected")
-        # Check libraries package hash
-        hash_l = _hash(libs_tar)
-        _log.debug("Libs Hash {}".format(hash_l))
-        if checksum.get(f"idaes-lib-{platform}-{arch[1]}.tar.gz", "") != hash_l:
-            raise Exception("Library package hash does not match expected")
+        for n, p, f in zip(pname, ptar, ftar):
+            hash_l = _hash(p)
+            _log.debug(f"{n} Hash {hash_l}")
+            if checksum.get(f, "") != hash_l:
+                raise Exception(f"{n} hash does not match expected")
 
     # Extract solvers
-    if not library_only:
-        _log.debug("Extracting files in {}".format(idaes.bin_directory))
-        with tarfile.open(solvers_tar, 'r') as f:
+    for n, p in zip(pname, ptar):
+        _log.debug(f"Extracting files in {p} to {to_path}")
+        with tarfile.open(p, 'r') as f:
             f.extractall(to_path)
-    # Extract libraries
-    _log.debug("Extracting files in {}".format(idaes.bin_directory))
-    with tarfile.open(libs_tar, 'r') as f:
-        f.extractall(to_path)

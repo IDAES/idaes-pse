@@ -89,6 +89,18 @@ def print_extensions_version(library_only=False):
     "--show-platforms",
     is_flag=True,
     help="Show the platform options")
+@click.option(
+    "--show-extras",
+    is_flag=True,
+    help="Show list of binary extras")
+@click.option(
+    "--extra",
+    multiple=True,
+    help="Install extras")
+@click.option(
+    "--extras-only",
+    is_flag=True,
+    help="Only install extras")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -101,18 +113,27 @@ def get_extensions(
     library_only,
     no_download,
     show_current_version,
-    show_platforms):
+    show_platforms,
+    show_extras,
+    extras_only,
+    extra):
 
     if show_platforms:
-        click.echo("\nBuild platforms for IDAES binary Extensions.  Most Linux")
-        click.echo("platforms are interchangeable.")
-        for key, mes in idaes.config.known_binary_platform.items():
+        click.echo("\nSupported platforms for IDAES binary extensions.")
+        for key, mes in sorted(idaes.config.known_binary_platform.items()):
             click.echo("    {}: {}".format(key, mes))
+        click.echo("\nBinaries compiled on these platforms:")
+        for k in sorted(idaes.config.basic_platforms()):
+            click.echo(f"    {k}")
+        return
+    elif show_extras:
+        click.echo("\nBinary Extras")
+        for k in sorted(idaes.config.extra_binaries):
+            click.echo(f"    {k}")
         return
     elif show_current_version:
         print_extensions_version()
         return
-
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -130,7 +151,9 @@ def get_extensions(
                 platform,
                 nochecksum,
                 library_only,
-                no_download)
+                no_download,
+                extras_only,
+                extra)
             click.echo("Done")
         except idaes.util.download_bin.UnsupportedPlatformError as e:
             click.echo("")
@@ -152,3 +175,40 @@ def get_extensions(
             print_extensions_version(library_only)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
+
+
+@cb.command(name="hash-extensions", help="Calculate release hashes")
+@click.option(
+    "--release",
+    help="Optional, specify an official binary release to download",
+    default=None,
+    required=True)
+@click.option(
+    "--path",
+    help="Directory of release files",
+    default=None,
+    required=True)
+def hash_extensions(release, path):
+    hfile = f"sha256sum_{release}.txt"
+    if path is not None:
+        hfile = os.path.join(path, hfile)
+
+    def _w(fp, pack, plat):
+        f = f"idaes-{pack}-{plat}-64.tar.gz"
+        fp.write(f)
+        fp.write("  ")
+        if path is not None:
+            f = os.path.join(path, f)
+        h = idaes.util.download_bin.hash_file_sha256(f)
+        fp.write(h)
+        fp.write("\n")
+
+    with open(hfile, "w") as f:
+        for plat in idaes.config.basic_platforms():
+            for pack in ["solvers", "lib"]:
+                _w(f, pack, plat)
+        for plat in idaes.config.basic_platforms():
+            for pack, sp in idaes.config.extra_binaries.items():
+                if plat not in sp:
+                    continue
+                _w(f, pack, plat)
