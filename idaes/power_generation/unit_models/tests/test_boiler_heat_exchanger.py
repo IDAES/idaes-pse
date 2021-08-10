@@ -40,6 +40,8 @@ from idaes.power_generation.unit_models.boiler_heat_exchanger import (
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util import get_solver
+import idaes.core.util.scaling as iscale
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
@@ -142,7 +144,7 @@ def th(
     m.fs.unit.fcorrection_dp_shell.fix(1.0)
 
     assert degrees_of_freedom(m) == 0
-
+    iscale.calculate_scaling_factors(m)
     m.fs.unit.initialize()
 
     results = solver.solve(m)
