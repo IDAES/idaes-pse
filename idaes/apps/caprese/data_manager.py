@@ -12,15 +12,6 @@
 # license information.
 #################################################################################
 
-# import pandas as pd
-# import numpy as np
-# from pyomo.environ import (ComponentUID,)
-# from idaes.apps.caprese.common.config import (
-#         VariableCategory as VC,
-#         ConstraintCategory as CC,
-#         )
-# from pyomo.util.slices import slice_component_along_sets
-
 import pyomo.environ as pyo
 
 from pyomo.core.base.componentuid import ComponentUID
@@ -285,7 +276,7 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
                                                                 self.states_need_setpoints)
         
         # Important!!!
-        # User given variables are not nmpc_var, so they don't have setpoitn attribute.
+        # User given variables are not nmpc_var, so they don't have setpoint attribute.
         # Create this componentmap to map the given vars to corresponding nmpc_vars.
         vardata_map = self.controllerblock.vardata_map
         t0 = self.controllerblock.time.first()
