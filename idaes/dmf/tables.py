@@ -35,6 +35,12 @@ import pandas as pd
 __author__ = "Dan Gunter"
 
 
+class DataFormatError(Exception):
+    def __init__(self, source, problem):
+        message = f"in {source}: {problem}"
+        super().__init__(self, message)
+
+
 class Table:
     """Represent a table stored in the DMF.
     """
@@ -103,7 +109,8 @@ class Table:
             None
 
         Raises:
-            ValueError, if more than one Excel sheet is returned
+            ValueError: if more than one Excel sheet is returned
+            DataFormatError: if the input data or header is invalid
         """
         # Workaround for older versions of Python/Pandas (python 3.6):
         # set engine explicitly to openpyxl for *.xlsx files
@@ -148,13 +155,15 @@ class Table:
     def _split_units(cls, name) -> Tuple[str, str]:
         m = re.match(cls.UNITS_REGEX, name, flags=re.X)
         if m is None:
-            return name, ""
+            raise DataFormatError(name, "No recognized column name. Expected format "
+                                        "is 'name [units]', where [units] is optional")
+        new_name = m.group("name").strip()
+        unit = m.group("units")
+        if unit == "-" or unit is None:
+            unit = ""  # normalize empty units to empty string
         else:
-            new_name = m.group("name")
-            unit = m.group("units")
-            if unit == "-":
-                unit = ""  # normalize empty units to empty string
-            return new_name, unit
+            unit = unit.strip()
+        return new_name, unit
 
     def add_to_resource(self, rsrc):
         rsrc.v["data"]["table"] = self.as_dict()
