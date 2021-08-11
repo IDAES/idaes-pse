@@ -124,7 +124,7 @@ def get_PP_costing(self, cost_accounts,
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2018')
 
@@ -359,7 +359,7 @@ def get_sCO2_unit_cost(self, equipment, scaled_param, temp_C=None, n_equip=1):
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2017')
 
@@ -537,7 +537,7 @@ def get_ASU_cost(self, scaled_param):
     except AttributeError:
         fs = self.parent_block()
 
-    # build flowsheet level parameters CE_index = year 
+    # build flowsheet level parameters CE_index = year
     if not hasattr(fs, 'costing'):
         fs.get_costing(year='2017')
 
@@ -724,20 +724,22 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
     # calculated from labor rate, labor burden, and operators per shift
     @m.fs.costing.Constraint()
     def annual_labor_cost_rule(c):
-        return (c.annual_operating_labor_cost*1e6 == c.operators_per_shift *
-                c.labor_rate*(1 + c.labor_burden/100)*8760)
+        return c.annual_operating_labor_cost*1e6 == \
+            (c.operators_per_shift *
+             c.labor_rate*(1 + c.labor_burden/100)*8760)
 
     # technology specific percentage of TPC
     @m.fs.costing.Constraint()
     def maintenance_labor_cost_rule(c):
-        return (c.maintenance_labor_cost == TPC *
-                c.maintenance_labor_TPC_split * c.maintenance_labor_percent)
+        return c.maintenance_labor_cost == (TPC *
+                                            c.maintenance_labor_TPC_split
+                                            * c.maintenance_labor_percent)
 
     # 25% of the sum of annual operating labor and maintenance labor
     @m.fs.costing.Constraint()
     def admin_and_support_labor_cost_rule(c):
-        return (c.admin_and_support_labor_cost == 0.25 *
-                (c.annual_operating_labor_cost + c.maintenance_labor_cost))
+        return c.admin_and_support_labor_cost == \
+            (0.25 * (c.annual_operating_labor_cost + c.maintenance_labor_cost))
 
     # 2% of TPC
     @m.fs.costing.Constraint()
@@ -747,18 +749,17 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
     # sum of fixed O&M costs
     @m.fs.costing.Constraint()
     def total_fixed_OM_cost_rule(c):
-        return (c.total_fixed_OM_cost ==
-                c.annual_operating_labor_cost +
-                c.maintenance_labor_cost +
-                c.admin_and_support_labor_cost +
-                c.property_taxes_and_insurance)
+        return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
+                                         c.maintenance_labor_cost +
+                                         c.admin_and_support_labor_cost +
+                                         c.property_taxes_and_insurance)
 
     # technology specific percentage of TPC
     @m.fs.costing.Constraint()
     def maintenance_material_cost_rule(c):
-        return (c.maintenance_material_cost == TPC * 1e6 *
-                c.maintenance_material_TPC_split *
-                c.maintenance_material_percent/0.85/nameplate_capacity/8760)
+        return c.maintenance_material_cost == \
+            (TPC * 1e6 * c.maintenance_material_TPC_split *
+             c.maintenance_material_percent/0.85/nameplate_capacity/8760)
 
 
 def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
@@ -772,13 +773,13 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
         net_power: pyomo var indexed by m.fs.time representing net system power
         resources: a list of strings for the resorces to be costed
         rates: a list of pyomo vars for resource consumption rates
-        prices: a list of resource prices. If default is selected the function
-        will try to get prices from a premade dictionary.
+        prices: a dict of resource prices to be added to the premade dictionary
 
     Returns:
         None.
 
     """
+
     # assert arguments are correct types
     if type(resources) is not list:
         raise TypeError("resources argument must be a list")
@@ -796,17 +797,19 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
         m.fs.get_costing(year='2018')
 
     # dictionary of default prices
-    default_prices = {"natural gas": 4.42*pyunits.USD/pyunits.MBtu,  # $/MMbtu
-                      "coal": 51.96*pyunits.USD/pyunits.ton,
-                      "water": 1.90e-3*pyunits.USD/pyunits.gallon,
-                      "water treatment chemicals": 550*pyunits.USD/pyunits.ton,
-                      "ammonia": 300*pyunits.USD/pyunits.ton,
-                      "SCR catalyst": 150*pyunits.USD/pyunits.ft**3,
-                      "triethylene glycol": 6.80*pyunits.USD/pyunits.gallon,
-                      "SCR catalyst waste": 2.50*pyunits.USD/pyunits.ft**3,
-                      "triethylene glycol waste": 0.35*pyunits.USD/pyunits.gallon,
-                      "amine purification unit waste": 38*pyunits.USD/pyunits.ton,
-                      "thermal reclaimer unit waste": 38*pyunits.USD/pyunits.ton}
+    default_prices = {
+        "natural gas": 4.42*pyunits.USD/pyunits.MBtu,  # $/MMbtu
+        "coal": 51.96*pyunits.USD/pyunits.ton,
+        "water": 1.90e-3*pyunits.USD/pyunits.gallon,
+        "water treatment chemicals": 550*pyunits.USD/pyunits.ton,
+        "ammonia": 300*pyunits.USD/pyunits.ton,
+        "SCR catalyst": 150*pyunits.USD/pyunits.ft**3,
+        "triethylene glycol": 6.80*pyunits.USD/pyunits.gallon,
+        "SCR catalyst waste": 2.50*pyunits.USD/pyunits.ft**3,
+        "triethylene glycol waste": 0.35*pyunits.USD/pyunits.gallon,
+        "amine purification unit waste": 38*pyunits.USD/pyunits.ton,
+        "thermal reclaimer unit waste": 38*pyunits.USD/pyunits.ton
+        }
 
     # add entrys from prices to defualt_prices
     for key in prices.keys():
@@ -999,7 +1002,7 @@ def get_total_TPC(m):
 def display_flowsheet_cost(m):
     print('\n')
     print('Total flowsheet cost: $%.3f Million' %
-          value(m.fs.flowsheet_cost_exp))
+          value(m.fs.flowsheet_cost))
 
 
 def check_sCO2_costing_bounds(fs):
