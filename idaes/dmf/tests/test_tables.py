@@ -17,7 +17,7 @@ __author__ = "Dan Gunter"
 
 from pathlib import Path
 import pytest
-from idaes.dmf.tables import Table
+from idaes.dmf.tables import Table, DataFormatError
 from idaes.dmf import resource, DMF
 
 # DATA
@@ -30,12 +30,37 @@ SIMPLE_CSV_DATA = [
     "2,2.0,4.0"
 ]
 
+SIMPLE_CSV_DATA_NO_UNITS = [
+    "C1 ,C2, C3",
+    "1,1.0,2.0",
+    "2,2.0,4.0"
+]
+
+BAD_CSV_DATA = [
+    "[,],,"
+    "1,2,3,4"
+]
+
 
 @pytest.fixture
 def example_csv_file(tmp_path):
-    p = tmp_path / "data.csv"
+    return write_csv_data(tmp_path, "data.csv", SIMPLE_CSV_DATA)
+
+
+@pytest.fixture
+def example_csv_file_empty_units(tmp_path):
+    return write_csv_data(tmp_path, "data_no_units.csv", SIMPLE_CSV_DATA_NO_UNITS)
+
+
+@pytest.fixture
+def bad_csv_data(tmp_path):
+    return write_csv_data(tmp_path, "bad_csv_data.csv", BAD_CSV_DATA)
+
+
+def write_csv_data(path, name, data):
+    p = path / name
     with p.open("w", encoding="utf-8") as f:
-        for line in SIMPLE_CSV_DATA:
+        for line in data:
             f.write(line)
             f.write("\n")
     return p
@@ -45,6 +70,7 @@ def example_csv_file(tmp_path):
 def example_excel_file():
     p = DATA_DIR / "tables_data.xlsx"
     return p
+
 
 @pytest.fixture
 def tmp_dmf(tmp_path):
@@ -68,6 +94,20 @@ def test_table_csv(example_csv_file):
     t = Table()
     t.read_csv(example_csv_file)
     validate_example_data(t)
+
+
+@pytest.mark.unit
+def test_table_empty_units(example_csv_file_empty_units):
+    t = Table()
+    t.read_csv(example_csv_file_empty_units)
+    validate_example_data(t, units=False)
+
+
+@pytest.mark.unit
+def test_table_bad_data(bad_csv_data):
+    t = Table()
+    with pytest.raises(DataFormatError):
+        t.read_csv(bad_csv_data)
 
 
 @pytest.mark.unit
@@ -116,20 +156,30 @@ def test_dmf(example_csv_file, tmp_dmf):
     # retrieve from DMF
     r2 = tmp_dmf.find_one(name="table_test_resource")
     t2 = Table.get_from_resource(r2)
-    # print(t2.data)
     validate_example_data(t2)
+
+
+@pytest.mark.unit
+def test_get_from_resource():
+    # get non-existent resource
+    r_no_table = resource.Resource(type_=resource.ResourceTypes.tabular)
+    with pytest.raises(KeyError):
+        Table.get_from_resource(r_no_table)
 
 
 # Helpers
 
-def validate_example_data(t):
+def validate_example_data(t, units=True):
     """Shared by test_table_*() functions, since their input data is the same.
     """
     input_data_columns = [f"C{num}" for num in range(1, 4)]
     assert list(t.data.columns) == input_data_columns
-    input_data_units = ["m/s", "mol/L", "(m^3)/kg"]
-    assert t.units_dict == {input_data_columns[i]: input_data_units[i]
-                            for i in range(len(input_data_columns))}
-    assert t.units_list == [input_data_units[i] for i in range(len(input_data_columns))]
-
-
+    if units:
+        input_data_units = ["m/s", "mol/L", "(m^3)/kg"]
+        assert t.units_dict == {input_data_columns[i]: input_data_units[i]
+                                for i in range(len(input_data_columns))}
+        assert t.units_list == [input_data_units[i] for i in range(len(input_data_columns))]
+    else:
+        assert t.units_dict == {input_data_columns[i]: ""
+                                for i in range(len(input_data_columns))}
+        assert t.units_list == [""] * len(input_data_columns)
