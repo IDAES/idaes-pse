@@ -201,12 +201,13 @@ def hash_extensions(release, path):
 
     def _w(fp, pack, plat):
         f = f"idaes-{pack}-{plat}-64.tar.gz"
-        fp.write(f)
-        fp.write("  ")
         if path is not None:
-            f = os.path.join(path, f)
-        h = idaes.util.download_bin.hash_file_sha256(f)
+            h = idaes.util.download_bin.hash_file_sha256(os.path.join(path, f))
+        else:
+            h = idaes.util.download_bin.hash_file_sha256(f)
         fp.write(h)
+        fp.write("  ")
+        fp.write(f)
         fp.write("\n")
 
     with open(hfile, "w") as f:
