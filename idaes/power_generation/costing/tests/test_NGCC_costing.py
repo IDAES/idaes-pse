@@ -20,7 +20,7 @@ Author: A. Deshpande and M. Zamarripa
 import pytest
 from idaes.power_generation.costing.power_plant_costing import \
      (get_PP_costing,
-      build_flowsheet_cost_constraint,
+      get_total_TPC,
       costing_initialization)
 from idaes.core.util.model_statistics import degrees_of_freedom
 import pyomo.environ as pyo
@@ -113,7 +113,7 @@ def test_units1_costing(build_costing):
         pyo.TerminationCondition.optimal
     assert results.solver.status == pyo.SolverStatus.ok
 
-     # Accounts with raw water withdrawal as reference parameter
+    # Accounts with raw water withdrawal as reference parameter
     assert pytest.approx(26.435, abs=0.5) \
         == sum(pyo.value(m.fs.b2.costing.total_plant_cost[ac])
                for ac in RW_withdraw_accounts)
@@ -329,7 +329,7 @@ def test_units3_costing(build_costing):
 def test_flowsheet_costing(build_costing):
     m = build_costing
     # Build cost constraints
-    build_flowsheet_cost_constraint(m)
+    get_total_TPC(m)
 
     # Initialize costing
     costing_initialization(m.fs)
@@ -342,4 +342,4 @@ def test_flowsheet_costing(build_costing):
     assert results.solver.status == pyo.SolverStatus.ok
 
     # Verify total plant costs
-    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.flowsheet_cost)
+    assert pytest.approx(574.85, abs=0.1) == pyo.value(m.fs.costing.total_TPC)
