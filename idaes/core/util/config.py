@@ -96,7 +96,7 @@ def list_of_floats(arg):
         arg : argument to be cast to list of floats and validated
 
     Returns:
-        List of strings
+        List of floats
     '''
     try:
         # Assume arg is iterable
@@ -104,6 +104,33 @@ def list_of_floats(arg):
     except TypeError:
         # arg is not iterable
         lst = [float(arg)]
+    return lst
+
+
+def list_of_ints(arg):
+    '''Domain validator for lists of integers
+
+    Args:
+        arg : argument to be cast to list of ints and validated
+
+    Returns:
+        List of ints
+    '''
+    lst = []
+    try:
+        iter(arg)
+    except TypeError:
+        arg = [arg]
+
+    for v in arg:
+        if isinstance(v, int):
+            lst.append(v)
+        elif isinstance(v, float) and v.is_integer():
+            lst.append(int(v))
+        else:
+            raise ConfigurationError(
+                """Invalid argument - expected list of integers""")
+
     return lst
 
 
