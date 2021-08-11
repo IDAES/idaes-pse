@@ -199,7 +199,7 @@ def hash_extensions(release, path):
     if path is not None:
         hfile = os.path.join(path, hfile)
 
-    def _w(fp, pack, plat):
+    def _write_hash(fp, pack, plat):
         f = f"idaes-{pack}-{plat}-64.tar.gz"
         if path is not None:
             h = idaes.util.download_bin.hash_file_sha256(os.path.join(path, f))
@@ -213,9 +213,9 @@ def hash_extensions(release, path):
     with open(hfile, "w") as f:
         for plat in idaes.config.basic_platforms():
             for pack in ["solvers", "lib"]:
-                _w(f, pack, plat)
+                _write_hash(f, pack, plat)
         for plat in idaes.config.basic_platforms():
             for pack, sp in idaes.config.extra_binaries.items():
                 if plat not in sp:
                     continue
-                _w(f, pack, plat)
+                _write_hash(f, pack, plat)
