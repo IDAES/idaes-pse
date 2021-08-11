@@ -12,3 +12,4 @@
 #################################################################################
 from .bubbling_fluidized_bed import BubblingFluidizedBed
 from .moving_bed import MBR
+from .fixed_bed_0D import FixedBed0D
