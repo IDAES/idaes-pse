@@ -101,6 +101,10 @@ def print_extensions_version(library_only=False):
     "--extras-only",
     is_flag=True,
     help="Only install extras")
+@click.option(
+    "--to",
+    default=None,
+    help="Put extrensions in a alternate location")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -116,7 +120,8 @@ def get_extensions(
     show_platforms,
     show_extras,
     extras_only,
-    extra):
+    extra,
+    to):
 
     if show_platforms:
         click.echo("\nSupported platforms for IDAES binary extensions.")
@@ -153,7 +158,8 @@ def get_extensions(
                 library_only,
                 no_download,
                 extras_only,
-                extra)
+                extra,
+                alt_path=to)
             click.echo("Done")
         except idaes.util.download_bin.UnsupportedPlatformError as e:
             click.echo("")

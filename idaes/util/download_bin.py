@@ -136,6 +136,7 @@ def download_binaries(
     extras_only=False,
     extra=(),
     to_path=None,
+    alt_path=None,
     ):
     """
     Download IDAES solvers and libraries and put them in the right location. Need
@@ -157,6 +158,8 @@ def download_binaries(
     # this function without interfereing with anything else.  It's a subdirectory
     # of the data directory because that should be a safe place to store some
     # test files.
+    if alt_path is not None:
+        to_path = os.path.abspath(alt_path)
     if to_path is None:
         to_path = idaes.bin_directory
     else:
