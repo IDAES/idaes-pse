@@ -104,7 +104,7 @@ def print_extensions_version(library_only=False):
 @click.option(
     "--to",
     default=None,
-    help="Put extrensions in a alternate location")
+    help="Put extensions in a alternate location")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -126,7 +126,7 @@ def get_extensions(
     if show_platforms:
         click.echo("\nSupported platforms for IDAES binary extensions.")
         for key, mes in sorted(idaes.config.known_binary_platform.items()):
-            click.echo("    {}: {}".format(key, mes))
+            click.echo(f"    {key}: {mes}")
         click.echo("\nBinaries compiled on these platforms:")
         for k in sorted(idaes.config.basic_platforms()):
             click.echo(f"    {k}")
