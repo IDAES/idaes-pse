@@ -20,8 +20,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 import os.path, pickle
 
 
-# from mypy_extensions import TypedDict
-
 class Metrics:
     """
 
@@ -54,21 +52,9 @@ class Metrics:
     R2 = "R2"
 
 
-class ConfigurationError(Exception):
-    """
-    IDAES exception to be used when configuration arguments are incorrect
-    or inconsistent.
-    """
-    pass
-
-
 # Single Surrogate Modeler
 class Surrogate:
     CONFIG = ConfigBlock()
-
-    # Common Declarations
-    # CONFIG.declare('overwrite', ConfigValue(default=None, domain=bool))
-    # CONFIG.declare('fname', ConfigValue(default=None, domain=str))
 
     def __init__(self, **settings):
         """
@@ -96,10 +82,16 @@ class Surrogate:
         self._b_built = False  # flag for regression
 
         # Data
+        self._input_labels = None
+        self._output_labels = None
+        self._input_max = None
+        self._input_min = None
         self._rdata_in = None
         self._rdata_out = None
         self._vdata_in = None
         self._vdata_out = None
+        self._n_inputs = None
+        self._n_outputs = None
 
         self.pkl_info = None
 
