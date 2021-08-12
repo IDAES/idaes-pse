@@ -23,7 +23,8 @@ from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.util import disable_methods
 from pyomo.common.config import ConfigBlock
-from pyomo.network import Port, Arc
+from pyomo.network.arc import _ArcData
+from pyomo.network.port import _PortData
 
 import idaes.logger as idaeslog
 import idaes.core.solvers
@@ -241,7 +242,7 @@ def copy_port_values(destination=None, source=None, arc=None):
         None
     """
     # Allow an arc to be passed as a positional arg
-    if destination is not None and source is None and isinstance(destination, Arc):
+    if destination is not None and source is None and isinstance(destination, _ArcData):
         arc = destination
         destination = None
     # Check that only arc or source and destination are passed
@@ -249,17 +250,17 @@ def copy_port_values(destination=None, source=None, arc=None):
         raise RuntimeError(
             "In copy_port_values(), must provide source and destination or arc")
     if arc is not None:
-        if not isinstance(arc, Arc):
+        if not isinstance(arc, _ArcData):
             raise RuntimeError(
                 "In copy_port_values(), arc argument is not an instance of an Arc")
         if destination is not None or source is not None:
             raise RuntimeError(
                 "In copy_port_values(), provide only arc or source and destination")
     if destination is not None:
-        if not isinstance(destination, Port):
+        if not isinstance(destination, _PortData):
             raise RuntimeError(
                 "In copy_port_values(), destination is not an instance of Port")
-        if not isinstance(source, Port):
+        if not isinstance(source, _PortData):
             raise RuntimeError(
                 "In copy_port_values(), source is not an instance of Port")
 
@@ -270,8 +271,13 @@ def copy_port_values(destination=None, source=None, arc=None):
 
     # Copy values
     for k, v in destination.vars.items():
-        if isinstance(v, pyo.Var):
-            for i in v:
+        if not isinstance(v, pyo.Var):
+            raise TypeError("Port contains one or more members which are "
+                            "not Vars. propogate_state works by assigning "
+                            "to the value attribute, thus can only be "
+                            "when Port members are Pyomo Vars.")
+        for i in v:
+            if not v[i].fixed:
                 v[i].value = pyo.value(source.vars[k][i])
 
 

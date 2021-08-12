@@ -22,6 +22,7 @@ from pyomo.core.expr.visitor import identify_variables
 
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.misc import copy_port_values
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.dyn_utils import (
     get_activity_dict,
@@ -140,25 +141,13 @@ def propagate_state(stream, direction="forward"):
                         "a Pyomo Arc.")
 
     if direction == "forward":
-        value_source = stream.source
-        value_dest = stream.destination
+        copy_port_values(destination=stream.destination, source=stream.source)
     elif direction == "backward":
-        value_source = stream.destination
-        value_dest = stream.source
+        copy_port_values(destination=stream.source, source=stream.destination)
     else:
         raise ValueError("Unexpected value for direction argument: ({}). "
                          "Value must be either 'forward' or 'backward'."
                          .format(direction))
-
-    for v in value_source.vars:
-        if not isinstance(value_dest.vars[v], Var):
-            raise TypeError("Port contains one or more members which are "
-                            "not Vars. propogate_state works by assigning "
-                            "to the value attribute, thus can only be "
-                            "when Port members are Pyomo Vars.")
-        for i in value_source.vars[v]:
-            if not value_dest.vars[v][i].fixed:
-                value_dest.vars[v][i].value = value_source.vars[v][i].value
 
 
 # HACK, courtesy of J. Siirola
