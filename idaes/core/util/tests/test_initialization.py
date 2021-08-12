@@ -652,7 +652,7 @@ def test_propagate_state_reverse():
 
 
 @pytest.mark.unit
-def test_propagate_state_fixed():
+def test_propagate_state_indexed_fixed():
     m = ConcreteModel()
 
     def block_rule(b):
@@ -660,15 +660,17 @@ def test_propagate_state_fixed():
         b.v1 = Var()
         b.v2 = Var(b.s)
 
-        b.p = Port()
-        b.p.add(b.v1, "V1")
-        b.p.add(b.v2, "V2")
+        b.p = Port(b.s)
+        b.p[1].add(b.v1, "V1")
+        b.p[2].add(b.v2, "V2")
         return
 
     m.b1 = Block(rule=block_rule)
     m.b2 = Block(rule=block_rule)
 
-    m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
+    def arc_rule(m,i):
+        return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
+    m.s1 = Arc([1,2], rule=arc_rule)
 
     # Set values on first block
     m.b1.v1.value = 10
@@ -683,19 +685,47 @@ def test_propagate_state_fixed():
     # Fix v1 in block 2
     m.b2.v1.fix(500)
 
-    propagate_state(m.s1)
+    propagate_state(m.s1[1])
 
     # Check that values were propagated correctly
     assert m.b2.v1.value == 500
+    assert m.b1.v1.fixed is False
+    assert m.b2.v1.fixed is True
+
+    propagate_state(m.s1[2])
+
+    # Check that values were propagated correctly
     assert m.b2.v2[1].value == m.b1.v2[1].value
     assert m.b2.v2[2].value == m.b1.v2[2].value
-
-    assert m.b1.v1.fixed is False
     assert m.b1.v2[1].fixed is False
     assert m.b1.v2[2].fixed is False
-    assert m.b2.v1.fixed is True
     assert m.b2.v2[1].fixed is False
     assert m.b2.v2[2].fixed is False
+
+
+@pytest.mark.unit
+def test_propagate_state_indexed():
+    m = ConcreteModel()
+
+    def block_rule(b):
+        b.s = Set(initialize=[1, 2])
+        b.v1 = Var()
+        b.v2 = Var(b.s)
+
+        b.p = Port(b.s)
+        b.p[1].add(b.v1, "V1")
+        b.p[2].add(b.v2, "V2")
+        return
+
+    m.b1 = Block(rule=block_rule)
+    m.b2 = Block(rule=block_rule)
+
+    def arc_rule(m,i):
+        return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
+    m.s1 = Arc([1,2], rule=arc_rule)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s1)
 
 
 @pytest.mark.unit
