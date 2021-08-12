@@ -490,7 +490,7 @@ class ThermalGenerator:
 
     @property
     def total_cost(self):
-        return {g: (m.tot_cost,1) for g, m in self.model_dict.items()}
+        return {g: [(m.tot_cost,1)] for g, m in self.model_dict.items()}
 
     @property
     def default_bids(self):
@@ -510,31 +510,31 @@ if __name__ == "__main__":
                                                 horizon = horizon, \
                                                 generators = [generator])
 
-    # solver = pyo.SolverFactory('cbc')
-    #
-    # run_bidder = True
-    # run_tracker = False
-    #
-    # if run_tracker:
-    #     # make a tracker
-    #     thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
-    #                               n_tracking_hour = 1, \
-    #                               solver = solver)
-    #
-    #     market_dispatch = {generator: [30, 40 , 50, 70]}
-    #
-    #     thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
-    #                                           date = "2021-07-26", \
-    #                                           hour = '17:00')
-    #
-    # if run_bidder:
-    #
-    #     thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
-    #                              solver = solver)
-    #
-    #     price_forecasts = {generator:{0:[25,15,20,10], \
-    #                                   1:[20,12,22,13], \
-    #                                   2:[22,13,28,14]}}
-    #     date = "2021-08-01"
-    #     hour = "13:00"
-    #     bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
+    solver = pyo.SolverFactory('cbc')
+
+    run_tracker = True
+    run_bidder = False
+
+    if run_tracker:
+        # make a tracker
+        thermal_tracker = Tracker(tracking_model_object = thermal_generator_object,\
+                                  n_tracking_hour = 1, \
+                                  solver = solver)
+
+        market_dispatch = {generator: [30, 40 , 50, 70]}
+
+        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
+                                              date = "2021-07-26", \
+                                              hour = '17:00')
+
+    if run_bidder:
+
+        thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
+                                 solver = solver)
+
+        price_forecasts = {generator:{0:[25,15,20,10], \
+                                      1:[20,12,22,13], \
+                                      2:[22,13,28,14]}}
+        date = "2021-08-01"
+        hour = "13:00"
+        bids = thermal_bidder.compute_bids(price_forecasts, date, hour)

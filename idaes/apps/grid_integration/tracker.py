@@ -5,8 +5,6 @@ import os
 
 class Tracker:
 
-    tracking_set_names = ['Time','Generators']
-
     def __init__(self, tracking_model_object, n_tracking_hour, solver):
 
         '''
@@ -24,7 +22,7 @@ class Tracker:
         self.tracking_model_object = tracking_model_object
         self.n_tracking_hour = n_tracking_hour
         self.solver = solver
-        self.model = self.tracking_model_object.model
+        self.model_dict = self.tracking_model_object.model_dict
         self.formulate_tracking_problem()
 
     def formulate_tracking_problem(self):
@@ -40,273 +38,106 @@ class Tracker:
             None
         '''
 
-        # get the sets needed for the tracking problem
-        self.tracking_set = self._get_tracking_sets()
+        self._get_time_set()
 
-        self._add_tracking_params()
-        self._add_tracking_constraints()
-        self._add_tracking_objective()
+        for g,m in self.model_dict.items():
+            self._add_tracking_params(g)
+            self._add_tracking_constraints(g)
+            self._add_tracking_objective(g)
 
         return
 
-    def _get_tracking_sets(self):
+    def _get_time_set(self):
 
         '''
-        Get the necessary index sets for tracking, i.e., generator names and
-        time.
+        Get the time index sets and store them in a dictionary as a class property.
 
         Arguments:
             None
 
         Returns:
-            tracking_set: a list that contains the necessary Pyomo set objects.
+            None
         '''
 
-        tracking_set = []
+        self.time_set = {}
+        for g in self.model_dict:
+            self.time_set[g] = self.tracking_model_object.power_output[g].index_set()
 
-        model_sets = self.tracking_model_object.indices
+        return
 
-        for s, n in model_sets.items():
-            if n in self.tracking_set_names:
-                tracking_set.append(s)
-
-        return tracking_set
-
-    def _add_tracking_params(self):
+    def _add_tracking_params(self,g):
 
         '''
         Add necessary tracking parameters to the model, i.e., market dispatch
         signal.
 
         Arguments:
-            None
+            g: generator name in str
 
         Returns:
             None
         '''
 
         # add params to the model
-        self.model.power_dispatch = pyo.Param(*self.tracking_set, \
-                                              initialize = 0, \
-                                              mutable = True)
+        self.model_dict[g].power_dispatch = pyo.Param(self.time_set[g], \
+                                                      initialize = 0, \
+                                                      mutable = True)
         return
 
-    def _add_tracking_constraints(self):
+    def _add_tracking_constraints(self,g):
 
         '''
         Add necessary tracking constraints to the model, e.g., power output needs
         to follow market dispatch signals.
 
         Arguments:
-            None
+            g: generator name in str
 
         Returns:
             None
         '''
 
-        self._add_tracking_dispatch_constraints()
+        self._add_tracking_dispatch_constraints(g)
         return
 
-    def _add_tracking_dispatch_constraints(self):
+    def _add_tracking_dispatch_constraints(self,g):
 
         '''
         Add tracking constraints to the model, i.e., power output needs
         to follow market dispatch signals.
 
         Arguments:
-            None
+            g: generator name in str
 
         Returns:
             None
         '''
 
         # declare a constraint list
-        self.model.tracking_dispatch_constraints = pyo.ConstraintList()
-
-        # unpack things
-        model_sets = self.tracking_model_object.indices
-        set_ls = list(model_sets.keys())
-
-        power_output = self.tracking_model_object.power_output
-        power_dispatch = self.model.power_dispatch
-
-        def dfs_add_constraints(set_idx, indices, tracking_indices):
-
-            '''
-            This function use depth first search (DFS) to traverse the inexplicit
-            sets the model has. When all sets have one entry in the indices, we
-            add the constraint to track the dispatch signals, i.e., power output
-            == dispatch.
-
-            The DFS algorithm will be expalined by the following example. For
-            example, the arbitary model is indexed by 3 sets:
-                set_1 = {1,2}
-                set_2 = {a,b}
-                set_3 = {y,z}
-
-            So we have the following search tree:
-                                   Dummy  Node
-                                   /          \
-            Level 1 (set_1)        1           2
-                                 /  \        /  \
-            Level 2 (set_2)     a    b      a    b
-                               / \  / \    / \  / \
-            Level 3 (set_3)   y  z  y  z   y  z y  z
-
-            To search all possible indices the variables in the model have, we
-            need to use DFS. At each level we append the index from the
-            corresponding set to our list.
-
-            E.g.,
-            Before the algorithm, indices = []
-            Dive to the first level, indices = [1]
-            Dive to the second level, indices = [1,a]
-            Dive to the third level, indices = [1,a,y]
-
-            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
-            We add the constraints/objective with these indices.
-
-            But we haven't enumerated all combinations of indices in the model,
-            we need to go back up a level in the search tree -- backtrack. And
-            then keep searching.
-
-            E.g.,
-            Before backtrack, indices = [1,a,y]
-            After backtrack we are at level 2, indices = [1,a]
-            Keep searching and dive to the third level, indices = [1,a,z]
-
-            So in this way we can find all valid collection of indices and add
-            constraints/objective accordingly.
-
-            Arguments:
-                set_idx: an index that points to a set in a list of sets.
-                indices: a list to store the current traversed indices
-                tracking_indices: a list to store the current traversed indices
-                                  for the tracking problem.
-
-            Returns:
-                None
-            '''
-
-            # traveled all the sets, and now we can add the constraint
-            if set_idx == len(set_ls):
-                self.model.tracking_dispatch_constraints.add(power_output[tuple(indices)] == power_dispatch[tuple(tracking_indices)])
-                return
-
-            for idx in set_ls[set_idx]:
-
-                indices.append(idx)
-                if model_sets[set_ls[set_idx]] in self.tracking_set_names:
-                    tracking_indices.append(idx)
-
-                # recursion
-                dfs_add_constraints(set_idx + 1, indices, tracking_indices)
-
-                # backtrack
-                indices.pop()
-                if model_sets[set_ls[set_idx]] in self.tracking_set_names:
-                    tracking_indices.pop()
-
-        dfs_add_constraints(set_idx = 0, indices = [], tracking_indices = [])
+        self.model_dict[g].tracking_dispatch_constraints = pyo.ConstraintList()
+        for t in self.time_set[g]:
+            self.model_dict[g].tracking_dispatch_constraints.add(self.tracking_model_object.power_output[g][t] == self.model_dict[g].power_dispatch[t])
 
         return
 
-    def _add_tracking_objective(self):
+    def _add_tracking_objective(self,g):
 
         '''
         Add EMPC objective function to the model, i.e., minimizing different costs
         of the energy system.
 
         Arguments:
-            None
+            g: generator name in str
 
         Returns:
             None
         '''
 
         # declare an empty objective
-        self.model.obj = pyo.Objective(expr = 0, sense = pyo.minimize)
-
-        # unpack things
-        model_sets = self.tracking_model_object.indices
-        set_ls = list(model_sets.keys())
-
-        total_cost = self.tracking_model_object.total_cost
-        cost_ls = list(total_cost.keys())
-
-        def dfs_sum_costs(cost, set_idx, indices):
-
-            '''
-            This function use depth first search (DFS) to traverse the inexplicit
-            sets the model has. When all sets have one entry in the indices, we
-            add the cost associated to these indices to the objective function.
-
-            The DFS algorithm will be expalined by the following example. For
-            example, the arbitary model is indexed by 3 sets:
-                set_1 = {1,2}
-                set_2 = {a,b}
-                set_3 = {y,z}
-
-            So we have the following search tree:
-                                   Dummy  Node
-                                   /          \
-            Level 1 (set_1)        1           2
-                                 /  \        /  \
-            Level 2 (set_2)     a    b      a    b
-                               / \  / \    / \  / \
-            Level 3 (set_3)   y  z  y  z   y  z y  z
-
-            To search all possible indices the variables in the model have, we
-            need to use DFS. At each level we append the index from the
-            corresponding set to our list.
-
-            E.g.,
-            Before the algorithm, indices = []
-            Dive to the first level, indices = [1]
-            Dive to the second level, indices = [1,a]
-            Dive to the third level, indices = [1,a,y]
-
-            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
-            We add the constraints/objective with these indices.
-
-            But we haven't enumerated all combinations of indices in the model,
-            we need to go back up a level in the search tree -- backtrack. And
-            then keep searching.
-
-            E.g.,
-            Before backtrack, indices = [1,a,y]
-            After backtrack we are at level 2, indices = [1,a]
-            Keep searching and dive to the third level, indices = [1,a,z]
-
-            So in this way we can find all valid collection of indices and add
-            constraints/objective accordingly.
-
-            Arguments:
-                cost: one certain type of cost the model has. It is Pyomo expression
-                      and/or variable
-                set_idx: an index that points to a set in a list of sets.
-                indices: a list to store the current traversed indices
-
-            Returns:
-                None
-            '''
-
-            # traveled all the sets, and now we can add the constraint
-            if set_idx == len(set_ls):
-                weight = total_cost[cost]
-                self.model.obj.expr += weight * cost[tuple(indices)]
-                return
-
-            for idx in set_ls[set_idx]:
-
-                indices.append(idx)
-                # recursion
-                dfs_sum_costs(cost, set_idx + 1, indices)
-                # backtrack
-                indices.pop()
-
-        for cost in cost_ls:
-            dfs_sum_costs(cost = cost, set_idx = 0, indices = [])
+        self.model_dict[g].obj = pyo.Objective(expr = 0, sense = pyo.minimize)
+        for c, w in self.tracking_model_object.total_cost[g]:
+            for t in self.time_set[g]:
+                self.model_dict[g].obj.expr += w * c[t]
 
         return
 
@@ -329,7 +160,9 @@ class Tracker:
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
-        self.solver.solve(self.model,tee=True)
+        for g,m in self.model_dict.items():
+            self.solver.solve(m,tee=True)
+            
         self.record_results(date = date, hour = hour)
 
         # update the model
@@ -348,16 +181,9 @@ class Tracker:
             None
         '''
 
-        set1 = self.tracking_set[0]
-        set2 = self.tracking_set[1]
-
-        for s1 in set1:
-            for s2 in set2:
-
-                if self.tracking_model_object.indices[set1] == 'Time':
-                    self.model.power_dispatch[s1,s2] = market_dispatch[s2][s1]
-                else:
-                    self.model.power_dispatch[s1,s2] = market_dispatch[s1][s2]
+        for g,m in self.model_dict.items():
+            for t, dipsatch in zip(self.time_set[g], market_dispatch[g]):
+                m.power_dispatch[t] = dipsatch
 
         return
 
