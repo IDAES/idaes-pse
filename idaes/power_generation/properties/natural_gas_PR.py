@@ -134,6 +134,7 @@ _component_params = {
         'elemental_composition': {'H': 2, 'O': 1},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
+        'cp_mol_ig_comp': NIST,
         'pressure_sat_comp': NIST,
         'parameter_data': {
             'mw': (0.01801528, pyunits.kg/pyunits.mol),
@@ -161,6 +162,7 @@ _component_params = {
         'elemental_composition': {'C': 1, 'O': 2},
         'enth_mol_ig_comp': NIST,
         'entr_mol_ig_comp': NIST,
+        'cp_mol_ig_comp': NIST,
         'parameter_data': {
             'mw': (0.04401, pyunits.kg/pyunits.mol),
             'pressure_crit': (73.8e5, pyunits.Pa),

@@ -905,6 +905,8 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol': {'method': '_gibbs_mol'},
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase'},
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
+             'isentropic_speed_sound_phase': {'method': '_isentropic_speed_sound_phase'},
+             'isothermal_speed_sound_phase': {'method': '_isothermal_speed_sound_phase'},
              'mw': {'method': '_mw'},
              'mw_phase': {'method': '_mw_phase'},
              'pressure_bubble': {'method': '_pressure_bubble'},
@@ -2484,6 +2486,32 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_gibbs_mol_phase_comp)
         except AttributeError:
             self.del_component(self.gibbs_mol_phase_comp)
+            raise
+
+    def _isentropic_speed_sound_phase(self):
+        try:
+            def rule_isentropic_speed_sound_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.isentropic_speed_sound_phase(b, p)
+            self.isentropic_speed_sound_phase = Expression(
+                    self.phase_list,
+                    doc="Isentropic speed of sound in each phase",
+                    rule=rule_isentropic_speed_sound_phase)
+        except AttributeError:
+            self.del_component(self.isentropic_speed_sound_phase)
+            raise
+
+    def _isothermal_speed_sound_phase(self):
+        try:
+            def rule_isothermal_speed_sound_phase(b, p):
+                p_config = b.params.get_phase(p).config
+                return p_config.equation_of_state.isothermal_speed_sound_phase(b, p)
+            self.isothermal_speed_sound_phase = Expression(
+                    self.phase_list,
+                    doc="Isothermal speed of sound in each phase",
+                    rule=rule_isothermal_speed_sound_phase)
+        except AttributeError:
+            self.del_component(self.isothermal_speed_sound_phase)
             raise
 
     def _mw(self):

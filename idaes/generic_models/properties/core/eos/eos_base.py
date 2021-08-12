@@ -105,8 +105,7 @@ class EoSBase():
 
     @staticmethod
     def heat_capacity_ratio_phase(b, p):
-        return (b.cp_mol_phase[p] /
-                b.cv_mol_phase[p])
+        raise NotImplementedError(_msg(b, "heat_capacity_ratio_phase"))
 
     @staticmethod
     def cv_mol_ig_comp_pure(b, j):
@@ -281,6 +280,14 @@ class EoSBase():
     @staticmethod
     def gibbs_mol_phase_comp(b, p, j):
         raise NotImplementedError(_msg(b, "gibbs_mol_phase_comp"))
+
+    @staticmethod
+    def isentropic_speed_sound_phase(b, p):
+        raise NotImplementedError(_msg(b, "isentropic_speed_sound_phase"))
+
+    @staticmethod
+    def isothermal_speed_sound_phase(b, p):
+        raise NotImplementedError(_msg(b, "isothermal_speed_sound_phase"))
 
 
 def _msg(b, attr):
