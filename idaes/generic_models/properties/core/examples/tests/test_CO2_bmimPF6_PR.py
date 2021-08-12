@@ -35,7 +35,7 @@ from idaes.generic_models.properties.core.generic.generic_property import (
 
 from idaes.generic_models.unit_models import Flash
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 
 from idaes.generic_models.properties.core.examples.CO2_bmimPF6_PR \
     import configuration
@@ -87,7 +87,7 @@ class TestParamBlock(object):
         )
 
         assert model.param.config.phase_equilibrium_state == {
-            ("Vap", "Liq"): smooth_VLE}
+            ("Vap", "Liq"): SmoothVLE}
 
         assert isinstance(model.param.phase_equilibrium_idx, Set)
         assert len(model.param.phase_equilibrium_idx) == 1
