@@ -21,7 +21,7 @@ from pyomo.environ import Set, value, Var, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.core.base.misc import tabular_writer
+from pyomo.common.formatting import tabular_writer
 
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
