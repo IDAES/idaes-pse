@@ -12,7 +12,7 @@ command-line program.
 
 idaes command
 -------------
-The base `idaes` command does not do anything by itself, beside set some
+The base `idaes` command does not do anything by itself, besides set some
 shared configuration values. All the real work is done by one of the subcommands,
 each of which is described on a separate page below.
 
