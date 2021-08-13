@@ -5,7 +5,7 @@ import os
 
 class Tracker:
 
-    def __init__(self, tracking_model_object, n_tracking_hour, solver):
+    def __init__(self, tracking_model_class, n_tracking_hour, solver, **kwarg):
 
         '''
         Initializes the tracker object.
@@ -19,10 +19,19 @@ class Tracker:
             None
         '''
 
-        self.tracking_model_object = tracking_model_object
+        self.model_class = tracking_model_class
+
+        # create an instance
+        self.tracking_model_object = tracking_model_class(**kwarg)
+
+        # link each block to a model
+        self.model_dict = {}
+        for g,b in self.tracking_model_object.model_dict.items():
+            self.model_dict[g] = pyo.ConcreteModel()
+            self.model_dict[g].b = b
+
         self.n_tracking_hour = n_tracking_hour
         self.solver = solver
-        self.model_dict = self.tracking_model_object.model_dict
         self.formulate_tracking_problem()
 
     def formulate_tracking_problem(self):
