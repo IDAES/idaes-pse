@@ -102,7 +102,7 @@ class Alamopy(Surrogate):
     Standard SurrogateModelTrainer for ALAMO.
 
     This mainly defines a set of configuration options for ALAMO along with
-    methods to read and write the ALAMO input and poutput files and to call
+    methods to read and write the ALAMO input and output files and to call
     the ALAMO executable.
 
     Generally, options default to None to indicate that no entry will be
