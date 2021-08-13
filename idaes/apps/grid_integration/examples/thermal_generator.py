@@ -9,7 +9,7 @@ from bidder import Bidder
 
 class ThermalGenerator:
 
-    def __init__(self, rts_gmlc_dataframe, horizon = 48, generators = None):
+    def __init__(self, rts_gmlc_dataframe, horizon = 48, generator = "102_STEAM_3"):
 
         '''
         Initializes the class object by building the thermal generator model.
@@ -23,18 +23,13 @@ class ThermalGenerator:
             None
         '''
 
-        self.generators = generators
-        self.model_data = self.assemble_model_data(generator_names = generators, \
+        self.generator = generator
+        self.model_data = self.assemble_model_data(generator_name = generator, \
                                                    gen_params = rts_gmlc_dataframe)
-        self.model_dict = {}
-        for g in self.generators:
-            self.model_dict[g] = self.build_thermal_generator_model(generator = g,
-                                                                    plan_horizon = horizon,
-                                                                    segment_number = 4)
         self.result_list = []
 
     @staticmethod
-    def assemble_model_data(generator_names, gen_params):
+    def assemble_model_data(generator_name, gen_params):
 
         '''
         This function assembles the parameter data to build the thermal generator
@@ -49,38 +44,35 @@ class ThermalGenerator:
             {data type name: {generator name: value}}.
         '''
 
-        gen_params.set_index('GEN UID',inplace = True)
+        gen_params = gen_params.set_index('GEN UID',inplace = False)
         properties = ['PMin MW', 'PMax MW', 'Min Up Time Hr', 'Min Down Time Hr',\
                       'Ramp Rate MW/Min', 'Start Heat Warm MBTU', 'Fuel Price $/MMBTU',\
                       'HR_avg_0', 'HR_incr_1', 'HR_incr_2', 'HR_incr_3',\
                       'Output_pct_1','Output_pct_2','Output_pct_3']
 
         # to dict
-        model_data = gen_params.loc[generator_names, properties].to_dict('index')
+        model_data = gen_params.loc[generator_name, properties].to_dict()
 
-        # customize data
-        for g in generator_names:
+        model_data['RU'] = model_data['Ramp Rate MW/Min'] * 60
+        model_data['RD'] = model_data['RU']
+        model_data['SU'] = min(model_data['PMin MW'], model_data['RU'])
+        model_data['SD'] = min(model_data['PMin MW'], model_data['RD'])
+        model_data['SU Cost'] = model_data['Start Heat Warm MBTU'] * model_data['Fuel Price $/MMBTU']
 
-            model_data[g]['RU'] = model_data[g]['Ramp Rate MW/Min'] * 60
-            model_data[g]['RD'] = model_data[g]['RU']
-            model_data[g]['SU'] = min(model_data[g]['PMin MW'], model_data[g]['RU'])
-            model_data[g]['SD'] = min(model_data[g]['PMin MW'], model_data[g]['RD'])
-            model_data[g]['SU Cost'] = model_data[g]['Start Heat Warm MBTU'] * model_data[g]['Fuel Price $/MMBTU']
+        model_data['Min Load Cost'] = model_data['HR_avg_0']/1000 * \
+                                         model_data['Fuel Price $/MMBTU'] *\
+                                         model_data['PMin MW']
 
-            model_data[g]['Min Load Cost'] = model_data[g]['HR_avg_0']/1000 * \
-                                             model_data[g]['Fuel Price $/MMBTU'] *\
-                                             model_data[g]['PMin MW']
+        model_data['Power Segments'] = {}
+        model_data['Marginal Costs'] = {}
 
-            model_data[g]['Power Segments'] = {}
-            model_data[g]['Marginal Costs'] = {}
+        model_data['Original Marginal Cost Curve'] = {}
+        model_data['Original Marginal Cost Curve'][model_data['PMin MW']] = model_data['Min Load Cost']/model_data['PMin MW']
 
-            model_data[g]['Original Marginal Cost Curve'] = {}
-            model_data[g]['Original Marginal Cost Curve'][model_data[g]['PMin MW']] = model_data[g]['Min Load Cost']/model_data[g]['PMin MW']
-
-            for l in range(1,4):
-                model_data[g]['Power Segments'][l] = model_data[g]['Output_pct_{}'.format(l)] * model_data[g]['PMax MW']
-                model_data[g]['Marginal Costs'][l] = model_data[g]['HR_incr_{}'.format(l)]/1000 * model_data[g]['Fuel Price $/MMBTU']
-                model_data[g]['Original Marginal Cost Curve'][model_data[g]['Power Segments'][l]] = model_data[g]['Marginal Costs'][l]
+        for l in range(1,4):
+            model_data['Power Segments'][l] = model_data['Output_pct_{}'.format(l)] * model_data['PMax MW']
+            model_data['Marginal Costs'][l] = model_data['HR_incr_{}'.format(l)]/1000 * model_data['Fuel Price $/MMBTU']
+            model_data['Original Marginal Cost Curve'][model_data['Power Segments'][l]] = model_data['Marginal Costs'][l]
 
         return model_data
 
@@ -130,7 +122,6 @@ class ThermalGenerator:
         return
 
     def build_thermal_generator_model(self,
-                                      generator = None,
                                       plan_horizon = 48,
                                       segment_number = 4):
 
@@ -147,12 +138,12 @@ class ThermalGenerator:
             b: the constructed model.
         '''
 
-        model_data = self.model_data[generator]
+        model_data = self.model_data
         b = pyo.Block()
 
         ## define the sets
-        b.HOUR = pyo.Set(initialize = range(plan_horizon))
-        b.SEGMENTS = pyo.Set(initialize = range(1, segment_number))
+        b.HOUR = pyo.Set(initialize = list(range(plan_horizon)))
+        b.SEGMENTS = pyo.Set(initialize = list(range(1, segment_number)))
 
         ## define the parameters
 
@@ -314,7 +305,8 @@ class ThermalGenerator:
 
         return b
 
-    def _update_UT_DT(self, implemented_shut_down, implemented_start_up):
+    @staticmethod
+    def _update_UT_DT(b, implemented_shut_down, implemented_start_up):
         '''
         This method updates the parameters in the minimum up/down time
         constraints based on the implemented shut down and start up events.
@@ -327,41 +319,36 @@ class ThermalGenerator:
             None
         '''
 
-        # copy to a queue
-        pre_shut_down_trajectory_copy = {}
-        pre_start_up_trajectory_copy = {}
+        pre_shut_down_trajectory_copy = deque([])
+        pre_start_up_trajectory_copy = deque([])
 
-        for g,b in self.model_dict.items():
+        # copy old trajectory
+        for t in b.pre_shut_down_trajectory_set:
+            pre_shut_down_trajectory_copy.append(round(pyo.value(b.pre_shut_down_trajectory[t])))
+        for t in b.pre_start_up_trajectory_set:
+            pre_start_up_trajectory_copy.append(round(pyo.value(b.pre_start_up_trajectory[t])))
 
-            pre_shut_down_trajectory_copy[g] = deque([])
-            pre_start_up_trajectory_copy[g] = deque([])
+        # add implemented trajectory to the queue
+        pre_shut_down_trajectory_copy += deque(implemented_shut_down)
+        pre_start_up_trajectory_copy += deque(implemented_start_up)
 
-            # copy old trajectory
-            for t in b.pre_shut_down_trajectory_set:
-                pre_shut_down_trajectory_copy[g].append(round(pyo.value(b.pre_shut_down_trajectory[t])))
-            for t in b.pre_start_up_trajectory_set:
-                pre_start_up_trajectory_copy[g].append(round(pyo.value(b.pre_start_up_trajectory[t])))
+        # pop out outdated trajectory
+        while len(pre_shut_down_trajectory_copy) > pyo.value(b.min_dw_time) - 1:
+            pre_shut_down_trajectory_copy.popleft()
+        while len(pre_start_up_trajectory_copy) > pyo.value(b.min_up_time) - 1:
+            pre_start_up_trajectory_copy.popleft()
 
-            # add implemented trajectory to the queue
-            pre_shut_down_trajectory_copy[g] += deque(implemented_shut_down[g])
-            pre_start_up_trajectory_copy[g] += deque(implemented_start_up[g])
+        # actual update
+        for t in b.pre_shut_down_trajectory_set:
+            b.pre_shut_down_trajectory[t] = pre_shut_down_trajectory_copy.popleft()
 
-            # pop out outdated trajectory
-            while len(pre_shut_down_trajectory_copy[g]) > pyo.value(b.min_dw_time) - 1:
-                pre_shut_down_trajectory_copy[g].popleft()
-            while len(pre_start_up_trajectory_copy[g]) > pyo.value(b.min_up_time) - 1:
-                pre_start_up_trajectory_copy[g].popleft()
-
-            # actual update
-            for t in b.pre_shut_down_trajectory_set:
-                b.pre_shut_down_trajectory[t] = pre_shut_down_trajectory_copy[g].popleft()
-
-            for t in b.pre_start_up_trajectory_set:
-                b.pre_start_up_trajectory[t] = pre_start_up_trajectory_copy[g].popleft()
+        for t in b.pre_start_up_trajectory_set:
+            b.pre_start_up_trajectory[t] = pre_start_up_trajectory_copy.popleft()
 
         return
 
-    def _update_power(self, implemented_power_output):
+    @staticmethod
+    def _update_power(b, implemented_power_output):
         '''
         This method updates the parameters in the ramping constraints based on
         the implemented power outputs.
@@ -373,13 +360,12 @@ class ThermalGenerator:
              None
         '''
 
-        for g, b in self.model_dict.items():
-            b.pre_P_T = round(implemented_power_output[g][-1],2)
-            b.pre_on_off = round(int(implemented_power_output[g][-1] > 1e-3))
+        b.pre_P_T = round(implemented_power_output[-1],2)
+        b.pre_on_off = round(int(implemented_power_output[-1] > 1e-3))
 
         return
 
-    def update_model(self,last_implemented_time_step):
+    def update_model(self, b, implemented_shut_down,implemented_start_up, implemented_power_output):
 
         '''
         This method updates the parameters in the model based on
@@ -393,19 +379,13 @@ class ThermalGenerator:
              None
         '''
 
-        implemented_shut_down = self.get_implemented_profile(model_var = 'shut_dw',\
-                                                             last_implemented_time_step = last_implemented_time_step)
-        implemented_start_up = self.get_implemented_profile(model_var = 'start_up',\
-                                                            last_implemented_time_step = last_implemented_time_step)
-        implemented_power_output = self.get_implemented_profile(model_var = 'P_T',\
-                                                                last_implemented_time_step = last_implemented_time_step)
-
-        self._update_UT_DT(implemented_shut_down, implemented_start_up)
-        self._update_power(implemented_power_output)
+        self._update_UT_DT(b, implemented_shut_down, implemented_start_up)
+        self._update_power(b, implemented_power_output)
 
         return
 
-    def get_implemented_profile(self, model_var, last_implemented_time_step):
+    @staticmethod
+    def get_implemented_profile(b, model_var, last_implemented_time_step):
 
         '''
         This method gets the implemented variable profiles in the last optimization
@@ -420,14 +400,15 @@ class ThermalGenerator:
              profile: the intended profile, {unit: [...]}
         '''
 
-        profile = {}
-        for g in self.generators:
-            var = getattr(self.model_dict[g], model_var)
-            profile[g] = [pyo.value(var[t]) for t in range(last_implemented_time_step + 1)]
+        implemented_shut_down = [pyo.value(b.shut_dw[t]) for t in range(last_implemented_time_step + 1)]
+        implemented_start_up = [pyo.value(b.start_up[t]) for t in range(last_implemented_time_step + 1)]
+        implemented_power_output = [pyo.value(b.P_T[t]) for t in range(last_implemented_time_step + 1)]
 
-        return profile
+        return {'implemented_shut_down': implemented_shut_down,\
+                'implemented_start_up': implemented_start_up,\
+                'implemented_power_output': implemented_power_output}
 
-    def record_results(self, date = None, hour = None, **kwargs):
+    def record_results(self, b, date = None, hour = None, **kwargs):
 
         '''
         Record the operations stats for the model.
@@ -444,39 +425,38 @@ class ThermalGenerator:
 
         df_list = []
 
-        for g, b in self.model_dict.items():
-            for t in b.HOUR:
+        for t in b.HOUR:
 
-                result_dict = {}
-                result_dict['Generator'] = g
-                result_dict['Date'] = date
-                result_dict['Hour'] = hour
+            result_dict = {}
+            result_dict['Generator'] = self.generator
+            result_dict['Date'] = date
+            result_dict['Hour'] = hour
 
-                # simulation inputs
-                result_dict['Horizon [hr]'] = int(t)
+            # simulation inputs
+            result_dict['Horizon [hr]'] = int(t)
 
-                # model vars
-                result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(b.P_T[t]),2))
+            # model vars
+            result_dict['Thermal Power Generated [MW]'] = float(round(pyo.value(b.P_T[t]),2))
 
-                result_dict['On/off [bin]'] = int(round(pyo.value(b.on_off[t])))
-                result_dict['Start Up [bin]'] = int(round(pyo.value(b.start_up[t])))
-                result_dict['Shut Down [bin]'] = int(round(pyo.value(b.shut_dw[t])))
+            result_dict['On/off [bin]'] = int(round(pyo.value(b.on_off[t])))
+            result_dict['Start Up [bin]'] = int(round(pyo.value(b.start_up[t])))
+            result_dict['Shut Down [bin]'] = int(round(pyo.value(b.shut_dw[t])))
 
-                result_dict['Production Cost [$]'] = float(round(pyo.value(b.prod_cost_approx[t]),2))
-                result_dict['Start-up Cost [$]'] = float(round(pyo.value(b.start_up_cost_expr[t]),2))
-                result_dict['Total Cost [$]'] = float(round(pyo.value(b.tot_cost[t]),2))
+            result_dict['Production Cost [$]'] = float(round(pyo.value(b.prod_cost_approx[t]),2))
+            result_dict['Start-up Cost [$]'] = float(round(pyo.value(b.start_up_cost_expr[t]),2))
+            result_dict['Total Cost [$]'] = float(round(pyo.value(b.tot_cost[t]),2))
 
-                # calculate mileage
-                if t == 0:
-                    result_dict['Mileage [MW]'] = float(round(abs(pyo.value(b.P_T[t] - b.pre_P_T)),2))
-                else:
-                    result_dict['Mileage [MW]'] = float(round(abs(pyo.value(b.P_T[t] - b.P_T[t-1])),2))
+            # calculate mileage
+            if t == 0:
+                result_dict['Mileage [MW]'] = float(round(abs(pyo.value(b.P_T[t] - b.pre_P_T)),2))
+            else:
+                result_dict['Mileage [MW]'] = float(round(abs(pyo.value(b.P_T[t] - b.P_T[t-1])),2))
 
-                for key in kwargs:
-                    result_dict[key] = kwargs[key]
+            for key in kwargs:
+                result_dict[key] = kwargs[key]
 
-                result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
-                df_list.append(result_df.T)
+            result_df = pd.DataFrame.from_dict(result_dict,orient = 'index')
+            df_list.append(result_df.T)
 
         # save the result to object property
         # wait to be written when simulation ends
@@ -506,38 +486,42 @@ if __name__ == "__main__":
     horizon = 4
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
-    # thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
-    #                                             horizon = horizon, \
-    #                                             generators = [generator])
+    thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
+                                                horizon = horizon, \
+                                                generator = generator)
 
-    solver = pyo.SolverFactory('cbc')
+    # solver = pyo.SolverFactory('cbc')
+    #
+    # run_tracker = False
+    # run_bidder = True
+    #
+    # if run_tracker:
+    #     # make a tracker
+    #     thermal_tracker = Tracker(tracking_model_class = ThermalGenerator,\
+    #                               n_tracking_hour = 1, \
+    #                               solver = solver,\
+    #                               rts_gmlc_dataframe = rts_gmlc_dataframe,\
+    #                               horizon = horizon,\
+    #                               generators = [generator])
+    #
+    #     market_dispatch = {generator: [30, 40 , 50, 70]}
+    #
+    #     thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
+    #                                           date = "2021-07-26", \
+    #                                           hour = '17:00')
+    #
+    # if run_bidder:
+    #
+    #     thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
+    #                             n_scenario = 3,\
+    #                             solver = solver,\
+    #                             rts_gmlc_dataframe = rts_gmlc_dataframe,\
+    #                             horizon = horizon,\
+    #                             generators = [generator])
 
-    run_tracker = True
-    run_bidder = False
-
-    if run_tracker:
-        # make a tracker
-        thermal_tracker = Tracker(tracking_model_class = ThermalGenerator,\
-                                  n_tracking_hour = 1, \
-                                  solver = solver,\
-                                  rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                                  horizon = horizon,\
-                                  generators = [generator])
-
-        market_dispatch = {generator: [30, 40 , 50, 70]}
-
-        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
-                                              date = "2021-07-26", \
-                                              hour = '17:00')
-
-    if run_bidder:
-
-        thermal_bidder = Bidder(bidding_model_object = thermal_generator_object,\
-                                 solver = solver)
-
-        price_forecasts = {generator:{0:[25,15,20,10], \
-                                      1:[20,12,22,13], \
-                                      2:[22,13,28,14]}}
-        date = "2021-08-01"
-        hour = "13:00"
-        bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
+        # price_forecasts = {generator:{0:[25,15,20,10], \
+        #                               1:[20,12,22,13], \
+        #                               2:[22,13,28,14]}}
+        # date = "2021-08-01"
+        # hour = "13:00"
+        # bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
