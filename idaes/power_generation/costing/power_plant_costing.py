@@ -16,16 +16,17 @@ Power Plant costing library
 This method leverages NETL costing capabilities. Two main methods have been
 developed to calculate the capital cost of power generation plants:
 
-1.- Fossil fueled power plants (from SCPC to IGCC) (get_PP_costing)
-2.- supercritical CO2 power cycles (direct and indirect) (get_sCO2_unit_cost)
+1. Fossil fueled power plants (from SCPC to IGCC) (get_PP_costing)
+2. Supercritical CO2 power cycles (direct and indirect) (get_sCO2_unit_cost)
 
 other methods:
+* get_fixed_OM_costs() to cost fixed O&M costs
+* get_variable_OM_costs to cost variable O&M costs
 * get_ASU_cost() to cost air separation units
 * costing_initialization() to initialize costing blocks
-* display_total_plant_costs() to display total plant cost
+* display_total_plant_costs() to display total plant cost (TPC)
 * display_bare_erected_costs() to display BEC costs
-* build_flowsheet_cost_constraint() to display the total cost of the entire
-flowsheet
+* get_total_TPC() to display the total TPC of the entire flowsheet
 * display_flowsheet_cost() to display flowsheet cost
 * check_sCO2_costing_bounds() to display a warnning if costing model have been
 used outside the range that where designed for
@@ -611,7 +612,7 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
                        labor_burden=30, operators_per_shift=6, tech=1,
                        fixed_TPC=None):
     """
-    Creates constraints for the following fixed O&M costs:
+    Creates constraints for the following fixed O&M costs in $MM/yr:
         1. Annual operating labor
         2. Maintenance labor
         3. Admin and support labor
@@ -761,7 +762,7 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
              c.maintenance_material_percent/0.85/nameplate_capacity/8760)
 
 
-def get_variable_OM_costs(m, net_power, resources, rates, prices="default"):
+def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
     """
     This function calculates the $/MWh price of resources used by the plant.
     The function is structured to allow the user to generate all fuel,
@@ -772,27 +773,24 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices="default"):
         net_power: pyomo var indexed by m.fs.time representing net system power
         resources: a list of strings for the resorces to be costed
         rates: a list of pyomo vars for resource consumption rates
-        prices: a list of resource prices. If default is selected the function
-        will try to get prices from a premade dictionary.
+        prices: a dict of resource prices to be added to the premade dictionary
 
     Returns:
         None.
 
     """
-    # assert arguments are lists
+
+    # assert arguments are correct types
     if type(resources) is not list:
         raise TypeError("resources argument must be a list")
     if type(rates) is not list:
         raise TypeError("rates argument must be a list")
-    if prices != "default" and type(prices) is not list:
-        raise TypeError("prices argument must be a list")
+    if type(prices) is not dict:
+        raise TypeError("prices argument must be a dictionary")
 
     # assert lists are the same length
     if len(resources) != len(rates):
         raise Exception("resources and rates must be lists of the same length")
-    if prices != "default" and len(resources) != len(prices):
-        raise Exception("resources and prices must "
-                        "be lists of the same length")
 
     # check if flowsheet level costing block exists
     if not hasattr(m.fs, "costing"):
@@ -813,15 +811,17 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices="default"):
         "thermal reclaimer unit waste": 38*pyunits.USD/pyunits.ton
         }
 
-    if prices == "default":
-        # raise error if the user includes resources not in default_prices
-        if not set(resources).issubset(default_prices.keys()):
-            raise Exception("A resource was included that does not contain a "
-                            "default price. Default prices exist for the "
-                            "following resources: "
-                            "{}".format(list(default_prices.keys())))
-        # create list of prices
-        prices = [default_prices[r] for r in resources]
+    # add entrys from prices to defualt_prices
+    for key in prices.keys():
+        default_prices[key] = prices[key]
+
+    # raise error if the user included a resource not in default_prices
+    if not set(resources).issubset(default_prices.keys()):
+        raise Exception("A resource was included that does not contain a "
+                        "price. Prices exist for the following resources: "
+                        "{}".format(list(default_prices.keys())))
+    # create list of prices
+    prices = [default_prices[r] for r in resources]
 
     # zip rates and prices into a dict accessible by resource
     resource_rates = dict(zip(resources, rates))
@@ -908,10 +908,11 @@ def initialize_variable_OM_costs(m):
             m.fs.costing.total_variable_OM_cost[t],
             m.fs.costing.total_variable_cost_rule[t])
 
-
 # -----------------------------------------------------------------------------
 # Costing Library Utility Functions
 # -----------------------------------------------------------------------------
+
+
 def costing_initialization(fs):
     for o in fs.component_objects(descend_into=False):
         # look for costing blocks
@@ -996,24 +997,6 @@ def get_total_TPC(m):
     @m.fs.costing.Constraint()
     def total_TPC_eq(c):
         return c.total_TPC == sum(TPC_list)
-
-
-def build_flowsheet_cost_constraint(m):
-    total_cost_list = []
-    for o in m.fs.component_objects(descend_into=False):
-        # look for costing blocks
-        if hasattr(o, 'costing'):
-            for key in o.costing.total_plant_cost.keys():
-                total_cost_list.append(o.costing.total_plant_cost[key])
-
-    m.fs.flowsheet_cost = Var(initialize=0,
-                              bounds=(0, 1e12),
-                              doc='cost of entire process')
-
-    def flowsheet_cost_rule(fs):
-        return fs.flowsheet_cost == sum(total_cost_list)
-
-    m.fs.flowsheet_cost_eq = Constraint(rule=flowsheet_cost_rule)
 
 
 def display_flowsheet_cost(m):

@@ -20,7 +20,7 @@ from idaes.power_generation.costing.power_plant_costing import \
     (get_sCO2_unit_cost,
      get_PP_costing,
      get_ASU_cost,
-     build_flowsheet_cost_constraint,
+     get_total_TPC,
      costing_initialization)
 from idaes.core.util.model_statistics import (degrees_of_freedom)
 import pyomo.environ as pyo
@@ -113,7 +113,7 @@ def test_PP_costing():
                    m.fs.ash_handling.ash_mass_flow, 'lb/hr', 2)
 
     # add total cost
-    build_flowsheet_cost_constraint(m)
+    get_total_TPC(m)
 
     # add initialize
     costing_initialization(m.fs)
@@ -202,7 +202,7 @@ def test_PP_costing():
         abs=1e-1) == 2564/1e3
 
     assert pytest.approx(pyo.value(
-        m.fs.flowsheet_cost), abs=1e-1) == 993753/1e3
+        m.fs.costing.total_TPC), abs=1e-1) == 993753/1e3
 
     return m
 
@@ -275,7 +275,7 @@ def test_power_plant_costing():
                    'lb/hr', 7)
 
     # add total cost
-    build_flowsheet_cost_constraint(m)
+    get_total_TPC(m)
 
     # add initialize
     costing_initialization(m.fs)
@@ -474,7 +474,7 @@ def test_sCO2_costing():
                        n_equip=4.0)
 
     # add total cost
-    build_flowsheet_cost_constraint(m)
+    get_total_TPC(m)
 
     # add initialize
     costing_initialization(m.fs)
