@@ -15,9 +15,6 @@ from idaes.core import FlowsheetBlock, EnergyBalanceType
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util import get_solver
 
-# Access parent directory (chemical_looping) of the current directory
-sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
-
 from idaes.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
 from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseParameterBlock
@@ -85,7 +82,6 @@ solver = get_solver('ipopt', optarg) # create solver
 
 initialize_by_time_element(m.fs, m.fs.time, solver=solver)
 solver.solve(m, tee=True)
-# write_violated_equalities(m.fs)
 
 t_simulation = time.time()  # Simulation time
 

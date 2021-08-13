@@ -25,10 +25,9 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block)
-from idaes.logger import (getInitLogger, condition, solver_log,
-                          DEBUG, getSolveLogger)
-from idaes.core.util.model_statistics import (degrees_of_freedom)
+import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+
 __author__ = "Chinedu Okoli, Andrew Lee"
 
 
@@ -37,7 +36,7 @@ __author__ = "Chinedu Okoli, Andrew Lee"
 # Perfect mixing in Vap phase
 # Static solid phase
 
-# Need to have build-on-demand properties in ractions for this to work
+# Need to have build-on-demand properties in reactions for this to work
 
 @declare_process_block_class("FixedBed0D")
 class FixedBed0DData(UnitModelBlockData):
@@ -58,20 +57,6 @@ class FixedBed0DData(UnitModelBlockData):
         doc="""Indicates whether holdup terms should be constructed or not.
 **default** - True. Fixed bed reactors must be dynamic, thus this must be
 True."""))
-#     CONFIG.declare("material_balance_type", ConfigValue(
-#         default=MaterialBalanceType.useDefault,
-#         domain=In(MaterialBalanceType),
-#         description="Material balance construction flag",
-#         doc="""Indicates what type of mass balance should be constructed,
-# **default** - MaterialBalanceType.useDefault.
-# **Valid values:** {
-# **MaterialBalanceType.useDefault - refer to property package for default
-# balance type
-# **MaterialBalanceType.none** - exclude material balances,
-# **MaterialBalanceType.componentPhase** - use phase component balances,
-# **MaterialBalanceType.componentTotal** - use total component balances,
-# **MaterialBalanceType.elementTotal** - use total element balances,
-# **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
@@ -271,8 +256,8 @@ see reaction package for documentation.}"""))
                           for r in b.config.reaction_package.
                           rate_reaction_idx)
 
-    def initialize(blk, state_args=None, outlvl=6,
-                   solver='ipopt', optarg={'tol': 1e-6}):
+    def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
+                   solver=None, optarg=None):
         '''
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
@@ -300,31 +285,30 @@ see reaction package for documentation.}"""))
             None
         '''
         # Set solver options
-        init_log = getInitLogger(blk.name, outlvl)
-#        solve_log = getSolveLogger(blk.name, outlvl, tag="unit")
+        init_log = idaeslog.getInitLogger(blk.name, outlvl)
         opt = get_solver(solver, optarg) # create solver
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        print()
-        print('Initialize thermophysical properties')
+        init_log.info('Initialize Thermophysical Properties')
+        
         # Initialize gas_phase block
         gas_phase_flags = blk.gas.initialize(
-                                outlvl=outlvl - 1,
+                                outlvl=outlvl,
                                 optarg=optarg,
                                 solver=solver)
 
         # Initialize solid_phase properties block
         solid_phase_flags = blk.solids.initialize(
-                                outlvl=outlvl - 1,
+                                outlvl=outlvl,
                                 optarg=optarg,
                                 solver=solver)
 
         print()
         print('Initialize reaction properties')
         # Initialize reactions
-        blk.reactions.initialize(outlvl=outlvl - 1,
+        blk.reactions.initialize(outlvl=outlvl,
                                  optarg=optarg,
                                  solver=solver)
 
@@ -334,22 +318,9 @@ see reaction package for documentation.}"""))
             for t in blk.flowsheet().config.time:
                 blk.solids[t].temperature.fix(blk.solids[0].temperature.value)
 
-        init_log.log(4, 'Initialization Step 1 Complete.')
-
-        # ---------------------------------------------------------------------
-        # Solve unit
-#         with solver_log(solve_log, DEBUG) as slc:
-#             results = opt.solve(blk, tee=slc.tee)
-# #        results = opt.solve(blk, tee=init_tee(init_log))
-
-#         init_log.log(4, "Initialization Step 2 {}."
-#                      .format(condition(results)))
+        init_log.info_high("Initialization Step 1 Complete.")
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.gas.release_state(gas_phase_flags, outlvl+1)
         blk.solids.release_state(solid_phase_flags, outlvl+1)
-
-        print('dof', degrees_of_freedom(blk))
-        # init_log.log(5, 'Initialization Complete: {}'
-        #              .format(condition(results)))
