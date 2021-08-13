@@ -19,13 +19,32 @@ import click
 from idaes.core.util.env_info import EnvironmentInfo
 from idaes.commands import cb
 
+
 @cb.command(
     name="environment-info",
     help="Print information about idaes, OS, dependencies...")
-def environment_info():
-    info = EnvironmentInfo().display_dict()
-    for k, v in info.items():
-        click.echo("")
-        click.echo(f"{k}")
-        for l, q in v.items():
-            click.echo(f"    {l}: {q}")
+@click.option(
+    "--solver",
+    multiple=True,
+    help="Add solvers to list of solvers to check"
+)
+@click.option(
+    "--file",
+    default=None,
+    help="Write output ot a file"
+)
+def environment_info(solver, file):
+    info = EnvironmentInfo(addtional_solvers=solver).display_dict()
+    if file is None:
+        for k, v in info.items():
+            click.echo("")
+            click.echo(f"{k}")
+            for l, q in v.items():
+                click.echo(f"    {l}: {q}")
+    else:
+        with open(file, "w") as f:
+            for k, v in info.items():
+                f.write("\n")
+                f.write(f"{k}\n")
+                for l, q in v.items():
+                    f.write(f"    {l}: {q}\n")
