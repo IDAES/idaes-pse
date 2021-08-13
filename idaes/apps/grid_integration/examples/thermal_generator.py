@@ -24,6 +24,7 @@ class ThermalGenerator:
         '''
 
         self.generator = generator
+        self.horizon = horizon
         self.model_data = self.assemble_model_data(generator_name = generator, \
                                                    gen_params = rts_gmlc_dataframe)
         self.result_list = []
@@ -121,9 +122,7 @@ class ThermalGenerator:
 
         return
 
-    def build_thermal_generator_model(self,
-                                      plan_horizon = 48,
-                                      segment_number = 4):
+    def create_model(self, plan_horizon = 48, segment_number = 4):
 
         '''
         This function builds the model for a thermal generator.
@@ -142,7 +141,7 @@ class ThermalGenerator:
         b = pyo.Block()
 
         ## define the sets
-        b.HOUR = pyo.Set(initialize = list(range(plan_horizon)))
+        b.HOUR = pyo.Set(initialize = list(range(self.horizon)))
         b.SEGMENTS = pyo.Set(initialize = list(range(1, segment_number)))
 
         ## define the parameters
@@ -385,7 +384,7 @@ class ThermalGenerator:
         return
 
     @staticmethod
-    def get_implemented_profile(b, model_var, last_implemented_time_step):
+    def get_implemented_profile(b, last_implemented_time_step):
 
         '''
         This method gets the implemented variable profiles in the last optimization
@@ -466,19 +465,19 @@ class ThermalGenerator:
 
     @property
     def power_output(self):
-        return {g: b.P_T for g, b in self.model_dict.items()}
+        return 'P_T'
 
     @property
     def total_cost(self):
-        return {g: [(b.tot_cost,1)] for g, b in self.model_dict.items()}
+        return ('tot_cost',1)
 
     @property
     def default_bids(self):
-        return {g: self.model_data[g]['Original Marginal Cost Curve'] for g in self.generators}
+        return self.model_data['Original Marginal Cost Curve']
 
     @property
     def pmin(self):
-        return {g: self.model_data[g]['PMin MW'] for g in self.generators}
+        return self.model_data[g]
 
 if __name__ == "__main__":
 
@@ -486,29 +485,29 @@ if __name__ == "__main__":
     horizon = 4
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
-    thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
-                                                horizon = horizon, \
-                                                generator = generator)
+    # thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
+    #                                             horizon = horizon, \
+    #                                             generator = generator)
 
-    # solver = pyo.SolverFactory('cbc')
-    #
-    # run_tracker = False
-    # run_bidder = True
-    #
-    # if run_tracker:
-    #     # make a tracker
-    #     thermal_tracker = Tracker(tracking_model_class = ThermalGenerator,\
-    #                               n_tracking_hour = 1, \
-    #                               solver = solver,\
-    #                               rts_gmlc_dataframe = rts_gmlc_dataframe,\
-    #                               horizon = horizon,\
-    #                               generators = [generator])
-    #
-    #     market_dispatch = {generator: [30, 40 , 50, 70]}
-    #
-    #     thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
-    #                                           date = "2021-07-26", \
-    #                                           hour = '17:00')
+    solver = pyo.SolverFactory('cbc')
+
+    run_tracker = True
+    run_bidder = False
+
+    if run_tracker:
+        # make a tracker
+        thermal_tracker = Tracker(tracking_model_class = ThermalGenerator,\
+                                  n_tracking_hour = 1, \
+                                  solver = solver,\
+                                  rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                  horizon = horizon,\
+                                  generator = generator)
+
+        market_dispatch = {generator: [30, 40 , 50, 70]}
+
+        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch[generator], \
+                                              date = "2021-07-26", \
+                                              hour = '17:00')
     #
     # if run_bidder:
     #

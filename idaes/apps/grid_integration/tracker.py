@@ -19,16 +19,21 @@ class Tracker:
             None
         '''
 
-        self.model_class = tracking_model_class
-
         # create an instance
         self.tracking_model_object = tracking_model_class(**kwarg)
 
-        # link each block to a model
-        self.model_dict = {}
-        for g,b in self.tracking_model_object.model_dict.items():
-            self.model_dict[g] = pyo.ConcreteModel()
-            self.model_dict[g].b = b
+        # add flowsheet to model
+        self.model = pyo.ConcreteModel()
+        self.model.fs = pyo.Block()
+        b = self.tracking_model_object.create_model()
+        self.model.fs.transfer_attributes_from(b)
+
+        # get the power output
+        power_output_name = self.tracking_model_object.power_output
+        self.power_output = getattr(self.model.fs, power_output_name)
+
+        # get the time index set
+        self.time_set = self.power_output.index_set()
 
         self.n_tracking_hour = n_tracking_hour
         self.solver = solver
@@ -47,34 +52,13 @@ class Tracker:
             None
         '''
 
-        self._get_time_set()
-
-        for g,m in self.model_dict.items():
-            self._add_tracking_params(g)
-            self._add_tracking_constraints(g)
-            self._add_tracking_objective(g)
+        self._add_tracking_params()
+        self._add_tracking_constraints()
+        self._add_tracking_objective()
 
         return
 
-    def _get_time_set(self):
-
-        '''
-        Get the time index sets and store them in a dictionary as a class property.
-
-        Arguments:
-            None
-
-        Returns:
-            None
-        '''
-
-        self.time_set = {}
-        for g in self.model_dict:
-            self.time_set[g] = self.tracking_model_object.power_output[g].index_set()
-
-        return
-
-    def _add_tracking_params(self,g):
+    def _add_tracking_params(self):
 
         '''
         Add necessary tracking parameters to the model, i.e., market dispatch
@@ -88,12 +72,13 @@ class Tracker:
         '''
 
         # add params to the model
-        self.model_dict[g].power_dispatch = pyo.Param(self.time_set[g], \
-                                                      initialize = 0, \
-                                                      mutable = True)
+        self.model.power_dispatch = pyo.Param(self.time_set, \
+                                              initialize = 0, \
+                                              within = pyo.Reals,\
+                                              mutable = True)
         return
 
-    def _add_tracking_constraints(self,g):
+    def _add_tracking_constraints(self):
 
         '''
         Add necessary tracking constraints to the model, e.g., power output needs
@@ -106,10 +91,10 @@ class Tracker:
             None
         '''
 
-        self._add_tracking_dispatch_constraints(g)
+        self._add_tracking_dispatch_constraints()
         return
 
-    def _add_tracking_dispatch_constraints(self,g):
+    def _add_tracking_dispatch_constraints(self):
 
         '''
         Add tracking constraints to the model, i.e., power output needs
@@ -123,13 +108,13 @@ class Tracker:
         '''
 
         # declare a constraint list
-        self.model_dict[g].tracking_dispatch_constraints = pyo.ConstraintList()
-        for t in self.time_set[g]:
-            self.model_dict[g].tracking_dispatch_constraints.add(self.tracking_model_object.power_output[g][t] == self.model_dict[g].power_dispatch[t])
+        self.model.tracking_dispatch_constraints = pyo.ConstraintList()
+        for t in self.time_set:
+            self.model.tracking_dispatch_constraints.add(self.power_output[t] == self.model.power_dispatch[t])
 
         return
 
-    def _add_tracking_objective(self,g):
+    def _add_tracking_objective(self):
 
         '''
         Add EMPC objective function to the model, i.e., minimizing different costs
@@ -143,10 +128,14 @@ class Tracker:
         '''
 
         # declare an empty objective
-        self.model_dict[g].obj = pyo.Objective(expr = 0, sense = pyo.minimize)
-        for c, w in self.tracking_model_object.total_cost[g]:
-            for t in self.time_set[g]:
-                self.model_dict[g].obj.expr += w * c[t]
+        self.model.obj = pyo.Objective(expr = 0, sense = pyo.minimize)
+
+        cost_name = self.tracking_model_object.total_cost[0]
+        cost = getattr(self.model.fs, cost_name)
+        weight = self.tracking_model_object.total_cost[1]
+
+        for t in self.time_set:
+            self.model.obj.expr += weight * cost[t]
 
         return
 
@@ -169,13 +158,14 @@ class Tracker:
         self._pass_market_dispatch(market_dispatch)
 
         # solve the model
-        for g,m in self.model_dict.items():
-            self.solver.solve(m,tee=True)
+        self.solver.solve(self.model,tee=True)
 
         self.record_results(date = date, hour = hour)
 
         # update the model
-        self.tracking_model_object.update_model(last_implemented_time_step = self.n_tracking_hour - 1)
+        profiles = self.tracking_model_object.get_implemented_profile(b = self.model.fs, \
+                                                                      last_implemented_time_step = self.n_tracking_hour - 1)
+        self.tracking_model_object.update_model(self.model.fs, **profiles)
 
     def _pass_market_dispatch(self, market_dispatch):
 
@@ -190,9 +180,8 @@ class Tracker:
             None
         '''
 
-        for g,m in self.model_dict.items():
-            for t, dipsatch in zip(self.time_set[g], market_dispatch[g]):
-                m.power_dispatch[t] = dipsatch
+        for t, dipsatch in zip(self.time_set, market_dispatch):
+            self.model.power_dispatch[t] = dipsatch
 
         return
 
@@ -210,4 +199,4 @@ class Tracker:
 
         '''
 
-        self.tracking_model_object.record_results(**kwargs)
+        self.tracking_model_object.record_results(self.model.fs, **kwargs)
