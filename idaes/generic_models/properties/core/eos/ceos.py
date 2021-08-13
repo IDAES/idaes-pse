@@ -45,6 +45,16 @@ _log = idaeslog.getLogger(__name__)
 # Set path to root finder .so file
 _so = os.path.join(bin_directory, "cubic_roots.so")
 
+"""
+References:
+[1]. Poling, B.E., Prausnitz, J.M. and O’connell, J.P., 2001. 
+     Properties of gases and liquids. McGraw-Hill Education.
+
+[2]. Trujillo, M.F., O'Rourke, P. and Torres, D., 2002.
+     Generalizing the Thermodynamics State Relationships in KIVA-3V
+     https://www.osti.gov/servlets/purl/809947 (Last accessed: 08/13/2021)
+"""
+
 
 def cubic_roots_available():
     """Make sure the compiled cubic root functions are available. Yes, in
@@ -336,26 +346,9 @@ class Cubic(EoSBase):
             raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
         return proc(f, A[p], B[p])
 
-    @staticmethod
-    def dens_mass_phase(b, p):
-        return b.dens_mol_phase[p]*b.mw_phase[p]
-
-    @staticmethod
-    def dens_mol_phase(b, p):
-        pobj = b.params.get_phase(p)
-        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
-            return b.pressure/(
-                Cubic.gas_constant(b)*b.temperature*b.compress_fact_phase[p])
-        else:
-            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-
 
     @staticmethod
     def cp_mol_phase(blk, p):
-        pobj = blk.params.get_phase(p)
-        if not pobj.is_vapor_phase():
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
-
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
@@ -399,7 +392,7 @@ class Cubic(EoSBase):
         expression4 = (2 * dZdT + (EoS_u + EoS_p) * dBdT) / expression1
 
 
-        # Derived from equation on pg. 120 in Properties of Gases and Liquids
+        # Derived from the relations in Chapter 6 of [1]
         return (
             Cubic.gas_constant(blk)*(blk.temperature * dZdT + Z - 1) +
             blk.temperature * d2adT2 * safe_log(expression1 / expression2)  + 
@@ -412,10 +405,6 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cv_mol_phase(blk, p):
-        pobj = blk.params.get_phase(p)
-        if not pobj.is_vapor_phase():
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
-
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
@@ -432,10 +421,26 @@ class Cubic(EoSBase):
         dPdT = (Cubic.gas_constant(blk) / (V - bm)) - \
                (1 / (V**2 + EoS_u * bm * V + EoS_w * bm**2)) * dadT
 
+        # See Chapter 6 in [1]
         return (
             cp + blk.temperature * dPdT**2 / dPdV
         )
 
+
+    @staticmethod
+    def dens_mass_phase(b, p):
+        return b.dens_mol_phase[p]*b.mw_phase[p]
+    
+
+    @staticmethod
+    def dens_mol_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+            return b.pressure/(
+                Cubic.gas_constant(b)*b.temperature*b.compress_fact_phase[p])
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+    
 
     @staticmethod
     def energy_internal_mol_phase(blk, p):
@@ -867,15 +872,12 @@ class Cubic(EoSBase):
 
     @staticmethod
     def isentropic_speed_sound_phase(blk, p):
+        # See Reference [2]
         return sqrt(blk.heat_capacity_ratio_phase[p]) * blk.isothermal_speed_sound_phase[p]
 
     
     @staticmethod
     def isothermal_speed_sound_phase(blk, p):
-        pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
-        
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
@@ -889,6 +891,7 @@ class Cubic(EoSBase):
         dPdV = - ((Cubic.gas_constant(blk) * blk.temperature) / (V - bm)**2 ) + \
                 (am * (2 * V + EoS_u * bm) / (V**2 + EoS_u * bm * V + EoS_w * bm**2)**2)
 
+        # see reference [2]
         return sqrt(- dPdV * mw / rho**2)
 
 
