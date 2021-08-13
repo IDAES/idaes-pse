@@ -10,9 +10,7 @@ from itertools import combinations
 
 class Bidder:
 
-    bidding_set_names = ['Time','LMP Scenarios','Generators']
-
-    def __init__(self, bidding_model_object, solver):
+    def __init__(self, bidding_model_class, n_scenario, solver, **kwarg):
 
         '''
         Initializes the bidder object.
@@ -25,12 +23,33 @@ class Bidder:
             None
         '''
 
-        self.bidding_model_object = bidding_model_object
+        # create an instance
+        self.bidding_model_object = bidding_model_class(**kwarg)
+
+        # add flowsheet to model
+        self.model = pyo.ConcreteModel()
+        self.model.SCENARIOS = pyo.Set(initialize = range(n_scenario))
+        self.model.fs = pyo.Block(self.model.SCENARIOS)
+        for i in self.model.SCENARIOS:
+            b = self.bidding_model_object.create_model()
+            self.model.fs[i].transfer_attributes_from(b)
+
+        self._save_power_outputs()
+
+        self.n_scenario = n_scenario
         self.solver = solver
-        self.model = self.bidding_model_object.model
         self.formulate_bidding_problem()
 
         self.bids_result_list = []
+
+    def _save_power_outputs(self):
+
+        for i in self.model.SCENARIOS:
+            # get the power output
+            power_output_name = self.bidding_model_object.power_output
+            self.model.fs[i].power_output_ref = pyo.Reference(getattr(self.model.fs[i], power_output_name))
+
+        return
 
     def formulate_bidding_problem(self):
 
@@ -45,37 +64,11 @@ class Bidder:
             None
         '''
 
-        # get the sets needed for the tracking problem
-        self.bidding_set = self._get_bidding_sets()
-
         self._add_bidding_params()
         self._add_bidding_constraints()
         self._add_bidding_objective()
 
         return
-
-    def _get_bidding_sets(self):
-
-        '''
-        Get the necessary index sets for bidding, i.e., price scenarios and
-        time.
-
-        Arguments:
-            None
-
-        Returns:
-            bidding_set: a list that contains the necessary Pyomo set objects.
-        '''
-
-        bidding_set = []
-
-        model_sets = self.bidding_model_object.indices
-
-        for s, n in model_sets.items():
-            if n in self.bidding_set_names:
-                bidding_set.append(s)
-
-        return bidding_set
 
     def _add_bidding_params(self):
 
@@ -89,12 +82,11 @@ class Bidder:
             None
         '''
 
-        # add params to the model
-        # because the members in the bidding set is inexplicit
-        # we use * to unpack the list
-        self.model.energy_price = pyo.Param(*self.bidding_set, \
-                                              initialize = 0, \
-                                              mutable = True)
+        for i in self.model.SCENARIOS:
+            time_index = self.model.fs[i].power_output_ref.index_set()
+            self.model.fs[i].energy_price = pyo.Param(time_index, \
+                                                      initialize = 0, \
+                                                      mutable = True)
         return
 
     def _add_bidding_constraints(self):
@@ -110,143 +102,20 @@ class Bidder:
             None
         '''
 
-        model_sets = self.bidding_model_object.indices
-        modified_model_sets = {}
-
-        # modify the model set dictionary
-        for s, n in model_sets.items():
-            if n == 'LMP Scenarios':
-                # combine every 2 price scenario
-                modified_model_sets[tuple(combinations(s,2))] = n
-            else:
-                modified_model_sets[s] = n
-        modified_set_ls = list(modified_model_sets.keys())
-
-        # unpack
-        power_output = self.bidding_model_object.power_output
-        energy_price = self.model.energy_price
-
         # declare a constraint list
         self.model.bidding_constraints = pyo.ConstraintList()
 
-        # dfs: depth first search
-        def dfs_add_bidding_constraints(set_idx, indices_1, indices_2, bidding_indices_1, bidding_indices_2):
+        # generate scenarios combinations
+        scenario_comb = list(combinations(self.model.SCENARIOS,2))
 
-            '''
-            This function use depth first search (DFS) to traverse the inexplicit
-            sets the model has. When all sets have one entry in the indices, we
-            add the bidding constraints associated to these indices to the model.
-            Note that for this bidding constraint, we want to compare the LMP and
-            power offer in 2 different LMP scenarios, so we have 2 lists to store
-            the current indices, i.e., bidding_indices_1, bidding_indices_2.
-
-            The DFS algorithm will be expalined by the following example. For
-            example, the arbitary model is indexed by 3 sets:
-                set_1 = {1,2}
-                set_2 = {a,b}
-                set_3 = {y,z}
-
-            So we have the following search tree:
-                                   Dummy  Node
-                                   /          \
-            Level 1 (set_1)        1           2
-                                 /  \        /  \
-            Level 2 (set_2)     a    b      a    b
-                               / \  / \    / \  / \
-            Level 3 (set_3)   y  z  y  z   y  z y  z
-
-            To search all possible indices the variables in the model have, we
-            need to use DFS. At each level we append the index from the
-            corresponding set to our list.
-
-            E.g.,
-            Before the algorithm, indices = []
-            Dive to the first level, indices = [1]
-            Dive to the second level, indices = [1,a]
-            Dive to the third level, indices = [1,a,y]
-
-            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
-            We add the constraints/objective with these indices.
-
-            But we haven't enumerated all combinations of indices in the model,
-            we need to go back up a level in the search tree -- backtrack. And
-            then keep searching.
-
-            E.g.,
-            Before backtrack, indices = [1,a,y]
-            After backtrack we are at level 2, indices = [1,a]
-            Keep searching and dive to the third level, indices = [1,a,z]
-
-            So in this way we can find all valid collection of indices and add
-            constraints/objective accordingly.
-
-            Arguments:
-                set_idx: an index that points to a set in a list of sets.
-                indices_1: a list to store the current traversed indices for the
-                           first price scenario
-                indices_2: a list to store the current traversed indices for the
-                           second price scenario
-                bidding_indices_1: a list to store the current traversed indices
-                                  for the bidding problem/energy price parameter
-                                  for the first price scenario.
-                bidding_indices_2: a list to store the current traversed indices
-                                  for the bidding problem/energy price parameter
-                                  for the second price scenario.
-
-            Returns:
-                None
-            '''
-
-            # traveled all the sets
-            # add the bidding constraints
-            # the constraint requires the bidding curve to be nondecreasing
-            # i.e., the larger the power output the larger the marginal price
-            if set_idx == len(modified_set_ls):
-                self.model.bidding_constraints.add((power_output[tuple(indices_1)] - \
-                                                 power_output[tuple(indices_2)]) * \
-                                                 (energy_price[tuple(bidding_indices_1)] -\
-                                                 energy_price[tuple(bidding_indices_2)]) >= 0)
-            return
-
-            for idx in modified_set_ls[set_idx]:
-
-                # if the current index is for LMP scenarios
-                if modified_model_sets[modified_set_ls[set_idx]] == 'LMP Scenarios':
-                    indices_1.append(idx[0])
-                    indices_2.append(idx[1])
-                    bidding_indices_1.append(idx[0])
-                    bidding_indices_2.append(idx[1])
-
-                # if the current index is other indices for bidding problem
-                elif modified_model_sets[modified_set_ls[set_idx]] in self.bidding_set_names:
-                    indices_1.append(idx)
-                    indices_2.append(idx)
-                    bidding_indices_1.append(idx)
-                    bidding_indices_2.append(idx)
-
-                # if the current index is other inexplicit index
-                else:
-                    indices_1.append(idx)
-                    indices_2.append(idx)
-
-                # recursion
-                dfs_add_bidding_constraints(set_idx + 1, indices_1, indices_2, bidding_indices_1, bidding_indices_2)
-
-                # backtrack
-                if modified_model_sets[modified_set_ls[set_idx]] in self.bidding_set_names:
-                    indices_1.pop()
-                    indices_2.pop()
-                    bidding_indices_1.pop()
-                    bidding_indices_2.pop()
-                else:
-                    indices_1.pop()
-                    indices_2.pop()
-
-        dfs_add_bidding_constraints(set_idx = 0, \
-                                    indices_1 = [], \
-                                    indices_2 = [], \
-                                    bidding_indices_1 = [], \
-                                    bidding_indices_2 = [])
+        for k in scenario_comb:
+            time_index = self.model.fs[k[0]].power_output_ref.index_set()
+            for t in time_index:
+                self.model.bidding_constraints.add((self.model.fs[k[0]].power_output_ref[t] \
+                                                    - self.model.fs[k[1]].power_output_ref[t])\
+                                                    * (self.model.fs[k[0]].energy_price[t] \
+                                                    - self.model.fs[k[0]].energy_price[t]) >= 0)
+        return
 
     def _add_bidding_objective(self):
 
@@ -264,165 +133,17 @@ class Bidder:
         # declare an empty objective
         self.model.obj = pyo.Objective(expr = 0, sense = pyo.maximize)
 
-        # unpack indices, power output, energy price from self
-        model_sets = self.bidding_model_object.indices
-        set_ls = list(model_sets.keys())
-        total_cost = self.bidding_model_object.total_cost
-        power_output = self.bidding_model_object.power_output
-        energy_price = self.model.energy_price
-        cost_ls = list(total_cost.keys())
+        for k in self.model.SCENARIOS:
+            time_index = self.model.fs[k].power_output_ref.index_set()
 
-        def dfs_sum_costs(cost, set_idx, indices):
+            cost_name = self.bidding_model_object.total_cost[0]
+            cost = getattr(self.model.fs[k], cost_name)
+            weight = self.tracking_model_object.total_cost[1]
 
-            '''
-            This function use depth first search (DFS) to traverse the inexplicit
-            sets the model has. When all sets have one entry in the indices, we
-            add the cost associated to these indices to the objective function.
-
-            The DFS algorithm will be expalined by the following example. For
-            example, the arbitary model is indexed by 3 sets:
-                set_1 = {1,2}
-                set_2 = {a,b}
-                set_3 = {y,z}
-
-            So we have the following search tree:
-                                   Dummy  Node
-                                   /          \
-            Level 1 (set_1)        1           2
-                                 /  \        /  \
-            Level 2 (set_2)     a    b      a    b
-                               / \  / \    / \  / \
-            Level 3 (set_3)   y  z  y  z   y  z y  z
-
-            To search all possible indices the variables in the model have, we
-            need to use DFS. At each level we append the index from the
-            corresponding set to our list.
-
-            E.g.,
-            Before the algorithm, indices = []
-            Dive to the first level, indices = [1]
-            Dive to the second level, indices = [1,a]
-            Dive to the third level, indices = [1,a,y]
-
-            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
-            We add the constraints/objective with these indices.
-
-            But we haven't enumerated all combinations of indices in the model,
-            we need to go back up a level in the search tree -- backtrack. And
-            then keep searching.
-
-            E.g.,
-            Before backtrack, indices = [1,a,y]
-            After backtrack we are at level 2, indices = [1,a]
-            Keep searching and dive to the third level, indices = [1,a,z]
-
-            So in this way we can find all valid collection of indices and add
-            constraints/objective accordingly.
-
-            Arguments:
-                cost: one certain type of cost the model has. It is Pyomo expression
-                      and/or variable
-                set_idx: an index that points to a set in a list of sets.
-                indices: a list to store the current traversed indices
-
-            Returns:
-                None
-            '''
-
-            # traveled all the sets, and now we can add the objective
-            if set_idx == len(set_ls):
-                weight = total_cost[cost]
-                self.model.obj.expr -= weight * cost[tuple(indices)]
-                return
-
-            for idx in set_ls[set_idx]:
-
-                indices.append(idx)
-                # recursion
-                dfs_sum_costs(cost, set_idx + 1, indices)
-                # backtrack
-                indices.pop()
-
-        def dfs_sum_revenue(set_idx, indices, bidding_indices):
-
-            '''
-            This function use depth first search (DFS) to traverse the inexplicit
-            sets the model has. When all sets have one entry in the indices, we
-            add the revenue associated to these indices to the objective function.
-
-            The DFS algorithm will be expalined by the following example. For
-            example, the arbitary model is indexed by 3 sets:
-                set_1 = {1,2}
-                set_2 = {a,b}
-                set_3 = {y,z}
-
-            So we have the following search tree:
-                                   Dummy  Node
-                                   /          \
-            Level 1 (set_1)        1           2
-                                 /  \        /  \
-            Level 2 (set_2)     a    b      a    b
-                               / \  / \    / \  / \
-            Level 3 (set_3)   y  z  y  z   y  z y  z
-
-            To search all possible indices the variables in the model have, we
-            need to use DFS. At each level we append the index from the
-            corresponding set to our list.
-
-            E.g.,
-            Before the algorithm, indices = []
-            Dive to the first level, indices = [1]
-            Dive to the second level, indices = [1,a]
-            Dive to the third level, indices = [1,a,y]
-
-            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
-            We add the constraints/objective with these indices.
-
-            But we haven't enumerated all combinations of indices in the model,
-            we need to go back up a level in the search tree -- backtrack. And
-            then keep searching.
-
-            E.g.,
-            Before backtrack, indices = [1,a,y]
-            After backtrack we are at level 2, indices = [1,a]
-            Keep searching and dive to the third level, indices = [1,a,z]
-
-            So in this way we can find all valid collection of indices and add
-            constraints/objective accordingly.
-
-            Arguments:
-                set_idx: an index that points to a set in a list of sets.
-                indices: a list to store the current traversed indices
-                bidding_indices: a list to store the current traversed indices
-                                for the bidding problem/energy price parameter.
-
-            Returns:
-                None
-            '''
-
-            # traveled all the sets, and now we can add the objective
-            if set_idx == len(set_ls):
-                self.model.obj.expr += power_output[tuple(indices)] * energy_price[tuple(bidding_indices)]
-                return
-
-            for idx in set_ls[set_idx]:
-
-                indices.append(idx)
-                if model_sets[set_ls[set_idx]] in self.bidding_set_names:
-                    bidding_indices.append(idx)
-
-                # recursion
-                dfs_sum_revenue(set_idx + 1, indices, bidding_indices)
-
-                # backtrack
-                indices.pop()
-                if model_sets[set_ls[set_idx]] in self.bidding_set_names:
-                    bidding_indices.pop()
-
-        # add the objectives
-        for cost in cost_ls:
-            dfs_sum_costs(cost = cost, set_idx = 0, indices = [])
-        dfs_sum_revenue(set_idx = 0, indices = [], bidding_indices = [])
+            for t in time_index:
+                self.model.obj.expr += self.model.fs[k].power_output_ref[t] \
+                                        * self.model.fs[k].energy_price[t] \
+                                        - weight * cost[t]
 
     def compute_bids(self, price_forecasts, date, hour):
 
@@ -463,24 +184,10 @@ class Bidder:
             None
         '''
 
-        model_sets = self.bidding_model_object.indices
-        energy_price = self.model.energy_price
-
-        # because we do not neccesarily know which set in the bidding sets
-        # corresponds to generators, time, and lmp scenarios, I construct an
-        # auxillary dictionary. So we can easily fetch the value from
-        # 'price_forecasts', which has a fixed structure.
-        aux_dict = {'Generators': None, 'Time': None, 'LMP Scenarios': None}
-
-        for idx1 in self.bidding_set[0]:
-            for idx2 in self.bidding_set[1]:
-                for idx3 in self.bidding_set[2]:
-
-                    aux_dict[model_sets[self.bidding_set[0]]] = idx1
-                    aux_dict[model_sets[self.bidding_set[1]]] = idx2
-                    aux_dict[model_sets[self.bidding_set[2]]] = idx3
-
-                    energy_price[idx1,idx2,idx3] = price_forecasts[aux_dict['Generators']][aux_dict['LMP Scenarios']][aux_dict['Time']]
+        for i in self.model.SCENARIOS:
+            time_index = self.model.fs[i].energy_price.index_set()
+            for t,p in zip(time_index, price_forecasts[i]):
+                self.model.fs[i].energy_price[t] = p
 
         return
 
