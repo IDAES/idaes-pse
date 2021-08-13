@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Dec 17 15:40:33 2019
-
-@author: alee
+Created on Thur May 14 13:45:323 2020
+@author: cokoli
 """
 
 import sys
 import os
+import time
 
 from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, EnergyBalanceType
 from idaes.core.util.initialization import initialize_by_time_element
 from idaes.core.util import get_solver
 
@@ -19,22 +19,25 @@ from idaes.core.util import get_solver
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir))
 
 from idaes.gas_solid_contactors.unit_models.fixed_bed_0D import FixedBed0D
-import property_packages.TGA_example_properties.TGA_gas_example as gas_props
-import property_packages.TGA_example_properties.TGA_solid_example as solid_props
-import property_packages.TGA_example_properties.TGA_reactions_example as solid_rxns
-
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    gas_phase_thermo import GasPhaseParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    solid_phase_thermo import SolidPhaseParameterBlock
+from idaes.gas_solid_contactors.properties.methane_iron_OC_reduction. \
+    hetero_reactions import HeteroReactionParameterBlock
 
 m = ConcreteModel()
 
 m.fs = FlowsheetBlock(default={"dynamic": True, "time_set": [0, 3600]})
 
-m.fs.gas_props = gas_props.AirParameterBlock()
-m.fs.solid_props = solid_props.ZeoliteParameterBlock()
-m.fs.solid_rxns = solid_rxns.AdsorptionParameterBlock(
+m.fs.gas_props = GasPhaseParameterBlock()
+m.fs.solid_props = SolidPhaseParameterBlock()
+m.fs.solid_rxns = HeteroReactionParameterBlock(
         default={"solid_property_package": m.fs.solid_props,
                  "gas_property_package": m.fs.gas_props})
 
-m.fs.TGA = FixedBed0D(default={"gas_property_package": m.fs.gas_props,
+m.fs.TGA = FixedBed0D(default={"energy_balance_type": EnergyBalanceType.none,
+                               "gas_property_package": m.fs.gas_props,
                                "solid_property_package": m.fs.solid_props,
                                "reaction_package": m.fs.solid_rxns})
 
@@ -45,33 +48,45 @@ m.discretizer.apply_to(m,
                        wrt=m.fs.time,
                        scheme="BACKWARD")
 
-m.fs.TGA.inlet.flow_mol.fix(1)
-m.fs.TGA.inlet.temperature.fix(303.15)
-m.fs.TGA.inlet.pressure.fix(1.2e5)
 
-m.fs.TGA.volume_reactor.fix(0.2)
+# Set initial conditions of the solid phase
+m.fs.TGA.mass_solids[0].fix(1)
+m.fs.TGA.solids[0].particle_porosity.fix(0.20)
+m.fs.TGA.solids[0].mass_frac_comp['Fe2O3'].fix(0.45)
+m.fs.TGA.solids[0].mass_frac_comp['Fe3O4'].fix(0)
+m.fs.TGA.solids[0].mass_frac_comp['Al2O3'].fix(0.55)
+m.fs.TGA.solids[0].temperature.fix(1273.15)
 
-m.fs.TGA.solids_material_holdup[0, "Zeo"].fix(0.1)
-m.fs.TGA.solids[0].loading["N2"].fix(0.0)
-m.fs.TGA.solids[0].temperature.fix(303.15)
-
+# Set conditions of the gas phase (this is all fixed as gas side assumption is
+# excess gas flowrate which means all state variables remain unchanged)
 for t in m.fs.time:
-    m.fs.TGA.inlet.mole_frac_comp[t, "N2"].fix(0.79)
-    m.fs.TGA.inlet.mole_frac_comp[t, "O2"].fix(0.21)
+    m.fs.TGA.gas[t].temperature.fix(1273.15)
+    m.fs.TGA.gas[t].pressure.fix(1.01325)  # 1atm
+    m.fs.TGA.gas[t].mole_frac_comp['CO2'].fix(0.4)
+    m.fs.TGA.gas[t].mole_frac_comp['H2O'].fix(0.5)
+    m.fs.TGA.gas[t].mole_frac_comp['CH4'].fix(0.1)
 
-# Set initial conditions - accumulation = 0 at time = 0
-m.fs.fix_initial_conditions(state="steady-state")
 
-#m.fs.TGA.initialize()
+optarg = {
+         "bound_push": 1e-8,
+         'halt_on_ampl_error': 'yes',
+         'linear_solver': 'ma27'
+          }
 
-opt = get_solver(solver, optarg) # create solver
+t_start = time.time()  # Run start time
+
+m.fs.TGA.initialize()
+
+t_initialize = time.time()  # Initialization time
+
+blk = m.fs.TGA
+
+solver = get_solver('ipopt', optarg) # create solver
+
 initialize_by_time_element(m.fs, m.fs.time, solver=solver)
 solver.solve(m, tee=True)
+# write_violated_equalities(m.fs)
 
-#m.fs.TGA.outlet.display()
-#m.fs.TGA.solids_material_holdup.display()
-#m.fs.TGA.reactions[3600].display()
-#m.fs.TGA.solids[0].display()
+t_simulation = time.time()  # Simulation time
+
 m.fs.TGA.solids[3600].display()
-#m.fs.TGA.mass_solids.display()
-import pdb; pdb.set_trace()

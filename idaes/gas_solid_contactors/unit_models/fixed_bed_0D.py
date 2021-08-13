@@ -15,34 +15,21 @@ IDAES 0D Fixed Bed Reactor model.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
-                           TransformationFactory, Constraint,
-                           TerminationCondition)
-from pyomo.dae import DerivativeVar, ContinuousSet # added ContinuousSet
+from pyomo.environ import Constraint, SolverFactory, Var
+from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.util.calc_var_value import calculate_variable_from_constraint # added
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0DBlock,
-                        declare_process_block_class,
-                        MaterialBalanceType,
+from idaes.core import (declare_process_block_class,
                         EnergyBalanceType,
-                        MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        BurntToast) # added
-from idaes.core.util.tables import create_stream_table_dataframe # added
-from idaes.core.util.misc import add_object_reference
-from idaes.core.util.constants import Constants as constants # added
-from idaes.core.util.math import smooth_abs # added
-from idaes.core.util import get_solver # added
+from idaes.core.util.config import (is_physical_parameter_block)
 from idaes.logger import (getInitLogger, condition, solver_log,
                           DEBUG, getSolveLogger)
-
-__author__ = "Andrew Lee" # edited by Brandon Paul
+from idaes.core.util.model_statistics import (degrees_of_freedom)
+from idaes.core.util import get_solver
+__author__ = "Chinedu Okoli, Andrew Lee"
 
 
 # Assumptions:
@@ -63,7 +50,7 @@ class FixedBed0DData(UnitModelBlockData):
         default=True,
         description="Dynamic model flag - must be True",
         doc="""Indicates whether this model will be dynamic or not,
-**default** = True. Fixed beds must be dynamicr."""))
+**default** = True. Fixed beds must be dynamic."""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=True,
         domain=In([True]),
@@ -71,20 +58,20 @@ class FixedBed0DData(UnitModelBlockData):
         doc="""Indicates whether holdup terms should be constructed or not.
 **default** - True. Fixed bed reactors must be dynamic, thus this must be
 True."""))
-    CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.useDefault,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.useDefault.
-**Valid values:** {
-**MaterialBalanceType.useDefault - refer to property package for default
-balance type
-**MaterialBalanceType.none** - exclude material balances,
-**MaterialBalanceType.componentPhase** - use phase component balances,
-**MaterialBalanceType.componentTotal** - use total component balances,
-**MaterialBalanceType.elementTotal** - use total element balances,
-**MaterialBalanceType.total** - use total material balance.}"""))
+#     CONFIG.declare("material_balance_type", ConfigValue(
+#         default=MaterialBalanceType.useDefault,
+#         domain=In(MaterialBalanceType),
+#         description="Material balance construction flag",
+#         doc="""Indicates what type of mass balance should be constructed,
+# **default** - MaterialBalanceType.useDefault.
+# **Valid values:** {
+# **MaterialBalanceType.useDefault - refer to property package for default
+# balance type
+# **MaterialBalanceType.none** - exclude material balances,
+# **MaterialBalanceType.componentPhase** - use phase component balances,
+# **MaterialBalanceType.componentTotal** - use total component balances,
+# **MaterialBalanceType.elementTotal** - use total element balances,
+# **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
@@ -99,67 +86,6 @@ balance type
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-#    CONFIG.declare("has_heat_transfer", ConfigValue(
-#        default=False,
-#        domain=In([True, False]),
-#        description="External Heat transfer term construction flag",
-#        doc="""Indicates whether terms for external heat transfer should be
-#constructed, **default** - False.
-#**Valid values:** {
-#**True** - include external heat transfer terms,
-#**False** - exclude external heat transfer terms.}"""))
-#    CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-#        default=False,
-#        domain=In([True, False]),
-#        description="Equilibrium reaction construction flag",
-#        doc="""Indicates whether terms for equilibrium controlled reactions
-#should be constructed,
-#**default** - True.
-#**Valid values:** {
-#**True** - include equilibrium reaction terms,
-#**False** - exclude equilibrium reaction terms.}"""))
-#    CONFIG.declare("has_phase_equilibrium", ConfigValue(
-#        default=False,
-#        domain=In([True, False]),
-#        description="Phase equilibrium construction flag",
-#        doc="""Indicates whether terms for phase equilibrium should be
-#constructed,
-#**default** = False.
-#**Valid values:** {
-#**True** - include phase equilibrium terms
-#**False** - exclude phase equilibrium terms.}"""))
-#    CONFIG.declare("has_heat_of_reaction", ConfigValue(
-#        default=False,
-#        domain=In([True, False]),
-#        description="Heat of reaction term construction flag",
-#        doc="""Indicates whether terms for heat of reaction terms should be
-#constructed,
-#**default** - False.
-#**Valid values:** {
-#**True** - include heat of reaction terms,
-#**False** - exclude heat of reaction terms.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("gas_property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -218,55 +144,30 @@ see reaction package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(FixedBed0DData, self).build()
 
-        # Build Gas Phase Control Volume
-        self.gas_phase = ControlVolume0DBlock(default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.gas_property_package,
-                "property_package_args": self.config.gas_property_package_args})#,
-#                "reaction_package": self.config.reaction_package,
-#                "reaction_package_args": self.config.reaction_package_args})
-
-        self.gas_phase.add_geometry()
-
-        self.gas_phase.add_state_blocks(
-                has_phase_equilibrium=False)
-
-#        self.gas_phase.add_reaction_blocks(
-#                has_equilibrium=self.config.has_equilibrium_reactions)
-
-        self.gas_phase.add_material_balances(
-            balance_type=self.config.material_balance_type,
-            has_mass_transfer=True)
-
-        self.gas_phase.add_energy_balances(
-            balance_type=self.config.energy_balance_type,
-            has_heat_of_reaction=False,
-            has_heat_transfer=True)
-
-        self.gas_phase.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+        # Build Gas Phase StateBlock
+        # This block only needed so gas conc. to rxn block is calculated
+        # Defined state is set to True so that the "sum(mole_frac)=1" eqn in
+        # the gas state block is deactivated.
+        self.gas = self.config.gas_property_package.state_block_class(
+                self.flowsheet().time,
+                default={"parameters": self.config.gas_property_package,
+                         "defined_state": True})
 
         # Build Solid Phase StateBlock
         # As there is no solid flow, only need a single state block
+        # Defined state is set to True so that the "sum(mass_frac)=1" eqn in
+        # the solid state block is deactivated. This is done here as there is
+        # currently no way to deactivate the constraint at the initial time
+        # for batch systems (i.e. no inlet or outlet ports).
+        # The "sum(mass_frac)=1 for all t neq 0" eqn is written in the
+        # unit model instead
         self.solids = self.config.solid_property_package.state_block_class(
                 self.flowsheet().time,
-                default={"parameters": self.config.solid_property_package})
-
-        # Create Reaction Block
-#        self.reactions = self.config.reaction_package.reaction_block_class(
-#                self.flowsheet().time,
-#                default={"parameters": self.config.reaction_package,
-#                         # Had to change these keys to get 'working' with reduction packages
-#                         #"solid_state_block": self.solids,
-#                         # ^ old
-#                         "state_block": self.solids,
-#                         # ^ new
-#                         "gas_state_block": self.gas_phase.properties_out})
+                default={"parameters": self.config.solid_property_package,
+                         "defined_state": True})
 
         tmp_dict = dict(**self.config.reaction_package_args)
-        tmp_dict["gas_state_block"] = self.gas_phase.properties_out
+        tmp_dict["gas_state_block"] = self.gas
         tmp_dict["solid_state_block"] = self.solids
         tmp_dict["parameters"] = (self.config.reaction_package)
         self.reactions = (
@@ -278,8 +179,7 @@ see reaction package for documentation.}"""))
 
         # Solid phase material balance
         # Volume of solid
-        self.volume_solid = Var(self.flowsheet().config.time,
-                                initialize=1.0,
+        self.volume_solid = Var(initialize=1.0,
                                 doc="Solids phase volume")
 
         # Accumulation equal to mass transfer/reaction
@@ -294,8 +194,8 @@ see reaction package for documentation.}"""))
                          doc="Solid phase material holdup constraints")
         def solids_material_holdup_constraints(b, t, j):
             return b.solids_material_holdup[t, j] == (
-                  self.volume_solid[t] *
-                  b.solids[t].get_material_density_terms("Sol", j))
+                b.volume_solid *
+                b.solids[t].get_material_density_terms("Sol", j))
 
         self.solids_material_accumulation = DerivativeVar(
                     self.solids_material_holdup,
@@ -306,26 +206,16 @@ see reaction package for documentation.}"""))
                          self.config.solid_property_package.component_list,
                          doc="Solid phase material accumulation constraints")
         def solids_material_accumulation_constraints(b, t, j):
-            if t == self.flowsheet().config.time.first():
-                return Constraint.Skip
-            else:
-                return (b.solids_material_accumulation[t, j]*1e5 ==
-                        1e5*b.volume_solid[t] * b.solids[t]._params.mw[j] *
-                        sum(b.reactions[t].reaction_rate[r] *
-                            b.config.reaction_package
-                            .rate_reaction_stoichiometry[r, "Sol", j] for r in
-                            b.config.reaction_package.rate_reaction_idx))
-
-        @self.Constraint(self.flowsheet().config.time,
-                         self.config.gas_property_package.component_list,
-                         doc="Gas phase mass transfer constraints")
-        def gas_phase_mass_transfer_constraints(b, t, j):
-            return (b.gas_phase.mass_transfer_term[t, "Vap", j]*1e5 ==
-                    1e5*b.volume_solid[t] *
+            # if t == self.flowsheet().config.time.first():
+            #     return Constraint.Skip
+            # else:
+            return (b.solids_material_accumulation[t, j] ==
+                    b.volume_solid *
+                    b.solids[t]._params.mw_comp[j] *
                     sum(b.reactions[t].reaction_rate[r] *
                         b.config.reaction_package
-                        .rate_reaction_stoichiometry[r, "Vap", j]
-                        for r in b.config.reaction_package.rate_reaction_idx))
+                        .rate_reaction_stoichiometry[r, "Sol", j] for r in
+                        b.config.reaction_package.rate_reaction_idx))
 
         # Add solid mass variable and constraint for TGA tracking
         self.mass_solids = Var(self.flowsheet().config.time,
@@ -334,7 +224,7 @@ see reaction package for documentation.}"""))
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculating total mass of solids")
         def mass_solids_eq(b, t):
-            return b.mass_solids[t] == b.volume_solid[t]*sum(
+            return 1e2*b.mass_solids[t] == 1e2*b.volume_solid * sum(
                     b.solids[t].get_material_density_terms("Sol", j)
                     for j in b.config.solid_property_package.component_list)
 
@@ -345,70 +235,41 @@ see reaction package for documentation.}"""))
             if t == b.flowsheet().config.time.first():
                 return Constraint.Skip
             else:
-                return 1e2 == 1e2*sum(b.solids[t].mass_frac[j]
+                return 1e2 == 1e2*sum(b.solids[t].mass_frac_comp[j]
                                       for j in b.solids[t].
                                       _params.component_list)
 
-        # Create total volume variable
-        self.volume_reactor = Var(initialize=0.1,
-                                  doc="Total reactor volume")
+        if self.config.energy_balance_type != EnergyBalanceType.none:
+            # Solid phase energy balance
+            # Accumulation equal to heat transfer
+            self.solids_energy_holdup = Var(
+                    self.flowsheet().time,
+                    initialize=1,
+                    doc="Solid phase energy holdup")
 
-        # Add object reference to gas volume
-        add_object_reference(self,
-                             "volume_gas",
-                             self.gas_phase.volume)
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Solid phase energy holdup constraints")
+            def solids_energy_holdup_constraints(b, t):
+                return b.solids_energy_holdup[t] == (
+                      self.volume_solid *
+                      b.solids[t].get_energy_density_terms("Sol"))
 
-        # Calculate volume of gas
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Volume of gas constraint")
-        def total_volume_constraint(b, t):
-            return b.volume_reactor == b.volume_gas[t] + b.volume_solid[t]
+            self.solids_energy_accumulation = DerivativeVar(
+                        self.solids_energy_holdup,
+                        doc="Solids energy accumulation")
 
-        # Solid phase energy balance
-        # Accumulation equal to heat transfer
-        self.solids_energy_holdup = Var(
-                self.flowsheet().time,
-                initialize=1,
-                doc="Solid phase energy holdup")
-
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Solid phase energy holdup constraints")
-        def solids_energy_holdup_constraints(b, t):
-            return b.solids_energy_holdup[t] == (
-                  self.volume_solid[t] *
-                  b.solids[t].get_energy_density_terms("Sol"))
-
-        self.solids_energy_accumulation = DerivativeVar(
-                    self.solids_energy_holdup,
-                    doc="Solids energy accumulation")
-
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Solid phase energy accumulation constraints")
-        def solids_energy_accumulation_constraints(b, t):
-            if t == self.flowsheet().config.time.first():
-                return Constraint.Skip
-            else:
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Solid phase energy accumulation constraints")
+            def solids_energy_accumulation_constraints(b, t):
+                # if t == self.flowsheet().config.time.first():
+                #     return Constraint.Skip
+                # else:
                 return b.solids_energy_accumulation[t] == \
-                    - self.gas_phase.heat[t]
-
-#        # Heat Transfer Model
-#        # TODO: For now assume thermal equilibrium
-#        @self.Constraint(self.flowsheet().config.time,
-#                         doc="Gas-solids temperature equilibrium constraint")
-#        def solids_temperature_constraint(b, t):
-#            return b.solids[t].temperature == \
-#                b.gas_phase.properties_out[t].temperature
-
-        # Solids pressure equal to gas pressure
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Gas-solids pressure equilibrium constraint")
-        def solids_pressure_constraint(b, t):
-            return b.solids[t].pressure == \
-                b.gas_phase.properties_out[t].pressure
-
-        # Add Ports for gas phase
-        self.add_inlet_port("inlet", self.gas_phase)
-        self.add_outlet_port("outlet", self.gas_phase)
+                    - sum(b.reactions[t].reaction_rate[r] *
+                          b.volume_solid *
+                          b.reactions[t].dh_rxn[r]
+                          for r in b.config.reaction_package.
+                          rate_reaction_idx)
 
     def initialize(blk, state_args=None, outlvl=6,
                    solver='ipopt', optarg={'tol': 1e-6}):
@@ -417,10 +278,8 @@ see reaction package for documentation.}"""))
         models. This method assumes a single ControlVolume block called
         controlVolume, and first initializes this and then attempts to solve
         the entire unit.
-
         More complex models should overload this method with their own
         initialization routines,
-
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                            package(s) to provide an initial state for
@@ -437,37 +296,60 @@ see reaction package for documentation.}"""))
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
-
         Returns:
             None
         '''
         # Set solver options
         init_log = getInitLogger(blk.name, outlvl)
-        solve_log = getSolveLogger(blk.name, outlvl, tag="unit")
+#        solve_log = getSolveLogger(blk.name, outlvl, tag="unit")
         opt = get_solver(solver, optarg) # create solver
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.gas_phase.initialize(outlvl=outlvl+1,
-                                         optarg=optarg,
-                                         solver=solver,
-                                         state_args=state_args)
+        print()
+        print('Initialize thermophysical properties')
+        # Initialize gas_phase block
+        gas_phase_flags = blk.gas.initialize(
+                                outlvl=outlvl - 1,
+                                optarg=optarg,
+                                solver=solver)
+
+        # Initialize solid_phase properties block
+        solid_phase_flags = blk.solids.initialize(
+                                outlvl=outlvl - 1,
+                                optarg=optarg,
+                                solver=solver)
+
+        print()
+        print('Initialize reaction properties')
+        # Initialize reactions
+        blk.reactions.initialize(outlvl=outlvl - 1,
+                                 optarg=optarg,
+                                 solver=solver)
+
+        # TODO - maybe set this up in a nicer way
+        # Fix the solids temperature to initial value if isothermal conditions
+        if blk.config.energy_balance_type == EnergyBalanceType.none:
+            for t in blk.flowsheet().config.time:
+                blk.solids[t].temperature.fix(blk.solids[0].temperature.value)
 
         init_log.log(4, 'Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
-        with solver_log(solve_log, DEBUG) as slc:
-            results = opt.solve(blk, tee=slc.tee)
-#        results = opt.solve(blk, tee=init_tee(init_log))
+#         with solver_log(solve_log, DEBUG) as slc:
+#             results = opt.solve(blk, tee=slc.tee)
+# #        results = opt.solve(blk, tee=init_tee(init_log))
 
-        init_log.log(4, "Initialization Step 2 {}."
-                     .format(condition(results)))
+#         init_log.log(4, "Initialization Step 2 {}."
+#                      .format(condition(results)))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.gas_phase.release_state(flags, outlvl+1)
+        blk.gas.release_state(gas_phase_flags, outlvl+1)
+        blk.solids.release_state(solid_phase_flags, outlvl+1)
 
-        init_log.log(5, 'Initialization Complete: {}'
-                     .format(condition(results)))
+        print('dof', degrees_of_freedom(blk))
+        # init_log.log(5, 'Initialization Complete: {}'
+        #              .format(condition(results)))
