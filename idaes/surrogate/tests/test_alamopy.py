@@ -15,25 +15,38 @@ Tests for Alampy SurrogateModelTrainer
 """
 import pytest
 import numpy as np
+import io
 
 from idaes.surrogate.alamopy_new import Alamopy
 
 
-@pytest.mark.skip
-@pytest.mark.unit
-def test_alamopy():
-    alm_obj = Alamopy()
+class TestAlamopyWriter():
+    @pytest.fixture
+    def alm_obj(self):
+        alm_obj = Alamopy()
 
-    alm_obj._n_inputs = 2
-    alm_obj._n_outputs = 1
+        alm_obj._n_inputs = 2
+        alm_obj._n_outputs = 1
 
-    alm_obj._input_labels = ["x1", "x2"]
-    alm_obj._output_labels = ["z1"]
+        alm_obj._input_labels = ["x1", "x2"]
+        alm_obj._output_labels = ["z1"]
 
-    alm_obj._input_min = [0, 0]
-    alm_obj._input_max = [5, 10]
+        alm_obj._input_min = [0, 0]
+        alm_obj._input_max = [5, 10]
 
-    alm_obj._rdata_in = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-    alm_obj._rdata_out = np.array([10, 20, 30, 40])
+        alm_obj._rdata_in = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
+        alm_obj._rdata_out = np.array([10, 20, 30, 40], ndmin=2)
 
-    alm_obj.writeAlamoInputFile()
+        # alm_obj._vdata_in = np.array([[2.5], [6.5]])
+        # alm_obj._vdata_out = np.array([25])
+
+        return alm_obj
+
+    @pytest.mark.unit
+    def test_default(self, alm_obj):
+        stream = io.StringIO()
+
+        alm_obj._write_alamo_input_to_stream(stream=stream)
+
+        print(stream.getvalue())
+        assert False

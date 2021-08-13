@@ -21,7 +21,7 @@ from pyomo.common.config import ConfigValue, In
 TEMPPATH = os.path.dirname(__file__)
 
 
-# The values associated with these must match tose expected in the .alm file
+# The values associated with these must match those expected in the .alm file
 class Modelers(Enum):
     BIC = 1
     MallowsCp = 2
@@ -88,7 +88,7 @@ Excluded Options:
 NSAMPLE, NVALSAMPLE, INITIALIZER, PRINT TO FILE, FUNFORM, NTRANS
 PRINT TO SCREEN - try to handle through logger
 
-Simulator options (not yet supported):
+Excluded Simulator options:
 MAXSIM, MINPOINTS, MAXPOINTS, SAMPLER, SIMULATOR, PRESET, TOLMAXERROR, SIMIN,
 SIMOUT
 
@@ -109,11 +109,11 @@ class Alamopy(Surrogate):
     written in the ALAMO input file. In this case, the default ALAMO settings
     will be used.
     """
-    # The follwoing ALAMO options are not (yet) supported
+    # The following ALAMO options are not (yet) supported
     # Returning model prediction, as we can do that in IDAES
-    # Ininital sampling of data, as SurrogateModelBuilder should do that
-    # Single valdiation set, due to limitations of current API
-    # Adaptive sampling is not yet implemented
+    # Iniital sampling of data, as SurrogateModelTrainer should do that
+    # Similarly, adaptive sampling is better handled in Python
+    # Single validation set, due to limitations of current API
     # Custom basis functions are not yet implemented
 
     CONFIG = Surrogate.CONFIG()
@@ -416,9 +416,13 @@ class Alamopy(Surrogate):
     def build_model(self):
         pass
 
-    def writeAlamoInputFile(
-            self, x_reg=None, z_reg=None, x_val=None, z_val=None):
-        """Write the input file for the ALAMO executable."""
+    def _write_alamo_input_to_stream(
+            self, stream=None, trace_fname=None, x_reg=None,
+            z_reg=None, x_val=None, z_val=None):
+        """Write the input file for the ALAMO executable to a stream."""
+        if stream is None:
+            raise TypeError("No stream provided to ALAMO writer.")
+
         if x_reg is None:
             x_reg = self._rdata_in
         if z_reg is None:
@@ -438,67 +442,67 @@ class Alamopy(Surrogate):
         else:
             n_vdata = 0
 
-        if self.config.filename is not None:
-            filename = self.config.filename
-        else:
-            filename = "temp.alm"
-        almFile = os.path.join(self.config.temp_path, filename)
-        tracefile = filename.split('.')[0]+"_trace.trc"
+        stream.write("# IDAES Alamopy input file\n")
+        stream.write(f"NINPUTS {self._n_inputs}\n")
+        stream.write(f"NOUTPUTS {self._n_outputs}\n")
+        stream.write(f"XLABELS {' '.join(map(str, self._input_labels))}\n")
+        stream.write(f"ZLABELS {' '.join(map(str, self._output_labels))}\n")
+        stream.write(f"XMIN {' '.join(map(str, self._input_min))}\n")
+        stream.write(f"XMAX {' '.join(map(str, self._input_max))}\n")
+        stream.write(f"NDATA {n_rdata}\n")
+        stream.write(f"NVALDATA {n_vdata}\n\n")
 
-        with open(almFile, "w") as af:
-            af.write("# IDAES Alamopy input file\n")
-            af.write("NINPUTS {0}\n".format(self._n_inputs))
-            af.write("NOUTPUTS {0}\n".format(self._n_outputs))
-            af.write("XLABELS {0}\n".format(
-                " ".join(map(str, self._input_labels))))
-            af.write("ZLABELS {0}\n".format(
-                " ".join(map(str, self._output_labels))))
-            af.write("XMIN {0}\n".format(" ".join(map(str, self._input_min))))
-            af.write("XMAX {0}\n".format(" ".join(map(str, self._input_max))))
-            af.write("NDATA {0}\n".format(n_rdata))
-            af.write("NVALDATA {0}\n".format(n_vdata))
+        # Other options for config
+        # Can be bool, list of floats, None, Enum, float
+        # Special cases
+        if self.config.monomialpower is not None:
+            stream.write(f"MONO {len(self.config.monomialpower)}\n")
+        if self.config.multi2power is not None:
+            stream.write(f"MULTI2 {len(self.config.multi2power)}\n")
+        if self.config.multi3power is not None:
+            stream.write(f"MULTI3 {len(self.config.multi3power)}\n")
+        if self.config.ratiopower is not None:
+            stream.write(f"RATIOS {len(self.config.ratiopower)}\n")
 
-            # Other options for config
-            # Can be bool, list of floats, None, Enum, float
-            # Special cases
-            if self.config.monomialpower is not None:
-                af.write("MONO {0}\n".format(len(self.config.monomialpower)))
-            if self.config.multi2power is not None:
-                af.write("MULTI2 {0}\n".format(len(self.config.multi2power)))
-            if self.config.multi3power is not None:
-                af.write("MULTI3 {0}\n".format(len(self.config.multi3power)))
-            if self.config.ratiopower is not None:
-                af.write("RATIOS {0}\n".format(len(self.config.ratiopower)))
+        for o in supported_options:
+            if self.config[o] is None:
+                # Write nothing to alm file
+                continue
+            elif isinstance(self.config[o], Enum):
+                # Need to write value of Enum
+                stream.write(f"{o} {self.config[o].value}\n")
+            elif isinstance(self.config[o], bool):
+                # Cast bool to int
+                stream.write(f"{o} {int(self.config[o])}\n")
+            elif isinstance(self.config[o], (str, float, int)):
+                # Write value to file
+                stream.write(f"{o} {self.config[o]}\n")
+            else:
+                # Assume the argument is a list
+                stream.write(f"{o} {' '.join(map(str, self.config[o]))}\n")
 
-            for o in supported_options:
-                if self.config[o] is None:
-                    # Write nothing to alm file
-                    continue
-                elif isinstance(self.config[o], Enum):
-                    # Need to write value of Enum
-                    af.write(f"{o} {self.config[o].value}\n")
-                elif isinstance(self.config[o], bool):
-                    # Cast bool to int
-                    af.write(f"{o} {int(self.config[o])}\n")
-                elif isinstance(self.config[o], (str, float, int)):
-                    # Write value to file
-                    af.write(f"{o} {self.config[o]}\n")
-                else:
-                    # Assume the argument is a list
-                    af.write("XMIN {0}\n".format(
-                        " ".join(map(str, self.config[o]))))
+        stream.write("\nTRACE 1\n")
+        if trace_fname is not None:
+            stream.write(f"TRACEFNAME {trace_fname}")
 
-            af.write("TRACE 1\n")
-            af.write(f"TRACEFNAME {tracefile}")
+        # TODO : Set FUNFORM if required
 
-            # TODO : Set FUNFORM if required
+        stream.write("\nBEGIN_DATA\n")
+        nin = self._n_inputs
+        nout = self._n_outputs
+        for row in range(n_rdata):
+            stream.write(
+                f"{' '.join(map(str, (x_reg[x][row] for x in range(nin))))}"
+                f" {' '.join(map(str, (z_reg[z][row] for z in range(nout))))}\n")
+        stream.write("END_DATA\n")
 
-            # If required
-            # BEGIN_DATA
-            # END_DATA
+        if x_val is not None:
+            # Add validation data defintion
+            stream.write("\nBEGIN_VALDATA\n")
+            for row in range(n_vdata):
+                stream.write(
+                    f"{' '.join(map(str, (x_val[x][row] for x in range(nin))))}"
+                    f" {' '.join(map(str, (z_val[z][row] for z in range(nout))))}\n")
+            stream.write("END_VALDATA\n")
 
-            # If required
-            # BEGIN_VALDATA
-            # END_VALDATA
-
-            # Custom basis functions if required
+        # Custom basis functions if required
