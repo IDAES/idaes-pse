@@ -32,9 +32,8 @@ from idaes.commands import cb
 @click.option("--distribution", required=True, help="Linux distribution")
 @click.option("--user", required=True, help="User")
 @click.option("--executable", required=True, help="Executable path on WSL")
-@click.option("-v", default=None, help="Get solver version")
 @click.argument('args', nargs=-1)
-def solver_wsl(distribution, user, executable, v, args):
+def solver_wsl(distribution, user, executable, args):
     al = [None]*len(args)
     for i, a in enumerate(args):
         r = re.match(r"^([A-Za-z]):\\(.*$)", a)
@@ -44,8 +43,5 @@ def solver_wsl(distribution, user, executable, v, args):
             l = r.group(1).lower()
             a = f"/mnt/{l}/{p}"
         al[i] = a
-    # expand the -v arg (-v doen't work on PETSc, but --version works on everything)
-    if v is not None:
-        al.append("--version")
     r = subprocess.run(["wsl", "-d", distribution, "-u", user, executable] + al)
     return r.returncode
