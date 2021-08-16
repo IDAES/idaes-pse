@@ -41,6 +41,24 @@ def alm_obj():
 
 
 @pytest.mark.unit
+def test_get_path(alm_obj):
+    alm_obj.config.temp_path = os.path.dirname(__file__)
+    alm_obj.config.filename = "foo.alm"
+    a, t = alm_obj.get_paths()
+    assert a == "foo.alm"
+    assert t == "foo.trc"
+    assert os.getcwd() == os.path.dirname(__file__)
+
+
+@pytest.mark.unit
+def test_get_path_default(alm_obj):
+    a, t = alm_obj.get_paths()
+    assert a == "alamopy.alm"
+    assert t == "alamopy.trc"
+    assert os.getcwd() == os.path.dirname(__file__)[:-6]
+
+
+@pytest.mark.unit
 def test_writer_default(alm_obj):
     stream = io.StringIO()
     alm_obj.write_alm_to_stream(stream=stream)
@@ -253,8 +271,7 @@ def test_writer_full_config(alm_obj):
 
 @pytest.mark.unit
 def test_read_trace(alm_obj):
-    path = os.path.join("idaes", "surrogate", "tests")
-    os.chdir(path)
+    os.chdir("tests")
     trc = alm_obj.read_trace_file(trace_file="alamotrace.trc")
 
     mstring = (

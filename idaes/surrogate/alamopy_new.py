@@ -423,17 +423,7 @@ class Alamopy(Surrogate):
         super().build_model()
 
         # Get paths for temp files
-        path = self.config.temp_path
-        if path is None:
-            path = DEFAULTPATH
-
-        path = os.chdir(path)
-
-        almname = self.config.filename
-        if almname is None:
-            almname = DEFAULTFNAME
-
-        trcname = almname.split(".")[0] + ".trc"
+        almname, trcname = self.get_paths()
 
         # Write .alm file
         self.write_alm_file(almname, trcname)
@@ -451,6 +441,21 @@ class Alamopy(Surrogate):
         # Clean up temporary files if required
         if not self.config.keep_files:
             self.remove_temp_files(almname, trcname)
+
+    def get_paths(self):
+        path = self.config.temp_path
+        if path is None:
+            path = DEFAULTPATH
+
+        path = os.chdir(path)
+
+        almname = self.config.filename
+        if almname is None:
+            almname = DEFAULTFNAME
+
+        trcname = almname.split(".")[0] + ".trc"
+
+        return almname, trcname
 
     def write_alm_to_stream(
             self, stream=None, trace_fname=None, x_reg=None,
@@ -545,11 +550,9 @@ class Alamopy(Surrogate):
 
     def write_alm_file(self, alm_fname=None, trace_fname=None,
                        x_reg=None, z_reg=None, x_val=None, z_val=None):
-        # Get path and file names
-        # Open file stream
-        # Call write_alm_to_stream
-        # open(trace_path, "x")
-        pass
+        f = open(alm_fname, "x")
+        self.write_alm_to_stream(f, trace_fname, x_reg, z_reg, x_val, z_val)
+        f.close()
 
     def call_alamo(self):
         pass
