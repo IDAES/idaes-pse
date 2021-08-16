@@ -724,7 +724,7 @@ def test_propagate_state_indexed():
         return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
     m.s1 = Arc([1,2], rule=arc_rule)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         propagate_state(m.s1)
 
 
@@ -749,7 +749,7 @@ def test_propagate_state_Expression():
 
     m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         propagate_state(m.s1)
 
 
@@ -757,7 +757,7 @@ def test_propagate_state_Expression():
 def test_propagate_state_invalid_stream():
     m = ConcreteModel()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError):
         propagate_state(m)
 
 
