@@ -391,10 +391,10 @@ class Alamopy(Surrogate):
         default=None,
         domain=In([True, False]),
         description="Whether to use an optimizer to solve MIP."))
-    CONFIG.declare('log_output', ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Whether to log ALAMO output."))
+    # CONFIG.declare('log_output', ConfigValue(
+    #     default=False,
+    #     domain=In([True, False]),
+    #     description="Whether to log ALAMO output."))
 
     # I/O file options
     CONFIG.declare("temp_path", ConfigValue(
@@ -414,9 +414,22 @@ class Alamopy(Surrogate):
         super().__init__(**settings)
 
     def build_model(self):
-        pass
+        super().build_model()
 
-    def _write_alamo_input_to_stream(
+        # Write .alm file
+        self.write_alm_file()
+
+        # Call ALAMO executable
+        self.call_alamo()
+
+        # Read back results
+        self.read_trace_file()
+
+        # Clean up temporary files if required
+        if not self.config.keep_files:
+            self.remove_temp_files()
+
+    def write_alm_to_stream(
             self, stream=None, trace_fname=None, x_reg=None,
             z_reg=None, x_val=None, z_val=None):
         """Write the input file for the ALAMO executable to a stream."""
@@ -506,3 +519,18 @@ class Alamopy(Surrogate):
             stream.write("END_VALDATA\n")
 
         # Custom basis functions if required
+
+    def write_alm_file(x_reg=None, z_reg=None, x_val=None, z_val=None):
+        # Get path and file names
+        # Open file stream
+        # Call write_alm_to_stream
+        pass
+
+    def call_alamo():
+        pass
+
+    def read_trace_file():
+        pass
+
+    def remove_temp_files():
+        pass
