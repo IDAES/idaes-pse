@@ -88,7 +88,10 @@ class EnvironmentInfo():
             if not a:
                 self.solver_versions[s] = None
             else:
-                self.solver_versions[s] = ".".join([f"{x}" for x in slv.version()])
+                v = slv.version()
+                if v is None:
+                    v = "Unknown Version Installed"
+                self.solver_versions[s] = ".".join([f"{x}" for x in v])
 
 
     def display_dict(self):
@@ -118,10 +121,10 @@ class EnvironmentInfo():
             ("Extras", OrderedDict()),
             ("Solvers", OrderedDict()),
         ])
-        for k, v in self.dependency_versions.items():
+        for k, v in sorted(self.dependency_versions.items()):
             d["Dependencies"][k] = v if v is not None else "Not Installed"
-        for k, v in self.extra_versions.items():
+        for k, v in sorted(self.extra_versions.items()):
             d["Extras"][k] = v if v is not None else "Not Installed"
-        for k, v in self.solver_versions.items():
+        for k, v in sorted(self.solver_versions.items()):
             d["Solvers"][k] = v if v is not None else "Not Installed"
         return d
