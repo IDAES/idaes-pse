@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 
-__Author__ = "John Eslick"
+__author__ = "John Eslick"
 
 import sys
 import platform
