@@ -114,8 +114,6 @@ class DoubleLoopCoordinator:
 
     def _register_initialization_callbacks(self):
         prescient.plugins.register_initialization_callback(self.initialize_customized_results)
-        prescient.plugins.register_initialization_callback(self.initialize_bidding_object)
-        prescient.plugins.register_initialization_callback(self.initialize_tracking_object)
 
     def _register_before_ruc_solve_callbacks(self):
         prescient.plugins.register_before_ruc_solve_callback(self.bid_into_DAM)
@@ -147,42 +145,6 @@ class DoubleLoopCoordinator:
         customized_results['RUC Schedule'] = []
         customized_results['SCED Schedule'] = []
         customized_results['Power Output'] = []
-
-        return
-
-    def initialize_bidding_object(self, options, simulator):
-
-        '''
-        This function initializes the bidding object and stores it in the Prescient
-        data manager.
-
-        Arguments:
-            options: Prescient options.
-            simulator: Prescient simulator.
-        Returns:
-            None
-        '''
-
-        plugin_dict = simulator.data_manager.extensions.setdefault('plugin_objects',{})
-        plugin_dict['bidder'] = self.bidder
-
-        return
-
-    def initialize_tracking_object(self, options, simulator):
-
-        '''
-        This function initializes the tracking object and stores it in the Prescient
-        data manager.
-
-        Arguments:
-            options: Prescient options.
-            simulator: Prescient simulator.
-        Returns:
-            None
-        '''
-
-        plugin_dict = simulator.data_manager.extensions.setdefault('plugin_objects',{})
-        plugin_dict['tracker'] = self.tracker
 
         return
 
@@ -255,20 +217,17 @@ class DoubleLoopCoordinator:
             full_projected_trajectory: the full projected power dispatch trajectory.
         '''
 
-        # unpack tracker
-        tracker = simulator.data_manager.extensions['plugin_objects']['tracker']
-
         full_projected_trajectory = {}
 
-        for stat in tracker.daily_stats:
+        for stat in self.tracker.daily_stats:
             full_projected_trajectory[stat] = {}
 
             gen_name = self.bidder.generator
 
             # merge the trajectory
-            full_projected_trajectory[stat][gen_name] = tracker.daily_stats.get(stat)[gen_name] + \
-                                                       tracker.projection.get(stat)[gen_name]
-        tracker.clear_projection()
+            full_projected_trajectory[stat][gen_name] = self.tracker.daily_stats.get(stat)[gen_name] + \
+                                                       self.tracker.projection.get(stat)[gen_name]
+        self.tracker.clear_projection()
 
         return full_projected_trajectory
 
@@ -286,10 +245,7 @@ class DoubleLoopCoordinator:
             full_projected_trajectory: the full projected power dispatch trajectory.
         '''
 
-        # unpack tracker
-        tracker = simulator.data_manager.extensions['plugin_objects']['tracker']
-
-        projection_m = tracker.clone_tracking_model()
+        projection_m = self.tracker.clone_tracking_model()
 
         for hour in range(ruc_hour, 24):
 
@@ -298,7 +254,7 @@ class DoubleLoopCoordinator:
                                                               simulator = simulator, \
                                                               hour = hour)
             # solve tracking
-            tracker.pass_schedule_to_track(m = projection_m,\
+            self.tracker.pass_schedule_to_track(m = projection_m,\
                                            market_signals = market_signals, \
                                            last_implemented_time_step = 0,\
                                            hour = hour,\
@@ -326,9 +282,6 @@ class DoubleLoopCoordinator:
         # check if it is first day
         is_first_day = simulator.time_manager.current_time is None
 
-        # unpack bid object
-        bidder = simulator.data_manager.extensions['plugin_objects']['bidder']
-
         if not is_first_day:
 
             # solve rolling horizon to get the trajectory
@@ -336,17 +289,17 @@ class DoubleLoopCoordinator:
                                                                     simulator, \
                                                                     ruc_hour)
             # update the bidding model
-            bidder.update_model(implemented_power_output = full_projected_trajectory['power'],\
+            self.bidder.update_model(implemented_power_output = full_projected_trajectory['power'],\
                                 implemented_shut_down = full_projected_trajectory['shut_down'], \
                                 implemented_start_up = full_projected_trajectory['start_up'])
 
         # generate bids
-        bids = bidder.compute_bids(price_forecasts, date = ruc_date)
+        bids = self.bidder.compute_bids(price_forecasts, date = ruc_date)
         if is_first_day:
-            simulator.data_manager.extensions['current_bids'] = bids
-            simulator.data_manager.extensions['next_bids'] = bids
+            self.current_bids = bids
+            self.next_bids = bids
         else:
-            simulator.data_manager.extensions['next_bids'] = bids
+            self.next_bids = bids
 
         # pass to prescient
         self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
@@ -397,7 +350,7 @@ class DoubleLoopCoordinator:
 
         # fetch the bids
         hour = simulator.time_manager.current_time.hour
-        bids = simulator.data_manager.extensions['current_bids']
+        bids = self.current_bids
 
         # pass bids into sced model
         pass_RT_bid_to_prescient(options, simulator, sced_instance, bids, hour)
@@ -460,9 +413,6 @@ class DoubleLoopCoordinator:
         current_date = simulator.time_manager.current_time.date
         current_hour = simulator.time_manager.current_time.hour
 
-        # unpack tracker
-        tracker = simulator.data_manager.extensions['plugin_objects']['tracker']
-
         # get market signals
         market_signals = self.assemble_sced_tracking_market_signals(options = options, \
                                                                     simulator = simulator, \
@@ -470,9 +420,9 @@ class DoubleLoopCoordinator:
                                                                     hour = current_hour)
 
         # actual tracking
-        tracker.track_market_dispatch(market_dispatch = market_signals, \
-                                      date = current_date,\
-                                      hour = current_hour)
+        self.tracker.track_market_dispatch(market_dispatch = market_signals, \
+                                           date = current_date,\
+                                           hour = current_hour)
 
         return
 
@@ -512,9 +462,10 @@ class DoubleLoopCoordinator:
         '''
 
         # change bids
-        current_bids = simulator.data_manager.extensions['next_bids']
-        simulator.data_manager.extensions['current_bids'] = current_bids
-        simulator.data_manager.extensions['next_bids'] = None
+        current_bids = self.next_bids
+        self.current_bids = current_bids
+        self.next_bids = None
+
         return
 
     def write_plugin_results(self, options, simulator):
@@ -532,8 +483,8 @@ class DoubleLoopCoordinator:
 
         '''
 
-        for key, plugins in simulator.data_manager.extensions['plugin_objects'].items():
-            plugins.write_results(path = options.output_directory)
+        self.bidder.write_results(path = options.output_directory)
+        self.tracker.write_results(path = options.output_directory)
 
         return
 
