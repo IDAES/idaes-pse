@@ -407,6 +407,10 @@ class ThermalGenerator:
                 'implemented_start_up': implemented_start_up,\
                 'implemented_power_output': implemented_power_output}
 
+    @staticmethod
+    def get_last_delivered_power(b,last_implemented_time_step):
+        return pyo.value(b.P_T[last_implemented_time_step])
+
     def record_results(self, b, date = None, hour = None, **kwargs):
 
         '''

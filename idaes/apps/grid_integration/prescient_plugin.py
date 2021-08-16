@@ -349,7 +349,7 @@ class DoubleLoopCoordinator:
             simulator.data_manager.extensions['next_bids'] = bids
 
         # pass to prescient
-        _pass_DA_bid_to_prescient(options, ruc_instance, bids)
+        self._pass_DA_bid_to_prescient(options, ruc_instance, bids)
 
         return
 
@@ -493,10 +493,7 @@ class DoubleLoopCoordinator:
 
         '''
 
-        # unpack tracker
-        tracker = simulator.data_manager.extensions['plugin_objects']['tracker']
-        g = self.bidder.generator
-        ops_stats.observed_thermal_dispatch_levels[g] = tracker.get_last_delivered_power(generator = g)
+        ops_stats.observed_thermal_dispatch_levels[g] = self.tracker.get_last_delivered_power()
 
         return
 
@@ -539,3 +536,9 @@ class DoubleLoopCoordinator:
             plugins.write_results(path = options.output_directory)
 
         return
+
+'''
+TODO:
+    - Fix the remaining methods
+    - Get rid of simulator.data_manager.extension: store things within the object
+''''

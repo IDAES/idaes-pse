@@ -185,6 +185,10 @@ class Tracker:
 
         return
 
+    def get_last_delivered_power(self):
+        return self.tracking_model_object.get_last_delivered_power(b = self.model.fs,\
+                                                                   last_implemented_time_step = self.n_tracking_hour - 1)
+
     def record_results(self, **kwargs):
 
         '''
