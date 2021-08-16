@@ -34,7 +34,7 @@ from idaes.commands import cb
     help="Write output ot a file"
 )
 def environment_info(solver, file):
-    info = EnvironmentInfo(addtional_solvers=solver).display_dict()
+    info = EnvironmentInfo(additional_solvers=solver).display_dict()
     if file is None:
         for k, v in info.items():
             click.echo("")

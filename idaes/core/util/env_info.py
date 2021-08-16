@@ -39,7 +39,7 @@ class EnvironmentInfo():
         "dot_sens",
     ]
 
-    def __init__(self, addtional_solvers=()):
+    def __init__(self, additional_solvers=()):
         # Get idaes version from ver module.  This works even if you just
         # check a new version our from github, have IDAES installed in-place
         # and don't reinstall, which is likely mode for a lot of developers
@@ -79,7 +79,7 @@ class EnvironmentInfo():
             except pkg_resources.DistributionNotFound:
                 self.extra_versions[dep] = None
         self.solver_versions = {}
-        for s in self.known_solvers + list(addtional_solvers):
+        for s in self.known_solvers + list(additional_solvers):
             slv = pyo.SolverFactory(s, validate=False)
             try:
                 a = slv.available()
