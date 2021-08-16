@@ -122,7 +122,7 @@ class EnvironmentInfo:
             },
             "Python": {
                 "Version": self.python_version,
-                "Executable": self.python_version,
+                "Executable": self.python_executable,
             },
             "OS": {
                 "Platform": self.os_platform,
