@@ -477,7 +477,7 @@ class ThermalGenerator:
 
     @property
     def pmin(self):
-        return self.model_data[g]
+        return self.model_data['PMin MW']
 
 if __name__ == "__main__":
 
@@ -491,8 +491,8 @@ if __name__ == "__main__":
 
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = True
-    run_bidder = False
+    run_tracker = False
+    run_bidder = True
 
     if run_tracker:
         # make a tracker
@@ -508,19 +508,19 @@ if __name__ == "__main__":
         thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch[generator], \
                                               date = "2021-07-26", \
                                               hour = '17:00')
-    #
-    # if run_bidder:
-    #
-    #     thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
-    #                             n_scenario = 3,\
-    #                             solver = solver,\
-    #                             rts_gmlc_dataframe = rts_gmlc_dataframe,\
-    #                             horizon = horizon,\
-    #                             generators = [generator])
 
-        # price_forecasts = {generator:{0:[25,15,20,10], \
-        #                               1:[20,12,22,13], \
-        #                               2:[22,13,28,14]}}
-        # date = "2021-08-01"
-        # hour = "13:00"
-        # bids = thermal_bidder.compute_bids(price_forecasts, date, hour)
+    if run_bidder:
+
+        thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
+                                n_scenario = 3,\
+                                solver = solver,\
+                                rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                horizon = horizon,\
+                                generator = generator)
+
+        price_forecasts = {generator:{0:[25,15,20,10], \
+                                      1:[20,12,22,13], \
+                                      2:[22,13,28,14]}}
+        date = "2021-08-01"
+        hour = "13:00"
+        bids = thermal_bidder.compute_bids(price_forecasts[generator], date, hour)

@@ -26,9 +26,10 @@ class Bidder:
         # create an instance
         self.bidding_model_object = bidding_model_class(**kwarg)
 
-        # add flowsheet to model
+        # add flowsheets to model
         self.model = pyo.ConcreteModel()
-        self.model.SCENARIOS = pyo.Set(initialize = range(n_scenario))
+        self.n_scenario = n_scenario
+        self.model.SCENARIOS = pyo.Set(initialize = range(self.n_scenario))
         self.model.fs = pyo.Block(self.model.SCENARIOS)
         for i in self.model.SCENARIOS:
             b = self.bidding_model_object.create_model()
@@ -138,7 +139,7 @@ class Bidder:
 
             cost_name = self.bidding_model_object.total_cost[0]
             cost = getattr(self.model.fs[k], cost_name)
-            weight = self.tracking_model_object.total_cost[1]
+            weight = self.bidding_model_object.total_cost[1]
 
             for t in time_index:
                 self.model.obj.expr += self.model.fs[k].power_output_ref[t] \
@@ -204,155 +205,59 @@ class Bidder:
             {t: {gen:{power: cost}}}.
         '''
 
-        model_sets = self.bidding_model_object.indices
-        model_sets_inverse = {}
-        for s, n in model_sets.items():
-            model_sets_inverse[n] = s
-
-        # unpack things
-        model_sets = self.bidding_model_object.indices
-        set_ls = list(model_sets.keys())
-
-        power_output = self.bidding_model_object.power_output
-        energy_price = self.model.energy_price
-
         bids = {}
-        def dfs_extract_bids(set_idx, indices, bidding_indices, t, gen):
+        gen = self.bidding_model_object.generator
 
-            '''
-            This function use depth first search (DFS) to traverse the inexplicit
-            sets the model has. When all sets have one entry in the indices, we
-            record the bids at time 't' for generator 'gen'.
-
-            The DFS algorithm will be expalined by the following example. For
-            example, the arbitary model is indexed by 3 sets:
-                set_1 = {1,2}
-                set_2 = {a,b}
-                set_3 = {y,z}
-
-            So we have the following search tree:
-                                   Dummy  Node
-                                   /          \
-            Level 1 (set_1)        1           2
-                                 /  \        /  \
-            Level 2 (set_2)     a    b      a    b
-                               / \  / \    / \  / \
-            Level 3 (set_3)   y  z  y  z   y  z y  z
-
-            To search all possible indices the variables in the model have, we
-            need to use DFS. At each level we append the index from the
-            corresponding set to our list.
-
-            E.g.,
-            Before the algorithm, indices = []
-            Dive to the first level, indices = [1]
-            Dive to the second level, indices = [1,a]
-            Dive to the third level, indices = [1,a,y]
-
-            Now we have a valid collection of indices, i.e., [1,a,y]. Accordingly,
-            We add the constraints/objective with these indices.
-
-            But we haven't enumerated all combinations of indices in the model,
-            we need to go back up a level in the search tree -- backtrack. And
-            then keep searching.
-
-            E.g.,
-            Before backtrack, indices = [1,a,y]
-            After backtrack we are at level 2, indices = [1,a]
-            Keep searching and dive to the third level, indices = [1,a,z]
-
-            So in this way we can find all valid collection of indices and add
-            constraints/objective accordingly.
-
-            Arguments:
-                set_idx: an index that points to a set in a list of sets.
-                indices: a list to store the current traversed indices
-                bidding_indices: a list to store the current traversed indices
-                                for the bidding problem/energy price parameter.
-                t: current time index
-                gen: current generator index
-
-            Returns:
-                None
-            '''
-
-            # traveled all the sets, and now we can add the objective
-            if set_idx == len(set_ls):
-                power = round(pyo.value(power_output[tuple(indices)]),2)
-                marginal_cost = round(pyo.value(energy_price[tuple(bidding_indices)]),2)
+        for i in self.model.SCENARIOS:
+            time_index = self.model.fs[i].energy_price.index_set()
+            for t in time_index:
 
                 if t not in bids:
                     bids[t] = {}
-
                 if gen not in bids[t]:
                     bids[t][gen] = {}
 
-                # add without duplicate
-                if power in bids[t][gen]:
-                    bids[t][gen][power] = min(bids[t][gen][power], marginal_cost)
+                power = pyo.value(self.model.fs[i].power_output_ref[t])
+                marginal_cost = pyo.value(self.model.fs[i].energy_price[t])
+
+                if power < self.bidding_model_object.pmin:
+                    continue
+                elif power in bids[t][gen]:
+                    bids[t][gen][power] = min(bids[t][gen][power],marginal_cost)
                 else:
                     bids[t][gen][power] = marginal_cost
 
-                return
+        for t in time_index:
 
-            for idx in set_ls[set_idx]:
+            # make sure the orignal points in the bids
+            for power, marginal_cost in self.bidding_model_object.default_bids.items():
+                if power not in bids[t][gen]:
+                    bids[t][gen][power] = marginal_cost
 
-                # remember the time and generator name
-                if model_sets[set_ls[set_idx]] == 'Time':
-                    t = idx
-                if model_sets[set_ls[set_idx]] == 'Generators':
-                    gen = idx
+            pmin = self.bidding_model_object.pmin
 
-                indices.append(idx)
-                if model_sets[set_ls[set_idx]] in self.bidding_set_names:
-                    bidding_indices.append(idx)
+            # sort the curves by power
+            bids[t][gen] = dict(sorted(bids[t][gen].items()))
 
-                # recursion
-                dfs_extract_bids(set_idx + 1, indices, bidding_indices, t, gen)
+            # make sure the curve is nondecreasing
+            pre_power = pmin
+            for power, marginal_cost in bids[t][gen].items():
 
-                # backtrack
-                indices.pop()
-                if model_sets[set_ls[set_idx]] in self.bidding_set_names:
-                    bidding_indices.pop()
-
-        dfs_extract_bids(set_idx = 0, \
-                         indices = [], \
-                         bidding_indices = [], \
-                         t = None,\
-                         gen = None)
-
-        for t in model_sets_inverse['Time']:
-            for gen in model_sets_inverse['Generators']:
-
-                # make sure the orignal points in the bids
-                for power, marginal_cost in self.bidding_model_object.default_bids[gen].items():
-                    if power not in bids[t][gen]:
-                        bids[t][gen][power] = marginal_cost
-
-                pmin = self.bidding_model_object.pmin[gen]
-
-                # sort the curves by power
-                bids[t][gen] = dict(sorted(bids[t][gen].items()))
-
-                # make sure the curve is nondecreasing
-                pre_power = pmin
-                for power, marginal_cost in bids[t][gen].items():
-
-                    # ignore pmin, because min load cost is special
-                    if pre_power == pmin:
-                        pre_power = power
-                        continue
-                    bids[t][gen][power] = max(bids[t][gen][power],bids[t][gen][pre_power])
-
-                # calculate the actual cost
-                pre_power = 0
-                pre_cost = 0
-                for power, marginal_cost in bids[t][gen].items():
-
-                    delta_p = power - pre_power
-                    bids[t][gen][power] = pre_cost + marginal_cost * delta_p
+                # ignore pmin, because min load cost is special
+                if pre_power == pmin:
                     pre_power = power
-                    pre_cost += marginal_cost * delta_p
+                    continue
+                bids[t][gen][power] = max(bids[t][gen][power],bids[t][gen][pre_power])
+
+            # calculate the actual cost
+            pre_power = 0
+            pre_cost = 0
+            for power, marginal_cost in bids[t][gen].items():
+
+                delta_p = power - pre_power
+                bids[t][gen][power] = pre_cost + marginal_cost * delta_p
+                pre_power = power
+                pre_cost += marginal_cost * delta_p
 
         return bids
 
@@ -390,7 +295,7 @@ class Bidder:
                     pair_cnt += 1
 
                 # place holder, in case different len of bids
-                while pair_cnt < self.bidding_model_object.n_scenario:
+                while pair_cnt < self.n_scenario:
 
                     result_dict['Power {} [MW]'.format(pair_cnt)] = None
                     result_dict['Cost {} [$]'.format(pair_cnt)] = None
@@ -405,7 +310,6 @@ class Bidder:
         self.bids_result_list.append(pd.concat(df_list))
 
         return
-
 
 class DAM_thermal_bidding:
 
