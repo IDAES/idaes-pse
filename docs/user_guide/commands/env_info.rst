@@ -46,7 +46,6 @@ options
     part of the IDAES binary distribution.  The solver option can be supplied
     multiple times to add multiple solvers.
 
-.. option:: --file <file path>
+.. option:: --json <file path>
 
-    Write the command output to a text file rather than displaying to the
-    screen.
+    Write output to the specified json file.
