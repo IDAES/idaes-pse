@@ -137,7 +137,7 @@ class EnvironmentInfo:
                 k: v if v is not None else "Not Installed"
                 for k, v in sorted(self.extra_versions.items())
             },
-            "Sovlers": {
+            "Solvers": {
                 k: v if v is not None else "Not Installed"
                 for k, v in sorted(self.solver_versions.items())
             },
