@@ -1024,7 +1024,7 @@ objects linked to all inlet states and the mixed state,
                     iscale.constraint_scaling_transform(c, s, overwrite=False)
 
         if hasattr(self, "enthalpy_mixing_equations"):
-            for (t), c in self.enthalpy_mixing_equations.items():
+            for t, c in self.enthalpy_mixing_equations.items():
                 def scale_gen():
                     for v in self.mixed_state[t].phase_list:
                         yield self.mixed_state[t].get_enthalpy_flow_terms(p)
