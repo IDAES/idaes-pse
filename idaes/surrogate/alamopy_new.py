@@ -18,7 +18,8 @@ from idaes.core.util.config import list_of_ints, list_of_floats
 from pyomo.common.config import ConfigValue, In
 
 
-TEMPPATH = os.path.dirname(__file__)
+DEFAULTPATH = os.path.dirname(__file__)
+DEFAULTFNAME = "alamopy.alm"
 
 
 # The values associated with these must match those expected in the .alm file
@@ -398,17 +399,22 @@ class Alamopy(Surrogate):
 
     # I/O file options
     CONFIG.declare("temp_path", ConfigValue(
-        default=TEMPPATH,
+        default=DEFAULTPATH,
         domain=str,
         description="Path for directory to store temp files."))
     CONFIG.declare("filename", ConfigValue(
-        default=None,
+        default=DEFAULTFNAME,
         domain=str,
         description="File name to use for temp files."))
     CONFIG.declare("keep_files", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Flag indicating whether to retain temp files."))
+    CONFIG.declare("overwrite_files", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Flag indicating whether existing files can be "
+        "overwritten."))
 
     def __init__(self, **settings):
         super().__init__(**settings)
@@ -416,18 +422,35 @@ class Alamopy(Surrogate):
     def build_model(self):
         super().build_model()
 
+        # Get paths for temp files
+        path = self.config.temp_path
+        if path is None:
+            path = DEFAULTPATH
+
+        path = os.chdir(path)
+
+        almname = self.config.filename
+        if almname is None:
+            almname = DEFAULTFNAME
+
+        trcname = almname.split(".")[0] + ".trc"
+
         # Write .alm file
-        self.write_alm_file()
+        self.write_alm_file(almname, trcname)
 
         # Call ALAMO executable
         self.call_alamo()
 
         # Read back results
-        self.read_trace_file()
+        trace_dict = self.read_trace_file(trcname)
+
+        # Populate results and SurrogateModel object
+        self.populate_results(trace_dict)
+        self.build_surrogate_model_object()
 
         # Clean up temporary files if required
         if not self.config.keep_files:
-            self.remove_temp_files()
+            self.remove_temp_files(almname, trcname)
 
     def write_alm_to_stream(
             self, stream=None, trace_fname=None, x_reg=None,
@@ -520,17 +543,39 @@ class Alamopy(Surrogate):
 
         # Custom basis functions if required
 
-    def write_alm_file(x_reg=None, z_reg=None, x_val=None, z_val=None):
+    def write_alm_file(self, alm_fname=None, trace_fname=None,
+                       x_reg=None, z_reg=None, x_val=None, z_val=None):
         # Get path and file names
         # Open file stream
         # Call write_alm_to_stream
+        # open(trace_path, "x")
         pass
 
-    def call_alamo():
+    def call_alamo(self):
         pass
 
-    def read_trace_file():
+    def read_trace_file(self, trace_file):
+        with open(trace_file, "r") as f:
+            lines = f.readlines()
+        f.close()
+
+        trace_read = {}
+        # Get headers from first line in trace file
+        headers = lines[0].split(", ")
+        # Get trace output from final line of file
+        # ALAMO will append new lines to existing trace files
+        trace = lines[-1].split(", ")
+
+        for i in range(len(headers)):
+            trace_read[headers[i].strip("\n")] = trace[i].strip("\n")
+        return trace_read
+
+    def populate_results(self, trace_dict):
         pass
 
-    def remove_temp_files():
+    def build_surrogate_model_object(self):
         pass
+
+    def remove_temp_files(self, almname, trcname):
+        os.remove(almname)
+        os.remove(trcname)
