@@ -48,4 +48,4 @@ options
 
 .. option:: --json <file path>
 
-    Write output to the specified json file.
+    Write output to the specified json file, instead of to the screen.
