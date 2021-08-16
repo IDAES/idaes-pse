@@ -3,7 +3,7 @@ import prescient.plugins
 
 class DoubleLoopCoordinator:
 
-    def __init__(self,bidder, tracker):
+    def __init__(self, bidder, tracker):
 
         self.bidder = bidder
         self.tracker = tracker
@@ -200,7 +200,7 @@ class DoubleLoopCoordinator:
             None
         '''
 
-        gen_name = options.bidding_generator
+        gen_name = self.bidder.generator
         gen_dict = ruc_instance.data['elements']['generator'][gen_name]
         p_cost = [list(bids[t][gen_name].items()) for t in range(options.ruc_horizon)]
 
@@ -225,8 +225,7 @@ class DoubleLoopCoordinator:
             market_signals: the market signals to be tracked.
         '''
 
-        ## TODO: make this in a for loop (imagine we have a list of bidding generators)
-        gen_name = options.bidding_generator
+        gen_name = self.bidder.generator
 
         current_ruc_dispatch = simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
 
@@ -264,8 +263,7 @@ class DoubleLoopCoordinator:
         for stat in tracker.daily_stats:
             full_projected_trajectory[stat] = {}
 
-            ## TODO: we can have a loop here
-            gen_name = options.bidding_generator
+            gen_name = self.bidder.generator
 
             # merge the trajectory
             full_projected_trajectory[stat][gen_name] = tracker.daily_stats.get(stat)[gen_name] + \
@@ -343,7 +341,7 @@ class DoubleLoopCoordinator:
                                 implemented_start_up = full_projected_trajectory['start_up'])
 
         # generate bids
-        bids = bidder.stochastic_bidding(ruc_date)
+        bids = bidder.compute_bids(price_forecasts, date = ruc_date)
         if is_first_day:
             simulator.data_manager.extensions['current_bids'] = bids
             simulator.data_manager.extensions['next_bids'] = bids
@@ -372,7 +370,7 @@ class DoubleLoopCoordinator:
             None
         '''
 
-        gen_name = options.bidding_generator
+        gen_name = self.bidder.generator
         gen_dict = sced_instance.data['elements']['generator'][gen_name]
 
         p_cost = list(bids[hour][gen_name].items())
@@ -420,8 +418,7 @@ class DoubleLoopCoordinator:
             market_signals: the market signals to be tracked.
         '''
 
-        ## TODO: make this in a for loop (imagine we have a list of bidding generators)
-        gen_name = options.bidding_generator
+        gen_name = self.bidder.generator
 
         sced_dispatch = sced_instance.data['elements']['generator'][gen_name]['pg']['values']
         current_ruc_dispatch = simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
@@ -429,7 +426,7 @@ class DoubleLoopCoordinator:
             next_ruc_dispatch = simulator.data_manager.ruc_market_pending.thermal_gen_cleared_DA
 
         # append the sced dispatch
-        market_signals = {gen_name:[sced_dispatch[0]]}
+        market_signals = [sced_dispatch[0]]
 
         # append corresponding RUC dispatch
         for t in range(hour+1, hour+options.sced_horizon):
@@ -440,7 +437,7 @@ class DoubleLoopCoordinator:
                 dispatch = sced_dispatch[t-hour]
             else:
                 dispatch = current_ruc_dispatch[(gen_name,t)]
-            market_signals[gen_name].append(dispatch)
+            market_signals.append(dispatch)
 
         return market_signals
 
@@ -467,17 +464,15 @@ class DoubleLoopCoordinator:
         tracker = simulator.data_manager.extensions['plugin_objects']['tracker']
 
         # get market signals
-        market_signals = assemble_sced_tracking_market_signals(options = options, \
-                                                               simulator = simulator, \
-                                                               sced_instance = sced_instance, \
-                                                               hour = current_hour)
+        market_signals = self.assemble_sced_tracking_market_signals(options = options, \
+                                                                    simulator = simulator, \
+                                                                    sced_instance = sced_instance, \
+                                                                    hour = current_hour)
 
         # actual tracking
-        tracker.pass_schedule_to_track(m = tracker.model,\
-                                       market_signals = market_signals, \
-                                       last_implemented_time_step = 0, \
-                                       date = current_date,\
-                                       hour = current_hour)
+        tracker.track_market_dispatch(market_dispatch = market_signals, \
+                                      date = current_date,\
+                                      hour = current_hour)
 
         return
 
@@ -500,7 +495,7 @@ class DoubleLoopCoordinator:
 
         # unpack tracker
         tracker = simulator.data_manager.extensions['plugin_objects']['tracker']
-        g = options.bidding_generator
+        g = self.bidder.generator
         ops_stats.observed_thermal_dispatch_levels[g] = tracker.get_last_delivered_power(generator = g)
 
         return
