@@ -25,6 +25,7 @@ class Bidder:
 
         # create an instance
         self.bidding_model_object = bidding_model_class(**kwarg)
+        self.generator = self.bidding_model_object.generator
 
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
@@ -146,7 +147,7 @@ class Bidder:
                                         * self.model.fs[k].energy_price[t] \
                                         - weight * cost[t]
 
-    def compute_bids(self, price_forecasts, date, hour):
+    def compute_bids(self, price_forecasts, date, hour = None):
 
         '''
         Solve the model to bid into the markets. After solving, record the bids
@@ -167,8 +168,6 @@ class Bidder:
         self.solver.solve(self.model,tee=True)
         bids = self._assemble_bids()
         self.record_bids(bids, date = date, hour = hour)
-
-        ## TODO: when to update bidding model??
 
         return bids
 
@@ -206,7 +205,7 @@ class Bidder:
         '''
 
         bids = {}
-        gen = self.bidding_model_object.generator
+        gen = self.generator
 
         for i in self.model.SCENARIOS:
             time_index = self.model.fs[i].energy_price.index_set()
@@ -310,6 +309,23 @@ class Bidder:
         self.bids_result_list.append(pd.concat(df_list))
 
         return
+
+    def write_results(self,path):
+        '''
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        '''
+
+        print("")
+        print('Saving bidding results to disk...')
+        pd.concat(self.bids_result_list).to_csv(os.path.join(path,'bidding_detail.csv'), \
+                                                index = False)
+
 
 class DAM_thermal_bidding:
 

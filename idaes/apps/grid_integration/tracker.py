@@ -200,3 +200,18 @@ class Tracker:
         '''
 
         self.tracking_model_object.record_results(self.model.fs, **kwargs)
+
+    def write_results(self,path):
+        '''
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        '''
+
+        print("")
+        print('Saving tracking results to disk...')
+        self.tracking_model_object.write_results(path = os.path.join(path,'tracking_detail.csv'))

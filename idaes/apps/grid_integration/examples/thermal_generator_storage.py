@@ -466,6 +466,9 @@ class ThermalGeneratorStorageIES:
 
         return
 
+    def write_results(self, path):
+        pd.concat(self.result_list).to_csv(path, index = False)
+
     @property
     def power_output(self):
         return {g: m.P_total for g, m in self.model_dict.items()}

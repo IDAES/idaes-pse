@@ -463,6 +463,9 @@ class ThermalGenerator:
 
         return
 
+    def write_results(self, path):
+        pd.concat(self.result_list).to_csv(path, index = False)
+
     @property
     def power_output(self):
         return 'P_T'
@@ -491,7 +494,7 @@ if __name__ == "__main__":
 
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = False
+    run_tracker = True
     run_bidder = True
 
     if run_tracker:
@@ -508,6 +511,7 @@ if __name__ == "__main__":
         thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch[generator], \
                                               date = "2021-07-26", \
                                               hour = '17:00')
+        thermal_tracker.write_results(path = './')
 
     if run_bidder:
 
@@ -524,3 +528,4 @@ if __name__ == "__main__":
         date = "2021-08-01"
         hour = "13:00"
         bids = thermal_bidder.compute_bids(price_forecasts[generator], date, hour)
+        thermal_bidder.write_results(path = './')
