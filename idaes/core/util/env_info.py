@@ -15,8 +15,9 @@ __Author__ = "John Eslick"
 
 import sys
 import platform
-from collections import OrderedDict
+import collections
 import pkg_resources
+import json
 
 import idaes
 import pyomo
@@ -24,7 +25,8 @@ import pyomo.environ as pyo
 
 import idaes.ver as ver
 
-class EnvironmentInfo():
+
+class EnvironmentInfo:
     """Get information about IDAES and the environment IDAES is running in,
     including OS and Critial dependency versions."""
 
@@ -37,6 +39,10 @@ class EnvironmentInfo():
         "cbc",
         "k_aug",
         "dot_sens",
+    ]
+
+    extras = [
+        "seaborn",
     ]
 
     def __init__(self, additional_solvers=()):
@@ -52,6 +58,7 @@ class EnvironmentInfo():
         self.local_config = idaes._local_config_file
         # Get Python info
         self.python_version = sys.version
+        self.python_executable = sys.executable
         # Get os info
         self.os_platform = platform.system()
         self.os_release = platform.release()
@@ -59,23 +66,22 @@ class EnvironmentInfo():
         # Get pyomo
         self.pyomo_version = pyomo.version.__version__
         # Get dependency info
-        self.dependency_versions = OrderedDict()
+        self.dependency_versions = {}
         reqs = pkg_resources.get_distribution("idaes-pse").requires()
         for dep in [x.name for x in reqs]:
             if dep == "pyomo":
-                continue # pyomo is special
+                continue  # pyomo is special
             try:
-                self.dependency_versions[dep] = \
-                    pkg_resources.get_distribution(dep).version
+                self.dependency_versions[dep] = pkg_resources.get_distribution(
+                    dep
+                ).version
             except pkg_resources.DistributionNotFound:
                 self.dependency_versions[dep] = None
         # Extra packages, users must install these for esoteric features
-        self.extra_versions = OrderedDict()
-        extras = ["seaborn"]
-        for dep in extras:
+        self.extra_versions = {}
+        for dep in self.extras:
             try:
-                self.extra_versions[dep] = \
-                    pkg_resources.get_distribution(dep).version
+                self.extra_versions[dep] = pkg_resources.get_distribution(dep).version
             except pkg_resources.DistributionNotFound:
                 self.extra_versions[dep] = None
         self.solver_versions = {}
@@ -93,38 +99,47 @@ class EnvironmentInfo():
                     v = "Unknown Version Installed"
                 self.solver_versions[s] = ".".join([f"{x}" for x in v])
 
+    def to_json(self, fname=None):
+        if fname is not None:
+            with open(fname, "w") as f:
+                json.dump(self.to_dict(), f, indent=4)
+        else:
+            return json.dumps(self.to_dict(), indent=4)
 
-    def display_dict(self):
+    def to_dict(self):
         """Return a dictionary that is in a format that allows easy printing"""
-        d = OrderedDict([
-            ("IDAES", OrderedDict([
-                # for version, I'm breaking off the +label, which is the git hash
-                ("Version", self.version_string.split("+")[0]),
-                # and displaying it here
-                ("Git Hash", self.git_hash),
-                ("Binary Directory", self.bin_directory),
-                ("Data Directory", self.data_directory),
-                ("Global Config", self.global_config),
-            ])),
-            ("Pyomo", OrderedDict([
-                ("Pyomo Version", self.pyomo_version)
-            ])),
-            ("OS", OrderedDict([
-                ("Platform", self.os_platform),
-                ("Release", self.os_release),
-                ("Version", self.os_version),
-            ])),
-            ("Python", OrderedDict([
-                ("Python Version", self.python_version)
-            ])),
-            ("Dependencies", OrderedDict()),
-            ("Extras", OrderedDict()),
-            ("Solvers", OrderedDict()),
-        ])
-        for k, v in sorted(self.dependency_versions.items()):
-            d["Dependencies"][k] = v if v is not None else "Not Installed"
-        for k, v in sorted(self.extra_versions.items()):
-            d["Extras"][k] = v if v is not None else "Not Installed"
-        for k, v in sorted(self.solver_versions.items()):
-            d["Solvers"][k] = v if v is not None else "Not Installed"
+        d = {
+            "IDAES": {
+                # break off the +label, which is the git hash
+                "Version": self.version_string.split("+")[0],
+                "Git Hash": self.git_hash,
+                "Binary Directory": self.bin_directory,
+                "Data Directory": self.data_directory,
+                "Global Config": self.global_config,
+            },
+            "Pyomo": {
+                "Version": self.pyomo_version,
+            },
+            "Python": {
+                "Version": self.python_version,
+                "Executable": self.python_version,
+            },
+            "OS": {
+                "Platform": self.os_platform,
+                "Release": self.os_release,
+                "Version": self.os_version,
+            },
+            "Dependencies": {
+                k: v if v is not None else "Not Installed"
+                for k, v in sorted(self.dependency_versions.items())
+            },
+            "Extras": {
+                k: v if v is not None else "Not Installed"
+                for k, v in sorted(self.extra_versions.items())
+            },
+            "Sovlers": {
+                k: v if v is not None else "Not Installed"
+                for k, v in sorted(self.solver_versions.items())
+            },
+        }
         return d

@@ -29,22 +29,18 @@ from idaes.commands import cb
     help="Add solvers to list of solvers to check"
 )
 @click.option(
-    "--file",
+    "--json",
     default=None,
     help="Write output ot a file"
 )
-def environment_info(solver, file):
-    info = EnvironmentInfo(additional_solvers=solver).display_dict()
-    if file is None:
-        for k, v in info.items():
+def environment_info(solver, json):
+    info = EnvironmentInfo(additional_solvers=solver)
+    d = info.to_dict()
+    if json is None:
+        for k, v in d.items():
             click.echo("")
             click.echo(f"{k}")
             for l, q in v.items():
                 click.echo(f"    {l}: {q}")
     else:
-        with open(file, "w") as f:
-            for k, v in info.items():
-                f.write("\n")
-                f.write(f"{k}\n")
-                for l, q in v.items():
-                    f.write(f"    {l}: {q}\n")
+        info.to_json(json)
