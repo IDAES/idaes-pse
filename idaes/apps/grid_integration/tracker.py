@@ -170,15 +170,15 @@ class Tracker:
                                                                       last_implemented_time_step = self.n_tracking_hour - 1)
         self.tracking_model_object.update_model(self.model.fs, **profiles)
 
-        self._record_daily_stats(profile)
+        self._record_daily_stats(profiles)
 
-    def _record_daily_stats(self, profile):
+    def _record_daily_stats(self, profiles):
 
         if self.daily_stats is None:
             self.daily_stats = profiles
         else:
             for k in self.daily_stats:
-                self.daily_stats[k] += profile[k]
+                self.daily_stats[k] += profiles[k]
 
         for v in self.daily_stats.values():
             while len(v) >= 24:
