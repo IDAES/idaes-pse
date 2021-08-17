@@ -171,6 +171,10 @@ class Bidder:
 
         return bids
 
+    def update_model(self, **kwargs):
+        for i in self.model.SCENARIOS:
+            self.bidding_model_object.update_model(b = self.model.fs[i], **kwargs)
+
     def _pass_price_forecasts(self, price_forecasts):
 
         '''

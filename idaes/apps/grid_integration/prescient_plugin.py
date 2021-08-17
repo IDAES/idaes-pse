@@ -3,10 +3,11 @@ import prescient.plugins
 
 class DoubleLoopCoordinator:
 
-    def __init__(self, bidder, tracker):
+    def __init__(self, bidder, tracker, projection_tracker):
 
         self.bidder = bidder
         self.tracker = tracker
+        self.projection_tracker = projection_tracker
         self.register_callbacks()
 
     def register_callbacks(self):
@@ -191,7 +192,7 @@ class DoubleLoopCoordinator:
 
         current_ruc_dispatch = simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
 
-        market_signals = {gen_name:[]}
+        market_signals = []
 
         # append corresponding RUC dispatch
         for t in range(hour, hour+options.sced_horizon):
@@ -199,37 +200,9 @@ class DoubleLoopCoordinator:
                 dispatch = current_ruc_dispatch[(gen_name,23)]
             else:
                 dispatch = current_ruc_dispatch[(gen_name,t)]
-            market_signals[gen_name].append(dispatch)
+            market_signals.append(dispatch)
 
         return market_signals
-
-    def get_full_projected_trajectory(self, options, simulator):
-
-        '''
-        This function gets the full projected power dispatch trajectory from the
-        tracking model so we can use it to update the bidding model, i.e. advance
-        the time for the bidding model.
-
-        Arguments:
-            options: Prescient options.
-            simulator: Prescient simulator.
-        Returns:
-            full_projected_trajectory: the full projected power dispatch trajectory.
-        '''
-
-        full_projected_trajectory = {}
-
-        for stat in self.tracker.daily_stats:
-            full_projected_trajectory[stat] = {}
-
-            gen_name = self.bidder.generator
-
-            # merge the trajectory
-            full_projected_trajectory[stat][gen_name] = self.tracker.daily_stats.get(stat)[gen_name] + \
-                                                       self.tracker.projection.get(stat)[gen_name]
-        self.tracker.clear_projection()
-
-        return full_projected_trajectory
 
     def project_tracking_trajectory(self, options, simulator, ruc_hour):
 
@@ -245,22 +218,32 @@ class DoubleLoopCoordinator:
             full_projected_trajectory: the full projected power dispatch trajectory.
         '''
 
-        projection_m = self.tracker.clone_tracking_model()
+        self._clone_tracking_model()
 
         for hour in range(ruc_hour, 24):
 
             # assemble market_signals
-            market_signals = assemble_project_tracking_signal(options = options, \
-                                                              simulator = simulator, \
-                                                              hour = hour)
+            market_signals = self.assemble_project_tracking_signal(options = options, \
+                                                                   simulator = simulator, \
+                                                                   hour = hour)
             # solve tracking
-            self.tracker.pass_schedule_to_track(m = projection_m,\
-                                           market_signals = market_signals, \
-                                           last_implemented_time_step = 0,\
-                                           hour = hour,\
-                                           projection = True)
+            self.projection_tracker.track_market_dispatch(market_dispatch = market_signals, \
+                                                          date = current_date,\
+                                                          hour = current_hour)
 
-        return get_full_projected_trajectory(options,simulator)
+        # merge the trajectory
+        full_projected_trajectory = {}
+        for stat in self.tracker.daily_stats:
+            full_projected_trajectory[stat] = self.tracker.daily_stats.get(stat) + \
+                                              self.projection_tracker.daily_stats.get(stat)
+
+        # clear the projection stats
+        self.projection_tracker.daily_stats = None
+
+        return full_projected_trajectory
+
+    def _clone_tracking_model(self):
+        self.projection_tracker.model = self.tracker.model.clone()
 
     def bid_into_DAM(self, options, simulator, ruc_instance, ruc_date, ruc_hour):
 
@@ -285,16 +268,15 @@ class DoubleLoopCoordinator:
         if not is_first_day:
 
             # solve rolling horizon to get the trajectory
-            full_projected_trajectory = project_tracking_trajectory(options, \
-                                                                    simulator, \
-                                                                    ruc_hour)
+            full_projected_trajectory = self.project_tracking_trajectory(options, \
+                                                                         simulator, \
+                                                                         ruc_hour)
             # update the bidding model
-            self.bidder.update_model(implemented_power_output = full_projected_trajectory['power'],\
-                                implemented_shut_down = full_projected_trajectory['shut_down'], \
-                                implemented_start_up = full_projected_trajectory['start_up'])
+            self.bidder.update_model(**full_projected_trajectory)
 
         # generate bids
-        bids = self.bidder.compute_bids(price_forecasts, date = ruc_date)
+        bids = self.bidder.compute_bids(date = ruc_date)
+
         if is_first_day:
             self.current_bids = bids
             self.next_bids = bids
@@ -306,7 +288,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def pass_RT_bid_to_prescient(self, options, simulator, sced_instance, bids, hour):
+    def _pass_RT_bid_to_prescient(self, options, simulator, sced_instance, bids, hour):
 
         '''
         This method passes the bids into the SCED model for real-time market
@@ -353,7 +335,7 @@ class DoubleLoopCoordinator:
         bids = self.current_bids
 
         # pass bids into sced model
-        pass_RT_bid_to_prescient(options, simulator, sced_instance, bids, hour)
+        self._pass_RT_bid_to_prescient(options, simulator, sced_instance, bids, hour)
 
         return
 
@@ -491,5 +473,10 @@ class DoubleLoopCoordinator:
 '''
 TODO:
     - Fix the remaining methods
-    - Get rid of simulator.data_manager.extension: store things within the object
+
+Questions:
+    -
+
+Assumptions:
+    - Trackers should provide the necessary stats to update the bidder
 ''''

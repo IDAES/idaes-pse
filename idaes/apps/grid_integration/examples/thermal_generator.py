@@ -399,9 +399,9 @@ class ThermalGenerator:
              profile: the intended profile, {unit: [...]}
         '''
 
-        implemented_shut_down = [pyo.value(b.shut_dw[t]) for t in range(last_implemented_time_step + 1)]
-        implemented_start_up = [pyo.value(b.start_up[t]) for t in range(last_implemented_time_step + 1)]
-        implemented_power_output = [pyo.value(b.P_T[t]) for t in range(last_implemented_time_step + 1)]
+        implemented_shut_down = deque([pyo.value(b.shut_dw[t]) for t in range(last_implemented_time_step + 1)])
+        implemented_start_up = deque([pyo.value(b.start_up[t]) for t in range(last_implemented_time_step + 1)])
+        implemented_power_output = deque([pyo.value(b.P_T[t]) for t in range(last_implemented_time_step + 1)])
 
         return {'implemented_shut_down': implemented_shut_down,\
                 'implemented_start_up': implemented_start_up,\

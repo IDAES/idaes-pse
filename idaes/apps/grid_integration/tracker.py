@@ -39,6 +39,9 @@ class Tracker:
         self.solver = solver
         self.formulate_tracking_problem()
 
+        self.daily_stats = None
+        self.projection = None
+
     def formulate_tracking_problem(self):
 
         '''
@@ -166,6 +169,22 @@ class Tracker:
         profiles = self.tracking_model_object.get_implemented_profile(b = self.model.fs, \
                                                                       last_implemented_time_step = self.n_tracking_hour - 1)
         self.tracking_model_object.update_model(self.model.fs, **profiles)
+
+        self._record_daily_stats(profile)
+
+    def _record_daily_stats(self, profile):
+
+        if self.daily_stats is None:
+            self.daily_stats = profiles
+        else:
+            for k in self.daily_stats:
+                self.daily_stats[k] += profile[k]
+
+        for v in self.daily_stats.values():
+            while len(v) >= 24:
+                v.popleft()
+
+        return
 
     def _pass_market_dispatch(self, market_dispatch):
 
