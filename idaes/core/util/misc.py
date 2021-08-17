@@ -21,7 +21,7 @@ from pyomo.core.base.expression import _GeneralExpressionData
 from pyomo.core.base.component import ModelComponentFactory
 from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
-from pyomo.core.base.util import disable_methods
+from pyomo.core.base.disable_methods import disable_methods
 from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
