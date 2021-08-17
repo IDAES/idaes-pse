@@ -6,6 +6,7 @@ import sys
 sys.path.append('../')
 from tracker import Tracker
 from bidder import Bidder
+from forecaster import WhiteNoiseForecaster
 
 class ThermalGenerator:
 
@@ -496,6 +497,9 @@ if __name__ == "__main__":
     #                                             horizon = horizon, \
     #                                             generator = generator)
 
+    price_forecasts_df = pd.read_csv('lmp_forecasts_example.csv')
+    forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
+
     solver = pyo.SolverFactory('cbc')
 
     run_tracker = True
@@ -522,14 +526,12 @@ if __name__ == "__main__":
         thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
                                 n_scenario = 3,\
                                 solver = solver,\
+                                forecaster = forecaster,\
                                 rts_gmlc_dataframe = rts_gmlc_dataframe,\
                                 horizon = horizon,\
                                 generator = generator)
 
-        price_forecasts = {generator:{0:[25,15,20,10], \
-                                      1:[20,12,22,13], \
-                                      2:[22,13,28,14]}}
         date = "2021-08-01"
         hour = "13:00"
-        bids = thermal_bidder.compute_bids(price_forecasts[generator], date, hour)
+        bids = thermal_bidder.compute_bids(date, hour)
         thermal_bidder.write_results(path = './')
