@@ -12,14 +12,14 @@ class DoubleLoopCoordinator:
 
     def register_callbacks(self):
 
-        self._register_custom_commandline_options()
+        # self._register_custom_commandline_options()
         self._register_initialization_callbacks()
         self._register_before_ruc_solve_callbacks()
         self._register_before_operations_solve_callbacks()
         self._register_after_operations_callbacks()
         self._register_update_operations_stats_callbacks()
         self._register_after_ruc_activation_callbacks()
-        # self._register_after_simulation_callback()
+        self._register_after_simulation_callbacks()
 
         return
 
@@ -131,7 +131,7 @@ class DoubleLoopCoordinator:
     def _register_after_ruc_activation_callbacks(self):
         prescient.plugins.register_after_ruc_activation_callback(self.after_ruc_activation)
 
-    def _register_after_simulation_callback(self):
+    def _register_after_simulation_callbacks(self):
         prescient.plugins.register_after_simulation_callback(self.write_plugin_results)
 
     def initialize_customized_results(self, options, simulator):
@@ -220,7 +220,7 @@ class DoubleLoopCoordinator:
 
         current_date = simulator.time_manager.current_time.date
         current_hour = simulator.time_manager.current_time.hour
-        
+
         self._clone_tracking_model()
 
         for hour in range(ruc_hour, 24):
