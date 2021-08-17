@@ -19,7 +19,7 @@ class DoubleLoopCoordinator:
         self._register_after_operations_callbacks()
         self._register_update_operations_stats_callbacks()
         self._register_after_ruc_activation_callbacks()
-        self._register_after_simulation_callback()
+        # self._register_after_simulation_callback()
 
         return
 
@@ -218,6 +218,9 @@ class DoubleLoopCoordinator:
             full_projected_trajectory: the full projected power dispatch trajectory.
         '''
 
+        current_date = simulator.time_manager.current_time.date
+        current_hour = simulator.time_manager.current_time.hour
+        
         self._clone_tracking_model()
 
         for hour in range(ruc_hour, 24):
@@ -424,7 +427,7 @@ class DoubleLoopCoordinator:
             None
 
         '''
-
+        g = self.bidder.generator
         ops_stats.observed_thermal_dispatch_levels[g] = self.tracker.get_last_delivered_power()
 
         return
@@ -469,14 +472,3 @@ class DoubleLoopCoordinator:
         self.tracker.write_results(path = options.output_directory)
 
         return
-
-'''
-TODO:
-    - Fix the remaining methods
-
-Questions:
-    -
-
-Assumptions:
-    - Trackers should provide the necessary stats to update the bidder
-''''

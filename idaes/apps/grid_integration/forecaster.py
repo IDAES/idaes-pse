@@ -14,6 +14,7 @@ class WhiteNoiseForecaster:
         return
 
     def forecast(self, date, **kwargs):
+        date = str(date)
         return self.price_forecasts_df.loc[date].to_dict('list')
 
 

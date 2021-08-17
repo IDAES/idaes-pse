@@ -224,8 +224,8 @@ class Bidder:
                 if gen not in bids[t]:
                     bids[t][gen] = {}
 
-                power = pyo.value(self.model.fs[i].power_output_ref[t])
-                marginal_cost = pyo.value(self.model.fs[i].energy_price[t])
+                power = round(pyo.value(self.model.fs[i].power_output_ref[t]),2)
+                marginal_cost = round(pyo.value(self.model.fs[i].energy_price[t]),2)
 
                 if power < self.bidding_model_object.pmin:
                     continue

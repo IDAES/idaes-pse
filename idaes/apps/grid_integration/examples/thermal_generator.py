@@ -497,12 +497,12 @@ if __name__ == "__main__":
     #                                             horizon = horizon, \
     #                                             generator = generator)
 
-    price_forecasts_df = pd.read_csv('lmp_forecasts_example.csv')
+    price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
     forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
 
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = True
+    run_tracker = False
     run_bidder = True
 
     if run_tracker:
@@ -524,14 +524,14 @@ if __name__ == "__main__":
     if run_bidder:
 
         thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
-                                n_scenario = 3,\
+                                n_scenario = 10,\
                                 solver = solver,\
                                 forecaster = forecaster,\
                                 rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                                horizon = horizon,\
+                                horizon = 48,\
                                 generator = generator)
 
-        date = "2021-08-01"
+        date = "2020-07-10"
         hour = "13:00"
         bids = thermal_bidder.compute_bids(date, hour)
         thermal_bidder.write_results(path = './')
