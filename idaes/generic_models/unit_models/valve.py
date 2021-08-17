@@ -262,6 +262,6 @@ variables, expressions, or constraints required can also be added by the callbac
             pc["vars"]["Valve Coefficient"] = self.Cv
         except AttributeError:
             pass
-        if self.config.valve_function == ValveFunctionType.equal_percentage:
+        if self.config.valve_function_callback == ValveFunctionType.equal_percentage:
             pc["vars"]["alpha"] = self.alpha
         return pc
