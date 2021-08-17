@@ -10,7 +10,7 @@ from itertools import combinations
 
 class Bidder:
 
-    def __init__(self, bidding_model_class, n_scenario, solver, **kwarg):
+    def __init__(self, bidding_model_class, n_scenario, solver, forecaster, **kwarg):
 
         '''
         Initializes the bidder object.
@@ -41,6 +41,8 @@ class Bidder:
         self.n_scenario = n_scenario
         self.solver = solver
         self.formulate_bidding_problem()
+
+        self.forecaster = forecaster
 
         self.bids_result_list = []
 
@@ -147,7 +149,7 @@ class Bidder:
                                         * self.model.fs[k].energy_price[t] \
                                         - weight * cost[t]
 
-    def compute_bids(self, price_forecasts, date, hour = None):
+    def compute_bids(self, date, hour = None):
 
         '''
         Solve the model to bid into the markets. After solving, record the bids
@@ -162,6 +164,8 @@ class Bidder:
         Returns:
             None
         '''
+
+        price_forecasts = self.forecaster.forecast(date = date, hour = hour)
 
         # update the price forecasts
         self._pass_price_forecasts(price_forecasts)
