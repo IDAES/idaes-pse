@@ -5,12 +5,37 @@ class DoubleLoopCoordinator:
 
     def __init__(self, bidder, tracker, projection_tracker):
 
+        '''
+        Initializes the DoubleLoopCoordinator object and registers functionalities
+        in Prescient's plugin system.
+
+        Arguments:
+            bidder: an initialized bidder object
+            tracker: an initialized bidder object
+            projection_tracker: an initialized bidder object, this object is for
+                                projecting the system states and updating bidder
+                                model
+
+        Returns:
+            None
+        '''
+
         self.bidder = bidder
         self.tracker = tracker
         self.projection_tracker = projection_tracker
         self.register_callbacks()
 
     def register_callbacks(self):
+
+        '''
+        Register functionalities in Prescient's plugin system.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         # self._register_custom_commandline_options()
         self._register_initialization_callbacks()
@@ -24,6 +49,16 @@ class DoubleLoopCoordinator:
         return
 
     def _register_custom_commandline_options(self):
+
+        '''
+        Register customized commandline options.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         # Add command line options
         opt = Option('--track-ruc-signal',
@@ -114,27 +149,115 @@ class DoubleLoopCoordinator:
         return
 
     def _register_initialization_callbacks(self):
+
+        '''
+        Register initialization plugins, which run before Prescient simulation
+        begins.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_initialization_callback(self.initialize_customized_results)
 
     def _register_before_ruc_solve_callbacks(self):
+
+        '''
+        Register plugins that run before Prescient solves Reliability Unit
+        Commitment (RUC) problems.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_before_ruc_solve_callback(self.bid_into_DAM)
 
     def _register_before_operations_solve_callbacks(self):
+
+        '''
+        Register plugins that run before Prescient solves Securitiy Constrained
+        Economic Dispatch (SCED), aka "operation", problems.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_before_operations_solve_callback(self.bid_into_RTM)
 
     def _register_after_operations_callbacks(self):
+
+        '''
+        Register plugins that run after Prescient solves Securitiy Constrained
+        Economic Dispatch (SCED), aka "operation", problems.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_after_operations_callback(self.track_sced_signal)
 
     def _register_update_operations_stats_callbacks(self):
+
+        '''
+        Register plugins that update stats of Securitiy Constrained Economic
+        Dispatch (SCED), aka "operation".
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_update_operations_stats_callback(self.update_observed_thermal_dispatch)
 
     def _register_after_ruc_activation_callbacks(self):
+
+        '''
+        Register plugins that update stats of Securitiy Constrained Economic
+        Dispatch (SCED), aka "operation".
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_after_ruc_activation_callback(self.after_ruc_activation)
 
     def _register_finalization_callbacks(self):
+
+        '''
+        Register finalization plugins, which run after Prescient simulation
+        finishes.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+
         prescient.plugins.register_finalization_callback(self.write_plugin_results)
 
     def initialize_customized_results(self, options, simulator):
+
+        '''
+        This method is outdated.
+        '''
 
         simulator.data_manager.extensions['customized_results'] = {}
         customized_results = simulator.data_manager.extensions['customized_results']
@@ -214,6 +337,7 @@ class DoubleLoopCoordinator:
         Arguments:
             options: Prescient options.
             simulator: Prescient simulator.
+            ruc_hour: the hour RUC is being solved
         Returns:
             full_projected_trajectory: the full projected power dispatch trajectory.
         '''
@@ -246,6 +370,16 @@ class DoubleLoopCoordinator:
         return full_projected_trajectory
 
     def _clone_tracking_model(self):
+        '''
+        Clone the model in tracker and replace that of projection tracker. In this
+        way, tracker and projection tracker have the same states before projection.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
         self.projection_tracker.model = self.tracker.model.clone()
 
     def bid_into_DAM(self, options, simulator, ruc_instance, ruc_date, ruc_hour):
