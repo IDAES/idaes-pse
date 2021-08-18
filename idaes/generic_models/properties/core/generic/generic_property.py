@@ -2361,7 +2361,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_flow_mass_comp(b, i):
                 if b.get_material_flow_basis() == MaterialFlowBasis.mass:
                     return self.mass_frac_comp[i]*self.flow_mass
-                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                elif b.get_material_flow_basis() == MaterialFlowBasis.molar:
                     return b.flow_mol_comp[i]*b.mw_comp[i]
                 else:
                     raise PropertyPackageError(
