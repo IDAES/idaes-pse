@@ -278,10 +278,12 @@ class GenericReactionParameterData(ReactionParameterBlock):
 
                 # Check that a method was provided for the rate form
                 if rxn.rate_form is None:
-                    raise ConfigurationError(
+                    _log.debug(
                         "{} rate reaction {} was not provided with a "
-                        "rate_form configuration argument."
-                        .format(self.name, r))
+                        "rate_form configuration argument. This is suitable "
+                        "for processes using stoichiometric reactors, but not "
+                        "for those using unit operations which rely on "
+                        "reaction rate.".format(self.name, r))
 
         # Construct equilibrium reaction attributes if required
         if len(self.config.equilibrium_reactions) > 0:
@@ -611,6 +613,11 @@ class GenericReactionBlockData(ReactionBlockDataBase):
             rblock = getattr(b.params, "reaction_"+r)
 
             carg = b.params.config.rate_reactions[r]
+
+            if carg["rate_form"] is None:
+                raise ConfigurationError(
+                    f"{b.name} Generic Reaction {r} was not provided with a "
+                    f"rate_form configuration argument.")
 
             return carg["rate_form"].return_expression(
                 b, rblock, r, b.state_ref.temperature)
