@@ -23,7 +23,6 @@ from pyomo.core.base.indexed_component import (
     UnindexedComponent_set, )
 from pyomo.core.base.disable_methods import disable_methods
 from pyomo.common.config import ConfigBlock
-from pyomo.network import Port, Arc
 
 import idaes.logger as idaeslog
 import idaes.core.solvers
@@ -227,52 +226,18 @@ def svg_tag(
 
 
 # Author: John Eslick
-def copy_port_values(destination=None, source=None, arc=None):
+def copy_port_values(destination=None, source=None, arc=None,
+        direction="forward"):
     """
-    Copy the variable values in the source port to the destination port. The
-    ports must containt the same variables.
-
-    Args:
-        destination (Port): Port to copy values to or None if specifying arc
-        source (Port): Port to copy values from or None if specifying arc
-        arc (Arc): If arc is provided, use arc to define source and destination
-
-    Returns:
-        None
+    Moved to idaes.core.util.initialization.propagate_state.
+    Leaving redirection function here for deprecation warning.
     """
-    # Allow an arc to be passed as a positional arg
-    if destination is not None and source is None and isinstance(destination, Arc):
-        arc = destination
-        destination = None
-    # Check that only arc or source and destination are passed
-    if arc is None and (destination is None or source is None):
-        raise RuntimeError(
-            "In copy_port_values(), must provide source and destination or arc")
-    if arc is not None:
-        if not isinstance(arc, Arc):
-            raise RuntimeError(
-                "In copy_port_values(), arc argument is not an instance of an Arc")
-        if destination is not None or source is not None:
-            raise RuntimeError(
-                "In copy_port_values(), provide only arc or source and destination")
-    if destination is not None:
-        if not isinstance(destination, Port):
-            raise RuntimeError(
-                "In copy_port_values(), destination is not an instance of Port")
-        if not isinstance(source, Port):
-            raise RuntimeError(
-                "In copy_port_values(), source is not an instance of Port")
-
-    # Arc provided so get source and destination from arc
-    if arc is not None:
-        source = arc.source
-        destination = arc.dest
-
-    # Copy values
-    for k, v in destination.vars.items():
-        if isinstance(v, pyo.Var):
-            for i in v:
-                v[i].value = pyo.value(source.vars[k][i])
+    _log.warning("DEPRECATED: copy_port_values has been deprecated. "
+            "The same functionality can be found in "
+            "idaes.core.util.initialization.propagate_state.")
+    from idaes.core.util.initialization import propagate_state
+    propagate_state(destination=destination, source=source, arc=arc,
+            direction=direction)
 
 
 def set_param_from_config(b, param, config=None, index=None):
