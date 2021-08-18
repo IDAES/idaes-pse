@@ -145,22 +145,23 @@ class DegeneracyHunter():
             if sort:
                 residual_values = dict(sorted(residual_values.items(), key=itemgetter(1),reverse=True))
 
-                for i, (c,r) in enumerate(residual_values.items()):
-                    if print_level == 1:
-                        # Basic print statement. count, constraint, residual
-                        print(i,"\t",c,"\t",r)
-                    else:
-                        # Pretty print constraint
-                        print("\ncount =",i,"\t|residual| =",r)
-                        c.pprint()
-        
-                    if print_level == 2:
-                        # print values and bounds for each variable in the constraint
-                        print("variable\tlower\tvalue\tupper")
-                        for v in identify_variables(c.body):
-                            self.print_variable_bounds(v)
-            else:
-                print("No constraints with residuals larger than",tol,"!")
+            for i, (c,r) in enumerate(residual_values.items()):
+                if print_level == 1:
+                    # Basic print statement. count, constraint, residual
+                    print(i,"\t",c,"\t",r)
+                else:
+                    # Pretty print constraint
+                    print("\ncount =",i,"\t|residual| =",r)
+                    c.pprint()
+    
+                if print_level == 2:
+                    # print values and bounds for each variable in the constraint
+                    print("variable\tlower\tvalue\tupper")
+                    for v in identify_variables(c.body):
+                        self.print_variable_bounds(v)
+        else:
+            print("No constraints with residuals larger than",tol,"!")
+                
                 
         return residual_values.keys()
 
