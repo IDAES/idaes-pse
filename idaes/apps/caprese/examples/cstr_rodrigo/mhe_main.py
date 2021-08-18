@@ -75,7 +75,7 @@ def main():
 
     plant = mhe.plant
     estimator = mhe.estimator
-    
+
     p_t0 = mhe.plant.time.first()
     c_t0 = mhe.estimator.time.first()
     p_ts = mhe.plant.sample_points[1]
@@ -93,12 +93,12 @@ def main():
                                        states_of_interest,)
     #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
-    
+
     # Here we solve for a steady state and use it to fill in past measurements
     desired_ss = [(estimator.mod.Ca[0], 0.021)]
     ss_weights = [(estimator.mod.Ca[0], 1.)]
     mhe.estimator.initialize_past_info_with_steady_state(desired_ss, ss_weights, solver)
-        
+
     # Now we are ready to construct the objective function for MHE
     model_disturbance_weights = [
             (estimator.mod.Ca[0], 1.),
@@ -110,10 +110,10 @@ def main():
             (estimator.mod.Ca[0], 100.),
             (estimator.mod.Tall[0, "T"], 20.),
             ]   
-    
+
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
-    
+
     #-------------------------------------------------------------------------
     # Set up measurement noises that will be applied to measurements
     variance = [
@@ -126,43 +126,43 @@ def main():
             (var[c_t0].lb, var[c_t0].ub) for var in estimator.measurement_vars
             ]
     #-------------------------------------------------------------------------
-    
+
     data_manager.save_initial_plant_data()
-    
+
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
     data_manager.save_plant_data(iteration = 0)
-    
+
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
     mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.Tjinb[p_ts].value])
-    
+
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
     data_manager.save_estimator_data(iteration = 0)
-    
+
     cinput = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(1, 11)}
-    
-    
+
+
     for i in range(1,11):
         print('\nENTERING MHE LOOP ITERATION %s\n' % i)
-        
+
         mhe.plant.advance_one_sample()
         mhe.plant.initialize_to_initial_conditions()
         inputs = [cinput[i]]
         mhe.plant.inject_inputs(inputs)
-        
+
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
         data_manager.save_plant_data(iteration = i)
-        
+
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
                     measurements,
@@ -170,18 +170,18 @@ def main():
                     random.gauss,
                     measurement_noise_bounds,
                     )
-        
+
         mhe.estimator.advance_one_sample()
         mhe.estimator.load_measurements(measurements,
                                         target = "actualmeasurement",
                                         timepoint = estimator.time.last())
         mhe.estimator.load_inputs_for_MHE(inputs)
-        
+
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
         data_manager.save_estimator_data(iteration = i)
-        
+
     data_manager.plot_estimation_results(states_of_interest)
     return mhe, data_manager
 
