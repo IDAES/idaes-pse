@@ -34,7 +34,7 @@ def rglob(path, glob):
 
 
 DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.1.idaes.2021.06.04.zip",
+    "pyomo @ https://github.com/IDAES/pyomo/archive/6.0.1.idaes.2021.08.13.zip",
 ]
 
 
@@ -54,6 +54,10 @@ kwargs = dict(
         "flask",  # for ui/fsvis
         "flask-cors",
         "jupyter",
+        # pinning pywin32 to version 225 as a workaround for Python 3.8 compatibility issues
+        # (ImportError: DLL load failed while importing ...)
+        # for more information see e.g. https://stackoverflow.com/a/62249872
+        "pywin32==225; sys_platform=='win32' and python_version>='3.8'",
         "lxml",
         "matplotlib",
         "nbconvert",

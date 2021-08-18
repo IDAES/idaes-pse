@@ -42,7 +42,8 @@ runs:
         echo "config_file_name=$config_file_name" >> "$GITHUB_ENV"
     - name: Run build.py script
       working-directory: ${{ inputs.working-dir }}
-      shell: bash
+      # -l needed to be able to run this step correctly within a Conda environment
+      shell: bash -l {0}
       run: |
         echo "::group::Contents of config file $config_file_name"
         cat "$config_file_name"
