@@ -123,7 +123,7 @@ class GenericParameterData(PhysicalParameterBlock):
         default=StateIndex.true,
         domain=In(StateIndex),
         doc="Index state variables by true or apparent components",
-        description="Argument idicating whether the true or apparent species "
+        description="Argument indicating whether the true or apparent species "
         "set should be used for indexing state variables. Must be "
         "StateIndex.true or StateIndex.apparent."))
 
