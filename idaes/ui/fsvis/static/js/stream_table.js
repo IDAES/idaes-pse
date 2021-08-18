@@ -38,6 +38,13 @@ export class StreamTable {
                 if (column_header === "Variable") {
                     column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, pinned: 'left',});
                 }
+                else if (column_header === "Units") {
+                    column_defs.push({headerName: column_header, field: column_header,
+                        cellRenderer: (params) => {
+                            console.log("cellRenderer - params:", params);
+                            return '<span style="opacity: 0.6;">' + params.value + '</span>';
+                        }});
+                }
                 // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
                 else {
                     column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, cellStyle: {"text-align": "right"}});

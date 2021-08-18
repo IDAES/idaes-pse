@@ -433,12 +433,14 @@ class FlowsheetSerializer:
     def _construct_model_json(self):
         from idaes.core.util.tables import (
             create_stream_table_dataframe,
+            create_stream_table_dataframe_with_units
         )  # deferred to avoid circular import
 
         # Get the stream table and add it to the model json
         # Change the index of the pandas dataframe to not be the variables
         self._stream_table_df = (
-            create_stream_table_dataframe(self.arcs)
+            # create_stream_table_dataframe(self.arcs)
+            create_stream_table_dataframe_with_units(self.arcs)
             # Change the index of the pandas dataframe to not be the variables
             .reset_index()
             .rename(columns={"index": "Variable"})
