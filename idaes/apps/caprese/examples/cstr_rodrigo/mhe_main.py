@@ -83,7 +83,8 @@ def main():
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
     # It's ok not declaring anything. The data manager will still save some 
-    # important data, but the user should use the default string of CUID for plotting afterward.
+    # important data, but the user should use the default string of CUID for
+    # plotting afterward.
     states_of_interest = [Reference(mhe.plant.mod.Ca[:]),
                           Reference(mhe.plant.mod.Tall[:, "T"])]
 
@@ -97,7 +98,11 @@ def main():
     # Here we solve for a steady state and use it to fill in past measurements
     desired_ss = [(estimator.mod.Ca[0], 0.021)]
     ss_weights = [(estimator.mod.Ca[0], 1.)]
-    mhe.estimator.initialize_past_info_with_steady_state(desired_ss, ss_weights, solver)
+    mhe.estimator.initialize_past_info_with_steady_state(
+        desired_ss,
+        ss_weights,
+        solver,
+    )
 
     # Now we are ready to construct the objective function for MHE
     model_disturbance_weights = [
