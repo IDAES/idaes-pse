@@ -154,13 +154,13 @@ class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
         units_meta = self.shell.config.property_package.get_metadata()
-        self.enth_sub = Var(self.flowsheet().config.time,
+        self.enth_sub = Var(self.flowsheet().time,
                             initialize=0,
                             units=units_meta.get_derived_units("energy_mole"))
         self.enth_sub.fix()
 
         @self.Constraint(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Calculate steam extraction rate such that all steam condenses",
         )
         def extraction_rate_constraint(b, t):
@@ -246,7 +246,7 @@ class FWH0DData(UnitModelBlockData):
             }
             self.drain_mix = Mixer(default=mix_cfg)
 
-            @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
+            @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
                 """
                 Constraint to set the drain mixer pressure to the pressure of

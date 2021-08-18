@@ -21,7 +21,7 @@ import textwrap
 from pandas import DataFrame
 
 from pyomo.core.base.block import _BlockData
-from pyomo.core.base.misc import tabular_writer
+from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
@@ -170,21 +170,21 @@ class ProcessBlockData(_BlockData):
                 # Try to fix material_accumulation @ first time point
                 try:
                     obj.material_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
                     obj.element_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix energy_accumulation @ first time point
                 try:
                     obj.energy_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -205,21 +205,21 @@ class ProcessBlockData(_BlockData):
             # Try to unfix material_accumulation @ first time point
             try:
                 obj.material_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
                 obj.element_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix energy_accumulation @ first time point
             try:
                 obj.energy_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 

@@ -4,6 +4,7 @@ dynamically created through the `declare_process_block_class()` decorator.
 
 See #1159 for more information.
 """
+import sys
 import functools
 import logging
 import time
@@ -18,6 +19,23 @@ _logger = logging.getLogger('pylint.ideas_plugin')
 
 # TODO figure out a better way to integrate this with pylint logging and/or verbosity settings
 _display = _notify = lambda *a, **kw: None
+
+
+REFERENCE_PYLINT_VERSION = '2.8.3'
+
+
+def _check_version_compatibility():
+
+    from pylint import __version__
+    if __version__ != REFERENCE_PYLINT_VERSION:
+        cmd_to_install = f"pip install pylint=={REFERENCE_PYLINT_VERSION}"
+        msg = (
+            f"WARNING: this plugin's reference version is {REFERENCE_PYLINT_VERSION}, "
+            f"but the currently installed pylint version is {__version__}. "
+            "This is not necessarily a problem; "
+            f"however, in case of issues, try installing the reference version using {cmd_to_install}"
+        )
+        print(msg, file=sys.stderr)
 
 
 def has_declare_block_class_decorator(cls_node, decorator_name="declare_process_block_class"):
@@ -171,3 +189,4 @@ astroid.MANAGER.register_transform(
 
 def register(linter):
     "This function needs to be defined for the plugin to be picked up by pylint"
+    _check_version_compatibility()

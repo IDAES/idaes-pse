@@ -393,7 +393,7 @@ documentation for supported schemes,
         # Add object reference - time
         add_object_reference(self,
                              "t",
-                             self.flowsheet().config.time)
+                             self.flowsheet().time)
 
         # Packing  parameters
         self.eps_ref = Param(initialize=self.config.packing_void_fraction,
