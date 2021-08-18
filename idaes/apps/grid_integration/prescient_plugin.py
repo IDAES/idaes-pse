@@ -19,7 +19,7 @@ class DoubleLoopCoordinator:
         self._register_after_operations_callbacks()
         self._register_update_operations_stats_callbacks()
         self._register_after_ruc_activation_callbacks()
-        self._register_after_simulation_callbacks()
+        self._register_finalization_callbacks()
 
         return
 
@@ -131,8 +131,8 @@ class DoubleLoopCoordinator:
     def _register_after_ruc_activation_callbacks(self):
         prescient.plugins.register_after_ruc_activation_callback(self.after_ruc_activation)
 
-    def _register_after_simulation_callbacks(self):
-        prescient.plugins.register_after_simulation_callback(self.write_plugin_results)
+    def _register_finalization_callbacks(self):
+        prescient.plugins.register_finalization_callback(self.write_plugin_results)
 
     def initialize_customized_results(self, options, simulator):
 
