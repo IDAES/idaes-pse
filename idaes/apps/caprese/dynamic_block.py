@@ -287,7 +287,9 @@ class _DynamicBlockData(_BlockData):
 
         finite_elements = time.get_finite_elements()
         fe_set = set(finite_elements)
-        finite_element_indices = [i for i in range(1,n_t+1) if time[i] in fe_set]
+        finite_element_indices = [
+            i for i in range(1, n_t + 1) if time.card(i) in fe_set
+        ]
         sample_points = [time.first()]
         sample_indices = [1] # Indices of sample points with in time set
         sample_no = 1
@@ -335,7 +337,7 @@ class _DynamicBlockData(_BlockData):
             for i in range(i_0+1, i_s+1):
                 # Want to exclude first time point of sample,
                 # but include last time point of sample.
-                t = time[i]
+                t = time.card(i)
                 var[t].set_value(var.setpoint)
 
     def initialize_sample_to_initial(self,
@@ -349,12 +351,12 @@ class _DynamicBlockData(_BlockData):
         sample_point_indices = self.sample_point_indices
         i_0 = sample_point_indices[sample_idx-1]
         i_s = sample_point_indices[sample_idx]
-        t0 = time[i_0]
+        t0 = time.card(i_0)
         for var in self.component_objects(ctype):
             # Would be nice if I could use a slice with
             # start/stop indices to make this more concise.
             for i in range(i_0+1, i_s+1):
-                t = time[i]
+                t = time.card(i)
                 var[t].set_value(var[t0].value)
 
     def initialize_to_setpoint(self, 
@@ -517,7 +519,7 @@ class _DynamicBlockData(_BlockData):
             if idx is None:
                 # t + sample_time is outside the model's "horizon"
                 continue
-            ts = time[idx]
+            ts = time.card(idx)
             for var in self.component_objects(ctype):
                 var[t].set_value(var[ts].value)
 
@@ -548,14 +550,14 @@ class _DynamicBlockData(_BlockData):
         # passing around time points or the integer index of samples.
         time = self.time
         idx_s = time.find_nearest_index(ts, tolerance=tolerance)
-        ts = time[idx_s]
+        ts = time.card(idx_s)
         if t0 is None:
             t0 = ts - self.sample_time
         idx_0 = time.find_nearest_index(t0, tolerance=tolerance)
         idx_start = idx_0 if include_t0 else idx_0 + 1
         for i in range(idx_start, idx_s+1):
             # Don't want to include first point in sample
-            yield time[i]
+            yield time.card(i)
 
     def get_data_from_sample(self,
             ts,
@@ -587,7 +589,7 @@ class _DynamicBlockData(_BlockData):
             cuid = ComponentUID(_slice.referent)
             if include_t0:
                 i0 = time.find_nearest_index(ts-sample_time, tolerance=tolerance)
-                t0 = time[i0]
+                t0 = time.card(i0)
                 data[cuid] = [_slice[t0].value]
             else:
                 data[cuid] = []
@@ -637,7 +639,7 @@ class _DynamicBlockData(_BlockData):
             if idx is None:
                 # t + sample_time is outside the model's "horizon"
                 continue
-            ts = time[idx]
+            ts = time.card(idx)
             for var in self.component_objects(ctype):
                 if var[t] in zL and var[ts] in zL:
                     zL[var[t]] = zL[var[ts]]
@@ -795,7 +797,7 @@ class SquareSolveContext(object):
 
         for var, val in zip(input_vars, input_vals):
             for i in time_indices:
-                t = time[i]
+                t = time.card(i)
                 if val is None:
                     var[t].fix()
                 else:
@@ -811,7 +813,7 @@ class SquareSolveContext(object):
         input_vars = self.block.input_vars
         for var in input_vars:
             for i in time_indices:
-                t = time[i]
+                t = time.card(i)
                 var[t].unfix()
 
         if self.strip_var_bounds:
