@@ -11,9 +11,10 @@ class Tracker:
         Initializes the tracker object.
 
         Arguments:
-            tracking_model_object: the initialized model object for tracking
+            tracking_model_class: the model object class for tracking
             n_tracking_hour: number of implemented hours after each solve
             solver: a Pyomo mathematical programming solver object
+            **kwarg: necessary arguments to initialize the selected model object
 
         Returns:
             None
@@ -68,7 +69,7 @@ class Tracker:
         signal.
 
         Arguments:
-            g: generator name in str
+            None
 
         Returns:
             None
@@ -88,7 +89,7 @@ class Tracker:
         to follow market dispatch signals.
 
         Arguments:
-            g: generator name in str
+            None
 
         Returns:
             None
@@ -104,7 +105,7 @@ class Tracker:
         to follow market dispatch signals.
 
         Arguments:
-            g: generator name in str
+            None
 
         Returns:
             None
@@ -124,7 +125,7 @@ class Tracker:
         of the energy system.
 
         Arguments:
-            g: generator name in str
+            None
 
         Returns:
             None
@@ -174,6 +175,16 @@ class Tracker:
 
     def _record_daily_stats(self, profiles):
 
+        '''
+        Record the stats that are used to update the model in the past 24 hours.
+
+        Arguments:
+            profiles: the newly implemented stats. {stat_name: [...]}
+
+        Returns:
+            None
+        '''
+
         if self.daily_stats is None:
             self.daily_stats = profiles
         else:
@@ -193,7 +204,7 @@ class Tracker:
 
         Arguments:
             market_dispatch: a dictionary that contains the market dispatch signals
-                             that we want to track. {generator name: [float]}
+                             that we want to track.
 
         Returns:
             None
@@ -205,6 +216,16 @@ class Tracker:
         return
 
     def get_last_delivered_power(self):
+
+        '''
+        Returns the last delivered power output.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
         return self.tracking_model_object.get_last_delivered_power(b = self.model.fs,\
                                                                    last_implemented_time_step = self.n_tracking_hour - 1)
 
