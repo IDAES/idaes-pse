@@ -13,9 +13,16 @@
 from enum import Enum
 import os
 
-from idaes.surrogate.my_surrogate_base import Surrogate
+from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
 from idaes.core.util.config import list_of_ints, list_of_floats
 from pyomo.common.config import ConfigValue, In
+
+
+# TODO: Default file and path names
+# TODO: Pre-existing files
+# TODO: Custom basis functions
+# TODO: Multiple output trace files
+# TODO: Generate expression from string representation
 
 
 DEFAULTPATH = os.path.dirname(__file__)
@@ -96,6 +103,13 @@ SIMOUT
 Other options not yet included:
 NCUSTOMBAS
 """
+
+
+# Headers from ALAMO trace file that should be common for all outputs
+common_trace = [
+    "filename", "NINPUTS", "NOUTPUTS", "INITIALPOINTS", "SET", "INITIALIZER",
+    "SAMPLER", "MODELER", "BUILDER", "GREEDYBUILD", "BACKSTEPPER",
+    "GREEDYBACK", "REGULARIZER", "SOLVEMIP"]
 
 
 class Alamopy(Surrogate):
@@ -429,7 +443,7 @@ class Alamopy(Surrogate):
         self.write_alm_file(almname, trcname)
 
         # Call ALAMO executable
-        self.call_alamo()
+        self.call_alamo(almname)
 
         # Read back results
         trace_dict = self.read_trace_file(trcname)
@@ -554,8 +568,8 @@ class Alamopy(Surrogate):
         self.write_alm_to_stream(f, trace_fname, x_reg, z_reg, x_val, z_val)
         f.close()
 
-    def call_alamo(self):
-        pass
+    def call_alamo(self, almname):
+        os.system("alamo " + almname)
 
     def read_trace_file(self, trace_file):
         with open(trace_file, "r") as f:
@@ -565,20 +579,73 @@ class Alamopy(Surrogate):
         trace_read = {}
         # Get headers from first line in trace file
         headers = lines[0].split(", ")
-        # Get trace output from final line of file
-        # ALAMO will append new lines to existing trace files
-        trace = lines[-1].split(", ")
-
         for i in range(len(headers)):
-            trace_read[headers[i].strip("\n")] = trace[i].strip("\n")
+            header = headers[i].strip("#\n")
+            if header in common_trace:
+                trace_read[header] = None
+            else:
+                trace_read[header] = {}
+
+        # Get trace output from final line(s) of file
+        # ALAMO will append new lines to existing trace files
+        # For multiple outputs, each output has its own line in trace file
+        for j in range(self._n_outputs):
+            trace = lines[-j-1].split(", ")
+
+            for i in range(len(headers)):
+                header = headers[i].strip("#\n")
+                trace_val = trace[i].strip("\n")
+
+                # Replace Fortran powers (^) with Python powers (**)
+                trace_val = trace_val.replace("^", "**")
+                # Replace = with ==
+                trace_val = trace_val.replace("=", "==")
+
+                if header in common_trace:
+                    # These should be common across all output
+                    if trace_read[header] is None:
+                        # No value yet, so set value
+                        trace_read[header] = trace_val
+                    else:
+                        # Check that current value matches the existng value
+                        if trace_read[header] != trace_val:
+                            raise RuntimeError(
+                                f"Mismatch in values when reading ALAMO trace "
+                                f"file. Values for {header}: "
+                                f"{trace_read[header]}, {header}")
+                else:
+                    trace_read[header][self._output_labels[j]] = trace_val
+
+                # Do some final sanity checks
+                if header == "OUTPUT":
+                    # Value should be equal to the current index of outputs
+                    if trace_val != j+1:
+                        raise RuntimeError(
+                            f"{trace_val} {j+1}")
+                    
+
         return trace_read
 
     def populate_results(self, trace_dict):
-        pass
+        self._results = trace_dict
 
     def build_surrogate_model_object(self):
-        pass
+        self._model = AlamoModelObject(
+            surrogate=self._results["Model"],
+            input_labels=self._input_labels,
+            output_labels=self._output_labels)
 
     def remove_temp_files(self, almname, trcname):
         os.remove(almname)
         os.remove(trcname)
+
+
+class AlamoModelObject(SurrogateModelObject):
+
+    def populate_block(self, block, variables=None):
+        if variables is None:
+            variables = self.construct_variables(block)
+
+        expr = eval(self._surrogate, locals=variables)
+
+        

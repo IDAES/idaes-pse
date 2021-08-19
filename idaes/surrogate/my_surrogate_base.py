@@ -58,7 +58,7 @@ class Surrogate:
 
     def __init__(self, **settings):
         """
-        Initialization fo the Surrogate Class.
+        Initialization for the Surrogate Class.
         Keyword Args:
             settings            : Dictionary of user-defined configurations and settings for the selected surrogate model tool(s).
         Returns:
@@ -295,3 +295,29 @@ class Surrogate:
             return
         except:
             raise Exception('File could not be loaded.')
+
+
+class SurrogateModelObject():
+    """
+    Base class for standard IDAES Surrogate Model object
+    """
+
+    def __init__(self, surrogate, input_list, output_list):
+        self._surrogate = surrogate
+        self._input_labels = input_labels
+        self._output_labels = output_labels
+
+    def populate_block(self, block, variables=None):
+        """
+        Method to populate a Pyomo Block with surrogate model constraints.
+        """
+        raise NotImplementedError(
+            "SurrogateModel class has not implemented populate_block method.")
+
+    def evalute_surrogate(self, inputs):
+        """
+        Method ot evaluate constraint at a set of user provide values.
+        """
+        raise NotImplementedError(
+            "SurrogateModel class has not implemented evaluate_surrogate "
+            "method.")
