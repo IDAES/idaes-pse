@@ -1,11 +1,6 @@
-# Xian Gao
-# Dowling Lab
-# xgao1@nd.edu
-
 import pandas as pd
 import pyomo.environ as pyo
 import os
-from collections import deque, OrderedDict
 from itertools import combinations
 
 class Bidder:
