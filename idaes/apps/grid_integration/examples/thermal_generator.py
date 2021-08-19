@@ -18,7 +18,7 @@ class ThermalGenerator:
         Arguments:
             rts_gmlc_dataframe: the RTS-GMLC generator data in Pandas DataFrame
             horizon: the length of the planning horizon of the model.
-            generators: a list of generators in RTS-GMLC
+            generator: a generator in RTS-GMLC
 
         Returns:
             None
@@ -38,12 +38,12 @@ class ThermalGenerator:
         model, given a list of generator names and the RTS-GMLC data directory.
 
         Arguments:
-            generator_names: a list of generator names in RTS-GMLC dataset.
+            generator_names: a generator name in RTS-GMLC dataset.
             gen_params: the RTS-GMLC generator data in Pandas DataFrame
 
         Returns:
             model_data: a dictionary which has this structure
-            {data type name: {generator name: value}}.
+            {data type name: value}.
         '''
 
         gen_params = gen_params.set_index('GEN UID',inplace = False)
@@ -88,7 +88,7 @@ class ThermalGenerator:
         Ostrowski, J. and Watson, J.P., 2020.
 
         Arguments:
-            b: a pyomo model
+            b: a pyomo block
 
         Returns:
             None
@@ -129,13 +129,12 @@ class ThermalGenerator:
         This function builds the model for a thermal generator.
 
         Arguments:
-            generator: generator name in str.
             plan_horizon: the length of the planning horizon of the model.
             segment_number: number of segments used in the piecewise linear
             production model.
 
         Returns:
-            b: the constructed model.
+            b: the constructed block.
         '''
 
         model_data = self.model_data
@@ -312,8 +311,9 @@ class ThermalGenerator:
         constraints based on the implemented shut down and start up events.
 
         Arguments:
-            implemented_shut_down: realized shut down events: {unit: []}.
-            implemented_start_up: realized start up events: {unit: []}
+            b: the block that needs to be updated
+            implemented_shut_down: realized shut down events: [].
+            implemented_start_up: realized start up events: []
 
         Returns:
             None
@@ -354,7 +354,8 @@ class ThermalGenerator:
         the implemented power outputs.
 
         Arguments:
-            implemented_power_output: realized power outputs: {unit: []}
+            b: the block that needs to be updated
+            implemented_power_output: realized power outputs: []
 
          Returns:
              None
@@ -372,8 +373,10 @@ class ThermalGenerator:
         the implemented power outputs, shut down and start up events.
 
         Arguments:
-            last_implemented_time_step: time index for the last implemented time
-                                        step
+            b: the block that needs to be updated
+            implemented_shut_down: realized shut down events: [].
+            implemented_start_up: realized start up events: []
+            implemented_power_output: realized power outputs: []
 
          Returns:
              None
@@ -392,6 +395,7 @@ class ThermalGenerator:
         solve.
 
         Arguments:
+            b: the block
             model_var: intended variable name in str
             last_implemented_time_step: time index for the last implemented time
                                         step
@@ -493,9 +497,6 @@ if __name__ == "__main__":
     horizon = 4
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
-    # thermal_generator_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe, \
-    #                                             horizon = horizon, \
-    #                                             generator = generator)
 
     price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
     forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
