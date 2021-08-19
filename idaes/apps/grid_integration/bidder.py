@@ -11,7 +11,7 @@ class Bidder:
         Initializes the bidder object.
 
         Arguments:
-            bidding_model_class: the initialized model object for bidding
+            bidding_model_class: the model object class for tracking for bidding
             n_scenario: number of LMP scenarios
             solver: a Pyomo mathematical programming solver object
             forecaster: an initialized LMP forecaster object
