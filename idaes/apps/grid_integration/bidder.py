@@ -16,8 +16,11 @@ class Bidder:
         Initializes the bidder object.
 
         Arguments:
-            bidding_model_object: the initialized model object for bidding
+            bidding_model_class: the initialized model object for bidding
+            n_scenario: number of LMP scenarios
             solver: a Pyomo mathematical programming solver object
+            forecaster: an initialized LMP forecaster object
+            **kwarg: necessary arguments to initialize the selected model object
 
         Returns:
             None
@@ -36,17 +39,31 @@ class Bidder:
             b = self.bidding_model_object.create_model()
             self.model.fs[i].transfer_attributes_from(b)
 
+        # save power output variable in the model object
         self._save_power_outputs()
 
+        # copy the inputs
         self.n_scenario = n_scenario
         self.solver = solver
-        self.formulate_bidding_problem()
-
         self.forecaster = forecaster
 
+        self.formulate_bidding_problem()
+
+        # declare a list to store results
         self.bids_result_list = []
 
     def _save_power_outputs(self):
+
+        '''
+        Create references of the power output variable in each price scenario
+        block.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
 
         for i in self.model.SCENARIOS:
             # get the power output
@@ -157,7 +174,7 @@ class Bidder:
 
         Arguments:
             price_forecasts: price forecasts needed to solve the bidding problem.
-                            {gen: {LMP scenario: [forecast timeseries] }}
+                            {LMP scenario: [forecast timeseries] }
             date: current simulation date
             hour: current simulation hour
 
@@ -176,6 +193,19 @@ class Bidder:
         return bids
 
     def update_model(self, **kwargs):
+
+        '''
+        Update the flowsheets in all the price scenario blocks to advance time
+        step.
+
+        Arguments:
+            **kwargs: necessary profiles to update the underlying model.
+                      {stat_name: [...]}
+
+        Returns:
+            None
+        '''
+
         for i in self.model.SCENARIOS:
             self.bidding_model_object.update_model(b = self.model.fs[i], **kwargs)
 
@@ -186,7 +216,7 @@ class Bidder:
 
         Arguments:
             price_forecasts: price forecasts needed to solve the bidding problem.
-                             {generator: {LMP scenario: [forecast timeseries] }}
+                             {LMP scenario: [forecast timeseries] }
 
         Returns:
             None
@@ -268,7 +298,7 @@ class Bidder:
 
         return bids
 
-    def record_bids(self, bids, date, hour, **kwargs):
+    def record_bids(self, bids, date, hour):
 
         '''
         This function records the bids we computed for the given date into a
@@ -277,8 +307,9 @@ class Bidder:
         DataFrame into a class property 'bids_result_list'.
 
         Arguments:
-            date: the date we bid into
             bids: the obtained bids for this date.
+            date: the date we bid into
+            hour: the hour we bid into
 
         Returns:
             None
