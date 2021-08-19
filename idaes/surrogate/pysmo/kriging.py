@@ -481,6 +481,32 @@ class KrigingModel:
             y_pred[i, 0] = self.optimal_mean + np.matmul(np.matmul(cov_matrix_tests.transpose(), self.covariance_matrix_inverse), self.optimal_y_mu)
         return y_pred
 
+    def predict_output_var(self, x_pred):
+        """
+        DOCTSTRING UPDATE PENDING AS ON 17-Aug-21.
+        The ``predict_output_`` method generates output predictions for input data x_pred based a previously trained Kriging model.
+
+        Args:
+            x_pred(NumPy Array)             : Array of designs for which the output is to be evaluated/predicted.
+
+        Returns:
+             NumPy Array                    : Output variable predictions based on the Kriging model.
+
+        """
+        x_pred_scaled = ((x_pred - self.x_data_min) / (self.x_data_max - self.x_data_min))
+        x_pred = x_pred_scaled.reshape(x_pred.shape)
+
+        if x_pred.ndim == 1:
+            x_pred = x_pred.reshape(1, len(x_pred))
+
+        y_var_pred = np.zeros((x_pred.shape[0], 1))
+
+        for i in range(0, x_pred.shape[0]):
+            cmt = (np.matmul(((np.abs(x_pred[i, :] - self.x_data_scaled)) ** self.optimal_p), self.optimal_weights)).transpose()
+            cov_matrix_tests = np.exp(-1 * cmt)
+            y_var_pred[i, 0] = self.optimal_variance *(1 + self.regularization_parameter -  np.matmul(np.matmul(cov_matrix_tests.transpose(), self.covariance_matrix_inverse), cov_matrix_tests))
+        return y_var_pred
+
     def training(self):
         """
         Main function for Kriging training.
@@ -578,6 +604,10 @@ class KrigingModel:
 
         This function was contributed by Elvis Eugene, Jialu Wang, and Alex Dowling at the University of Notre Dame with support from NSF grant CBET-1941596.
         """
+        '''
+        CHECK THE DIMENSIONS OF THE VECTORS / MATRICES IN THIS FUNCTION IN CASE OF MISMATCH WITH NUMERICAL RESULTS
+        '''
+
         t1 = np.array([variable_list])
         phi_var = []
         for i in range(0, self.x_data.shape[0]):
@@ -587,7 +617,7 @@ class KrigingModel:
             phi_var.append(curr_term)
         phi_var_array = np.asarray(phi_var)
 
-        corr_expr = 1 + self.regularization_parameter - phi_var_array @ self.covariance_matrix_inverse @ phi_var_array
+        corr_expr = 1 + self.regularization_parameter - phi_var_array.T @ self.covariance_matrix_inverse @ phi_var_array
 
         covar_expr = self.optimal_variance * corr_expr
 
