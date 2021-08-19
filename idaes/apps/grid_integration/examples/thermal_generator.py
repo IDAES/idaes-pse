@@ -414,6 +414,17 @@ class ThermalGenerator:
 
     @staticmethod
     def get_last_delivered_power(b,last_implemented_time_step):
+
+        '''
+        Returns the last delivered power output.
+
+        Arguments:
+            None
+
+        Returns:
+            None
+        '''
+        
         return pyo.value(b.P_T[last_implemented_time_step])
 
     def record_results(self, b, date = None, hour = None, **kwargs):
@@ -473,6 +484,17 @@ class ThermalGenerator:
         return
 
     def write_results(self, path):
+
+        '''
+        This methods writes the saved operation stats into an csv file.
+
+        Arguments:
+            path: the path to write the results.
+
+        Return:
+            None
+        '''
+
         pd.concat(self.result_list).to_csv(path, index = False)
 
     @property
