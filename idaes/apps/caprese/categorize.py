@@ -70,7 +70,7 @@ def _get_disc_eq(deriv):
 
 def _identify_derivative_if_differential(condata, wrt, include_fixed=False):
     parent = condata.parent_component()
-    if parent.local_name.endswith("_disc_eq"):
+    if parent.local_name.endswith(DAE_DISC_SUFFIX):
         return False, None
     deriv = None
     for var in identify_variables(condata.expr, include_fixed=include_fixed):
