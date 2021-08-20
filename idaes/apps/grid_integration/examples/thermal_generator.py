@@ -6,7 +6,7 @@ import sys
 sys.path.append('../')
 from tracker import Tracker
 from bidder import Bidder
-from forecaster import WhiteNoiseForecaster
+from forecaster import PlaceHolderForecaster
 
 class ThermalGenerator:
 
@@ -550,7 +550,7 @@ if __name__ == "__main__":
 
         # create forecaster
         price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
-        forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
+        forecaster = PlaceHolderForecaster(price_forecasts_df = price_forecasts_df)
 
         thermal_bidder = Bidder(bidding_model_object = bidding_model_object,\
                                 n_scenario = 10,\

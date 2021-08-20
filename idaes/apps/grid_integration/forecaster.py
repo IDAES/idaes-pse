@@ -1,6 +1,6 @@
 import pandas as pd
 
-class WhiteNoiseForecaster:
+class PlaceHolderForecaster:
 
     def __init__(self, price_forecasts_df):
         self.price_forecasts_df = price_forecasts_df
@@ -21,7 +21,7 @@ class WhiteNoiseForecaster:
 if __name__ == "__main__":
 
     price_forecasts_df = pd.read_csv('examples/lmp_forecasts_example.csv')
-    forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
+    forecaster = PlaceHolderForecaster(price_forecasts_df = price_forecasts_df)
 
     date = "2021-08-01"
     forecasts = forecaster.forecast(date = date)

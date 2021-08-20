@@ -4,7 +4,7 @@ import sys
 sys.path.append('../')
 from tracker import Tracker
 from bidder import Bidder
-from forecaster import WhiteNoiseForecaster
+from forecaster import PlaceHolderForecaster
 from prescient_plugin import DoubleLoopCoordinator
 from thermal_generator import ThermalGenerator
 
@@ -19,7 +19,7 @@ rts_gmlc_dataframe = pd.read_csv('gen.csv')
 
 # create forecaster
 price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
-forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
+forecaster = PlaceHolderForecaster(price_forecasts_df = price_forecasts_df)
 
 # create solver
 solver = pyo.SolverFactory('cbc')
