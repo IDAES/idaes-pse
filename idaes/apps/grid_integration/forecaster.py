@@ -1,6 +1,10 @@
 import pandas as pd
 
 class PlaceHolderForecaster:
+    '''
+    This a placeholder for a real price forecaster. This placeholder can
+    manipulate the forecasts in a dataframe and feed to the bidder.
+    '''
 
     def __init__(self, price_forecasts_df):
         self.price_forecasts_df = price_forecasts_df
