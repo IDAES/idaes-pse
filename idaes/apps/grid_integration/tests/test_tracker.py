@@ -29,7 +29,7 @@ class TestingModel:
         self.horizon = horizon
         self.result_list = []
 
-    def popluate_model(self, b):
+    def populate_model(self, b):
 
         '''
         This function builds the model for a thermal generator.
