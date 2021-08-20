@@ -998,13 +998,19 @@ objects linked to all inlet states and the mixed state,
         if hasattr(self, "material_mixing_equations"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, p, j), c in self.material_mixing_equations.items():
-                    flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
+                    try: # not all phases contain all components
+                        flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
+                    except KeyError:
+                        continue
                     s = iscale.get_scaling_factor(flow_term, default=1)
                     iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, j), c in self.material_mixing_equations.items():
                     for i, p in enumerate(self.mixed_state.phase_list):
-                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        try: # not all phases contain all components
+                            ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        except KeyError:
+                            continue
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
@@ -1015,7 +1021,10 @@ objects linked to all inlet states and the mixed state,
                 pc_set = self.mixed_state.phase_component_set
                 for t, c in self.material_mixing_equations.items():
                     for i, (p, j) in enumerate(pc_set):
-                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        try: # not all phases contain all components
+                            ft = self.mixed_state[t].get_material_flow_terms(p, j)
+                        except KeyError:
+                            continue
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
