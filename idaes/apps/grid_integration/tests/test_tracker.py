@@ -29,7 +29,7 @@ class TestingModel:
         self.horizon = horizon
         self.result_list = []
 
-    def create_model(self):
+    def popluate_model(self, b):
 
         '''
         This function builds the model for a thermal generator.
@@ -42,8 +42,6 @@ class TestingModel:
         Returns:
             b: the constructed block.
         '''
-
-        b = pyo.Block()
 
         ## define the sets
         b.HOUR = pyo.Set(initialize = range(self.horizon))
@@ -73,7 +71,7 @@ class TestingModel:
             return b.prod_cost_approx[h]
         b.tot_cost = pyo.Expression(b.HOUR,rule = tot_cost_fun)
 
-        return b
+        return
 
     @staticmethod
     def _update_power(b, implemented_power_output):
@@ -232,10 +230,12 @@ def tracker_object():
     n_tracking_hour = 1
     solver = pyo.SolverFactory('cbc')
 
-    return Tracker(tracking_model_class = TestingModel,\
-                   n_tracking_hour = n_tracking_hour, \
-                   solver = solver,\
-                   horizon = horizon)
+    # create a tracker model
+    tracking_model_object = TestingModel(horizon = horizon)
+    tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                             n_tracking_hour = n_tracking_hour, \
+                             solver = solver)
+    return tracker_object
 
 @pytest.mark.component
 def test_track_market_dispatch(tracker_object):
