@@ -376,7 +376,7 @@ class Cubic(EoSBase):
                          for i in blk.components_in_phase(p))
                  )
 
-        dBdT = -B / blk.pressure
+        dBdT = -B / blk.temperature
         dAdT = (A/am) * dadT - (2*A/blk.temperature)
         K2 = (EoS_u - 1) * B - 1
         K3 = A - EoS_u * B - (EoS_u - EoS_w) * B**2
@@ -395,7 +395,7 @@ class Cubic(EoSBase):
         # Derived from the relations in Chapter 6 of [1]
         return (
             Cubic.gas_constant(blk)*(blk.temperature * dZdT + Z - 1) +
-            blk.temperature * d2adT2 * safe_log(expression1 / expression2)  + 
+            (blk.temperature * d2adT2 / (EoS_p * bm)) * safe_log(expression1 / expression2)  + 
             ((am - blk.temperature * dadT) / (EoS_p * bm)) * (expression3 - expression4) +
             sum(blk.mole_frac_phase_comp[p, j] * 
                 get_method(blk, "cp_mol_ig_comp", j)(blk, cobj(blk, j), blk.temperature)
