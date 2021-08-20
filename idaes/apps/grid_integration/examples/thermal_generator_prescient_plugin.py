@@ -24,29 +24,32 @@ forecaster = PlaceHolderForecaster(price_forecasts_df = price_forecasts_df)
 # create solver
 solver = pyo.SolverFactory('cbc')
 
-# create trackers
-thermal_tracker = Tracker(tracking_model_class = ThermalGenerator,\
+## create trackers
+
+# make a tracker
+tracking_model_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                         horizon = tracking_horizon, \
+                                         generator = generator)
+thermal_tracker = Tracker(tracking_model_object = tracking_model_object,\
                           n_tracking_hour = n_tracking_hour, \
-                          solver = solver,\
-                          rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                          horizon = tracking_horizon,\
-                          generator = generator)
+                          solver = solver)
 
-thermal_projection_tracker = Tracker(tracking_model_class = ThermalGenerator,\
+# make a projection tracker
+projection_tracking_model_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                                    horizon = tracking_horizon, \
+                                                    generator = generator)
+thermal_projection_tracker = Tracker(tracking_model_object = projection_tracking_model_object,\
                                      n_tracking_hour = n_tracking_hour, \
-                                     solver = solver,\
-                                     rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                                     horizon = tracking_horizon,\
-                                     generator = generator)
+                                     solver = solver)
 
-# create bidder
-thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
+# create a bidder
+bidding_model_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                        horizon = bidding_horizon, \
+                                        generator = generator)
+thermal_bidder = Bidder(bidding_model_object = bidding_model_object,\
                         n_scenario = n_scenario,\
                         solver = solver,\
-                        forecaster = forecaster,\
-                        rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                        horizon = bidding_horizon,\
-                        generator = generator)
+                        forecaster = forecaster)
 
 # create coordinator
 coordinator = DoubleLoopCoordinator(bidder = thermal_bidder,\
