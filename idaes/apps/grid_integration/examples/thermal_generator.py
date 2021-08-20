@@ -123,13 +123,13 @@ class ThermalGenerator:
 
         return
 
-    def create_model(self, plan_horizon = 48, segment_number = 4):
+    def populate_model(self, b, segment_number = 4):
 
         '''
         This function builds the model for a thermal generator.
 
         Arguments:
-            plan_horizon: the length of the planning horizon of the model.
+            b: a pyomo block
             segment_number: number of segments used in the piecewise linear
             production model.
 
@@ -138,7 +138,6 @@ class ThermalGenerator:
         '''
 
         model_data = self.model_data
-        b = pyo.Block()
 
         ## define the sets
         b.HOUR = pyo.Set(initialize = list(range(self.horizon)))
@@ -302,7 +301,7 @@ class ThermalGenerator:
             return b.prod_cost_approx[h] + b.start_up_cost_expr[h]
         b.tot_cost = pyo.Expression(b.HOUR,rule = tot_cost_fun)
 
-        return b
+        return
 
     @staticmethod
     def _update_UT_DT(b, implemented_shut_down, implemented_start_up):
@@ -424,7 +423,7 @@ class ThermalGenerator:
         Returns:
             None
         '''
-        
+
         return pyo.value(b.P_T[last_implemented_time_step])
 
     def record_results(self, b, date = None, hour = None, **kwargs):
@@ -519,40 +518,44 @@ if __name__ == "__main__":
     horizon = 4
 
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
-
-    price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
-    forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
-
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = False
+    run_tracker = True
     run_bidder = True
 
     if run_tracker:
+
+        # create a tracker model
+        tracking_model_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                                 horizon = 4, \
+                                                 generator = "102_STEAM_3")
         # make a tracker
-        thermal_tracker = Tracker(tracking_model_class = ThermalGenerator,\
+        thermal_tracker = Tracker(tracking_model_object = tracking_model_object,\
                                   n_tracking_hour = 1, \
-                                  solver = solver,\
-                                  rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                                  horizon = horizon,\
-                                  generator = generator)
+                                  solver = solver)
 
-        market_dispatch = {generator: [30, 40 , 50, 70]}
+        market_dispatch = [30, 40 , 50, 70]
 
-        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch[generator], \
+        thermal_tracker.track_market_dispatch(market_dispatch = market_dispatch, \
                                               date = "2021-07-26", \
                                               hour = '17:00')
         thermal_tracker.write_results(path = './')
 
     if run_bidder:
 
-        thermal_bidder = Bidder(bidding_model_class = ThermalGenerator,\
+        # create a tracker model
+        bidding_model_object = ThermalGenerator(rts_gmlc_dataframe = rts_gmlc_dataframe,\
+                                                horizon = 48, \
+                                                generator = "102_STEAM_3")
+
+        # create forecaster
+        price_forecasts_df = pd.read_csv('lmp_forecasts_concat.csv')
+        forecaster = WhiteNoiseForecaster(price_forecasts_df = price_forecasts_df)
+
+        thermal_bidder = Bidder(bidding_model_object = bidding_model_object,\
                                 n_scenario = 10,\
                                 solver = solver,\
-                                forecaster = forecaster,\
-                                rts_gmlc_dataframe = rts_gmlc_dataframe,\
-                                horizon = 48,\
-                                generator = generator)
+                                forecaster = forecaster)
 
         date = "2020-07-10"
         hour = "13:00"

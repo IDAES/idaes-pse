@@ -5,7 +5,7 @@ import os
 
 class Tracker:
 
-    def __init__(self, tracking_model_class, n_tracking_hour, solver, **kwarg):
+    def __init__(self, tracking_model_object, n_tracking_hour, solver):
 
         '''
         Initializes the tracker object.
@@ -21,13 +21,12 @@ class Tracker:
         '''
 
         # create an instance
-        self.tracking_model_object = tracking_model_class(**kwarg)
+        self.tracking_model_object = tracking_model_object
 
         # add flowsheet to model
         self.model = pyo.ConcreteModel()
         self.model.fs = pyo.Block()
-        b = self.tracking_model_object.create_model()
-        self.model.fs.transfer_attributes_from(b)
+        self.tracking_model_object.populate_model(self.model.fs)
 
         # get the power output
         power_output_name = self.tracking_model_object.power_output

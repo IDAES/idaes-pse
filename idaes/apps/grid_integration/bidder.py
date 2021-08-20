@@ -5,7 +5,7 @@ from itertools import combinations
 
 class Bidder:
 
-    def __init__(self, bidding_model_class, n_scenario, solver, forecaster, **kwarg):
+    def __init__(self, bidding_model_object, n_scenario, solver, forecaster):
 
         '''
         Initializes the bidder object.
@@ -22,23 +22,25 @@ class Bidder:
         '''
 
         # create an instance
-        self.bidding_model_object = bidding_model_class(**kwarg)
+        self.bidding_model_object = bidding_model_object
         self.generator = self.bidding_model_object.generator
 
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
         self.n_scenario = n_scenario
+
+        # declare scenario set
         self.model.SCENARIOS = pyo.Set(initialize = range(self.n_scenario))
+
+        # populate scenario blocks
         self.model.fs = pyo.Block(self.model.SCENARIOS)
         for i in self.model.SCENARIOS:
-            b = self.bidding_model_object.create_model()
-            self.model.fs[i].transfer_attributes_from(b)
+            self.bidding_model_object.populate_model(self.model.fs[i])
 
         # save power output variable in the model object
         self._save_power_outputs()
 
         # copy the inputs
-        self.n_scenario = n_scenario
         self.solver = solver
         self.forecaster = forecaster
 
