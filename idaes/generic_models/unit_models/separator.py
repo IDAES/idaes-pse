@@ -1631,13 +1631,19 @@ objects linked the mixed state and all outlet states,
         if hasattr(self, "material_splitting_eqn"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, o, p, j), c in self.material_splitting_eqn.items():
-                    flow_term = mixed_state[t].get_material_flow_terms(p, j)
+                    try: # not all phases contain all components
+                        flow_term = mixed_state[t].get_material_flow_terms(p, j)
+                    except KeyError:
+                        continue
                     s = iscale.get_scaling_factor(flow_term, default=1)
                     iscale.constraint_scaling_transform(c, s)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, o, j), c in self.material_splitting_eqn.items():
                     for i, p in enumerate(mixed_state.phase_list):
-                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        try:
+                            ft = mixed_state[t].get_material_flow_terms(p, j)
+                        except KeyError:
+                            continue
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
@@ -1648,7 +1654,10 @@ objects linked the mixed state and all outlet states,
                 pc_set = mixed_state.phase_component_set
                 for (t, o), c in self.material_splitting_eqn.items():
                     for i, (p, j) in enumerate(pc_set):
-                        ft = mixed_state[t].get_material_flow_terms(p, j)
+                        try: # not all phases contain all components
+                            ft = mixed_state[t].get_material_flow_terms(p, j)
+                        except KeyError:
+                            continue
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
