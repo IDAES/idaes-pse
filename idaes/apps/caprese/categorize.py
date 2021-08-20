@@ -109,7 +109,7 @@ def categorize_dae_variables_and_constraints(
         # Use the first non-initial time point as a "representative
         # index." Don't use get_finite_elements so this will be valid
         # for general ordered sets.
-        t1 = time.card(2)
+        t1 = time.at(2)
 
     if input_vars is None:
         input_vars = []
