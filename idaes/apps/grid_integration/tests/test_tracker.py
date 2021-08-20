@@ -7,7 +7,7 @@ from idaes.apps.grid_integration.tracker import Tracker
 # declare a testing model class
 class TestingModel:
 
-    pmin = 0
+    pmin = 20
     pmax = 100
     marginal_cost = 30
 
