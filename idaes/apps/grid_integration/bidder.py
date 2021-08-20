@@ -163,7 +163,7 @@ class Bidder:
                                         * self.model.fs[k].energy_price[t] \
                                         - weight * cost[t]
 
-    def compute_bids(self, date, hour = None):
+    def compute_bids(self, date, hour = None, **kwargs):
 
         '''
         Solve the model to bid into the markets. After solving, record the bids
@@ -179,7 +179,7 @@ class Bidder:
             None
         '''
 
-        price_forecasts = self.forecaster.forecast(date = date, hour = hour)
+        price_forecasts = self.forecaster.forecast(date = date, hour = hour, **kwargs)
 
         # update the price forecasts
         self._pass_price_forecasts(price_forecasts)
