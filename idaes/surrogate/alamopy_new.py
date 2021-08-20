@@ -15,14 +15,16 @@ import os
 
 from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
 from idaes.core.util.config import list_of_ints, list_of_floats
+from pyomo.environ import Constraint
 from pyomo.common.config import ConfigValue, In
 
 
+# TODO: Test calling ALAMO
 # TODO: Default file and path names
 # TODO: Pre-existing files
 # TODO: Custom basis functions
-# TODO: Multiple output trace files
 # TODO: Generate expression from string representation
+# TODO: Log ALAMO output
 
 
 DEFAULTPATH = os.path.dirname(__file__)
@@ -590,7 +592,7 @@ class Alamopy(Surrogate):
         # ALAMO will append new lines to existing trace files
         # For multiple outputs, each output has its own line in trace file
         for j in range(self._n_outputs):
-            trace = lines[-j-1].split(", ")
+            trace = lines[-self._n_outputs+j].split(", ")
 
             for i in range(len(headers)):
                 header = headers[i].strip("#\n")
@@ -618,11 +620,20 @@ class Alamopy(Surrogate):
 
                 # Do some final sanity checks
                 if header == "OUTPUT":
-                    # Value should be equal to the current index of outputs
-                    if trace_val != j+1:
+                    # OUTPUT should be equal to the current index of outputs
+                    if trace_val != str(j+1):
                         raise RuntimeError(
-                            f"{trace_val} {j+1}")
-                    
+                            f"Mismatch when reading ALAMO trace file. "
+                            f"Expected OUTPUT = {j+1}, found {trace_val}.")
+                elif header == "Model":
+                    # Var label on LHS should match output label
+                    vlabel = trace_val.split("==")[0].strip()
+                    if vlabel != self._output_labels[j]:
+                        raise RuntimeError(
+                            f"Mismatch when reading ALAMO trace file. "
+                            f"Label of output variable in expression "
+                            f"({vlabel}) does not match expected label "
+                            f"({self._output_labels[j]}).")
 
         return trace_read
 
@@ -642,10 +653,21 @@ class Alamopy(Surrogate):
 
 class AlamoModelObject(SurrogateModelObject):
 
+    def evaluate_surroagte(self, inputs):
+        values = {}
+        for o in self._output_labels:
+            expr = self._surrogate[o].split("==")[1]
+            values[o] = eval(expr, locals=inputs)
+        return values
+
     def populate_block(self, block, variables=None):
         if variables is None:
             variables = self.construct_variables(block)
 
-        expr = eval(self._surrogate, locals=variables)
+        def alamo_rule(b, o):
+            return eval(self._surrogate[o], locals=variables)
 
-        
+        block.add_component(
+            "alamo_constraint",
+            Constraint(self._output_labels,
+                       rule=alamo_rule))

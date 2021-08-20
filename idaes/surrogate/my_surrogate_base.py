@@ -302,7 +302,7 @@ class SurrogateModelObject():
     Base class for standard IDAES Surrogate Model object
     """
 
-    def __init__(self, surrogate, input_list, output_list):
+    def __init__(self, surrogate, input_labels, output_labels):
         self._surrogate = surrogate
         self._input_labels = input_labels
         self._output_labels = output_labels
