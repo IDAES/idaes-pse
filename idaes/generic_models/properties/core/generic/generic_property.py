@@ -123,7 +123,7 @@ class GenericParameterData(PhysicalParameterBlock):
         default=StateIndex.true,
         domain=In(StateIndex),
         doc="Index state variables by true or apparent components",
-        description="Argument idicating whether the true or apparent species "
+        description="Argument indicating whether the true or apparent species "
         "set should be used for indexing state variables. Must be "
         "StateIndex.true or StateIndex.apparent."))
 
@@ -2361,7 +2361,7 @@ class GenericStateBlockData(StateBlockData):
             def rule_flow_mass_comp(b, i):
                 if b.get_material_flow_basis() == MaterialFlowBasis.mass:
                     return self.mass_frac_comp[i]*self.flow_mass
-                elif b.get_material_flow_basis() == MaterialFlowBasis.mass:
+                elif b.get_material_flow_basis() == MaterialFlowBasis.molar:
                     return b.flow_mol_comp[i]*b.mw_comp[i]
                 else:
                     raise PropertyPackageError(
