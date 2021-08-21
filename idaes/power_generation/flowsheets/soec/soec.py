@@ -1,0 +1,628 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
+
+__author__ = "John Eslick"
+
+import os
+import csv
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import pyomo.environ as pyo
+from pyomo.network import Arc
+from pyomo.common.fileutils import this_file_dir
+
+from idaes.core import FlowsheetBlock
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock,
+)
+from idaes.generic_models.properties.core.generic.generic_reaction import (
+    GenericReactionParameterBlock,
+)
+import idaes.generic_models.unit_models as gum  # generic unit models
+import idaes.power_generation.unit_models as pum  # power unit models
+import idaes.core.util as iutil
+import idaes.core.util.tables as tables
+import idaes.core.util.scaling as iscale
+import idaes.core.util.initialization as iinit
+
+import idaes.core.plugins
+from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
+from idaes.core.solvers import use_idaes_solver_configuration_defaults
+from idaes.power_generation.properties import FlueGasParameterBlock
+from idaes.generic_models.properties import iapws95
+
+from idaes.generic_models.unit_models.heat_exchanger import (
+    delta_temperature_underwood_callback,
+)
+
+from idaes.generic_models.properties.helmholtz.helmholtz import (
+    HelmholtzThermoExpressions as ThermoExpr
+)
+
+
+def add_properties(m):
+    m.fs.o2_side_prop = GenericParameterBlock(
+        default=get_prop(components={"O2", "H2O"}, phases=["Vap"])
+    )
+    m.fs.h2_side_prop = GenericParameterBlock(
+        default=get_prop(components={"H2", "H2O"}, phases=["Vap"])
+    )
+    m.fs.o2l_side_prop = GenericParameterBlock(
+        default=get_prop(components={"O2", "H2O"}, phases=["Vap", "Liq"])
+    )
+    m.fs.h2l_side_prop = GenericParameterBlock(
+        default=get_prop(components={"H2", "H2O"}, phases=["Vap"])
+    )
+    m.fs.fg_side_prop = GenericParameterBlock(
+        default=get_prop(components=["N2", "O2", "CO2", "H2O"], phases=["Vap"])
+    )
+    m.fs.water_prop = iapws95.Iapws95ParameterBlock()
+    m.fs.h2_side_prop.set_default_scaling("mole_frac_comp", 10)
+    m.fs.h2_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.o2_side_prop.set_default_scaling("mole_frac_comp", 10)
+    m.fs.o2_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.h2l_side_prop.set_default_scaling("mole_frac_comp", 10)
+    m.fs.h2l_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.o2l_side_prop.set_default_scaling("mole_frac_comp", 10)
+    m.fs.o2l_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+
+
+def add_soec(m):
+    m.fs.n_soec_cells = pyo.Var(initialize=1e6)
+    m.fs.soec = pum.IsothermalSofc(
+        default={
+            "nz": 20,
+            "nxfe": 10,
+            "nxae": 10,
+            "soec": True,
+            "air_side_comp_list": ["H2O", "O2"],
+            "fuel_side_comp_list": ["H2O", "H2"],
+            "air_side_stoich": {"H2O": 0, "O2": -0.25},
+        }
+    )
+    m.fs.split_f1 = gum.Separator(
+        default={
+            "property_package": m.fs.h2_side_prop,
+            "outlet_list": ["out", "recycle"],
+        }
+    )
+    m.fs.split_a1 = gum.Separator(
+        default={
+            "property_package": m.fs.o2_side_prop,
+            "outlet_list": ["out", "recycle"],
+        }
+    )
+
+    @m.fs.Constraint(m.fs.time)
+    def soec_to_split_f1_temperature(b, t):
+        return b.split_f1.inlet.temperature[t] == b.soec.outlet_fc.temperature[t]
+
+    @m.fs.Constraint(m.fs.time)
+    def soec_to_split_f1_pressure(b, t):
+        return b.split_f1.inlet.pressure[t] == b.soec.outlet_fc.pressure[t]
+
+    @m.fs.Constraint(m.fs.time)
+    def soec_to_split_f1_flow(b, t):
+        return (
+            b.split_f1.inlet.flow_mol[t]
+            == b.soec.outlet_fc.flow_mol[t] * b.n_soec_cells
+        )
+
+    @m.fs.Constraint(m.fs.time, m.fs.soec.fc.config.comp_list)
+    def soec_to_split_f1_mole_frac(b, t, i):
+        return (
+            b.split_f1.inlet.mole_frac_comp[t, i]
+            == b.soec.outlet_fc.mole_frac_comp[t, i]
+        )
+
+    @m.fs.Constraint(m.fs.time)
+    def soec_to_split_a1_temperature(b, t):
+        return b.split_a1.inlet.temperature[t] == b.soec.outlet_ac.temperature[t]
+
+    @m.fs.Constraint(m.fs.time)
+    def soec_to_split_a1_pressure(b, t):
+        return b.split_a1.inlet.pressure[t] == b.soec.outlet_ac.pressure[t]
+
+    @m.fs.Constraint(m.fs.time)
+    def soec_to_split_a1_flow(b, t):
+        return (
+            b.split_a1.inlet.flow_mol[t]
+            == b.soec.outlet_ac.flow_mol[t] * b.n_soec_cells
+        )
+
+    @m.fs.Constraint(m.fs.time, m.fs.soec.ac.config.comp_list)
+    def soec_to_split_a1_mole_frac(b, t, i):
+        return (
+            b.split_a1.inlet.mole_frac_comp[t, i]
+            == b.soec.outlet_ac.mole_frac_comp[t, i]
+        )
+
+    m.fs.n_soec_cells.fix(20e6)
+    m.fs.soec.E_cell.fix(1.287) # unfix after initialize
+    m.fs.soec.el.thickness.fix(8e-6)
+    m.fs.soec.fe.thickness.fix(1e-3)
+    m.fs.soec.ae.thickness.fix(20e-6)
+    m.fs.soec.length.fix(0.05)
+    m.fs.soec.width.fix(0.05)
+    m.fs.soec.k_ae.fix(1e11)
+    m.fs.soec.eact_ae.fix(120000)
+    m.fs.soec.k_fe.fix(1.35e10)
+    m.fs.soec.eact_fe.fix(110000)
+    m.fs.soec.fe.k_res.fix(2.98e-5)
+    m.fs.soec.fe.E_res.fix(-1392)
+    m.fs.soec.ae.k_res.fix(8.114e-5)
+    m.fs.soec.ae.E_res.fix(600)
+    m.fs.soec.fc.thickness.fix(0.002)
+    m.fs.soec.ac.thickness.fix(0.002)
+    m.fs.soec.fe.porosity.fix(0.48)
+    m.fs.soec.fe.tortuosity.fix(5.4)
+    m.fs.soec.ae.porosity.fix(0.48)
+    m.fs.soec.ae.tortuosity.fix(5.4)
+    temperature = 1073.15
+    m.fs.soec.el.temperature.fix(temperature)
+    m.fs.soec.fc.temperature.fix(temperature)
+    m.fs.soec.ac.temperature.fix(temperature)
+    m.fs.soec.fe.temperature.fix(temperature)
+    m.fs.soec.ae.temperature.fix(temperature)
+
+
+def add_recycle_inlet_mixers(m):
+    m.fs.mix_f1 = gum.Mixer(
+        default={
+            "property_package": m.fs.h2_side_prop,
+            "inlet_list": ["water", "recycle"],
+            "momentum_mixing_type": gum.MomentumMixingType.none,
+        }
+    )
+    m.fs.mix_a1 = gum.Mixer(
+        default={
+            "property_package": m.fs.o2_side_prop,
+            "inlet_list": ["water", "recycle"],
+            "momentum_mixing_type": gum.MomentumMixingType.none,
+        }
+    )
+
+    @m.fs.mix_f1.Constraint(m.fs.time)
+    def mxpress_eqn(b, t):
+        return b.mixed_state[t].pressure == b.water_state[t].pressure
+
+    @m.fs.Constraint(m.fs.time)
+    def hxf2_to_mix_temperature_eqn(b, t):
+        return (
+            b.mix_f1.water_state[t].temperature
+            == b.hxf2.tube.properties_out[t].temperature
+        )
+
+    @m.fs.Constraint(m.fs.time)
+    def hxff_to_mix_pressure_eqn(b, t):
+        return (
+            b.mix_f1.water_state[t].pressure == b.hxf2.tube.properties_out[t].pressure
+        )
+
+    @m.fs.Constraint(m.fs.time)
+    def hxff_to_mix_flow_mol_eqn(b, t):
+        return (
+            b.mix_f1.water_state[t].flow_mol == b.hxf2.tube.properties_out[t].flow_mol
+        )
+
+    @m.fs.Constraint(m.fs.time, m.fs.soec.fc.config.comp_list)
+    def hxf1_to_mix_mole_frac_eqn(b, t, i):
+        if i == "H2O":
+            return b.mix_f1.water_state[t].mole_frac_comp[i] == 1.0
+        else:
+            return b.mix_f1.water_state[t].mole_frac_comp[i] == 0.0
+
+    @m.fs.mix_a1.Constraint(m.fs.time)
+    def mxpress_eqn(b, t):
+        return b.mixed_state[t].pressure == b.water_state[t].pressure
+
+    @m.fs.Constraint(m.fs.time)
+    def hxaf_to_mix_temperature_eqn(b, t):
+        return (
+            b.mix_a1.water_state[t].temperature
+            == b.hxa2.tube.properties_out[t].temperature
+        )
+
+    @m.fs.Constraint(m.fs.time)
+    def hxaf_to_mix_pressure_eqn(b, t):
+        return (
+            b.mix_a1.water_state[t].pressure == b.hxa2.tube.properties_out[t].pressure
+        )
+
+    @m.fs.Constraint(m.fs.time)
+    def hxaf_to_mix_flow_mol_eqn(b, t):
+        return (
+            b.mix_a1.water_state[t].flow_mol == b.hxa2.tube.properties_out[t].flow_mol
+        )
+
+    @m.fs.Constraint(m.fs.time, m.fs.soec.ac.config.comp_list)
+    def hxaf_to_mix_mole_frac_eqn(b, t, i):
+        if i == "H2O":
+            return b.mix_a1.water_state[t].mole_frac_comp[i] == 1.0
+        else:
+            return b.mix_a1.water_state[t].mole_frac_comp[i] == 0.0
+
+
+def add_heatexchangers(m):
+    m.fs.hxf1 = gum.HeatExchanger(
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {"property_package": m.fs.o2l_side_prop},
+            "tube": {"property_package": m.fs.water_prop},
+        }
+    )
+    m.fs.hxa1 = gum.HeatExchanger(
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {"property_package": m.fs.h2l_side_prop},
+            "tube": {"property_package": m.fs.water_prop},
+        }
+    )
+    m.fs.hxf2 = gum.HeatExchanger(
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {"property_package": m.fs.fg_side_prop},
+            "tube": {"property_package": m.fs.water_prop},
+        }
+    )
+    m.fs.hxa2 = gum.HeatExchanger(
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {"property_package": m.fs.fg_side_prop},
+            "tube": {"property_package": m.fs.water_prop},
+        }
+    )
+    m.fs.hxf1.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxa1.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxf2.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxa2.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxf1.area.fix(5000)
+    m.fs.hxa1.area.fix(5000)
+    m.fs.hxf2.area.fix(5000)
+    m.fs.hxa2.area.fix(5000)
+
+
+def add_constraints(m):
+    @m.fs.Expression(m.fs.time)
+    def total_soec_power_expr(b, t):
+        return b.soec.power[t] * b.n_soec_cells
+
+    m.fs.total_soec_power = pyo.Var(m.fs.time, initialize=10e6)
+
+    @m.fs.Constraint(m.fs.time)
+    def total_soec_power_eqn(b, t):
+        return b.total_soec_power[t] == b.total_soec_power_expr[t]
+
+    te = ThermoExpr(blk=m.fs, parameters=m.fs.water_prop)
+
+    @m.fs.Constraint(m.fs.time)
+    def ftemp_in_eqn(b, t):
+        #T = b.soec.inlet_fc.temperature[t]
+        p = b.hxf2.tube.properties_out[t].pressure
+        hhx = b.hxf2.tube.properties_out[t].enth_mol
+        return hhx == te.h(T=1073.15, p=p, x=1)
+
+    @m.fs.Constraint(m.fs.time)
+    def atemp_in_eqn(b, t):
+        #T = b.soec.inlet_ac.temperature[t]
+        p = b.hxa2.tube.properties_out[t].pressure
+        hhx = b.hxa2.tube.properties_out[t].enth_mol
+        return hhx == te.h(T=1073.15, p=p, x=1)
+
+def add_arcs(m):
+    m.fs.f08 = Arc(source=m.fs.split_f1.recycle, destination=m.fs.mix_f1.recycle)
+    m.fs.f02 = Arc(source=m.fs.hxf1.tube_outlet, destination=m.fs.hxf2.tube_inlet)
+    m.fs.f06 = Arc(source=m.fs.split_f1.out, destination=m.fs.hxa1.shell_inlet)
+    m.fs.a08 = Arc(source=m.fs.split_a1.recycle, destination=m.fs.mix_a1.recycle)
+    m.fs.a02 = Arc(source=m.fs.hxa1.tube_outlet, destination=m.fs.hxa2.tube_inlet)
+    m.fs.a06 = Arc(source=m.fs.split_a1.out, destination=m.fs.hxf1.shell_inlet)
+
+    expand_arcs = pyo.TransformationFactory("network.expand_arcs")
+    expand_arcs.apply_to(m)
+
+
+def set_inputs(m):
+    m.fs.soec.fc.pressure[:, 0].fix(1e5)
+    m.fs.soec.fc.flow_mol[:, 0].fix(9e-5)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.99)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.01)
+
+    m.fs.soec.ac.pressure[:, 0].fix(1e5)
+    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
+
+    m.fs.split_f1.split_fraction[:, "out"].fix(0.90)
+    m.fs.split_a1.split_fraction[:, "out"].fix(0.95)
+
+    m.fs.hxf1.tube_inlet.enth_mol.fix(3000)
+    m.fs.hxf1.tube_inlet.pressure.fix(1e5)
+    m.fs.hxf1.tube_inlet.flow_mol.fix(1300)
+
+    m.fs.hxa1.tube_inlet.enth_mol.fix(3000)
+    m.fs.hxa1.tube_inlet.pressure.fix(1e5)
+    m.fs.hxa1.tube_inlet.flow_mol.fix(600)
+
+    m.fs.hxf2.shell_inlet.mole_frac_comp[:, "CO2"].fix(0.04)
+    m.fs.hxf2.shell_inlet.mole_frac_comp[:, "H2O"].fix(0.09)
+    m.fs.hxf2.shell_inlet.mole_frac_comp[:, "O2"].fix(0.11)
+    m.fs.hxf2.shell_inlet.mole_frac_comp[:, "N2"].fix(0.76)
+    m.fs.hxf2.shell_inlet.pressure.fix(1.03e5)
+    m.fs.hxf2.shell_inlet.temperature.fix(1200)
+    m.fs.hxf2.shell_inlet.flow_mol[0].value = 600
+
+    m.fs.hxa2.shell_inlet.mole_frac_comp[:, "CO2"].fix(0.04)
+    m.fs.hxa2.shell_inlet.mole_frac_comp[:, "H2O"].fix(0.09)
+    m.fs.hxa2.shell_inlet.mole_frac_comp[:, "O2"].fix(0.11)
+    m.fs.hxa2.shell_inlet.mole_frac_comp[:, "N2"].fix(0.76)
+    m.fs.hxa2.shell_inlet.pressure.fix(1.03e5)
+    m.fs.hxa2.shell_inlet.temperature.fix(1200)
+    m.fs.hxa2.shell_inlet.flow_mol[0].value = 400
+
+
+
+def do_scaling(m):
+    iscale.calculate_scaling_factors(m)
+
+
+def get_solver():
+    use_idaes_solver_configuration_defaults()
+    idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
+    idaes.cfg.ipopt["options"]["tol"] = 1e-8
+    # due to a lot of component mole fractions being on their lower bound of 0
+    # bound push result in much longer solve times, so set it low.
+    idaes.cfg.ipopt["options"]["bound_push"] = 1e-10
+    idaes.cfg.ipopt["options"]["max_iter"] = 150
+    return pyo.SolverFactory("ipopt")
+
+
+def do_initialization(m, solver):
+
+    m.fs.soec.initialize()
+    iinit.propagate_state(source=m.fs.soec.outlet_fc, destination=m.fs.split_f1.inlet)
+    m.fs.split_f1.inlet.flow_mol[0] = pyo.value(
+        m.fs.split_f1.inlet.flow_mol[0] * m.fs.n_soec_cells
+    )
+    iinit.propagate_state(source=m.fs.soec.outlet_ac, destination=m.fs.split_a1.inlet)
+    m.fs.split_a1.inlet.flow_mol[0] = pyo.value(
+        m.fs.split_a1.inlet.flow_mol[0] * m.fs.n_soec_cells
+    )
+    m.fs.split_f1.initialize()
+    m.fs.split_a1.initialize()
+    iinit.propagate_state(arc=m.fs.f06)
+    iinit.propagate_state(arc=m.fs.a06)
+    m.fs.hxf1.initialize()
+    m.fs.hxa1.initialize()
+    iinit.propagate_state(arc=m.fs.f02)
+    iinit.propagate_state(arc=m.fs.a02)
+    m.fs.hxf2.initialize()
+    m.fs.hxa2.initialize()
+
+    for t in m.fs.time:
+        m.fs.mix_f1.water_state[t].temperature = pyo.value(
+            m.fs.hxf2.tube.properties_out[t].temperature
+        )
+        m.fs.mix_f1.water_state[t].pressure = pyo.value(
+            m.fs.hxf2.tube.properties_out[t].pressure
+        )
+        m.fs.mix_f1.water_state[t].flow_mol == pyo.value(
+            m.fs.hxf2.tube.properties_out[t].flow_mol
+        )
+        m.fs.mix_f1.water_state[t].mole_frac_comp["H2O"] == 1.0
+        m.fs.mix_f1.water_state[t].mole_frac_comp["H2"] == 0.0
+        m.fs.mix_a1.water_state[t].temperature = pyo.value(
+            m.fs.hxa2.tube.properties_out[t].temperature
+        )
+        m.fs.mix_a1.water_state[t].pressure = pyo.value(
+            m.fs.hxa2.tube.properties_out[t].pressure
+        )
+        m.fs.mix_a1.water_state[t].flow_mol == pyo.value(
+            m.fs.hxa2.tube.properties_out[t].flow_mol
+        )
+        m.fs.mix_a1.water_state[t].mole_frac_comp["H2O"] == 1.0
+        m.fs.mix_a1.water_state[t].mole_frac_comp["O2"] == 0.0
+    iinit.propagate_state(arc=m.fs.f08)
+    iinit.propagate_state(arc=m.fs.a08)
+    m.fs.mix_f1.initialize()
+    m.fs.mix_a1.initialize()
+    #m.fs.soec.E_cell.unfix()
+    solver.solve(m, tee=True)
+
+
+    @m.fs.Constraint(m.fs.time)
+    def fpress_soec_in_eqn(b, t):
+        return b.soec.inlet_fc.pressure[t] == b.mix_f1.outlet.pressure[t]
+
+    @m.fs.Constraint(m.fs.time)
+    def apress_soec_in_eqn(b, t):
+        return b.soec.inlet_ac.pressure[t] == b.mix_a1.outlet.pressure[t]
+
+    @m.fs.Constraint(m.fs.time, m.fs.soec.fc.config.comp_list)
+    def fcomp_soec_in_eqn(b, t, i):
+        return b.soec.inlet_fc.mole_frac_comp[t, i] == b.mix_f1.outlet.mole_frac_comp[t, i]
+
+    @m.fs.Constraint(m.fs.time, m.fs.soec.ac.config.comp_list)
+    def acomp_soec_in_eqn(b, t, i):
+        return b.soec.inlet_ac.mole_frac_comp[t, i] == b.mix_a1.outlet.mole_frac_comp[t, i]
+
+
+    m.fs.soec.fc.pressure[:, 0].unfix()
+    m.fs.soec.ac.pressure[:, 0].unfix()
+    #m.fs.soec.inlet_fc.flow_mol.unfix()
+    #m.fs.soec.inlet_ac.flow_mol.unfix()
+    m.fs.soec.fc.mole_frac_comp[:, 0, :].unfix()
+    m.fs.soec.ac.mole_frac_comp[:, 0, :].unfix()
+    solver.solve(m, tee=True)
+
+
+    @m.fs.Constraint(m.fs.time)
+    def fflow_soec_in_eqn(b, t):
+        return b.soec.inlet_fc.flow_mol[t]*b.n_soec_cells == b.mix_f1.outlet.flow_mol[t]
+
+    @m.fs.Constraint(m.fs.time)
+    def aflow_soec_in_eqn(b, t):
+        return b.soec.inlet_ac.flow_mol[t]*b.n_soec_cells == b.mix_a1.outlet.flow_mol[t]
+
+    m.fs.hxf1.tube_inlet.flow_mol.unfix()
+    m.fs.hxa1.tube_inlet.flow_mol.unfix()
+
+    solver.solve(m, tee=True)
+
+    @m.fs.Constraint(m.fs.time)
+    def heat_duty_zero_eqn(b, t):
+        return b.soec.heat_duty[t] == 0
+    m.fs.soec.E_cell.unfix()
+    solver.solve(m, tee=True)
+
+
+
+def tag_model(m):
+    """
+    Create two dictionaries, one is called tags with tags for keys and
+    expressions for values. The second is called tag_format with tags for keys
+    and a formatting string. The formating string controls the number format and
+    can be used to add additional text, to report units for example. The two
+    dictionaries are returned, and also attached to the model.
+
+    Args:
+        m: (ConcreteModel) model to tag
+
+    Returns:
+        (dict) tags, (dict) tag_format
+    """
+    tags = {}  # dict of with tag keys and expressions for their values
+    tag_format = {}  # format string for the tags
+
+    def new_tag(name, expr, format):
+        # funcion to keep it more compact
+        tags[name] = expr
+        tag_format[name] = format
+
+    # Create a dict with Arc name keys and state block values
+    stream_states = tables.stream_states_dict(
+        tables.arcs_to_stream_dict(
+            m.fs,
+            descend_into=False,
+            additional={
+                "fg01": m.fs.hxf2.shell_inlet,
+                "fg02": m.fs.hxf2.shell_outlet,
+                "fg03": m.fs.hxa2.shell_inlet,
+                "fg04": m.fs.hxa2.shell_outlet,
+                "f03": m.fs.hxf2.tube_outlet,
+                "a03": m.fs.hxa2.tube_outlet,
+                "f01": m.fs.hxf1.tube_inlet,
+                "a01": m.fs.hxa1.tube_inlet,
+                "f05": m.fs.split_f1.inlet,
+                "a05": m.fs.split_a1.inlet,
+                "f04": m.fs.mix_f1.outlet,
+                "a04": m.fs.mix_a1.outlet,
+                "a07": m.fs.hxf1.shell_outlet,
+                "f07": m.fs.hxa1.shell_outlet,
+            },
+        )
+    )
+    for i, s in stream_states.items():  # create the tags for steam quantities
+        new_tag(f"{i}_Fmol", expr=s.flow_mol / 1000, format="{:.3f} kmol/s")
+        new_tag(f"{i}_F", expr=s.flow_mass, format="{:.3f} kg/s")
+        new_tag(f"{i}_P", expr=s.pressure / 1000, format="{:.3f} kPa")
+        new_tag(f"{i}_T", expr=s.temperature, format="{:.2f} K")
+        try:
+            new_tag(f"{i}_x", expr=s.vapor_frac * 100, format="{:.1f}%")
+        except (KeyError, AttributeError):
+            pass
+        try:
+            for c in s.mole_frac_comp:
+                new_tag(f"{i}_y{c}", expr=s.mole_frac_comp[c] * 100, format="{:.3f}%")
+        except (KeyError, AttributeError):
+            pass
+
+    new_tag("soec_power", expr=m.fs.total_soec_power_expr[0] / 1e6, format="{:.2f} MW")
+    new_tag("soec_n_cells", expr=m.fs.n_soec_cells, format="{:.2e}")
+    new_tag("E_cell", expr=m.fs.soec.E_cell[0], format="{:.4f} V")
+    new_tag("soec_heat_duty", expr=m.fs.soec.heat_duty[0]*m.fs.n_soec_cells/1e6, format="{:.4f} MW")
+
+    m.tags = tags
+    m.tag_format = tag_format
+    return tags, tag_format
+
+
+def write_pfd_results(filename, infilename=None):
+    """
+    Write simulation results in a template PFD in svg format and save as
+    filename.
+
+    Args:
+        filename: (str) file namd for output
+        tags: (dict) tag keys and expression values
+        tag_format: (dict) tag keys and format string values
+        infilename: input file name, if you want to use an alternative diagram
+
+    Returns:
+        None
+    """
+    if infilename is None:
+        infilename = os.path.join(this_file_dir(), "soec.svg")
+    with open(infilename, "r") as f:
+        iutil.svg_tag(svg=f, tags=m.tags, outfile=filename, tag_format=m.tag_format)
+
+
+def plot_soec(m):
+    z = [
+        (m.fs.soec.zset[iz] + m.fs.soec.zset[iz - 1]) / 2.0 for iz in m.fs.soec.izset_cv
+    ]
+    v = {t: None for t in m.fs.time}
+    for t in v:
+        v[t] = [
+            pyo.value(m.fs.soec.fc.mole_frac_comp[t, iz, "H2"])
+            for iz in m.fs.soec.izset_cv
+        ]
+
+    for t in v:
+        plt.plot(z, v[t], label=f"t = {t}")
+
+    plt.title(
+        f"Fuel Channel H$_2$ (E$_{{cell}}$ = {pyo.value(m.fs.soec.E_cell[0]):.4f}V)"
+    )
+    plt.xlabel("z/L")
+    plt.ylabel("$x_{H_2}$")
+    plt.legend()
+    plt.show()
+
+
+def get_model(m=None):
+    if m is None:
+        m = pyo.ConcreteModel("Gas Turbine Model")
+    if not hasattr(m, "fs"):
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+    add_properties(m)
+    add_soec(m)
+    add_heatexchangers(m)
+    add_recycle_inlet_mixers(m)
+    add_arcs(m)
+    add_constraints(m)
+
+    set_inputs(m)
+    do_scaling(m)
+    solver = get_solver()
+    do_initialization(m, solver)
+    tag_model(m)
+
+    return m, solver
+
+
+if __name__ == "__main__":
+    m, solver = get_model()
+    plot_soec(m)
+    write_pfd_results("soec_init.svg")
