@@ -7,9 +7,9 @@ from idaes.apps.grid_integration.tracker import Tracker
 # declare a testing model class
 class TestingModel:
 
-    pmin = 20
-    pmax = 100
-    marginal_cost = 30
+    pmin = 20.00
+    pmax = 100.00
+    marginal_cost = 30.00
 
     def __init__(self, horizon = 48):
 
@@ -220,7 +220,7 @@ class TestingModel:
 
     @property
     def default_bids(self):
-        return {p: self.marginal_cost for p in [20, 40, 60, 80, 100]}
+        return {p: self.marginal_cost for p in [20.00, 40.00, 60.00, 80.00, 100.00]}
 
 horizon = 4
 
