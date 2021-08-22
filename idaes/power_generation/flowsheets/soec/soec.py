@@ -161,11 +161,11 @@ def add_recycle_inlet_mixers(m):
     )
 
     @m.fs.mix_f1.Constraint(m.fs.time)
-    def mxpress_eqn(b, t):
+    def fmxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
 
     @m.fs.mix_a1.Constraint(m.fs.time)
-    def mxpress_eqn(b, t):
+    def amxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
 
 
@@ -206,7 +206,7 @@ def add_heatexchangers(m):
     )
 
     @m.fs.hxa2.Expression(m.fs.time, m.fs.soec.ac.config.comp_list)
-    def tube_mole_frac_expr(b, t, i):
+    def atube_mole_frac_expr(b, t, i):
         if i == "H2O":
             return 1
         else:
@@ -217,14 +217,14 @@ def add_heatexchangers(m):
     m.fs.hxa2.tube_outlet_adapt.add(
         m.fs.hxa2._temperature_tube_outlet_ref, "temperature"
     )
-    m.fs.hxa2.tube_outlet_adapt.add(m.fs.hxa2.tube_mole_frac_expr, "mole_frac_comp")
+    m.fs.hxa2.tube_outlet_adapt.add(m.fs.hxa2.atube_mole_frac_expr, "mole_frac_comp")
     m.fs.hxf2.tube_outlet_adapt = Port()
     m.fs.hxf2._temperature_tube_outlet_ref = pyo.Reference(
         m.fs.hxf2.tube.properties_out[:].temperature
     )
 
     @m.fs.hxf2.Expression(m.fs.time, m.fs.soec.fc.config.comp_list)
-    def tube_mole_frac_expr(b, t, i):
+    def ftube_mole_frac_expr(b, t, i):
         if i == "H2O":
             return 1
         else:
@@ -235,7 +235,7 @@ def add_heatexchangers(m):
     m.fs.hxf2.tube_outlet_adapt.add(
         m.fs.hxf2._temperature_tube_outlet_ref, "temperature"
     )
-    m.fs.hxf2.tube_outlet_adapt.add(m.fs.hxf2.tube_mole_frac_expr, "mole_frac_comp")
+    m.fs.hxf2.tube_outlet_adapt.add(m.fs.hxf2.ftube_mole_frac_expr, "mole_frac_comp")
 
 
 def add_constraints(m):
@@ -364,8 +364,8 @@ def do_scaling(m):
     iscale.set_scaling_factor(m.fs.hxf2.shell.heat, 1e-6)
     iscale.constraint_scaling_transform(m.fs.ftemp_in_eqn[0], 1e-3)
     iscale.constraint_scaling_transform(m.fs.atemp_in_eqn[0], 1e-3)
-    iscale.constraint_scaling_transform(m.fs.mix_f1.mxpress_eqn[0], 1e-5)
-    iscale.constraint_scaling_transform(m.fs.mix_a1.mxpress_eqn[0], 1e-5)
+    iscale.constraint_scaling_transform(m.fs.mix_f1.fmxpress_eqn[0], 1e-5)
+    iscale.constraint_scaling_transform(m.fs.mix_a1.amxpress_eqn[0], 1e-5)
     for i, c in m.fs.total_soec_power_eqn.items():
         s = iscale.get_scaling_factor(m.fs.total_soec_power[i])
         iscale.constraint_scaling_transform(c, s)
