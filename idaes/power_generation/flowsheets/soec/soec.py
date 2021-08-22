@@ -20,7 +20,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import pyomo.environ as pyo
-from pyomo.network import Arc
+from pyomo.network import Arc, Port
 from pyomo.common.fileutils import this_file_dir
 
 from idaes.core import FlowsheetBlock
@@ -48,7 +48,7 @@ from idaes.generic_models.unit_models.heat_exchanger import (
 )
 
 from idaes.generic_models.properties.helmholtz.helmholtz import (
-    HelmholtzThermoExpressions as ThermoExpr
+    HelmholtzThermoExpressions as ThermoExpr,
 )
 
 
@@ -71,16 +71,26 @@ def add_properties(m):
     m.fs.water_prop = iapws95.Iapws95ParameterBlock()
     m.fs.h2_side_prop.set_default_scaling("mole_frac_comp", 10)
     m.fs.h2_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.h2_side_prop.set_default_scaling("enth_mol_phase", 1e-3)
+
     m.fs.o2_side_prop.set_default_scaling("mole_frac_comp", 10)
     m.fs.o2_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.o2_side_prop.set_default_scaling("enth_mol_phase", 1e-3)
+
     m.fs.h2l_side_prop.set_default_scaling("mole_frac_comp", 10)
     m.fs.h2l_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.h2l_side_prop.set_default_scaling("enth_mol_phase", 1e-3)
+
     m.fs.o2l_side_prop.set_default_scaling("mole_frac_comp", 10)
     m.fs.o2l_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.o2l_side_prop.set_default_scaling("enth_mol_phase", 1e-3)
+
+    m.fs.fg_side_prop.set_default_scaling("mole_frac_comp", 10)
+    m.fs.fg_side_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.fg_side_prop.set_default_scaling("enth_mol_phase", 1e-3)
 
 
 def add_soec(m):
-    m.fs.n_soec_cells = pyo.Var(initialize=1e6)
     m.fs.soec = pum.IsothermalSofc(
         default={
             "nz": 20,
@@ -105,52 +115,8 @@ def add_soec(m):
         }
     )
 
-    @m.fs.Constraint(m.fs.time)
-    def soec_to_split_f1_temperature(b, t):
-        return b.split_f1.inlet.temperature[t] == b.soec.outlet_fc.temperature[t]
-
-    @m.fs.Constraint(m.fs.time)
-    def soec_to_split_f1_pressure(b, t):
-        return b.split_f1.inlet.pressure[t] == b.soec.outlet_fc.pressure[t]
-
-    @m.fs.Constraint(m.fs.time)
-    def soec_to_split_f1_flow(b, t):
-        return (
-            b.split_f1.inlet.flow_mol[t]
-            == b.soec.outlet_fc.flow_mol[t] * b.n_soec_cells
-        )
-
-    @m.fs.Constraint(m.fs.time, m.fs.soec.fc.config.comp_list)
-    def soec_to_split_f1_mole_frac(b, t, i):
-        return (
-            b.split_f1.inlet.mole_frac_comp[t, i]
-            == b.soec.outlet_fc.mole_frac_comp[t, i]
-        )
-
-    @m.fs.Constraint(m.fs.time)
-    def soec_to_split_a1_temperature(b, t):
-        return b.split_a1.inlet.temperature[t] == b.soec.outlet_ac.temperature[t]
-
-    @m.fs.Constraint(m.fs.time)
-    def soec_to_split_a1_pressure(b, t):
-        return b.split_a1.inlet.pressure[t] == b.soec.outlet_ac.pressure[t]
-
-    @m.fs.Constraint(m.fs.time)
-    def soec_to_split_a1_flow(b, t):
-        return (
-            b.split_a1.inlet.flow_mol[t]
-            == b.soec.outlet_ac.flow_mol[t] * b.n_soec_cells
-        )
-
-    @m.fs.Constraint(m.fs.time, m.fs.soec.ac.config.comp_list)
-    def soec_to_split_a1_mole_frac(b, t, i):
-        return (
-            b.split_a1.inlet.mole_frac_comp[t, i]
-            == b.soec.outlet_ac.mole_frac_comp[t, i]
-        )
-
-    m.fs.n_soec_cells.fix(20e6)
-    m.fs.soec.E_cell.fix(1.287) # unfix after initialize
+    m.fs.soec.n_cells.fix(20e6)
+    m.fs.soec.E_cell.fix(1.28)  # unfix after initialize
     m.fs.soec.el.thickness.fix(8e-6)
     m.fs.soec.fe.thickness.fix(1e-3)
     m.fs.soec.ae.thickness.fix(20e-6)
@@ -198,61 +164,9 @@ def add_recycle_inlet_mixers(m):
     def mxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
 
-    @m.fs.Constraint(m.fs.time)
-    def hxf2_to_mix_temperature_eqn(b, t):
-        return (
-            b.mix_f1.water_state[t].temperature
-            == b.hxf2.tube.properties_out[t].temperature
-        )
-
-    @m.fs.Constraint(m.fs.time)
-    def hxff_to_mix_pressure_eqn(b, t):
-        return (
-            b.mix_f1.water_state[t].pressure == b.hxf2.tube.properties_out[t].pressure
-        )
-
-    @m.fs.Constraint(m.fs.time)
-    def hxff_to_mix_flow_mol_eqn(b, t):
-        return (
-            b.mix_f1.water_state[t].flow_mol == b.hxf2.tube.properties_out[t].flow_mol
-        )
-
-    @m.fs.Constraint(m.fs.time, m.fs.soec.fc.config.comp_list)
-    def hxf1_to_mix_mole_frac_eqn(b, t, i):
-        if i == "H2O":
-            return b.mix_f1.water_state[t].mole_frac_comp[i] == 1.0
-        else:
-            return b.mix_f1.water_state[t].mole_frac_comp[i] == 0.0
-
     @m.fs.mix_a1.Constraint(m.fs.time)
     def mxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
-
-    @m.fs.Constraint(m.fs.time)
-    def hxaf_to_mix_temperature_eqn(b, t):
-        return (
-            b.mix_a1.water_state[t].temperature
-            == b.hxa2.tube.properties_out[t].temperature
-        )
-
-    @m.fs.Constraint(m.fs.time)
-    def hxaf_to_mix_pressure_eqn(b, t):
-        return (
-            b.mix_a1.water_state[t].pressure == b.hxa2.tube.properties_out[t].pressure
-        )
-
-    @m.fs.Constraint(m.fs.time)
-    def hxaf_to_mix_flow_mol_eqn(b, t):
-        return (
-            b.mix_a1.water_state[t].flow_mol == b.hxa2.tube.properties_out[t].flow_mol
-        )
-
-    @m.fs.Constraint(m.fs.time, m.fs.soec.ac.config.comp_list)
-    def hxaf_to_mix_mole_frac_eqn(b, t, i):
-        if i == "H2O":
-            return b.mix_a1.water_state[t].mole_frac_comp[i] == 1.0
-        else:
-            return b.mix_a1.water_state[t].mole_frac_comp[i] == 0.0
 
 
 def add_heatexchangers(m):
@@ -284,22 +198,52 @@ def add_heatexchangers(m):
             "tube": {"property_package": m.fs.water_prop},
         }
     )
-    m.fs.hxf1.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxa1.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxf2.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxa2.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxf1.area.fix(5000)
-    m.fs.hxa1.area.fix(5000)
-    m.fs.hxf2.area.fix(5000)
-    m.fs.hxa2.area.fix(5000)
+    # Add new ports the the heat exchanger outlet for connect the IAPWS property
+    # pacakge for steam in tubes to muticomponent in the mixer
+    m.fs.hxa2.tube_outlet_adapt = Port()
+    m.fs.hxa2._temperature_tube_outlet_ref = pyo.Reference(
+        m.fs.hxa2.tube.properties_out[:].temperature
+    )
+
+    @m.fs.hxa2.Expression(m.fs.time, m.fs.soec.ac.config.comp_list)
+    def tube_mole_frac_expr(b, t, i):
+        if i == "H2O":
+            return 1
+        else:
+            return 0
+
+    m.fs.hxa2.tube_outlet_adapt.add(m.fs.hxa2._flow_mol_tube_outlet_ref, "flow_mol")
+    m.fs.hxa2.tube_outlet_adapt.add(m.fs.hxa2._pressure_tube_outlet_ref, "pressure")
+    m.fs.hxa2.tube_outlet_adapt.add(
+        m.fs.hxa2._temperature_tube_outlet_ref, "temperature"
+    )
+    m.fs.hxa2.tube_outlet_adapt.add(m.fs.hxa2.tube_mole_frac_expr, "mole_frac_comp")
+    m.fs.hxf2.tube_outlet_adapt = Port()
+    m.fs.hxf2._temperature_tube_outlet_ref = pyo.Reference(
+        m.fs.hxf2.tube.properties_out[:].temperature
+    )
+
+    @m.fs.hxf2.Expression(m.fs.time, m.fs.soec.fc.config.comp_list)
+    def tube_mole_frac_expr(b, t, i):
+        if i == "H2O":
+            return 1
+        else:
+            return 0
+
+    m.fs.hxf2.tube_outlet_adapt.add(m.fs.hxf2._flow_mol_tube_outlet_ref, "flow_mol")
+    m.fs.hxf2.tube_outlet_adapt.add(m.fs.hxf2._pressure_tube_outlet_ref, "pressure")
+    m.fs.hxf2.tube_outlet_adapt.add(
+        m.fs.hxf2._temperature_tube_outlet_ref, "temperature"
+    )
+    m.fs.hxf2.tube_outlet_adapt.add(m.fs.hxf2.tube_mole_frac_expr, "mole_frac_comp")
 
 
 def add_constraints(m):
     @m.fs.Expression(m.fs.time)
     def total_soec_power_expr(b, t):
-        return b.soec.power[t] * b.n_soec_cells
+        return b.soec.power[t] * b.soec.n_cells
 
-    m.fs.total_soec_power = pyo.Var(m.fs.time, initialize=10e6)
+    m.fs.total_soec_power = pyo.Var(m.fs.time, initialize=-10e6)
 
     @m.fs.Constraint(m.fs.time)
     def total_soec_power_eqn(b, t):
@@ -309,25 +253,36 @@ def add_constraints(m):
 
     @m.fs.Constraint(m.fs.time)
     def ftemp_in_eqn(b, t):
-        #T = b.soec.inlet_fc.temperature[t]
+        # T = b.soec.inlet_fc.temperature[t]
         p = b.hxf2.tube.properties_out[t].pressure
         hhx = b.hxf2.tube.properties_out[t].enth_mol
         return hhx == te.h(T=1073.15, p=p, x=1)
 
     @m.fs.Constraint(m.fs.time)
     def atemp_in_eqn(b, t):
-        #T = b.soec.inlet_ac.temperature[t]
+        # T = b.soec.inlet_ac.temperature[t]
         p = b.hxa2.tube.properties_out[t].pressure
         hhx = b.hxa2.tube.properties_out[t].enth_mol
         return hhx == te.h(T=1073.15, p=p, x=1)
 
+    @m.fs.Constraint(m.fs.time)
+    def heat_duty_zero_eqn(b, t):
+        return b.soec.heat_duty[t] == 0
+
+
 def add_arcs(m):
-    m.fs.f08 = Arc(source=m.fs.split_f1.recycle, destination=m.fs.mix_f1.recycle)
     m.fs.f02 = Arc(source=m.fs.hxf1.tube_outlet, destination=m.fs.hxf2.tube_inlet)
-    m.fs.f06 = Arc(source=m.fs.split_f1.out, destination=m.fs.hxa1.shell_inlet)
-    m.fs.a08 = Arc(source=m.fs.split_a1.recycle, destination=m.fs.mix_a1.recycle)
     m.fs.a02 = Arc(source=m.fs.hxa1.tube_outlet, destination=m.fs.hxa2.tube_inlet)
+    m.fs.f03 = Arc(source=m.fs.hxf2.tube_outlet_adapt, destination=m.fs.mix_f1.water)
+    m.fs.a03 = Arc(source=m.fs.hxa2.tube_outlet_adapt, destination=m.fs.mix_a1.water)
+    m.fs.f04 = Arc(source=m.fs.mix_f1.outlet, destination=m.fs.soec.inlet_fc_mult)
+    m.fs.a04 = Arc(source=m.fs.mix_a1.outlet, destination=m.fs.soec.inlet_ac_mult)
+    m.fs.f05 = Arc(source=m.fs.soec.outlet_fc_mult, destination=m.fs.split_f1.inlet)
+    m.fs.a05 = Arc(source=m.fs.soec.outlet_ac_mult, destination=m.fs.split_a1.inlet)
+    m.fs.f06 = Arc(source=m.fs.split_f1.out, destination=m.fs.hxa1.shell_inlet)
     m.fs.a06 = Arc(source=m.fs.split_a1.out, destination=m.fs.hxf1.shell_inlet)
+    m.fs.f08 = Arc(source=m.fs.split_f1.recycle, destination=m.fs.mix_f1.recycle)
+    m.fs.a08 = Arc(source=m.fs.split_a1.recycle, destination=m.fs.mix_a1.recycle)
 
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
@@ -336,16 +291,16 @@ def add_arcs(m):
 def set_inputs(m):
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
     m.fs.soec.fc.flow_mol[:, 0].fix(9e-5)
-    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.99)
-    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.01)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.95)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.05)
 
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
     m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
 
-    m.fs.split_f1.split_fraction[:, "out"].fix(0.90)
-    m.fs.split_a1.split_fraction[:, "out"].fix(0.95)
+    m.fs.split_f1.split_fraction[:, "out"].fix(0.95)
+    m.fs.split_a1.split_fraction[:, "out"].fix(0.85)
 
     m.fs.hxf1.tube_inlet.enth_mol.fix(3000)
     m.fs.hxf1.tube_inlet.pressure.fix(1e5)
@@ -371,16 +326,57 @@ def set_inputs(m):
     m.fs.hxa2.shell_inlet.temperature.fix(1200)
     m.fs.hxa2.shell_inlet.flow_mol[0].value = 400
 
+    # Fix basic heat exchanger dimensions
+    m.fs.hxf1.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxa1.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxf2.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxa2.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxf1.area.fix(5000)
+    m.fs.hxa1.area.fix(5000)
+    m.fs.hxf2.area.fix(5000)
+    m.fs.hxa2.area.fix(5000)
 
 
 def do_scaling(m):
+    # flow through a single cell is very small
+    iscale.set_scaling_factor(m.fs.soec.fc.flow_mol, 1e5)
+    iscale.set_scaling_factor(m.fs.soec.ac.flow_mol, 1e5)
+    iscale.set_scaling_factor(m.fs.total_soec_power, 1e-7)
+    iscale.set_scaling_factor(m.fs.hxf1.overall_heat_transfer_coefficient, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxa1.overall_heat_transfer_coefficient, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxf2.overall_heat_transfer_coefficient, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxa2.overall_heat_transfer_coefficient, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxf1.delta_temperature_in, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxa1.delta_temperature_in, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxf2.delta_temperature_in, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxa2.delta_temperature_in, 1e-2)
+    iscale.set_scaling_factor(m.fs.hxf1.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.hxa1.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.hxf2.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.hxa2.area, 1e-4)
+    iscale.set_scaling_factor(m.fs.hxa1.tube.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxa1.shell.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxa2.tube.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxa2.shell.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxf1.tube.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxf1.shell.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxf2.tube.heat, 1e-6)
+    iscale.set_scaling_factor(m.fs.hxf2.shell.heat, 1e-6)
+    iscale.constraint_scaling_transform(m.fs.ftemp_in_eqn[0], 1e-3)
+    iscale.constraint_scaling_transform(m.fs.atemp_in_eqn[0], 1e-3)
+    iscale.constraint_scaling_transform(m.fs.mix_f1.mxpress_eqn[0], 1e-5)
+    iscale.constraint_scaling_transform(m.fs.mix_a1.mxpress_eqn[0], 1e-5)
+    for i, c in m.fs.total_soec_power_eqn.items():
+        s = iscale.get_scaling_factor(m.fs.total_soec_power[i])
+        iscale.constraint_scaling_transform(c, s)
+
     iscale.calculate_scaling_factors(m)
 
 
 def get_solver():
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
-    idaes.cfg.ipopt["options"]["tol"] = 1e-8
+    idaes.cfg.ipopt["options"]["tol"] = 1e-7
     # due to a lot of component mole fractions being on their lower bound of 0
     # bound push result in much longer solve times, so set it low.
     idaes.cfg.ipopt["options"]["bound_push"] = 1e-10
@@ -391,14 +387,8 @@ def get_solver():
 def do_initialization(m, solver):
 
     m.fs.soec.initialize()
-    iinit.propagate_state(source=m.fs.soec.outlet_fc, destination=m.fs.split_f1.inlet)
-    m.fs.split_f1.inlet.flow_mol[0] = pyo.value(
-        m.fs.split_f1.inlet.flow_mol[0] * m.fs.n_soec_cells
-    )
-    iinit.propagate_state(source=m.fs.soec.outlet_ac, destination=m.fs.split_a1.inlet)
-    m.fs.split_a1.inlet.flow_mol[0] = pyo.value(
-        m.fs.split_a1.inlet.flow_mol[0] * m.fs.n_soec_cells
-    )
+    iinit.propagate_state(arc=m.fs.f05)
+    iinit.propagate_state(arc=m.fs.a05)
     m.fs.split_f1.initialize()
     m.fs.split_a1.initialize()
     iinit.propagate_state(arc=m.fs.f06)
@@ -409,83 +399,45 @@ def do_initialization(m, solver):
     iinit.propagate_state(arc=m.fs.a02)
     m.fs.hxf2.initialize()
     m.fs.hxa2.initialize()
-
-    for t in m.fs.time:
-        m.fs.mix_f1.water_state[t].temperature = pyo.value(
-            m.fs.hxf2.tube.properties_out[t].temperature
-        )
-        m.fs.mix_f1.water_state[t].pressure = pyo.value(
-            m.fs.hxf2.tube.properties_out[t].pressure
-        )
-        m.fs.mix_f1.water_state[t].flow_mol == pyo.value(
-            m.fs.hxf2.tube.properties_out[t].flow_mol
-        )
-        m.fs.mix_f1.water_state[t].mole_frac_comp["H2O"] == 1.0
-        m.fs.mix_f1.water_state[t].mole_frac_comp["H2"] == 0.0
-        m.fs.mix_a1.water_state[t].temperature = pyo.value(
-            m.fs.hxa2.tube.properties_out[t].temperature
-        )
-        m.fs.mix_a1.water_state[t].pressure = pyo.value(
-            m.fs.hxa2.tube.properties_out[t].pressure
-        )
-        m.fs.mix_a1.water_state[t].flow_mol == pyo.value(
-            m.fs.hxa2.tube.properties_out[t].flow_mol
-        )
-        m.fs.mix_a1.water_state[t].mole_frac_comp["H2O"] == 1.0
-        m.fs.mix_a1.water_state[t].mole_frac_comp["O2"] == 0.0
+    iinit.propagate_state(arc=m.fs.f03)
+    iinit.propagate_state(arc=m.fs.a03)
     iinit.propagate_state(arc=m.fs.f08)
     iinit.propagate_state(arc=m.fs.a08)
     m.fs.mix_f1.initialize()
     m.fs.mix_a1.initialize()
-    #m.fs.soec.E_cell.unfix()
+    m.fs.soec.E_cell.unfix()
+    m.fs.f04_expanded.deactivate()
+    m.fs.a04_expanded.deactivate()
     solver.solve(m, tee=True)
 
-
-    @m.fs.Constraint(m.fs.time)
-    def fpress_soec_in_eqn(b, t):
-        return b.soec.inlet_fc.pressure[t] == b.mix_f1.outlet.pressure[t]
-
-    @m.fs.Constraint(m.fs.time)
-    def apress_soec_in_eqn(b, t):
-        return b.soec.inlet_ac.pressure[t] == b.mix_a1.outlet.pressure[t]
-
-    @m.fs.Constraint(m.fs.time, m.fs.soec.fc.config.comp_list)
-    def fcomp_soec_in_eqn(b, t, i):
-        return b.soec.inlet_fc.mole_frac_comp[t, i] == b.mix_f1.outlet.mole_frac_comp[t, i]
-
-    @m.fs.Constraint(m.fs.time, m.fs.soec.ac.config.comp_list)
-    def acomp_soec_in_eqn(b, t, i):
-        return b.soec.inlet_ac.mole_frac_comp[t, i] == b.mix_a1.outlet.mole_frac_comp[t, i]
-
-
+    m.fs.f04_expanded.activate()
+    m.fs.f04_expanded.flow_mol_equality.deactivate()
     m.fs.soec.fc.pressure[:, 0].unfix()
-    m.fs.soec.ac.pressure[:, 0].unfix()
-    #m.fs.soec.inlet_fc.flow_mol.unfix()
-    #m.fs.soec.inlet_ac.flow_mol.unfix()
+    m.fs.soec.fc.temperature[:, 0].unfix()
     m.fs.soec.fc.mole_frac_comp[:, 0, :].unfix()
+    solver.solve(m, tee=True)
+
+    m.fs.f04_expanded.flow_mol_equality.activate()
+    m.fs.hxf1.tube_inlet.flow_mol.unfix()
+    solver.solve(m, tee=True)
+
+    # this won't change the flow to the SOEC since it's not the multi flow var
+    # that's fixed
+    iinit.propagate_state(arc=m.fs.f04)
+    iinit.propagate_state(arc=m.fs.a04)
+    solver.solve(m, tee=True)
+
+    m.fs.a04_expanded.activate()
+    m.fs.a04_expanded.flow_mol_equality.deactivate()
+    m.fs.soec.ac.pressure[:, 0].unfix()
+    m.fs.soec.ac.temperature[:, 0].unfix()
     m.fs.soec.ac.mole_frac_comp[:, 0, :].unfix()
     solver.solve(m, tee=True)
 
 
-    @m.fs.Constraint(m.fs.time)
-    def fflow_soec_in_eqn(b, t):
-        return b.soec.inlet_fc.flow_mol[t]*b.n_soec_cells == b.mix_f1.outlet.flow_mol[t]
-
-    @m.fs.Constraint(m.fs.time)
-    def aflow_soec_in_eqn(b, t):
-        return b.soec.inlet_ac.flow_mol[t]*b.n_soec_cells == b.mix_a1.outlet.flow_mol[t]
-
-    m.fs.hxf1.tube_inlet.flow_mol.unfix()
+    m.fs.a04_expanded.flow_mol_equality.activate()
     m.fs.hxa1.tube_inlet.flow_mol.unfix()
-
     solver.solve(m, tee=True)
-
-    @m.fs.Constraint(m.fs.time)
-    def heat_duty_zero_eqn(b, t):
-        return b.soec.heat_duty[t] == 0
-    m.fs.soec.E_cell.unfix()
-    solver.solve(m, tee=True)
-
 
 
 def tag_model(m):
@@ -520,14 +472,8 @@ def tag_model(m):
                 "fg02": m.fs.hxf2.shell_outlet,
                 "fg03": m.fs.hxa2.shell_inlet,
                 "fg04": m.fs.hxa2.shell_outlet,
-                "f03": m.fs.hxf2.tube_outlet,
-                "a03": m.fs.hxa2.tube_outlet,
                 "f01": m.fs.hxf1.tube_inlet,
                 "a01": m.fs.hxa1.tube_inlet,
-                "f05": m.fs.split_f1.inlet,
-                "a05": m.fs.split_a1.inlet,
-                "f04": m.fs.mix_f1.outlet,
-                "a04": m.fs.mix_a1.outlet,
                 "a07": m.fs.hxf1.shell_outlet,
                 "f07": m.fs.hxa1.shell_outlet,
             },
@@ -539,7 +485,7 @@ def tag_model(m):
         new_tag(f"{i}_P", expr=s.pressure / 1000, format="{:.3f} kPa")
         new_tag(f"{i}_T", expr=s.temperature, format="{:.2f} K")
         try:
-            new_tag(f"{i}_x", expr=s.vapor_frac * 100, format="{:.1f}%")
+            new_tag(f"{i}_x", expr=s.phase_frac["Vap"] * 100, format="{:.1f}%")
         except (KeyError, AttributeError):
             pass
         try:
@@ -549,9 +495,13 @@ def tag_model(m):
             pass
 
     new_tag("soec_power", expr=m.fs.total_soec_power_expr[0] / 1e6, format="{:.2f} MW")
-    new_tag("soec_n_cells", expr=m.fs.n_soec_cells, format="{:.2e}")
+    new_tag("soec_n_cells", expr=m.fs.soec.n_cells, format="{:.2e}")
     new_tag("E_cell", expr=m.fs.soec.E_cell[0], format="{:.4f} V")
-    new_tag("soec_heat_duty", expr=m.fs.soec.heat_duty[0]*m.fs.n_soec_cells/1e6, format="{:.4f} MW")
+    new_tag(
+        "soec_heat_duty",
+        expr=m.fs.soec.heat_duty[0] * m.fs.soec.n_cells / 1e6,
+        format="{:.4f} MW",
+    )
 
     m.tags = tags
     m.tag_format = tag_format
@@ -626,3 +576,21 @@ if __name__ == "__main__":
     m, solver = get_model()
     plot_soec(m)
     write_pfd_results("soec_init.svg")
+    check_scaling = False
+    if check_scaling:
+        jac, nlp = iscale.get_jacobian(m, scaled=True)
+        print("Extreme Jacobian entries:")
+        for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
+            print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
+        print("Unscaled constraints:")
+        for c in iscale.unscaled_constraints_generator(m):
+            print(f"    {c}")
+        print("Scaled constraints by factor:")
+        for c, s in iscale.constraints_with_scale_factor_generator(m):
+            print(f"    {c}, {s}")
+        print("Badly scaled variables:")
+        for v, sv in iscale.badly_scaled_var_generator(
+            m, large=1e2, small=1e-2, zero=1e-12
+        ):
+            print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
+        print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")

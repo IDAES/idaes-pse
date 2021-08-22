@@ -44,11 +44,20 @@ import idaes.logger as idaeslog
 _log = idaeslog.getLogger(__name__)
 
 
-def __none_mult(x, y):
-    """PRIVATE FUNCTION, If x or y is None return None, else return x * y"""
-    if x is not None and y is not None:
+def __none_left_mult(x, y):
+    """PRIVATE FUNCTION, If x is None return None, else return x * y"""
+    if x is not None:
         return x * y
     return None
+
+
+def __scale_constraint(c, v):
+    """PRIVATE FUNCTION, scale Constraint c to value v"""
+    if c.equality:
+        c.set_value((c.lower*v, c.body*v))
+    else:
+        c.set_value(
+            (__none_left_mult(c.lower, v), c.body*v, __none_left_mult(c.upper, v)))
 
 
 def scale_arc_constraints(blk):
@@ -368,14 +377,8 @@ def constraint_scaling_transform(c, s, overwrite=True):
         # If no existing scaling factor, use value of 1
         st = 1
 
-    v = s / st
-    if c.upper is c.lower:
-        ul = __none_mult(c.lower, v)
-        c.set_value((ul, __none_mult(c.body, v), ul))
-    else:
-        c.set_value(
-            (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v))
-        )
+    v = s/st
+    __scale_constraint(c, v)
     __set_constraint_transform_applied_scaling_factor(c, s)
 
 
@@ -392,18 +395,8 @@ def constraint_scaling_transform_undo(c):
         raise TypeError(f"{c} is not a constraint or is an indexed constraint")
     v = get_constraint_transform_applied_scaling_factor(c)
     if v is None:
-        return  # hasn't been transformed, so nothing to do.
-    if c.upper is c.lower:
-        ul = __none_mult(c.lower, 1 / v)
-        c.set_value((ul, __none_mult(c.body, 1 / v), ul))
-    else:
-        c.set_value(
-            (
-                __none_mult(c.lower, 1 / v),
-                __none_mult(c.body, 1 / v),
-                __none_mult(c.upper, 1 / v),
-            )
-        )
+        return # hasn't been transformed, so nothing to do.
+    __scale_constraint(c, 1/v)
     __unset_constraint_transform_applied_scaling_factor(c)
 
 
@@ -831,9 +824,7 @@ def scale_single_constraint(c):
             f"{c.name} constraint has no scaling factor, so it was not scaled."
         )
         return
-    c.set_value(
-        (__none_mult(c.lower, v), __none_mult(c.body, v), __none_mult(c.upper, v))
-    )
+    __scale_constraint(c, v)
     unset_scaling_factor(c)
 
 
