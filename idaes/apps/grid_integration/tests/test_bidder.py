@@ -1,7 +1,7 @@
 import pytest
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.bidder import Bidder
-from .test_tracker import TestingModel
+from test_tracker import TestingModel
 
 class TestingForecaster:
 
@@ -37,25 +37,41 @@ def test_compute_bids(bidder_object):
     default_bids = bidder_object.bidding_model_object.default_bids
     pmin = bidder_object.bidding_model_object.pmin
     pmax = bidder_object.bidding_model_object.pmax
+    date = '2021-08-20'
 
     # test forecaster lower than marginal cost
-    fixed_forecast = marginal_cost - 1
-    bids = bidder_object.compute_bids(date, \
+    shift = 1
+    fixed_forecast = marginal_cost - shift
+    bids = bidder_object.compute_bids(date = date, \
                                       hour = None, \
                                       prediction = fixed_forecast)
 
-    expected_bids = {t: {gen: {p: p*marginal_cost for p in default_bids}} for t in range(horizon)}
-    for t in range(horizon):
-        expected_bids[t][gen][pmin] = fixed_forecast * pmin
+    expected_bids = {t: {gen: {p: p*marginal_cost - shift*pmin for p in default_bids}} for t in range(horizon)}
 
     assert expected_bids == bids
 
     # test forecaster lower than marginal cost
-    fixed_forecast = marginal_cost + 1
-    bids = bidder_object.compute_bids(date, \
+    shift = 1
+    fixed_forecast = marginal_cost + shift
+    bids = bidder_object.compute_bids(date = date, \
                                       hour = None, \
                                       prediction = fixed_forecast)
 
-    expected_bids = {t: {gen: {p: p*marginal_cost for p in default_bids}} for t in range(horizon)}
+    expected_bids = {}
+    for t in range(horizon):
+
+        expected_bids[t]= {}
+        expected_bids[t][gen] = {}
+
+        pre_p = 0
+        pre_cost = 0
+
+        for p in default_bids:
+            if p == pmax:
+                expected_bids[t][gen][p] = (p - pre_p) * (marginal_cost + shift) + pre_cost
+            else:
+                expected_bids[t][gen][p] = (p - pre_p) * marginal_cost + pre_cost
+            pre_p = p
+            pre_cost = expected_bids[t][gen][p]
 
     assert expected_bids == bids
