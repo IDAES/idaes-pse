@@ -1,3 +1,16 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+
 import numpy as np
 from itertools import combinations
 
@@ -631,7 +644,7 @@ class IsothermalSofcElectrodeData(UnitModelBlockData):
                 else:
                     return (
                         c
-                        * b.current[t, 1 + izset_cv[-1] - iz]
+                        * b.current[t, 1 + izset_cv.last() - iz]
                         / _constF
                         / b.diff_eff_coeff[t, iz, ix, i]
                         / dz
@@ -643,7 +656,7 @@ class IsothermalSofcElectrodeData(UnitModelBlockData):
 
         @self.Expression(tset, izset_cv, ixset, comps)
         def dcdz(b, t, iz, ix, i):
-            if iz == izset_cv[-1]:
+            if iz == izset_cv.last():
                 return 0
             else:
                 dz = (zset[iz + 1] - zset[iz]) * self.length[None]
@@ -660,8 +673,7 @@ class IsothermalSofcElectrodeData(UnitModelBlockData):
                 # indexing starts at 1. This is a boundary condition and it
                 # does make the flux into the electrode the same as the flux
                 # out of the channel.
-                c_conc = self.config.channel_conc
-                return b.conc[t, iz, 0, i] == c_conc[t, iz, i]
+                return b.conc[t, iz, 0, i] == self.config.channel_conc[t, iz, i]
             elif iz == 1:
                 return self.dcdt == b.diff_eff_coeff[t, iz, ix, i] * (
                     -b.dcdz[t, iz, ix, i] / dz
@@ -887,6 +899,15 @@ class IsothermalSofcData(UnitModelBlockData):
         self.eact_ae = pyo.Var()
         self.heat_duty = pyo.Var(tset)
 
+        # multiple cells ports
+        self.n_cells = pyo.Var(initialize=20e6)
+        self.n_cells.fix()
+        self.mult_flow_mol_fc_inlet = pyo.Var(tset)
+        self.mult_flow_mol_fc_outlet = pyo.Var(tset)
+        self.mult_flow_mol_ac_inlet = pyo.Var(tset)
+        self.mult_flow_mol_ac_outlet = pyo.Var(tset)
+
+
         self.el = IsothermalSofcElectrolyte(
             default={
                 "dynamic": is_dynamic,
@@ -948,11 +969,11 @@ class IsothermalSofcData(UnitModelBlockData):
 
         @self.Expression(tset, izset_cv)
         def E_nerst(b, t, iz):
-            T = b.fe.temperature[t, iz, nxfe]
-            Pae = b.ae.pressure[t, 1 + nz - iz, nxae]
-            yH2 = b.fe.mole_frac_comp[t, iz, nxfe, "H2"]
-            yO2 = b.ae.mole_frac_comp[t, 1 + nz - iz, nxae, "O2"]
-            yH2O = b.fe.mole_frac_comp[t, iz, nxfe, "H2O"]
+            T = b.fe.temperature[t, iz, b.fe.ixset.last()]
+            Pae = b.ae.pressure[t, 1 + nz - iz, b.ae.ixset.last()]
+            yH2 = b.fe.mole_frac_comp[t, iz, b.fe.ixset.last(), "H2"]
+            yO2 = b.ae.mole_frac_comp[t, 1 + nz - iz, b.ae.ixset.last(), "O2"]
+            yH2O = b.fe.mole_frac_comp[t, iz, b.fe.ixset.last(), "H2O"]
             return (
                 1.253
                 - 0.00024516 * T
@@ -1038,14 +1059,14 @@ class IsothermalSofcData(UnitModelBlockData):
 
         @self.Expression(tset)
         def power(b, t):
-            return b.E_cell[t] * b.total_current[t]
+            return -b.E_cell[t] * b.total_current[t]
 
         @self.Expression(tset)
         def h2_utilization_expr(b, t):
             return (
                 (
                     b.fc.flow_mol[t, 0] / b.fc.mole_frac_comp[t, 0, "H2"]
-                    - b.fc.flow_mol[t, izset[-1]] * b.fc.mole_frac_comp[t, nz, "H2"]
+                    - b.fc.flow_mol[t, izset.last()] * b.fc.mole_frac_comp[t, nz, "H2"]
                 )
                 / b.fc.flow_mol[t, 0]
                 / b.fc.mole_frac_comp[t, 0, "H2"]
@@ -1092,7 +1113,7 @@ class IsothermalSofcData(UnitModelBlockData):
 
         @self.Expression(tset)
         def h_fuel_out(b, t):
-            return b.fc.flow_mol[t, izset[-1]] * sum(
+            return b.fc.flow_mol[t, izset.last()] * sum(
                 comp_enthalpy_expr(b.fc.temperature[t, nz], i)
                 * b.fc.mole_frac_comp[t, nz, i]
                 for i in self.fc.config.comp_list
@@ -1100,7 +1121,7 @@ class IsothermalSofcData(UnitModelBlockData):
 
         @self.Expression(tset)
         def h_air_out(b, t):
-            return b.ac.flow_mol[t, izset[-1]] * sum(
+            return b.ac.flow_mol[t, izset.last()] * sum(
                 comp_enthalpy_expr(b.ac.temperature[t, nz], i)
                 * b.ac.mole_frac_comp[t, nz, i]
                 for i in self.ac.config.comp_list
@@ -1112,7 +1133,23 @@ class IsothermalSofcData(UnitModelBlockData):
 
         @self.Constraint(tset)
         def enth_bal(b, t):
-            return b.power[t] + b.deltah_therm[t] + b.heat_duty[t] == 0
+            return  b.deltah_therm[t] + b.heat_duty[t] == b.power[t]
+
+        @self.Constraint(tset)
+        def mult_flow_mol_fc_inlet_eqn(b, t):
+            return b.mult_flow_mol_fc_inlet[t] == b.n_cells * self.fc.flow_mol[t, 0]
+
+        @self.Constraint(tset)
+        def mult_flow_mol_fc_outlet_eqn(b, t):
+            return b.mult_flow_mol_fc_outlet[t] == b.n_cells * self.fc.flow_mol[t, nz]
+
+        @self.Constraint(tset)
+        def mult_flow_mol_ac_inlet_eqn(b, t):
+            return b.mult_flow_mol_ac_inlet[t] == b.n_cells * self.ac.flow_mol[t, 0]
+
+        @self.Constraint(tset)
+        def mult_flow_mol_ac_outlet_eqn(b, t):
+            return b.mult_flow_mol_ac_outlet[t] == b.n_cells * self.ac.flow_mol[t, nz]
 
         self.inlet_ac_flow_mol_ref = pyo.Reference(self.ac.flow_mol[:, 0])
         self.inlet_ac_temperature_ref = pyo.Reference(self.ac.temperature[:, 0])
@@ -1123,6 +1160,11 @@ class IsothermalSofcData(UnitModelBlockData):
         self.inlet_ac.add(self.inlet_ac_temperature_ref, "temperature")
         self.inlet_ac.add(self.inlet_ac_pressure_ref, "pressure")
         self.inlet_ac.add(self.inlet_ac_mole_frac_comp_ref, "mole_frac_comp")
+        self.inlet_ac_mult = Port()
+        self.inlet_ac_mult.add(self.mult_flow_mol_ac_inlet, "flow_mol")
+        self.inlet_ac_mult.add(self.inlet_ac_temperature_ref, "temperature")
+        self.inlet_ac_mult.add(self.inlet_ac_pressure_ref, "pressure")
+        self.inlet_ac_mult.add(self.inlet_ac_mole_frac_comp_ref, "mole_frac_comp")
 
         self.outlet_ac_flow_mol_ref = pyo.Reference(self.ac.flow_mol[:, nz])
         self.outlet_ac_temperature_ref = pyo.Reference(self.ac.temperature[:, nz])
@@ -1133,6 +1175,11 @@ class IsothermalSofcData(UnitModelBlockData):
         self.outlet_ac.add(self.outlet_ac_temperature_ref, "temperature")
         self.outlet_ac.add(self.outlet_ac_pressure_ref, "pressure")
         self.outlet_ac.add(self.outlet_ac_mole_frac_comp_ref, "mole_frac_comp")
+        self.outlet_ac_mult = Port()
+        self.outlet_ac_mult.add(self.mult_flow_mol_ac_outlet, "flow_mol")
+        self.outlet_ac_mult.add(self.outlet_ac_temperature_ref, "temperature")
+        self.outlet_ac_mult.add(self.outlet_ac_pressure_ref, "pressure")
+        self.outlet_ac_mult.add(self.outlet_ac_mole_frac_comp_ref, "mole_frac_comp")
 
         self.inlet_fc_flow_mol_ref = pyo.Reference(self.fc.flow_mol[:, 0])
         self.inlet_fc_temperature_ref = pyo.Reference(self.fc.temperature[:, 0])
@@ -1143,6 +1190,11 @@ class IsothermalSofcData(UnitModelBlockData):
         self.inlet_fc.add(self.inlet_fc_temperature_ref, "temperature")
         self.inlet_fc.add(self.inlet_fc_pressure_ref, "pressure")
         self.inlet_fc.add(self.inlet_fc_mole_frac_comp_ref, "mole_frac_comp")
+        self.inlet_fc_mult = Port()
+        self.inlet_fc_mult.add(self.mult_flow_mol_fc_inlet, "flow_mol")
+        self.inlet_fc_mult.add(self.inlet_fc_temperature_ref, "temperature")
+        self.inlet_fc_mult.add(self.inlet_fc_pressure_ref, "pressure")
+        self.inlet_fc_mult.add(self.inlet_fc_mole_frac_comp_ref, "mole_frac_comp")
 
         self.outlet_fc_flow_mol_ref = pyo.Reference(self.fc.flow_mol[:, nz])
         self.outlet_fc_temperature_ref = pyo.Reference(self.fc.temperature[:, nz])
@@ -1153,7 +1205,11 @@ class IsothermalSofcData(UnitModelBlockData):
         self.outlet_fc.add(self.outlet_fc_temperature_ref, "temperature")
         self.outlet_fc.add(self.outlet_fc_pressure_ref, "pressure")
         self.outlet_fc.add(self.outlet_fc_mole_frac_comp_ref, "mole_frac_comp")
-
+        self.outlet_fc_mult = Port()
+        self.outlet_fc_mult.add(self.mult_flow_mol_fc_outlet, "flow_mol")
+        self.outlet_fc_mult.add(self.outlet_fc_temperature_ref, "temperature")
+        self.outlet_fc_mult.add(self.outlet_fc_pressure_ref, "pressure")
+        self.outlet_fc_mult.add(self.outlet_fc_mole_frac_comp_ref, "mole_frac_comp")
 
     def initialize(self, outlvl=idaeslog.DEBUG, solver=None, optarg=None, soec=False):
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
@@ -1200,8 +1256,10 @@ class IsothermalSofcData(UnitModelBlockData):
         iscale.set_scaling_factor(self.current, s_deltaz * s_width / 300.0)
         iscale.set_scaling_factor(self.eta_fe, 100)
         iscale.set_scaling_factor(self.eta_ae, 100)
-
-        iscale.propagate_indexed_component_scaling_factors(self)
+        iscale.set_scaling_factor(self.mult_flow_mol_fc_inlet, 1e-3)
+        iscale.set_scaling_factor(self.mult_flow_mol_ac_inlet, 1e-3)
+        iscale.set_scaling_factor(self.mult_flow_mol_fc_outlet, 1e-3)
+        iscale.set_scaling_factor(self.mult_flow_mol_ac_outlet, 1e-3)
 
         for i, c in self.ac_xflux_eqn.items():
             s = iscale.get_scaling_factor(self.ac.xflux[i])
@@ -1209,6 +1267,22 @@ class IsothermalSofcData(UnitModelBlockData):
 
         for i, c in self.fc_xflux_eqn.items():
             s = iscale.get_scaling_factor(self.fc.xflux[i])
+            iscale.constraint_scaling_transform(c, s)
+
+        for i, c in self.mult_flow_mol_fc_inlet_eqn.items():
+            s = iscale.get_scaling_factor(self.mult_flow_mol_fc_inlet[i])
+            iscale.constraint_scaling_transform(c, s)
+
+        for i, c in self.mult_flow_mol_ac_inlet_eqn.items():
+            s = iscale.get_scaling_factor(self.mult_flow_mol_ac_inlet[i])
+            iscale.constraint_scaling_transform(c, s)
+
+        for i, c in self.mult_flow_mol_fc_outlet_eqn.items():
+            s = iscale.get_scaling_factor(self.mult_flow_mol_fc_outlet[i])
+            iscale.constraint_scaling_transform(c, s)
+
+        for i, c in self.mult_flow_mol_ac_outlet_eqn.items():
+            s = iscale.get_scaling_factor(self.mult_flow_mol_ac_outlet[i])
             iscale.constraint_scaling_transform(c, s)
 
 
@@ -1591,7 +1665,6 @@ def soec_example():
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
 
-    iscale.calculate_scaling_factors(m)
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
     idaes.cfg.ipopt["options"]["tol"] = 1e-8

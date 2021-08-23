@@ -2,8 +2,8 @@ Command-line interface
 ======================
 The IDAES PSE Toolkit includes a command-line tool that can be invoked
 by typing `idaes` in a UNIX or Mac OSX shell, or Windows Powershell,
-that is in an installed IDAES environment. For the most part, this means
-that wherever you installed IDAES will have this command available.
+that is in an installed IDAES environment. Generally, the `idaes` command
+is available where you install IDAES.
 
 This section of the documentation describes the capabilities of this
 command-line program.
@@ -23,6 +23,7 @@ each of which is described on a separate page below.
     bin_directory
     copyright
     data_directory
+    env_info
     get_examples
     get_extensions
     lib_directory

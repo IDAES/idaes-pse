@@ -10,18 +10,25 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from .feedwater_heater_0D import FWH0D, FWHCondensing0D
-from .balance import BalanceBlockData, BalanceBlock
-from .boiler_fireside import BoilerFireside
-from .boiler_heat_exchanger import BoilerHeatExchanger
-from .boiler_heat_exchanger_2D import HeatExchangerCrossFlow2D_Header
-from .downcomer import Downcomer
-from .drum import Drum
-from .drum1D import Drum1D
-from .feedwater_heater_0D_dynamic import FWH0DDynamic
-from .heat_exchanger_3streams import HeatExchangerWith3Streams
-from .steamheater import SteamHeater
-from .waterpipe import WaterPipe
-from .watertank import WaterTank
-from .waterwall_section import WaterwallSection
-from .isothermal_sofc import IsothermalSofc
+"""
+Tests get environment info
+"""
+import json
+import pytest
+import idaes.ver as ver
+from idaes.core.util.env_info import EnvironmentInfo
+
+@pytest.mark.unit
+def test_env_info():
+    x = EnvironmentInfo()
+    d = x.to_dict()
+    assert "IDAES" in d
+    assert "Pyomo" in d
+    assert "OS" in d
+    assert hasattr(x, "package_version")
+    assert x.version_string == ver.__version__
+    s = x.to_json()
+    d = json.loads(s)
+    assert "IDAES" in d
+    assert "Pyomo" in d
+    assert "OS" in d

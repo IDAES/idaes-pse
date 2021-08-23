@@ -11,559 +11,400 @@
 # license information.
 #################################################################################
 """
-Test for Caprese's module for NMPC.
+Test categorize_dae_variables_and_constraints function.
 """
 
 import pytest
-from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, 
-                           TransformationFactory, TerminationCondition)
-from pyomo.network import Arc
+import pyomo.environ as pyo
+import pyomo.dae as dae
 from pyomo.common.collections import ComponentSet
 from pyomo.dae.flatten import flatten_dae_components
 
-from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
-        MomentumBalanceType)
-from idaes.core.util.model_statistics import (degrees_of_freedom, 
-        activated_equalities_generator)
-from idaes.apps.caprese.categorize import categorize_dae_variables
+from idaes.apps.caprese.categorize import (
+        categorize_dae_variables_and_constraints,
+        )
 from idaes.apps.caprese.common.config import VariableCategory as VC
-import idaes.logger as idaeslog
-from idaes.apps.caprese.examples.cstr_model import make_model
+from idaes.apps.caprese.common.config import ConstraintCategory as CC
+from idaes.apps.caprese.tests.test_simple_model import make_model
 
 __author__ = "Robert Parker"
 
-
 @pytest.mark.unit
-def test_categorize_1():
+def test_categorize_deriv():
+    """ The simplest test. Identify a differential and a derivative var.
     """
-    This test categorizes the enzyme cstr "as intended."
-    Volume is used as a measurement, and solvent flow rates are
-    fixed, but otherwise equations are as expected.
-    """
-    model = make_model(horizon=1, ntfe=5, ntcp=2)
-    time = model.fs.time
-
-    init_input_list = [
-            model.fs.mixer.S_inlet.flow_vol[0],
-            model.fs.mixer.E_inlet.flow_vol[0],
-            ]
-    init_input_set = ComponentSet(init_input_list)
-
-    init_deriv_list = [
-            model.fs.cstr.control_volume.energy_accumulation[0, 'aq'],
-            *list(model.fs.cstr.control_volume.material_accumulation[0, 'aq', :]),
-            ]
-    init_deriv_set = ComponentSet(init_deriv_list)
-
-    init_diff_list = [
-            model.fs.cstr.control_volume.energy_holdup[0, 'aq'],
-            *list(model.fs.cstr.control_volume.material_holdup[0, 'aq', :]),
-            ]
-    init_diff_set = ComponentSet(init_diff_list)
-
-    init_fixed_list = [
-            model.fs.mixer.E_inlet.temperature[0],
-            model.fs.mixer.S_inlet.temperature[0],
-            *list(model.fs.mixer.E_inlet.conc_mol[0, :]),
-            *list(model.fs.mixer.S_inlet.conc_mol[0, :]),
-            model.fs.cstr.outlet.conc_mol[0, 'Solvent'],
-            model.fs.mixer.outlet.conc_mol[0, 'Solvent'],
-            ]
-    init_fixed_set = ComponentSet(init_fixed_list)
-
-    init_meas_list = [
-            model.fs.cstr.control_volume.energy_holdup[0, 'aq'],
-            model.fs.cstr.control_volume.volume[0],
-            *list(model.fs.cstr.control_volume.material_holdup[0, 'aq', :]),
-            ]
-    init_meas_set = ComponentSet(init_meas_list)
-    # Solvent holdup is not a measurement; we measure volume instead
-    init_meas_set.remove(
-            model.fs.cstr.control_volume.material_holdup[0, 'aq', 'Solvent'])
-
-    init_alg_list = [
-        model.fs.cstr.outlet.flow_vol[0],
-        model.fs.cstr.outlet.temperature[0],
-        model.fs.cstr.inlet.flow_vol[0],
-        model.fs.cstr.inlet.temperature[0],
-        model.fs.mixer.outlet.flow_vol[0],
-        model.fs.mixer.outlet.temperature[0],
-        model.fs.cstr.control_volume.volume[0],
-        *list(model.fs.cstr.control_volume.properties_out[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.inlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.properties_in[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_generation[0, 'aq', :]),
-        *list(model.fs.mixer.mixed_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.E_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.S_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.outlet.conc_mol[0, :]),
-        *list(model.fs.mixer.outlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_coef[:]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_rate[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_extent[0, :]),
-        ]
-    init_alg_set = ComponentSet(init_alg_list)
-    # solvent outlet concentrations are not algebraic variables as
-    # it is fixed.
-    init_alg_set.remove(model.fs.cstr.outlet.conc_mol[0, 'Solvent'])
-    init_alg_set.remove(model.fs.mixer.outlet.conc_mol[0, 'Solvent'])
-
-    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
-    category_dict = categorize_dae_variables(dae_vars, time, init_input_list)
-
-    input_vars = category_dict[VC.INPUT]
-    diff_vars = category_dict[VC.DIFFERENTIAL]
-    deriv_vars = category_dict[VC.DERIVATIVE]
-    fixed_vars = category_dict[VC.FIXED]
-    alg_vars = category_dict[VC.ALGEBRAIC]
-    meas_vars = category_dict[VC.MEASUREMENT]
-
-    assert len(input_vars) == len(init_input_set)
-    for v in input_vars:
-        assert v[0] in init_input_set
-
-    assert len(deriv_vars) == len(init_deriv_set)
-    for v in deriv_vars:
-        assert v[0] in init_deriv_set
-
-    assert len(diff_vars) == len(init_deriv_set)
-    for v in diff_vars:
-        assert v[0] in init_diff_set
-
-    assert len(fixed_vars) == len(init_fixed_set)
-    for v in fixed_vars:
-        assert v[0] in init_fixed_set
-
-    assert len(alg_vars) == len(init_alg_set)
-    for v in alg_vars:
-        assert v[0] in init_alg_set
-
-    assert len(meas_vars) == len(init_meas_set)
-    for v in meas_vars:
-        assert v[0] in init_meas_set
-
-    assert len(scalar_vars) == 0
-
-
-@pytest.mark.unit
-def test_categorize_2():
-    """
-    In this instance, temperature is "measured" (used as an initial condition)
-    instead of energy_holdup, conc[P] is measured instead of holdup[P],
-    and accumulation[C] is measured instead of holdup[C].
-    """
-    model = make_model(horizon=1, ntfe=5, ntcp=2)
-    time = model.fs.time
-    t0 = time.first()
-
-    material_holdup = model.fs.cstr.control_volume.material_holdup
-    material_accumulation = model.fs.cstr.control_volume.material_accumulation
-    energy_holdup = model.fs.cstr.control_volume.energy_holdup
-    energy_accumulation = model.fs.cstr.control_volume.energy_accumulation
-    conc_mol = model.fs.cstr.outlet.conc_mol
-
-    # Specify temperature instead of energy holdup
-    energy_holdup[t0, 'aq'].unfix()
-    model.fs.cstr.outlet.temperature[t0].fix(300)
-
-    # Specify C_P instead of holdup
-    material_holdup[t0, 'aq', 'P'].unfix()
-    conc_mol[t0, 'P'].fix(0.)
-
-    # Specify accumulation of C instead of holdup
-    # You might want to do this if you want to start at steady state,
-    # but don't know the value of every variable at the steady state
-    # you want to start at...
-    material_holdup[t0, 'aq', 'C'].unfix()
-    material_accumulation[t0, 'aq', 'C'].fix(0.)
-
-    init_input_list = [
-            model.fs.mixer.S_inlet.flow_vol[0],
-            model.fs.mixer.E_inlet.flow_vol[0],
-            ]
-    init_input_set = ComponentSet(init_input_list)
-
-    init_deriv_list = [
-            model.fs.cstr.control_volume.energy_accumulation[0, 'aq'],
-            *list(model.fs.cstr.control_volume.material_accumulation[0, 'aq', :]),
-            ]
-    init_deriv_set = ComponentSet(init_deriv_list)
-
-    init_diff_list = [
-            model.fs.cstr.control_volume.energy_holdup[0, 'aq'],
-            *list(model.fs.cstr.control_volume.material_holdup[0, 'aq', :]),
-            ]
-    init_diff_set = ComponentSet(init_diff_list)
-
-    init_fixed_list = [
-            model.fs.mixer.E_inlet.temperature[0],
-            model.fs.mixer.S_inlet.temperature[0],
-            *list(model.fs.mixer.E_inlet.conc_mol[0, :]),
-            *list(model.fs.mixer.S_inlet.conc_mol[0, :]),
-            model.fs.cstr.outlet.conc_mol[0, 'Solvent'],
-            model.fs.mixer.outlet.conc_mol[0, 'Solvent'],
-            ]
-    init_fixed_set = ComponentSet(init_fixed_list)
-
-    init_meas_list = [
-            model.fs.cstr.outlet.temperature[0],
-            model.fs.cstr.control_volume.volume[0],
-            model.fs.cstr.control_volume.material_holdup[0, 'aq', 'S'],
-            model.fs.cstr.control_volume.material_holdup[0, 'aq', 'E'],
-            model.fs.cstr.control_volume.material_holdup[0, 'aq', 'S'],
-            model.fs.cstr.control_volume.material_accumulation[0, 'aq', 'C'],
-            model.fs.cstr.outlet.conc_mol[0,'P'],
-            ]
-    init_meas_set = ComponentSet(init_meas_list)
-    # No need to remove solvent holdup here as it was not added to this list.
-
-    init_alg_list = [
-        model.fs.cstr.outlet.flow_vol[0],
-        model.fs.cstr.outlet.temperature[0],
-        model.fs.cstr.inlet.flow_vol[0],
-        model.fs.cstr.inlet.temperature[0],
-        model.fs.mixer.outlet.flow_vol[0],
-        model.fs.mixer.outlet.temperature[0],
-        model.fs.cstr.control_volume.volume[0],
-        *list(model.fs.cstr.control_volume.properties_out[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.inlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.properties_in[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_generation[0, 'aq', :]),
-        *list(model.fs.mixer.mixed_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.E_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.S_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.outlet.conc_mol[0, :]),
-        *list(model.fs.mixer.outlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_coef[:]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_rate[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_extent[0, :]),
-        ]
-    init_alg_set = ComponentSet(init_alg_list)
-    # solvent outlet concentrations are not algebraic variables as
-    # it is fixed.
-    init_alg_set.remove(model.fs.cstr.outlet.conc_mol[0, 'Solvent'])
-    init_alg_set.remove(model.fs.mixer.outlet.conc_mol[0, 'Solvent'])
-
-    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
-    category_dict = categorize_dae_variables(dae_vars, time, init_input_list)
-
-    input_vars = category_dict[VC.INPUT]
-    diff_vars = category_dict[VC.DIFFERENTIAL]
-    deriv_vars = category_dict[VC.DERIVATIVE]
-    fixed_vars = category_dict[VC.FIXED]
-    alg_vars = category_dict[VC.ALGEBRAIC]
-    meas_vars = category_dict[VC.MEASUREMENT]
-
-    assert len(input_vars) == len(init_input_set)
-    for v in input_vars:
-        assert v[0] in init_input_set
-
-    assert len(deriv_vars) == len(init_deriv_set)
-    for v in deriv_vars:
-        assert v[0] in init_deriv_set
-
-    assert len(diff_vars) == len(init_deriv_set)
-    for v in diff_vars:
-        assert v[0] in init_diff_set
-
-    assert len(fixed_vars) == len(init_fixed_set)
-    for v in fixed_vars:
-        assert v[0] in init_fixed_set
-
-    assert len(alg_vars) == len(init_alg_set)
-    for v in alg_vars:
-        assert v[0] in init_alg_set
-
-    assert len(meas_vars) == len(init_meas_set)
-    for v in meas_vars:
-        assert v[0] in init_meas_set
-
-    assert len(scalar_vars) == 0
-
-
-@pytest.mark.unit
-def test_categorize_3():
-    """
-    In this test we fix one of the differential variables.
-    This is the case where somebody wants to run an isothermal
-    CSTR.
-    """
-    model = make_model(horizon=1, ntfe=5, ntcp=2)
-    time = model.fs.time
-
-    CV = model.fs.cstr.control_volume
-    CV.energy_holdup.fix(300)
-    CV.energy_accumulation_disc_eq.deactivate()
-
-    init_input_list = [
-            model.fs.mixer.S_inlet.flow_vol[0],
-            model.fs.mixer.E_inlet.flow_vol[0],
-            ]
-    init_input_set = ComponentSet(init_input_list)
-
-    init_deriv_list = [
-            *list(model.fs.cstr.control_volume.material_accumulation[0, 'aq', :]),
-            ]
-    init_deriv_set = ComponentSet(init_deriv_list)
-
-    init_diff_list = [
-            *list(model.fs.cstr.control_volume.material_holdup[0, 'aq', :]),
-            ]
-    init_diff_set = ComponentSet(init_diff_list)
-
-    init_fixed_list = [
-            # Energy holdup has been fixed
-            model.fs.cstr.control_volume.energy_holdup[0, 'aq'],
-            model.fs.mixer.E_inlet.temperature[0],
-            model.fs.mixer.S_inlet.temperature[0],
-            *list(model.fs.mixer.E_inlet.conc_mol[0, :]),
-            *list(model.fs.mixer.S_inlet.conc_mol[0, :]),
-            model.fs.cstr.outlet.conc_mol[0, 'Solvent'],
-            model.fs.mixer.outlet.conc_mol[0, 'Solvent'],
-            ]
-    init_fixed_set = ComponentSet(init_fixed_list)
-
-    init_meas_list = [
-            model.fs.cstr.control_volume.volume[0],
-            *list(model.fs.cstr.control_volume.material_holdup[0, 'aq', :]),
-            ]
-    init_meas_set = ComponentSet(init_meas_list)
-    # Solvent holdup is not a measurement; we measure volume instead
-    init_meas_set.remove(
-            model.fs.cstr.control_volume.material_holdup[0, 'aq', 'Solvent'])
-
-    init_alg_list = [
-        # Since energy_holdup is fixed, energy_accumulation is not
-        # considered a derivative. Instead it is algebraic.
-        model.fs.cstr.control_volume.energy_accumulation[0, 'aq'],
-        model.fs.cstr.outlet.flow_vol[0],
-        model.fs.cstr.outlet.temperature[0],
-        model.fs.cstr.inlet.flow_vol[0],
-        model.fs.cstr.inlet.temperature[0],
-        model.fs.mixer.outlet.flow_vol[0],
-        model.fs.mixer.outlet.temperature[0],
-        model.fs.cstr.control_volume.volume[0],
-        *list(model.fs.cstr.control_volume.properties_out[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.inlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.properties_in[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_generation[0, 'aq', :]),
-        *list(model.fs.mixer.mixed_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.E_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.S_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.outlet.conc_mol[0, :]),
-        *list(model.fs.mixer.outlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_coef[:]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_rate[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_extent[0, :]),
-        ]
-    init_alg_set = ComponentSet(init_alg_list)
-    # solvent outlet concentrations are not algebraic variables as
-    # it is fixed.
-    init_alg_set.remove(model.fs.cstr.outlet.conc_mol[0, 'Solvent'])
-    init_alg_set.remove(model.fs.mixer.outlet.conc_mol[0, 'Solvent'])
-
-    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
-    category_dict = categorize_dae_variables(dae_vars, time, init_input_list)
-
-    input_vars = category_dict[VC.INPUT]
-    diff_vars = category_dict[VC.DIFFERENTIAL]
-    deriv_vars = category_dict[VC.DERIVATIVE]
-    fixed_vars = category_dict[VC.FIXED]
-    alg_vars = category_dict[VC.ALGEBRAIC]
-    meas_vars = category_dict[VC.MEASUREMENT]
-
-    assert len(input_vars) == len(init_input_set)
-    for v in input_vars:
-        assert v[0] in init_input_set
-
-    assert len(deriv_vars) == len(init_deriv_set)
-    for v in deriv_vars:
-        assert v[0] in init_deriv_set
-
-    assert len(diff_vars) == len(init_deriv_set)
-    for v in diff_vars:
-        assert v[0] in init_diff_set
-
-    assert len(fixed_vars) == len(init_fixed_set)
-    for v in fixed_vars:
-        assert v[0] in init_fixed_set
-
-    assert len(alg_vars) == len(init_alg_set)
-    for v in alg_vars:
-        assert v[0] in init_alg_set
-
-    assert len(meas_vars) == len(init_meas_set)
-    for v in meas_vars:
-        assert v[0] in init_meas_set
-
-    assert len(scalar_vars) == 0
-
-
-@pytest.mark.unit
-def test_categorize_4():
-    """
-    This tests categorization when a psuedo-steady state
-    approximation is used. Energy accumulation and accumulation of E
-    are fixed, the corresponding initial conditions unfixed, and
-    the corresponding discretization equations deactivated.
-    """
-    model = make_model(horizon=1, ntfe=5, ntcp=2)
-    time = model.fs.time
-
-    CV = model.fs.cstr.control_volume
-    CV.energy_accumulation[:, 'aq'].fix(0.)
-    CV.material_accumulation[:, 'aq', 'E'].fix(0.)
-    CV.energy_holdup[0, 'aq'].unfix()
-    CV.material_holdup[0, 'aq', 'E'].unfix()
-    CV.energy_accumulation_disc_eq.deactivate()
-    CV.material_accumulation_disc_eq.deactivate()
-
-    init_input_list = [
-            model.fs.mixer.S_inlet.flow_vol[0],
-            model.fs.mixer.E_inlet.flow_vol[0],
-            ]
-    init_input_set = ComponentSet(init_input_list)
-
-    init_deriv_list = [
-            CV.material_accumulation[0, 'aq', 'C'],
-            CV.material_accumulation[0, 'aq', 'S'],
-            CV.material_accumulation[0, 'aq', 'P'],
-            CV.material_accumulation[0, 'aq', 'Solvent'],
-            ]
-    init_deriv_set = ComponentSet(init_deriv_list)
-
-    init_diff_list = [
-            CV.material_holdup[0, 'aq', 'C'],
-            CV.material_holdup[0, 'aq', 'S'],
-            CV.material_holdup[0, 'aq', 'P'],
-            CV.material_holdup[0, 'aq', 'Solvent'],
-            ]
-    init_diff_set = ComponentSet(init_diff_list)
-
-    init_fixed_list = [
-            model.fs.cstr.control_volume.energy_accumulation[0, 'aq'],
-            CV.material_accumulation[0, 'aq', 'E'],
-            model.fs.mixer.E_inlet.temperature[0],
-            model.fs.mixer.S_inlet.temperature[0],
-            *list(model.fs.mixer.E_inlet.conc_mol[0, :]),
-            *list(model.fs.mixer.S_inlet.conc_mol[0, :]),
-            model.fs.cstr.outlet.conc_mol[0, 'Solvent'],
-            model.fs.mixer.outlet.conc_mol[0, 'Solvent'],
-            ]
-    init_fixed_set = ComponentSet(init_fixed_list)
-
-    init_meas_list = [
-            model.fs.cstr.control_volume.volume[0],
-            CV.material_holdup[0,'aq','P'],
-            CV.material_holdup[0,'aq','C'],
-            CV.material_holdup[0,'aq','S'],
-            ]
-    init_meas_set = ComponentSet(init_meas_list)
-
-    init_alg_list = [
-        model.fs.cstr.control_volume.energy_holdup[0, 'aq'],
-        CV.material_holdup[0, 'aq', 'E'],
-        model.fs.cstr.outlet.flow_vol[0],
-        model.fs.cstr.outlet.temperature[0],
-        model.fs.cstr.inlet.flow_vol[0],
-        model.fs.cstr.inlet.temperature[0],
-        model.fs.mixer.outlet.flow_vol[0],
-        model.fs.mixer.outlet.temperature[0],
-        model.fs.cstr.control_volume.volume[0],
-        *list(model.fs.cstr.control_volume.properties_out[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.inlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.properties_in[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_generation[0, 'aq', :]),
-        *list(model.fs.mixer.mixed_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.E_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.mixer.S_inlet_state[0].flow_mol_comp[:]),
-        *list(model.fs.cstr.outlet.conc_mol[0, :]),
-        *list(model.fs.mixer.outlet.conc_mol[0, :]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_coef[:]),
-        *list(model.fs.cstr.control_volume.reactions[0].reaction_rate[:]),
-        *list(model.fs.cstr.control_volume.rate_reaction_extent[0, :]),
-        ]
-    init_alg_set = ComponentSet(init_alg_list)
-    # solvent outlet concentrations are not algebraic variables as
-    # it is fixed.
-    init_alg_set.remove(model.fs.cstr.outlet.conc_mol[0, 'Solvent'])
-    init_alg_set.remove(model.fs.mixer.outlet.conc_mol[0, 'Solvent'])
-
-    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
-    category_dict = categorize_dae_variables(dae_vars, time, init_input_list)
-
-    input_vars = category_dict[VC.INPUT]
-    diff_vars = category_dict[VC.DIFFERENTIAL]
-    deriv_vars = category_dict[VC.DERIVATIVE]
-    fixed_vars = category_dict[VC.FIXED]
-    alg_vars = category_dict[VC.ALGEBRAIC]
-    meas_vars = category_dict[VC.MEASUREMENT]
-
-    assert len(input_vars) == len(init_input_set)
-    for v in input_vars:
-        assert v[0] in init_input_set
-
-    assert len(deriv_vars) == len(init_deriv_set)
-    for v in deriv_vars:
-        assert v[0] in init_deriv_set
-
-    assert len(diff_vars) == len(init_deriv_set)
-    for v in diff_vars:
-        assert v[0] in init_diff_set
-
-    assert len(fixed_vars) == len(init_fixed_set)
-    for v in fixed_vars:
-        assert v[0] in init_fixed_set
-
-    assert len(alg_vars) == len(init_alg_set)
-    for v in alg_vars:
-        assert v[0] in init_alg_set
-
-    assert len(meas_vars) == len(init_meas_set)
-    for v in meas_vars:
-        assert v[0] in init_meas_set
-
-    assert len(scalar_vars) == 0
-
-
-@pytest.mark.unit
-def test_categorize_error():
-    model = make_model(horizon=1, ntfe=5, ntcp=2)
-    time = model.fs.time
-
-    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
-
-    # Add a dummy var to treat as an input.
-    # This var is not in `dae_vars`, so it will not be located during
-    # categorization, which should fail.
-    model.dummy_var = Var(time)
-
-    init_input_list = [
-            model.fs.mixer.S_inlet.flow_vol[0],
-            model.fs.mixer.E_inlet.flow_vol[0],
-            model.dummy_var[0],
-            ]
-
-    with pytest.raises(RuntimeError, match=r'Not all inputs could be found'):
-        category_dict = categorize_dae_variables(
-                dae_vars,
-                time,
-                init_input_list,
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1])
+    m.v = pyo.Var(m.time, initialize=0)
+    m.dv = dae.DerivativeVar(m.v, wrt=m.time)
+    m.diff_eqn = pyo.Constraint(
+            m.time,
+            rule={t: m.dv[t] == -m.v[t]**2 for t in m.time}
+            )
+    with pytest.raises(TypeError):
+        # If we find a derivative var, we will try to access the disc eq.
+        var_partition, con_partition = categorize_dae_variables_and_constraints(
+                m,
+                [m.v, m.dv],
+                [m.diff_eqn],
+                m.time,
                 )
+    disc = pyo.TransformationFactory('dae.finite_difference')
+    disc.apply_to(m, wrt=m.time, nfe=1, scheme='BACKWARD')
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            [m.v, m.dv],
+            [m.diff_eqn, m.dv_disc_eq],
+            m.time,
+            )
+    assert len(var_partition[VC.DIFFERENTIAL]) == 1
+    assert var_partition[VC.DIFFERENTIAL][0] is m.v
+    assert len(var_partition[VC.DERIVATIVE]) == 1
+    assert var_partition[VC.DERIVATIVE][0] is m.dv
+    assert len(con_partition[CC.DIFFERENTIAL]) == 1
+    assert con_partition[CC.DIFFERENTIAL][0] is m.diff_eqn
+    assert len(con_partition[CC.DISCRETIZATION]) == 1
+    assert con_partition[CC.DISCRETIZATION][0] is m.dv_disc_eq
 
-    # Re-run flattener. Now `dummy_var` should be included in `dae_vars`.
-    scalar_vars, dae_vars = flatten_dae_components(model, time, ctype=Var)
-    category_dict = categorize_dae_variables(
+    for categ in VC:
+        if (categ is not VC.DIFFERENTIAL and categ is not VC.DERIVATIVE
+                and categ in var_partition):
+            assert len(var_partition[categ]) == 0
+    for categ in CC:
+        if (categ is not CC.DIFFERENTIAL and categ is not CC.DISCRETIZATION
+                and categ in con_partition):
+            assert len(con_partition[categ]) == 0
+
+
+@pytest.mark.unit
+def test_categorize_deriv_fixed():
+    """ If one of the derivative or diff var are fixed, the other
+    should be categorized as algebraic.
+    """
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1])
+    m.v = pyo.Var(m.time, initialize=0)
+    m.dv = dae.DerivativeVar(m.v, wrt=m.time)
+    m.diff_eqn = pyo.Constraint(
+            m.time,
+            rule={t: m.dv[t] == -m.v[t]**2 for t in m.time}
+            )
+    disc = pyo.TransformationFactory('dae.finite_difference')
+    disc.apply_to(m, wrt=m.time, nfe=1, scheme='BACKWARD')
+    
+    #
+    # Fix differential variable, e.g. it is an input
+    #
+    m.v.fix()
+    m.diff_eqn.deactivate()
+
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            [m.v, m.dv],
+            [m.diff_eqn, m.dv_disc_eq],
+            m.time,
+            )
+    # Expected categories have expected variables
+    assert len(var_partition[VC.ALGEBRAIC]) == 1
+    assert var_partition[VC.ALGEBRAIC][0] is m.dv
+    assert len(con_partition[CC.ALGEBRAIC]) == 1
+    assert con_partition[CC.ALGEBRAIC][0] is m.dv_disc_eq
+
+    # Unexpected categories are empty
+    for categ in VC:
+        if (categ is not VC.ALGEBRAIC and categ is not VC.UNUSED
+                and categ in var_partition):
+            assert len(var_partition[categ]) == 0
+    for categ in CC:
+        if (categ is not CC.ALGEBRAIC and categ is not CC.UNUSED
+                and categ in con_partition):
+            assert len(con_partition[categ]) == 0
+
+    #
+    # We can accomplish something similar by making m.v an input
+    #
+    m.v.unfix()
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            [m.v, m.dv],
+            [m.diff_eqn, m.dv_disc_eq],
+            m.time,
+            input_vars=[m.v],
+            )
+    # Expected categories have expected variables
+    assert len(var_partition[VC.ALGEBRAIC]) == 1
+    assert var_partition[VC.ALGEBRAIC][0] is m.dv
+    assert len(var_partition[VC.INPUT]) == 1
+    assert var_partition[VC.INPUT][0] is m.v
+    assert len(con_partition[CC.ALGEBRAIC]) == 1
+    assert con_partition[CC.ALGEBRAIC][0] is m.dv_disc_eq
+
+    #
+    # Fix derivative var, e.g. pseudo-steady state
+    #
+    for var in m.dv.values():
+        var.fix(0.0)
+    m.diff_eqn.activate()
+    m.dv_disc_eq.deactivate()
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            [m.v, m.dv],
+            [m.diff_eqn, m.dv_disc_eq],
+            m.time,
+            )
+    # Expected categories have expected variables
+    assert len(var_partition[VC.ALGEBRAIC]) == 1
+    assert var_partition[VC.ALGEBRAIC][0] is m.v
+    assert len(con_partition[CC.ALGEBRAIC]) == 1
+    assert con_partition[CC.ALGEBRAIC][0] is m.diff_eqn
+
+
+@pytest.mark.unit
+def test_categorize_simple_model():
+    """ Categorize variables and equations in the "simple model" used
+    for the base class unit tests.
+    """
+    m = make_model()
+    m.conc_in.unfix()
+    m.flow_in.unfix()
+    scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
+    scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
             dae_vars,
-            time,
-            init_input_list,
+            dae_cons,
+            m.time,
+            input_vars=[m.flow_in],
+            disturbance_vars=[
+                pyo.Reference(m.conc_in[:, 'A']),
+                pyo.Reference(m.conc_in[:, 'B']),
+                ],
+            )
+    t1 = m.time[2]
+    # Expected variables:
+    expected_vars = {
+            VC.DIFFERENTIAL: ComponentSet([m.conc[t1, 'A'], m.conc[t1, 'B']]),
+            VC.DERIVATIVE: ComponentSet([m.dcdt[t1, 'A'], m.dcdt[t1, 'B']]),
+            VC.ALGEBRAIC: ComponentSet([
+                    m.rate[t1, 'A'],
+                    m.rate[t1, 'B'],
+                    m.flow_out[t1],
+                    ]),
+            VC.INPUT: ComponentSet([m.flow_in[t1]]),
+            VC.DISTURBANCE: ComponentSet([
+                    m.conc_in[t1, 'A'],
+                    m.conc_in[t1, 'B'],
+                    ]),
+            }
+
+    # Expected constraints:
+    expected_cons = {
+            CC.DIFFERENTIAL: ComponentSet([
+                    m.material_balance[t1, 'A'],
+                    m.material_balance[t1, 'B'],
+                    ]),
+            CC.DISCRETIZATION: ComponentSet([
+                    m.dcdt_disc_eq[t1, 'A'],
+                    m.dcdt_disc_eq[t1, 'B'],
+                    ]),
+            CC.ALGEBRAIC: ComponentSet([
+                    m.rate_eqn[t1, 'A'],
+                    m.rate_eqn[t1, 'B'],
+                    m.flow_eqn[t1],
+                    ]),
+            }
+
+    # Expected categories have expected variables and constraints
+    for categ in expected_vars:
+        assert len(expected_vars[categ]) == len(var_partition[categ])
+        for var in var_partition[categ]:
+            assert var[t1] in expected_vars[categ]
+    for categ in var_partition:
+        if categ not in expected_vars:
+            assert len(var_partition[categ]) == 0
+
+    for categ in expected_cons:
+        assert len(expected_cons[categ]) == len(con_partition[categ])
+        for con in con_partition[categ]:
+            assert con[t1] in expected_cons[categ]
+    for categ in con_partition:
+        if categ not in expected_cons:
+            assert len(con_partition[categ]) == 0
+
+
+@pytest.mark.unit
+def test_categorize_simple_model_with_constraints():
+    """ Categorize variables and equations in the "simple model" used
+    for the base class unit tests, now with an "input constraint"
+    and an active inequality.
+
+    Note that the active inequality is in terms of a differential var,
+    so that var must be matched with the inequality and therefore
+    must be "considered differential."
+    """
+    m = make_model()
+    m.conc_in.unfix()
+    m.flow_in.unfix()
+    m.performance = pyo.Constraint(m.time, rule={
+        t: m.conc[t, 'A'] >= 0.5 for t in m.time
+        })
+    m.pwc_input = pyo.Constraint(m.time, rule={
+        t: m.flow_in[t] == 1.0 for t in m.time
+        })
+    scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
+    scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            dae_vars,
+            dae_cons,
+            m.time,
+            input_vars=[m.flow_in],
+            disturbance_vars=[pyo.Reference(m.conc_in[:, 'B'])],
+            input_cons=[m.pwc_input],
+            active_inequalities=[m.performance],
+            )
+    t1 = m.time[2]
+    # Expected variables:
+    expected_vars = {
+            VC.DIFFERENTIAL: ComponentSet([m.conc[t1, 'B']]),
+            VC.DERIVATIVE: ComponentSet([m.dcdt[t1, 'B']]),
+            VC.ALGEBRAIC: ComponentSet([
+                    m.rate[t1, 'A'],
+                    m.rate[t1, 'B'],
+                    m.flow_out[t1],
+                    m.conc[t1, 'A'],
+                    m.dcdt[t1, 'A'],
+                    m.conc_in[t1, 'A'],
+                    ]),
+            VC.INPUT: ComponentSet([m.flow_in[t1]]),
+            VC.DISTURBANCE: ComponentSet([
+                    m.conc_in[t1, 'B'],
+                    ]),
+            }
+
+    # Expected constraints:
+    expected_cons = {
+            CC.DIFFERENTIAL: ComponentSet([
+                    m.material_balance[t1, 'B'],
+                    ]),
+            CC.DISCRETIZATION: ComponentSet([
+                    m.dcdt_disc_eq[t1, 'B'],
+                    ]),
+            CC.ALGEBRAIC: ComponentSet([
+                    m.rate_eqn[t1, 'A'],
+                    m.rate_eqn[t1, 'B'],
+                    m.flow_eqn[t1],
+                    m.material_balance[t1, 'A'],
+                    m.dcdt_disc_eq[t1, 'A'],
+                    m.performance[t1],
+                    ]),
+            CC.INPUT: ComponentSet([
+                    m.pwc_input[t1],
+                    ]),
+            }
+
+    # Expected categories have expected variables and constraints
+    for categ in expected_vars:
+        assert len(expected_vars[categ]) == len(var_partition[categ])
+        for var in var_partition[categ]:
+            assert var[t1] in expected_vars[categ]
+    for categ in var_partition:
+        if categ not in expected_vars:
+            assert len(var_partition[categ]) == 0
+
+    for categ in expected_cons:
+        assert len(expected_cons[categ]) == len(con_partition[categ])
+        for con in con_partition[categ]:
+            assert con[t1] in expected_cons[categ]
+    for categ in con_partition:
+        if categ not in expected_cons:
+            assert len(con_partition[categ]) == 0
+
+
+@pytest.mark.unit
+def test_space_indexed_model():
+    """ The case where a differential variable is "specifed"
+    by an input (boundary condition). This is the case that
+    motivated the development of this categorization method.
+    """
+    m = pyo.ConcreteModel()
+    m.time = dae.ContinuousSet(initialize=[0, 1])
+    m.space = dae.ContinuousSet(initialize=[0, 1])
+    m.v = pyo.Var(m.time, m.space, initialize=0)
+
+    m.dvdt = dae.DerivativeVar(m.v, wrt=m.time)
+    m.dvdx = dae.DerivativeVar(m.v, wrt=m.space)
+
+    def _balance_rule(m, t, x):
+        return m.dvdt[t, x] + m.dvdx[t, x] == 0
+    m.balance = pyo.Constraint(m.time, m.space, rule=_balance_rule)
+
+    m.u = pyo.Var(m.time, m.space, initialize=0)
+    def _u_eqn_rule(m, t, x):
+        return m.v[t, x] == m.u[t, x]
+    m.u_eqn = pyo.Constraint(m.time, m.space, rule=_u_eqn_rule)
+
+    disc = pyo.TransformationFactory('dae.finite_difference')
+    disc.apply_to(m, wrt=m.time, nfe=2, scheme='BACKWARD')
+    disc.apply_to(m, wrt=m.space, nfe=2, scheme='BACKWARD')
+
+    scalar_vars, dae_vars = flatten_dae_components(m, m.time, pyo.Var)
+    scalar_cons, dae_cons = flatten_dae_components(m, m.time, pyo.Constraint)
+    var_partition, con_partition = categorize_dae_variables_and_constraints(
+            m,
+            dae_vars,
+            dae_cons,
+            m.time,
+            input_vars=[pyo.Reference(m.u[:, 0])],
             )
 
+    t1 = m.time[2]
+    # Expected variables:
+    expected_vars = {
+            VC.DIFFERENTIAL: ComponentSet([
+                m.v[t1, x] for x in m.space if x != 0
+                ]),
+            VC.DERIVATIVE: ComponentSet([
+                m.dvdt[t1, x] for x in m.space if x != 0
+                ]),
+            VC.ALGEBRAIC: ComponentSet([
+                m.dvdt[t1, 0],
+                m.v[t1, 0],
+                *[m.dvdx[t1, x] for x in m.space],
+                *[m.u[t1, x] for x in m.space if x != 0],
+                ]),
+            VC.INPUT: ComponentSet([m.u[t1, 0]]),
+            }
 
-if __name__ == '__main__':
-    test_categorize_1()
-    test_categorize_2()
-    test_categorize_3()
-    test_categorize_4()
-    test_categorize_error()
+    # Expected constraints:
+    expected_cons = {
+            CC.DIFFERENTIAL: ComponentSet([
+                m.balance[t1, x] for x in m.space if x != 0
+                ]),
+            CC.DISCRETIZATION: ComponentSet([
+                m.dvdt_disc_eq[t1, x] for x in m.space if x != 0
+                ]),
+            CC.ALGEBRAIC: ComponentSet([
+                m.balance[t1, 0],
+                m.dvdt_disc_eq[t1, 0],
+                *[m.dvdx_disc_eq[t1, x] for x in m.space if x != 0],
+                *[m.u_eqn[t1, x] for x in m.space],
+                ]),
+            }
+
+    # Expected categories have expected variables and constraints
+    for categ in expected_vars:
+        assert len(expected_vars[categ]) == len(var_partition[categ])
+        for var in var_partition[categ]:
+            assert var[t1] in expected_vars[categ]
+    for categ in var_partition:
+        if categ not in expected_vars:
+            assert len(var_partition[categ]) == 0
+
+    for categ in expected_cons:
+        assert len(expected_cons[categ]) == len(con_partition[categ])
+        for con in con_partition[categ]:
+            assert con[t1] in expected_cons[categ]
+    for categ in con_partition:
+        if categ not in expected_cons:
+            assert len(con_partition[categ]) == 0
