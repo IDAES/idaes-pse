@@ -39,9 +39,9 @@ def coordinator_object():
                             forecaster = forecaster)
 
     ## create coordinator
-    coordinator = DoubleLoopCoordinator(bidder = thermal_bidder,\
-                                        tracker = thermal_tracker,\
-                                        projection_tracker = thermal_projection_tracker)
+    coordinator_object = DoubleLoopCoordinator(bidder = thermal_bidder,\
+                                               tracker = thermal_tracker,\
+                                               projection_tracker = thermal_projection_tracker)
 
     return coordinator_object
 
@@ -79,8 +79,8 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
     # case 1
     hour = 10
     next_ruc_dispatch = None
-    expected_signal = [sced_dispatch[0]] + \
-                      [current_ruc_dispatch[(gen_name, t) for t in range(hour + 1, hour + sced_dispatch)]]
+    expected_signal = [sced_dispatch[0]] +\
+                      [current_ruc_dispatch[(gen_name, t)] for t in range(hour + 1, hour + sced_horizon)]
     signal = coordinator_object._assemble_sced_tracking_market_signals(gen_name = gen_name, \
                                                                        hour = hour, \
                                                                        sced_dispatch = sced_dispatch, \
@@ -104,8 +104,8 @@ def test_assemble_sced_tracking_market_signals(coordinator_object):
     # case 3
     hour = 23
     next_ruc_dispatch = {(gen_name, t): (t+1) * 10 for t in range(24)}
-    expected_signal = [sced_dispatch[0]] + \
-                      [next_ruc_dispatch[(gen_name, t) for t in range(0, hour + sced_dispatch - 1)]]
+    expected_signal = [sced_dispatch[0]] +\
+                      [next_ruc_dispatch[(gen_name, t)] for t in range(0, sced_horizon - 1)]
     signal = coordinator_object._assemble_sced_tracking_market_signals(gen_name = gen_name, \
                                                                        hour = hour, \
                                                                        sced_dispatch = sced_dispatch, \
