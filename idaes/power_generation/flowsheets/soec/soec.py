@@ -102,13 +102,13 @@ def add_soec(m):
             "air_side_stoich": {"H2O": 0, "O2": -0.25},
         }
     )
-    m.fs.split_f1 = gum.Separator(
+    m.fs.spltf1 = gum.Separator(
         default={
             "property_package": m.fs.h2_side_prop,
             "outlet_list": ["out", "recycle"],
         }
     )
-    m.fs.split_a1 = gum.Separator(
+    m.fs.splta1 = gum.Separator(
         default={
             "property_package": m.fs.o2_side_prop,
             "outlet_list": ["out", "recycle"],
@@ -145,14 +145,14 @@ def add_soec(m):
 
 
 def add_recycle_inlet_mixers(m):
-    m.fs.mix_f1 = gum.Mixer(
+    m.fs.mxf1 = gum.Mixer(
         default={
             "property_package": m.fs.h2_side_prop,
             "inlet_list": ["water", "recycle"],
             "momentum_mixing_type": gum.MomentumMixingType.none,
         }
     )
-    m.fs.mix_a1 = gum.Mixer(
+    m.fs.mxa1 = gum.Mixer(
         default={
             "property_package": m.fs.o2_side_prop,
             "inlet_list": ["water", "recycle"],
@@ -160,11 +160,11 @@ def add_recycle_inlet_mixers(m):
         }
     )
 
-    @m.fs.mix_f1.Constraint(m.fs.time)
+    @m.fs.mxf1.Constraint(m.fs.time)
     def fmxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
 
-    @m.fs.mix_a1.Constraint(m.fs.time)
+    @m.fs.mxa1.Constraint(m.fs.time)
     def amxpress_eqn(b, t):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
 
@@ -273,16 +273,16 @@ def add_constraints(m):
 def add_arcs(m):
     m.fs.f02 = Arc(source=m.fs.hxf1.tube_outlet, destination=m.fs.hxf2.tube_inlet)
     m.fs.a02 = Arc(source=m.fs.hxa1.tube_outlet, destination=m.fs.hxa2.tube_inlet)
-    m.fs.f03 = Arc(source=m.fs.hxf2.tube_outlet_adapt, destination=m.fs.mix_f1.water)
-    m.fs.a03 = Arc(source=m.fs.hxa2.tube_outlet_adapt, destination=m.fs.mix_a1.water)
-    m.fs.f04 = Arc(source=m.fs.mix_f1.outlet, destination=m.fs.soec.inlet_fc_mult)
-    m.fs.a04 = Arc(source=m.fs.mix_a1.outlet, destination=m.fs.soec.inlet_ac_mult)
-    m.fs.f05 = Arc(source=m.fs.soec.outlet_fc_mult, destination=m.fs.split_f1.inlet)
-    m.fs.a05 = Arc(source=m.fs.soec.outlet_ac_mult, destination=m.fs.split_a1.inlet)
-    m.fs.f06 = Arc(source=m.fs.split_f1.out, destination=m.fs.hxa1.shell_inlet)
-    m.fs.a06 = Arc(source=m.fs.split_a1.out, destination=m.fs.hxf1.shell_inlet)
-    m.fs.f08 = Arc(source=m.fs.split_f1.recycle, destination=m.fs.mix_f1.recycle)
-    m.fs.a08 = Arc(source=m.fs.split_a1.recycle, destination=m.fs.mix_a1.recycle)
+    m.fs.f03 = Arc(source=m.fs.hxf2.tube_outlet_adapt, destination=m.fs.mxf1.water)
+    m.fs.a03 = Arc(source=m.fs.hxa2.tube_outlet_adapt, destination=m.fs.mxa1.water)
+    m.fs.f04 = Arc(source=m.fs.mxf1.outlet, destination=m.fs.soec.inlet_fc_mult)
+    m.fs.a04 = Arc(source=m.fs.mxa1.outlet, destination=m.fs.soec.inlet_ac_mult)
+    m.fs.f05 = Arc(source=m.fs.soec.outlet_fc_mult, destination=m.fs.spltf1.inlet)
+    m.fs.a05 = Arc(source=m.fs.soec.outlet_ac_mult, destination=m.fs.splta1.inlet)
+    m.fs.f06 = Arc(source=m.fs.spltf1.out, destination=m.fs.hxa1.shell_inlet)
+    m.fs.a06 = Arc(source=m.fs.splta1.out, destination=m.fs.hxf1.shell_inlet)
+    m.fs.f08 = Arc(source=m.fs.spltf1.recycle, destination=m.fs.mxf1.recycle)
+    m.fs.a08 = Arc(source=m.fs.splta1.recycle, destination=m.fs.mxa1.recycle)
 
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
@@ -299,8 +299,8 @@ def set_inputs(m):
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
 
-    m.fs.split_f1.split_fraction[:, "out"].fix(0.95)
-    m.fs.split_a1.split_fraction[:, "out"].fix(0.85)
+    m.fs.spltf1.split_fraction[:, "out"].fix(0.95)
+    m.fs.splta1.split_fraction[:, "out"].fix(0.85)
 
     m.fs.hxf1.tube_inlet.enth_mol.fix(3000)
     m.fs.hxf1.tube_inlet.pressure.fix(1e5)
@@ -364,8 +364,8 @@ def do_scaling(m):
     iscale.set_scaling_factor(m.fs.hxf2.shell.heat, 1e-6)
     iscale.constraint_scaling_transform(m.fs.ftemp_in_eqn[0], 1e-3)
     iscale.constraint_scaling_transform(m.fs.atemp_in_eqn[0], 1e-3)
-    iscale.constraint_scaling_transform(m.fs.mix_f1.fmxpress_eqn[0], 1e-5)
-    iscale.constraint_scaling_transform(m.fs.mix_a1.amxpress_eqn[0], 1e-5)
+    iscale.constraint_scaling_transform(m.fs.mxf1.fmxpress_eqn[0], 1e-5)
+    iscale.constraint_scaling_transform(m.fs.mxa1.amxpress_eqn[0], 1e-5)
     for i, c in m.fs.total_soec_power_eqn.items():
         s = iscale.get_scaling_factor(m.fs.total_soec_power[i])
         iscale.constraint_scaling_transform(c, s)
@@ -389,8 +389,8 @@ def do_initialization(m, solver):
     m.fs.soec.initialize()
     iinit.propagate_state(arc=m.fs.f05)
     iinit.propagate_state(arc=m.fs.a05)
-    m.fs.split_f1.initialize()
-    m.fs.split_a1.initialize()
+    m.fs.spltf1.initialize()
+    m.fs.splta1.initialize()
     iinit.propagate_state(arc=m.fs.f06)
     iinit.propagate_state(arc=m.fs.a06)
     m.fs.hxf1.initialize()
@@ -403,8 +403,8 @@ def do_initialization(m, solver):
     iinit.propagate_state(arc=m.fs.a03)
     iinit.propagate_state(arc=m.fs.f08)
     iinit.propagate_state(arc=m.fs.a08)
-    m.fs.mix_f1.initialize()
-    m.fs.mix_a1.initialize()
+    m.fs.mxf1.initialize()
+    m.fs.mxa1.initialize()
     m.fs.soec.E_cell.unfix()
     m.fs.f04_expanded.deactivate()
     m.fs.a04_expanded.deactivate()
@@ -434,6 +434,11 @@ def do_initialization(m, solver):
     m.fs.soec.ac.mole_frac_comp[:, 0, :].unfix()
     solver.solve(m, tee=True)
 
+    # this won't change the flow to the SOEC since it's not the multi flow var
+    # that's fixed
+    iinit.propagate_state(arc=m.fs.f04)
+    iinit.propagate_state(arc=m.fs.a04)
+    solver.solve(m, tee=True)
 
     m.fs.a04_expanded.flow_mol_equality.activate()
     m.fs.hxa1.tube_inlet.flow_mol.unfix()
@@ -553,7 +558,7 @@ def plot_soec(m):
 
 def get_model(m=None):
     if m is None:
-        m = pyo.ConcreteModel("Gas Turbine Model")
+        m = pyo.ConcreteModel("SOEC Module")
     if not hasattr(m, "fs"):
         m.fs = FlowsheetBlock(default={"dynamic": False})
     add_properties(m)
