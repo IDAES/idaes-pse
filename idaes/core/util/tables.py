@@ -15,6 +15,7 @@ from pandas import DataFrame
 from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
+from pyomo.core.base.units_container import units
 
 import idaes.logger as idaeslog
 
@@ -208,7 +209,7 @@ def tag_state_quantities(blocks, attributes, labels, exception=False):
 
 
 def create_stream_table_dataframe(
-    streams, true_state=False, time_point=0, orient="columns"
+    streams, true_state=False, time_point=0, orient="columns", add_units=False
 ):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
@@ -228,6 +229,8 @@ def create_stream_table_dataframe(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
+        add_units : Add a Units column to the dataframe representing the
+            stream values.
 
     Returns:
         A pandas DataFrame containing the stream table data.
@@ -235,6 +238,10 @@ def create_stream_table_dataframe(
     stream_attributes = OrderedDict()
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
     full_keys = []  # List of all rows in dataframe to fill in missing data
+
+    if add_units:
+        stream_attributes['Units'] = {}
+
     for key, sb in stream_states.items():
         stream_attributes[key] = {}
         if true_state:
@@ -245,10 +252,14 @@ def create_stream_table_dataframe(
             for i in disp_dict[k]:
                 if i is None:
                     stream_attributes[key][k] = value(disp_dict[k][i])
+                    if add_units:
+                        stream_attributes['Units'][k] = units.get_units(disp_dict[k][i])
                     if k not in full_keys:
                         full_keys.append(k)
                 else:
                     stream_attributes[key][f"{k} {i}"] = value(disp_dict[k][i])
+                    if add_units:
+                        stream_attributes['Units'][f"{k} {i}"] = units.get_units(disp_dict[k][i])
                     if f"{k} {i}" not in full_keys:
                         full_keys.append(f"{k} {i}")
 
@@ -260,82 +271,6 @@ def create_stream_table_dataframe(
                 v[r] = "-"
 
     return DataFrame.from_dict(stream_attributes, orient=orient)
-
-
-def create_stream_table_dataframe_with_units(
-    streams, true_state=False, time_point=0, orient="columns"
-):
-    """
-    Method to create a stream table with units in the form of a pandas
-    dataframe. Method takes a dict with name keys and stream values. Use an
-    OrderedDict to list the streams in a specific order, otherwise the
-    dataframe can be sorted later.
-
-    Args:
-        streams : dict with name keys and stream values. Names will be used as
-            display names for stream table, and streams may be Arcs, Ports or
-            StateBlocks.
-        true_state : indicated whether the stream table should contain the
-            display variables define in the StateBlock (False, default) or the
-            state variables (True).
-        time_point : point in the time domain at which to generate stream table
-            (default = 0)
-        orient : orientation of stream table. Accepted values are 'columns'
-            (default) where streams are displayed as columns, or 'index' where
-            stream are displayed as rows.
-
-    Returns:
-        A pandas DataFrame containing the stream table data.
-    """
-    stream_states = stream_states_dict(streams=streams, time_point=time_point)
-
-    import random
-    from collections import defaultdict
-    from pyomo.core.base.units_container import PyomoUnitsContainer
-
-    units_dict = {}
-    units_dict_arr = defaultdict(list)
-
-    _, sb = next(iter(stream_states.items()))
-    derived_units = sb.params.get_metadata().derived_units
-    for unit_key, unit_val in derived_units.items():
-        if not unit_val:
-            continue
-        unit_var = derived_units[unit_key]
-        pint_var = None
-        try:
-            pint_var = unit_var._get_pint_unit()
-        except:
-            # Expression
-            pyomoUnitsContainer = PyomoUnitsContainer()
-            pint_var = pyomoUnitsContainer.get_units(unit_var)._get_pint_unit()
-
-        units_dict[unit_key] = {
-            'units': str(pint_var),
-            'html': f'{pint_var:~H}',
-            'latex': f'{pint_var:~L}'
-        }
-        units_dict_arr['units'].append(str(pint_var))
-        units_dict_arr['html'].append(f'{pint_var:~H}')
-        units_dict_arr['latex'].append(f'{pint_var:~L}')
-
-    stream_table_df = create_stream_table_dataframe(streams, true_state, time_point, orient)
-    stream_table_len = len(stream_table_df)
-
-    units_raw = []
-    units_html = []
-    units_latex = []
-    for i in range(stream_table_len):
-        random_index = random.randint(0,stream_table_len)
-        units_raw.append(units_dict_arr['units'][random_index])
-        units_html.append(units_dict_arr['html'][random_index])
-        units_latex.append(units_dict_arr['latex'][random_index])
-
-    stream_table_df['Expression'] = units_raw
-
-    stream_table_df.insert(0, "Units", units_html, True)
-
-    return stream_table_df
 
 
 def stream_table_dataframe_to_string(stream_table, **kwargs):

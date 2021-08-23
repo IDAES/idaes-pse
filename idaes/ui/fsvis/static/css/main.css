@@ -336,3 +336,12 @@ input:checked + .slider:before {
 .dropdown-item:active {
   background-color: white;
 }
+
+.variable {
+  display: block;
+}
+
+.units {
+  opacity: 0.6;
+  float: right;
+}

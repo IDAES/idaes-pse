@@ -432,15 +432,13 @@ class FlowsheetSerializer:
 
     def _construct_model_json(self):
         from idaes.core.util.tables import (
-            create_stream_table_dataframe,
-            create_stream_table_dataframe_with_units
+            create_stream_table_dataframe
         )  # deferred to avoid circular import
 
         # Get the stream table and add it to the model json
         # Change the index of the pandas dataframe to not be the variables
         self._stream_table_df = (
-            # create_stream_table_dataframe(self.arcs)
-            create_stream_table_dataframe_with_units(self.arcs)
+            create_stream_table_dataframe(self.arcs, add_units=True)
             # Change the index of the pandas dataframe to not be the variables
             .reset_index()
             .rename(columns={"index": "Variable"})
@@ -450,6 +448,24 @@ class FlowsheetSerializer:
                 lambda x: round(x, self._sig_figs) if isinstance(x, (int, float)) else x
             )
         )
+
+        # Styling the units for display
+        def apply_html(value, style=''):
+            if value is not None:
+                return '<span class="' + style + '">' + str(value) + '</span>'
+            else:
+                return '<span class="' + style + '">&ndash;</span>'
+
+        self._stream_table_df['Units'] = self._stream_table_df.apply(
+            lambda x: apply_html(x.Units, 'units'),
+            axis=1
+        )
+
+        # Append the Units to the Variables columns and drop the Units column
+        self._stream_table_df['Variable'] = (
+            self._stream_table_df['Variable']+ self._stream_table_df['Units']
+        )
+        self._stream_table_df = self._stream_table_df.drop(['Units'], axis=1)
 
         # Change NaNs to None for JSON
         self._stream_table_df = self._stream_table_df.where(

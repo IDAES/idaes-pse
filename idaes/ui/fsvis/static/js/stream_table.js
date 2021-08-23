@@ -36,14 +36,17 @@ export class StreamTable {
             if (column_header !== "") {
                 // If the column_header is Variable then we don't want the column to be right-aligned and we want the column to be pinned to the left so when the user scrolls the column scrolls with them
                 if (column_header === "Variable") {
-                    column_defs.push({headerName: column_header, field: column_header, filter: 'agTextColumnFilter', sortable: true, resizable: true, pinned: 'left',});
-                }
-                else if (column_header === "Units") {
-                    column_defs.push({headerName: column_header, field: column_header,
+                    column_defs.push({
+                        headerName: column_header,
+                        field: column_header,
+                        filter: 'agTextColumnFilter',
+                        sortable: true,
+                        resizable: true,
+                        pinned: 'left',
                         cellRenderer: (params) => {
-                            console.log("cellRenderer - params:", params);
-                            return '<span style="opacity: 0.6;">' + params.value + '</span>';
-                        }});
+                            return '<span class="variable">' + params.value + '</span>';
+                        }
+                    });
                 }
                 // If the column header isn't "Variable" then we assume that the contents of the column are numbers so they should be right aligned
                 else {
