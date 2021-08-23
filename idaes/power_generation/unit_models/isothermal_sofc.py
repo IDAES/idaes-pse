@@ -1,3 +1,16 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+
 import numpy as np
 from itertools import combinations
 
@@ -660,8 +673,7 @@ class IsothermalSofcElectrodeData(UnitModelBlockData):
                 # indexing starts at 1. This is a boundary condition and it
                 # does make the flux into the electrode the same as the flux
                 # out of the channel.
-                c_conc = self.config.channel_conc
-                return b.conc[t, iz, 0, i] == c_conc[t, iz, i]
+                return b.conc[t, iz, 0, i] == self.config.channel_conc[t, iz, i]
             elif iz == 1:
                 return self.dcdt == b.diff_eff_coeff[t, iz, ix, i] * (
                     -b.dcdz[t, iz, ix, i] / dz
@@ -957,11 +969,11 @@ class IsothermalSofcData(UnitModelBlockData):
 
         @self.Expression(tset, izset_cv)
         def E_nerst(b, t, iz):
-            T = b.fe.temperature[t, iz, nxfe]
-            Pae = b.ae.pressure[t, 1 + nz - iz, nxae]
-            yH2 = b.fe.mole_frac_comp[t, iz, nxfe, "H2"]
-            yO2 = b.ae.mole_frac_comp[t, 1 + nz - iz, nxae, "O2"]
-            yH2O = b.fe.mole_frac_comp[t, iz, nxfe, "H2O"]
+            T = b.fe.temperature[t, iz, b.fe.ixset.last()]
+            Pae = b.ae.pressure[t, 1 + nz - iz, b.ae.ixset.last()]
+            yH2 = b.fe.mole_frac_comp[t, iz, b.fe.ixset.last(), "H2"]
+            yO2 = b.ae.mole_frac_comp[t, 1 + nz - iz, b.ae.ixset.last(), "O2"]
+            yH2O = b.fe.mole_frac_comp[t, iz, b.fe.ixset.last(), "H2O"]
             return (
                 1.253
                 - 0.00024516 * T
@@ -1194,7 +1206,7 @@ class IsothermalSofcData(UnitModelBlockData):
         self.outlet_fc.add(self.outlet_fc_pressure_ref, "pressure")
         self.outlet_fc.add(self.outlet_fc_mole_frac_comp_ref, "mole_frac_comp")
         self.outlet_fc_mult = Port()
-        self.outlet_fc_mult.add(self.mult_flow_mol_ac_outlet, "flow_mol")
+        self.outlet_fc_mult.add(self.mult_flow_mol_fc_outlet, "flow_mol")
         self.outlet_fc_mult.add(self.outlet_fc_temperature_ref, "temperature")
         self.outlet_fc_mult.add(self.outlet_fc_pressure_ref, "pressure")
         self.outlet_fc_mult.add(self.outlet_fc_mole_frac_comp_ref, "mole_frac_comp")
