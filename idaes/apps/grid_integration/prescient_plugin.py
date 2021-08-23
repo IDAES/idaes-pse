@@ -312,13 +312,21 @@ class DoubleLoopCoordinator:
         '''
 
         gen_name = self.bidder.generator
-
         current_ruc_dispatch = simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
+        sced_horizon = options.sced_horizon
+
+        market_signals = self._assemble_project_tracking_signal(gen_name = gen_name,\
+                                                                current_ruc_dispatch = current_ruc_dispatch,\
+                                                                hour = hour,\
+                                                                sced_horizon = sced_horizon)
+        return market_signals
+
+    @staticmethod
+    def _assemble_project_tracking_signal(gen_name, current_ruc_dispatch, hour, sced_horizon):
 
         market_signals = []
-
         # append corresponding RUC dispatch
-        for t in range(hour, hour+options.sced_horizon):
+        for t in range(hour, hour + sced_horizon):
             if t >= 23:
                 dispatch = current_ruc_dispatch[(gen_name,23)]
             else:
@@ -491,21 +499,37 @@ class DoubleLoopCoordinator:
         '''
 
         gen_name = self.bidder.generator
-
         sced_dispatch = sced_instance.data['elements']['generator'][gen_name]['pg']['values']
+        sced_horizon = options.sced_horizon
         current_ruc_dispatch = simulator.data_manager.ruc_market_active.thermal_gen_cleared_DA
         if simulator.data_manager.ruc_market_pending is not None:
             next_ruc_dispatch = simulator.data_manager.ruc_market_pending.thermal_gen_cleared_DA
+        else:
+            next_ruc_dispatch = None
+
+        market_signals = self._assemble_sced_tracking_market_signals(gen_name = gen_name, \
+                                                                     sced_dispatch = sced_dispatch, \
+                                                                     sced_horizon = sced_horizon, \
+                                                                     current_ruc_dispatch = current_ruc_dispatch, \
+                                                                     next_ruc_dispatch = None)
+        return market_signals
+
+    @staticmethod
+    def _assemble_sced_tracking_market_signals(gen_name, \
+                                               sced_dispatch, \
+                                               sced_horizon, \
+                                               current_ruc_dispatch, \
+                                               next_ruc_dispatch = None):
 
         # append the sced dispatch
         market_signals = [sced_dispatch[0]]
 
         # append corresponding RUC dispatch
-        for t in range(hour+1, hour+options.sced_horizon):
-            if t > 23 and simulator.data_manager.ruc_market_pending is not None:
+        for t in range(hour+1, hour + sced_horizon):
+            if t > 23 and next_ruc_dispatch:
                 t = t % 24
                 dispatch = next_ruc_dispatch[(gen_name,t)]
-            elif t > 23 and simulator.data_manager.ruc_market_pending is None:
+            elif t > 23 and next_ruc_dispatch is None:
                 dispatch = sced_dispatch[t-hour]
             else:
                 dispatch = current_ruc_dispatch[(gen_name,t)]
