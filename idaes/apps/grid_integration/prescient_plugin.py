@@ -508,6 +508,7 @@ class DoubleLoopCoordinator:
             next_ruc_dispatch = None
 
         market_signals = self._assemble_sced_tracking_market_signals(gen_name = gen_name, \
+                                                                     hour = hour, \
                                                                      sced_dispatch = sced_dispatch, \
                                                                      sced_horizon = sced_horizon, \
                                                                      current_ruc_dispatch = current_ruc_dispatch, \
@@ -516,6 +517,7 @@ class DoubleLoopCoordinator:
 
     @staticmethod
     def _assemble_sced_tracking_market_signals(gen_name, \
+                                               hour, \
                                                sced_dispatch, \
                                                sced_horizon, \
                                                current_ruc_dispatch, \
