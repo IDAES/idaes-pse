@@ -16,6 +16,7 @@ Common Surrogate interface for IDAES.
 from pathlib import Path
 from typing import Dict
 import yaml
+from pyomo.environ import Var
 from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 import os.path, pickle
 
@@ -95,6 +96,7 @@ class Surrogate:
 
         self.pkl_info = None
 
+    # TODO: Do we need this? It is not hard to set config args directly
     def modify_config(self, **kwargs):
         """
         The ``modify_config`` method allows users to define a new surrogate instance simply by modifying one or more of the
@@ -108,7 +110,7 @@ class Surrogate:
         self.config = self.CONFIG(kwargs)
 
     # Build
-
+    # TODO: Should we call this train_surrogate instead?
     def build_model(self):
         """
         The ``build_model`` method trains a surrogate model to an input dataset.
@@ -123,6 +125,7 @@ class Surrogate:
 
         pass
 
+    # TODO: Should we call this update_surrogate or retrain_surrogate instead?
     def update_model(self):
         """
         The ``update_model`` trains a new surrogate model based on the updated configuration/set-up defined by
@@ -137,6 +140,7 @@ class Surrogate:
 
     # Get Results
 
+    # TODO: This should be part of the SurrogateModel object instead
     def get_model(self):  # Pyomo Expression
         """
         The ``get_model`` method returns the result of the surrogate training process as a Pyomo Expression
@@ -188,6 +192,7 @@ class Surrogate:
         """
         return (self._vdata_in, self._vdata_out)
 
+    # TODO: This should be part of the SurrogateModel object instead
     def validation_data(self, v_in, v_out):  # 2D Numparray
         """
         The ``validation_data`` method initializes the Surrogate class with data for validating/testing the surrogate model after generation.
@@ -199,6 +204,7 @@ class Surrogate:
         self._vdata_out = v_out
 
     # Using regressed model
+    # TODO: This should be part of the SurrogateModel object instead
     # PYLINT-TODO: check if adding self as arg to fix pylint "undefined-variable 'self'" is valid
     def calculate_outputs(self, inputs):  # 2D Numparray, use pyomo expression
         """
@@ -297,15 +303,19 @@ class Surrogate:
             raise Exception('File could not be loaded.')
 
 
+# TODO: unit tests
+# TODO: Index sets for vars and constraints
 class SurrogateModelObject():
     """
     Base class for standard IDAES Surrogate Model object
     """
 
-    def __init__(self, surrogate, input_labels, output_labels):
+    def __init__(
+            self, surrogate, input_labels, output_labels, input_bounds=None):
         self._surrogate = surrogate
         self._input_labels = input_labels
         self._output_labels = output_labels
+        self._input_bounds = input_bounds  # dict of bounds for each label
 
     def populate_block(self, block, variables=None):
         """
@@ -314,10 +324,30 @@ class SurrogateModelObject():
         raise NotImplementedError(
             "SurrogateModel class has not implemented populate_block method.")
 
-    def evalute_surrogate(self, inputs):
+    def evaluate_surrogate(self, inputs):
         """
         Method ot evaluate constraint at a set of user provide values.
         """
         raise NotImplementedError(
             "SurrogateModel class has not implemented evaluate_surrogate "
             "method.")
+
+    def construct_variables(self, block):
+        var_map = {}
+
+        for v in self._input_labels:
+            if self._input_bounds is not None:
+                bounds = self._input_bounds[v]
+            else:
+                bounds = (None, None)
+
+            vobj = Var(bounds=bounds)
+            block.add_component(v, vobj)
+            var_map[v] = vobj
+
+        for v in self._output_labels:
+            vobj = Var()
+            block.add_component(v, vobj)
+            var_map[v] = vobj
+
+        return var_map

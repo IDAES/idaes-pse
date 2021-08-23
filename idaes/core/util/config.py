@@ -123,13 +123,10 @@ def list_of_ints(arg):
         arg = [arg]
 
     for v in arg:
-        if isinstance(v, int):
-            lst.append(v)
-        elif isinstance(v, float) and v.is_integer():
-            lst.append(int(v))
-        else:
-            raise ConfigurationError(
-                """Invalid argument - expected list of integers""")
+        i = int(v)
+        if i != float(v):
+            raise ValueError(f"Value {v} is not an integer")
+        lst.append(i)
 
     return lst
 

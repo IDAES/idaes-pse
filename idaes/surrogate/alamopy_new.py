@@ -12,23 +12,32 @@
 #################################################################################
 from enum import Enum
 import os
+import subprocess
+from io import StringIO
+import sys
+
+from pyomo.environ import Constraint, value, sin, cos, log, exp
+from pyomo.common.config import ConfigValue, In, Path
+from pyomo.common.tee import TeeStream
+from pyomo.common.fileutils import Executable
 
 from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
 from idaes.core.util.config import list_of_ints, list_of_floats
-from pyomo.environ import Constraint
-from pyomo.common.config import ConfigValue, In
+import idaes.logger as idaeslog
 
 
-# TODO: Test calling ALAMO
 # TODO: Default file and path names
 # TODO: Pre-existing files
 # TODO: Custom basis functions
-# TODO: Generate expression from string representation
-# TODO: Log ALAMO output
+
+alamo = Executable('alamo')
 
 
 DEFAULTPATH = os.path.dirname(__file__)
 DEFAULTFNAME = "alamopy.alm"
+
+# Define mapping of Pyomo function names for expression evaluation
+GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
 
 
 # The values associated with these must match those expected in the .alm file
@@ -91,12 +100,12 @@ supported_options = [
     "linearerror",
     "GAMS",
     "GAMSSOLVER",
-    "solvemip"]
+    "solvemip",
+    "print_to_screen"]
 
 """
 Excluded Options:
 NSAMPLE, NVALSAMPLE, INITIALIZER, PRINT TO FILE, FUNFORM, NTRANS
-PRINT TO SCREEN - try to handle through logger
 
 Excluded Simulator options:
 MAXSIM, MINPOINTS, MAXPOINTS, SAMPLER, SIMULATOR, PRESET, TOLMAXERROR, SIMIN,
@@ -408,15 +417,20 @@ class Alamopy(Surrogate):
         default=None,
         domain=In([True, False]),
         description="Whether to use an optimizer to solve MIP."))
-    # CONFIG.declare('log_output', ConfigValue(
-    #     default=False,
-    #     domain=In([True, False]),
-    #     description="Whether to log ALAMO output."))
+    CONFIG.declare('print_to_screen', ConfigValue(
+        default=None,
+        domain=In([True, False]),
+        description="Send ALAMO output to stdout. Output is returned by the "
+        "call_alamo method."))
 
     # I/O file options
+    CONFIG.declare("alamo_path", ConfigValue(
+        default=None,
+        domain=Path,
+        doc="Path to ALAMO executable (if not in path)."))
     CONFIG.declare("temp_path", ConfigValue(
         default=DEFAULTPATH,
-        domain=str,
+        domain=Path,
         description="Path for directory to store temp files."))
     CONFIG.declare("filename", ConfigValue(
         default=DEFAULTFNAME,
@@ -435,28 +449,33 @@ class Alamopy(Surrogate):
     def __init__(self, **settings):
         super().__init__(**settings)
 
+        if self.config.alamo_path is not None:
+            alamo.executable = self.config.alamo_path
+
     def build_model(self):
         super().build_model()
 
         # Get paths for temp files
         almname, trcname = self.get_paths()
 
-        # Write .alm file
-        self.write_alm_file(almname, trcname)
+        try:
+            # Write .alm file
+            self.write_alm_file(almname, trcname)
 
-        # Call ALAMO executable
-        self.call_alamo(almname)
+            # Call ALAMO executable
+            self.call_alamo(almname)
 
-        # Read back results
-        trace_dict = self.read_trace_file(trcname)
+            # Read back results
+            trace_dict = self.read_trace_file(trcname)
 
-        # Populate results and SurrogateModel object
-        self.populate_results(trace_dict)
-        self.build_surrogate_model_object()
+            # Populate results and SurrogateModel object
+            self.populate_results(trace_dict)
+            self.build_surrogate_model_object()
 
-        # Clean up temporary files if required
-        if not self.config.keep_files:
-            self.remove_temp_files(almname, trcname)
+        finally:
+            # Clean up temporary files if required
+            if not self.config.keep_files:
+                self.remove_temp_files(almname, trcname)
 
     def get_paths(self):
         path = self.config.temp_path
@@ -474,12 +493,9 @@ class Alamopy(Surrogate):
         return almname, trcname
 
     def write_alm_to_stream(
-            self, stream=None, trace_fname=None, x_reg=None,
+            self, stream, trace_fname=None, x_reg=None,
             z_reg=None, x_val=None, z_val=None):
         """Write the input file for the ALAMO executable to a stream."""
-        if stream is None:
-            raise TypeError("No stream provided to ALAMO writer.")
-
         if x_reg is None:
             x_reg = self._rdata_in
         if z_reg is None:
@@ -571,7 +587,26 @@ class Alamopy(Surrogate):
         f.close()
 
     def call_alamo(self, almname):
-        os.system("alamo " + almname)
+        ostreams = [StringIO(), sys.stdout]
+        try:
+            with TeeStream(*ostreams) as t:
+                results = subprocess.run(
+                    [alamo.executable, almname],
+                    stdout=t.STDOUT,
+                    stderr=t.STDERR,
+                    universal_newlines=True,
+                )
+
+                t.STDOUT.flush()
+                t.STDERR.flush()
+
+            rc = results.returncode
+            almlog = ostreams[0].getvalue()
+        except OSError:
+            raise OSError(
+                f'Could not execute the command: alamo {almname}. '
+                f'Error message: {sys.exc_info()[1]}.')
+        return rc, almlog
 
     def read_trace_file(self, trace_file):
         with open(trace_file, "r") as f:
@@ -647,17 +682,26 @@ class Alamopy(Surrogate):
             output_labels=self._output_labels)
 
     def remove_temp_files(self, almname, trcname):
-        os.remove(almname)
-        os.remove(trcname)
+        errs = None
+        try:
+            os.remove(almname)
+        except FileNotFoundError:
+            idaeslog.warn(
+                "Could not remove file {almname} - file not found.")
+        try:
+            os.remove(trcname)
+        except FileNotFoundError:
+            idaeslog.warn(
+                "Could not remove file {trcname} - file not found.")
 
 
 class AlamoModelObject(SurrogateModelObject):
 
-    def evaluate_surroagte(self, inputs):
+    def evaluate_surrogate(self, inputs):
         values = {}
         for o in self._output_labels:
             expr = self._surrogate[o].split("==")[1]
-            values[o] = eval(expr, locals=inputs)
+            values[o] = value(eval(expr, GLOBAL_FUNCS, inputs))
         return values
 
     def populate_block(self, block, variables=None):
@@ -665,7 +709,7 @@ class AlamoModelObject(SurrogateModelObject):
             variables = self.construct_variables(block)
 
         def alamo_rule(b, o):
-            return eval(self._surrogate[o], locals=variables)
+            return eval(self._surrogate[o], GLOBAL_FUNCS, variables)
 
         block.add_component(
             "alamo_constraint",
