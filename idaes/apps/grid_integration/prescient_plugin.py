@@ -236,7 +236,7 @@ class DoubleLoopCoordinator:
             None
         '''
 
-        prescient.plugins.register_after_ruc_activation_callback(self.after_ruc_activation)
+        prescient.plugins.register_after_ruc_activation_callback(self.activate_DA_bids)
 
     def _register_finalization_callbacks(self):
 
@@ -590,7 +590,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def after_ruc_activation(self, options, simulator):
+    def activate_DA_bids(self, options, simulator):
 
         '''
         This function puts the day-ahead bids computed in the day before into effect,
