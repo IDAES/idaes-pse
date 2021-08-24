@@ -349,6 +349,7 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cp_mol_phase(blk, p):
+        pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
@@ -405,6 +406,7 @@ class Cubic(EoSBase):
 
     @staticmethod
     def cv_mol_phase(blk, p):
+        pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
@@ -878,6 +880,7 @@ class Cubic(EoSBase):
     
     @staticmethod
     def isothermal_speed_sound_phase(blk, p):
+        pobj = b.params.get_phase(p)
         cname = pobj._cubic_type.name
         am = getattr(blk, cname+"_am")[p]
         bm = getattr(blk, cname+"_bm")[p]
