@@ -70,7 +70,7 @@ def _get_disc_eq(deriv):
 
 def _identify_derivative_if_differential(condata, wrt, include_fixed=False):
     parent = condata.parent_component()
-    if parent.local_name.endswith("_disc_eq"):
+    if parent.local_name.endswith(DAE_DISC_SUFFIX):
         return False, None
     deriv = None
     for var in identify_variables(condata.expr, include_fixed=include_fixed):
@@ -109,7 +109,7 @@ def categorize_dae_variables_and_constraints(
         # Use the first non-initial time point as a "representative
         # index." Don't use get_finite_elements so this will be valid
         # for general ordered sets.
-        t1 = time[2]
+        t1 = time.at(2)
 
     if input_vars is None:
         input_vars = []

@@ -1199,7 +1199,7 @@ class TestDynamicBlock(object):
         assert model.conc_in[t0, 'B'].value == 3.3
 
     @pytest.mark.unit
-    def test_emtpy_category(self):
+    def test_empty_category(self):
         model = make_model(horizon=1, nfe=2)
         time = model.time
         t0 = time.first()
