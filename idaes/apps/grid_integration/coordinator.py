@@ -1,4 +1,3 @@
-from optparse import Option
 import prescient.plugins as pplugins
 from prescient.simulator.config import PrescientConfig
 from pyomo.common.config import ConfigDict, ConfigValue
@@ -25,7 +24,6 @@ class DoubleLoopCoordinator:
         self.bidder = bidder
         self.tracker = tracker
         self.projection_tracker = projection_tracker
-        # self.register_callbacks()
 
     def register_plugins(self, \
                          context: pplugins.PluginRegistrationContext,\
@@ -42,7 +40,6 @@ class DoubleLoopCoordinator:
             None
         '''
 
-        # self._register_custom_commandline_options()
         self._register_initialization_callbacks(context, options, plugin_config)
         self._register_before_ruc_solve_callbacks(context, options, plugin_config)
         self._register_before_operations_solve_callbacks(context, options, plugin_config)
@@ -53,7 +50,7 @@ class DoubleLoopCoordinator:
 
         return
 
-    def _register_custom_commandline_options(self):
+    def get_configuration(self, key):
 
         '''
         Register customized commandline options.
@@ -66,89 +63,12 @@ class DoubleLoopCoordinator:
         '''
 
         # Add command line options
-        opt = Option('--track-ruc-signal',
-                     help='When tracking the market signal, RUC signals are used instead of the SCED signal.',
-                     action='store_true',
-                     dest='track_ruc_signal',
-                     default=False)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--track-sced-signal',
-                     help='When tracking the market signal, SCED signals are used instead of the RUC signal.',
-                     action='store_true',
-                     dest='track_sced_signal',
-                     default=False)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--hybrid-tracking',
-                     help='When tracking the market signal, hybrid model is used.',
-                     action='store_true',
-                     dest='hybrid_tracking',
-                     default=False)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--track-horizon',
-                     help="Specifies the number of hours in the look-ahead horizon "
-                          "when each tracking process is executed.",
-                     action='store',
-                     dest='track_horizon',
-                     type='int',
-                     default=48)
-        pplugins.add_custom_commandline_option(opt)
-
         opt = Option('--bidding-generator',
                      help="Specifies the generator we derive bidding strategis for.",
                      action='store',
                      dest='bidding_generator',
                      type='string',
                      default='102_STEAM_3')
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--bidding',
-                     help="Invoke generator strategic bidding when simulate.",
-                     action='store_true',
-                     dest='bidding',
-                     default=False)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--deviation-weight',
-                     help="Set the weight for deviation term when tracking",
-                     action='store',
-                     dest='deviation_weight',
-                     type='float',
-                     default=30)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--ramping-weight',
-                     help="Set the weight for ramping term when tracking",
-                     action='store',
-                     dest='ramping_weight',
-                     type='float',
-                     default=20)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--cost-weight',
-                     help="Set the weight for cost term when tracking",
-                     action='store',
-                     dest='cost_weight',
-                     type='float',
-                     default=1)
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--rts_gmlc_data_dir',
-                     help="the relative path to rts gmlc data set",
-                     action='store',
-                     dest='rts_gmlc_data_dir',
-                     type='str',
-                     default='./RTS-GMLC/RTS_Data/SourceData/')
-        pplugins.add_custom_commandline_option(opt)
-
-        opt = Option('--price_forecast_file',
-                     help="the relative path to price forecasts",
-                     action='store',
-                     dest='price_forecast_file',
-                     type='str',
-                     default='../../prescient/plugins/price_forecasts/lmp_forecasts_concat.csv')
         pplugins.add_custom_commandline_option(opt)
 
         return
