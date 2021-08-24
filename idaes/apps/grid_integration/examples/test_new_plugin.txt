@@ -5,11 +5,9 @@ command/exec simulator.py
 #--model-directory=..|..|..|..|..|..|doubleloop|Prescient|prescient|models|tight
 --output-directory=bidding_plugin_test_output_new_forecasts
 #--output-directory=repeat_old_results_output
-#--run-deterministic-ruc
 --start-date=07-10-2020
 --num-days=1
 --sced-horizon=4
-#--traceback
 #--random-seed=10
 --compute-market-settlements
 --day-ahead-pricing=LMP
@@ -26,9 +24,4 @@ command/exec simulator.py
 --deterministic-ruc-solver=cbc
 --sced-solver=cbc
 --plugin=doubleloop:thermal_generator_prescient_plugin.py
-#--rts_gmlc_data_dir=..|..|..|..|..|..|doubleloop|Prescient|downloads|rts_gmlc|RTS-GMLC|RTS_Data|SourceData|
-#--price_forecast_file=price_forecasts|102_std1_lmp_forecasts.csv
-#--bidding
-#--bidding-generator=102_STEAM_3
-#--track-sced-signal
-#--hybrid-tracking
+--doubleloop.bidding-generator=102_STEAM_3

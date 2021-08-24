@@ -62,16 +62,17 @@ class DoubleLoopCoordinator:
             None
         '''
 
-        # Add command line options
-        opt = Option('--bidding-generator',
-                     help="Specifies the generator we derive bidding strategis for.",
-                     action='store',
-                     dest='bidding_generator',
-                     type='string',
-                     default='102_STEAM_3')
-        pplugins.add_custom_commandline_option(opt)
+        config = ConfigDict()
 
-        return
+        # Add command line options
+        config.declare('bidding_generator',
+                       ConfigValue(domain = str,
+                                   description = 'Specifies the generator we derive bidding strategis for.',
+                                   default = None)).declare_as_argument(f'--{key}.bidding-generator')
+        ## How to access this option?
+        # options.plugin.{key}.bidding_generator
+
+        return config
 
     def _register_initialization_callbacks(self, \
                                            context: pplugins.PluginRegistrationContext,\

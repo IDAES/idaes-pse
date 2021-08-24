@@ -60,8 +60,5 @@ coordinator = DoubleLoopCoordinator(bidder = thermal_bidder,\
 # Prescient requires the following functions in this module
 
 # This is a required function, must have this name and signature
-def get_configuration(key):
-    config = ConfigDict()
-    return config
-
+get_configuration = coordinator.get_configuration
 register_plugins = coordinator.register_plugins
