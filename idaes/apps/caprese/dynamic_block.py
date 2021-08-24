@@ -145,8 +145,8 @@ class _DynamicBlockData(_BlockData):
                 # due empty (unknown dimension) slices.
                 category_dict.pop(categ)
 
-        self._add_category_blocks()
-        self._add_category_references()
+        self._add_category_blocks(self.category_dict)
+        self._add_category_references(self.category_dict)
 
         self.categories = set(category_dict)
 
@@ -183,15 +183,17 @@ class _DynamicBlockData(_BlockData):
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
-        # These should be overridden by a call to `set_sample_time`
+        # These may be overridden by a call to `set_sample_time`
         # The defaults assume that the entire model is one sample.
         if self._sample_time is None:
             self.sample_points = [time.first(), time.last()]
             self.sample_point_indices = [1, len(time)]
         # If self._sample_time is provided, sample_points for the plant and the controller 
         # will be created in mhe.py or controller.py.
-        # else: 
-        #     self.set_sample_time(self._sample_time)
+        # ^ This is a little inconvenient/unintuitive... Why not just do it here?
+        # Presumably it was already done...
+        else: 
+            self.set_sample_time(self._sample_time)
 
     _var_name = 'var'
     _block_suffix = '_BLOCK'
@@ -207,11 +209,11 @@ class _DynamicBlockData(_BlockData):
         """ Gets set name from name of enum entry """
         return categ.name + cls._set_suffix
 
-    def _add_category_blocks(self):
+    def _add_category_blocks(self, category_dict):
         """ Adds an indexed block for each category of variable and
         attach a reference to each variable to one of the BlockDatas.
         """
-        category_dict = self.category_dict
+        #category_dict = self.category_dict
         var_name = self._var_name
         for categ, varlist in category_dict.items():
             ctype = CATEGORY_TYPE_MAP.get(categ, DynamicVar)
@@ -250,9 +252,9 @@ class _DynamicBlockData(_BlockData):
 
     _vectors_name = 'vectors'
 
-    def _add_category_references(self):
+    def _add_category_references(self, category_dict):
         """ Create a "time-indexed vector" for each category of variables. """
-        category_dict = self.category_dict
+        #category_dict = self.category_dict
 
         # Add a deactivated block to store all my `_DynamicVector`s
         # These be will vars, named by category, indexed by the index
