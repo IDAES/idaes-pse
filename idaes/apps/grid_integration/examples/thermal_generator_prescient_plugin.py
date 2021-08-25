@@ -57,8 +57,6 @@ coordinator = DoubleLoopCoordinator(bidder = thermal_bidder,\
                                     tracker = thermal_tracker,\
                                     projection_tracker = thermal_projection_tracker)
 
-# Prescient requires the following functions in this module
-
-# This is a required function, must have this name and signature
+## Prescient requires the following functions in this module
 get_configuration = coordinator.get_configuration
 register_plugins = coordinator.register_plugins

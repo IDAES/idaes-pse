@@ -24,4 +24,4 @@ command/exec simulator.py
 --deterministic-ruc-solver=cbc
 --sced-solver=cbc
 --plugin=doubleloop:thermal_generator_prescient_plugin.py
---doubleloop.bidding-generator=102_STEAM_3
+--bidding-generator=102_STEAM_3

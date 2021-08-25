@@ -40,6 +40,8 @@ class DoubleLoopCoordinator:
             None
         '''
 
+        self.plugin_config = plugin_config
+
         self._register_initialization_callbacks(context, options, plugin_config)
         self._register_before_ruc_solve_callbacks(context, options, plugin_config)
         self._register_before_operations_solve_callbacks(context, options, plugin_config)
@@ -68,7 +70,7 @@ class DoubleLoopCoordinator:
         config.declare('bidding_generator',
                        ConfigValue(domain = str,
                                    description = 'Specifies the generator we derive bidding strategis for.',
-                                   default = None)).declare_as_argument(f'--{key}.bidding-generator')
+                                   default = None)).declare_as_argument('--bidding-generator')
         ## How to access this option?
         # options.plugin.{key}.bidding_generator
 
