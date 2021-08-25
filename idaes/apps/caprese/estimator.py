@@ -111,35 +111,14 @@ class _EstimatorBlockData(_DynamicBlockData):
         self._add_measurement_error()
         self._add_model_disturbance()
 
-        #self._add_MHE_vars_to_category_dict()
-        # Here I inline _add_MHE_vars_to_category_dict, for now, so
-        # I can create a new category dict with MHE vars
-        #
         # These are new categories we need to add to the "vectors" block
-        mhe_var_category_dict = {}
-        MHEBlock = self.MHE_VARS_CONS_BLOCK
-        # target_set = ComponentSet((self.SAMPLEPOINT_SET,))
-        blo_list = [MHEBlock.ACTUAL_MEASUREMENT_BLOCK, 
-                    MHEBlock.MEASUREMENT_ERROR_BLOCK, 
-                    MHEBlock.MODEL_DISTURBANCE_BLOCK]
-        cate_list = [VC.ACTUALMEASUREMENT, 
-                      VC.MEASUREMENTERROR, 
-                      VC.MODELDISTURBANCE]
-        MCTM = MHE_CATEGORY_TYPE_MAP
-        for bloitem, category in zip(blo_list, cate_list):
-            ctype = MCTM[category]
-            newvars = []
-            for i in bloitem:
-                varlist = list(bloitem[i].component_objects(Var))
-                assert len(varlist) == 1
-                newvars.append(Reference(varlist[0], ctype=ctype))
-            mhe_var_category_dict[category] = newvars
+        mhe_var_category_dict = self._get_mhe_var_category_dict()
 
         CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
         CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
         CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
-        #super(_EstimatorBlockData, self)._construct()
-        # All we need from the base class constructor is the following lines:
+
+        # Add category blocks and references for MHE variables
         self._add_category_blocks(mhe_var_category_dict)
         self._add_category_references(mhe_var_category_dict)
 
@@ -296,9 +275,8 @@ class _EstimatorBlockData(_DynamicBlockData):
             moddis_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             #Fix model disturbance at t = 0 as 0.0
             moddis_block[i].find_component(var_name)[t0].fix(0.0) 
-            
-            
-    def _add_MHE_vars_to_category_dict(self):        
+
+    def _get_mhe_var_category_dict(self):        
         MHEBlock = self.MHE_VARS_CONS_BLOCK
         # target_set = ComponentSet((self.SAMPLEPOINT_SET,))        
         blo_list = [MHEBlock.ACTUAL_MEASUREMENT_BLOCK, 
@@ -308,6 +286,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                       VC.MEASUREMENTERROR, 
                       VC.MODELDISTURBANCE]
         MCTM = MHE_CATEGORY_TYPE_MAP
+        mhe_category_dict = {}
         for bloitem, category in zip(blo_list, cate_list):
             ctype = MCTM[category]
             newvars = []
@@ -315,8 +294,8 @@ class _EstimatorBlockData(_DynamicBlockData):
                 varlist = list(bloitem[i].component_objects(Var))
                 assert len(varlist) == 1
                 newvars.append(Reference(varlist[0], ctype=ctype))
-            self.category_dict[category] = newvars
-
+            mhe_category_dict[category] = newvars
+        return mhe_category_dict
 
     def _add_mea_moddis_componentmap(self):
         '''Add component map for:
