@@ -86,22 +86,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         if self._sample_time is None:
             raise RuntimeError("MHE needs the sample time to be provided!")
 
-        else:
-            sample_time = self._sample_time
-            self.set_sample_time(sample_time)
-           
-        mod = self.mod
-        time = self.time
-        
-        try:
-            inputs = self._inputs
-        except AttributeError:
-            inputs = self._inputs = None
-        try:
-            measurements = self._measurements
-        except AttributeError:
-            measurements = self._measurements = None
-
         # Call base class construct method
         super(_EstimatorBlockData, self)._construct()
             
