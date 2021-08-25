@@ -182,7 +182,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         actual measurements that come from the plant. 
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
-        
+
         block_name = "ACTUAL_MEASUREMENT_BLOCK"
         mea_set = MHEBlock.MEASUREMENT_SET
         actmea_block = Block(mea_set)
@@ -194,35 +194,33 @@ class _EstimatorBlockData(_DynamicBlockData):
             actmea_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
             #Variables in this block should always be fixed!
             actmea_block[i].find_component(var_name).fix() 
-            
-    
+
     def _add_measurement_error(self):
         """This function creates a indexed block for measurement errors.
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
-        
+
         block_name = "MEASUREMENT_ERROR_BLOCK"
         mea_set = MHEBlock.MEASUREMENT_SET
         meaerr_block = Block(mea_set)
         MHEBlock.add_component(block_name, meaerr_block)
-        
+
         sps_set = self.SAMPLEPOINT_SET
         for i in mea_set:
             var_name = "measurement_error"
             meaerr_block[i].add_component(var_name, Var(sps_set, initialize = 0.0))
-            
-        
+
     def _add_model_disturbance(self):
         """This function creates a indexed block for model disturbances.
         The order of disturbances is the same as differential vars and derivative vars.
         """
         MHEBlock = self.MHE_VARS_CONS_BLOCK
-        
+
         block_name = "MODEL_DISTURBANCE_BLOCK"
         diffvar_set = MHEBlock.DIFFERENTIAL_SET
         moddis_block = Block(diffvar_set)
         MHEBlock.add_component(block_name, moddis_block)
-        
+
         sps_set = self.SAMPLEPOINT_SET
         t0 = self.time.first()
         for i in diffvar_set:
@@ -259,22 +257,21 @@ class _EstimatorBlockData(_DynamicBlockData):
             3. meavar @ t0 --> measurement error var
             4. meavar @ t0 --> actual measurement var
         '''
-        
+
         t0 = self.time.first()
-        
+
         differential_block = self.find_component("DIFFERENTIAL_BLOCK")
         moddis_block = self.find_component("MODELDISTURBANCE_BLOCK")
         diffvar_set = self.DIFFERENTIAL_SET
         self.diffvar_map_moddis = ComponentMap((differential_block[ind].var[t0], moddis_block[ind].var)
                                                 for ind in diffvar_set)
-        
+
         derivative_block = self.find_component("DERIVATIVE_BLOCK")
         derivar_set = self.DERIVATIVE_SET
         self.derivar_map_moddis = ComponentMap((derivative_block[ind].var[t0], moddis_block[ind].var)
                                                 for ind in derivar_set)
         #Note that order of self.DIFFERENTIAL_SET and the order of self.DERIVATIVE_SET are corresponding.
-                                                
-              
+
         measurement_block = self.find_component("MEASUREMENT_BLOCK")
         meaerr_block = self.find_component("MEASUREMENTERROR_BLOCK")
         actmea_block = self.find_component("ACTUALMEASUREMENT_BLOCK")
@@ -283,8 +280,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                                                 for ind in mea_set)
         self.meavar_map_actmea = ComponentMap((measurement_block[ind].var[t0], actmea_block[ind].var)
                                                 for ind in mea_set)
-        
-        
+
     def _add_measurement_constraint(self):
         '''
         This function creates a indexed block, containing measurement error equations.
@@ -295,7 +291,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         mea_set = MHEBlock.MEASUREMENT_SET
         meacon_block = Block(mea_set)
         MHEBlock.add_component(block_name, meacon_block)
-        
+
         con_name = "con_mea_err" #actual_mea = measured_state + mea_err
         time = self.time
         sample_points = self.sample_points
@@ -316,8 +312,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                     return actual_mea[s] == measured_stat[s] + mea_err[s]
             meacon_block[i].add_component(con_name, Constraint(time, 
                                                                rule = _con_mea_err))
-    
-        
+
     def _add_disturbance_to_differential_cons(self):
         """
         This function creates a indexed block, containing model differential equations
@@ -330,14 +325,14 @@ class _EstimatorBlockData(_DynamicBlockData):
         assert n_diff_equs == len(self.DIFFERENTIAL_SET) #This should be correct!
         ddc_block = Block(range(n_diff_equs))
         MHEBlock.add_component(block_name, ddc_block)
-        
+
         #Because model disturbances is indexed by sample time, this function finds
         #the corresponding sample time from a given time point.
         def curr_sample_point(time_pt, sample_points):
             for j in sample_points:
                 if j >= time_pt:
                     return j
-                
+
         time = self.time
         sample_points = self.sample_points
         moddistlist = self.category_dict[VC.MODELDISTURBANCE]
@@ -354,10 +349,10 @@ class _EstimatorBlockData(_DynamicBlockData):
                 return newexpr
             _dd_con = Constraint(time, rule=_dd_rule)
             ddc_block[i].add_component(con_name, _dd_con)
-            
+
             #Deactivate the original/undisturbed differential equs
             curr_difeq.deactivate() 
-            
+
     def add_steady_state_objective(self, desired_ss, ss_weights):
         '''
         Add an objective function for solving a steady state, which is used to 
@@ -370,7 +365,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         ss_weights : List of vardata, value tuples describing the
                      weightss of these specified variables.
         '''
-        
+
         vardata_map = self.vardata_map
         for vardata, weight in ss_weights:
             nmpc_var = vardata_map[vardata]
@@ -388,17 +383,17 @@ class _EstimatorBlockData(_DynamicBlockData):
             weight_vector[i]*(var - sp)**2 for
             i, (var, sp) in enumerate(desired_ss))
         self.steadystate_objective = Objective(expr=obj_expr)
-        
+
     def solve_steady_state(self, solver):
         '''
         This function solve for a steady state, which will be used to initialize
         past information.
         '''
-        
+
         model = self.mod
         time = self.time
         t0 = time.first()
-        
+
         was_originally_active = ComponentMap([(comp, comp.active) for comp in 
                 model.component_data_objects((Constraint, Block))])
         non_initial_time = list(time)[1:]
@@ -409,7 +404,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                 allow_skip=True,
                 suppress_warnings=True,
                 )
-        
+
         self.vectors.differential[:, t0].unfix()
         self.vectors.input[:, t0].unfix() #dof
         self.vectors.derivative[:, t0].fix(0.)
@@ -418,13 +413,13 @@ class _EstimatorBlockData(_DynamicBlockData):
         # Activate the original/undisturbed differential equations at t0
         for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
             indexcon[t0].activate()
-            
+
         self.steadystate_objective.activate()
-        
+
         dof = degrees_of_freedom(model)
         # This should be True for solving a steady state.
         assert dof == len(self.INPUT_SET)
-        
+
         results = solver.solve(self, tee=True)
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
@@ -433,26 +428,26 @@ class _EstimatorBlockData(_DynamicBlockData):
             raise RuntimeError(msg)
 
         self.steadystate_objective.deactivate()
-        
+
         for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
             indexcon[t0].deactivate()
         self.MHE_VARS_CONS_BLOCK.activate()
         self.vectors.derivative[:, t0].unfix()
         self.vectors.input[:, t0].fix()
         self.vectors.differential[:, t0].fix()
-        
+
         for t, complist in deactivated.items():
             for comp in complist:
                 if was_originally_active[comp]:
                     comp.activate()
-                    
+
     def initialize_actualmeasurements_at_t0(self):
         t0 = self.sample_points[0]
         for ind in self.MEASUREMENT_SET:
             actmea_block = self.ACTUALMEASUREMENT_BLOCK[ind]
             mea_block = self.MEASUREMENT_BLOCK[ind]
             actmea_block.var[0].set_value(mea_block.var[0].value)  
-        
+
     def initialize_past_info_with_steady_state(self, 
                                                desired_ss, 
                                                ss_weights, 
@@ -460,7 +455,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         Before running MHE, we need to set up past information (measurements, states, etc.). 
         Here we solve for a steady state and set it as past information.
-        
+
         Parameters
         ----------
         desired_ss : List of vardata, value tuples describing the
@@ -471,11 +466,10 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         self.add_steady_state_objective(desired_ss, ss_weights)
         self.solve_steady_state(solver)
-        
+
         self.initialize_actualmeasurements_at_t0()
         self.initialize_to_initial_conditions(ctype=(DiffVar, AlgVar, DerivVar, InputVar,))
 
-          
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,
                                      measurement_noise_weights,
@@ -483,7 +477,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         Set up the objective function for MHE. The given form can be either 'weight'
         or 'variance'.
-        
+
         Parameters
         ----------        
         model_disturbance_weights: A list of vardata-value tuples describing 
@@ -495,18 +489,18 @@ class _EstimatorBlockData(_DynamicBlockData):
         givenform: The form of given lists. It should be either "weight" (default)
                     or "variance".
         '''
-        
+
         if givenform not in ["weight", "variance"]:
             raise RuntimeError("Wrong argument 'givenform' is given. "
                    "Please assign either 'weight' or 'variance'.")
-        
+
         diff_id_list = [id(var[0]) for var in self.differential_vars]
         for var, val in model_disturbance_weights:  
             #Check whether the given variable is classified under diffvar
             if id(var) not in diff_id_list:
                 raise RuntimeError(var.name, 
                                    " is not a differential variable.")
-                
+
             if givenform == "weight":
                 self.diffvar_map_moddis[var].weight = val
             elif givenform == "variance":
@@ -518,71 +512,71 @@ class _EstimatorBlockData(_DynamicBlockData):
             if id(var) not in mea_id_list:
                 raise RuntimeError(var.name, 
                                    " is not declared as a measurement.")
-                
+
             if givenform == "weight":
                 self.meavar_map_meaerr[var].weight = val
             elif givenform == "variance":
                 self.meavar_map_meaerr[var].weight = 1./val
-        
+
         moddis_block = self.MODELDISTURBANCE_BLOCK
         moddis_list = [moddis_block[ind].var for ind in self.DIFFERENTIAL_SET]
-        
+
         meaerr_block = self.MEASUREMENTERROR_BLOCK
         meaerr_list = [meaerr_block[ind].var for ind in self.MEASUREMENT_SET]
-        
+
         wQw = sum(
             moddis.weight * moddis[sampt]**2
             for moddis in moddis_list
             for sampt in self.sample_points
             if sampt != self.time.first() #Skip model disturbnace at time.first()
             )
-        
+
         vRv = sum(
             meaerr.weight * meaerr[sampt]**2
             for meaerr in meaerr_list
             for sampt in self.sample_points #Here should include the time.first()
             )
-        
+
         self.noise_minimize_objective = Objective(expr = (wQw) + (vRv))  
-        
+
     def check_var_con_dof(self, skip_dof_check = False):
         '''This function does the final check for fixed and unfixed variables
         as well as the deactivated differential equations. Then check the degree of freedom.
-        
+
         Parameters
         ----------
         skip_dof_check: SKip to check the degree of freedom if it's True. 
                         Default is False.
         '''
-        
+
         self.vectors.input[...].fix()
         self.vectors.differential[...].unfix()
         self.vectors.modeldisturbance[:,0].fix(0.0)
-        
+
         for diff_eq in self.con_category_dict[CC.DIFFERENTIAL]:
             diff_eq.deactivate()
-        
+
         n_diffvars = len(self.DIFFERENTIAL_SET.ordered_data())
         n_steps_in_horizon = len(self.sample_points) - 1
         correct_dof = n_diffvars * (n_steps_in_horizon + 1)
-        
+
         if not skip_dof_check:
             dof = degrees_of_freedom(self)
             assert dof == correct_dof  
-        
+
     def load_inputs_for_MHE(self, inputs):
         last_sampt = self.sample_points[-1]
         secondlast_sampt = self.sample_points[-2]
         time_list = [tp for tp in self.time if tp > secondlast_sampt 
                                                  and tp <= last_sampt]
-        
+
         for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
             for tind in time_list:
                 var[tind].set_value(val)
-                
+
     def generate_estimates_at_time(self, t):
         return [val for val in self.vectors.differential[:, t].value]
-                    
+
 
 class EstimatorBlock(DynamicBlock):
     """ This is a user-facing class to be instantiated when one
