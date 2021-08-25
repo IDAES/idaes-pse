@@ -90,8 +90,10 @@ class _ControllerBlockData(_DynamicBlockData):
         time = self.time
         t0 = time.first()
         
-        # Determine initial conditions depend on measurements or differential variables
-        if self.estimator_is_existing:
+        # Determine initial conditions depend on measurements or
+        # differential variables
+        if (hasattr(self, "estimator_is_existing")
+                and self.estimator_is_existing):
             # In this case, the number of measurements may be smaller than the 
             # number differential variables.
             ics_vector_var = self.vectors.differential
