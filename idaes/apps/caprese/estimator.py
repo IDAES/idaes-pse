@@ -158,51 +158,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         
         return unref_category_dict
 
-        
-    def _categorize_var_con_for_MHE(self, mod, time, inputs, measurements):
-        '''This function category variables and constraints for MHE.
-        1. Flatten vars and constraints
-        2. Convert the given _GeneralVarData in inputs and measurements to IndexedVar
-        3. Categorize variables and constraints
-        '''
-        
-        t0 = time.first()
-        
-        scalar_vars, dae_vars = flatten_dae_components(mod, time, ctype=Var)
-        self.scalar_vars = scalar_vars
-        self.dae_vars = dae_vars
-        
-        scalar_cons, dae_cons = flatten_dae_components(mod, time, ctype = Constraint)
-        
-        #change items in inputs and measurements to IndexedVar with only time index
-        dae_map = ComponentMap((var[t0], var) for var in dae_vars)
-        t0_vardata = list(dae_map.keys())
-        input_set = ComponentSet(inputs)
-        measurement_set = ComponentSet(measurements)
-        input_vars = []
-        measurement_vars = []
-        #This loop is important in order to maintain the same order of 
-        #measurements and inputs between MHE and plant
-        for var0 in t0_vardata: 
-            if var0 in input_set:
-                time_slice = dae_map[var0]
-                input_vars.append(time_slice)
-            if var0 in measurement_set:
-                time_slice = dae_map[var0]
-                measurement_vars.append(time_slice)
-
-        unref_category_dict, unref_con_category_dict = categorize_dae_variables_and_constraints(
-                                                                                    mod,
-                                                                                    dae_vars,
-                                                                                    dae_cons,
-                                                                                    time,
-                                                                                    input_vars = input_vars,
-                                                                                    )
-        
-        unref_category_dict[VC.MEASUREMENT] = measurement_vars
-        
-        return unref_category_dict, unref_con_category_dict
-
     def reference_var_category_dict(self, unref_category_dict):
         category_dict = {
                         category: [
