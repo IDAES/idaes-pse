@@ -144,20 +144,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         #                 for idx in self.SAMPLEPOINT_SET} #Not sure why it doesn't work when the value is None
         #     self.ACTUALMEASUREMENT_BLOCK[ind].var.set_values(init_val)
 
-    def _use_user_given_var_categ_dict(self, inputs, measurements):
-        unref_category_dict = self._category_dict
-        if (VC.INPUT not in unref_category_dict and inputs is not None):
-            unref_category_dict[VC.INPUT] = inputs
-        if (VC.MEASUREMENT not in unref_category_dict and measurements is not None):
-            unref_category_dict[VC.MEASUREMENT] = measurements
-        self.dae_vars = []
-        for categ, varlist in unref_category_dict.items():
-            if categ not in [VC.MEASUREMENT, VC.UNUSED]:
-                # Assume that measurements are duplicates
-                self.dae_vars.extend(varlist)
-        
-        return unref_category_dict
-
     def reference_var_category_dict(self, unref_category_dict):
         category_dict = {
                         category: [
