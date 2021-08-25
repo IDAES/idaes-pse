@@ -81,14 +81,15 @@ class _EstimatorBlockData(_DynamicBlockData):
             e.g. actual measurements, measurement errors, model disturbances
                 error constraints, disturbed differential equations
         """
-        
+        self._categorize_constraints = True
         
         if self._sample_time is None:
             raise RuntimeError("MHE needs the sample time to be provided!")
+
         else:
             sample_time = self._sample_time
             self.set_sample_time(sample_time)
-            
+           
         mod = self.mod
         time = self.time
         
@@ -100,82 +101,108 @@ class _EstimatorBlockData(_DynamicBlockData):
             measurements = self._measurements
         except AttributeError:
             measurements = self._measurements = None
-            
-        
-        # MHE requires not only variable categories but also constraint categories.
-        # This if statement check which is given, which is not.
-        if self._category_dict is not None and self._con_category_dict is not None:
-            unref_category_dict = self._use_user_given_var_categ_dict(inputs, measurements)
-            unref_con_category_dict = self._con_category_dict
 
-        # This is the case that I expect to be the most often.
-        elif self._category_dict is None and self._con_category_dict is None:
-            unref_category_dict, unref_con_category_dict = self._categorize_var_con_for_MHE(
-                                                                                            mod, 
-                                                                                            time, 
-                                                                                            inputs, 
-                                                                                            measurements,
-                                                                                            )
-        else:
-            raise RuntimeError(
-                                "Please give both cateogry_dict and con_category_dict for MHE. "
-                                "Note that the order of differential variables and differential equations "
-                                "should match.")
+        # Call base class construct method
+        super(_EstimatorBlockData, self)._construct()
             
-        self.reference_var_category_dict(unref_category_dict)
+        # This processing should not be necessary here; we should have done it
+        # in the base class constructor
+        #
+        ## MHE requires not only variable categories but also constraint categories.
+        ## This if statement check which is given, which is not.
+        #if self._category_dict is not None and self._con_category_dict is not None:
+        #    unref_category_dict = self._use_user_given_var_categ_dict(inputs, measurements)
+        #    unref_con_category_dict = self._con_category_dict
+
+        ## This is the case that I expect to be the most often.
+        #elif self._category_dict is None and self._con_category_dict is None:
+        #    unref_category_dict, unref_con_category_dict = \
+        #        self._categorize_var_con_for_MHE(
+        #            mod, time, inputs, measurements
+        #        )
+        #else:
+        #    raise RuntimeError(
+        #        "Please give both cateogry_dict and con_category_dict for MHE. "
+        #        "Note that the order of differential variables and "
+        #        "differential equations should match."
+        #    )
+
+        #self.reference_var_category_dict(unref_category_dict)
+        self.reference_var_category_dict(self.category_dict)
         #At this stage, no need to use reference on constraints
-        self.con_category_dict = unref_con_category_dict
-        
+        #self.con_category_dict = unref_con_category_dict
+
         #Set a flag so that classification won't do again in _DynamicBlockData
         self.already_categorized_for_MHE = True
         category_dict = self.category_dict
-        
+
         self._add_sample_point_set()
         # Variables and constraints for MHE will be added under this block.
         self.MHE_VARS_CONS_BLOCK = Block()
-        
+
         n_measurement = len(category_dict[VC.MEASUREMENT])
         n_diffvar_con = len(category_dict[VC.DIFFERENTIAL])
         self.MHE_VARS_CONS_BLOCK.MEASUREMENT_SET = Set(initialize = range(n_measurement))
         self.MHE_VARS_CONS_BLOCK.DIFFERENTIAL_SET = Set(initialize = range(n_diffvar_con))
-        
+
         self._add_actual_measurement_param()
         self._add_measurement_error()
         self._add_model_disturbance()
-        
-        self._add_MHE_vars_to_category_dict()
-        
+
+        #self._add_MHE_vars_to_category_dict()
+        # Here I inline _add_MHE_vars_to_category_dict, for now, so
+        # I can create a new category dict with MHE vars
+        #
+        # These are new categories we need to add to the "vectors" block
+        mhe_var_category_dict = {}
+        MHEBlock = self.MHE_VARS_CONS_BLOCK
+        # target_set = ComponentSet((self.SAMPLEPOINT_SET,))
+        blo_list = [MHEBlock.ACTUAL_MEASUREMENT_BLOCK, 
+                    MHEBlock.MEASUREMENT_ERROR_BLOCK, 
+                    MHEBlock.MODEL_DISTURBANCE_BLOCK]
+        cate_list = [VC.ACTUALMEASUREMENT, 
+                      VC.MEASUREMENTERROR, 
+                      VC.MODELDISTURBANCE]
+        MCTM = MHE_CATEGORY_TYPE_MAP
+        for bloitem, category in zip(blo_list, cate_list):
+            ctype = MCTM[category]
+            newvars = []
+            for i in bloitem:
+                varlist = list(bloitem[i].component_objects(Var))
+                assert len(varlist) == 1
+                newvars.append(Reference(varlist[0], ctype=ctype))
+            mhe_var_category_dict[category] = newvars
+
         CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
         CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
         CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
-        super(_EstimatorBlockData, self)._construct()
-        if VC.ACTUALMEASUREMENT in self.category_dict:
-            self.actualmeasurement_vars = category_dict[VC.ACTUALMEASUREMENT]
-        if VC.MEASUREMENTERROR in self.category_dict:
-            self.measurementerror_vars = category_dict[VC.MEASUREMENTERROR]
-        if VC.MODELDISTURBANCE in self.category_dict:
-            self.modeldisturbance_vars = category_dict[VC.MODELDISTURBANCE]
-        
+        #super(_EstimatorBlockData, self)._construct()
+        # All we need from the base class constructor is the following lines:
+        self._add_category_blocks(mhe_var_category_dict)
+        self._add_category_references(mhe_var_category_dict)
+
+        self.category_dict.update(mhe_var_category_dict)
+        self.categories.update(mhe_var_category_dict)
+
         self._add_mea_moddis_componentmap()
-        
+
         self._add_measurement_constraint()
         self._add_disturbance_to_differential_cons()
         # at this stage, we don't need to add new constraints to con_categ_dict
-        
+
         # Pop the mhe categories. This is important if any plant or controller is
         # defined afterward.
         CATEGORY_TYPE_MAP.pop(VC.ACTUALMEASUREMENT)
         CATEGORY_TYPE_MAP.pop(VC.MEASUREMENTERROR)
         CATEGORY_TYPE_MAP.pop(VC.MODELDISTURBANCE)
-        
+
         #Set initial values for actual measurements
         # for ind in self.MEASUREMENT_SET:
         #     init_mea_block = self.MEASUREMENT_BLOCK[ind]
         #     init_val = {idx: 0.0 if init_mea_block.var[idx].value is None else init_mea_block.var[idx].value 
         #                 for idx in self.SAMPLEPOINT_SET} #Not sure why it doesn't work when the value is None
         #     self.ACTUALMEASUREMENT_BLOCK[ind].var.set_values(init_val)
-            
-            
+
     def _use_user_given_var_categ_dict(self, inputs, measurements):
         unref_category_dict = self._category_dict
         if (VC.INPUT not in unref_category_dict and inputs is not None):
@@ -246,7 +273,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                         if category in unref_category_dict #skip disturbance and unused
                         }
         
-        self.category_dict = category_dict
+        self.category_dict.update(category_dict)
         
 
     def _add_sample_point_set(self):
