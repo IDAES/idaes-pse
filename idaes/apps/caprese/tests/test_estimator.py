@@ -90,8 +90,6 @@ class TestEstimatorBlock(object):
         assert all(i1 is i2 for i1, i2 in zip(estimator._measurements, measurements))
         assert hasattr(estimator, "category_dict")
         assert hasattr(estimator, "con_category_dict")
-        assert hasattr(estimator, "already_categorized_for_MHE")
-        assert estimator.already_categorized_for_MHE
         assert hasattr(estimator, "MHE_VARS_CONS_BLOCK")
         MHEBlock = estimator.MHE_VARS_CONS_BLOCK
         assert hasattr(MHEBlock, "MEASUREMENT_SET")
@@ -137,8 +135,6 @@ class TestEstimatorBlock(object):
             assert all(i1 is i2 for i1, i2 in zip(c._measurements, measurements_map[i]))
             assert hasattr(c, "category_dict")
             assert hasattr(c, "con_category_dict")
-            assert hasattr(c, "already_categorized_for_MHE")
-            assert c.already_categorized_for_MHE
             assert hasattr(c, "MHE_VARS_CONS_BLOCK")
             MHEBlock = c.MHE_VARS_CONS_BLOCK
             assert hasattr(MHEBlock, "MEASUREMENT_SET")

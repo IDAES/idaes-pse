@@ -95,8 +95,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             self.reference_var_category_dict(self.category_dict)
         )
 
-        #Set a flag so that classification won't do again in _DynamicBlockData
-        self.already_categorized_for_MHE = True
+        # Assign local category_dict variable for convenience
         category_dict = self.category_dict
 
         self._add_sample_point_set()

@@ -98,115 +98,100 @@ class _DynamicBlockData(_BlockData):
             measurements = self._measurements
         except AttributeError:
             measurements = self._measurements = None
-            
-        
-        # Categorization has already been done in estimator.py, 
-        # so we don't do it again here.
-        if hasattr(self, "already_categorized_for_MHE") and \
-            self.already_categorized_for_MHE:
-            category_dict = self.category_dict #local variable is used in the rest of this function
 
-            # CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
-            # CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
-            # CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
-
-        # TODO: Give the user the option to provide their own
-        # category_dict (they know the structure of their model
-        # better than I do...)
+        # TODO: The logic here is way too complicated
+        categorize_variables = False
+        categorize_constraints = False
+        if self._category_dict is None:
+            # User did not provide a category dict. We must categorize
+            # variables
+            categorize_variables = True
         else:
-            # TODO: The logic here is way too complicated
-            categorize_variables = False
-            categorize_constraints = False
-            if self._category_dict is None:
-                # User did not provide a category dict. We must categorize
-                # variables
-                categorize_variables = True
-            else:
-                # User provided a variable category dict
-                category_dict = self._category_dict
-                self.category_dict = self._category_dict
-                if VC.INPUT not in category_dict and inputs is not None:
-                    # If the user provided inputs but did not put them in
-                    # the category dict
-                    self.category_dict[VC.INPUT] = inputs
-                if (VC.MEASUREMENT not in category_dict
-                        and measurements is not None):
-                    # If the user provided measurements but did not put them
-                    # in the category dict
-                    self.category_dict[VC.MEASUREMENT] = measurements
-                self.dae_vars = []
-                for categ, varlist in category_dict.items():
-                    if categ is not VC.MEASUREMENT:
-                        # Assume that measurements are duplicates
-                        self.dae_vars.extend(varlist)
-            
-            if self._con_category_dict is None:
-                if self._categorize_constraints:
-                    # User (a) requested constraint categorization and (b)
-                    # did not provided a constraint category dict
-                    categorize_constraints = True
-            else:
-                # User provided a constraint category dict
-                con_category_dict = self._con_category_dict
-                self.con_category_dict = self._con_category_dict
+            # User provided a variable category dict
+            category_dict = self._category_dict
+            self.category_dict = self._category_dict
+            if VC.INPUT not in category_dict and inputs is not None:
+                # If the user provided inputs but did not put them in
+                # the category dict
+                self.category_dict[VC.INPUT] = inputs
+            if (VC.MEASUREMENT not in category_dict
+                    and measurements is not None):
+                # If the user provided measurements but did not put them
+                # in the category dict
+                self.category_dict[VC.MEASUREMENT] = measurements
+            self.dae_vars = []
+            for categ, varlist in category_dict.items():
+                if categ is not VC.MEASUREMENT:
+                    # Assume that measurements are duplicates
+                    self.dae_vars.extend(varlist)
+        
+        if self._con_category_dict is None:
+            if self._categorize_constraints:
+                # User (a) requested constraint categorization and (b)
+                # did not provided a constraint category dict
+                categorize_constraints = True
+        else:
+            # User provided a constraint category dict
+            con_category_dict = self._con_category_dict
+            self.con_category_dict = self._con_category_dict
 
-            if categorize_constraints and not categorize_variables:
-                raise RuntimeError(
-                    "If constraint categorization is requested, both or "
-                    "neither category dicts must be provided. \n"
-                    "Variable category dict was provided but constraint "
-                    "category dict was not."
-                )
+        if categorize_constraints and not categorize_variables:
+            raise RuntimeError(
+                "If constraint categorization is requested, both or "
+                "neither category dicts must be provided. \n"
+                "Variable category dict was provided but constraint "
+                "category dict was not."
+            )
 
-            if categorize_variables or categorize_constraints:
-                # Either way, we need flattened variables
+        if categorize_variables or categorize_constraints:
+            # Either way, we need flattened variables
+            scalar_vars, dae_vars = flatten_dae_components(
+                model, time, ctype=Var
+            )
+            if not categorize_constraints:
+                # Categorize variables only
                 scalar_vars, dae_vars = flatten_dae_components(
-                    model, time, ctype=Var
+                        model,
+                        time,
+                        ctype=Var,
+                        )
+                self.scalar_vars = scalar_vars
+                self.dae_vars = dae_vars
+                category_dict = categorize_dae_variables(
+                        dae_vars,
+                        time,
+                        inputs,
+                        measurements=measurements,
+                        )
+                self.category_dict = category_dict
+            else:
+                # Categorize variables and constraints
+                scalar_cons, dae_cons = flatten_dae_components(
+                    model, time, ctype=Constraint,
                 )
-                if not categorize_constraints:
-                    # Categorize variables only
-                    scalar_vars, dae_vars = flatten_dae_components(
-                            model,
-                            time,
-                            ctype=Var,
-                            )
-                    self.scalar_vars = scalar_vars
-                    self.dae_vars = dae_vars
-                    category_dict = categorize_dae_variables(
-                            dae_vars,
-                            time,
-                            inputs,
-                            measurements=measurements,
-                            )
-                    self.category_dict = category_dict
+                dae_map = ComponentMap((var[t0], var) for var in dae_vars)
+
+                # user-provided inputs should be inputs_at_t0
+                if inputs is None:
+                    input_vars = None
                 else:
-                    # Categorize variables and constraints
-                    scalar_cons, dae_cons = flatten_dae_components(
-                        model, time, ctype=Constraint,
-                    )
-                    dae_map = ComponentMap((var[t0], var) for var in dae_vars)
+                    input_vars = [dae_map[var] for var in inputs]
 
-                    # user-provided inputs should be inputs_at_t0
-                    if inputs is None:
-                        input_vars = None
-                    else:
-                        input_vars = [dae_map[var] for var in inputs]
+                # user-provided measurements should be measurements_at_t0
+                if measurements is None:
+                    meas_vars = []
+                else:
+                    meas_vars = [dae_map[var] for var in measurements]
 
-                    # user-provided measurements should be measurements_at_t0
-                    if measurements is None:
-                        meas_vars = []
-                    else:
-                        meas_vars = [dae_map[var] for var in measurements]
-
-                    var_cat, con_cat = categorize_dae_variables_and_constraints(
-                        model, dae_vars, dae_cons, time, input_vars=input_vars
-                    )
-                    self.category_dict = var_cat
-                    # Local variable is defined here for compatibility with
-                    # rest of routine.
-                    category_dict = var_cat
-                    self.con_category_dict = con_cat
-                    self.category_dict[VC.MEASUREMENT] = meas_vars
+                var_cat, con_cat = categorize_dae_variables_and_constraints(
+                    model, dae_vars, dae_cons, time, input_vars=input_vars
+                )
+                self.category_dict = var_cat
+                # Local variable is defined here for compatibility with
+                # rest of routine.
+                category_dict = var_cat
+                self.con_category_dict = con_cat
+                self.category_dict[VC.MEASUREMENT] = meas_vars
 
         keys = list(category_dict)
         for categ in keys:
