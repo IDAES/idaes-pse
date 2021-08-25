@@ -500,8 +500,8 @@ class TestEstimatorBlock(object):
             assert all(i1 is i2 for i1, i2 in zip(curr_con.keys(), estimator.SAMPLEPOINT_SET))
             for t in time: 
                 if t in estimator.SAMPLEPOINT_SET:
-                    pred_expr = actmea_block[bind].actual_measurement[t] - \
-                                (mea_block[bind].var[t] + meaerr_block[bind].measurement_error[t]) == 0.0
+                    pred_expr = actmea_block[bind].actual_measurement[t] ==\
+                                (mea_block[bind].var[t] + meaerr_block[bind].measurement_error[t])
                     assert curr_con[t].expr.to_string() == pred_expr.to_string()
             
     @pytest.mark.unit
