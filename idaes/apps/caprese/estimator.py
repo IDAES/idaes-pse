@@ -89,28 +89,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         # Call base class construct method
         super(_EstimatorBlockData, self)._construct()
             
-        # This processing should not be necessary here; we should have done it
-        # in the base class constructor
-        #
-        ## MHE requires not only variable categories but also constraint categories.
-        ## This if statement check which is given, which is not.
-        #if self._category_dict is not None and self._con_category_dict is not None:
-        #    unref_category_dict = self._use_user_given_var_categ_dict(inputs, measurements)
-        #    unref_con_category_dict = self._con_category_dict
-
-        ## This is the case that I expect to be the most often.
-        #elif self._category_dict is None and self._con_category_dict is None:
-        #    unref_category_dict, unref_con_category_dict = \
-        #        self._categorize_var_con_for_MHE(
-        #            mod, time, inputs, measurements
-        #        )
-        #else:
-        #    raise RuntimeError(
-        #        "Please give both cateogry_dict and con_category_dict for MHE. "
-        #        "Note that the order of differential variables and "
-        #        "differential equations should match."
-        #    )
-
         #self.reference_var_category_dict(unref_category_dict)
         self.reference_var_category_dict(self.category_dict)
         #At this stage, no need to use reference on constraints
