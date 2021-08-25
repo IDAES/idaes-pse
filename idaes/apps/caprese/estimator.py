@@ -89,10 +89,11 @@ class _EstimatorBlockData(_DynamicBlockData):
         # Call base class construct method
         super(_EstimatorBlockData, self)._construct()
             
-        #self.reference_var_category_dict(unref_category_dict)
-        self.reference_var_category_dict(self.category_dict)
-        #At this stage, no need to use reference on constraints
-        #self.con_category_dict = unref_con_category_dict
+        # Update category dict with references to proper ctypes.
+        # Not necessary for constraints currently.
+        self.category_dict.update(
+            self.reference_var_category_dict(self.category_dict)
+        )
 
         #Set a flag so that classification won't do again in _DynamicBlockData
         self.already_categorized_for_MHE = True
@@ -223,8 +224,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         unref_category_dict[VC.MEASUREMENT] = measurement_vars
         
         return unref_category_dict, unref_con_category_dict
-    
-    
+
     def reference_var_category_dict(self, unref_category_dict):
         category_dict = {
                         category: [
@@ -234,9 +234,7 @@ class _EstimatorBlockData(_DynamicBlockData):
                         for category, ctype in CATEGORY_TYPE_MAP.items()
                         if category in unref_category_dict #skip disturbance and unused
                         }
-        
-        self.category_dict.update(category_dict)
-        
+        return category_dict
 
     def _add_sample_point_set(self):
         '''
@@ -245,7 +243,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         set_name = "SAMPLEPOINT_SET"
         self.add_component(set_name, ContinuousSet(initialize = self.sample_points))
-        
 
     def _add_actual_measurement_param(self):
         """This function creates a indexed block and "fixed" variables to allocate 
