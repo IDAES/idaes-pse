@@ -99,16 +99,6 @@ class TestEstimatorBlock(object):
         assert hasattr(MHEBlock, "DIFFERENTIAL_SET")
         assert len(MHEBlock.DIFFERENTIAL_SET.ordered_data()) == \
             len(estimator.category_dict[VariableCategory.DIFFERENTIAL])
-        assert hasattr(estimator, "actualmeasurement_vars")
-        assert estimator.actualmeasurement_vars == \
-            estimator.category_dict[VariableCategory.ACTUALMEASUREMENT]
-        assert hasattr(estimator, "measurementerror_vars")
-        assert estimator.measurementerror_vars == \
-            estimator.category_dict[VariableCategory.MEASUREMENTERROR]
-        assert hasattr(estimator, "modeldisturbance_vars")
-        assert estimator.modeldisturbance_vars == \
-            estimator.category_dict[VariableCategory.MODELDISTURBANCE]
-        
         
     @pytest.mark.unit
     def test_construct_indexed(self, sample_time=0.5):#, horizon=1., nfe=2):
@@ -156,16 +146,7 @@ class TestEstimatorBlock(object):
             assert hasattr(MHEBlock, "DIFFERENTIAL_SET")
             assert len(MHEBlock.DIFFERENTIAL_SET.ordered_data()) == \
                 len(c.category_dict[VariableCategory.DIFFERENTIAL])
-            assert hasattr(c, "actualmeasurement_vars")
-            assert c.actualmeasurement_vars == \
-                c.category_dict[VariableCategory.ACTUALMEASUREMENT]
-            assert hasattr(c, "measurementerror_vars")
-            assert c.measurementerror_vars == \
-                c.category_dict[VariableCategory.MEASUREMENTERROR]
-            assert hasattr(c, "modeldisturbance_vars")
-            assert c.modeldisturbance_vars == \
-                c.category_dict[VariableCategory.MODELDISTURBANCE]
-            
+
     @pytest.mark.unit
     def make_estimator(self, sample_time=0.5, horizon=1., nfe=2):
         model = make_model(horizon=horizon, nfe=nfe)
@@ -183,7 +164,7 @@ class TestEstimatorBlock(object):
         estimator.construct()
         estimator.set_sample_time(sample_time)
         return estimator
-    
+
     @pytest.mark.unit
     def test_use_user_given_var_con_categ_dict(self):
         model = make_model(horizon=1, nfe=2)
@@ -206,7 +187,7 @@ class TestEstimatorBlock(object):
                                                                                     time,
                                                                                     input_vars = input_vars,
                                                                                     )
-        
+
         # Provide the category_dict when constructing EstimatorBlock
         estimator = EstimatorBlock(
                 model=model,
@@ -807,4 +788,3 @@ class TestEstimatorBlock(object):
 
         estimates = estimator.generate_estimates_at_time(tlast)
         assert estimates == [105., 205.]
-        
