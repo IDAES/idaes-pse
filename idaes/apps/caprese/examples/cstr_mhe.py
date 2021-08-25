@@ -158,7 +158,9 @@ def main():
             (cstr.volume[0.0], 0.05),
             ]
     mhe.estimator.set_variance(variance)
-    measurement_variance = [v.variance for v in estimator.measurement_vars]
+    measurement_variance = [
+            v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
+            ]
     measurement_noise_bounds = [
             (0.0, var[c_t0].ub) for var in estimator.measurement_vars
             ]
