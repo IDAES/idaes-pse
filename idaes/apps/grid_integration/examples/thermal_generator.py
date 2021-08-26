@@ -124,7 +124,7 @@ class ThermalGenerator:
 
         return
 
-    def populate_model(self, b, segment_number = 4):
+    def populate_model(self, b):
 
         '''
         This function builds the model for a thermal generator.
@@ -139,6 +139,7 @@ class ThermalGenerator:
         '''
 
         model_data = self.model_data
+        segment_number = 4
 
         ## define the sets
         b.HOUR = pyo.Set(initialize = list(range(self.horizon)))
@@ -521,9 +522,9 @@ if __name__ == "__main__":
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = False
+    run_tracker = True
     run_bidder = False
-    run_prescient = True
+    run_prescient = False
 
     if run_tracker:
 

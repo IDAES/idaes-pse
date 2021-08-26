@@ -4,6 +4,126 @@ import pandas as pd
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.tracker import Tracker
 
+@pytest.mark.unit
+def test_model_object_missing_populate_model():
+
+    class TestingModel:
+
+        # def populate_model(self,b):
+        #     pass
+
+        def get_implemented_profile(self,b):
+            pass
+
+        def update_model(self,b):
+            pass
+
+        def get_last_delivered_power(self,b):
+            pass
+
+        def record_results(self,b):
+            pass
+
+        def write_results(self,b):
+            pass
+
+        @property
+        def power_output(self):
+            return 'power_output'
+
+        @property
+        def total_cost(self):
+            return ('tot_cost',1)
+
+    n_tracking_hour = 1
+    solver = pyo.SolverFactory('cbc')
+    tracking_model_object = TestingModel()
+
+    with pytest.raises(Exception):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
+@pytest.mark.unit
+def test_model_object_missing_get_implemented_profile():
+
+    class TestingModel:
+
+        def populate_model(self,b):
+            pass
+
+        # def get_implemented_profile(self,b):
+        #     pass
+
+        def update_model(self,b):
+            pass
+
+        def get_last_delivered_power(self,b):
+            pass
+
+        def record_results(self,b):
+            pass
+
+        def write_results(self,b):
+            pass
+
+        @property
+        def power_output(self):
+            return 'power_output'
+
+        @property
+        def total_cost(self):
+            return ('tot_cost',1)
+
+    n_tracking_hour = 1
+    solver = pyo.SolverFactory('cbc')
+    tracking_model_object = TestingModel()
+
+    with pytest.raises(Exception):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
+@pytest.mark.unit
+def test_model_object_missing_update_model():
+
+    class TestingModel:
+
+        def populate_model(self,b):
+            pass
+
+        def get_implemented_profile(self,b):
+            pass
+
+        # def update_model(self,b):
+        #     pass
+
+        def get_last_delivered_power(self,b):
+            pass
+
+        def record_results(self,b):
+            pass
+
+        def write_results(self,b):
+            pass
+
+        @property
+        def power_output(self):
+            return 'power_output'
+
+        @property
+        def total_cost(self):
+            return ('tot_cost',1)
+
+    n_tracking_hour = 1
+    solver = pyo.SolverFactory('cbc')
+    tracking_model_object = TestingModel()
+
+    with pytest.raises(Exception):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
 # declare a testing model class
 class TestingModel:
 

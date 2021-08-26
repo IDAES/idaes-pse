@@ -20,8 +20,9 @@ class Tracker:
             None
         '''
 
-        # create an instance
+        # copy and check model object
         self.tracking_model_object = tracking_model_object
+        self._check_tracking_model_object()
 
         # add flowsheet to model
         self.model = pyo.ConcreteModel()
@@ -30,7 +31,10 @@ class Tracker:
 
         # get the power output
         power_output_name = self.tracking_model_object.power_output
-        self.power_output = getattr(self.model.fs, power_output_name)
+        self.power_output = getattr(self.model.fs, power_output_name, None)
+        if self.power_output is None:
+            raise Exception('The tracking model does not have a power_output named ' +\
+                            power_output_name + '.')
 
         # get the time index set
         self.time_set = self.power_output.index_set()
@@ -41,6 +45,41 @@ class Tracker:
 
         self.daily_stats = None
         self.projection = None
+
+    def _check_tracking_model_object(self):
+
+        msg = 'Tracking model object does not have a '
+
+        # check if it has populate model method
+        populate_model = getattr(self.tracking_model_object,'populate_model', None)
+        if populate_model is None:
+            raise Exception(msg + 'populate_model() method.')
+
+        # check if it has power_output
+        power_output = getattr(self.tracking_model_object,'power_output', None)
+        if power_output is None:
+            raise Exception(msg + 'power_output property.')
+        if not isinstance(power_output, str):
+            raise Exception('Tracking model object has a power_output property' +\
+                            ' of type {} rather than str'.format(type(power_output)))
+
+        if not hasattr(self.tracking_model_object,'total_cost'):
+            raise Exception(msg + 'total_cost property.')
+
+        if not hasattr(self.tracking_model_object,'get_implemented_profile'):
+            raise Exception(msg + 'get_implemented_profile method.')
+
+        if not hasattr(self.tracking_model_object,'update_model'):
+            raise Exception(msg + 'update_model method.')
+
+        if not hasattr(self.tracking_model_object,'get_last_delivered_power'):
+            raise Exception(msg + 'get_last_delivered_power method.')
+
+        if not hasattr(self.tracking_model_object,'record_results'):
+            raise Exception(msg + 'record_results method.')
+
+        if not hasattr(self.tracking_model_object,'write_results'):
+            raise Exception(msg + 'write_results method.')
 
     def formulate_tracking_problem(self):
 
