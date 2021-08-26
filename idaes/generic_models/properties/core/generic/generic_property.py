@@ -1654,7 +1654,7 @@ class GenericStateBlockData(StateBlockData):
 
                     iscale.constraint_scaling_transform(
                         self.equilibrium_constraint[k], sf_fug, overwrite=False)
-                except KeyError: # compoent not in phase
+                except KeyError: # component not in phase
                     pass
 
         # Inherent reactions
