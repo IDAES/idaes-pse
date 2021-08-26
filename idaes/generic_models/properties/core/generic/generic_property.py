@@ -1646,13 +1646,16 @@ class GenericStateBlockData(StateBlockData):
                 pe_form_config[pp].calculate_scaling_factors(self, pp)
 
             for k in self.equilibrium_constraint:
-                sf_fug = self.params.get_component(
-                    k[2]).config.phase_equilibrium_form[
-                        (k[0], k[1])].calculate_scaling_factors(
-                            self, k[0], k[1], k[2])
+                try:
+                    sf_fug = self.params.get_component(
+                        k[2]).config.phase_equilibrium_form[
+                            (k[0], k[1])].calculate_scaling_factors(
+                                self, k[0], k[1], k[2])
 
-                iscale.constraint_scaling_transform(
-                    self.equilibrium_constraint[k], sf_fug, overwrite=False)
+                    iscale.constraint_scaling_transform(
+                        self.equilibrium_constraint[k], sf_fug, overwrite=False)
+                except KeyError: # compoent not in phase
+                    pass
 
         # Inherent reactions
         if hasattr(self, "k_eq"):
