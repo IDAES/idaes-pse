@@ -1,11 +1,12 @@
 import pandas as pd
 import pyomo.environ as pyo
+from pyomo.common.config import ConfigDict, ConfigValue
 import sys
 sys.path.append('../')
 from tracker import Tracker
 from bidder import Bidder
 from forecaster import PlaceHolderForecaster
-from prescient_plugin import DoubleLoopCoordinator
+from coordinator import DoubleLoopCoordinator
 from thermal_generator import ThermalGenerator
 
 generator = "102_STEAM_3"
@@ -55,3 +56,7 @@ thermal_bidder = Bidder(bidding_model_object = bidding_model_object,\
 coordinator = DoubleLoopCoordinator(bidder = thermal_bidder,\
                                     tracker = thermal_tracker,\
                                     projection_tracker = thermal_projection_tracker)
+
+## Prescient requires the following functions in this module
+get_configuration = coordinator.get_configuration
+register_plugins = coordinator.register_plugins

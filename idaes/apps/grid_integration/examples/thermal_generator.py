@@ -7,6 +7,7 @@ sys.path.append('../')
 from tracker import Tracker
 from bidder import Bidder
 from forecaster import PlaceHolderForecaster
+from prescient.simulator import Prescient
 
 class ThermalGenerator:
 
@@ -520,8 +521,9 @@ if __name__ == "__main__":
     rts_gmlc_dataframe = pd.read_csv('gen.csv')
     solver = pyo.SolverFactory('cbc')
 
-    run_tracker = True
-    run_bidder = True
+    run_tracker = False
+    run_bidder = False
+    run_prescient = True
 
     if run_tracker:
 
@@ -561,3 +563,25 @@ if __name__ == "__main__":
         hour = "13:00"
         bids = thermal_bidder.compute_bids(date, hour)
         thermal_bidder.write_results(path = './')
+
+    if run_prescient:
+
+        options = {'data_directory': '../../../../../../doubleloop/Prescient/downloads/rts_gmlc/deterministic_with_network_scenarios',\
+                   'simulate_out_of_sample': True,\
+                   'run_sced_with_persistent_forecast_errors': True,\
+                   'output_directory': 'bidding_plugin_test_thermal_generator',\
+                   'start_date':'07-10-2020',\
+                   'num_days': 1,\
+                   'sced_horizon':4,\
+                   'compute_market_settlements': True,\
+                   'day_ahead_pricing': 'LMP',\
+                   'ruc_mipgap':0.01,\
+                   'symbolic_solver_labels': True,\
+                   'reserve_factor':0.0,\
+                   'deterministic_ruc_solver':'cbc',\
+                   'sced_solver':'cbc',\
+                   'plugin': {'doubleloop': {'module': 'thermal_generator_prescient_plugin.py',\
+                                              'bidding_generator': '102_STEAM_3'}}\
+                    }
+
+        Prescient().simulate(**options)
