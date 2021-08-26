@@ -33,11 +33,6 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-DEPENDENCIES_FOR_PRERELEASE_VERSION = [
-    "pyomo @ https://github.com/IDAES/pyomo/archive/6.1.2.zip",
-]
-
-
 kwargs = dict(
     zip_safe=False,
     name=NAME,
@@ -85,7 +80,6 @@ kwargs = dict(
     },
     # Only installed if [<key>] is added to package name
     extras_require={
-        "prerelease": DEPENDENCIES_FOR_PRERELEASE_VERSION,
     },
     package_data={
         # If any package contains these files, include them:
