@@ -31,8 +31,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.9298326"
-     inkscape:cx="347.78137"
-     inkscape:cy="42.896078"
+     inkscape:cx="484.66962"
+     inkscape:cy="141.89372"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -1545,7 +1545,7 @@
     </g>
     <path
        style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 170.65626,46.302074 -31.75,-3.968751"
+       d="m 170.65626,54.239574 -31.75,-11.906251"
        id="path2938-0-7-5-0-6-4-4-3-8-2-6-8-9-15-3-3"
        sodipodi:nodetypes="cc" />
     <g
@@ -2053,90 +2053,6 @@
            y="82.532669"
            style="font-size:1.41111px;text-align:center;text-anchor:middle;stroke-width:0.264583">a08</tspan></text>
     </g>
-    <g
-       id="g1570"
-       transform="translate(136.26042)">
-      <text
-         xml:space="preserve"
-         style="font-size:2.82223px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
-         x="37.034473"
-         y="24.909304"
-         id="text1455"><tspan
-           sodipodi:role="line"
-           id="tspan1453"
-           x="37.034473"
-           y="24.909304"
-           style="text-align:start;text-anchor:start;stroke-width:0.264583">SOEC Summary:</tspan></text>
-      <path
-         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 37.041674,26.458323 h 35.71875"
-         id="path1457"
-         sodipodi:nodetypes="cc" />
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
-         x="57.547424"
-         y="29.080261"
-         id="text1461"><tspan
-           sodipodi:role="line"
-           id="tspan1459"
-           x="57.547424"
-           y="29.080261"
-           style="text-align:end;text-anchor:end;stroke-width:0.264583">Electic Power Use:</tspan><tspan
-           sodipodi:role="line"
-           x="57.547424"
-           y="31.726099"
-           style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan1487">Number of Cells:</tspan><tspan
-           sodipodi:role="line"
-           x="57.547424"
-           y="34.371937"
-           style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan1513">Cell Voltage:</tspan><tspan
-           sodipodi:role="line"
-           x="57.547424"
-           y="37.017773"
-           style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan1790">Energy Balance:</tspan></text>
-      <path
-         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="M 37.041676,38.364573 H 72.760427"
-         id="path1457-0"
-         sodipodi:nodetypes="cc" />
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
-         x="60.192715"
-         y="29.104156"
-         id="soec_power"><tspan
-           sodipodi:role="line"
-           id="tspan1483"
-           x="60.192715"
-           y="29.104156"
-           style="stroke-width:0.264583">?</tspan></text>
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
-         x="60.192715"
-         y="31.743078"
-         id="soec_n_cells"><tspan
-           sodipodi:role="line"
-           id="tspan1483-1"
-           x="60.192715"
-           y="31.743078"
-           style="stroke-width:0.264583">?</tspan></text>
-      <text
-         xml:space="preserve"
-         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
-         x="60.182632"
-         y="34.403065"
-         id="E_cell"><tspan
-           sodipodi:role="line"
-           id="tspan1483-1-9"
-           x="60.182632"
-           y="34.403065"
-           style="stroke-width:0.264583">?</tspan></text>
-    </g>
     <text
        xml:space="preserve"
        id="text1539"
@@ -2481,17 +2397,6 @@
          x="119.06251"
          y="44.979156"
          style="stroke-width:0.264583">hxf1</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
-       x="196.43556"
-       y="37.041656"
-       id="soec_heat_duty"><tspan
-         sodipodi:role="line"
-         id="tspan1792"
-         x="196.43556"
-         y="37.041656"
-         style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
     <g
        id="g1812-3"
        transform="translate(-41.010413)">
@@ -2535,7 +2440,8 @@
          id="path5471-0" />
     </g>
     <g
-       id="g1934">
+       id="g1934"
+       transform="translate(-3.9999767e-7,7.9375007)">
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
@@ -2768,6 +2674,165 @@
            x="59.482784"
            y="154.79538"
            style="stroke-width:0.264583">?</tspan></text>
+    </g>
+    <g
+       id="g2121"
+       transform="translate(-5.2916602)">
+      <text
+         xml:space="preserve"
+         style="font-size:2.82223px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="171.23837"
+         y="24.909304"
+         id="text1455"><tspan
+           sodipodi:role="line"
+           id="tspan1453"
+           x="171.23837"
+           y="24.909304"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">Summary:</tspan></text>
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 170.65626,26.458323 41.01041,0"
+         id="path1457"
+         sodipodi:nodetypes="cc" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="193.80785"
+         y="29.080261"
+         id="text1461"><tspan
+           sodipodi:role="line"
+           id="tspan1459"
+           x="193.80785"
+           y="29.080261"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583">Electic Power Use:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="31.726099"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan1487">Number of Cells:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="34.371937"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan1513">Cell Voltage:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="37.017773"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan1790">Cell Energy Balance:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="39.663612"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan2022">Heat Duty hxf2:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="42.309448"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan2026">Heat Duty hxa2:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="44.955284"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan2028">Electric Power/H2:</tspan><tspan
+           sodipodi:role="line"
+           x="193.80785"
+           y="47.601124"
+           style="text-align:end;text-anchor:end;stroke-width:0.264583"
+           id="tspan2030">Heat/H2:</tspan></text>
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 170.65626,48.947907 41.01041,0"
+         id="path1457-0"
+         sodipodi:nodetypes="cc" />
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+         x="196.45314"
+         y="29.104156"
+         id="soec_power"><tspan
+           sodipodi:role="line"
+           id="tspan1483"
+           x="196.45314"
+           y="29.104156"
+           style="stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+         x="196.45314"
+         y="31.743078"
+         id="soec_n_cells"><tspan
+           sodipodi:role="line"
+           id="tspan1483-1"
+           x="196.45314"
+           y="31.743078"
+           style="stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+         x="196.44305"
+         y="34.403065"
+         id="E_cell"><tspan
+           sodipodi:role="line"
+           id="tspan1483-1-9"
+           x="196.44305"
+           y="34.403065"
+           style="stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="196.43556"
+         y="37.041656"
+         id="soec_heat_duty"><tspan
+           sodipodi:role="line"
+           id="tspan1792"
+           x="196.43556"
+           y="37.041656"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="196.43556"
+         y="39.653168"
+         id="hxf2_heat_duty"><tspan
+           sodipodi:role="line"
+           id="tspan1792-9"
+           x="196.43556"
+           y="39.653168"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="196.44972"
+         y="42.347473"
+         id="hxa2_heat_duty"><tspan
+           sodipodi:role="line"
+           id="tspan1792-8"
+           x="196.44972"
+           y="42.347473"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="196.43556"
+         y="44.979156"
+         id="power_per_h2"><tspan
+           sodipodi:role="line"
+           id="tspan1792-99"
+           x="196.43556"
+           y="44.979156"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="196.42955"
+         y="47.633125"
+         id="heat_per_h2"><tspan
+           sodipodi:role="line"
+           id="tspan1792-81"
+           x="196.42955"
+           y="47.633125"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
     </g>
   </g>
 </svg>

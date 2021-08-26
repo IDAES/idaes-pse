@@ -269,6 +269,28 @@ def add_constraints(m):
     def heat_duty_zero_eqn(b, t):
         return b.soec.heat_duty[t] == 0
 
+    @m.fs.Expression(m.fs.time)
+    def power_per_h2_MW(b, t):
+        return (
+            m.fs.total_soec_power_expr[t]
+            / 1e3
+            / 1000
+            / 0.002
+            / m.fs.hxa1.shell_outlet.flow_mol[t]
+            / m.fs.hxa1.shell_outlet.mole_frac_comp[t, "H2"]
+        )
+
+    @m.fs.Expression(m.fs.time)
+    def heat_per_h2_MW(b, t):
+        return (
+            (m.fs.hxf2.heat_duty[0] + m.fs.hxa2.heat_duty[t])
+            / 1e3
+            / 1000
+            / 0.002
+            / m.fs.hxa1.shell_outlet.flow_mol[t]
+            / m.fs.hxa1.shell_outlet.mole_frac_comp[t, "H2"]
+        )
+
 
 def add_arcs(m):
     m.fs.f02 = Arc(source=m.fs.hxf1.tube_outlet, destination=m.fs.hxf2.tube_inlet)
@@ -304,11 +326,11 @@ def set_inputs(m):
 
     m.fs.hxf1.tube_inlet.enth_mol.fix(3000)
     m.fs.hxf1.tube_inlet.pressure.fix(1e5)
-    m.fs.hxf1.tube_inlet.flow_mol.fix(1300)
+    m.fs.hxf1.tube_inlet.flow_mol.fix(1700)
 
     m.fs.hxa1.tube_inlet.enth_mol.fix(3000)
     m.fs.hxa1.tube_inlet.pressure.fix(1e5)
-    m.fs.hxa1.tube_inlet.flow_mol.fix(600)
+    m.fs.hxa1.tube_inlet.flow_mol.fix(1600)
 
     m.fs.hxf2.shell_inlet.mole_frac_comp[:, "CO2"].fix(0.04)
     m.fs.hxf2.shell_inlet.mole_frac_comp[:, "H2O"].fix(0.09)
@@ -421,23 +443,11 @@ def do_initialization(m, solver):
     m.fs.hxf1.tube_inlet.flow_mol.unfix()
     solver.solve(m, tee=True)
 
-    # this won't change the flow to the SOEC since it's not the multi flow var
-    # that's fixed
-    iinit.propagate_state(arc=m.fs.f04)
-    iinit.propagate_state(arc=m.fs.a04)
-    solver.solve(m, tee=True)
-
     m.fs.a04_expanded.activate()
     m.fs.a04_expanded.flow_mol_equality.deactivate()
     m.fs.soec.ac.pressure[:, 0].unfix()
     m.fs.soec.ac.temperature[:, 0].unfix()
     m.fs.soec.ac.mole_frac_comp[:, 0, :].unfix()
-    solver.solve(m, tee=True)
-
-    # this won't change the flow to the SOEC since it's not the multi flow var
-    # that's fixed
-    iinit.propagate_state(arc=m.fs.f04)
-    iinit.propagate_state(arc=m.fs.a04)
     solver.solve(m, tee=True)
 
     m.fs.a04_expanded.flow_mol_equality.activate()
@@ -506,6 +516,36 @@ def tag_model(m):
         "soec_heat_duty",
         expr=m.fs.soec.heat_duty[0] * m.fs.soec.n_cells / 1e6,
         format="{:.4f} MW",
+    )
+    new_tag(
+        "hxf2_heat_duty",
+        expr=m.fs.hxf2.heat_duty[0] / 1e6,
+        format="{:.2f} MW",
+    )
+    new_tag(
+        "hxa2_heat_duty",
+        expr=m.fs.hxa2.heat_duty[0] / 1e6,
+        format="{:.2f} MW",
+    )
+    new_tag(
+        "power_per_h2",
+        expr=m.fs.total_soec_power_expr[0]
+        / 1e3
+        / 1000
+        / 0.002
+        / m.fs.hxa1.shell_outlet.flow_mol[0]
+        / m.fs.hxa1.shell_outlet.mole_frac_comp[0, "H2"],
+        format="{:.2f} MJ/kg",
+    )
+    new_tag(
+        "heat_per_h2",
+        expr=(m.fs.hxf2.heat_duty[0] + m.fs.hxa2.heat_duty[0])
+        / 1e3
+        / 1000
+        / 0.002
+        / m.fs.hxa1.shell_outlet.flow_mol[0]
+        / m.fs.hxa1.shell_outlet.mole_frac_comp[0, "H2"],
+        format="{:.2f} MJ/kg",
     )
 
     m.tags = tags
@@ -579,8 +619,31 @@ def get_model(m=None):
 
 if __name__ == "__main__":
     m, solver = get_model()
-    plot_soec(m)
+    # plot_soec(m)
     write_pfd_results("soec_init.svg")
+
+    """
+    xs = np.linspace(1.00, 0.50, 20)
+    off = pyo.value(m.fs.soec.inlet_fc.flow_mol[0])
+    oaf = pyo.value(m.fs.soec.inlet_ac.flow_mol[0])
+    m.obj = pyo.Objective(expr=m.fs.heat_per_h2_MW[0] + m.fs.power_per_h2_MW[0])
+    m.fs.spltf1.split_fraction[0, "out"].unfix()
+    m.fs.spltf1.split_fraction[0, "out"].setlb(0.65)
+    m.fs.spltf1.split_fraction[0, "out"].setub(0.97)
+    m.fs.splta1.split_fraction[0, "out"].unfix()
+    m.fs.splta1.split_fraction[0, "out"].setlb(0.65)
+    m.fs.splta1.split_fraction[0, "out"].setub(0.95)
+    m.fs.soec.ac.flow_mol[:, 0].unfix()
+    m.fs.sweep_flow_ineq = pyo.Constraint(expr=m.fs.soec.ac.flow_mol[0, 0] >= 0.5*m.fs.soec.fc.flow_mol[0, 0])
+
+    m.fs.heat_per_h2_MW.display()
+    m.fs.power_per_h2_MW.display()
+    for x in xs:
+        m.fs.soec.inlet_fc.flow_mol.fix(off * x)
+        #m.fs.soec.inlet_ac.flow_mol.fix(oaf * x)
+        solver.solve(m, tee=True)
+        write_pfd_results(f"soec_init_{x}.svg")
+
     check_scaling = False
     if check_scaling:
         jac, nlp = iscale.get_jacobian(m, scaled=True)
@@ -599,3 +662,4 @@ if __name__ == "__main__":
         ):
             print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
+    """
