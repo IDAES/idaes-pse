@@ -70,9 +70,8 @@ class TestAlamoSurrogateTrainer:
 
         with pytest.raises(
                 FileExistsError,
-                match=f"A file with the name {alm_obj.config.filename} already"
-                f" exists. Either choose a new file name or set "
-                f"overwrite_files = True"):
+                match="alamotrace.trc already exists. Either choose a new "
+                "file name or set overwrite_files = True"):
             alm_obj.get_files()
 
     @pytest.mark.unit
