@@ -121,7 +121,7 @@ class Alamopy(Surrogate):
     """
     Standard SurrogateModelTrainer for ALAMO.
 
-    This mainly defines a set of configuration options for ALAMO along with
+    This defines a set of configuration options for ALAMO along with
     methods to read and write the ALAMO input and output files and to call
     the ALAMO executable.
 
@@ -447,6 +447,18 @@ class Alamopy(Surrogate):
             alamo.executable = self.config.alamo_path
 
     def build_model(self):
+        """
+        General workflow method for training an ALAMO surrogate model.
+
+        Takes the existing data set and executes the ALAMO workflow to create
+        an AlamoModelObject based on the current configuration arguments.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         super().build_model()
 
         # Get paths for temp files
@@ -472,6 +484,18 @@ class Alamopy(Surrogate):
                 self.remove_temp_files()
 
     def get_files(self):
+        """
+        Method to get/set paths for .alm and .trc files based on filename
+        coniguration argument.
+
+        If filename is None, temporary files will be created.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         if self.config.filename is None:
             # Get a temporary file from the manager
             almfile = TempfileManager.create_tempfile(suffix=".alm")
@@ -499,7 +523,23 @@ class Alamopy(Surrogate):
     def write_alm_to_stream(
             self, stream, trace_fname=None, x_reg=None,
             z_reg=None, x_val=None, z_val=None):
-        """Write the input file for the ALAMO executable to a stream."""
+        """
+        Method to write an ALAMO input file (.alm) to a stream.
+        Users may provide specific data sets for training and validation.
+        If no data sets are provided, the data sets contained in the
+        AlamoModelTrainer are used.
+
+        Args:
+            stream: stream that data should be writen to
+            trace_fname: name for trace file (.trc) to be included in .alm file
+            x_reg: input values for regression (2D numpy array)
+            z_reg: output values for regrssion (2D numpy array)
+            x_val: input values for validation (2D numpy array)
+            z_val: output values for regression (2D numpy array)
+
+        Returns:
+            None
+        """
         if x_reg is None:
             x_reg = self._rdata_in
         if z_reg is None:
@@ -583,11 +623,37 @@ class Alamopy(Surrogate):
         # Custom basis functions if required
 
     def write_alm_file(self, x_reg=None, z_reg=None, x_val=None, z_val=None):
+        """
+        Method to write an ALAMO input file (.alm) using the current settings.
+        Users may provide specific data sets for training and validation.
+        If no data sets are provided, the data sets contained in the
+        AlamoModelTrainer are used.
+
+        Args:
+            x_reg: input values for regression (2D numpy array)
+            z_reg: output values for regrssion (2D numpy array)
+            x_val: input values for validation (2D numpy array)
+            z_val: output values for regression (2D numpy array)
+
+        Returns:
+            None
+        """
         f = open(self._almfile, "w")
         self.write_alm_to_stream(f, self._trcfile, x_reg, z_reg, x_val, z_val)
         f.close()
 
     def call_alamo(self):
+        """
+        Method to call ALAMO executable from Python, passing the current .alm
+        file as an argument.
+
+        Args:
+            None
+
+        Returns:
+            ALAMO: return code
+            log: string of the text output from ALAMO
+        """
         ostreams = [StringIO(), sys.stdout]
         try:
             with TeeStream(*ostreams) as t:
@@ -610,6 +676,17 @@ class Alamopy(Surrogate):
         return rc, almlog
 
     def read_trace_file(self):
+        """
+        Method to read the results of an ALAMO run from a trace (.trc) file.
+        The name location of the trace file is tored on the AlamoModelTrainer
+        object and is generally set automatically.
+
+        Args:
+            None
+
+        Returns:
+            trace_dict: contents ofr trace file as a dict
+        """
         with open(self._trcfile, "r") as f:
             lines = f.readlines()
         f.close()
@@ -674,9 +751,28 @@ class Alamopy(Surrogate):
         return trace_read
 
     def populate_results(self, trace_dict):
+        """
+        Method to populate the results object with data from a trace file.
+
+        Args:
+            trace_dict: trace file data in form of a dict
+
+        Returns:
+            None
+        """
         self._results = trace_dict
 
     def build_surrogate_model_object(self):
+        """
+        Method to construct an AlmaoModelObject from the current results
+        object.
+
+        Args:
+            None
+
+        Returns:
+            NOne
+        """
         input_bounds = {}
         for i in range(len(self._input_labels)):
             iname = self._input_labels[i]
@@ -689,12 +785,30 @@ class Alamopy(Surrogate):
             input_bounds=input_bounds)
 
     def remove_temp_files(self):
+        """
+        Method to remove temporary files created during the ALAMO workflow,
+        i.e. the .alm and .trc files.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         TempfileManager.pop()
         # Release tempfile context
         self._temp_context = None
 
 
 class AlamoModelObject(SurrogateModelObject):
+    """
+    Standard SurrogateModelObject for surrogates trained using ALAMO.
+
+    Contains methods to both populate a Pyomo Block with constraints
+    representing the surrogate and to evalaute the surrogate a set of user
+    provided points.
+    """
+
     def __init__(
             self, surrogate, input_labels, output_labels, input_bounds=None):
         super().__init__(surrogate, input_labels, output_labels, input_bounds)
@@ -709,7 +823,7 @@ class AlamoModelObject(SurrogateModelObject):
     def evaluate_surrogate(self, *args):
         values = {}
         for o in self._output_labels:
-            values[o] = self._fcn[o](*args)
+            values[o] = value(self._fcn[o](*args))
         return values
 
     def populate_block(self, block, variables=None):
