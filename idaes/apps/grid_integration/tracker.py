@@ -31,10 +31,7 @@ class Tracker:
 
         # get the power output
         power_output_name = self.tracking_model_object.power_output
-        self.power_output = getattr(self.model.fs, power_output_name, None)
-        if self.power_output is None:
-            raise Exception('The tracking model does not have a power_output named ' +\
-                            power_output_name + '.')
+        self.power_output = getattr(self.model.fs, power_output_name)
 
         # get the time index set
         self.time_set = self.power_output.index_set()

@@ -4,125 +4,54 @@ import pandas as pd
 import pyomo.environ as pyo
 from idaes.apps.grid_integration.tracker import Tracker
 
+class TestMissingModel:
+
+    method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
+                    'get_last_delivered_power','record_results', 'write_results']
+    method_dict = {k: lambda: None for k in method_list}
+
+    attr_dict = {'power_output': 'power_output',\
+                 'total_cost': ('tot_cost',1) }
+
+    def __init__(self, missing_method = None, missing_attr = None):
+
+        for m in self.method_dict:
+            if m != missing_method:
+                setattr(self, m, self.method_dict[m])
+
+        for a in self.attr_dict:
+            if a != missing_attr:
+                setattr(self, a, self.attr_dict[a])
+
 @pytest.mark.unit
-def test_model_object_missing_populate_model():
-
-    class TestingModel:
-
-        # def populate_model(self,b):
-        #     pass
-
-        def get_implemented_profile(self,b):
-            pass
-
-        def update_model(self,b):
-            pass
-
-        def get_last_delivered_power(self,b):
-            pass
-
-        def record_results(self,b):
-            pass
-
-        def write_results(self,b):
-            pass
-
-        @property
-        def power_output(self):
-            return 'power_output'
-
-        @property
-        def total_cost(self):
-            return ('tot_cost',1)
+def test_model_object_missing_methods():
 
     n_tracking_hour = 1
     solver = pyo.SolverFactory('cbc')
-    tracking_model_object = TestingModel()
 
-    with pytest.raises(Exception):
-        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
-                                 n_tracking_hour = n_tracking_hour, \
-                                 solver = solver)
+    method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
+                    'get_last_delivered_power','record_results', 'write_results']
+
+    for m in method_list:
+        tracking_model_object = TestMissingModel(missing_method = m)
+        with pytest.raises(Exception):
+            tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                     n_tracking_hour = n_tracking_hour, \
+                                     solver = solver)
 
 @pytest.mark.unit
-def test_model_object_missing_get_implemented_profile():
-
-    class TestingModel:
-
-        def populate_model(self,b):
-            pass
-
-        # def get_implemented_profile(self,b):
-        #     pass
-
-        def update_model(self,b):
-            pass
-
-        def get_last_delivered_power(self,b):
-            pass
-
-        def record_results(self,b):
-            pass
-
-        def write_results(self,b):
-            pass
-
-        @property
-        def power_output(self):
-            return 'power_output'
-
-        @property
-        def total_cost(self):
-            return ('tot_cost',1)
+def test_model_object_missing_attr():
 
     n_tracking_hour = 1
     solver = pyo.SolverFactory('cbc')
-    tracking_model_object = TestingModel()
+    attr_list = ['power_output','total_cost']
 
-    with pytest.raises(Exception):
-        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
-                                 n_tracking_hour = n_tracking_hour, \
-                                 solver = solver)
-
-@pytest.mark.unit
-def test_model_object_missing_update_model():
-
-    class TestingModel:
-
-        def populate_model(self,b):
-            pass
-
-        def get_implemented_profile(self,b):
-            pass
-
-        # def update_model(self,b):
-        #     pass
-
-        def get_last_delivered_power(self,b):
-            pass
-
-        def record_results(self,b):
-            pass
-
-        def write_results(self,b):
-            pass
-
-        @property
-        def power_output(self):
-            return 'power_output'
-
-        @property
-        def total_cost(self):
-            return ('tot_cost',1)
-
-    n_tracking_hour = 1
-    solver = pyo.SolverFactory('cbc')
-    tracking_model_object = TestingModel()
-
-    with pytest.raises(Exception):
-        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
-                                 n_tracking_hour = n_tracking_hour, \
-                                 solver = solver)
+    for a in attr_list:
+        tracking_model_object = TestMissingModel(missing_attr = a)
+        with pytest.raises(Exception):
+            tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                     n_tracking_hour = n_tracking_hour, \
+                                     solver = solver)
 
 # declare a testing model class
 class TestingModel:
