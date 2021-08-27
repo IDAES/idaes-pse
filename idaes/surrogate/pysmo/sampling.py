@@ -362,7 +362,7 @@ class LatinHypercubeSampling(SamplingMethods):
             if not isinstance(rng_seed, int):
                 raise Exception('Random number seed (rng_seed) must be an integer.')
             elif rng_seed < 0 or 2**32-1 < rng_seed:
-                raise Exception('Seed must be between 0 and 2**32 - 1.')
+                raise Exception('Random number seed (rng_seed) must be between 0 and 2**32 - 1.')
 
         np.random.seed(rng_seed)
 
