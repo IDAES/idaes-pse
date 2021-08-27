@@ -34,7 +34,7 @@ def test_model_object_missing_methods():
 
     for m in method_list:
         tracking_model_object = TestMissingModel(missing_method = m)
-        with pytest.raises(Exception):
+        with pytest.raises(AttributeError, match = r".*{}().*".format(m)):
             tracker_object = Tracker(tracking_model_object = tracking_model_object,\
                                      n_tracking_hour = n_tracking_hour, \
                                      solver = solver)
@@ -48,7 +48,7 @@ def test_model_object_missing_attr():
 
     for a in attr_list:
         tracking_model_object = TestMissingModel(missing_attr = a)
-        with pytest.raises(Exception):
+        with pytest.raises(AttributeError, match = r".*{}.*".format(a)):
             tracker_object = Tracker(tracking_model_object = tracking_model_object,\
                                      n_tracking_hour = n_tracking_hour, \
                                      solver = solver)
