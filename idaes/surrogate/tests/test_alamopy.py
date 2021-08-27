@@ -20,8 +20,13 @@ import os
 from math import sin, cos, log, exp
 
 from pyomo.environ import Block, Var, Constraint
+from pyomo.common.tempfiles import TempfileManager
+
 from idaes.surrogate.alamopy_new import \
     Alamopy, AlamoModelObject, Modelers, Screener, alamo
+
+
+dirpath = os.path.dirname(__file__)
 
 
 class TestAlamoSurrogateTrainer:
@@ -44,20 +49,32 @@ class TestAlamoSurrogateTrainer:
         return alm_obj
 
     @pytest.mark.unit
-    def test_get_path(self, alm_obj):
-        alm_obj.config.temp_path = os.path.dirname(__file__)
+    def test_get_files(self, alm_obj):
         alm_obj.config.filename = "foo.alm"
-        a, t = alm_obj.get_paths()
-        assert a == "foo.alm"
-        assert t == "foo.trc"
-        assert os.getcwd() == os.path.dirname(__file__)
+        alm_obj.get_files()
+        assert alm_obj._almfile == "foo.alm"
+        assert alm_obj._trcfile == "foo.trc"
 
     @pytest.mark.unit
-    def test_get_path_default(self, alm_obj):
-        a, t = alm_obj.get_paths()
-        assert a == "alamopy.alm"
-        assert t == "alamopy.trc"
-        assert os.getcwd() == os.path.dirname(__file__)[:-6]
+    def test_get_files_default(self, alm_obj):
+        with TempfileManager:
+            alm_obj.get_files()
+
+            assert alm_obj._almfile is not None
+            assert str(alm_obj._trcfile).split(".")[0] == str(
+                alm_obj._almfile).split(".")[0]
+
+    @pytest.mark.unit
+    def test_get_files_exists(self, alm_obj):
+        alm_obj.config.filename = os.path.join(dirpath, "alamotrace.trc")
+
+        almfile = ("/home/andrew/idaes/idaes-pse/idaes/surrogate/"
+                   "tests/alamotrace.trc")
+        with pytest.raises(FileExistsError,
+                           match=f"A file with the name {almfile} already "
+                           f"exists. Either choose a new file name or set "
+                           f"overwrite_files = True"):
+            alm_obj.get_files()
 
     @pytest.mark.unit
     def test_writer_default(self, alm_obj):
@@ -107,7 +124,7 @@ class TestAlamoSurrogateTrainer:
             "maxtime 1000.0\n"
             "numlimitbasis 1\n\n"
             "TRACE 1\n"
-            "TRACEFNAME foo.bar\n"
+            "TRACEFNAME foo.bar\n\n"
             "BEGIN_DATA\n"
             "1 5 10\n"
             "2 6 20\n"
@@ -268,17 +285,52 @@ class TestAlamoSurrogateTrainer:
             "4 8 40\n"
             "END_DATA\n")
 
+    @pytest.mark.component
+    def test_file_writer(self, alm_obj):
+        with TempfileManager:
+            alm_obj.get_files()
+            alm_obj.write_alm_file()
+
+            with open(alm_obj._almfile, "r") as f:
+                fcont = f.read()
+            f.close()
+            alm_obj.remove_temp_files()
+
+            assert fcont == (
+                f"# IDAES Alamopy input file\n"
+                f"NINPUTS 2\n"
+                f"NOUTPUTS 1\n"
+                f"XLABELS x1 x2\n"
+                f"ZLABELS z1\n"
+                f"XMIN 0 0\n"
+                f"XMAX 5 10\n"
+                f"NDATA 4\n"
+                f"NVALDATA 0\n\n"
+                f"linfcns 1\n"
+                f"constant 1\n"
+                f"maxtime 1000.0\n"
+                f"numlimitbasis 1\n\n"
+                f"TRACE 1\n"
+                f"TRACEFNAME {alm_obj._trcfile}\n\n"
+                f"BEGIN_DATA\n"
+                f"1 5 10\n"
+                f"2 6 20\n"
+                f"3 7 30\n"
+                f"4 8 40\n"
+                f"END_DATA\n")
+
     @pytest.mark.unit
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
     def test_call_alamo(self, alm_obj):
-        rc, log = alm_obj.call_alamo("test")
+        alm_obj._almfile = "test"
+        rc, log = alm_obj.call_alamo()
         assert rc == 0
         assert "ALAMO terminated with termination code 3" in log
 
     @pytest.mark.unit
     def test_read_trace_single(self, alm_obj):
-        os.chdir("tests")
-        trc = alm_obj.read_trace_file(trace_file="alamotrace.trc")
+        alm_obj._trcfile = os.path.join(dirpath, "alamotrace.trc")
+        trc = alm_obj.read_trace_file()
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                         '4.0000000000020765611453 * x2**2 - '
@@ -360,7 +412,8 @@ class TestAlamoSurrogateTrainer:
         alm_obj._n_outputs = 2
         alm_obj._output_labels = ["z1", "z2"]
 
-        trc = alm_obj.read_trace_file(trace_file="alamotrace2.trc")
+        alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
+        trc = alm_obj.read_trace_file()
 
         mdict = {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -450,25 +503,28 @@ class TestAlamoSurrogateTrainer:
 
     @pytest.mark.unit
     def test_read_trace_number_mismatch(self, alm_obj):
+        alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Expected OUTPUT = 1, found 2."):
-            alm_obj.read_trace_file(trace_file="alamotrace2.trc")
+            alm_obj.read_trace_file()
 
     @pytest.mark.unit
     def test_read_trace_label_mismatch(self, alm_obj):
         alm_obj._n_outputs = 2
         alm_obj._output_labels = ["z1", "z3"]
 
+        alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Label of output variable in expression "
                            "\(z2\) does not match expected label \(z3\)."):
-            alm_obj.read_trace_file(trace_file="alamotrace2.trc")
+            alm_obj.read_trace_file()
 
     @pytest.mark.unit
     def test_populate_results(self, alm_obj):
-        trc = alm_obj.read_trace_file(trace_file="alamotrace.trc")
+        alm_obj._trcfile = os.path.join(dirpath, "alamotrace.trc")
+        trc = alm_obj.read_trace_file()
         alm_obj.populate_results(trc)
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -548,7 +604,8 @@ class TestAlamoSurrogateTrainer:
 
     @pytest.mark.unit
     def test_build_surrogate_model_object(self, alm_obj):
-        trc = alm_obj.read_trace_file(trace_file="alamotrace.trc")
+        alm_obj._trcfile = os.path.join(dirpath, "alamotrace.trc")
+        trc = alm_obj.read_trace_file()
         alm_obj.populate_results(trc)
         alm_obj.build_surrogate_model_object()
 
@@ -562,6 +619,8 @@ class TestAlamoSurrogateTrainer:
                    '0.99999999999972988273811 * x1*x2')}
         assert alm_obj._model._input_labels == ["x1", "x2"]
         assert alm_obj._model._output_labels == ["z1"]
+        assert alm_obj._model._input_bounds == {
+            "x1": (0, 5), "x2": (0, 10)}
 
 
 class TestAlamoSurrogate():
@@ -576,8 +635,10 @@ class TestAlamoSurrogate():
                    '0.99999999999972988273811 * x1*x2')}
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
+        input_bounds = {"x1": (0, 5), "x2": (0, 10)}
 
-        alm_surr1 = AlamoModelObject(surrogate, input_labels, output_labels)
+        alm_surr1 = AlamoModelObject(
+            surrogate, input_labels, output_labels, input_bounds)
 
         return alm_surr1
 
@@ -603,8 +664,11 @@ class TestAlamoSurrogate():
         alm_surr1.populate_block(blk)
 
         assert isinstance(blk.x1, Var)
+        assert blk.x1.bounds == (0, 5)
         assert isinstance(blk.x2, Var)
+        assert blk.x2.bounds == (0, 10)
         assert isinstance(blk.z1, Var)
+        assert blk.z1.bounds == (None, None)
         assert isinstance(blk.alamo_constraint, Constraint)
         assert len(blk.alamo_constraint) == 1
         assert str(blk.alamo_constraint["z1"].body) == (
@@ -671,9 +735,13 @@ class TestAlamoSurrogate():
         alm_surr2.populate_block(blk)
 
         assert isinstance(blk.x1, Var)
+        assert blk.x1.bounds == (None, None)
         assert isinstance(blk.x2, Var)
+        assert blk.x2.bounds == (None, None)
         assert isinstance(blk.z1, Var)
+        assert blk.z1.bounds == (None, None)
         assert isinstance(blk.z2, Var)
+        assert blk.z2.bounds == (None, None)
         assert isinstance(blk.alamo_constraint, Constraint)
         assert len(blk.alamo_constraint) == 2
         assert str(blk.alamo_constraint["z1"].body) == (

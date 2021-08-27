@@ -11,30 +11,24 @@
 # license information.
 #################################################################################
 from enum import Enum
-import os
 import subprocess
 from io import StringIO
 import sys
+import os
 
 from pyomo.environ import Constraint, value, sin, cos, log, exp
 from pyomo.common.config import ConfigValue, In, Path
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
+from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
 from idaes.core.util.config import list_of_ints, list_of_floats
-import idaes.logger as idaeslog
 
 
-# TODO: Default file and path names
-# TODO: Pre-existing files
 # TODO: Custom basis functions
 
 alamo = Executable('alamo')
-
-
-DEFAULTPATH = os.path.dirname(__file__)
-DEFAULTFNAME = "alamopy.alm"
 
 # Define mapping of Pyomo function names for expression evaluation
 GLOBAL_FUNCS = {"sin": sin, "cos": cos, "log": log, "exp": exp}
@@ -428,14 +422,10 @@ class Alamopy(Surrogate):
         default=None,
         domain=Path,
         doc="Path to ALAMO executable (if not in path)."))
-    CONFIG.declare("temp_path", ConfigValue(
-        default=DEFAULTPATH,
-        domain=Path,
-        description="Path for directory to store temp files."))
     CONFIG.declare("filename", ConfigValue(
-        default=DEFAULTFNAME,
+        default=None,
         domain=str,
-        description="File name to use for temp files."))
+        description="File name to use for ALAMO files - must be full path."))
     CONFIG.declare("keep_files", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -449,6 +439,10 @@ class Alamopy(Surrogate):
     def __init__(self, **settings):
         super().__init__(**settings)
 
+        self._temp_context = None
+        self._almfile = None
+        self._trcfile = None
+
         if self.config.alamo_path is not None:
             alamo.executable = self.config.alamo_path
 
@@ -456,17 +450,17 @@ class Alamopy(Surrogate):
         super().build_model()
 
         # Get paths for temp files
-        almname, trcname = self.get_paths()
+        self.get_files()
 
         try:
             # Write .alm file
-            self.write_alm_file(almname, trcname)
+            self.write_alm_file()
 
             # Call ALAMO executable
-            self.call_alamo(almname)
+            self.call_alamo()
 
             # Read back results
-            trace_dict = self.read_trace_file(trcname)
+            trace_dict = self.read_trace_file()
 
             # Populate results and SurrogateModel object
             self.populate_results(trace_dict)
@@ -475,22 +469,32 @@ class Alamopy(Surrogate):
         finally:
             # Clean up temporary files if required
             if not self.config.keep_files:
-                self.remove_temp_files(almname, trcname)
+                self.remove_temp_files()
 
-    def get_paths(self):
-        path = self.config.temp_path
-        if path is None:
-            path = DEFAULTPATH
+    def get_files(self):
+        if self.config.filename is None:
+            # Get a temporary file from the manager
+            almfile = TempfileManager.create_tempfile(suffix=".alm")
+        else:
+            almfile = self.config.filename
 
-        path = os.chdir(path)
+            if not self.config.overwrite_files:
+                # It is OK if the trace file exists, as ALAMO will append to it
+                # The trace file reader handles this case
+                if os.path.isfile(almfile):
+                    raise FileExistsError(
+                        f"A file with the name {almfile} already exists. "
+                        f"Either choose a new file name or set "
+                        f"overwrite_files = True.")
 
-        almname = self.config.filename
-        if almname is None:
-            almname = DEFAULTFNAME
+        trcfile = almfile.split(".")[0] + ".trc"
+        if self.config.filename is None:
+            # If we had to get a temp file, add the trace file as well
+            TempfileManager.add_tempfile(trcfile, exists=False)
 
-        trcname = almname.split(".")[0] + ".trc"
-
-        return almname, trcname
+        # Set attributes to track file names
+        self._almfile = almfile
+        self._trcfile = trcfile
 
     def write_alm_to_stream(
             self, stream, trace_fname=None, x_reg=None,
@@ -556,9 +560,7 @@ class Alamopy(Surrogate):
 
         stream.write("\nTRACE 1\n")
         if trace_fname is not None:
-            stream.write(f"TRACEFNAME {trace_fname}")
-
-        # TODO : Set FUNFORM if required
+            stream.write(f"TRACEFNAME {trace_fname}\n")
 
         stream.write("\nBEGIN_DATA\n")
         nin = self._n_inputs
@@ -580,18 +582,17 @@ class Alamopy(Surrogate):
 
         # Custom basis functions if required
 
-    def write_alm_file(self, alm_fname=None, trace_fname=None,
-                       x_reg=None, z_reg=None, x_val=None, z_val=None):
-        f = open(alm_fname, "x")
-        self.write_alm_to_stream(f, trace_fname, x_reg, z_reg, x_val, z_val)
+    def write_alm_file(self, x_reg=None, z_reg=None, x_val=None, z_val=None):
+        f = open(self._almfile, "w")
+        self.write_alm_to_stream(f, self._trcfile, x_reg, z_reg, x_val, z_val)
         f.close()
 
-    def call_alamo(self, almname):
+    def call_alamo(self):
         ostreams = [StringIO(), sys.stdout]
         try:
             with TeeStream(*ostreams) as t:
                 results = subprocess.run(
-                    [alamo.executable, almname],
+                    [alamo.executable, str(self._almfile)],
                     stdout=t.STDOUT,
                     stderr=t.STDERR,
                     universal_newlines=True,
@@ -604,12 +605,12 @@ class Alamopy(Surrogate):
             almlog = ostreams[0].getvalue()
         except OSError:
             raise OSError(
-                f'Could not execute the command: alamo {almname}. '
+                f'Could not execute the command: alamo {str(self._almfile)}. '
                 f'Error message: {sys.exc_info()[1]}.')
         return rc, almlog
 
-    def read_trace_file(self, trace_file):
-        with open(trace_file, "r") as f:
+    def read_trace_file(self):
+        with open(self._trcfile, "r") as f:
             lines = f.readlines()
         f.close()
 
@@ -676,23 +677,21 @@ class Alamopy(Surrogate):
         self._results = trace_dict
 
     def build_surrogate_model_object(self):
+        input_bounds = {}
+        for i in range(len(self._input_labels)):
+            iname = self._input_labels[i]
+            input_bounds[iname] = (self._input_min[i], self._input_max[i])
+
         self._model = AlamoModelObject(
             surrogate=self._results["Model"],
             input_labels=self._input_labels,
-            output_labels=self._output_labels)
+            output_labels=self._output_labels,
+            input_bounds=input_bounds)
 
-    def remove_temp_files(self, almname, trcname):
-        errs = None
-        try:
-            os.remove(almname)
-        except FileNotFoundError:
-            idaeslog.warn(
-                "Could not remove file {almname} - file not found.")
-        try:
-            os.remove(trcname)
-        except FileNotFoundError:
-            idaeslog.warn(
-                "Could not remove file {trcname} - file not found.")
+    def remove_temp_files(self):
+        TempfileManager.pop()
+        # Release tempfile context
+        self._temp_context = None
 
 
 class AlamoModelObject(SurrogateModelObject):
