@@ -23,6 +23,10 @@ class Bidder:
 
         # create an instance
         self.bidding_model_object = bidding_model_object
+
+        self._check_bidding_model_object()
+
+        # get the generator name
         self.generator = self.bidding_model_object.generator
 
         # add flowsheets to model
@@ -48,6 +52,26 @@ class Bidder:
 
         # declare a list to store results
         self.bids_result_list = []
+
+    def _check_bidding_model_object(self):
+
+        method_list = ['populate_model', 'update_model']
+        attr_list = ['power_output','total_cost','generator','pmin', 'default_bids']
+        msg = 'Tracking model object does not have a '
+
+        for m in method_list:
+            obtained_m = getattr(self.bidding_model_object, m, None)
+            if obtained_m is None:
+                raise AttributeError(msg + m + '() method. ' + \
+                                    'The bidder object needs the users to ' + \
+                                    'implement this method in their model object.')
+
+        for attr in attr_list:
+            obtained_attr = getattr(self.bidding_model_object, attr, None)
+            if obtained_attr is None:
+                raise AttributeError(msg + attr + ' property. ' + \
+                                    'The bidder object needs the users to ' + \
+                                    'specify this property in their model object.')
 
     def _save_power_outputs(self):
 
