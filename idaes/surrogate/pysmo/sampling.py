@@ -334,7 +334,7 @@ class LatinHypercubeSampling(SamplingMethods):
 
     """
 
-    def __init__(self, data_input, number_of_samples=None, sampling_type=None):
+    def __init__(self, data_input, number_of_samples=None, sampling_type=None, rng_seed=None):
         """
         Initialization of **LatinHypercubeSampling** class. Two inputs are required.
 
@@ -356,6 +356,9 @@ class LatinHypercubeSampling(SamplingMethods):
             Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
 
         """
+
+        np.random.seed(rng_seed)
+
         if sampling_type is None:
             sampling_type = 'creation'
             self.sampling_type = sampling_type
@@ -444,7 +447,7 @@ class LatinHypercubeSampling(SamplingMethods):
         var_samples = np.zeros((self.number_of_samples, 1))
         for i in range(self.number_of_samples):
             strata_lb = i * strata_size
-            sample_point = strata_lb + (random.random() * strata_size)
+            sample_point = strata_lb + (np.random.rand() * strata_size)
             var_samples[i, 0] = (sample_point * (variable_max - variable_min)) + variable_min
         return var_samples
 
