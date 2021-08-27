@@ -45,38 +45,24 @@ class Tracker:
 
     def _check_tracking_model_object(self):
 
+        method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
+                        'get_last_delivered_power','record_results', 'write_results']
+        attr_list = ['power_output','total_cost']
         msg = 'Tracking model object does not have a '
 
-        # check if it has populate model method
-        populate_model = getattr(self.tracking_model_object,'populate_model', None)
-        if populate_model is None:
-            raise Exception(msg + 'populate_model() method.')
+        for m in method_list:
+            obtained_m = getattr(self.tracking_model_object, m, None)
+            if obtained_m is None:
+                raise AttributeError(msg + m + '() method. ' + \
+                                    'The tracker object needs the users to ' + \
+                                    'implement this method in their model object.')
 
-        # check if it has power_output
-        power_output = getattr(self.tracking_model_object,'power_output', None)
-        if power_output is None:
-            raise Exception(msg + 'power_output property.')
-        if not isinstance(power_output, str):
-            raise Exception('Tracking model object has a power_output property' +\
-                            ' of type {} rather than str'.format(type(power_output)))
-
-        if not hasattr(self.tracking_model_object,'total_cost'):
-            raise Exception(msg + 'total_cost property.')
-
-        if not hasattr(self.tracking_model_object,'get_implemented_profile'):
-            raise Exception(msg + 'get_implemented_profile method.')
-
-        if not hasattr(self.tracking_model_object,'update_model'):
-            raise Exception(msg + 'update_model method.')
-
-        if not hasattr(self.tracking_model_object,'get_last_delivered_power'):
-            raise Exception(msg + 'get_last_delivered_power method.')
-
-        if not hasattr(self.tracking_model_object,'record_results'):
-            raise Exception(msg + 'record_results method.')
-
-        if not hasattr(self.tracking_model_object,'write_results'):
-            raise Exception(msg + 'write_results method.')
+        for attr in attr_list:
+            obtained_attr = getattr(self.tracking_model_object, attr, None)
+            if obtained_attr is None:
+                raise AttributeError(msg + attr + ' property. ' + \
+                                    'The tracker object needs the users to ' + \
+                                    'specify this property in their model object.')
 
     def formulate_tracking_problem(self):
 
