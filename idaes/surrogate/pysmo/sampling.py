@@ -346,7 +346,7 @@ class LatinHypercubeSampling(SamplingMethods):
 
             number_of_samples (int): The number of samples to be generated. Should be a positive integer less than or equal to the number of entries (rows) in **data_input**.
             sampling_type (str) : Option which determines whether the algorithm selects samples from an existing dataset ("selection") or attempts to generate sample from a supplied range ("creation"). Default is "creation".
-            rng_seed (int): An optional argument which fixes the generation of random numbers in this algorithm to a specific seed for reproducability and testing purposes.
+            rng_seed (int): An optional argument which fixes the generation of random numbers in this algorithm to a specific seed for reproducibility and testing purposes.
 
         Returns:
             **self** function containing the input information
