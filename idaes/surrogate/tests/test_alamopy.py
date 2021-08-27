@@ -68,12 +68,11 @@ class TestAlamoSurrogateTrainer:
     def test_get_files_exists(self, alm_obj):
         alm_obj.config.filename = os.path.join(dirpath, "alamotrace.trc")
 
-        almfile = ("/home/andrew/idaes/idaes-pse/idaes/surrogate/"
-                   "tests/alamotrace.trc")
-        with pytest.raises(FileExistsError,
-                           match=f"A file with the name {almfile} already "
-                           f"exists. Either choose a new file name or set "
-                           f"overwrite_files = True"):
+        with pytest.raises(
+                FileExistsError,
+                match=f"A file with the name {alm_obj.config.filename} already"
+                f" exists. Either choose a new file name or set "
+                f"overwrite_files = True"):
             alm_obj.get_files()
 
     @pytest.mark.unit
