@@ -695,12 +695,21 @@ class Alamopy(Surrogate):
 
 
 class AlamoModelObject(SurrogateModelObject):
+    def __init__(
+            self, surrogate, input_labels, output_labels, input_bounds=None):
+        super().__init__(surrogate, input_labels, output_labels, input_bounds)
 
-    def evaluate_surrogate(self, inputs):
+        self._fcn = {}
+        for o in self._output_labels:
+            self._fcn[o] = eval(
+                f"lambda {', '.join(self._input_labels)}: "
+                f"{self._surrogate[o].split('==')[1]}",
+                GLOBAL_FUNCS)
+
+    def evaluate_surrogate(self, *args):
         values = {}
         for o in self._output_labels:
-            expr = self._surrogate[o].split("==")[1]
-            values[o] = value(eval(expr, GLOBAL_FUNCS, inputs))
+            values[o] = self._fcn[o](*args)
         return values
 
     def populate_block(self, block, variables=None):

@@ -648,7 +648,7 @@ class TestAlamoSurrogate():
                    0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
         for x1 in in_list:
             for x2 in in_list:
-                out = alm_surr1.evaluate_surrogate({"x1": x1, "x2": x2})
+                out = alm_surr1.evaluate_surrogate(x1, x2)
                 assert pytest.approx(out["z1"], rel=1e-8) == (
                     3.9999999999925446303450 * x1**2 -
                     4.0000000000020765611453 * x2**2 -
@@ -708,7 +708,7 @@ class TestAlamoSurrogate():
                    0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
         for x1 in in_list:
             for x2 in in_list:
-                out = alm_surr2.evaluate_surrogate({"x1": x1, "x2": x2})
+                out = alm_surr2.evaluate_surrogate(x1, x2)
                 assert pytest.approx(out["z1"], rel=1e-8) == (
                     3.9999999999925446303450 * x1**2 -
                     4.0000000000020765611453 * x2**2 -
@@ -772,7 +772,7 @@ class TestAlamoSurrogate():
         in_list = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
         for x1 in in_list:
             for x2 in in_list:
-                out = alm_surr3.evaluate_surrogate({"x1": x1, "x2": x2})
+                out = alm_surr3.evaluate_surrogate(x1, x2)
                 assert pytest.approx(out["z1"], rel=1e-8) == (
                     2*sin(x1**2) - 3*cos(x2**3) -
                     4*log(x1**4) + 5*exp(x2**5))
