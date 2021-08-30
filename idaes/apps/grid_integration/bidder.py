@@ -1,5 +1,6 @@
 import pandas as pd
 import pyomo.environ as pyo
+from pyomo.opt.base.solvers import OptSolver
 import os
 from itertools import combinations
 
@@ -11,27 +12,28 @@ class Bidder:
         Initializes the bidder object.
 
         Arguments:
-            bidding_model_class: the model object class for tracking for bidding
+            bidding_model_object: the model object for tracking for bidding
             n_scenario: number of LMP scenarios
             solver: a Pyomo mathematical programming solver object
             forecaster: an initialized LMP forecaster object
-            **kwarg: necessary arguments to initialize the selected model object
 
         Returns:
             None
         '''
 
-        # create an instance
+        # copy the inputs
         self.bidding_model_object = bidding_model_object
+        self.n_scenario = n_scenario
+        self.solver = solver
+        self.forecaster = forecaster
 
-        self._check_bidding_model_object()
+        self._check_inputs()
 
         # get the generator name
         self.generator = self.bidding_model_object.generator
 
         # add flowsheets to model
         self.model = pyo.ConcreteModel()
-        self.n_scenario = n_scenario
 
         # declare scenario set
         self.model.SCENARIOS = pyo.Set(initialize = range(self.n_scenario))
@@ -44,14 +46,16 @@ class Bidder:
         # save power output variable in the model object
         self._save_power_outputs()
 
-        # copy the inputs
-        self.solver = solver
-        self.forecaster = forecaster
-
         self.formulate_bidding_problem()
 
         # declare a list to store results
         self.bids_result_list = []
+
+    def _check_inputs(self):
+
+        self._check_bidding_model_object()
+        self._check_n_scenario()
+        self._check_solver()
 
     def _check_bidding_model_object(self):
 
@@ -72,6 +76,22 @@ class Bidder:
                 raise AttributeError(msg + attr + ' property. ' + \
                                     'The bidder object needs the users to ' + \
                                     'specify this property in their model object.')
+
+    def _check_n_scenario(self):
+
+        # check if it is an integer
+        if not isinstance(self.n_scenario, int):
+            raise TypeError("The number of LMP scenarios should be an integer, " +\
+                            "but a {} was given.".format(type(self.n_scenario).__name__))
+
+        if self.n_scenario <= 0:
+            raise ValueError("The number of LMP scenarios should be greater than zero, " +\
+                            "but {} was given.".format(self.n_scenario))
+
+    def _check_solver(self):
+
+        if not isinstance(self.solver, OptSolver):
+            raise TypeError("The provided solver {} is not a valid Pyomo solver.".format(self.solver))
 
     def _save_power_outputs(self):
 

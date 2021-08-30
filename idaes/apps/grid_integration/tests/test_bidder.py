@@ -66,6 +66,40 @@ def test_model_object_missing_attr():
                                    solver = solver,\
                                    forecaster = forecaster)
 
+@pytest.mark.unit
+def test_n_scenario_checker():
+
+    solver = pyo.SolverFactory('cbc')
+    forecaster = TestingForecaster(horizon = horizon, n_sample = n_scenario)
+    bidding_model_object = TestingModel(horizon = horizon)
+
+    with pytest.raises(ValueError, match = r".*greater than zero.*"):
+        bidder_object = Bidder(bidding_model_object = bidding_model_object,\
+                               n_scenario = -1,\
+                               solver = solver,\
+                               forecaster = forecaster)
+
+    with pytest.raises(TypeError, match = r".*should be an integer.*"):
+        bidder_object = Bidder(bidding_model_object = bidding_model_object,\
+                               n_scenario = 3.0,\
+                               solver = solver,\
+                               forecaster = forecaster)
+
+@pytest.mark.unit
+def test_solver_checker():
+
+    solver = pyo.SolverFactory('cbc')
+    forecaster = TestingForecaster(horizon = horizon, n_sample = n_scenario)
+    bidding_model_object = TestingModel(horizon = horizon)
+
+    invalid_solvers = [5, 'cbc', 'ipopt']
+    for s in invalid_solvers:
+        with pytest.raises(TypeError, match = r".*not a valid Pyomo solver.*"):
+            bidder_object = Bidder(bidding_model_object = bidding_model_object,\
+                                   n_scenario = n_scenario,\
+                                   solver = s,\
+                                   forecaster = forecaster)
+
 @pytest.fixture
 def bidder_object():
 
