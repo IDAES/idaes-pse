@@ -1,5 +1,6 @@
 import pandas as pd
 import pyomo.environ as pyo
+from pyomo.opt.base.solvers import OptSolver
 from collections import deque
 import os
 
@@ -14,7 +15,6 @@ class Tracker:
             tracking_model_class: the model object class for tracking
             n_tracking_hour: number of implemented hours after each solve
             solver: a Pyomo mathematical programming solver object
-            **kwarg: necessary arguments to initialize the selected model object
 
         Returns:
             None
@@ -22,7 +22,9 @@ class Tracker:
 
         # copy and check model object
         self.tracking_model_object = tracking_model_object
-        self._check_tracking_model_object()
+        self.n_tracking_hour = n_tracking_hour
+        self.solver = solver
+        self._check_inputs()
 
         # add flowsheet to model
         self.model = pyo.ConcreteModel()
@@ -36,12 +38,16 @@ class Tracker:
         # get the time index set
         self.time_set = self.power_output.index_set()
 
-        self.n_tracking_hour = n_tracking_hour
-        self.solver = solver
         self.formulate_tracking_problem()
 
         self.daily_stats = None
         self.projection = None
+
+    def _check_inputs(self):
+
+        self._check_tracking_model_object()
+        self._check_n_tracking_hour()
+        self._check_solver()
 
     def _check_tracking_model_object(self):
 
@@ -63,6 +69,22 @@ class Tracker:
                 raise AttributeError(msg + attr + ' property. ' + \
                                     'The tracker object needs the users to ' + \
                                     'specify this property in their model object.')
+
+    def _check_n_tracking_hour(self):
+
+        # check if it is an integer
+        if not isinstance(self.n_tracking_hour, int):
+            raise TypeError("The number of hour for tracking should be an integer, " +\
+                            "but a {} was given.".format(type(self.n_tracking_hour).__name__))
+
+        if self.n_tracking_hour <= 0:
+            raise ValueError("The number of hour for tracking should be greater than zero, " +\
+                            "but {} was given.".format(self.n_tracking_hour))
+
+    def _check_solver(self):
+
+        if not isinstance(self.solver, OptSolver):
+            raise TypeError("The provided solver {} is not a valid Pyomo solver.".format(self.solver))
 
     def formulate_tracking_problem(self):
 

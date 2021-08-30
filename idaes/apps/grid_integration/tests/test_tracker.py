@@ -273,6 +273,37 @@ class TestingModel:
 
 horizon = 4
 
+@pytest.mark.unit
+def test_n_tracking_hour_checker():
+
+    solver = pyo.SolverFactory('cbc')
+    tracking_model_object = TestingModel(horizon = horizon)
+
+    n_tracking_hour = -1
+    with pytest.raises(ValueError, match = r".*greater than zero.*"):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
+    n_tracking_hour = 3.0
+    with pytest.raises(TypeError, match = r".*should be an integer.*"):
+        tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                 n_tracking_hour = n_tracking_hour, \
+                                 solver = solver)
+
+@pytest.mark.unit
+def test_solver_checker():
+
+    n_tracking_hour = 1
+    tracking_model_object = TestingModel(horizon = horizon)
+
+    invalid_solvers = [5, 'cbc', 'ipopt']
+    for s in invalid_solvers:
+        with pytest.raises(TypeError, match = r".*not a valid Pyomo solver.*"):
+            tracker_object = Tracker(tracking_model_object = tracking_model_object,\
+                                     n_tracking_hour = n_tracking_hour, \
+                                     solver = s)
+
 @pytest.fixture
 def tracker_object():
 
