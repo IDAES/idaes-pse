@@ -17,13 +17,12 @@ import sys
 import os
 
 from pyomo.environ import Constraint, value, sin, cos, log, exp
-from pyomo.common.config import ConfigValue, In, Path
+from pyomo.common.config import ConfigValue, In, Path, ListOf
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
-from idaes.core.util.config import list_of_ints, list_of_floats
 
 
 # TODO: Custom basis functions
@@ -117,6 +116,15 @@ common_trace = [
     "GREEDYBACK", "REGULARIZER", "SOLVEMIP"]
 
 
+# Validator for list of ints that are not 0 or 1
+def IntNot01(val):
+    ans = int(val)
+    if ans != val or ans in {0, 1}:
+        raise ValueError(
+            f"Value must be an integer other than 0 or 1; received {val}")
+    return ans
+
+
 class Alamopy(Surrogate):
     """
     Standard SurrogateModelTrainer for ALAMO.
@@ -140,7 +148,7 @@ class Alamopy(Surrogate):
 
     CONFIG.declare('xfactor', ConfigValue(
         default=None,
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="List of scaling factors for input variables."))
     CONFIG.declare('xscaling', ConfigValue(
         default=None,
@@ -157,22 +165,22 @@ class Alamopy(Surrogate):
     # Basis function options
     CONFIG.declare('monomialpower', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int, IntNot01),
         description="Vector of monomial powers considered in basis "
         "functions."))
     CONFIG.declare('multi2power', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="Vector of powers to be considered for pairwise "
         "combinations in basis functions."))
     CONFIG.declare('multi3power', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="Vector of three variable combinations of powers to be "
         "considered as basis functions."))
     CONFIG.declare('ratiopower', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="Vector of ratio combinations of powers to be considered "
         "in the basis functions."))
     CONFIG.declare('constant', ConfigValue(
@@ -290,14 +298,14 @@ class Alamopy(Surrogate):
         "through the maxterms and minterms options."))
     CONFIG.declare('maxterms', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="List of maximum number of model terms to per output.",
         doc="Row vector of maximum terms allowed in the modeling of output "
         "variables. One per output variable, space separated. A −1 signals "
         "that no limit is imposed."))
     CONFIG.declare('minterms', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="List of minimum number of model terms to per output.",
         doc="Row vector of minimum terms required in the modeling of output "
         "variables. One per output variable, space separated. A 0 signals "
@@ -314,7 +322,7 @@ class Alamopy(Surrogate):
         "options exclude and groupcon."))
     CONFIG.declare('exclude', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="List of inputs to exclude during building,",
         doc="Row vector of 0/1 flags that specify which input variables, if "
         "any, ALAMO should exclude during the model building process. All "
@@ -324,7 +332,7 @@ class Alamopy(Surrogate):
         "functions or RBFs."))
     CONFIG.declare('ignore', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="List of outputs to ignore during building.",
         doc="Row vector of 0/1 flags that specify which output variables, "
         "if any, ALAMO should ignore. All output variables must be present in "
@@ -332,14 +340,14 @@ class Alamopy(Surrogate):
         "equals 1."))
     CONFIG.declare('xisint', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="List of inputs that should be treated as integers.",
         doc="Row vector of 0/1 flags that specify which input variables, if "
         "any, ALAMO should treat as integers. For integer inputs, ALAMO’s "
         "sampling will be restricted to integer values."))
     CONFIG.declare('zisint', ConfigValue(
         default=None,
-        domain=list_of_ints,
+        domain=ListOf(int),
         description="List of outputs that should be treated as integers.",
         doc="Row vector of 0/1 flags that specify which output variables, if "
         "any, ALAMO should treat as integers. For integer variables, ALAMO’s "
@@ -348,7 +356,7 @@ class Alamopy(Surrogate):
 
     CONFIG.declare('tolrelmetric', ConfigValue(
         default=None,
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="Relative tolerance for outputs.",
         doc="Relative convergence tolerance for the chosen fitness metric for "
         "the modeling of output variables. One per output variable, space "
@@ -357,7 +365,7 @@ class Alamopy(Surrogate):
         ))
     CONFIG.declare('tolabsmetric', ConfigValue(
         default=None,
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="Absolute tolerance for outputs.",
         doc="Absolute convergence tolerance for the chosen fitness metric for "
         "the modeling of output variables. One per output variable, space "
@@ -366,7 +374,7 @@ class Alamopy(Surrogate):
         ))
     CONFIG.declare('tolmeanerror', ConfigValue(
         default=None,
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="Convergence tolerance for mean errors in outputs.",
         doc="Row vector of convergence tolerances for mean errors in the "
         "modeling of output variables. One per output variable, space "
@@ -425,11 +433,8 @@ class Alamopy(Surrogate):
     CONFIG.declare("filename", ConfigValue(
         default=None,
         domain=str,
-        description="File name to use for ALAMO files - must be full path."))
-    CONFIG.declare("keep_files", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Flag indicating whether to retain temp files."))
+        description="File name to use for ALAMO files - must be full path. "
+        "If this option is not None, then working files will not be deleted."))
     CONFIG.declare("overwrite_files", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -496,6 +501,8 @@ class Alamopy(Surrogate):
         Returns:
             None
         """
+        self._temp_context = TempfileManager.push()
+
         if self.config.filename is None:
             # Get a temporary file from the manager
             almfile = TempfileManager.create_tempfile(suffix=".alm")
@@ -511,10 +518,10 @@ class Alamopy(Surrogate):
                         f"Either choose a new file name or set "
                         f"overwrite_files = True.")
 
+            TempfileManager.add_tempfile(almfile, exists=False)
+
         trcfile = almfile.split(".")[0] + ".trc"
-        if self.config.filename is None:
-            # If we had to get a temp file, add the trace file as well
-            TempfileManager.add_tempfile(trcfile, exists=False)
+        TempfileManager.add_tempfile(trcfile, exists=False)
 
         # Set attributes to track file names
         self._almfile = almfile
@@ -685,7 +692,7 @@ class Alamopy(Surrogate):
             None
 
         Returns:
-            trace_dict: contents ofr trace file as a dict
+            trace_dict: contents of trace file as a dict
         """
         with open(self._trcfile, "r") as f:
             lines = f.readlines()
@@ -795,7 +802,11 @@ class Alamopy(Surrogate):
         Returns:
             None
         """
-        TempfileManager.pop()
+        remove = True
+        if self.config.filename is not None:
+            remove = False
+
+        TempfileManager.pop(remove=remove)
         # Release tempfile context
         self._temp_context = None
 

@@ -30,7 +30,6 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
                                     list_of_floats,
-                                    list_of_ints,
                                     list_of_strings,
                                     list_of_phase_types,
                                     is_port,
@@ -175,28 +174,6 @@ def test_list_of_floats_errors():
         list_of_floats(["foo", "bar"])  # list of strs
     with pytest.raises(ValueError):
         list_of_floats({"foo": "bar"})  # dict
-
-
-@pytest.mark.unit
-def test_list_of_ints():
-    # Test list_of_ints returns correctly
-    assert list_of_ints(1) == [1]  # int
-    assert list_of_ints([1, 2, 3]) == [1, 2, 3]  # list of ints
-    assert list_of_ints(1.0) == [1]  # integer float
-    assert list_of_ints([1.0, 2.0, 3.0]) == [1, 2, 3]  # list of integer floats
-
-
-@pytest.mark.unit
-def test_list_of_ints_errors():
-    # Test that list_of_ints fails correctly
-    with pytest.raises(ValueError):
-        list_of_ints("foo")  # str
-    with pytest.raises(ValueError):
-        list_of_ints(["foo", "bar"])  # list of strs
-    with pytest.raises(ValueError):
-        list_of_ints({"foo": "bar"})  # dict
-    with pytest.raises(ValueError):
-        list_of_ints([1.2, 2.7, 3.6])  # non-integer floats
 
 
 @pytest.mark.unit

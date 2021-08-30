@@ -169,7 +169,7 @@ class TestAlamoSurrogateTrainer:
         alm_obj.config.xscaling = True
         alm_obj.config.scalez = True
 
-        alm_obj.config.monomialpower = [1, 2]
+        alm_obj.config.monomialpower = [2]
         alm_obj.config.multi2power = [1, 2, 3]
         alm_obj.config.multi3power = [1, 2, 3, 4]
         alm_obj.config.ratiopower = [1, 2, 3, 4, 5]
@@ -228,14 +228,14 @@ class TestAlamoSurrogateTrainer:
             "XMAX 5 10\n"
             "NDATA 4\n"
             "NVALDATA 0\n\n"
-            "MONO 2\n"
+            "MONO 1\n"
             "MULTI2 3\n"
             "MULTI3 4\n"
             "RATIOS 5\n"
             "xfactor 1.2 1.6\n"
             "xscaling 1\n"
             "scalez 1\n"
-            "monomialpower 1 2\n"
+            "monomialpower 2\n"
             "multi2power 1 2 3\n"
             "multi3power 1 2 3 4\n"
             "ratiopower 1 2 3 4 5\n"

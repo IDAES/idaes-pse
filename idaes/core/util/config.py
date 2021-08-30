@@ -107,30 +107,6 @@ def list_of_floats(arg):
     return lst
 
 
-def list_of_ints(arg):
-    '''Domain validator for lists of integers
-
-    Args:
-        arg : argument to be cast to list of ints and validated
-
-    Returns:
-        List of ints
-    '''
-    lst = []
-    try:
-        iter(arg)
-    except TypeError:
-        arg = [arg]
-
-    for v in arg:
-        i = int(v)
-        if i != float(v):
-            raise ValueError(f"Value {v} is not an integer")
-        lst.append(i)
-
-    return lst
-
-
 def list_of_strings(arg):
     '''Domain validator for lists of strings
 
