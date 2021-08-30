@@ -15,7 +15,7 @@ Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, Reference, Var
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -24,7 +24,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Jinliang Ma, Andrew Lee"
@@ -121,7 +121,7 @@ and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("inert_species", ConfigValue(
         default=[],
-        domain=list_of_strings,
+        domain=ListOf(str),
         description="List of inert species",
         doc="List of species which do not take part in reactions."))
 

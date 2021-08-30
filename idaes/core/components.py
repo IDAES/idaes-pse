@@ -16,13 +16,12 @@ IDAES Component objects
 @author: alee
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData)
 from .phases import PhaseType as PT
-from .util.config import list_of_phase_types
 from .util.exceptions import ConfigurationError, PropertyPackageError
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
@@ -37,7 +36,7 @@ class ComponentData(ProcessBlockData):
     CONFIG = ConfigBlock()
 
     CONFIG.declare("valid_phase_types", ConfigValue(
-            domain=list_of_phase_types,
+            domain=ListOf(PT),
             doc="List of valid PhaseTypes (Enums) for this Component."))
 
     CONFIG.declare("elemental_composition", ConfigValue(

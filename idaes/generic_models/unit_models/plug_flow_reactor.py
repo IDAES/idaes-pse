@@ -15,7 +15,7 @@ Standard IDAES PFR model.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var, Reference, Block
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 # Import IDAES cores
 from idaes.core import (ControlVolume1DBlock,
@@ -26,8 +26,7 @@ from idaes.core import (ControlVolume1DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block,
-                                    list_of_floats)
+                                    is_reaction_parameter_block)
 from idaes.core.util.misc import add_object_reference
 import idaes.core.util.unit_costing as costing
 from idaes.core.util.constants import Constants as const
@@ -166,7 +165,7 @@ and used when constructing these,
 see reaction package for documentation.}"""))
     CONFIG.declare("length_domain_set", ConfigValue(
         default=[0.0, 1.0],
-        domain=list_of_floats,
+        domain=ListOf(float),
         description="List of points to use to initialize length domain",
         doc="""A list of values to be used when constructing the length domain
 of the reactor. Point must lie between 0.0 and 1.0,

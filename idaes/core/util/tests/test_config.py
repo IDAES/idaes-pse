@@ -150,13 +150,6 @@ def test_list_of_strings():
 
 
 @pytest.mark.unit
-def test_list_of_strings_errors():
-    # Test that list_of_strings fails correctly
-    with pytest.raises(ConfigurationError):
-        list_of_strings({"foo": "bar"})  # dict
-
-
-@pytest.mark.unit
 def test_list_of_floats():
     # Test list_of_floats returns correctly
     assert list_of_floats(1) == [1.0]  # int
@@ -258,7 +251,5 @@ def test_list_of_phase_types():
     assert list_of_phase_types([PT.liquidPhase]) == [PT.liquidPhase]
     assert list_of_phase_types([PT.liquidPhase, PT.vaporPhase]) == \
         [PT.liquidPhase, PT.vaporPhase]
-    with pytest.raises(ConfigurationError,
-                       match="valid_phase_types configuration argument must "
-                       "be a list of PhaseTypes."):
+    with pytest.raises(ValueError):
         list_of_phase_types("foo")
