@@ -53,11 +53,19 @@ class Bidder:
 
     def _check_inputs(self):
 
+        '''
+        Check if the inputs to construct the tracker is valid. If not raise errors.
+        '''
+
         self._check_bidding_model_object()
         self._check_n_scenario()
         self._check_solver()
 
     def _check_bidding_model_object(self):
+
+        '''
+        Check if tracking model object has the necessary methods and attributes.
+        '''
 
         method_list = ['populate_model', 'update_model']
         attr_list = ['power_output','total_cost','generator','pmin', 'default_bids']
@@ -79,6 +87,10 @@ class Bidder:
 
     def _check_n_scenario(self):
 
+        '''
+        Check if the number of LMP scenarios is an integer and greater than 0.
+        '''
+
         # check if it is an integer
         if not isinstance(self.n_scenario, int):
             raise TypeError("The number of LMP scenarios should be an integer, " +\
@@ -89,6 +101,10 @@ class Bidder:
                             "but {} was given.".format(self.n_scenario))
 
     def _check_solver(self):
+
+        '''
+        Check if provides solver is a valid Pyomo solver object.
+        '''
 
         if not isinstance(self.solver, OptSolver):
             raise TypeError("The provided solver {} is not a valid Pyomo solver.".format(self.solver))

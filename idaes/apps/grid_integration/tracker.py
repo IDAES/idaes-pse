@@ -45,11 +45,19 @@ class Tracker:
 
     def _check_inputs(self):
 
+        '''
+        Check if the inputs to construct the tracker is valid. If not raise errors.
+        '''
+
         self._check_tracking_model_object()
         self._check_n_tracking_hour()
         self._check_solver()
 
     def _check_tracking_model_object(self):
+
+        '''
+        Check if tracking model object has the necessary methods and attributes.
+        '''
 
         method_list = ['populate_model', 'get_implemented_profile', 'update_model',\
                         'get_last_delivered_power','record_results', 'write_results']
@@ -72,6 +80,10 @@ class Tracker:
 
     def _check_n_tracking_hour(self):
 
+        '''
+        Check if the number of hour for tracking is an integer and greater than 0.
+        '''
+
         # check if it is an integer
         if not isinstance(self.n_tracking_hour, int):
             raise TypeError("The number of hour for tracking should be an integer, " +\
@@ -82,6 +94,10 @@ class Tracker:
                             "but {} was given.".format(self.n_tracking_hour))
 
     def _check_solver(self):
+
+        '''
+        Check if provides solver is a valid Pyomo solver object.
+        '''
 
         if not isinstance(self.solver, OptSolver):
             raise TypeError("The provided solver {} is not a valid Pyomo solver.".format(self.solver))
