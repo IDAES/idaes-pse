@@ -30,9 +30,9 @@ from idaes.apps.caprese.common.config import VariableCategory as VC
 __author__ = "Robert Parker, David Thierry, and Kuan-Han Lin"
 
 
-def use_CUID_to_capture_vars_t0_in_given_model(cuid_list, 
-                                               target_t0,
-                                               target_mod):
+def capture_vars_t0_w_CUID(cuid_list, 
+                           target_t0,
+                           target_mod):
     varlist_in_target_model = [cuid.find_component_on(target_mod)[target_t0]
                                for cuid in cuid_list]
 
@@ -56,10 +56,10 @@ class DynamicSim(object):
                             for comp in inputs_at_t0
                             ]
         self.measurement_cuids = [
-                                    ComponentUID(
-                                    slice_component_along_sets(comp, (plant_time_set,)))
-                                    for comp in measurements_at_t0
-                                    ]
+                            ComponentUID(
+                            slice_component_along_sets(comp, (plant_time_set,))))
+                            for comp in measurements_at_t0
+                            ]
 
         self.has_plant = False
         self.has_estimator = False
@@ -91,12 +91,16 @@ class DynamicSim(object):
             self.has_estimator = True
             
             # Capture vars in estimator model
-            estimator_inputs_t0 = use_CUID_to_capture_vars_t0_in_given_model(self.input_cuids,
-                                                                              estimator_time_set.first(),
-                                                                              estimator_model,)
-            estimator_measurements_t0 = use_CUID_to_capture_vars_t0_in_given_model(self.measurement_cuids,
-                                                                                    estimator_time_set.first(),
-                                                                                    estimator_model,)
+            estimator_inputs_t0 = capture_vars_t0_w_CUID(
+                                                    self.input_cuids,
+                                                    estimator_time_set.first(),
+                                                    estimator_model,
+                                                        )
+            estimator_measurements_t0 = capture_vars_t0_w_CUID(
+                                                    self.measurement_cuids,
+                                                    estimator_time_set.first(),
+                                                    estimator_model,
+                                                        )
             
             self.estimator = EstimatorBlock(
                     model=estimator_model,
@@ -116,12 +120,16 @@ class DynamicSim(object):
             self.has_controller = True
 
             # Capture vars in controller model
-            controller_inputs_t0 = use_CUID_to_capture_vars_t0_in_given_model(self.input_cuids,
-                                                                              controller_time_set.first(),
-                                                                              controller_model,)
-            controller_measurements_t0 = use_CUID_to_capture_vars_t0_in_given_model(self.measurement_cuids,
-                                                                                    controller_time_set.first(),
-                                                                                    controller_model,)
+            controller_inputs_t0 = capture_vars_t0_w_CUID(
+                                                    self.input_cuids,
+                                                    controller_time_set.first(),
+                                                    controller_model,
+                                                            )
+            controller_measurements_t0 = capture_vars_t0_w_CUID(
+                                                    self.measurement_cuids,
+                                                    controller_time_set.first(),
+                                                    controller_model,
+                                                            )
             
             self.controller = ControllerBlock(
                     model=controller_model,
