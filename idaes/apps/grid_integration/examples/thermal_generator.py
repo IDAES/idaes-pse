@@ -8,6 +8,8 @@ from prescient.simulator import Prescient
 
 class ThermalGenerator:
 
+    segment_number = 4
+
     def __init__(self, rts_gmlc_dataframe, horizon = 48, generator = "102_STEAM_3"):
 
         '''
@@ -128,19 +130,16 @@ class ThermalGenerator:
 
         Arguments:
             b: a pyomo block
-            segment_number: number of segments used in the piecewise linear
-            production model.
 
         Returns:
             b: the constructed block.
         '''
 
         model_data = self.model_data
-        segment_number = 4
 
         ## define the sets
         b.HOUR = pyo.Set(initialize = list(range(self.horizon)))
-        b.SEGMENTS = pyo.Set(initialize = list(range(1, segment_number)))
+        b.SEGMENTS = pyo.Set(initialize = list(range(1, self.segment_number)))
 
         ## define the parameters
 
