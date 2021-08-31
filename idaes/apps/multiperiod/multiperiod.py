@@ -36,17 +36,16 @@ class MultiPeriodModel:
     """
     def build_multi_period_model(self, model_data_kwargs={}):
         assert(list(range(len(model_data_kwargs)))==sorted(model_data_kwargs))
-
         m = pyo.ConcreteModel()
         m.TIME = pyo.Set(initialize=range(self.n_time_points))
 
-        #Create user defined steady-state models. Each block is a multi-period capable ss model.
+        #create user defined steady-state models. Each block is a multi-period capable model.
         m.blocks = pyo.Block(m.TIME)
         for t in m.TIME:
             m.blocks[t].process = self.create_process_model(**model_data_kwargs[t])
 
-        #Link blocks together. Loop over every time except final time
-        for t in m.TIME.data()[:self.n_time_points-1]: #does not include last value
+        #link blocks together. loop over every time index except the last one
+        for t in m.TIME.data()[:self.n_time_points-1]: 
             link_variable_pairs = self.get_linking_variable_pairs(m.blocks[t].process,m.blocks[t+1].process)
             self._create_linking_constraints(m.blocks[t].process,link_variable_pairs)
 
@@ -57,7 +56,6 @@ class MultiPeriodModel:
 
         self._pyomo_model = m
         self._first_active_time = m.TIME.first()
-
         return m
 
     """
@@ -67,7 +65,6 @@ class MultiPeriodModel:
             model_data_args: arguments passed to user provided steady-state builder function
     """
     def advance_time(self, **model_data_kwargs):
-
         m = self._pyomo_model
         previous_time = self._first_active_time
         current_time = m.TIME.next(previous_time)

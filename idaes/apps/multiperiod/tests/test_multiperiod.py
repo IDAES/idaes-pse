@@ -24,7 +24,6 @@ def get_periodic_variables(b1,b2):
 
 @pytest.mark.unit
 def test_build_model():
-    #data passed to each block time period
     n_time_points = 4
     time_points = np.arange(0,n_time_points)
     time_data = np.linspace(0.5,2,4)
@@ -40,7 +39,6 @@ def test_build_model():
     assert mp.get_linking_variable_pairs == get_link_variables
     assert mp.get_periodic_variable_pairs == get_periodic_variables
 
-    #create the multiperiod object
     mp.build_multi_period_model(data_kwargs)
     m = mp.pyomo_model
 
@@ -69,6 +67,7 @@ def test_advance_time():
     assert(len(m.blocks) == 4)
     mp.advance_time(p=3)
     assert(mp.current_time == 1)
+    assert len(m.TIME) == 5
     assert(len(m.blocks) == 5)
     assert(m.blocks[0].process.active == False)
 
