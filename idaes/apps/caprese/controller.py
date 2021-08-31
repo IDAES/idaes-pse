@@ -91,7 +91,7 @@ class _ControllerBlockData(_DynamicBlockData):
         t0 = time.first()
         
         # Determine initial conditions depend on measurements or differential variables
-        if self.estimator_is_existing:
+        if self.has_estimator:
             # In this case, the number of measurements may be smaller than the 
             # number differential variables.
             ics_vector_var = self.vectors.differential
@@ -338,7 +338,7 @@ class _ControllerBlockData(_DynamicBlockData):
         if type_of_ics is None:
             print("Loading type of initial conditions is not declared. \n"
                   "Determine the type by checking whether MHE exists or not.")
-            if self.estimator_is_existing:
+            if self.has_estimator:
                 type_of_ics = "estimate"
             else:
                 type_of_ics = "measurement"

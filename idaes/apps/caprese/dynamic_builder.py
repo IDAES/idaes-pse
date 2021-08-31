@@ -61,13 +61,13 @@ class DynamicSim(object):
                                     for comp in measurements_at_t0
                                     ]
         
-        self.plant_is_existing = False
-        self.estimator_is_existing = False
-        self.controller_is_existing = False
+        self.has_plant = False
+        self.has_estimator = False
+        self.has_controller = False
         
         #----------------------------------------------------------------------                
         if plant_model:
-            self.plant_is_existing = True
+            self.has_plant = True
             
             # Capture vars in plant model
             plant_inputs_t0 = inputs_at_t0
@@ -88,7 +88,7 @@ class DynamicSim(object):
                 
         #----------------------------------------------------------------------                
         if estimator_model:
-            self.estimator_is_existing = True
+            self.has_estimator = True
             
             # Capture vars in estimator model
             estimator_inputs_t0 = use_CUID_to_capture_vars_t0_in_given_model(self.input_cuids,
@@ -113,7 +113,7 @@ class DynamicSim(object):
         
         #----------------------------------------------------------------------
         if controller_model:
-            self.controller_is_existing = True
+            self.has_controller = True
             
             # Capture vars in controller model
             controller_inputs_t0 = use_CUID_to_capture_vars_t0_in_given_model(self.input_cuids,
@@ -135,10 +135,10 @@ class DynamicSim(object):
                 self.controller.set_sample_time(sample_time)
              
             # Controller should know whether the estimator exists or not    
-            if self.estimator_is_existing:
-                self.controller.estimator_is_existing = True
+            if self.has_estimator:
+                self.controller.has_estimator = True
             else:
-                self.controller.estimator_is_existing = False
+                self.controller.has_estimator = False
     
     
         if sample_time is not None:
@@ -146,7 +146,7 @@ class DynamicSim(object):
             
 
         #check number of measurements and differential vars if there is no mhe
-        if self.controller_is_existing and not self.estimator_is_existing:
+        if self.has_controller and not self.has_estimator:
             if len(measurements_at_t0) != \
                 len(self.controller.differential_vars):
             
@@ -155,7 +155,7 @@ class DynamicSim(object):
                     "Therefore, the number of declared measurements should equal to "
                     "the number of differential variables.")
                 
-        if self.controller_is_existing and self.estimator_is_existing:
+        if self.has_controller and self.has_estimator:
             # In this case, controller should take the estimation results from MHE, 
             # instead of the measurements directly from the plant for initial conditions.       
             
