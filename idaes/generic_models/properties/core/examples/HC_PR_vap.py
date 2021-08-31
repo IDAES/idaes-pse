@@ -33,14 +33,11 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.core.phases import PhaseType as PT
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
-from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
-        LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
-import idaes.generic_models.properties.core.pure.RPP5 as RPP5
+from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure import RPP4
+from idaes.generic_models.properties.core.pure import RPP5
 
 # Set up logger
 _log = logging.getLogger(__name__)
