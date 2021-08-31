@@ -25,7 +25,8 @@ class MultiPeriodModel:
             periodic_variable_func: a function that returns a tuple of variable
                                     pairs to link between last and first time steps
     """
-    def __init__(self, n_time_points, process_model_func, linking_variable_func,  periodic_variable_func=None):#, state_variable_func=None):
+    def __init__(self, n_time_points, process_model_func, linking_variable_func,
+                 periodic_variable_func=None):#, state_variable_func=None):
         self.n_time_points = n_time_points
 
         #user provided functions
@@ -35,12 +36,12 @@ class MultiPeriodModel:
         #self.get_state_variable_pairs = state_variable_func
 
         #populated on 'build_multi_period_model'
-        self._pyomo_model = None                 #pyomo model
-        self._first_active_time = None           #index of first active time in problem horizon
+        self._pyomo_model = None
+        self._first_active_time = None
 
         #optional initialzation features
-        self.initialization_points = None       #library of possible initial points
-        self.initialize_func = None             #function to perform the initialize
+        #self.initialization_points = None   #library of possible initial points
+        #self.initialize_func = None         #function to perform the initialize
 
     def build_multi_period_model(self, model_data_kwargs={}):
         """
@@ -63,13 +64,21 @@ class MultiPeriodModel:
 
         #link blocks together. loop over every time index except the last one
         for t in m.TIME.data()[:self.n_time_points-1]:
-            link_variable_pairs = self.get_linking_variable_pairs(m.blocks[t].process,m.blocks[t+1].process)
-            self._create_linking_constraints(m.blocks[t].process,link_variable_pairs)
+            link_variable_pairs = self.get_linking_variable_pairs(
+                                    m.blocks[t].process,
+                                    m.blocks[t+1].process)
+            self._create_linking_constraints(
+                                    m.blocks[t].process,
+                                    link_variable_pairs)
 
         if self.get_periodic_variable_pairs is not None:
             N = len(m.blocks)
-            periodic_variable_pairs = self.get_periodic_variable_pairs(m.blocks[N-1].process,m.blocks[0].process)
-            self._create_periodic_constraints(m.blocks[N-1].process,periodic_variable_pairs)
+            periodic_variable_pairs = self.get_periodic_variable_pairs(
+                                    m.blocks[N-1].process,
+                                    m.blocks[0].process)
+            self._create_periodic_constraints(
+                                    m.blocks[N-1].process,
+                                    periodic_variable_pairs)
 
         self._pyomo_model = m
         self._first_active_time = m.TIME.first()
@@ -100,21 +109,34 @@ class MultiPeriodModel:
         m.blocks[new_time].process = self.create_process_model(**model_data_kwargs)
 
         #sequential time coupling
-        link_variable_pairs = self.get_linking_variable_pairs(m.blocks[last_time].process, m.blocks[new_time].process)
-        self._create_linking_constraints(m.blocks[last_time].process,link_variable_pairs)
+        link_variable_pairs = self.get_linking_variable_pairs(
+                                    m.blocks[last_time].process,
+                                    m.blocks[new_time].process)
+        self._create_linking_constraints(
+                                    m.blocks[last_time].process,
+                                    link_variable_pairs)
 
         #periodic time coupling
         if self.get_periodic_variable_pairs is not None:
-            periodic_variable_pairs = self.get_periodic_variable_pairs(m.blocks[new_time].process,m.blocks[current_time].process)
-            self._create_periodic_constraints(m.blocks[new_time].process,periodic_variable_pairs)
+            periodic_variable_pairs = self.get_periodic_variable_pairs(
+                                    m.blocks[new_time].process,
+                                    m.blocks[current_time].process)
+            self._create_periodic_constraints(
+                                    m.blocks[new_time].process,
+                                    periodic_variable_pairs)
             #deactivate old periodic constraint
             m.blocks[last_time].process.periodic_constraints.deactivate()
 
-        # TODO: discuss where state goes. sometimes the user might want to fix values based on a 'real' process
+        # TODO: discuss where state goes.
+        # sometimes the user might want to fix values based on a 'real' process
         # also TODO: inspect argument and use fix() if possible
         # if self.get_state_variable_pairs is not None:
-        #     state_variable_pairs = self.get_state_variable_pairs(m.blocks[previous_time].process, m.blocks[current_time].process)
-        #     self._fix_initial_states(m.blocks[current_time].process,state_variable_pairs)
+        #     state_variable_pairs = self.get_state_variable_pairs(
+        #                       m.blocks[previous_time].process,
+        #                       m.blocks[current_time].process)
+        #     self._fix_initial_states(
+        #                       m.blocks[current_time].process,
+        #                       state_variable_pairs)
 
     """
         Retrieve the underlying pyomo model

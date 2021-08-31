@@ -98,7 +98,7 @@ opt.solve(b_mp, tee=True)
 #create and solve a multiperiod model
 #########################################
 n_time_points = 4
-mp_rankine = MultiPeriodModel(n_time_points, create_mp_rankine_block, get_rankine_link_variable_pairs)#, state_variable_func=get_rankine_link_variable_pairs)
+mp_rankine = MultiPeriodModel(n_time_points, create_mp_rankine_block, get_rankine_link_variable_pairs)
 
 #data passed to each block time period
 time_points = np.arange(0,n_time_points)
@@ -120,7 +120,8 @@ opt.solve(m,tee=True)
 
 #check results
 for block in blks:
-    print("Dispatch [MW]: ", pyo.value(block.rankine.power_output), "Charge [MWh]: ",pyo.value(block.battery.soc))
+    print("Dispatch [MW]: ", pyo.value(block.rankine.power_output),
+    "Charge [MWh]: ",pyo.value(block.battery.soc))
 
 #########################################
 #advance time steps
@@ -136,7 +137,8 @@ opt.solve(m,tee=True)
 
 #Check solution.
 for block in blks:
-    print("Dispatch [MW]: ", pyo.value(block.rankine.power_output), "Charge [MWh]: ",pyo.value(block.battery.soc))
+    print("Dispatch [MW]: ", pyo.value(block.rankine.power_output),
+    "Charge [MWh]: ",pyo.value(block.battery.soc))
 
 #advance time again
 mp_rankine.advance_time(lmp_signal=200.0)
@@ -146,4 +148,5 @@ blks[0].battery.soc.fix(pyo.value(blks[0].battery.soc))
 blks[0].fix_power = pyo.Constraint(expr = blks[0].rankine.power_output == pyo.value(blks[0].rankine.power_output))
 opt.solve(m,tee=True)
 for block in blks:
-    print("Dispatch [MW]: ", pyo.value(block.rankine.power_output), "Charge [MWh]: ",pyo.value(block.battery.soc))
+    print("Dispatch [MW]: ", pyo.value(block.rankine.power_output),
+    "Charge [MWh]: ",pyo.value(block.battery.soc))
