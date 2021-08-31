@@ -77,9 +77,9 @@ def main():
     estimator = mhe.estimator
     
     p_t0 = mhe.plant.time.first()
-    c_t0 = mhe.estimator.time.first()
+    e_t0 = mhe.estimator.time.first()
     p_ts = mhe.plant.sample_points[1]
-    c_ts = mhe.estimator.sample_points[1]
+    e_ts = mhe.estimator.sample_points[1]
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
     # It's ok not declaring anything. The data manager will still save some 
@@ -123,7 +123,7 @@ def main():
     mhe.estimator.set_variance(variance)
     measurement_variance = [v.variance for v in estimator.measurement_vars]
     measurement_noise_bounds = [
-            (var[c_t0].lb, var[c_t0].ub) for var in estimator.measurement_vars
+            (var[e_t0].lb, var[e_t0].ub) for var in estimator.measurement_vars
             ]
     #-------------------------------------------------------------------------
     
