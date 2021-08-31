@@ -5,8 +5,10 @@ import numpy as np
 from random import random
 
 """
-    Create a simple steady-state rankine cycle model. Not yet multi-period capable
+    Example driver for multiperiod.py using a simple rankine cycle
 """
+
+#Create a steady-state ranking cycle model, note yet multi-period capable
 def create_ss_rankine_model():
     p_lower_bound = 300
     p_upper_bound = 450
@@ -31,10 +33,8 @@ def create_ss_rankine_model():
     #Now add coupling information
     return m
 
-#user-provided functions to MultiPeriod interface
-"""
-    Create a multiperiod capable steady-state rankine cycle model.
-"""
+#Create a multiperiod capable steady-state rankine cycle model. This is a
+#user-provided function to a MultiPeriod class
 def create_mp_rankine_block(lmp_signal):
     m = create_ss_rankine_model()
     b1 = m.rankine
@@ -71,7 +71,8 @@ def create_mp_rankine_block(lmp_signal):
     m.cost = pyo.Expression(expr=-(m.revenue - b1.fs.operating_cost))
     return m
 
-#Variable pairs linked between time steps
+#Function to retrieve variable pairs linked between time steps. This is a
+#user-provided function to a MultiPeriod class
 def get_rankine_link_variable_pairs(b1,b2):
     return [(b1.rankine.next_power_output,b2.rankine.power_output),
             (b1.battery.next_soc,b2.battery.soc)]
@@ -85,7 +86,7 @@ opt.solve(b_ss)
 opt.solve(b_ss, tee=True)
 
 #########################################
-# Check that a multiperio-capable block solves
+# Check that a multiperiod-capable block solves
 #########################################
 b_mp = create_mp_rankine_block(lmp_signal=30.0)
 b_mp.obj = pyo.Objective(expr=b_mp.cost)

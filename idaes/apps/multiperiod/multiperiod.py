@@ -1,15 +1,30 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import pyomo.environ as pyo
 
 class MultiPeriodModel:
 
     """
-        Initialize a MultiPeriodModel
+        The `MultiPeriodModel` class helps transfer existing steady-state
+        process models to multiperiod versions that contain dynamic time coupling.
 
         Arguments:
-            n_time_points: number of time points in horizon
-            process_model_func: a multiperiod capable steady state model builder
-            linking_variable_func: a function that returns a tuple of variable pairs to link between time steps
-            periodic_variable_func: a function that returns a tuple of variable pairs to link between last and first time steps
+            n_time_points: number of points to use in time horizon
+            process_model_func: function that returns a multiperiod capable pyomo model
+            linking_variable_func: function that returns a tuple of variable
+                                   pairs to link between time steps
+            periodic_variable_func: a function that returns a tuple of variable
+                                    pairs to link between last and first time steps
     """
     def __init__(self, n_time_points, process_model_func, linking_variable_func,  periodic_variable_func=None):#, state_variable_func=None):
         self.n_time_points = n_time_points
@@ -28,13 +43,16 @@ class MultiPeriodModel:
         self.initialization_points = None       #library of possible initial points
         self.initialize_func = None             #function to perform the initialize
 
-    """
-        Build a multi-period capable model using user-provided functions
-
-        Arguments:
-            model_data_args: dictionary with {time:(arguments,)} where `time` is the time in the horizon.
-    """
     def build_multi_period_model(self, model_data_kwargs={}):
+        """
+            Build a multi-period capable model using user-provided functions
+
+            Arguments:
+                model_data_kwargs: a dict of dicts with {time:{"key",value}}
+                                   where `time` is the time in the horizon. each
+                                   `time` dictionary is passed to the
+                                   `create_process_model` function
+        """
         assert(list(range(len(model_data_kwargs)))==sorted(model_data_kwargs))
         m = pyo.ConcreteModel()
         m.TIME = pyo.Set(initialize=range(self.n_time_points))
@@ -45,7 +63,7 @@ class MultiPeriodModel:
             m.blocks[t].process = self.create_process_model(**model_data_kwargs[t])
 
         #link blocks together. loop over every time index except the last one
-        for t in m.TIME.data()[:self.n_time_points-1]: 
+        for t in m.TIME.data()[:self.n_time_points-1]:
             link_variable_pairs = self.get_linking_variable_pairs(m.blocks[t].process,m.blocks[t+1].process)
             self._create_linking_constraints(m.blocks[t].process,link_variable_pairs)
 
@@ -58,13 +76,14 @@ class MultiPeriodModel:
         self._first_active_time = m.TIME.first()
         return m
 
-    """
-        Advance the current model instance to the next time period
-
-        Arguments:
-            model_data_args: arguments passed to user provided steady-state builder function
-    """
     def advance_time(self, **model_data_kwargs):
+        """
+            Advance the current model instance to the next time period
+
+            Arguments:
+                model_data_kwargs: keyword arguments passed to user provided
+                                   `create_process_model` function
+        """
         m = self._pyomo_model
         previous_time = self._first_active_time
         current_time = m.TIME.next(previous_time)
