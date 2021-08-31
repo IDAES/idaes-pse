@@ -13,7 +13,6 @@
 import pyomo.environ as pyo
 
 class MultiPeriodModel:
-
     """
         The `MultiPeriodModel` class helps transfer existing steady-state
         process models to multiperiod versions that contain dynamic time coupling.

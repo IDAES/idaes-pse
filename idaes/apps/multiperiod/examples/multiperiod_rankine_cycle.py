@@ -7,7 +7,6 @@ from random import random
 """
     Example driver for multiperiod.py using a simple rankine cycle
 """
-
 #Create a steady-state ranking cycle model, note yet multi-period capable
 def create_ss_rankine_model():
     p_lower_bound = 300
