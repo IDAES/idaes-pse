@@ -16,7 +16,7 @@ IDAES Component objects
 @author: alee
 """
 from pyomo.environ import Set, Param, Var, units as pyunits
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 from pyomo.core.base.units_container import _PyomoUnit
 
 from .process_base import (declare_process_block_class,
@@ -91,7 +91,7 @@ class ComponentData(ProcessBlockData):
 
     CONFIG.declare("has_vapor_pressure", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Flag indicating whether component has a vapor pressure"))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure"))

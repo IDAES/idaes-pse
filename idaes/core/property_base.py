@@ -20,7 +20,7 @@ import sys
 from pyomo.environ import Set, value, Var, Expression, Constraint
 from pyomo.core.base.var import _VarData
 from pyomo.core.base.expression import _ExpressionData
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.common.formatting import tabular_writer
 
 # Import IDAES cores
@@ -562,7 +562,7 @@ class StateBlockData(ProcessBlockData):
 Block associated with this property package."""))
     CONFIG.declare("defined_state", ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Flag indicating if incoming state is fully defined",
             doc="""Flag indicating whether the state should be considered fully
 defined, and thus whether constraints such as sum of mass/mole fractions should
@@ -573,7 +573,7 @@ be included,
 **False** - state variables will not be fully defined.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Phase equilibrium constraint flag",
             doc="""Flag indicating whether phase equilibrium constraints
 should be constructed in this state block,

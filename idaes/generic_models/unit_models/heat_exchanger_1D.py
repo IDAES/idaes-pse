@@ -20,13 +20,12 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (
-    SolverFactory,
     Var,
     Constraint,
     value,
     units as pyunits
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (
@@ -156,7 +155,7 @@ be constructed,
         "has_pressure_change",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Pressure change term construction flag",
             doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -170,7 +169,7 @@ constructed,
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Phase equilibrium term construction flag",
             doc="""Argument to enable phase equilibrium on the shell side.
 - True - include phase equilibrium term

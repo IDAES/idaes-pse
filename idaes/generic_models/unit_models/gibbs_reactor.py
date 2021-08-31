@@ -15,7 +15,7 @@ Standard IDAES Gibbs reactor model.
 """
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Param, Reals, Reference, Var
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -85,7 +85,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -94,7 +94,7 @@ balance type
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

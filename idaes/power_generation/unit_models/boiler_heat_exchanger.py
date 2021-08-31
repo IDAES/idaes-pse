@@ -38,11 +38,10 @@ import logging
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, value, Var, Param, exp, sqrt,\
+from pyomo.environ import value, Var, Param, exp, sqrt,\
     log, PositiveReals, NonNegativeReals, units as pyunits
-from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -176,7 +175,7 @@ see property package for documentation.}"""))
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

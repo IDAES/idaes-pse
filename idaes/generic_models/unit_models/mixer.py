@@ -21,10 +21,9 @@ from pyomo.environ import (
     PositiveReals,
     Reals,
     RangeSet,
-    SolverFactory,
     Var,
 )
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf, Bool
 
 from idaes.core import (
     declare_process_block_class,
@@ -184,7 +183,7 @@ balance type
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Calculate phase equilibrium in mixed stream",
             doc="""Argument indicating whether phase equilibrium should be
 calculated for the resulting mixed stream,
@@ -249,7 +248,7 @@ Mixer block,
         "construct_ports",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Construct inlet and outlet Port objects",
             doc="""Argument indicating whether model should construct Port
 objects linked to all inlet states and the mixed state,
