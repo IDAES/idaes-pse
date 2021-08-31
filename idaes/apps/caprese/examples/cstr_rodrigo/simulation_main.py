@@ -19,7 +19,7 @@ from idaes.apps.caprese.dynamic_builder import DynamicSim
 from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
-from cstr_rodrigo_model import make_model
+from idaes.apps.caprese.examples.cstr_rodrigo.cstr_rodrigo_model import make_model
 from idaes.apps.caprese.data_manager import PlantDataManager
 
 __author__ = "Kuan-Han Lin"

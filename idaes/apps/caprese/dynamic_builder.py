@@ -57,7 +57,7 @@ class DynamicSim(object):
                             ]
         self.measurement_cuids = [
                             ComponentUID(
-                            slice_component_along_sets(comp, (plant_time_set,))))
+                            slice_component_along_sets(comp, (plant_time_set,)))
                             for comp in measurements_at_t0
                             ]
 
