@@ -38,7 +38,7 @@ import idaes.core.util.scaling as iscale
 import idaes.core.util.initialization as iinit
 
 import idaes.core.plugins
-from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
+from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -50,23 +50,24 @@ from idaes.generic_models.unit_models.heat_exchanger import (
 from idaes.generic_models.properties.helmholtz.helmholtz import (
     HelmholtzThermoExpressions as ThermoExpr,
 )
+import idaes.logger as idaeslog
 
 
 def add_properties(m):
     m.fs.o2_side_prop = GenericParameterBlock(
-        default=get_prop(components={"O2", "H2O"}, phases=["Vap"])
+        default=get_prop(components={"O2", "H2O"}, phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.h2_side_prop = GenericParameterBlock(
-        default=get_prop(components={"H2", "H2O"}, phases=["Vap"])
+        default=get_prop(components={"H2", "H2O"}, phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.o2l_side_prop = GenericParameterBlock(
-        default=get_prop(components={"O2", "H2O"}, phases=["Vap", "Liq"])
+        default=get_prop(components={"O2", "H2O"}, phases=["Vap", "Liq"], eos=EosType.IDEAL)
     )
     m.fs.h2l_side_prop = GenericParameterBlock(
-        default=get_prop(components={"H2", "H2O"}, phases=["Vap"])
+        default=get_prop(components={"H2", "H2O"}, phases=["Vap", "Liq"], eos=EosType.IDEAL)
     )
     m.fs.fg_side_prop = GenericParameterBlock(
-        default=get_prop(components=["N2", "O2", "CO2", "H2O"], phases=["Vap"])
+        default=get_prop(components=["N2", "O2", "CO2", "H2O"], phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.water_prop = iapws95.Iapws95ParameterBlock()
     m.fs.h2_side_prop.set_default_scaling("mole_frac_comp", 10)
@@ -94,8 +95,8 @@ def add_soec(m):
     m.fs.soec = pum.IsothermalSofc(
         default={
             "nz": 20,
-            "nxfe": 10,
-            "nxae": 10,
+            "nxfe": 6,
+            "nxae": 6,
             "soec": True,
             "air_side_comp_list": ["H2O", "O2"],
             "fuel_side_comp_list": ["H2O", "H2"],
@@ -172,28 +173,28 @@ def add_recycle_inlet_mixers(m):
 def add_heatexchangers(m):
     m.fs.hxf1 = gum.HeatExchanger(
         default={
-            "delta_temperature_callback": delta_temperature_underwood_callback,
+            # "delta_temperature_callback": delta_temperature_underwood_callback,
             "shell": {"property_package": m.fs.o2l_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
     m.fs.hxa1 = gum.HeatExchanger(
         default={
-            "delta_temperature_callback": delta_temperature_underwood_callback,
+            # "delta_temperature_callback": delta_temperature_underwood_callback,
             "shell": {"property_package": m.fs.h2l_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
     m.fs.hxf2 = gum.HeatExchanger(
         default={
-            "delta_temperature_callback": delta_temperature_underwood_callback,
+            # "delta_temperature_callback": delta_temperature_underwood_callback,
             "shell": {"property_package": m.fs.fg_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
     m.fs.hxa2 = gum.HeatExchanger(
         default={
-            "delta_temperature_callback": delta_temperature_underwood_callback,
+            # "delta_temperature_callback": delta_temperature_underwood_callback,
             "shell": {"property_package": m.fs.fg_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
@@ -268,6 +269,19 @@ def add_constraints(m):
     @m.fs.Constraint(m.fs.time)
     def heat_duty_zero_eqn(b, t):
         return b.soec.heat_duty[t] == 0
+
+    @m.fs.Expression(m.fs.time)
+    def h2_flow_out_expr(b, t):
+        return (
+            m.fs.hxa1.shell_outlet.flow_mol[t]
+            * m.fs.hxa1.shell_outlet.mole_frac_comp[t, "H2"]
+        )
+
+    m.fs.h2_out_flow = pyo.Var(m.fs.time, initialize=1.0)
+
+    @m.fs.Constraint(m.fs.time)
+    def h2_flow_out_eqn(b, t):
+        return m.fs.h2_out_flow[t] == m.fs.h2_flow_out_expr[t]
 
     @m.fs.Expression(m.fs.time)
     def power_per_h2_MW(b, t):
@@ -354,15 +368,13 @@ def set_inputs(m):
     m.fs.hxf2.overall_heat_transfer_coefficient.fix(100)
     m.fs.hxa2.overall_heat_transfer_coefficient.fix(100)
     m.fs.hxf1.area.fix(5000)
-    m.fs.hxa1.area.fix(5000)
+    m.fs.hxa1.area.fix(2000)
     m.fs.hxf2.area.fix(5000)
     m.fs.hxa2.area.fix(5000)
 
 
 def do_scaling(m):
     # flow through a single cell is very small
-    iscale.set_scaling_factor(m.fs.soec.fc.flow_mol, 1e5)
-    iscale.set_scaling_factor(m.fs.soec.ac.flow_mol, 1e5)
     iscale.set_scaling_factor(m.fs.total_soec_power, 1e-7)
     iscale.set_scaling_factor(m.fs.hxf1.overall_heat_transfer_coefficient, 1e-2)
     iscale.set_scaling_factor(m.fs.hxa1.overall_heat_transfer_coefficient, 1e-2)
@@ -384,13 +396,36 @@ def do_scaling(m):
     iscale.set_scaling_factor(m.fs.hxf1.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxf2.tube.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxf2.shell.heat, 1e-6)
+
+    fs.hxf1.shell.properties_in[0.0].mole_frac_phase_comp[Vap,H2O] -- 3.601797551580377e-05 -- 10
+    fs.hxf1.shell.properties_in[0.0]._mole_frac_tdew[Vap,Liq,O2] -- 0.0019689845570607842 -- 1
+    fs.hxf1.shell.properties_out[0.0].mole_frac_phase_comp[Vap,H2O] -- 6.231783712764959e-06 -- 10
+    fs.hxf1.shell.properties_out[0.0]._mole_frac_tdew[Vap,Liq,O2] -- 0.0019689845570607842 -- 1
+    fs.hxa1.shell.properties_in[0.0].flow_mol_phase[Liq] -- 0.0034287671107834676 -- 0.000125
+    fs.hxa1.shell.properties_in[0.0].mole_frac_phase_comp[Vap,H2O] -- 4.386963708297891e-06 -- 10
+    fs.hxa1.shell.properties_in[0.0]._mole_frac_tdew[Vap,Liq,H2] -- 0.0019689845570607842 -- 1
+    fs.hxa1.shell.properties_out[0.0].flow_mol_phase[Liq] -- 0.0024752497515155084 -- 0.000125
+    fs.hxa1.shell.properties_out[0.0].mole_frac_phase_comp[Vap,H2O] -- 3.296915537118436e-06 -- 10
+    fs.hxa1.shell.properties_out[0.0]._mole_frac_tdew[Vap,Liq,H2] -- 0.0019689845570607842 -- 1
+
+
     iscale.constraint_scaling_transform(m.fs.ftemp_in_eqn[0], 1e-3)
     iscale.constraint_scaling_transform(m.fs.atemp_in_eqn[0], 1e-3)
     iscale.constraint_scaling_transform(m.fs.mxf1.fmxpress_eqn[0], 1e-5)
     iscale.constraint_scaling_transform(m.fs.mxa1.amxpress_eqn[0], 1e-5)
+
+
+
+
     for i, c in m.fs.total_soec_power_eqn.items():
         s = iscale.get_scaling_factor(m.fs.total_soec_power[i])
         iscale.constraint_scaling_transform(c, s)
+    iscale.set_scaling_factor(m.fs.h2_out_flow, 1e-3)
+    for i, c in m.fs.h2_flow_out_eqn.items():
+        s = iscale.get_scaling_factor(m.fs.h2_out_flow[i])
+        iscale.constraint_scaling_transform(c, s)
+
+
 
     iscale.calculate_scaling_factors(m)
 
@@ -401,8 +436,11 @@ def get_solver():
     idaes.cfg.ipopt["options"]["tol"] = 1e-7
     # due to a lot of component mole fractions being on their lower bound of 0
     # bound push result in much longer solve times, so set it low.
-    idaes.cfg.ipopt["options"]["bound_push"] = 1e-10
-    idaes.cfg.ipopt["options"]["max_iter"] = 150
+    idaes.cfg.ipopt["options"]["bound_push"] = 1e-9
+    idaes.cfg.ipopt["options"]["linear_solver"] = "ma27"
+    idaes.cfg.ipopt["options"]["max_iter"] = 400
+    #idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-1
+    #idaes.cfg.ipopt["options"]["ma57_pivtol"] = 1e-1
     return pyo.SolverFactory("ipopt")
 
 
@@ -415,7 +453,7 @@ def do_initialization(m, solver):
     m.fs.splta1.initialize()
     iinit.propagate_state(arc=m.fs.f06)
     iinit.propagate_state(arc=m.fs.a06)
-    m.fs.hxf1.initialize()
+    m.fs.hxf1.initialize(outlvl=idaeslog.DEBUG)
     m.fs.hxa1.initialize()
     iinit.propagate_state(arc=m.fs.f02)
     iinit.propagate_state(arc=m.fs.a02)
@@ -517,40 +555,53 @@ def tag_model(m):
         expr=m.fs.soec.heat_duty[0] * m.fs.soec.n_cells / 1e6,
         format="{:.4f} MW",
     )
+    new_tag("hxf2_heat_duty", expr=m.fs.hxf2.heat_duty[0] / 1e6, format="{:.2f} MW")
+    new_tag("hxa2_heat_duty", expr=m.fs.hxa2.heat_duty[0] / 1e6, format="{:.2f} MW")
+    new_tag("power_per_h2", expr=m.fs.power_per_h2_MW[0], format="{:.2f} MJ/kg")
+    new_tag("heat_per_h2", expr=m.fs.heat_per_h2_MW[0], format="{:.2f} MJ/kg")
     new_tag(
-        "hxf2_heat_duty",
-        expr=m.fs.hxf2.heat_duty[0] / 1e6,
-        format="{:.2f} MW",
+        "spltf1_recycle_frac",
+        expr=m.fs.spltf1.split_fraction[0, "recycle"],
+        format="{:.3f}",
     )
     new_tag(
-        "hxa2_heat_duty",
-        expr=m.fs.hxa2.heat_duty[0] / 1e6,
-        format="{:.2f} MW",
+        "splta1_recycle_frac",
+        expr=m.fs.splta1.split_fraction[0, "recycle"],
+        format="{:.3f}",
     )
     new_tag(
-        "power_per_h2",
-        expr=m.fs.total_soec_power_expr[0]
-        / 1e3
-        / 1000
-        / 0.002
-        / m.fs.hxa1.shell_outlet.flow_mol[0]
-        / m.fs.hxa1.shell_outlet.mole_frac_comp[0, "H2"],
-        format="{:.2f} MJ/kg",
+        "h2_flow_out",
+        expr=m.fs.h2_flow_out_expr[0] / 1000,
+        format="{:.3f} kmol/s",
     )
     new_tag(
-        "heat_per_h2",
-        expr=(m.fs.hxf2.heat_duty[0] + m.fs.hxa2.heat_duty[0])
-        / 1e3
-        / 1000
-        / 0.002
-        / m.fs.hxa1.shell_outlet.flow_mol[0]
-        / m.fs.hxa1.shell_outlet.mole_frac_comp[0, "H2"],
-        format="{:.2f} MJ/kg",
+        "h2_product_h2_pct",
+        expr=m.fs.hxa1.shell_outlet.mole_frac_comp[0, "H2"]*100,
+        format="{:.1f}%",
+    )
+    new_tag(
+        "h2_product_h2o_pct",
+        expr=m.fs.hxa1.shell_outlet.mole_frac_comp[0, "H2O"]*100,
+        format="{:.1f}%",
     )
 
     m.tags = tags
     m.tag_format = tag_format
     return tags, tag_format
+
+
+def write_csv_header(m, columns, filename="res.csv"):
+    # Write CSV header
+    with open(filename, "w", newline="") as f:
+        cw = csv.writer(f)
+        cw.writerow(columns)
+
+
+def write_csv_row(m, columns, filename="res.csv"):
+    # Write CSV header
+    with open(filename, "a", newline="") as f:
+        cw = csv.writer(f)
+        cw.writerow([pyo.value(m.tags[k]) for k in columns])
 
 
 def write_pfd_results(filename, infilename=None):
@@ -622,29 +673,47 @@ if __name__ == "__main__":
     # plot_soec(m)
     write_pfd_results("soec_init.svg")
 
-    """
-    xs = np.linspace(1.00, 0.50, 20)
-    off = pyo.value(m.fs.soec.inlet_fc.flow_mol[0])
-    oaf = pyo.value(m.fs.soec.inlet_ac.flow_mol[0])
+    #xs = np.linspace(1, 1.75, 31)
+    xs = np.linspace(1, 0.10, 36)
+    ohf = pyo.value(m.fs.h2_out_flow[0])
     m.obj = pyo.Objective(expr=m.fs.heat_per_h2_MW[0] + m.fs.power_per_h2_MW[0])
     m.fs.spltf1.split_fraction[0, "out"].unfix()
-    m.fs.spltf1.split_fraction[0, "out"].setlb(0.65)
-    m.fs.spltf1.split_fraction[0, "out"].setub(0.97)
+    m.fs.spltf1.split_fraction[0, "out"].setlb(0.80)
+    m.fs.spltf1.split_fraction[0, "out"].setub(0.98)
+    m.fs.spltf1.split_fraction[0, "out"].fix(0.98)
     m.fs.splta1.split_fraction[0, "out"].unfix()
-    m.fs.splta1.split_fraction[0, "out"].setlb(0.65)
-    m.fs.splta1.split_fraction[0, "out"].setub(0.95)
+    m.fs.splta1.split_fraction[0, "out"].setlb(0.70)
+    m.fs.splta1.split_fraction[0, "out"].setub(0.98)
     m.fs.soec.ac.flow_mol[:, 0].unfix()
-    m.fs.sweep_flow_ineq = pyo.Constraint(expr=m.fs.soec.ac.flow_mol[0, 0] >= 0.5*m.fs.soec.fc.flow_mol[0, 0])
+    m.fs.sweep_flow_ineq = pyo.Constraint(
+        expr=m.fs.soec.ac.flow_mol[0, 0] == 0.5 * m.fs.soec.fc.flow_mol[0, 0]
+    )
+    m.fs.soec.inlet_fc.flow_mol.unfix()
 
-    m.fs.heat_per_h2_MW.display()
-    m.fs.power_per_h2_MW.display()
+    cols = [
+        "stat",
+        "h2_flow_out",
+        "soec_power",
+        "spltf1_recycle_frac",
+        "splta1_recycle_frac",
+        "power_per_h2",
+        "heat_per_h2",
+        "h2_product_h2_pct",
+        "h2_product_h2o_pct",
+    ]
+    write_csv_header(m, cols)
+    #iscale.constraint_autoscale_large_jac(m)
     for x in xs:
-        m.fs.soec.inlet_fc.flow_mol.fix(off * x)
-        #m.fs.soec.inlet_ac.flow_mol.fix(oaf * x)
-        solver.solve(m, tee=True)
-        write_pfd_results(f"soec_init_{x}.svg")
-
-    check_scaling = False
+        m.fs.h2_out_flow.fix(ohf * x)
+        try:
+            res = solver.solve(m, tee=True)
+            write_pfd_results(f"soec_{x:.4f}.svg")
+            stat = idaeslog.condition(res)
+            m.tags["stat"] = stat
+            write_csv_row(m, cols)
+        except ValueError:
+            pass
+    check_scaling = True
     if check_scaling:
         jac, nlp = iscale.get_jacobian(m, scaled=True)
         print("Extreme Jacobian entries:")
@@ -662,4 +731,3 @@ if __name__ == "__main__":
         ):
             print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
         print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
-    """

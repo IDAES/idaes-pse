@@ -453,6 +453,7 @@ class IsothermalSofcChannelData(UnitModelBlockData):
         _set_default_factor(self.thickness, 1e5)
         _set_default_factor(self.conc, 1)
         _set_default_factor(self.mole_frac_comp, 10)
+        _set_default_factor(self.flow_mol, 1e4)
         _set_default_factor(self.velocity, 10)
         _set_default_factor(self.xflux, 100)
         iscale.propagate_indexed_component_scaling_factors(self)
@@ -474,6 +475,10 @@ class IsothermalSofcChannelData(UnitModelBlockData):
             sx = iscale.get_scaling_factor(self.mole_frac_comp[i])
             iscale.constraint_scaling_transform(self.conc_eqn[i], sp * sx)
 
+        for i, c in self.flow_mol_eqn.items():
+            s = iscale.get_scaling_factor(self.flow_mol[i])
+            iscale.constraint_scaling_transform(c, s)
+
         for i in self.mole_frac_eqn:
             iscale.constraint_scaling_transform(self.mole_frac_eqn[i], 10)
 
@@ -487,6 +492,8 @@ class IsothermalSofcChannelData(UnitModelBlockData):
             iscale.constraint_scaling_transform(
                 self.mass_balance_eqn[t, iz, i], sc * sv / s_deltaz
             )
+
+
 
 
 @declare_process_block_class("IsothermalSofcElectrode")

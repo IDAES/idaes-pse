@@ -514,6 +514,17 @@ class HelmholtzThermoExpressions(object):
         blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
         return delta_vap*self.param.dens_mass_crit/self.param.mw
 
+    def cp_mol_liq(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_cp"])
+        return (
+            self.func_cp(delta_liq, tau) * self.param.uc_kJ_per_kgK_to_J_per_molK)
+
+    def cp_mol_vap(self, **kwargs):
+        blk, delta_liq, delta_vap, tau, x = self.basic_calculations(**kwargs)
+        self.add_funcs(names=["func_cp"])
+        return (
+            self.func_cp(delta_liq, tau) * self.param.uc_kJ_per_kgK_to_J_per_molK)
 
 class HelmholtzParameterBlockData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()

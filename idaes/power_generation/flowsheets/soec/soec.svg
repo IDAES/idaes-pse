@@ -31,8 +31,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.9298326"
-     inkscape:cx="484.66962"
-     inkscape:cy="141.89372"
+     inkscape:cx="430.89209"
+     inkscape:cy="322.88221"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -212,13 +212,13 @@
     <text
        xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
-       x="90.9282"
-       y="136.68515"
+       x="90.7911"
+       y="137.37065"
        id="text4755-5"><tspan
          sodipodi:role="line"
          id="tspan4753-0"
-         x="90.9282"
-         y="136.68515"
+         x="90.7911"
+         y="137.37065"
          style="text-align:end;text-anchor:end;stroke-width:0.264583">Sweep Water</tspan></text>
     <g
        id="g1681">
@@ -453,7 +453,7 @@
          style="text-align:start;text-anchor:start;stroke-width:0.264583">O2/H2O Out</tspan></text>
     <g
        id="g8499"
-       transform="translate(-18.520833,5.2916556)">
+       transform="translate(-19.843748,2.6458223)">
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
@@ -520,13 +520,13 @@
          sodipodi:nodetypes="cc" />
       <path
          style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         d="m 162.71876,48.947918 -2.64583,-2.645833"
+         d="m 162.71876,48.947918 h -1.32292"
          id="path2938-0-7-5-0-6-4-4-3-8-2-6"
          sodipodi:nodetypes="cc" />
     </g>
     <g
        id="g8499-1"
-       transform="translate(-89.958325,74.083324)">
+       transform="translate(-89.958323,76.729158)">
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
@@ -593,7 +593,7 @@
          sodipodi:nodetypes="cc" />
       <path
          style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         d="m 182.5625,58.208335 1.32292,2.645833"
+         d="m 182.5625,58.208335 1.32292,-10e-7"
          id="path2938-0-7-5-0-6-4-4-3-8-2-6-8"
          sodipodi:nodetypes="cc" />
     </g>
@@ -808,7 +808,7 @@
     </g>
     <g
        id="g8719-2-0"
-       transform="translate(22.489592,11.906235)">
+       transform="translate(23.81251,14.552073)">
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
@@ -885,7 +885,7 @@
          sodipodi:nodetypes="cc" />
       <path
          style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         d="m 80.697917,87.312502 -5.291667,7.9375"
+         d="M 79.375001,84.666669 75.40625,95.250002"
          id="path2938-0-7-5-0-6-4-4-3-8-2-6-8-9-1-1"
          sodipodi:nodetypes="cc" />
       <text
@@ -913,7 +913,7 @@
     </g>
     <g
        id="g8719-1"
-       transform="translate(88.635427,-30.427099)">
+       transform="translate(84.666679,-33.072928)">
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
@@ -990,7 +990,7 @@
          sodipodi:nodetypes="cc" />
       <path
          style="fill:none;stroke:#000000;stroke-width:0.1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         d="m 50.270833,109.80209 -6.614584,7.9375"
+         d="m 50.270833,109.80209 -2.645834,10.58333"
          id="path2938-0-7-5-0-6-4-4-3-8-2-6-8-9-17"
          sodipodi:nodetypes="cc" />
       <text
@@ -2833,6 +2833,78 @@
            x="196.42955"
            y="47.633125"
            style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
+    </g>
+    <g
+       id="g2247"
+       transform="translate(58.208335,-58.208332)">
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="29.104202"
+         y="165.36458"
+         id="text2799-4-0-1-3-3-0-7-5-2-6-4-4-4-4-2"><tspan
+           sodipodi:role="line"
+           x="29.104202"
+           y="165.36458"
+           style="stroke-width:0.264583"
+           id="tspan8647-5-2">Recycle Fraction:</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+         x="30.427109"
+         y="165.36458"
+         id="splta1_recycle_frac"><tspan
+           sodipodi:role="line"
+           id="tspan2846-1-9-5-6-2-0-4-6-9-1-0-4-0-2-1"
+           x="30.427109"
+           y="165.36458"
+           style="stroke-width:0.264583">?</tspan></text>
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 10.58334,162.71874 H 39.687509"
+         id="path2874-3-7-2-6-4-4-9-9-0-3-7-2-4-9-87"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 10.583342,166.68749 H 39.687509"
+         id="path2876-3-9-3-4-5-4-8-9-6-0-5-1-2-4-9"
+         sodipodi:nodetypes="cc" />
+    </g>
+    <g
+       id="g2247-9"
+       transform="translate(125.67709,-84.666666)">
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="29.104202"
+         y="165.36458"
+         id="text2799-4-0-1-3-3-0-7-5-2-6-4-4-4-4-2-6"><tspan
+           sodipodi:role="line"
+           x="29.104202"
+           y="165.36458"
+           style="stroke-width:0.264583"
+           id="tspan8647-5-2-8">Recycle Fraction:</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+         x="30.427109"
+         y="165.36458"
+         id="spltf1_recycle_frac"><tspan
+           sodipodi:role="line"
+           id="tspan2846-1-9-5-6-2-0-4-6-9-1-0-4-0-2-1-3"
+           x="30.427109"
+           y="165.36458"
+           style="stroke-width:0.264583">?</tspan></text>
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 10.58334,162.71874 H 39.687509"
+         id="path2874-3-7-2-6-4-4-9-9-0-3-7-2-4-9-87-3"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 10.583342,166.68749 H 39.687509"
+         id="path2876-3-9-3-4-5-4-8-9-6-0-5-1-2-4-9-1"
+         sodipodi:nodetypes="cc" />
     </g>
   </g>
 </svg>
