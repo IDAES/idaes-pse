@@ -1,12 +1,9 @@
 import pyomo.environ as pyo
 from collections import deque
 import pandas as pd
-# from idaes.apps.grid_integration.tracker import Tracker
-import sys
-sys.path.append('../')
-from tracker import Tracker
-from bidder import Bidder
-from forecaster import PlaceHolderForecaster
+from idaes.apps.grid_integration.tracker import Tracker
+from idaes.apps.grid_integration.bidder import Bidder
+from idaes.apps.grid_integration.forecaster import PlaceHolderForecaster
 from prescient.simulator import Prescient
 
 class ThermalGenerator:
@@ -523,8 +520,8 @@ if __name__ == "__main__":
     solver = pyo.SolverFactory('cbc')
 
     run_tracker = True
-    run_bidder = False
-    run_prescient = False
+    run_bidder = True
+    run_prescient = True
 
     if run_tracker:
 
