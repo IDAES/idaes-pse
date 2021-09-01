@@ -103,6 +103,40 @@ class TestAlamoSurrogateTrainer:
             "END_DATA\n")
 
     @pytest.mark.unit
+    def test_writer_custom_basis(self, alm_obj):
+        alm_obj.config.custom_basis_functions = [
+            "sin(x1*x2)", "x1*tanh(x2)"]
+        stream = io.StringIO()
+        alm_obj.write_alm_to_stream(stream=stream)
+
+        assert stream.getvalue() == (
+            "# IDAES Alamopy input file\n"
+            "NINPUTS 2\n"
+            "NOUTPUTS 1\n"
+            "XLABELS x1 x2\n"
+            "ZLABELS z1\n"
+            "XMIN 0 0\n"
+            "XMAX 5 10\n"
+            "NDATA 4\n"
+            "NVALDATA 0\n\n"
+            "NCUSTOMBAS 2\n"
+            "linfcns 1\n"
+            "constant 1\n"
+            "maxtime 1000.0\n"
+            "numlimitbasis 1\n\n"
+            "TRACE 1\n\n"
+            "BEGIN_DATA\n"
+            "1 5 10\n"
+            "2 6 20\n"
+            "3 7 30\n"
+            "4 8 40\n"
+            "END_DATA\n\n"
+            "BEGIN_CUSTOMBAS\n"
+            "sin(x1*x2)\n"
+            "x1*tanh(x2)\n"
+            "END_CUSTOMBAS\n")
+
+    @pytest.mark.unit
     def test_writer_min_max_equal(self, alm_obj):
         alm_obj._input_max = [5, 10]
         alm_obj._input_min = [0, 10]
@@ -308,37 +342,36 @@ class TestAlamoSurrogateTrainer:
 
     @pytest.mark.component
     def test_file_writer(self, alm_obj):
-        with TempfileManager:
-            alm_obj.get_files()
-            alm_obj.write_alm_file()
+        alm_obj.get_files()
+        alm_obj.write_alm_file()
 
-            with open(alm_obj._almfile, "r") as f:
-                fcont = f.read()
-            f.close()
-            alm_obj.remove_temp_files()
+        with open(alm_obj._almfile, "r") as f:
+            fcont = f.read()
+        f.close()
+        alm_obj.remove_temp_files()
 
-            assert fcont == (
-                f"# IDAES Alamopy input file\n"
-                f"NINPUTS 2\n"
-                f"NOUTPUTS 1\n"
-                f"XLABELS x1 x2\n"
-                f"ZLABELS z1\n"
-                f"XMIN 0 0\n"
-                f"XMAX 5 10\n"
-                f"NDATA 4\n"
-                f"NVALDATA 0\n\n"
-                f"linfcns 1\n"
-                f"constant 1\n"
-                f"maxtime 1000.0\n"
-                f"numlimitbasis 1\n\n"
-                f"TRACE 1\n"
-                f"TRACEFNAME {alm_obj._trcfile}\n\n"
-                f"BEGIN_DATA\n"
-                f"1 5 10\n"
-                f"2 6 20\n"
-                f"3 7 30\n"
-                f"4 8 40\n"
-                f"END_DATA\n")
+        assert fcont == (
+            f"# IDAES Alamopy input file\n"
+            f"NINPUTS 2\n"
+            f"NOUTPUTS 1\n"
+            f"XLABELS x1 x2\n"
+            f"ZLABELS z1\n"
+            f"XMIN 0 0\n"
+            f"XMAX 5 10\n"
+            f"NDATA 4\n"
+            f"NVALDATA 0\n\n"
+            f"linfcns 1\n"
+            f"constant 1\n"
+            f"maxtime 1000.0\n"
+            f"numlimitbasis 1\n\n"
+            f"TRACE 1\n"
+            f"TRACEFNAME {alm_obj._trcfile}\n\n"
+            f"BEGIN_DATA\n"
+            f"1 5 10\n"
+            f"2 6 20\n"
+            f"3 7 30\n"
+            f"4 8 40\n"
+            f"END_DATA\n")
 
     @pytest.mark.unit
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
@@ -353,10 +386,17 @@ class TestAlamoSurrogateTrainer:
     @pytest.mark.component
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
     def test_call_alamo_w_input(self, alm_obj):
-        alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
-        rc, log = alm_obj.call_alamo()
-        assert rc == 0
-        assert "Normal termination" in log
+        with TempfileManager as t:
+            # TODO : Is there something else we should do here to be safe?
+            # This could potentially delete existing files if they happen to
+            # have the names used here. Unfortunately, we don't have direct
+            # control over the creation of these files.
+            t.add_tempfile("GUI_trace.trc", exists=False)
+            t.add_tempfile("alamo_test.lst", exists=False)
+            alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
+            rc, log = alm_obj.call_alamo()
+            assert rc == 0
+            assert "Normal termination" in log
 
     @pytest.mark.unit
     def test_read_trace_single(self, alm_obj):

@@ -27,6 +27,7 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 # TODO: Custom basis functions
+# TODO: Adaptive sampling
 
 alamo = Executable('alamo')
 
@@ -104,9 +105,6 @@ NSAMPLE, NVALSAMPLE, INITIALIZER, PRINT TO FILE, FUNFORM, NTRANS
 Excluded Simulator options:
 MAXSIM, MINPOINTS, MAXPOINTS, SAMPLER, SIMULATOR, PRESET, TOLMAXERROR, SIMIN,
 SIMOUT
-
-Other options not yet included:
-NCUSTOMBAS
 """
 
 
@@ -217,6 +215,14 @@ class Alamopy(Surrogate):
         domain=float,
         description="Multiplicative constant used in the Gaussian radial basis"
         " functions."))
+    CONFIG.declare('custom_basis_functions', ConfigValue(
+        default=None,
+        domain=ListOf(str),
+        description="List of custom basis functions to include in surrogate "
+        "fitting.",
+        doc="List of custom basis functions to include in surrogate model "
+        "fitting. These should be in a form that can be rendered as a string "
+        "that meets ALAMO's requirements."))
 
     # Other fitting options
     CONFIG.declare('modeler', ConfigValue(
@@ -505,7 +511,7 @@ class Alamopy(Surrogate):
 
         if self.config.filename is None:
             # Get a temporary file from the manager
-            almfile = TempfileManager.create_tempfile(suffix=".alm")
+            almfile = self._temp_context.create_tempfile(suffix=".alm")
         else:
             almfile = self.config.filename
 
@@ -518,10 +524,10 @@ class Alamopy(Surrogate):
                         f"Either choose a new file name or set "
                         f"overwrite_files = True.")
 
-            TempfileManager.add_tempfile(almfile, exists=False)
+            self._temp_context.add_tempfile(almfile, exists=False)
 
         trcfile = almfile.split(".")[0] + ".trc"
-        TempfileManager.add_tempfile(trcfile, exists=False)
+        self._temp_context.add_tempfile(trcfile, exists=False)
 
         # Set attributes to track file names
         self._almfile = almfile
@@ -598,6 +604,9 @@ class Alamopy(Surrogate):
             stream.write(f"MULTI3 {len(self.config.multi3power)}\n")
         if self.config.ratiopower is not None:
             stream.write(f"RATIOS {len(self.config.ratiopower)}\n")
+        if self.config.custom_basis_functions is not None:
+            stream.write(
+                f"NCUSTOMBAS {len(self.config.custom_basis_functions)}\n")
 
         for o in supported_options:
             if self.config[o] is None:
@@ -638,7 +647,11 @@ class Alamopy(Surrogate):
                     f" {' '.join(map(str, (z_val[z][row] for z in range(nout))))}\n")
             stream.write("END_VALDATA\n")
 
-        # Custom basis functions if required
+        if self.config.custom_basis_functions is not None:
+            stream.write("\nBEGIN_CUSTOMBAS\n")
+            for i in self.config.custom_basis_functions:
+                stream.write(f"{str(i)}\n")
+            stream.write("END_CUSTOMBAS\n")
 
     def write_alm_file(self, x_reg=None, z_reg=None, x_val=None, z_val=None):
         """
@@ -823,7 +836,7 @@ class Alamopy(Surrogate):
         if self.config.filename is not None:
             remove = False
 
-        TempfileManager.pop(remove=remove)
+        self._temp_context.release(remove=remove)
         # Release tempfile context
         self._temp_context = None
 
