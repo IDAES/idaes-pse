@@ -23,6 +23,7 @@ from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
+from idaes.core.util.exceptions import ConfigurationError
 
 
 # TODO: Custom basis functions
@@ -485,8 +486,7 @@ class Alamopy(Surrogate):
 
         finally:
             # Clean up temporary files if required
-            if not self.config.keep_files:
-                self.remove_temp_files()
+            self.remove_temp_files()
 
     def get_files(self):
         """
@@ -555,6 +555,17 @@ class Alamopy(Surrogate):
             x_val = self._vdata_in
         if z_val is None:
             z_val = self._vdata_out
+
+        # Check bounds on inputs to avoid potential ALAMO failures
+        for i in range(len(self._input_labels)):
+            if self._input_max[i] == self._input_min[i]:
+                raise ConfigurationError(
+                    f"ALAMO configuration error: upper and lower bounds on "
+                    f"input {self._input_labels[i]} are equal.")
+            elif self._input_max[i] < self._input_min[i]:
+                raise ConfigurationError(
+                    f"ALAMO configuration error: upper bounds is less than "
+                    f"lower bounds for input {self._input_labels[i]}.")
 
         # Get number of data points to build alm file
         if x_reg is not None:
@@ -680,6 +691,12 @@ class Alamopy(Surrogate):
             raise OSError(
                 f'Could not execute the command: alamo {str(self._almfile)}. '
                 f'Error message: {sys.exc_info()[1]}.')
+
+        if "ALAMO terminated with termination code " in almlog:
+            raise RuntimeError(
+                "ALAMO executable returned non-zero return code. Check "
+                "the ALAMO output for more information.")
+
         return rc, almlog
 
     def read_trace_file(self):

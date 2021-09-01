@@ -24,6 +24,7 @@ from pyomo.common.tempfiles import TempfileManager
 
 from idaes.surrogate.alamopy_new import \
     Alamopy, AlamoModelObject, Modelers, Screener, alamo
+from idaes.core.util.exceptions import ConfigurationError
 
 
 dirpath = os.path.dirname(__file__)
@@ -100,6 +101,28 @@ class TestAlamoSurrogateTrainer:
             "3 7 30\n"
             "4 8 40\n"
             "END_DATA\n")
+
+    @pytest.mark.unit
+    def test_writer_min_max_equal(self, alm_obj):
+        alm_obj._input_max = [5, 10]
+        alm_obj._input_min = [0, 10]
+        stream = io.StringIO()
+
+        with pytest.raises(ConfigurationError,
+                           match="ALAMO configuration error: upper and lower "
+                           "bounds on input x2 are equal."):
+            alm_obj.write_alm_to_stream(stream=stream)
+
+    @pytest.mark.unit
+    def test_writer_min_max_reversed(self, alm_obj):
+        alm_obj._input_max = [5, 10]
+        alm_obj._input_min = [0, 15]
+        stream = io.StringIO()
+
+        with pytest.raises(ConfigurationError,
+                           match="ALAMO configuration error: upper bounds is "
+                           "less than lower bounds for input x2."):
+            alm_obj.write_alm_to_stream(stream=stream)
 
     @pytest.mark.unit
     def test_writer_trace(self, alm_obj):
@@ -319,11 +342,21 @@ class TestAlamoSurrogateTrainer:
 
     @pytest.mark.unit
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
-    def test_call_alamo(self, alm_obj):
+    def test_call_alamo_empty(self, alm_obj):
         alm_obj._almfile = "test"
+        with pytest.raises(RuntimeError,
+                           match="ALAMO executable returned non-zero return "
+                           "code. Check the ALAMO output for more "
+                           "information."):
+            alm_obj.call_alamo()
+
+    @pytest.mark.component
+    @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
+    def test_call_alamo_w_input(self, alm_obj):
+        alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
         rc, log = alm_obj.call_alamo()
         assert rc == 0
-        assert "ALAMO terminated with termination code 3" in log
+        assert "Normal termination" in log
 
     @pytest.mark.unit
     def test_read_trace_single(self, alm_obj):
