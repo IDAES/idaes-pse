@@ -17,7 +17,7 @@ import sys
 import os
 
 from pyomo.environ import Constraint, value, sin, cos, log, exp
-from pyomo.common.config import ConfigValue, In, Path, ListOf
+from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
@@ -151,14 +151,14 @@ class Alamopy(Surrogate):
         description="List of scaling factors for input variables."))
     CONFIG.declare('xscaling', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Option to scale input variables.",
         doc="Option to scale input variables. If True and xfactors are not "
         "provided, ALAMO sets XFACTORS equal to the range of each input "
         "variable."))
     CONFIG.declare('scalez', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Option to scale output variables."))
 
     # Basis function options
@@ -184,31 +184,31 @@ class Alamopy(Surrogate):
         "in the basis functions."))
     CONFIG.declare('constant', ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include constant basis function if True. Default = True"))
     CONFIG.declare('linfcns', ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include linear basis functions if True. Default = True"))
     CONFIG.declare('expfcns', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include exponential basis functions if True."))
     CONFIG.declare('logfcns', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include logarithmic basis functions if True."))
     CONFIG.declare('sinfcns', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include sine basis functions if True."))
     CONFIG.declare('cosfcns', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include cosine basis functions if True."))
     CONFIG.declare('grbfcns', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include Gaussian radial basis functions if True."))
     CONFIG.declare('rbfparam', ConfigValue(
         default=None,
@@ -232,7 +232,7 @@ class Alamopy(Surrogate):
         "instance of Modelers Enum."))
     CONFIG.declare('builder', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="If True, a greedy heuristic builds up a model "
         "by adding one variable at a time.",
         doc="If True, a greedy heuristic builds up a model by adding one "
@@ -242,7 +242,7 @@ class Alamopy(Surrogate):
         "will be the final model to be returned."))
     CONFIG.declare('backstepper', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="If set to 1, a greedy heuristic builds down a model by "
         "starting from the least squares model and removing one variable at "
         "a time."))
@@ -296,7 +296,7 @@ class Alamopy(Surrogate):
         "preprocess data, solve optimization subproblems, and print results."))
     CONFIG.declare('datalimitterms', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Limit model terms to number of measurements.",
         doc="If True, ALAMO will limit the number of terms in the model to be "
         "no more than the number of data measurements; otherwise, no limit "
@@ -319,7 +319,7 @@ class Alamopy(Surrogate):
         "that no limit is imposed."))
     CONFIG.declare('numlimitbasis', ConfigValue(
         default=True,  # default this to true to avoid numerical issues
-        domain=In([True, False]),
+        domain=Bool,
         description="Eliminate infeasible basis functions. Default = True",
         doc="If True, ALAMO will eliminate basis functions that are not "
         "numerically acceptable (e.g., log(x) will be eliminated if x may be "
@@ -405,7 +405,7 @@ class Alamopy(Surrogate):
         description="Relative tolerance for MIP."))
     CONFIG.declare('linearerror', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="If True, a linear objective is used when solving "
         "mixed-integer optimization problems; otherwise, a squared error will "
         "be employed."))
@@ -424,11 +424,11 @@ class Alamopy(Surrogate):
         "programming solver available under GAMS can be used."))
     CONFIG.declare('solvemip', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Whether to use an optimizer to solve MIP."))
     CONFIG.declare('print_to_screen', ConfigValue(
         default=None,
-        domain=In([True, False]),
+        domain=Bool,
         description="Send ALAMO output to stdout. Output is returned by the "
         "call_alamo method."))
 
@@ -444,7 +444,7 @@ class Alamopy(Surrogate):
         "If this option is not None, then working files will not be deleted."))
     CONFIG.declare("overwrite_files", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Flag indicating whether existing files can be "
         "overwritten."))
 
