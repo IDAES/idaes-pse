@@ -15,7 +15,7 @@ IDAES 0D Fixed Bed Reactor model.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, SolverFactory, Var
+from pyomo.environ import Constraint, Var
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -109,7 +109,8 @@ property block(s) and used when constructing these,
 see property package for documentation.}"""))
     CONFIG.declare("reaction_package", ConfigValue(
         default=None,
-        # TODO: Had to remove domain due to limitations in ReactionBase for heterogeneous systems
+        # TODO: Had to remove domain due to limitations in ReactionBase for
+        # heterogeneous systems
         description="Reaction package to use for unit",
         doc="""Reaction parameter object used to define reaction calculations,
 **default** - None.
@@ -258,13 +259,14 @@ see reaction package for documentation.}"""))
 
     def initialize(blk, state_args=None, outlvl=idaeslog.NOTSET,
                    solver=None, optarg=None):
-        '''
+        """
         This is a general purpose initialization routine for simple unit
         models. This method assumes a single ControlVolume block called
         controlVolume, and first initializes this and then attempts to solve
         the entire unit.
         More complex models should overload this method with their own
-        initialization routines,
+        initialization routines.
+
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                            package(s) to provide an initial state for
@@ -281,18 +283,20 @@ see reaction package for documentation.}"""))
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
+
         Returns:
             None
-        '''
+        """
+
         # Set solver options
         init_log = idaeslog.getInitLogger(blk.name, outlvl)
-        opt = get_solver(solver, optarg) # create solver
+        opt = get_solver(solver, optarg)  # create solver
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
         init_log.info('Initialize Thermophysical Properties')
-        
+
         # Initialize gas_phase block
         gas_phase_flags = blk.gas.initialize(
                                 outlvl=outlvl,

@@ -5,11 +5,9 @@ Created on Thur May 14 13:45:323 2020
 @author: cokoli
 """
 
-import sys
-import os
 import time
 
-from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+from pyomo.environ import ConcreteModel, TransformationFactory
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType
 from idaes.core.util.initialization import initialize_by_time_element
@@ -78,7 +76,7 @@ t_initialize = time.time()  # Initialization time
 
 blk = m.fs.TGA
 
-solver = get_solver('ipopt', optarg) # create solver
+solver = get_solver('ipopt', optarg)  # create solver
 
 initialize_by_time_element(m.fs, m.fs.time, solver=solver)
 solver.solve(m, tee=True)

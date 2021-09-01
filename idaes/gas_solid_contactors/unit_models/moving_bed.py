@@ -736,7 +736,7 @@ see reaction package for documentation.}"""))
             def prandtl_number(b, t, x):
                 return (b.Pr[t, x] *
                         b.gas_phase.properties[t, x].therm_cond ==
-                        b.solid_phase.properties[t, x].cp_mass *
+                        b.solid_phase.properties[t, x].cp_mass *  # should this be gas_phase.cp_mass?
                         b.gas_phase.properties[t, x].visc_d)
 
             # Particle Nusselt number
