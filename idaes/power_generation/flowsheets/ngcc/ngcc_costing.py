@@ -22,7 +22,7 @@ import pytest
 import idaes
 from idaes.power_generation.costing.power_plant_costing import (
     get_PP_costing,
-    build_flowsheet_cost_constraint,
+    get_total_TPC,
     costing_initialization,
     get_fixed_OM_costs,
     get_variable_OM_costs,
@@ -463,7 +463,7 @@ def get_ngcc_costing(m, evaluate_cost=False):
         get_PP_costing(m.fs.b16, gasturbine_accounts, gt_power, "kW", 6)
 
     # Build cost constraints
-    build_flowsheet_cost_constraint(m)
+    get_total_TPC(m)
 
     # Initialize costing
     costing_initialization(m.fs)
@@ -476,7 +476,7 @@ def get_ngcc_costing(m, evaluate_cost=False):
     #     pass
 
     # Obtain the total plant cost for the entire process
-    # TPC = pyo.value(m.fs.flowsheet_cost)
+    # TPC = pyo.value(m.fs.costing.total_TPC)
     # print('\n\nThe total plant cost is {0} Million $'.format(TPC))
     # return TPC
 

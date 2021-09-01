@@ -532,7 +532,7 @@ def get_model():
         ms.to_json(m, fname="init_add_costing.json.gz")
 
 
-    iscale.set_scaling_factor(m.fs.flowsheet_cost, 1e-2)
+    iscale.set_scaling_factor(m.fs.costing.total_TPC, 1e-2)
     iscale.set_scaling_factor(m.fs.natural_gas, 1e-4)
     iscale.set_scaling_factor(m.fs.net_power_cost, 1e-2)
     iscale.set_scaling_factor(m.fs.HP_ECON1.side_1.deltaP[0.0], 1e-7)
@@ -577,7 +577,7 @@ def get_model():
     iscale.constraint_scaling_transform(m.fs.costing.annual_labor_cost_rule, 1e-6)
     for t in m.fs.reboiler.reboiler_condense_eqn:
         iscale.constraint_scaling_transform(m.fs.reboiler.reboiler_condense_eqn[t], 1e-3)
-    for t, c in m.fs.flowsheet_cost_eq.items():
+    for t, c in m.fs.total_TPC_eq.items():
         iscale.constraint_scaling_transform(c, 1e-2)
 
     return m, solver
