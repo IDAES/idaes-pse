@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import pyomo.environ as pyo
 from pyomo.network import Arc, Port
 from pyomo.common.fileutils import this_file_dir
+import pyomo.common.errors
 
 from idaes.core import FlowsheetBlock
 from idaes.generic_models.properties.core.generic.generic_property import (
@@ -45,6 +46,9 @@ from idaes.generic_models.properties import iapws95
 
 from idaes.generic_models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
+    delta_temperature_lmtd_callback,
+    delta_temperature_lmtd2_callback,
+    delta_temperature_lmtd3_callback,
 )
 
 from idaes.generic_models.properties.helmholtz.helmholtz import (
@@ -116,14 +120,13 @@ def add_soec(m):
         }
     )
 
-    m.fs.soec.n_cells.fix(20e6)
     m.fs.soec.E_cell.fix(1.28)  # unfix after initialize
     m.fs.soec.el.thickness.fix(8e-6)
     m.fs.soec.fe.thickness.fix(1e-3)
     m.fs.soec.ae.thickness.fix(20e-6)
     m.fs.soec.length.fix(0.05)
     m.fs.soec.width.fix(0.05)
-    m.fs.soec.k_ae.fix(1e11)
+    m.fs.soec.k_ae.fix(26.1e7)
     m.fs.soec.eact_ae.fix(120000)
     m.fs.soec.k_fe.fix(1.35e10)
     m.fs.soec.eact_fe.fix(110000)
@@ -173,28 +176,28 @@ def add_recycle_inlet_mixers(m):
 def add_heatexchangers(m):
     m.fs.hxf1 = gum.HeatExchanger(
         default={
-            # "delta_temperature_callback": delta_temperature_underwood_callback,
+            "delta_temperature_callback": delta_temperature_lmtd2_callback,
             "shell": {"property_package": m.fs.o2l_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
     m.fs.hxa1 = gum.HeatExchanger(
         default={
-            # "delta_temperature_callback": delta_temperature_underwood_callback,
+            "delta_temperature_callback": delta_temperature_lmtd2_callback,
             "shell": {"property_package": m.fs.h2l_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
     m.fs.hxf2 = gum.HeatExchanger(
         default={
-            # "delta_temperature_callback": delta_temperature_underwood_callback,
+            "delta_temperature_callback": delta_temperature_lmtd2_callback,
             "shell": {"property_package": m.fs.fg_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
     m.fs.hxa2 = gum.HeatExchanger(
         default={
-            # "delta_temperature_callback": delta_temperature_underwood_callback,
+            "delta_temperature_callback": delta_temperature_lmtd2_callback,
             "shell": {"property_package": m.fs.fg_side_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
@@ -325,13 +328,15 @@ def add_arcs(m):
 
 
 def set_inputs(m):
+    m.fs.soec.n_cells.fix(200e6)
+
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
-    m.fs.soec.fc.flow_mol[:, 0].fix(9e-5)
+    m.fs.soec.fc.flow_mol[:, 0].fix(9e-5/10)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.95)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.05)
 
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
-    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
+    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4/10)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
 
@@ -396,18 +401,6 @@ def do_scaling(m):
     iscale.set_scaling_factor(m.fs.hxf1.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxf2.tube.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxf2.shell.heat, 1e-6)
-
-    fs.hxf1.shell.properties_in[0.0].mole_frac_phase_comp[Vap,H2O] -- 3.601797551580377e-05 -- 10
-    fs.hxf1.shell.properties_in[0.0]._mole_frac_tdew[Vap,Liq,O2] -- 0.0019689845570607842 -- 1
-    fs.hxf1.shell.properties_out[0.0].mole_frac_phase_comp[Vap,H2O] -- 6.231783712764959e-06 -- 10
-    fs.hxf1.shell.properties_out[0.0]._mole_frac_tdew[Vap,Liq,O2] -- 0.0019689845570607842 -- 1
-    fs.hxa1.shell.properties_in[0.0].flow_mol_phase[Liq] -- 0.0034287671107834676 -- 0.000125
-    fs.hxa1.shell.properties_in[0.0].mole_frac_phase_comp[Vap,H2O] -- 4.386963708297891e-06 -- 10
-    fs.hxa1.shell.properties_in[0.0]._mole_frac_tdew[Vap,Liq,H2] -- 0.0019689845570607842 -- 1
-    fs.hxa1.shell.properties_out[0.0].flow_mol_phase[Liq] -- 0.0024752497515155084 -- 0.000125
-    fs.hxa1.shell.properties_out[0.0].mole_frac_phase_comp[Vap,H2O] -- 3.296915537118436e-06 -- 10
-    fs.hxa1.shell.properties_out[0.0]._mole_frac_tdew[Vap,Liq,H2] -- 0.0019689845570607842 -- 1
-
 
     iscale.constraint_scaling_transform(m.fs.ftemp_in_eqn[0], 1e-3)
     iscale.constraint_scaling_transform(m.fs.atemp_in_eqn[0], 1e-3)
@@ -691,6 +684,7 @@ if __name__ == "__main__":
     m.fs.soec.inlet_fc.flow_mol.unfix()
 
     cols = [
+        "number",
         "stat",
         "h2_flow_out",
         "soec_power",
@@ -703,8 +697,10 @@ if __name__ == "__main__":
     ]
     write_csv_header(m, cols)
     #iscale.constraint_autoscale_large_jac(m)
+    #solver.options["halt_on_ampl_error"] = "yes"
     for x in xs:
         m.fs.h2_out_flow.fix(ohf * x)
+        m.tags["number"] = x
         try:
             res = solver.solve(m, tee=True)
             write_pfd_results(f"soec_{x:.4f}.svg")
@@ -712,7 +708,11 @@ if __name__ == "__main__":
             m.tags["stat"] = stat
             write_csv_row(m, cols)
         except ValueError:
-            pass
+            m.tags["stat"] = "Solver Error"
+            write_csv_row(m, ["number", "stat"])
+        except pyomo.common.errors.ApplicationError:
+            m.tags["stat"] = "Solver Halted on Eval Error"
+            write_csv_row(m, ["number", "stat"])
     check_scaling = True
     if check_scaling:
         jac, nlp = iscale.get_jacobian(m, scaled=True)

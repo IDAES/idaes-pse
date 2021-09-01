@@ -1009,7 +1009,7 @@ class IsothermalSofcData(UnitModelBlockData):
             E = self.eact_fe
             yh2 = self.fe.mole_frac_comp[t, iz, nxfe, "H2"]
             yh2o = self.fe.mole_frac_comp[t, iz, nxfe, "H2O"]
-            A = self.width * (zset[iz] - zset[iz - 1]) * self.length
+            A = self.width * (zset[iz] - zset[iz - 1]) * self.length * self.fe.porosity
             T = b.fe.temperature[t, iz, nxfe]
             return k * A * yh2 * yh2o * pyo.exp(-E / _constR / T)
 
@@ -1026,7 +1026,7 @@ class IsothermalSofcData(UnitModelBlockData):
             k = self.k_ae
             E = self.eact_ae
             yo2 = self.ae.mole_frac_comp[t, iz, nxae, "O2"]
-            A = self.width * (zset[iz] - zset[iz - 1]) * self.length
+            A = self.width * (zset[iz] - zset[iz - 1]) * self.length * self.ae.porosity
             T = b.ae.temperature[t, iz, nxae]
             return k * A * yo2 ** 0.25 * pyo.exp(-E / _constR / T)
 
@@ -1641,7 +1641,7 @@ def soec_example():
     m.fs.soec.ae.thickness.fix(20e-6)
     m.fs.soec.length.fix(0.05)
     m.fs.soec.width.fix(0.05)
-    m.fs.soec.k_ae.fix(1e11)
+    m.fs.soec.k_ae.fix(8.7e7*3)
     m.fs.soec.eact_ae.fix(120000)
     m.fs.soec.k_fe.fix(1.35e10)
     m.fs.soec.eact_fe.fix(110000)
@@ -1663,12 +1663,12 @@ def soec_example():
     m.fs.soec.ae.temperature.fix(temperature)
 
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
-    m.fs.soec.fc.flow_mol[:, 0].fix(9e-5)
+    m.fs.soec.fc.flow_mol[:, 0].fix(1e-5)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.7)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.30)
 
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
-    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
+    m.fs.soec.ac.flow_mol[:, 0].fix(1e-5)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
 
