@@ -38,7 +38,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 import idaes.logger as idaeslog
@@ -59,7 +59,7 @@ class WaterwallSectionData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,

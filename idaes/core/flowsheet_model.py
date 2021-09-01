@@ -18,13 +18,14 @@ IDAES modeling framework.
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.network import Arc
-from pyomo.common.config import ConfigValue, In, ListOf
+from pyomo.common.config import ConfigValue, ListOf
 from pyomo.core.base.units_container import _PyomoUnit
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_time_domain)
+                                    is_time_domain,
+                                    DefaultBool)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import DynamicError, ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -61,7 +62,7 @@ class FlowsheetBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
 **default** - useDefault.

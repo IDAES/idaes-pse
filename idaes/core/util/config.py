@@ -20,7 +20,7 @@ the `domain` argument in ConfigBlocks.
 __author__ = "Andrew Lee"
 
 from pyomo.common.deprecation import deprecation_warning
-from pyomo.common.config import ListOf
+from pyomo.common.config import ListOf, Bool
 
 from pyomo.environ import Set
 from pyomo.dae import ContinuousSet
@@ -209,3 +209,23 @@ def is_transformation_scheme(arg):
                 'Invalid value provided for transformation_scheme. '
                 'Please check the value and spelling of the argument provided.'
                 )
+
+
+def DefaultBool(arg):
+    """
+    Domain validator for bool-like arguments with a 'use default' option.
+    Relies on Pyomo's Bool() validator for identifying bool-like arguments.
+
+    Args:
+        arg : argument to be validated.
+
+    Returns:
+        A bool or useDefault
+
+    Raises:
+        ValueError if arg is not bool-like or useDefault
+    """
+    if arg == useDefault:
+        return arg
+    else:
+        return Bool(arg)

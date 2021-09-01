@@ -26,7 +26,8 @@ from idaes.core import (ProcessBlockData,
                         useDefault,
                         declare_process_block_class)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block)
+                                    is_reaction_parameter_block,
+                                    DefaultBool)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -76,7 +77,7 @@ class FlowDirection(Enum):
 CONFIG_Template = ProcessBlockData.CONFIG()
 CONFIG_Template.declare("dynamic", ConfigValue(
     default=useDefault,
-    domain=In([useDefault, True, False]),
+    domain=DefaultBool,
     description="Dynamic model flag",
     doc="""Indicates whether this model will be dynamic,
 **default** - useDefault.
@@ -270,7 +271,7 @@ class ControlVolumeBlockData(ProcessBlockData):
 
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
@@ -281,7 +282,7 @@ class ControlVolumeBlockData(ProcessBlockData):
 **False** - set as a steady-state model}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,

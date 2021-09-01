@@ -62,7 +62,7 @@ from idaes.core import (
 )
 import idaes.logger as idaeslog
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 # Additional import for the unit operation
 from pyomo.environ import Var, asin, cos
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -88,7 +88,7 @@ class DrumData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,

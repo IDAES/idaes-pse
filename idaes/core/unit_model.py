@@ -16,7 +16,7 @@ Base class for unit models
 
 from pyomo.environ import Reference
 from pyomo.network import Port
-from pyomo.common.config import ConfigValue, In
+from pyomo.common.config import ConfigValue
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
@@ -33,6 +33,8 @@ from idaes.core.util.tables import create_stream_table_dataframe
 import idaes.core.util.unit_costing
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
+from idaes.core.util.config import DefaultBool
+
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -53,7 +55,7 @@ class UnitModelBlockData(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
@@ -63,7 +65,7 @@ class UnitModelBlockData(ProcessBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,

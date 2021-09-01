@@ -52,7 +52,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
@@ -84,7 +84,7 @@ class BoilerHeatExchangerData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
@@ -95,7 +95,7 @@ class BoilerHeatExchangerData(UnitModelBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,

@@ -32,7 +32,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 
 # Additional import for the unit operation
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -53,7 +53,7 @@ class DowncomerData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,

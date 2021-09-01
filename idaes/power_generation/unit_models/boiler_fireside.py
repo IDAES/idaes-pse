@@ -68,7 +68,7 @@ The surrogate models are typically a function of:
 
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
+from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -77,7 +77,7 @@ from idaes.core import (declare_process_block_class,
 
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
@@ -101,7 +101,7 @@ Boiler fire-side surrogate model with enforced mass and energy balance
 
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
