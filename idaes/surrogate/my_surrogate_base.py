@@ -304,8 +304,6 @@ class Surrogate:
             raise Exception('File could not be loaded.')
 
 
-# TODO: unit tests
-# TODO: Index sets for vars and constraints
 class SurrogateModelObject():
     """
     Base class for standard IDAES Surrogate Model object
