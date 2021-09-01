@@ -22,7 +22,7 @@ from pyomo.environ import (
     value,
     units as pyunits
 )
-from pyomo.network import Arc
+from pyomo.network import Arc, Port
 from idaes.core import (
     FlowsheetBlock,
     StateBlock,
@@ -553,7 +553,16 @@ def test_state_block_retrieval_fail(flash_model):
            "belong to a state block."
            ):
         df = create_stream_table_dataframe({"state": m.fs.flash.liq_outlet})
-        
+
+@pytest.mark.unit
+def test_state_block_retrieval_empty_port():
+    m = ConcreteModel()
+    m.p = Port()
+    with pytest.raises(AttributeError,
+           match="No state block could be retrieved from Port p because it "
+           "contains no variables."
+           ):
+        df = create_stream_table_dataframe({"state": m.p})
 @pytest.fixture()
 def distillation_model():
     m = ConcreteModel()

@@ -99,15 +99,15 @@ def stream_states_dict(streams, time_point=0):
             _stream_dict_add(sb, n)
         else:
             # _IndexedStateBlock is a private class, so cannot directly test
-            # whether  streams[n] is one or not. 
+            # whether  streams[n] is one or not.
             try:
                 sb = streams[n][time_point]
-            except (AttributeError, KeyError):
+            except (AttributeError, KeyError) as err:
                 raise TypeError(
                     f"Unrecognised component type for stream argument {streams[n]}."
                     f" The stream_states_dict function only supports Arcs, "
                     f"Ports or StateBlocks."
-                )
+                ) from err
             _stream_dict_add(sb, n)
     return stream_dict
 
@@ -271,6 +271,7 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
 def _get_state_from_port(port,time_point):
     from idaes.core.property_base import StateBlockData
     states = list()
+    v = None # To make PyLint stop complaining
     for v in port.iter_vars():
         if not v.parent_block().parent_component().is_indexed():
             raise TypeError(
@@ -284,10 +285,15 @@ def _get_state_from_port(port,time_point):
                 )
         states.append(v.parent_block().parent_component())
         
+    if len(states) == 0:
+        raise AttributeError(
+            f"No state block could be retrieved from Port {port.name} "
+            f"because it contains no variables."
+            )
     # Check the number of indices of the parent property block. If its indexed
     # both in space and time, keep the second, spatial index and throw out the
     # first, temporal index. If that ordering is changed, this method will
-    # need to be changed as well. 
+    # need to be changed as well.
     idx = v.parent_block().index()
     if isinstance(idx,tuple):
         if len(idx) ==2:
