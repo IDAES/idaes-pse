@@ -7,6 +7,18 @@
 # Washington to design NGFC systems with high efficiencies and low CO2
 # emissions.
 ##############################################################################
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 """
 IDAES block for co2 purifucation process based on surrogate models
 
@@ -49,7 +61,7 @@ The state variables can be accessed thotough ports named:
     pureco2
     water
     vent
-    
+
 This model is only based on the inlet flow rate of the CO2 rich stream
 The degrees of freedom are the Inlet states:
     (1) Inlet flow in mol/s
@@ -81,7 +93,7 @@ class CPUData(UnitModelBlockData):
     Assumptions:
     Fixed composition, temperature, and pressure of feed stream
     Fixed CO2 purity in the CO2 product stream
-    
+
     '''
 
     def build(self):
@@ -133,7 +145,7 @@ class CPUData(UnitModelBlockData):
             (3) Component mole flows [mol/s]: [stream_name]_flow_mol_comp
             (4) Temperature [K]: [stream_name]_temperature
             (5) Pressure [Pa]: [stream_name]_pressure
-            
+
         '''
         # units declaration for vars
         flow_units = pyunits.mol/pyunits.s
@@ -671,7 +683,7 @@ class CPUData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        
+
         # for v in self.component_data_objects(Var):
         #     iscale.set_scaling_factor(v, 1)
         for c in self.component_data_objects(Constraint):
