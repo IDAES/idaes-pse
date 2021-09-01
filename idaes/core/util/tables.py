@@ -89,24 +89,26 @@ def stream_states_dict(streams, time_point=0):
             key = "{}[{}]".format(n, i)
         stream_dict[key] = sb
 
-    for n in streams.keys():
-        try:
-            if isinstance(streams[n], Arc):
-                for i, a in streams[n].items():
-                    sb = _get_state_from_port(a.ports[1], time_point)
-                    _stream_dict_add(sb, n, i)
-            elif isinstance(streams[n], Port):
-                sb = _get_state_from_port(streams[n], time_point)
-                _stream_dict_add(sb, n)
-            else:
+    for n in streams.keys():        
+        if isinstance(streams[n], Arc):
+            for i, a in streams[n].items():
+                sb = _get_state_from_port(a.ports[1], time_point)
+                _stream_dict_add(sb, n, i)
+        elif isinstance(streams[n], Port):
+            sb = _get_state_from_port(streams[n], time_point)
+            _stream_dict_add(sb, n)
+        else:
+            # _IndexedStateBlock is a private class, so cannot directly test
+            # whether  streams[n] is one or not. 
+            try:
                 sb = streams[n][time_point]
-                _stream_dict_add(sb, n)
-        except (AttributeError, KeyError):
-            raise TypeError(
-                f"Unrecognised component type for stream argument {streams[n]}."
-                f" The stream_states_dict function only supports Arcs, "
-                f"Ports or StateBlocks."
-            )
+            except (AttributeError, KeyError):
+                raise TypeError(
+                    f"Unrecognised component type for stream argument {streams[n]}."
+                    f" The stream_states_dict function only supports Arcs, "
+                    f"Ports or StateBlocks."
+                )
+            _stream_dict_add(sb, n)
     return stream_dict
 
 
@@ -266,22 +268,44 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
         na_rep=na_rep, justify=justify, float_format=float_format, **kwargs
     )
 
-
-def _get_state_from_port(port, time_point):
-    # Check port for _state_block attribute
-    try:
-        if len(port._state_block) == 1:
-            return port._state_block[0][time_point]
-        else:
-            return port._state_block[0][time_point, port._state_block[1]]
-    except AttributeError:
-        # Port was not created by IDAES add_port methods. Return exception for
-        # the user to fix.
-        raise ConfigurationError(
-            f"Port {port.name} does not have a _state_block attribute, "
-            f"thus cannot determine StateBlock to use for collecting data."
-            f" Please provide the associated StateBlock instead, or use "
-            f"the IDAES add_port methods to create the Port."
+def _get_state_from_port(port,time_point):
+    from idaes.core.property_base import StateBlockData
+    states = list()
+    for v in port.iter_vars():
+        if not v.parent_block().parent_component().is_indexed():
+            raise TypeError(
+                f"No state block could be retrieved from Port {port.name} "
+                f"because variable {v.name} does not belong to a state block."
+                )
+        if not isinstance(v.parent_block(),StateBlockData):
+            raise TypeError(
+                f"No state block could be retrieved from Port {port.name} "
+                f"because variable {v.name} does not belong to a state block."
+                )
+        states.append(v.parent_block().parent_component())
+        
+    # Check the number of indices of the parent property block. If its indexed
+    # both in space and time, keep the second, spatial index and throw out the
+    # first, temporal index. If that ordering is changed, this method will
+    # need to be changed as well. 
+    idx = v.parent_block().index()
+    if isinstance(idx,tuple):
+        if len(idx) ==2:
+            idx = (time_point,v.parent_block().index()[1])
+        elif len(idx) >2:
+            raise NotImplementedError(
+                "State block retrieval is supported for only 0D and 1D control "
+                "volumes."
+            )
+    else:
+        idx = (time_point,)
+    # This method also assumes that ports with different spatial indices won't
+    # end up at the same port. Otherwise this check is insufficient.
+    if all(states[0] is s for s in states):
+        return states[0][idx]
+    raise AttributeError(
+        f"No state block could be retrieved from Port {port.name} "
+        f"because variables are derived from multiple state blocks."
         )
 
 
