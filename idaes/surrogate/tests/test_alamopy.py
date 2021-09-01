@@ -747,6 +747,37 @@ class TestAlamoSurrogate():
             "2.099999999985938*x1**4 + 4.000000000004311*x2**4 + "
             "0.33333333332782633*x1**6 + 0.9999999999997299*x1*x2)")
 
+    @pytest.mark.unit
+    def test_populate_block_indexed(self, alm_surr1):
+        blk = Block(concrete=True)
+
+        alm_surr1.populate_block(blk, index_set=[1, 2, 3])
+
+        assert isinstance(blk.x1, Var)
+        assert blk.x1.is_indexed()
+        assert len(blk.x1) == 3
+        assert isinstance(blk.x2, Var)
+        assert blk.x2.is_indexed()
+        assert len(blk.x2) == 3
+        assert isinstance(blk.z1, Var)
+        assert blk.z1.is_indexed()
+        assert len(blk.z1) == 3
+        assert isinstance(blk.alamo_constraint, Constraint)
+        assert blk.alamo_constraint.is_indexed()
+        assert len(blk.alamo_constraint) == 3
+
+        for i in [1, 2, 3]:
+            assert blk.x1[i].bounds == (0, 5)
+            assert blk.x2[i].bounds == (0, 10)
+            assert blk.z1[i].bounds == (None, None)
+            assert str(blk.alamo_constraint["z1", i].body) == (
+                f"z1[{i}] - (3.9999999999925446*x1[{i}]**2 - "
+                f"4.000000000002077*x2[{i}]**2 - "
+                f"2.099999999985938*x1[{i}]**4 + "
+                f"4.000000000004311*x2[{i}]**4 + "
+                f"0.33333333332782633*x1[{i}]**6 + "
+                f"0.9999999999997299*x1[{i}]*x2[{i}])")
+
     @pytest.fixture
     def alm_surr2(self):
         surrogate = {
@@ -825,6 +856,48 @@ class TestAlamoSurrogate():
             "0.04028628356655499*x1**3 + 0.006778566802168481*x2**5 - "
             "0.14017881460354553*x1**6 + 0.7720704944157665*x2**6 + "
             "0.4214330995151807*x1*x2 - 0.041818729807213094)")
+
+    @pytest.mark.unit
+    def test_populate_block_multi_indexed(self, alm_surr2):
+        blk = Block(concrete=True)
+
+        alm_surr2.populate_block(blk, index_set=[1, 2, 3])
+
+        assert isinstance(blk.x1, Var)
+        assert blk.x1.is_indexed()
+        assert len(blk.x1) == 3
+        assert isinstance(blk.x2, Var)
+        assert blk.x2.is_indexed()
+        assert len(blk.x2) == 3
+        assert isinstance(blk.z1, Var)
+        assert blk.z1.is_indexed()
+        assert len(blk.z1) == 3
+        assert isinstance(blk.alamo_constraint, Constraint)
+        assert blk.alamo_constraint.is_indexed()
+        assert len(blk.alamo_constraint) == 6
+
+        for i in [1, 2, 3]:
+            assert blk.x1[i].bounds == (None, None)
+            assert blk.x2[i].bounds == (None, None)
+            assert blk.z1[i].bounds == (None, None)
+            assert str(blk.alamo_constraint["z1", i].body) == (
+                f"z1[{i}] - (3.9999999999925446*x1[{i}]**2 - "
+                f"4.000000000002077*x2[{i}]**2 - "
+                f"2.099999999985938*x1[{i}]**4 + "
+                f"4.000000000004311*x2[{i}]**4 + "
+                f"0.33333333332782633*x1[{i}]**6 + "
+                f"0.9999999999997299*x1[{i}]*x2[{i}])")
+            assert str(blk.alamo_constraint["z2", i].body) == (
+                f"z2[{i}] - (0.07226779984920294*x1[{i}] + "
+                f"0.06845168475391271*x2[{i}] + "
+                f"1.0677896915911471*x1[{i}]**2 - "
+                f"0.7057646480622435*x2[{i}]**2 - "
+                f"0.04028628356655499*x1[{i}]**3 + "
+                f"0.006778566802168481*x2[{i}]**5 - "
+                f"0.14017881460354553*x1[{i}]**6 + "
+                f"0.7720704944157665*x2[{i}]**6 + "
+                f"0.4214330995151807*x1[{i}]*x2[{i}] - "
+                f"0.041818729807213094)")
 
     @pytest.fixture
     def alm_surr3(self):

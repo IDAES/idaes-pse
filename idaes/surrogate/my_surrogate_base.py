@@ -18,6 +18,7 @@ from typing import Dict
 import yaml
 from pyomo.environ import Var
 from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
+from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
 
@@ -332,7 +333,7 @@ class SurrogateModelObject():
             "SurrogateModel class has not implemented evaluate_surrogate "
             "method.")
 
-    def construct_variables(self, block):
+    def construct_variables(self, block, index_set=UnindexedComponent_set):
         var_map = {}
 
         for v in self._input_labels:
@@ -341,12 +342,12 @@ class SurrogateModelObject():
             else:
                 bounds = (None, None)
 
-            vobj = Var(bounds=bounds)
+            vobj = Var(index_set, bounds=bounds)
             block.add_component(v, vobj)
             var_map[v] = vobj
 
         for v in self._output_labels:
-            vobj = Var()
+            vobj = Var(index_set)
             block.add_component(v, vobj)
             var_map[v] = vobj
 

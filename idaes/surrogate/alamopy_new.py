@@ -15,12 +15,14 @@ import subprocess
 from io import StringIO
 import sys
 import os
+from copy import deepcopy
 
-from pyomo.environ import Constraint, value, sin, cos, log, exp
+from pyomo.environ import Constraint, value, sin, cos, log, exp, Set
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
 from pyomo.common.tee import TeeStream
 from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
+from pyomo.core.base.global_set import UnindexedComponent_set
 
 from idaes.surrogate.my_surrogate_base import Surrogate, SurrogateModelObject
 from idaes.core.util.exceptions import ConfigurationError
@@ -867,14 +869,29 @@ class AlamoModelObject(SurrogateModelObject):
             values[o] = value(self._fcn[o](*args))
         return values
 
-    def populate_block(self, block, variables=None):
-        if variables is None:
-            variables = self.construct_variables(block)
+    def populate_block(
+            self, block, variables=None, index_set=None):
+        if index_set is None:
+            var_index_set = UnindexedComponent_set
+            con_index_set = Set(initialize=self._output_labels)
+        else:
+            var_index_set = index_set
+            con_index_set = Set(initialize=self._output_labels)*index_set
 
-        def alamo_rule(b, o):
-            return eval(self._surrogate[o], GLOBAL_FUNCS, variables)
+        if variables is None:
+            variables = self.construct_variables(
+                block, index_set=var_index_set)
+
+        def alamo_rule(b, o, *args):
+            # If we have more than 1 argument, it mans we have an index_set
+            # Need to get the var_data from the indexed vars
+            lvars = deepcopy(variables)
+            if len(args) > 0:
+                for k, v in variables.items():
+                    lvars[k] = v[args]
+            return eval(self._surrogate[o], GLOBAL_FUNCS, lvars)
 
         block.add_component(
             "alamo_constraint",
-            Constraint(self._output_labels,
+            Constraint(con_index_set,
                        rule=alamo_rule))
