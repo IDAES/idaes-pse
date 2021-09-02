@@ -16,6 +16,7 @@ from io import StringIO
 import sys
 import os
 from copy import deepcopy
+import numpy as np
 
 from pyomo.environ import Constraint, value, sin, cos, log, exp, Set
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
@@ -863,11 +864,14 @@ class AlamoModelObject(SurrogateModelObject):
                 f"{self._surrogate[o].split('==')[1]}",
                 GLOBAL_FUNCS)
 
-    def evaluate_surrogate(self, *args):
-        values = {}
-        for o in self._output_labels:
-            values[o] = value(self._fcn[o](*args))
-        return values
+    def evaluate_surrogate(self, inputs):
+        outputs = np.zeros(shape=(len(self._output_labels), inputs.shape[1]))
+
+        for i in range(inputs.shape[1]):
+            for o in range(len(self._output_labels)):
+                o_name = self._output_labels[o]
+                outputs[o, i] = value(self._fcn[o_name](*inputs[:, i]))
+        return outputs
 
     def populate_block(
             self, block, variables=None, index_set=None):

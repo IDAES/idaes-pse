@@ -715,18 +715,20 @@ class TestAlamoSurrogate():
 
     @pytest.mark.unit
     def test_evaluate_surrogate(self, alm_surr1):
-        in_list = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
-                   0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
-        for x1 in in_list:
-            for x2 in in_list:
-                out = alm_surr1.evaluate_surrogate(x1, x2)
-                assert pytest.approx(out["z1"], rel=1e-8) == (
-                    3.9999999999925446303450 * x1**2 -
-                    4.0000000000020765611453 * x2**2 -
-                    2.0999999999859380039879 * x1**4 +
-                    4.0000000000043112180492 * x2**4 +
-                    0.33333333332782633107172 * x1**6 +
-                    0.99999999999972988273811 * x1*x2)
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+
+        out = alm_surr1.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[1]):
+            assert pytest.approx(out[0, i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs[0, i]**2 -
+                4.0000000000020765611453 * inputs[1, i]**2 -
+                2.0999999999859380039879 * inputs[0, i]**4 +
+                4.0000000000043112180492 * inputs[1, i]**4 +
+                0.33333333332782633107172 * inputs[0, i]**6 +
+                0.99999999999972988273811 * inputs[0, i]*inputs[1, i])
 
     @pytest.mark.unit
     def test_populate_block(self, alm_surr1):
@@ -806,29 +808,31 @@ class TestAlamoSurrogate():
 
     @pytest.mark.unit
     def test_evaluate_surrogate_multi(self, alm_surr2):
-        in_list = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
-                   0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
-        for x1 in in_list:
-            for x2 in in_list:
-                out = alm_surr2.evaluate_surrogate(x1, x2)
-                assert pytest.approx(out["z1"], rel=1e-8) == (
-                    3.9999999999925446303450 * x1**2 -
-                    4.0000000000020765611453 * x2**2 -
-                    2.0999999999859380039879 * x1**4 +
-                    4.0000000000043112180492 * x2**4 +
-                    0.33333333332782633107172 * x1**6 +
-                    0.99999999999972988273811 * x1*x2)
-                assert pytest.approx(out["z2"], rel=1e-8) == (
-                    0.72267799849202937756409E-001 * x1 +
-                    0.68451684753912708791823E-001 * x2 +
-                    1.0677896915911471165117 * x1**2 -
-                    0.70576464806224348258468 * x2**2 -
-                    0.40286283566554989543640E-001 * x1**3 +
-                    0.67785668021684807038607E-002 * x2**5 -
-                    0.14017881460354553180281 * x1**6 +
-                    0.77207049441576647286212 * x2**6 +
-                    0.42143309951518070910481 * x1*x2 -
-                    0.41818729807213093907503E-001)
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+
+        out = alm_surr2.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[1]):
+            assert pytest.approx(out[0, i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs[0, i]**2 -
+                4.0000000000020765611453 * inputs[1, i]**2 -
+                2.0999999999859380039879 * inputs[0, i]**4 +
+                4.0000000000043112180492 * inputs[1, i]**4 +
+                0.33333333332782633107172 * inputs[0, i]**6 +
+                0.99999999999972988273811 * inputs[0, i]*inputs[1, i])
+            assert pytest.approx(out[1, i], rel=1e-8) == (
+                0.72267799849202937756409E-001 * inputs[0, i] +
+                0.68451684753912708791823E-001 * inputs[1, i] +
+                1.0677896915911471165117 * inputs[0, i]**2 -
+                0.70576464806224348258468 * inputs[1, i]**2 -
+                0.40286283566554989543640E-001 * inputs[0, i]**3 +
+                0.67785668021684807038607E-002 * inputs[1, i]**5 -
+                0.14017881460354553180281 * inputs[0, i]**6 +
+                0.77207049441576647286212 * inputs[1, i]**6 +
+                0.42143309951518070910481 * inputs[0, i]*inputs[1, i] -
+                0.41818729807213093907503E-001)
 
     @pytest.mark.unit
     def test_populate_block_multi(self, alm_surr2):
@@ -913,13 +917,15 @@ class TestAlamoSurrogate():
 
     @pytest.mark.unit
     def test_evaluate_surrogate_funcs(self, alm_surr3):
-        in_list = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
-        for x1 in in_list:
-            for x2 in in_list:
-                out = alm_surr3.evaluate_surrogate(x1, x2)
-                assert pytest.approx(out["z1"], rel=1e-8) == (
-                    2*sin(x1**2) - 3*cos(x2**3) -
-                    4*log(x1**4) + 5*exp(x2**5))
+        x = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+
+        inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+
+        out = alm_surr3.evaluate_surrogate(inputs)
+        for i in range(inputs.shape[1]):
+            assert pytest.approx(out[0, i], rel=1e-8) == (
+                2*sin(inputs[0, i]**2) - 3*cos(inputs[1, i]**3) -
+                4*log(inputs[0, i]**4) + 5*exp(inputs[1, i]**5))
 
     @pytest.mark.unit
     def test_populate_block_funcs(self, alm_surr3):
