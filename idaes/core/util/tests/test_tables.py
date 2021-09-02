@@ -548,9 +548,8 @@ def test_state_block_retrieval_fail(flash_model):
     m = flash_model
     with pytest.raises(TypeError,
            match="No state block could be retrieved from Port "
-           "fs.flash.liq_outlet because variable "
-           "fs.flash.split._Liq_flow_mol_phase_comp_ref\[0.0,p1,c1\] does not "
-           "belong to a state block."
+           "fs.flash.liq_outlet because Component fs.flash.split "
+           "is not indexed."
            ):
         df = create_stream_table_dataframe({"state": m.fs.flash.liq_outlet})
 
@@ -560,7 +559,7 @@ def test_state_block_retrieval_empty_port():
     m.p = Port()
     with pytest.raises(AttributeError,
            match="No state block could be retrieved from Port p because it "
-           "contains no variables."
+           "contains no components."
            ):
         df = create_stream_table_dataframe({"state": m.p})
 @pytest.fixture()

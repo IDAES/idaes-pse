@@ -269,35 +269,38 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
     )
 
 def _get_state_from_port(port,time_point):
+    # To prevent circular import
     from idaes.core.property_base import StateBlockData
     states = list()
-    v = None # To make PyLint stop complaining
+    vlist = list()
     for v in port.iter_vars():
         if not v.parent_block().parent_component().is_indexed():
             raise TypeError(
                 f"No state block could be retrieved from Port {port.name} "
-                f"because variable {v.name} does not belong to a state block."
+                f"because Component {v.parent_block().parent_component()} "
+                "is not indexed."
                 )
         if not isinstance(v.parent_block(),StateBlockData):
             raise TypeError(
                 f"No state block could be retrieved from Port {port.name} "
-                f"because variable {v.name} does not belong to a state block."
+                f"because Component {v.name} does not belong to a state block."
                 )
         states.append(v.parent_block().parent_component())
+        vlist.append(v)
         
-    if len(states) == 0:
+    if len(vlist) == 0:
         raise AttributeError(
             f"No state block could be retrieved from Port {port.name} "
-            f"because it contains no variables."
+            f"because it contains no components."
             )
     # Check the number of indices of the parent property block. If its indexed
     # both in space and time, keep the second, spatial index and throw out the
     # first, temporal index. If that ordering is changed, this method will
     # need to be changed as well.
-    idx = v.parent_block().index()
+    idx = vlist[0].parent_block().index()
     if isinstance(idx,tuple):
-        if len(idx) ==2:
-            idx = (time_point,v.parent_block().index()[1])
+        if len(idx) == 2:
+            idx = (time_point,vlist[0].parent_block().index()[1])
         elif len(idx) >2:
             raise NotImplementedError(
                 "State block retrieval is supported for only 0D and 1D control "
@@ -311,7 +314,7 @@ def _get_state_from_port(port,time_point):
         return states[0][idx]
     raise AttributeError(
         f"No state block could be retrieved from Port {port.name} "
-        f"because variables are derived from multiple state blocks."
+        f"because components are derived from multiple state blocks."
         )
 
 
