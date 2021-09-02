@@ -14,20 +14,17 @@
 Tests for surrogate base class and functions.
 """
 # standard library
-import json
 import os
-from pathlib import Path
-import tempfile
 
 # third-party packages
 import pytest
 import numpy as np
-from idaes.surrogate.main import Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression, \
-                                Alamopy, Metrics, GeneralSurrogate
+from idaes.surrogate.main import \
+    Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression, Metrics, GeneralSurrogate
 from pyomo.environ import Block, Var, ConcreteModel, Objective, Set
 
-import idaes.surrogate.alamopy as alamopy
 from idaes.surrogate.my_surrogate_base import SurrogateModelObject
+
 
 @pytest.fixture
 def branin_dataset():
@@ -50,35 +47,6 @@ def branin_dataset():
 
     return m, x, y
 
-@pytest.mark.unit
-def test_alamopy(branin_dataset):
-    m, x, y = branin_dataset
-
-    alamo_settings = {'monomialpower':(1, 2, 3, 4, 5, 6),
-                      'multi2power':(1, 2),
-                      'expandoutput':True}
-    modeler = Alamopy(**alamo_settings)
-
-    modeler.regressed_data(x, y)
-
-    has_alamo_flag = alamopy.multos.has_alamo()
-    if has_alamo_flag:
-
-        modeler.build_model()
-
-        print(modeler.get_results())
-        m.obj = Objective(expr=modeler._model)
-        m.pprint()
-
-        modeler.save_results('results.pickle', overwrite=True)
-
-        check_metrics(modeler.get_results())
-        # check_model_returns(modeler.get_model())
-    else:
-        with pytest.raises(alamopy.AlamoError):
-            modeler.build_model()
-
-    return True
 
 @pytest.mark.unit
 def test_pysmo_krig(branin_dataset):
@@ -101,6 +69,7 @@ def test_pysmo_krig(branin_dataset):
 
     return True
 
+
 @pytest.mark.component
 def test_pysmo_rbf(branin_dataset):
     m, x, y = branin_dataset
@@ -121,6 +90,7 @@ def test_pysmo_rbf(branin_dataset):
     check_metrics(modeler.get_results())
 
     return True
+
 
 @pytest.mark.unit
 def test_pysmo_poly(branin_dataset):
@@ -151,11 +121,9 @@ def test_pysmo_poly(branin_dataset):
 def test_general_interface(branin_dataset):
     m, x, y = branin_dataset
 
-    general_settings = {'alamopy':True, # default
-                        'pysmo_polyregression':True, #default
+    general_settings = {'pysmo_polyregression':True, #default
                         'pysmo_kriging':False, #default
                         'pysmo_rbf':False, #default
-                        'alamopy_rbf': False,
                         'linear':True,
                         # 'ratio': True,
                         'pyomo_vars': [m.x[1], m.x[2]],
