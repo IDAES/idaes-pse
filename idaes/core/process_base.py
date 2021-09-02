@@ -98,7 +98,7 @@ class ProcessBlockData(_BlockData):
         The the build method should usually be overloaded in a subclass derived
         from ProcessBlockData. This method would generally add Pyomo components
         such as variables, expressions, and constraints to the object. It is
-        important for build() methods implimented in derived classes to call
+        important for build() methods implemented in derived classes to call
         build() from the super class.
 
         Args:
