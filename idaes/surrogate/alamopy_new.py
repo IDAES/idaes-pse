@@ -857,6 +857,7 @@ class AlamoModelObject(SurrogateModelObject):
             self, surrogate, input_labels, output_labels, input_bounds=None):
         super().__init__(surrogate, input_labels, output_labels, input_bounds)
 
+        # Create a set of lambda functions for evaluating the surrogate.
         self._fcn = {}
         for o in self._output_labels:
             self._fcn[o] = eval(
@@ -865,6 +866,17 @@ class AlamoModelObject(SurrogateModelObject):
                 GLOBAL_FUNCS)
 
     def evaluate_surrogate(self, inputs):
+        """
+        Method to evaluate ALAMO surrogate at a set of input values.
+
+        Args:
+            inputs: numpy array of input values. First dimension of array
+                must match the number of input variables.
+
+        Returns:
+            outputs: numpy array of values for all outputs evaluated at input
+                points.
+        """
         outputs = np.zeros(shape=(len(self._output_labels), inputs.shape[1]))
 
         for i in range(inputs.shape[1]):
@@ -875,6 +887,21 @@ class AlamoModelObject(SurrogateModelObject):
 
     def populate_block(
             self, block, variables=None, index_set=None):
+        """
+        Method to populate a Pyomo Block with surrogate model constraints.
+
+        Args:
+            block: Pyomo Block component to be populated with constraints.
+            variables: dict mapping surrogate variable labels to existing
+                Pyomo Vars (default=None). If no mapping provided,
+                construct_variables will be called to create a set of new Vars.
+            index_set: (optional) if provided, this will be used to index the
+                Constraints created. This must match the indexing Set of the
+                Vars provided in the variables argument.
+
+        Returns:
+            None
+        """
         if index_set is None:
             var_index_set = UnindexedComponent_set
             con_index_set = Set(initialize=self._output_labels)
@@ -883,11 +910,11 @@ class AlamoModelObject(SurrogateModelObject):
             con_index_set = Set(initialize=self._output_labels)*index_set
 
         if variables is None:
-            variables = self.construct_variables(
+            variables = self._construct_variables(
                 block, index_set=var_index_set)
 
         def alamo_rule(b, o, *args):
-            # If we have more than 1 argument, it mans we have an index_set
+            # If we have more than 1 argument, it means we have an index_set
             # Need to get the var_data from the indexed vars
             lvars = deepcopy(variables)
             if len(args) > 0:

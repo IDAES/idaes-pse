@@ -141,7 +141,6 @@ class Surrogate:
 
     # Get Results
 
-    # TODO: This should be part of the SurrogateModel object instead
     def get_model(self):  # Pyomo Expression
         """
         The ``get_model`` method returns the result of the surrogate training process as a Pyomo Expression
@@ -316,22 +315,57 @@ class SurrogateModelObject():
         self._output_labels = output_labels
         self._input_bounds = input_bounds  # dict of bounds for each label
 
-    def populate_block(self, block, variables=None):
+    def populate_block(
+            self, block, variables=None, index_set=UnindexedComponent_set):
         """
-        Method to populate a Pyomo Block with surrogate model constraints.
+        Placeholder method to populate a Pyomo Block with surrogate model
+        constraints.
+
+        Args:
+            block: Pyomo Block component to be populated with constraints.
+            variables: dict mapping surrogate variable labels to existing
+                Pyomo Vars (default=None). If no mapping provided,
+                construct_variables will be called to create a set of new Vars.
+            index_set: (optional) if provided, this will be used to index the
+                Constraints created. This must match the indexing Set of the
+                Vars provided in the variables argument.
+
+        Returns:
+            None
         """
         raise NotImplementedError(
             "SurrogateModel class has not implemented populate_block method.")
 
     def evaluate_surrogate(self, inputs):
         """
-        Method ot evaluate constraint at a set of user provide values.
+        Placeholder method to evaluate surrogate model at a set of user
+        provided values.
+
+        Args:
+            inputs: numpy array of input values
+
+        Returns:
+            output: numpy array of output values evaluated at inputs
         """
         raise NotImplementedError(
-            "SurrogateModel class has not implemented evaluate_surrogate "
+            "SurrogateModel class has not implemented an evaluate_surrogate "
             "method.")
 
-    def construct_variables(self, block, index_set=UnindexedComponent_set):
+    def _construct_variables(self, block, index_set=UnindexedComponent_set):
+        """
+        Private method used to construct variables when populating Pyomo Blocks
+        if no variable mapping is provided by the user. Variables will be given
+        names based on the labels used by the surroagate model.
+
+        Args:
+            block: Pyomo Block component to be populated with constraints
+            index_set: (optional) if provided, this will be used to index the
+                Vars created by this method.
+
+        Returns:
+            dict mapping surrogate variable labels to created Var components.
+            
+        """
         var_map = {}
 
         for v in self._input_labels:

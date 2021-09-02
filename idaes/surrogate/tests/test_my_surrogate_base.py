@@ -174,7 +174,7 @@ class TestSurrogateModelObject():
     def test_construct_variables_singleton(self, smo):
         b = Block(concrete=True)
 
-        smo.construct_variables(b)
+        smo._construct_variables(b)
 
         assert isinstance(b.x1, Var)
         assert not b.x1.is_indexed()
@@ -192,7 +192,7 @@ class TestSurrogateModelObject():
 
         b = Block(concrete=True)
 
-        smo.construct_variables(b)
+        smo._construct_variables(b)
 
         assert isinstance(b.x1, Var)
         assert not b.x1.is_indexed()
@@ -209,7 +209,7 @@ class TestSurrogateModelObject():
         b = Block(concrete=True)
         b.s = Set(initialize=[1, 2, 3])
 
-        smo.construct_variables(b, index_set=b.s)
+        smo._construct_variables(b, index_set=b.s)
 
         assert isinstance(b.x1, Var)
         assert b.x1.is_indexed()
@@ -230,7 +230,7 @@ class TestSurrogateModelObject():
         b = Block(concrete=True)
         b.s = Set(initialize=[1, 2, 3])
 
-        smo.construct_variables(b, index_set=b.s)
+        smo._construct_variables(b, index_set=b.s)
 
         assert isinstance(b.x1, Var)
         assert b.x1.is_indexed()
