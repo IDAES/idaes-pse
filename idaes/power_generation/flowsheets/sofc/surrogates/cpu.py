@@ -20,7 +20,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-IDAES block for co2 purifucation process based on surrogate models
+IDAES block for CO2 purifucation process based on surrogate models
 
 This is a black box (surrogate based) model for CO2 purification process
 available in Aspen.
@@ -29,11 +29,8 @@ The unit has 1 inlet stream for rich CO2 inlet: inlet
 the unti has 3 outlet streams: pureCO2, water, and vent
 
 The state variables are flow_mol, mol_fraction, temperature, and pressure.
-The state variables can be accessed thotough ports named:
-    inlet
-    pure_CO2
-    water
-    vent_gas
+The state variables can be accessed via ports named: inlet, pure_CO2, water,
+vent_gas
 
 The surrogate models were prepared varying rich inlet flowrate. Expected value
 11350 lbmol/hr, lower bound: 10850 lbmol/hr, and upper bound: 11850 lbmol/hr.
@@ -52,25 +49,24 @@ The unit has 1 inlet stream for rich CO2 inlet: inlet
 Also, the unti has 3 outlet streams: pureCO2, water, and vent
 
 The state variables are:
-    (1) flow_mol
-    (2) temperature
-    (3) pressure
-    (4) mole_frac_comp
-The state variables can be accessed thotough ports named:
-    inlet
-    pureco2
-    water
-    vent
+
+(1) flow_mol
+(2) temperature
+(3) pressure
+(4) mole_frac_comp
+
+The state variables can be accessed via ports named: inlet, pure_CO2, water,
+vent_gas
 
 This model is only based on the inlet flow rate of the CO2 rich stream
 The degrees of freedom are the Inlet states:
-    (1) Inlet flow in mol/s
-    (2) Inlet temperature in K
-    (3) Inlet pressure in Pa
-    (4) Inlet component mol fractions: CO2, H2O, N2, Ar, O2
+
+(1) Inlet flow in mol/s
+(2) Inlet temperature in K
+(3) Inlet pressure in Pa
+(4) Inlet component mol fractions: CO2, H2O, N2, Ar, O2
+
 """
-# Import IDAES cores
-import numpy as np
 from idaes.core import declare_process_block_class, UnitModelBlockData
 import idaes.core.util.scaling as iscale
 # Additional import for the unit operation
@@ -79,7 +75,8 @@ from pyomo.environ import Var, value, units as pyunits, Constraint
 from pyomo.network import Port
 import idaes.logger as idaeslog
 
-import idaes.power_generation.flowsheets.sofc.surrogates.cpu_surrogate_methods as sm
+import idaes.power_generation.flowsheets.sofc.surrogates.\
+    cpu_surrogate_methods as sm
 
 __author__ = "Differentiate Team (N. Susarla, A. Noring, M. Zamarripa)"
 __version__ = "1.0.0"
