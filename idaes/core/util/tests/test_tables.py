@@ -588,4 +588,3 @@ def test_extended_port_retrieval(distillation_model):
     assert df.loc["mole_frac_comp benzene"][stg] == pytest.approx(0.5)
     assert df.loc["mole_frac_comp toluene"][stg] == pytest.approx(0.5)
     assert df.loc["flow_mol"][stg] == pytest.approx(1)
-    
