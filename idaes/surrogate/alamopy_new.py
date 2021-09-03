@@ -694,10 +694,21 @@ class Alamopy(Surrogate):
             log: string of the text output from ALAMO
         """
         ostreams = [StringIO(), sys.stdout]
+
+        if self._temp_context is None:
+            self._temp_context = TempfileManager.push()
+        temp_dir = self._temp_context.mkdtemp()
+
+        # Add lst file to temp file manager
+        cwd = os.getcwd()
+        lstfname = os.path.basename(self._almfile).split(".")[0] + ".lst"
+        lstpath = os.path.join(cwd, lstfname)
+        self._temp_context.add_tempfile(lstpath, exists=False)
+
         try:
             with TeeStream(*ostreams) as t:
                 results = subprocess.run(
-                    [alamo.executable, str(self._almfile)],
+                    [alamo.executable, str(self._almfile), str(temp_dir)],
                     stdout=t.STDOUT,
                     stderr=t.STDERR,
                     universal_newlines=True,
