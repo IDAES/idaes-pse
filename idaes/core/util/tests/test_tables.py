@@ -546,10 +546,9 @@ def test_state_block_retrieval_fail(flash_model):
     # outlet ports. There is a mixture of references, expressions, and multiple
     # state blocks. Therefore we don't want any state block getting through.
     m = flash_model
-    with pytest.raises(TypeError,
-           match="No state block could be retrieved from Port "
-           "fs.flash.liq_outlet because Component fs.flash.split "
-           "is not indexed."
+    with pytest.raises(AttributeError,
+           match="No block could be retrieved from Port fs.flash.liq_outlet "
+           "because components are derived from multiple blocks."
            ):
         df = create_stream_table_dataframe({"state": m.fs.flash.liq_outlet})
 
@@ -558,8 +557,8 @@ def test_state_block_retrieval_empty_port():
     m = ConcreteModel()
     m.p = Port()
     with pytest.raises(AttributeError,
-           match="No state block could be retrieved from Port p because it "
-           "contains no components."
+           match="No block could be retrieved from Port p because it contains "
+           "no components."
            ):
         df = create_stream_table_dataframe({"state": m.p})
 @pytest.fixture()

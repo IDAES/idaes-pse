@@ -16,7 +16,6 @@ from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
 
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -269,43 +268,37 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
     )
 
 def _get_state_from_port(port,time_point):
-    # To prevent circular import
-    from idaes.core.property_base import StateBlockData
-    states = list()
-    vlist = list()
-    for v in port.iter_vars():
-        if not v.parent_block().parent_component().is_indexed():
-            raise TypeError(
-                f"No state block could be retrieved from Port {port.name} "
-                f"because Component {v.parent_block().parent_component()} "
-                "is not indexed."
-                )
-        if not isinstance(v.parent_block(),StateBlockData):
-            raise TypeError(
-                f"No state block could be retrieved from Port {port.name} "
-                f"because Component {v.name} does not belong to a state block."
-                )
-        states.append(v.parent_block().parent_component())
-        vlist.append(v)
-        
+    """
+    Attempt to get a state-block-like object connected to a Port. If different
+    variables on the port appear to be connected to different state blocks,
+    raise an exception. This process is complicated by the fact that the object
+    may be indexed by space as well as time. Therefore, we assume that, if it
+    is, the time index comes first.
+    """
+    vlist = [v for v in port.iter_vars()]
+    states = [v.parent_block().parent_component() for v in vlist]
+
     if len(vlist) == 0:
         raise AttributeError(
-            f"No state block could be retrieved from Port {port.name} "
+            f"No block could be retrieved from Port {port.name} "
             f"because it contains no components."
             )
     # Check the number of indices of the parent property block. If its indexed
     # both in space and time, keep the second, spatial index and throw out the
     # first, temporal index. If that ordering is changed, this method will
     # need to be changed as well.
-    idx = vlist[0].parent_block().index()
+    try:
+        idx = vlist[0].parent_block().index()
+    except AttributeError as err:
+        raise AttributeError(
+                f"No block could be retrieved from Port {port.name} "
+                f"because block {vlist[0].parent_block()} is not indexed."
+                ) from err
+    # Assuming the time index is always first and the spatial indices are all
+    # the same
     if isinstance(idx,tuple):
-        if len(idx) == 2:
-            idx = (time_point,vlist[0].parent_block().index()[1])
-        elif len(idx) >2:
-            raise NotImplementedError(
-                "State block retrieval is supported for only 0D and 1D control "
-                "volumes."
-            )
+        idx = (time_point,vlist[0].parent_block().index()[1:])
+
     else:
         idx = (time_point,)
     # This method also assumes that ports with different spatial indices won't
@@ -313,8 +306,8 @@ def _get_state_from_port(port,time_point):
     if all(states[0] is s for s in states):
         return states[0][idx]
     raise AttributeError(
-        f"No state block could be retrieved from Port {port.name} "
-        f"because components are derived from multiple state blocks."
+        f"No block could be retrieved from Port {port.name} "
+        f"because components are derived from multiple blocks."
         )
 
 
