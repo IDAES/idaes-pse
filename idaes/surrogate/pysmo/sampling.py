@@ -13,7 +13,6 @@
 
 from __future__ import division, print_function
 from six import string_types
-import random
 # from builtins import int, str
 import numpy as np
 import pandas as pd
@@ -356,6 +355,7 @@ class LatinHypercubeSampling(SamplingMethods):
             Exception: When **number_of_samples** is invalid (not an integer, too large, zero, or negative)
 
         """
+
         if sampling_type is None:
             sampling_type = 'creation'
             self.sampling_type = sampling_type
@@ -444,7 +444,7 @@ class LatinHypercubeSampling(SamplingMethods):
         var_samples = np.zeros((self.number_of_samples, 1))
         for i in range(self.number_of_samples):
             strata_lb = i * strata_size
-            sample_point = strata_lb + (random.random() * strata_size)
+            sample_point = strata_lb + (np.random.rand() * strata_size)
             var_samples[i, 0] = (sample_point * (variable_max - variable_min)) + variable_min
         return var_samples
 
