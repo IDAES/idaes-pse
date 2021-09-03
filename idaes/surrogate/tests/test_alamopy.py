@@ -62,8 +62,12 @@ class TestAlamoSurrogateTrainer:
             alm_obj.get_files()
 
             assert alm_obj._almfile is not None
+            assert os.path.exists(alm_obj._almfile)
             assert str(alm_obj._trcfile).split(".")[0] == str(
                 alm_obj._almfile).split(".")[0]
+
+        # Check that we cleaned-up after ourselves
+        assert not os.path.exists(alm_obj._almfile)
 
     @pytest.mark.unit
     def test_get_files_exists(self, alm_obj):
@@ -88,8 +92,7 @@ class TestAlamoSurrogateTrainer:
             "ZLABELS z1\n"
             "XMIN 0 0\n"
             "XMAX 5 10\n"
-            "NDATA 4\n"
-            "NVALDATA 0\n\n"
+            "NDATA 4\n\n"
             "linfcns 1\n"
             "constant 1\n"
             "maxtime 1000.0\n"
@@ -117,8 +120,7 @@ class TestAlamoSurrogateTrainer:
             "ZLABELS z1\n"
             "XMIN 0 0\n"
             "XMAX 5 10\n"
-            "NDATA 4\n"
-            "NVALDATA 0\n\n"
+            "NDATA 4\n\n"
             "NCUSTOMBAS 2\n"
             "linfcns 1\n"
             "constant 1\n"
@@ -172,8 +174,7 @@ class TestAlamoSurrogateTrainer:
             "ZLABELS z1\n"
             "XMIN 0 0\n"
             "XMAX 5 10\n"
-            "NDATA 4\n"
-            "NVALDATA 0\n\n"
+            "NDATA 4\n\n"
             "linfcns 1\n"
             "constant 1\n"
             "maxtime 1000.0\n"
@@ -283,8 +284,7 @@ class TestAlamoSurrogateTrainer:
             "ZLABELS z1\n"
             "XMIN 0 0\n"
             "XMAX 5 10\n"
-            "NDATA 4\n"
-            "NVALDATA 0\n\n"
+            "NDATA 4\n\n"
             "MONO 1\n"
             "MULTI2 3\n"
             "MULTI3 4\n"
@@ -358,8 +358,7 @@ class TestAlamoSurrogateTrainer:
             f"ZLABELS z1\n"
             f"XMIN 0 0\n"
             f"XMAX 5 10\n"
-            f"NDATA 4\n"
-            f"NVALDATA 0\n\n"
+            f"NDATA 4\n\n"
             f"linfcns 1\n"
             f"constant 1\n"
             f"maxtime 1000.0\n"
@@ -372,6 +371,9 @@ class TestAlamoSurrogateTrainer:
             f"3 7 30\n"
             f"4 8 40\n"
             f"END_DATA\n")
+
+        # Check for clean up
+        assert not os.path.exists(alm_obj._almfile)
 
     @pytest.mark.unit
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
@@ -394,9 +396,13 @@ class TestAlamoSurrogateTrainer:
             t.add_tempfile("GUI_trace.trc", exists=False)
             t.add_tempfile("alamo_test.lst", exists=False)
             alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
-            rc, log = alm_obj.call_alamo()
+            rc, almlog = alm_obj.call_alamo()
             assert rc == 0
-            assert "Normal termination" in log
+            assert "Normal termination" in almlog
+
+        # Check for clean up
+        assert not os.path.exists("GUI_trace.trc")
+        assert not os.path.exists("alamo_test.lst")
 
     @pytest.mark.unit
     def test_read_trace_single(self, alm_obj):
@@ -941,3 +947,100 @@ class TestAlamoSurrogate():
         print(str(blk.alamo_constraint["z1"].body))
         assert str(blk.alamo_constraint["z1"].body) == (
             "z1 - (2*sin(x1**2) - 3*cos(x2**3) - 4*log(x1**4) + 5*exp(x2**5))")
+
+
+@pytest.mark.integration
+def test_workflow():
+    # Test end-to-end workflow with a simple problem.
+    alm_obj = Alamopy()
+
+    alm_obj._n_inputs = 2
+    alm_obj._n_outputs = 1
+
+    alm_obj._input_labels = ["x1", "x2"]
+    alm_obj._output_labels = ["z1"]
+
+    alm_obj._input_min = [-1.5, -1.5]
+    alm_obj._input_max = [1.5, 1.5]
+
+    alm_obj._rdata_in = np.array([
+        [0.353837234435, 0.904978848612, 0.643706630938, 1.29881420688,
+         1.35791650867, 0.938369314089, -1.46593541641, -0.374378293218,
+         0.690326213554, -0.961163301329],
+        [0.99275270941666, -0.746908518721, -0.617496599522, 0.305594881575,
+         0.351045058258, -0.525167416293, 0.383902178482, -0.689730440659,
+         0.569364994374, 0.499471920546]])
+
+    alm_obj._rdata_out = np.array(
+        [0.762878272854, 0.387963718723, -0.0205375902284, 2.43011137696,
+         2.36989368612, 0.829756159423, 1.14054797964, -0.219122783909,
+         0.982068847698, 0.936855365038],
+        ndmin=2)
+
+    alm_obj.config.linfcns = True
+    alm_obj.config.monomialpower = [2, 3, 4, 5, 6]
+    alm_obj.config.multi2power = [1, 2]
+
+    rc, almlog = alm_obj.build_model()
+
+    # Check execution
+    assert rc == 0
+    assert "Normal termination" in almlog
+
+    # Check temp file clean up
+    assert alm_obj._temp_context is None
+    assert not os.path.exists(alm_obj._almfile)
+    assert not os.path.exists(alm_obj._trcfile)
+
+    # Check results
+    assert alm_obj._results is not None
+    assert alm_obj._results['NINPUTS'] == '2'
+    assert alm_obj._results['NOUTPUTS'] == '1'
+    assert alm_obj._results['SSEOLR'] == {'z1': '0.373E-29'}
+    assert alm_obj._results['SSE'] == {'z1': '0.976E-23'}
+    assert alm_obj._results['RMSE'] == {'z1': '0.988E-12'}
+    assert alm_obj._results['R2'] == {'z1': '1.00'}
+    assert alm_obj._results['ModelSize'] == {'z1': '6'}
+    assert alm_obj._results['BIC'] == {'z1': '-539.'}
+    assert alm_obj._results['RIC'] == {'z1': '32.5'}
+    assert alm_obj._results['Cp'] == {'z1': '2.00'}
+    assert alm_obj._results['AICc'] == {'z1': '-513.'}
+    assert alm_obj._results['HQC'] == {'z1': '-543.'}
+    assert alm_obj._results['MSE'] == {'z1': '0.325E-23'}
+    assert alm_obj._results['SSEp'] == {'z1': '0.976E-23'}
+    assert alm_obj._results['MADp'] == {'z1': '0.115E-07'}
+
+    assert alm_obj._results['Model'] == {
+            "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
+            "4.0000000000020792256805 * x2**2 - "
+            "2.0999999999859380039879 * x1**4 + "
+            "4.0000000000043085535140 * x2**4 + "
+            "0.33333333332782683067208 * x1**6 + "
+            "0.99999999999973088193883 * x1*x2"}
+
+    assert isinstance(alm_obj._model, AlamoModelObject)
+    assert alm_obj._model._surrogate == {
+        'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
+        '4.0000000000020792256805 * x2**2 - '
+        '2.0999999999859380039879 * x1**4 + '
+        '4.0000000000043085535140 * x2**4 + '
+        '0.33333333332782683067208 * x1**6 + '
+        '0.99999999999973088193883 * x1*x2'}
+    assert alm_obj._model._input_labels == ["x1", "x2"]
+    assert alm_obj._model._output_labels == ["z1"]
+    assert alm_obj._model._input_bounds == {
+        "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+
+    # Check populating a blokc to finish workflow
+    blk = Block(concrete=True)
+
+    alm_obj._model.populate_block(blk)
+
+    assert isinstance(blk.x1, Var)
+    assert blk.x1.bounds == (-1.5, 1.5)
+    assert isinstance(blk.x2, Var)
+    assert blk.x2.bounds == (-1.5, 1.5)
+    assert isinstance(blk.z1, Var)
+    assert blk.z1.bounds == (None, None)
+    assert isinstance(blk.alamo_constraint, Constraint)
+    assert len(blk.alamo_constraint) == 1

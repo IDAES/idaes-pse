@@ -472,7 +472,8 @@ class Alamopy(Surrogate):
             None
 
         Returns:
-            None
+            rc : return code from calling ALAMO executable
+            almlog : log of output from ALAMO executable
         """
         super().build_model()
 
@@ -484,7 +485,7 @@ class Alamopy(Surrogate):
             self.write_alm_file()
 
             # Call ALAMO executable
-            self.call_alamo()
+            rc, almlog = self.call_alamo()
 
             # Read back results
             trace_dict = self.read_trace_file()
@@ -496,6 +497,8 @@ class Alamopy(Surrogate):
         finally:
             # Clean up temporary files if required
             self.remove_temp_files()
+
+        return rc, almlog
 
     def get_files(self):
         """
@@ -594,7 +597,9 @@ class Alamopy(Surrogate):
         stream.write(f"XMIN {' '.join(map(str, self._input_min))}\n")
         stream.write(f"XMAX {' '.join(map(str, self._input_max))}\n")
         stream.write(f"NDATA {n_rdata}\n")
-        stream.write(f"NVALDATA {n_vdata}\n\n")
+        if x_val is not None:
+            stream.write(f"NVALDATA {n_vdata}\n")
+        stream.write("\n")
 
         # Other options for config
         # Can be bool, list of floats, None, Enum, float
