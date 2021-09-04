@@ -773,14 +773,42 @@ class IsothermalSofcElectrolyteData(UnitModelBlockData):
     CONFIG.declare(
         "zset", ConfigValue(description="Evenly spaced symetric CV boundary set")
     )
+    CONFIG.declare(
+        "length", ConfigValue(default=None, description="Lenght variable from parent")
+    )
+    CONFIG.declare(
+        "width", ConfigValue(default=None, description="Width variable from parent")
+    )
 
     def build(self):
         #
         super().build()
         tset = self.flowsheet().config.time
-        self.izset = pyo.Set(initialize=range(0, len(self.config.zset)))
+        zset = self.config.zset
+        self.izset = pyo.Set(initialize=range(0, len(zset)))
+        self.izset_cv = pyo.Set(initialize=range(1, len(zset)))
         self.thickness = pyo.Var()
         self.temperature = pyo.Var(tset, self.izset)
+
+
+        if self.config.length is None:
+            self.length = pyo.Var(initialize=0.25)
+        else:
+            self.length = pyo.Reference(self.config.length)
+
+        if self.config.width is None:
+            self.width = pyo.Var(initialize=0.25)
+        else:
+            self.width = pyo.Reference(self.config.width)
+
+        self.k_res = pyo.Var(initialize=2.94e-5)
+        self.E_res = pyo.Var(initialize=10350)
+
+        @self.Expression(tset, self.izset_cv)
+        def resistance(b, t, iz):
+            T = b.temperature[t, iz]
+            A = b.width * (zset[iz] - zset[iz - 1]) * b.length
+            return b.thickness * b.k_res * pyo.exp(b.E_res / T) / A
 
 
 @declare_process_block_class("IsothermalSofc")
@@ -902,6 +930,8 @@ class IsothermalSofcData(UnitModelBlockData):
         self.eta_ae = pyo.Var(tset, izset_cv, initialize=2000 * _constR / _constF)
         self.k_fe = pyo.Var()
         self.k_ae = pyo.Var()
+        self.alpha_fe = pyo.Var()
+        self.alpha_ae = pyo.Var()
         self.eact_fe = pyo.Var()
         self.eact_ae = pyo.Var()
         self.heat_duty = pyo.Var(tset)
@@ -992,19 +1022,13 @@ class IsothermalSofcData(UnitModelBlockData):
             )
 
         @self.Expression(tset, izset_cv)
-        def el_R(b, t, iz):
-            T = b.el.temperature[t, iz]
-            A = self.width * (zset[iz] - zset[iz - 1]) * self.length
-            return b.el.thickness * 2.94e-5 * pyo.exp(10350 / T) / A
-
-        @self.Expression(tset, izset_cv)
         def eta_ohm(b, t, iz):
             return b.current[t, iz] * (
-                b.el_R[t, iz] + b.fe.resistance[t, iz] + b.ae.resistance[t, 1 + nz - iz]
+                b.el.resistance[t, iz] + b.fe.resistance[t, iz] + b.ae.resistance[t, 1 + nz - iz]
             )
 
         @self.Expression(tset, izset_cv)
-        def fe_ced(b, t, iz):
+        def fe_ecd(b, t, iz):
             k = self.k_fe
             E = self.eact_fe
             yh2 = self.fe.mole_frac_comp[t, iz, nxfe, "H2"]
@@ -1016,13 +1040,13 @@ class IsothermalSofcData(UnitModelBlockData):
         @self.Expression(tset, izset_cv)
         def eta_fe_expr(b, t, iz):
             T = b.fe.temperature[t, iz, nxfe]
-            ced = b.fe_ced[t, iz]
+            ecd = b.fe_ecd[t, iz]
             I = b.current[t, iz]
-            alpha = 0.5
-            return _constR * T / alpha / _constF * pyo.asinh(I / ced / 2.0)
+            alpha = b.alpha_fe
+            return _constR * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
 
         @self.Expression(tset, izset_cv)
-        def ae_ced(b, t, iz):
+        def ae_ecd(b, t, iz):
             k = self.k_ae
             E = self.eact_ae
             yo2 = self.ae.mole_frac_comp[t, iz, nxae, "O2"]
@@ -1033,10 +1057,10 @@ class IsothermalSofcData(UnitModelBlockData):
         @self.Expression(tset, izset_cv)
         def eta_ae_expr(b, t, iz):
             T = b.ae.temperature[t, iz, nxfe]
-            ced = b.ae_ced[t, iz]
+            ecd = b.ae_ecd[t, iz]
             I = b.current[t, 1 + nz - iz]
-            alpha = 0.5
-            return _constR * T / alpha / _constF * pyo.asinh(I / ced / 2.0)
+            alpha = b.alpha_ae
+            return _constR * T / alpha / _constF * pyo.asinh(I / ecd / 2.0)
 
         @self.Constraint(tset, izset_cv)
         def potential_eqn(b, t, iz):
@@ -1072,12 +1096,23 @@ class IsothermalSofcData(UnitModelBlockData):
         def h2_utilization_expr(b, t):
             return (
                 (
-                    b.fc.flow_mol[t, 0] / b.fc.mole_frac_comp[t, 0, "H2"]
-                    - b.fc.flow_mol[t, izset.last()] * b.fc.mole_frac_comp[t, nz, "H2"]
+                    b.fc.flow_mol[t, 0] * b.fc.mole_frac_comp[t, 0, "H2"]
+                    - b.fc.flow_mol[t, izset.last()] * b.fc.mole_frac_comp[t, izset.last(), "H2"]
                 )
                 / b.fc.flow_mol[t, 0]
                 / b.fc.mole_frac_comp[t, 0, "H2"]
             )
+
+        @self.Expression(tset)
+        def h2_generation_expr(b, t):
+            return (
+                b.fc.flow_mol[t, izset.last()] * b.fc.mole_frac_comp[t, izset.last(), "H2"]
+                - b.fc.flow_mol[t, 0] * b.fc.mole_frac_comp[t, 0, "H2"]
+            )
+
+        @self.Expression(tset)
+        def power_per_h2_generation_expr(b, t):
+            return b.power[t]/b.h2_generation_expr[t]
 
         if not self.config.soec:
 
@@ -1332,12 +1367,16 @@ def sofc_example():
     m.fs.sofc.width.fix(0.05)
     m.fs.sofc.k_ae.fix(1e10)
     m.fs.sofc.eact_ae.fix(120000)
+    m.fs.sofc.alpha_ae.fix(0.5)
     m.fs.sofc.k_fe.fix(6.1e9)
     m.fs.sofc.eact_fe.fix(110000)
+    m.fs.sofc.alpha_fe.fix(0.5)
     m.fs.sofc.fe.k_res.fix(2.98e-5)
     m.fs.sofc.fe.E_res.fix(-1392)
     m.fs.sofc.ae.k_res.fix(8.114e-5)
     m.fs.sofc.ae.E_res.fix(600)
+    m.fs.sofc.el.k_res.fix(2.94e-5)
+    m.fs.sofc.el.E_res.fix(10350)
     m.fs.sofc.fc.thickness.fix(0.002)
     m.fs.sofc.ac.thickness.fix(0.002)
     m.fs.sofc.fe.porosity.fix(0.48)
@@ -1400,7 +1439,6 @@ def sofc_example():
     print(f"Flow_mol AC outlet: {pyo.value(m.fs.sofc.ac.flow_mol[0, nz])} mol/s")
     print(f"H2 Utilization: {pyo.value(m.fs.sofc.h2_utilization[0])}")
     print(f"O2 Stoichs: {pyo.value(m.fs.sofc.o2_stoichs[0])}")
-
     z = [
         (m.fs.sofc.zset[iz] + m.fs.sofc.zset[iz - 1]) / 2.0 for iz in m.fs.sofc.izset_cv
     ]
@@ -1643,12 +1681,16 @@ def soec_example():
     m.fs.soec.width.fix(0.05)
     m.fs.soec.k_ae.fix(8.7e7*3)
     m.fs.soec.eact_ae.fix(120000)
+    m.fs.soec.alpha_ae.fix(0.5)
     m.fs.soec.k_fe.fix(1.35e10)
     m.fs.soec.eact_fe.fix(110000)
+    m.fs.soec.alpha_fe.fix(0.4)
     m.fs.soec.fe.k_res.fix(2.98e-5)
     m.fs.soec.fe.E_res.fix(-1392)
     m.fs.soec.ae.k_res.fix(8.114e-5)
     m.fs.soec.ae.E_res.fix(600)
+    m.fs.soec.el.k_res.fix(2.94e-5)
+    m.fs.soec.el.E_res.fix(10350)
     m.fs.soec.fc.thickness.fix(0.002)
     m.fs.soec.ac.thickness.fix(0.002)
     m.fs.soec.fe.porosity.fix(0.48)
@@ -1663,12 +1705,12 @@ def soec_example():
     m.fs.soec.ae.temperature.fix(temperature)
 
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
-    m.fs.soec.fc.flow_mol[:, 0].fix(1e-5)
+    m.fs.soec.fc.flow_mol[:, 0].fix(1e-4)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.7)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.30)
 
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
-    m.fs.soec.ac.flow_mol[:, 0].fix(1e-5)
+    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
 
@@ -1686,6 +1728,12 @@ def soec_example():
     solver = pyo.SolverFactory("ipopt")
     # solver.options["halt_on_ampl_error"] = "yes"
     # solver.solve(m, tee=True, symbolic_solver_labels=True)
+    solver.solve(m, tee=True)
+
+    @m.fs.Constraint(m.fs.time)
+    def heat_duty_zero_eqn(b, t):
+        return b.soec.heat_duty[t] == 0
+    m.fs.soec.E_cell.unfix()
     solver.solve(m, tee=True)
 
     z = [
@@ -1787,6 +1835,9 @@ def soec_example():
         f"Current Density: {pyo.value(m.fs.soec.total_current[0]/m.fs.soec.length/m.fs.soec.width)} A/m^2"
     )
     print(f"Power: {pyo.value(m.fs.soec.power[0])} W")
+    print(f"H2 generated: {pyo.value(m.fs.soec.h2_generation_expr[0])} mol/s")
+    print(f"Power/H2 generated: {pyo.value(m.fs.soec.power_per_h2_generation_expr[0])} J/mol H2")
+    print(f"Power/H2 generated: {pyo.value(m.fs.soec.power_per_h2_generation_expr[0])/2e-3*1e-6} MJ/kg H2")
     print(f"Heat duty: {pyo.value(m.fs.soec.heat_duty[0])} W")
     print(f"Cell temperature: {pyo.value(m.fs.soec.ac.temperature[t,nz]):.1f} K")
     print(f"Fuel inlet enthalpy: {pyo.value(m.fs.soec.h_fuel_in[0])} W")
@@ -1798,6 +1849,7 @@ def soec_example():
     print(f"Flow_mol FC outlet: {pyo.value(m.fs.soec.fc.flow_mol[0, nz])} mol/s")
     print(f"Flow_mol AC inlet: {pyo.value(m.fs.soec.ac.flow_mol[0, 0])} mol/s")
     print(f"Flow_mol AC outlet: {pyo.value(m.fs.soec.ac.flow_mol[0, nz])} mol/s")
+
     m.fs.soec.inlet_ac.display()
     m.fs.soec.outlet_ac.display()
     m.fs.soec.inlet_fc.display()
