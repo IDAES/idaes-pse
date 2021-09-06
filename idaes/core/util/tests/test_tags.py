@@ -18,26 +18,30 @@ import pytest
 import pyomo.environ as pyo
 from idaes.core.util import ModelTag, ModelTagGroup
 
+
 @pytest.fixture()
 def model():
     m = pyo.ConcreteModel()
-    m.w = pyo.Var([1,2,3], ["a", "b"], initialize=4, units=pyo.units.kg)
-    m.x = pyo.Var([1,2,3], initialize=5, units=pyo.units.kg)
+    m.w = pyo.Var([1, 2, 3], ["a", "b"], initialize=4, units=pyo.units.kg)
+    m.x = pyo.Var([1, 2, 3], initialize=5, units=pyo.units.kg)
     m.y = pyo.Var(initialize=6, units=pyo.units.s)
     m.z = pyo.Var(initialize=7)
-    m.e = pyo.Expression(expr=m.w[1, "a"]/m.x[1])
-    m.f = pyo.Expression(expr=m.x[1]/m.y)
+    m.e = pyo.Expression(expr=m.w[1, "a"] / m.x[1])
+    m.f = pyo.Expression(expr=m.x[1] / m.y)
+
     @m.Expression([1, 2, 3], ["a", "b"])
     def g(b, i, j):
-        return m.w[i, j]/m.x[i]*100
+        return m.w[i, j] / m.x[i] * 100
+
     return m
+
 
 @pytest.mark.unit
 def test_tag_display(model):
     m = model
     tw = ModelTag(expr=m.w, format="{:.3f}", doc="Tag for w")
     tf = ModelTag(expr=m.f, format="{:.3f}", doc="Tag for f")
-    tg = ModelTag(expr=m.g, format="{:.1f}", doc="Tag for g", units="%")
+    tg = ModelTag(expr=m.g, format="{:.1f}", doc="Tag for g", display_units="%")
     tz = ModelTag(expr=m.z, format="{:.1f}", doc="Tag for z")
 
     m.w[1, "a"] = 4.0
@@ -56,6 +60,42 @@ def test_tag_display(model):
 
     m.z = 7
     assert str(tz) == "7.0"
+
+
+@pytest.mark.unit
+def test_tag_display_convert(model):
+    m = model
+    tw = ModelTag(expr=m.w, format="{:.3f}", doc="Tag for w", display_units=pyo.units.g)
+    tx = ModelTag(expr=m.x, format="{:.3f}", doc="Tag for x", display_units=pyo.units.g)
+    ty = ModelTag(
+        expr=m.y, format="{:.1f}", doc="Tag for y", display_units=pyo.units.hr
+    )
+    tf = ModelTag(
+        expr=m.f,
+        format="{:.1f}",
+        doc="Tag for f",
+        display_units=pyo.units.g / pyo.units.hr,
+    )
+
+    assert str(tf) == "3000000.0 g/hr"
+    m.x[1].value = 4
+    assert str(tf) == "2400000.0 g/hr"
+    assert str(tx[1]) == "4000.000 g"
+    m.x[1].value = 3
+    assert str(tx[1]) == "3000.000 g"
+    assert str(tw[1, "a"]) == "4000.000 g"
+    assert tw[1, "a"]._index == (1, "a")
+    assert tw._cache_display_value[1, "a"] == pytest.approx(4000.0)
+    assert tw._cache_validation_value[1, "a"] == 4
+    m.w[1, "a"].value = 1
+    m.w[2, "a"].value = 2
+    m.w[3, "a"].value = 3
+    assert str(tw[1, "a"]) == "1000.000 g"
+    assert str(tw[2, "a"]) == "2000.000 g"
+    assert str(tw[3, "a"]) == "3000.000 g"
+    assert tw._cache_display_value[1, "a"] == pytest.approx(1000.0)
+    assert tw._cache_validation_value[1, "a"] == 1
+
 
 @pytest.mark.unit
 def test_tag_input(model):
@@ -91,10 +131,34 @@ def test_tag_input(model):
     ty.set(4)
     assert pyo.value(m.y) == 4
 
+
+@pytest.mark.unit
+def test_tag_input_convert(model):
+    m = model
+    tw = ModelTag(expr=m.w, format="{:.3f}", doc="Tag for w", display_units=pyo.units.g)
+    ty = ModelTag(expr=m.y, format="{:.2f}", doc="Tag for y")
+
+    ty.set(1 * pyo.units.hr)
+    assert str(ty) == "3600.00 s"
+
+    ty.fix(2 * pyo.units.hr)
+    assert str(ty) == "7200.00 s"
+    assert m.y.fixed
+
+    tw[:, "a"].set(3000, in_display_units=True)
+    tw[:, "b"].set(2000, in_display_units=True)
+    assert pyo.value(m.w[1, "a"]) == pytest.approx(3.0)
+    assert pyo.value(m.w[2, "a"]) == pytest.approx(3.0)
+    assert pyo.value(m.w[3, "a"]) == pytest.approx(3.0)
+    assert pyo.value(m.w[1, "b"]) == pytest.approx(2.0)
+    assert pyo.value(m.w[2, "b"]) == pytest.approx(2.0)
+    assert pyo.value(m.w[3, "b"]) == pytest.approx(2.0)
+
+
 @pytest.mark.unit
 def test_tag_ref(model):
     m = model
-    m.rw = pyo.Reference(m.w[:,"a"])
+    m.rw = pyo.Reference(m.w[:, "a"])
     m.ry = pyo.Reference(m.y)
 
     rw = ModelTag(expr=m.rw, format="{:.3f}", doc="Tag for rw")
@@ -107,27 +171,29 @@ def test_tag_ref(model):
     ry[:].set(2)
     assert str(ry[None]) == "2.00 s"
 
+
 @pytest.mark.unit
 def test_tag_group(model):
     m = model
     g = ModelTagGroup()
-    m.rw = pyo.Reference(m.w[:,"a"])
+    m.rw = pyo.Reference(m.w[:, "a"])
     g.add("w", expr=m.rw, format="{:.3f}", doc="make sure this works")
     g.add("x", expr=m.x, format="{:.3f}")
     g.add("y", expr=m.y, format="{:.3f}")
     g.add("z", expr=m.z, format="{:.3f}")
     g.add("e", expr=m.e, format="{:.3f}")
     g.add("f", ModelTag(expr=m.f, format="{:.3f}"))
-    g.add("g", expr=m.g, format="{:.1f}", units="%")
-
+    g.add("g", expr=m.g, format="{:.1f}", display_units="%")
 
     assert g["w"].doc == "make sure this works"
-    g.str_index(1)
+    g.str_default_index(1)
     g.str_include_units(True)
-    g['w'].fix(2)
+    g["w"].fix(2)
 
-    g['x'].fix(1)
-    g['y'].fix(3)
+    g["x"].fix(1)
+    g["y"].fix(3)
+    assert g["w"]._str_index == 1
+    assert g["w"].is_indexed
     assert str(g["w"]) == "2.000 kg"
     assert str(g["x"]) == "1.000 kg"
     assert str(g["y"]) == "3.000 s"

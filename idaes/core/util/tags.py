@@ -19,19 +19,23 @@ from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
 class ModelTag(object):
     """The purpose of this class is to facilitate a simpler method of accessing
-    displaying and reporting model quantities. The structure of IDAES models can be
-    a cmplex hiarachy. The class allows quanties to be accessed more directly and
-    provides control over how they are reported."""
+    displaying and reporting model quantities. The structure of IDAES models is
+    a complex hiarachy. The class allows quanties to be accessed more directly
+    and provides more control over how they are reported."""
 
-    def __init__(self, expr, format="{}", doc="", units=None, name=None):
+    def __init__(self, expr, format="{}", doc="", name=None, display_units=None):
         super().__init__()
         self._format = format  # format string for printing expression
         self._expression = expr  # tag expression (can be unnamed)
-        self._units = units  # user supplied or otherwise obtained from pyomo
         self._doc = doc  # documentation for a tag
+        self._display_units = display_units  # unit to display value in
+        self._cache_validation_value = {}  # value when converted value stored
+        self._cache_display_value = {}  # value to display after unit conversions
         self._name = name  # tag name (just used to claify error messages)
         self._str_units = True  # include units to stringify the tag
         self._str_index = 0  # use this index to stringify the tag
+        self._root = None  # use this to cache scalar tags in indexed parent
+        self._index = None  # index to get cached converted value from parent
 
     def __getitem__(self, k):
         """Returns a new model tag for a scalar element of a tagged indexed
@@ -40,7 +44,7 @@ class ModelTag(object):
             tag = ModelTag(
                 expr=self.expression[k],
                 format=self._format,
-                units=self._units,
+                display_units=self._display_units,
                 doc=self._doc,
             )
         except KeyError:
@@ -49,8 +53,14 @@ class ModelTag(object):
             else:
                 raise KeyError(f"{index} is not a valid index for tag {self._name}")
         tag._str_units = self._str_units
-        # here you may expect for copy the default str index, but the new tag
-        # object shouldn't be indexed anymore, so it doesn't matter.
+        tag._str_index = self._str_index
+        if (
+            self._root is None or self.is_slice
+        ):  # cache the unit conversion in root object
+            tag._root = self
+        else:
+            tag._root = self._root
+        tag._index = k
         return tag
 
     def __str__(self):
@@ -58,7 +68,7 @@ class ModelTag(object):
         return self.display(units=self._str_units, index=self._str_index)
 
     def __call__(self, *args, **kwargs):
-        """Calling an instance of a tagged quantitiy get the display string see
+        """Calling an instance of a tagged quantitiy gets the display string see
         display()"""
         return self.display(*args, **kwargs)
 
@@ -68,37 +78,30 @@ class ModelTag(object):
         Args:
             units (bool): Include units of measure in the string
             format (str): Formatting string, if supplied overrides the default
-            index: If the tagged quantity is indexed, and index for the element
-                to display is required.
+            index: If the tagged quantity is indexed, an index for the element
+                to display is required, or the default index is used.
 
         Returns:
             str
         """
-        if self.is_indexed:
-            try:
-                e = self.expression[index]
-            except KeyError:
-                if self._name is None:
-                    raise KeyError(f"{index} is not a valid index for tag")
-                else:
-                    raise KeyError(f"{index} is not a valid index for tag {self._name}")
-        else:
-            e = self.expression
+        if self.is_indexed and index is None:
+            index = self._str_index
+        v = self.get_display_value(index=index)
         if format is None:
-            return self.get_format(units=units).format(pyo.value(e))
+            return self.get_format(units=units, index=index).format(v)
         else:
             if units:
-                return self._join_units(format=format).format(pyo.value(e))
+                return self._join_units(format=format, index=index).format(v)
             else:
-                return format.format(pyo.value(e))
+                return format.format(v)
 
-    def _join_units(self, format=None):
+    def _join_units(self, index=None, format=None):
         """Private method to join the format string with the units of measure
         string.
         """
         if format is None:
             format = self._format
-        u = self.unit_str
+        u = self.get_unit_str(index=index)
         if u == "None" or u == "" or u is None:
             return format
         elif u == "%":
@@ -116,37 +119,82 @@ class ModelTag(object):
         """Tag documentation string"""
         return self._doc
 
-    def get_format(self, units=True):
+    def get_format(self, units=True, index=None):
         """Get the formatting string.
 
         Args:
             units: if True include units of measure
+            index: index for indexed expressions
 
         Returns
             str:
         """
         if units:
-            return self._join_units()
+            return self._join_units(index=index)
         else:
             return self._format
 
-    @property
-    def unit_str(self):
-        """String representation of the tagged quantity's units of measure"""
-        if self._units is not None:
-            return self._units
+    def get_display_value(self, index=None, convert=True):
+        """Get the value of the expression to display.  Do unit conversion if
+        needed.  This caches the unit conversion, to save time if this is called
+        repeatededly.  The unconverted value is used to ensure the cached
+        converted value is still valid.
+
+        Args:
+            index: index of value to display if expression is indexed
+            convert: if False don't do unit conversion
+
+        Returns:
+            numeric expression value
+        """
+        if self.is_indexed:
+            try:
+                e = self.expression[index]
+            except KeyError:
+                if self._name is None:
+                    raise KeyError(f"{index} is not a valid index for tag")
+                else:
+                    raise KeyError(f"{index} is not a valid index for tag {self._name}")
         else:
-            if self.is_indexed: # issue with references assume units are same
-                first = self.expression.index_set().first()
-                self._units = str(pyo.units.get_units(self.expression[first]))
+            e = self.expression
+        if self._display_units is None:
+            # no display units, so display in original units
+            return pyo.value(e)
+        elif not convert or isinstance(self._display_units, str):
+            # display units can be a string, if you have a model without units
+            # attached but still want to display units, you can specify them as
+            # a string, just for printing
+            return pyo.value(e)
+        else:
+            v = pyo.value(e)
+            if self._root is None:
+                cv = self._cache_validation_value
+                cd = self._cache_display_value
             else:
-                self._units = str(pyo.units.get_units(self.expression))
-            #raise TypeError(self._units)
-            return self._units
+                cv = self._root._cache_validation_value
+                cd = self._root._cache_display_value
+                if not self.is_indexed:
+                    index = self._index
+            if v == cv.get(index, None):
+                return cd[index]
+            else:
+                cv[index] = v
+                cd[index] = pyo.value(pyo.units.convert(e, self._display_units))
+                return cd[index]
+
+    def get_unit_str(self, index=None):
+        """String representation of the tagged quantity's units of measure"""
+        if self._display_units is None:
+            if self.is_indexed:
+                return str(pyo.units.get_units(self.expression[index]))
+            else:
+                return str(pyo.units.get_units(self.expression))
+        else:
+            return str(self._display_units)
 
     @property
     def is_var(self):
-        """Returns whether the tagged expression is a Pyomo Var. Tagged variables
+        """Whether the tagged expression is a Pyomo Var. Tagged variables
         can be fixed or set, while expressions cannot.
 
         Args:
@@ -162,7 +210,7 @@ class ModelTag(object):
 
     @property
     def is_slice(self):
-        """Returns whether the tagged expression is a Pyomo slice.
+        """Whether the tagged expression is a Pyomo slice.
 
         Args:
             None
@@ -214,26 +262,29 @@ class ModelTag(object):
     def str_default_index(self, index=0):
         """Default index to use in the tag's string representation, this
         is required for indexed quntities if you want to automatically convert
-        to string."""
+        to string. An example use it for a time indexed tag, to display a
+        specific time point."""
         self._str_index = index
 
-    def set(self, v, index=None):
+    def set(self, v, in_display_units=False):
         """Set the value of a tagged variable.
 
         Args:
             v: value
-            index: if variable is indexed specifies the index to set
+            in_display_units: if true assume the value is in the display units
 
         Returns:
             None
         """
+        if in_display_units:
+            v *= self._display_units
 
         def _setv(c, v):
             try:
                 c.value = v
             except AttributeError:
                 raise AttributeError(
-                    f"Tagged expression {self._name}, has attribute 'value'."
+                    f"Tagged expression {self._name}, has no attribute 'value'."
                 )
 
         if self.is_slice:
@@ -242,15 +293,18 @@ class ModelTag(object):
         else:
             _setv(self.expression, v)
 
-    def fix(self, v=None):
+    def fix(self, v=None, in_display_units=False):
         """Fix the value of a tagged variable.
 
         Args:
             v: value, if None fix without setting a value
+            in_display_units: if true assume the value is in the display units
 
         Returns:
             None
         """
+        if in_display_units:
+            v *= self._display_units
 
         def _fix(c, v):
             try:
@@ -311,13 +365,17 @@ class ModelTagGroup(dict):
     def __init__(self):
         super().__init__()
 
-    def add(self, name, expr, format="{}", units=None, doc=""):
+    def add(self, name, expr, format="{}", display_units=None, doc=""):
         if isinstance(expr, ModelTag):
             self[name] = expr
             self[name]._name = name
         else:
             self[name] = ModelTag(
-                expr=expr, format=format, units=units, name=name, doc=doc
+                expr=expr,
+                format=format,
+                display_units=display_units,
+                name=name,
+                doc=doc,
             )
 
     def expr_dict(self):
@@ -342,7 +400,7 @@ class ModelTagGroup(dict):
         for v in self.values():
             v.str_include_units(b)
 
-    def str_index(self, index=0):
+    def str_default_index(self, index=0):
         """When convertig a tag in this group directly to a string, use index as
         the default index for indexed varaibles. This can be useful when the tag
         group where indexed expressions have a consitent index set.  For example,
@@ -372,72 +430,3 @@ class ModelTagGroup(dict):
         for n, v in self.items():
             d[name] = format.format(name=n, units=v.unit_str)
         return d
-
-
-if __name__ == "__main__":
-    """This contains some examples"""
-    m = pyo.ConcreteModel()
-    m.x = pyo.Var([1, 2], initialize={1: 3, 2: 4}, units=pyo.units.kg)
-    m.y = pyo.Var(initialize=5, units=pyo.units.s)
-    m.e = pyo.Expression(expr=m.x[1] / m.y)
-    m.z = pyo.Var(initialize=5)
-    m.w = pyo.Var(initialize=5, units=pyo.units.kg)
-
-    g = ModelTagGroup()
-
-    g.add("e", ModelTag(expr=m.e, format="{:.3f}"))
-    g.add("z", expr=m.z, format="{:.1f}")
-    g.add("x", expr=m.x, format="{}")
-    g.add("y", expr=m.y, format="{}")
-    g.add("f", expr=m.x[1] / m.w * 100, units="%")
-
-    for t, v in g.items():
-        print(f"{t} is var: {v.is_var}")
-        print(f"{t} is indexed: {v.is_indexed}")
-        print(f"{t} indexes: {v.indexes}")
-
-    # Various ways to display a tag
-
-    # indexed
-    try:
-        print(f"{g['x']}")
-    except KeyError:
-        print("I didn't provide a valid index")
-    g["x"].str_default_index(1)
-    print(f"{g['x']}")
-    print(f"{g['x'][1]}")
-    print(f"{g['x'](index=1)}")
-    print(f"{g['x'][1](units=False)}")
-    print(f"{g['x'][1].display(units=False, index=2)}")
-
-    # not indexed
-    print(f"{g['e']}")
-    print(f"{g['e'].display(units=False)}")
-    print(f"{g['e'].display(units=False, format='{:.1e}')}")
-
-    # no units
-    print(f"{g['y']}")
-    print(f"{g['y'].display(format='{:.1e}')}")
-
-    # user supplied units
-    print(f"{g['f']}")
-
-    # use tags to set value
-
-    g["x"][1].fix(1)
-    g["x"][2].set(4)
-    g["x"].expression.display()
-
-    # another way
-    g["x"][1].var.fix(2)
-    g["x"][2].var.value = 6
-    g["x"].var.display()
-
-    g["x"][:].fix(1)
-    g["x"].var.display()
-
-    g["x"][:].set(2)
-    g["x"].var.display()
-
-    g["x"][:].unfix()
-    g["x"].var.display()
