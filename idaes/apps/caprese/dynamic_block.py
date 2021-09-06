@@ -236,15 +236,10 @@ class _DynamicBlockData(_BlockData):
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
-        # These may be overridden by a call to `set_sample_time`
-        # The defaults assume that the entire model is one sample.
         if self._sample_time is None:
+            # Default is to assume that the entire model is one sample.
             self.sample_points = [time.first(), time.last()]
             self.sample_point_indices = [1, len(time)]
-        # If self._sample_time is provided, sample_points for the plant and the controller 
-        # will be created in mhe.py or controller.py.
-        # ^ This is a little inconvenient/unintuitive... Why not just do it here?
-        # Presumably it was already done...
         else: 
             self.set_sample_time(self._sample_time)
 
