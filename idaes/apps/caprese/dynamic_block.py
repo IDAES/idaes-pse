@@ -148,15 +148,9 @@ class _DynamicBlockData(_BlockData):
             scalar_vars, dae_vars = flatten_dae_components(
                 model, time, ctype=Var
             )
+            self.scalar_vars = scalar_vars
+            self.dae_vars = dae_vars
             if not categorize_constraints:
-                # Categorize variables only
-                scalar_vars, dae_vars = flatten_dae_components(
-                        model,
-                        time,
-                        ctype=Var,
-                        )
-                self.scalar_vars = scalar_vars
-                self.dae_vars = dae_vars
                 category_dict = categorize_dae_variables(
                         dae_vars,
                         time,
