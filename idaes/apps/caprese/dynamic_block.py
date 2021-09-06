@@ -124,7 +124,7 @@ class _DynamicBlockData(_BlockData):
                 if categ is not VC.MEASUREMENT:
                     # Assume that measurements are duplicates
                     self.dae_vars.extend(varlist)
-        
+
         if self._con_category_dict is None:
             if self._categorize_constraints:
                 # User (a) requested constraint categorization and (b)
