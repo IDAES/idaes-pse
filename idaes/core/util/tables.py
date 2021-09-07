@@ -303,7 +303,7 @@ def _get_state_from_port(port,time_point):
     except AttributeError as err:
         raise AttributeError(
                 f"No block could be retrieved from Port {port.name} "
-                f"because block {vlist[0].parent_block()} has no index."
+                f"because block {vlist[0].parent_block().name} has no index."
                 ) from err
     # Assuming the time index is always first and the spatial indices are all
     # the same
