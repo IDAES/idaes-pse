@@ -88,7 +88,7 @@ def stream_states_dict(streams, time_point=0):
             key = "{}[{}]".format(n, i)
         stream_dict[key] = sb
 
-    for n in streams.keys():        
+    for n in streams.keys():
         if isinstance(streams[n], Arc):
             for i, a in streams[n].items():
                 sb = _get_state_from_port(a.ports[1], time_point)
@@ -101,11 +101,11 @@ def stream_states_dict(streams, time_point=0):
             # whether  streams[n] is one or not.
             try:
                 sb = streams[n][time_point]
-            except (AttributeError, KeyError) as err:
+            except KeyError as err:
                 raise TypeError(
-                    f"Unrecognised component type for stream argument {streams[n]}."
-                    f" The stream_states_dict function only supports Arcs, "
-                    f"Ports or StateBlocks."
+                    f"Either component type of stream argument {streams[n]} "
+                    f"is unindexed or {time_point} is not a member of its "
+                    f"indexing set."
                 ) from err
             _stream_dict_add(sb, n)
     return stream_dict
@@ -269,17 +269,28 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
 
 def _get_state_from_port(port,time_point):
     """
-    Attempt to get a state-block-like object connected to a Port. If different
-    variables on the port appear to be connected to different state blocks,
-    raise an exception. This process is complicated by the fact that the object
-    may be indexed by space as well as time. Therefore, we assume that, if it
-    is, the time index comes first.
+    Attempt to find a StateBlock-like object connected to a Port. If the 
+    object is indexed both in space and time, assume that the time index
+    comes first.  If no components are assigned to the Port, raise a
+    ValueError. If the first component's parent block has no index, raise an
+    AttributeError. If different variables on the port appear to be connected
+    to different state blocks, raise a RuntimeError.
+    
+    Args:
+        port (pyomo.network.Port): a port with variables derived from some 
+            single StateBlock
+        time_point : point in the time domain at which to index StateBlock
+            (default = 0)
+
+    Returns:
+        (StateBlock-like) : an object containing all the components contained 
+            in the port.
     """
-    vlist = [v for v in port.iter_vars()]
+    vlist = list(port.iter_vars())
     states = [v.parent_block().parent_component() for v in vlist]
 
     if len(vlist) == 0:
-        raise AttributeError(
+        raise ValueError(
             f"No block could be retrieved from Port {port.name} "
             f"because it contains no components."
             )
@@ -305,7 +316,7 @@ def _get_state_from_port(port,time_point):
     # end up at the same port. Otherwise this check is insufficient.
     if all(states[0] is s for s in states):
         return states[0][idx]
-    raise AttributeError(
+    raise RuntimeError(
         f"No block could be retrieved from Port {port.name} "
         f"because components are derived from multiple blocks."
         )

@@ -546,7 +546,7 @@ def test_state_block_retrieval_fail(flash_model):
     # outlet ports. There is a mixture of references, expressions, and multiple
     # state blocks. Therefore we don't want any state block getting through.
     m = flash_model
-    with pytest.raises(AttributeError,
+    with pytest.raises(RuntimeError,
            match="No block could be retrieved from Port fs.flash.liq_outlet "
            "because components are derived from multiple blocks."
            ):
@@ -556,7 +556,7 @@ def test_state_block_retrieval_fail(flash_model):
 def test_state_block_retrieval_empty_port():
     m = ConcreteModel()
     m.p = Port()
-    with pytest.raises(AttributeError,
+    with pytest.raises(ValueError,
            match="No block could be retrieved from Port p because it contains "
            "no components."
            ):
