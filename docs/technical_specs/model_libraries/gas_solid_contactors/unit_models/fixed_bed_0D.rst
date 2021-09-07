@@ -46,8 +46,15 @@ Reaction and Mass/Heat Transfer Constraints
 
 Solid material holdup:
 
-.. math:: h_{mass,s,t,j} = v_{s} \rho_{mass,s,t} x_{mass,s,t,j}
-.. math:: A_{or} = \frac{1}{n_{or}}
+.. math:: h_{mass,s,t,j} = V_{s} \rho_{mass,s,t,j} x_{mass,s,t,j}
+
+Solid material accumulation:
+
+.. math:: {\dot{h}}_{mass,s,t,j} = V_{s} {MW}_{s,j} {\Sigma}_{r} {r_{s,t,r} \nu_{s,j,r}}
+
+Total mass of solids
+
+.. math:: S_{s,t} = V_{s} {\Sigma_{j} {\rho_{mass,s,t,j}}}
 
 List of Variables (need to update)
 ----------------------------------
@@ -55,20 +62,28 @@ List of Variables (need to update)
 .. csv-table::
    :header: "Variable", "Description", "Reference to"
 
-   
-   ":math:`V_{s}`", "Total volume of solids", "``volume_solid``"
-   ":math:`h_{mass,s,t,j}`", "Material holdup, solid phase", "``solids_material_holdup``"
-   ":math:`x_{mass,s,t,j}`", "Mass fraction of component j, solid phase", "``solid.mass_frac_comp``"
+   ":math:`h_{mass,s,t,j}`", "Material holdup, solid phase", "``solids.solids_material_holdup``"
+   ":math:`{\dot{h}}_{mass,s,t,j}`", "Material accumulation, solid phase", "``solids.solids_material_accumulation``"
+   ":math:`r_{s,t,r}`", "Solid phase reaction rate of reaction r", "``solids.reactions.reaction_rate``"
+   ":math:`S_{s,t}`", "Total mass of solids", "``solids.mass_solids``"
+   ":math:`x_{mass,s,t,j}`", "Mass fraction of component j, solid phase", "``solids.mass_frac_comp``"
+   ":math:`V_{s}`", "Total volume of solids", "``solids.volume_solid``"
    "*Greek letters*", " ", " "
-   ":math:`\rho_{mass,s,t}`", "Density of solid particles", "``solid_phase.properties.dens_mass_particle``"
+   ":math:`\rho_{mass,s,t,j}`", "Density of solid particles of component j", "``solids.dens_mass_particle``"
+   
+
+
+
+
+
+
    
    
-   ":math:`S_{s,t}`", "Total mass of solids", "``solid_phase.properties.flow_mass``"
    ":math:`h_{energy,s,t}`", "Energy holdup, solid phase", "``solid_phase.heat``"
    ":math:`a_{mass,s,t}`", "Material accumulation, solid phase", "``gas_phase.heat``"
    ":math:`a_{energy,s,t}`", "Energy accumulation, solid phase", "``solid_phase.heat``"
-   ":math:`r_{s,t,r}`", "Solid phase reaction rate", "``solid_phase.reactions.reaction_rate``"
-   ":math:`r_{s,t,r}`", "Solid phase reaction enthalpy", "``solid_phase.reactions.reaction_rate``"
+   
+   ":math:`H_{rxn,s,t,r}`", "Solid phase reaction enthalpy", "``solid_phase.reactions.reaction_rate``"
    ":math:`T_{g,t}`", "Gas phase temperature", "``gas_phase.properties.temperature``"
    ":math:`T_{s,t}`", "Solid phase temperature", "``solid_phase.properties.temperature``"
    
@@ -81,8 +96,8 @@ List of Parameters (need to update)
 .. csv-table::
    :header: "Parameter", "Description", "Reference to"
 
-   ":math:`d_{p}`", "Solid particle diameter", "``solid_phase.properties._params.particle_dia``"
-   ":math:`\nu_{s,j,r}`", "Stoichiometric coefficients", "``solid_phase.reactions.rate_reaction_stoichiometry``"
+   ":math:`{MW}_{s,j}`", "Molecular weight of solid component j", "``solids._params.mw_comp``"
+   ":math:`\nu_{s,j,r}`", "Stoichiometric coefficients", "``solids.reaction_package.rate_reaction_stoichiometry``"
 
 Initialization
 --------------
