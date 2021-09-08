@@ -65,7 +65,7 @@ Now we an use the tag to set model input and display model output.
   assert str(tag[2, "a"]) == "2.000 g"
   assert str(tag[3, "a"]) == "2.000 g"
 
-  tags.str_include_units = False
+  tag.str_include_units = False
   assert str(tag[1, "a"]) == "2.000"
 
 In addition to creating single tag objects, a tag group can be created.  The
