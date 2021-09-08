@@ -55,7 +55,7 @@ class Metrics:
 
 
 # Single Surrogate Modeler
-class Surrogate:
+class SurrogateTrainer:
     CONFIG = ConfigBlock()
 
     def __init__(self, **settings):
@@ -303,9 +303,9 @@ class Surrogate:
             raise Exception('File could not be loaded.')
 
 
-class SurrogateModelObject():
+class SurrogateObject():
     """
-    Base class for standard IDAES Surrogate Model object
+    Base class for standard IDAES Surrogate Object
     """
 
     def __init__(
@@ -364,7 +364,6 @@ class SurrogateModelObject():
 
         Returns:
             dict mapping surrogate variable labels to created Var components.
-            
         """
         var_map = {}
 

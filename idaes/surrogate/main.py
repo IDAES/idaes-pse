@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 from idaes.surrogate.pysmo import polynomial_regression, radial_basis_function, kriging
-from idaes.surrogate.my_surrogate_base import Surrogate
+from idaes.surrogate.my_surrogate_base import SurrogateTrainer
 from idaes.surrogate.my_surrogate_base import Metrics
 
 import time
@@ -27,8 +27,8 @@ import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue
 
 
-class GeneralSurrogate(Surrogate):
-    CONFIG = Surrogate.CONFIG()
+class GeneralSurrogate(SurrogateTrainer):
+    CONFIG = SurrogateTrainer.CONFIG()
 
     CONFIG.declare('pyomo_vars', ConfigValue(default=None, domain=list))
     CONFIG.declare('linear', ConfigValue(default=True, domain=bool))
@@ -133,8 +133,8 @@ class GeneralSurrogate(Surrogate):
         return self._models
 
 
-class Pysmo_rbf(Surrogate):
-    CONFIG = Surrogate.CONFIG()
+class Pysmo_rbf(SurrogateTrainer):
+    CONFIG = SurrogateTrainer.CONFIG()
 
     CONFIG.declare('basis_function', ConfigValue(default=None, domain=str))
     CONFIG.declare('solution_method', ConfigValue(default=None, domain=str))
@@ -184,8 +184,8 @@ class Pysmo_rbf(Surrogate):
             self._model = self.pysmo_rbf_results.rbf_generate_expression(list_vars)
 
 
-class Pysmo_kriging(Surrogate):
-    CONFIG = Surrogate.CONFIG()
+class Pysmo_kriging(SurrogateTrainer):
+    CONFIG = SurrogateTrainer.CONFIG()
 
     CONFIG.declare('numerical_gradients', ConfigValue(default=None, domain=bool))
     CONFIG.declare('regularization', ConfigValue(default=None, domain=bool))
@@ -238,8 +238,8 @@ class Pysmo_kriging(Surrogate):
             self._model = self.pysmo_kriging_results.kriging_generate_expression(list_vars)
 
 
-class Pysmo_polyregression(Surrogate):
-    CONFIG = Surrogate.CONFIG()
+class Pysmo_polyregression(SurrogateTrainer):
+    CONFIG = SurrogateTrainer.CONFIG()
 
     CONFIG.declare('number_of_crossvalidations', ConfigValue(default=None, domain=int))
     CONFIG.declare('maximum_polynomial_order', ConfigValue(default=None, domain=int))

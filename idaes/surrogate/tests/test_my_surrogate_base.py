@@ -23,7 +23,7 @@ from idaes.surrogate.main import \
     Pysmo_rbf, Pysmo_kriging, Pysmo_polyregression, Metrics, GeneralSurrogate
 from pyomo.environ import Block, Var, ConcreteModel, Objective, Set
 
-from idaes.surrogate.my_surrogate_base import SurrogateModelObject
+from idaes.surrogate.my_surrogate_base import SurrogateObject
 
 
 @pytest.fixture
@@ -163,10 +163,10 @@ def check_metrics(model_metrics):
         model_metrics[k]
 
 
-class TestSurrogateModelObject():
+class TestSurrogateObject():
     @pytest.fixture
     def smo(self):
-        smo = SurrogateModelObject("z1 = x1 + x2", ["x1", "x2"], ["z1"])
+        smo = SurrogateObject("z1 = x1 + x2", ["x1", "x2"], ["z1"])
 
         return smo
 
