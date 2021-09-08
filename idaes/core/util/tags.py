@@ -13,6 +13,7 @@
 """This module containts utility classes that allow users to tag model quantities
 and group them, for easy display, formatting, and input.
 """
+import xml.dom.minidom
 
 import pyomo.environ as pyo
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
@@ -122,12 +123,23 @@ class ModelTag:
         """
         val = self.get_display_value(index=index)
         if format_string is None:
-            return self.get_format(units=units, index=index).format(val)
+            format_string = self.get_format(units=False, index=index)
+        if callable(format_string):
+            format_string = format_string(val)
         if units:
-            return self._join_units(format_string=format_string, index=index).format(
-                val
-            )
-        return format_string.format(val)
+            format_string = self._join_units(index=index, format_string=format_string)
+        try:
+            return format_string.format(val)
+        except ValueError:
+            # Probably trying to put a string through the number format
+            # for various reasons, I'll allow it.
+            return str(val)
+        except TypeError:
+            # Probably trying to put None through the numeric format.  This
+            # can happen for example when variables don't have values.  I'll
+            # allow 'None' to be printed.  It's not uncommon to happen, and I
+            # don't want to raise an exception. 
+            return str(val)
 
     def _join_units(self, index=None, format_string=None):
         """Private method to join the format string with the units of measure
@@ -200,9 +212,16 @@ class ModelTag:
             or not convert
         ):
             # no display units, so display in original units, no convert opt
-            return pyo.value(expr)
+            try:
+                return pyo.value(expr, exception=False)
+            except ZeroDivisionError:
+                return "ZeroDivisionError"
 
-        val = pyo.value(expr)
+        try:
+            val = pyo.value(expr, exception=False)
+        except ZeroDivisionError:
+            return "ZeroDivisionError"
+
         cache_validate = self._cache_validation_value
         cache_value = self._cache_display_value
         if val == cache_validate.get(index, None):
@@ -564,3 +583,112 @@ class ModelTagGroup(dict):
         with a value that doesn't include units, assume the display units.
         """
         self._set_in_display_units = value
+
+# Author John Eslick
+def svg_tag(
+    tags=None,
+    svg=None,
+    tag_group=None,
+    outfile=None,
+    idx=None,
+    tag_map=None,
+    show_tags=False,
+    byte_encoding="utf-8",
+    tag_format=None,
+    tag_format_default="{:.4e}"
+):
+    """
+    Replace text in a SVG with tag values for the model. This works by looking
+    for text elements in the SVG with IDs that match the tags or are in tag_map.
+
+    Args:
+        svg: a file pointer or a string continaing svg contents
+        tag_group: a ModelTagGroup with tags to display in the SVG
+        outfile: a file name to save the results, if None don't save
+        idx: if None not indexed, otherwise an index in the indexing set of the
+            reference
+        tag_map: dictionary with svg id keys and tag values, to map svg ids to
+            tags, used in cases where tags contain characters that cannot be used
+            in the svg's xml
+        show_tags: Put tag labels of the diagram instead of numbers
+        byte_encoding: If svg is given as a byte-array, use this encoding to
+            convert it to a string.
+
+    Returns:
+        SVG String
+    """
+    if svg is None:
+        raise RuntimeError("svg string or file-like object required.")
+
+    # Deal with soon to be depricated input by converting it to new style
+    if tags is not None:
+        # As a temporary measure, allow a tag and tag format dict.  To simplfy
+        # and make it easier to remove this option in the future, use the old
+        # style input to make a ModelTagGroup object.
+        tag_group = ModelTagGroup()
+        for key, tag in tags.items():
+            if tag_format is None:
+                tag_format = {}
+            format_string = tag_format.get(key, tag_format_default)
+            tag_group[key] = ModelTag(expr=tag, format_string=format_string)
+            tag_group.str_include_units = False
+
+    # get SVG content string
+    if isinstance(svg, str): # already a string
+        pass
+    elif isinstance(svg, bytes): # bytes to string
+        svg = svg.decode(byte_encoding) # file-like to string
+    elif hasattr(svg, "read"):
+        svg = svg.read()
+    else: # Can't handle whatever this is.
+        raise TypeError("SVG must either be a string or a file-like object")
+
+    # Make tag map here because the tags may not make valid XML IDs if no
+    # tag_map provided we'll go ahead and handle XML @ (maybe more in future)
+    if tag_map is None:
+        tag_map = dict()
+        for tag in tag_group:
+            new_tag = tag.replace("@", "_")
+            tag_map[new_tag] = tag
+
+    # Ture SVG string into XML document
+    doc = xml.dom.minidom.parseString(svg)
+    # Get the text elements of the SVG
+    texts = doc.getElementsByTagName("text")
+
+    # Add some text
+    for t in texts:
+        id = t.attributes["id"].value
+        if id in tag_map:
+            # if it's multiline change last line
+            try:
+                tspan = t.getElementsByTagName("tspan")[-1]
+            except IndexError:
+                _log.warning(f"Text object but no tspan for tag {tag_map[id]}.")
+                _log.warning(f"Skipping output for {tag_map[id]}.")
+                continue
+            try:
+                tspan = tspan.childNodes[0]
+            except IndexError:
+                # No child node means there is a line with no text, so add some.
+                tspan.appendChild(doc.createTextNode(""))
+                tspan = tspan.childNodes[0]
+
+            if show_tags:
+                val = tag_map[id]
+            else:
+                if tag_group[tag_map[id]].is_indexed:
+                    val = tag_group[tag_map[id]][idx]
+                else:
+                    val = tag_group[tag_map[id]]
+
+            tspan.nodeValue = str(val)
+
+    new_svg = doc.toxml()
+    # If outfile is provided save to a file
+    if outfile is not None:
+        with open(outfile, "w") as f:
+            f.write(new_svg)
+    # Return the SVG as a string.  This lets you take several passes at adding
+    # output without saving and loading files.
+    return new_svg
