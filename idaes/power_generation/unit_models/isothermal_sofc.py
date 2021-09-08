@@ -807,7 +807,7 @@ class IsothermalSofcElectrolyteData(UnitModelBlockData):
         @self.Expression(tset, self.izset_cv)
         def resistance(b, t, iz):
             T = b.temperature[t, iz]
-            A = b.width * (zset[iz] - zset[iz - 1]) * b.length
+            A = b.width[None] * (zset[iz] - zset[iz - 1]) * b.length[None]
             return b.thickness * b.k_res * pyo.exp(b.E_res / T) / A
 
 
@@ -950,6 +950,8 @@ class IsothermalSofcData(UnitModelBlockData):
                 "dynamic": is_dynamic,
                 "has_holdup": has_holdup,
                 "zset": self.zset,
+                "length": self.length,
+                "width": self.width,
             }
         )
 
