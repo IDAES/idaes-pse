@@ -10,8 +10,8 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-"""This module containts utility classes that allow users to tag model quntities
-and put them in groups, for easy display formatting and model input.
+"""This module containts utility classes that allow users to tag model quantities
+and group them, for easy display, formatting, and input.
 """
 
 import pyomo.environ as pyo
@@ -23,7 +23,7 @@ __Author__ = "John Eslick"
 class ModelTag:
     """The purpose of this class is to facilitate a simpler method of accessing,
     displaying, and reporting model quantities. The structure of IDAES models is
-    a complex hiarachy. The class allows quanties to be accessed more directly
+    a complex hiarachy. This class allows quantities to be accessed more directly
     and provides more control over how they are reported."""
 
     __slots__ = [
@@ -47,10 +47,13 @@ class ModelTag:
         Args:
             expr: A Pyomo Var, Expression, Param, Reference, or unnamed
                 expression to tag. This can be a scalar or indexed.
-            format_string: A formating string to print an elememnt of the tagged
-                expression (e.g. '{:.3f}' prints a float with 3 decimal places).
+            format_string: A formating string used to print an elememnt of the
+                tagged expression (e.g. '{:.3f}').
             doc: A description of the tagged qunatity.
-            display_units: Pyomo units to display the qunatity in.
+            display_units: Pyomo units to display the qunatity in. If a string
+                is provided it will be used to display as the unit, but will not
+                be used to convert units. If None, use native units of the
+                quantity.
         """
         super().__init__()
         self._format = format_string  # format string for printing expression
@@ -65,12 +68,15 @@ class ModelTag:
         self._group = None  # Group object if this is a member of a group
         self._str_units = True  # include units to stringify the tag
         self._str_index = 0  # use this index to stringify the tag
-        self._set_in_display_units = False  # if a value is rovided with no units
-        # assume display units for fix and set
+        # if _set_in_display_units is True and no units are provided for for
+        # set, fix, setub, and setlb, the units will be assumed to be the
+        # display units.  If it is false and no units are proided, the units are
+        # assumed to be the native units of the quantity
+        self._set_in_display_units = False
 
     def __getitem__(self, k):
-        """Returns a new model tag for a scalar element of a tagged indexed
-        quantity"""
+        """Returns a new ModelTag for a scalar element of a tagged indexed
+        quantity or a ModelTag with a slice as the expression."""
         try:
             tag = ModelTag(
                 expr=self.expression[k],
@@ -84,9 +90,6 @@ class ModelTag:
             raise KeyError(
                 f"{k} is not a valid index for tag {self._name}"
             ) from key_err
-        tag._str_units = self._str_units
-        tag._str_index = self._str_index
-        tag._set_in_display_units = self._set_in_display_units
         if (
             self._root is None or self.is_slice
         ):  # cache the unit conversion in root object
@@ -94,20 +97,13 @@ class ModelTag:
         else:
             tag._root = self._root
         tag._index = k
-        tag._group = self._group
         return tag
 
     def __str__(self):
         """Returns the default string representation of a tagged quantity. If
         the tagged expression is indexed this uses the default index.  This can
         be handy for things like the time index."""
-        if self._group is None:
-            include_units = self._str_units
-            expr_index = self._str_index  # this is ignored if not indexed
-        else:
-            include_units = self._group._str_units
-            expr_index = self._group._str_index
-        return self.display(units=include_units, index=expr_index)
+        return self.display(units=self.str_include_units, index=self.str_default_index)
 
     def __call__(self, *args, **kwargs):
         """Calling an instance of a tagged quantitiy gets the display string see
@@ -190,34 +186,34 @@ class ModelTag:
         Returns:
             numeric expression value
         """
+        if self._root is not None:
+            if not self.is_indexed:
+                index = self._index
+            return self._root.get_display_value(index=index, convert=convert)
+
         if self.is_indexed:
             try:
                 expr = self.expression[index]
             except KeyError as key_err:
                 if self._name is None:
-                    raise KeyError(f"{index} is not a valid index for tag") from key_err
+                    raise KeyError(f"{index} not a valid key for tag") from key_err
                 raise KeyError(
-                    f"{index} is not a valid index for tag {self._name}"
+                    f"{index} not a valid key for tag {self._name}"
                 ) from key_err
         else:
             expr = self.expression
-        if self._display_units is None:
-            # no display units, so display in original units
+
+        if (
+            self._display_units is None
+            or isinstance(self._display_units, str)
+            or not convert
+        ):
+            # no display units, so display in original units, no convert opt
             return pyo.value(expr)
-        if not convert or isinstance(self._display_units, str):
-            # display units can be a string, if you have a model without units
-            # attached but still want to display units, you can specify them as
-            # a string, just for printing
-            return pyo.value(expr)
+
         val = pyo.value(expr)
-        if self._root is None:
-            cache_validate = self._cache_validation_value
-            cache_value = self._cache_display_value
-        else:
-            cache_validate = self._root._cache_validation_value
-            cache_value = self._root._cache_display_value
-            if not self.is_indexed:
-                index = self._index
+        cache_validate = self._cache_validation_value
+        cache_value = self._cache_display_value
         if val == cache_validate.get(index, None):
             return cache_value[index]
         cache_validate[index] = val
@@ -293,17 +289,35 @@ class ModelTag:
         return None
 
     @property
+    def group(self):
+        """The ModelTagGroup object that this belongs to, if any."""
+        if self._root is not None:
+            return self._root.group
+        return self._group
+
+    @group.setter
+    def group(self, val):
+        """The ModelTagGroup object that this belongs to, if any."""
+        if self._root is not None:
+            raise RuntimeError("group is superseded by the root property.")
+        self._group = val
+
+    @property
     def str_include_units(self):
         """Set whether to include units by default in the tag's string
         representation"""
-        if self._group is None:
-            return self._str_units
-        return self._group._str_units
+        if self.group is not None:
+            return self.group.str_include_units
+        if self._root is not None:
+            return self._root.str_include_units
+        return self._str_units
 
     @str_include_units.setter
     def str_include_units(self, val):
         if self._group is not None:
             raise RuntimeError("str_include_units is superseded by the group property.")
+        if self._root is not None:
+            raise RuntimeError("str_include_units is superseded by the root property.")
         self._str_units = val
 
     @property
@@ -312,9 +326,11 @@ class ModelTag:
         is required for indexed quntities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
-        if self._group is None:
-            return self._str_index
-        return self._group._str_index
+        if self.group is not None:
+            return self.group.str_default_index
+        if self._root is not None:
+            return self._root.str_default_index
+        return self._str_index
 
     @str_default_index.setter
     def str_default_index(self, index):
@@ -322,8 +338,10 @@ class ModelTag:
         is required for indexed quntities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
-        if self._group is not None:
+        if self.group is not None:
             raise RuntimeError("str_default_index is superseded by the group property.")
+        if self._root is not None:
+            raise RuntimeError("str_default_index is superseded by the root property.")
         self._str_index = index
 
     @property
@@ -332,21 +350,27 @@ class ModelTag:
         is required for indexed quntities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
-        if self._group is None:
-            return self._set_in_display_units
-        return self._group.set_in_display_units
+        if self.group is not None:
+            return self.group.set_in_display_units
+        if self._root is not None:
+            return self._root.set_in_display_units
+        return self._set_in_display_units
 
     @set_in_display_units.setter
-    def set_in_display_units(self, b):
+    def set_in_display_units(self, val):
         """Default index to use in the tag's string representation, this
         is required for indexed quntities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
-        if self._group is not None:
+        if self.group is not None:
             raise RuntimeError(
                 "set_in_display_units is superseded by the group property."
             )
-        self._set_in_display_units = b
+        if self._root is not None:
+            raise RuntimeError(
+                "set_in_display_units is superseded by the root property."
+            )
+        self._set_in_display_units = val
 
     def set(self, val, in_display_units=None):
         """Set the value of a tagged variable.
@@ -376,7 +400,7 @@ class ModelTag:
                 "Tagged expression has no attribute 'value'."
             ) from attr_err
 
-    def fix(self, v=None, in_display_units=None):
+    def fix(self, val=None, in_display_units=None):
         """Fix the value of a tagged variable.
 
         Args:
@@ -389,28 +413,19 @@ class ModelTag:
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
-        if in_display_units and pyo.units.get_units(v) is None:
-            if not (
-                isinstance(self._display_units, str) or self._display_units is None
-            ):
-                v *= self._display_units
+        if in_display_units and pyo.units.get_units(val) is None:
+            if self._display_units is not None:
+                val *= self._display_units
 
-        def _fix(comp, v):
-            try:
-                if v is None:
-                    comp.fix()
-                else:
-                    comp.fix(v)
-            except AttributeError as attr_err:
-                raise AttributeError(
-                    f"Tagged expression has no fix method ({self._name})"
-                ) from attr_err
-
-        if self.is_slice:
-            for comp in self.expression:
-                _fix(comp, v)
-        else:
-            _fix(self.expression, v)
+        try:
+            if val is None:
+                self.expression.fix()
+            else:
+                self.expression.fix(val)
+        except AttributeError as attr_err:
+            if self._name:
+                raise AttributeError(f"Tag {self._name} has no fix.") from attr_err
+            raise AttributeError("Tag has no fix.") from attr_err
 
     def unfix(self):
         """Unfix the value of a tagged variable.
@@ -421,20 +436,12 @@ class ModelTag:
         Returns:
             None
         """
-
-        def _unfix(c):
-            try:
-                c.unfix()
-            except AttributeError as attr_err:
-                raise AttributeError(
-                    f"Tagged expression {self._name}, has no unfix method."
-                ) from attr_err
-
-        if self.is_slice:
-            for c in self.expression:
-                _unfix(c)
-        else:
-            _unfix(self.expression)
+        try:
+            self.expression.unfix()
+        except AttributeError as attr_err:
+            if self._name:
+                raise AttributeError(f"Tag, {self._name}, has no unfix.") from attr_err
+            raise AttributeError("Tag has no unfix.") from attr_err
 
     @property
     def var(self):
@@ -478,19 +485,25 @@ class ModelTagGroup(dict):
         else:
             self[name] = ModelTag(expr=expr, **kwargs)
 
-    def expr_dict(self):
+    def expr_dict(self, index=None):
         """Get a dictionary of expressions with tag keys."""
-        d = {}
-        for name, v in self.items():
-            d[name] = v.expression
-        return d
+        expr_dict = {}
+        for name, tag in self.items():
+            if tag.is_indexed:
+                expr_dict[name] = tag.expression[index]
+            else:
+                expr_dict[name] = tag.expression
+        return expr_dict
 
-    def format_dict(self, units=True):
+    def format_dict(self, units=True, index=None):
         """Get a dictionary of format strings with tag keys."""
-        d = {}
-        for n, v in self.items():
-            d[n] = v.format(units=units)
-        return d
+        expr_dict = {}
+        for name, tag in self.items():
+            if tag.is_indexed:
+                expr_dict[name] = tag.get_format(units=units, index=index)
+            else:
+                expr_dict[name] = tag.get_format(units=units)
+        return expr_dict
 
     @property
     def str_include_units(self):
@@ -539,18 +552,3 @@ class ModelTagGroup(dict):
         display results at a specific time point.
         """
         self._str_index = value
-
-    def names_with_units_dict(self, format_string="{name} [{units}]"):
-        """Returns a dictionary with tag names as keys and tags with units for
-        values. This may be useful for tabulating results of multiple model
-        results among other things.
-
-        Args:
-            format_string: The format of the tag with units string by default the formating
-                is '{name} [{units}]'
-
-        """
-        d = {}
-        for name, v in self.items():
-            d[name] = format_string.format(name, v.unit_str)
-        return d
