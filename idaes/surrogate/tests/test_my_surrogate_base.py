@@ -58,9 +58,9 @@ def test_pysmo_krig(branin_dataset):
     modeler = Pysmo_kriging(**pysmo_krg_settings)
 
     modeler.regressed_data(x, y)
-    modeler.build_model()
+    modeler.train_surrogate()
 
-    m.obj = Objective(expr=modeler._model)
+    m.obj = Objective(expr=modeler._surrogate)
     m.pprint()
 
     modeler.save_results('results.pickle', overwrite=True)
@@ -80,9 +80,9 @@ def test_pysmo_rbf(branin_dataset):
     modeler = Pysmo_rbf(**pysmo_rbf_settings)
 
     modeler.regressed_data(x, y)
-    modeler.build_model()
+    modeler.train_surrogate()
 
-    m.obj = Objective(expr=modeler._model)
+    m.obj = Objective(expr=modeler._surrogate)
     m.pprint()
 
     modeler.save_results('results.pickle', overwrite=True)
@@ -105,9 +105,9 @@ def test_pysmo_poly(branin_dataset):
     modeler = Pysmo_polyregression(**pysmo_pr_settings)
 
     modeler.regressed_data(x, y)
-    modeler.build_model()
+    modeler.train_surrogate()
 
-    m.obj = Objective(expr=modeler._model)
+    m.obj = Objective(expr=modeler._surrogate)
     m.pprint()
 
     modeler.save_results('results.pickle', overwrite=True)
@@ -136,9 +136,9 @@ def test_general_interface(branin_dataset):
     modeler = GeneralSurrogate(**general_settings)
 
     modeler.regressed_data(x, y)
-    modeler.build_model()
+    modeler.train_surrogate()
 
-    m.obj = Objective(expr=modeler._model)
+    m.obj = Objective(expr=modeler._surrogate)
     m.pprint()
 
     modeler.save_results('results.pickle', overwrite=True)

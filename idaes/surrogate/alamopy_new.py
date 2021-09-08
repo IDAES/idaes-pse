@@ -461,12 +461,12 @@ class AlamoTrainer(SurrogateTrainer):
         if self.config.alamo_path is not None:
             alamo.executable = self.config.alamo_path
 
-    def build_model(self):
+    def train_surrogate(self):
         """
-        General workflow method for training an ALAMO surrogate model.
+        General workflow method for training an ALAMO surrogate.
 
         Takes the existing data set and executes the ALAMO workflow to create
-        an AlamoModelObject based on the current configuration arguments.
+        an AlamoObject based on the current configuration arguments.
 
         Args:
             None
@@ -475,7 +475,7 @@ class AlamoTrainer(SurrogateTrainer):
             rc : return code from calling ALAMO executable
             almlog : log of output from ALAMO executable
         """
-        super().build_model()
+        super().train_surrogate()
 
         # Get paths for temp files
         self.get_files()
@@ -492,7 +492,7 @@ class AlamoTrainer(SurrogateTrainer):
 
             # Populate results and SurrogateModel object
             self.populate_results(trace_dict)
-            self.build_surrogate_model_object()
+            self.build_surrogate_object()
 
         finally:
             # Clean up temporary files if required
@@ -818,9 +818,9 @@ class AlamoTrainer(SurrogateTrainer):
         """
         self._results = trace_dict
 
-    def build_surrogate_model_object(self):
+    def build_surrogate_object(self):
         """
-        Method to construct an AlmaoModelObject from the current results
+        Method to construct an AlmaoObject from the current results
         object.
 
         Args:
@@ -834,7 +834,7 @@ class AlamoTrainer(SurrogateTrainer):
             iname = self._input_labels[i]
             input_bounds[iname] = (self._input_min[i], self._input_max[i])
 
-        self._model = AlamoObject(
+        self._surrogate = AlamoObject(
             surrogate=self._results["Model"],
             input_labels=self._input_labels,
             output_labels=self._output_labels,

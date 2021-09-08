@@ -67,7 +67,7 @@ class SurrogateTrainer:
             *self** object containing all the input information and run results, including:
                 - **self.config** (Dict)                                    : The configuration of the selected tool
                 - **self._results** (Tuple)                                 : Performance metrics of the surrogate(s) trained
-                - **self._model**   (Pyomo Expression)                      : Pyomo representation of resulting surrogate
+                - **self._surrogate**   (Pyomo Expression)                      : Pyomo representation of resulting surrogate
                 - **self._r_data_in**, **self._r_data_out** (NumPy Array)   : Sample points and output values used in training the surrogate
                 - **self._v_data_in**, **self._v_data_out** (NumPy Array)   : Validation/test sample points and their true output values
                 - **self.pkl_info** (Python Object)                         : Python object containing relevant surrogate model information.
@@ -80,7 +80,7 @@ class SurrogateTrainer:
         # Results
         self._results = {}
         self._metrics = None
-        self._model = None
+        self._surrogate = None
         self._b_built = False  # flag for regression
 
         # Data
@@ -112,10 +112,10 @@ class SurrogateTrainer:
 
     # Build
     # TODO: Should we call this train_surrogate instead?
-    def build_model(self):
+    def train_surrogate(self):
         """
-        The ``build_model`` method trains a surrogate model to an input dataset.
-        It calls the core method which is called during surrogate generation: ``build_model`` sets up the surrogate problem,
+        The ``train_surrogate`` method trains a surrogate model to an input dataset.
+        It calls the core method which is called during surrogate generation: ``train_surrogate`` sets up the surrogate problem,
         trains the surrogate, computes the metrics, creates a results object and generates the Pyomo representation of the model.
         It accepts no user input, inheriting the information passed in class initialization.
         """
@@ -127,13 +127,13 @@ class SurrogateTrainer:
         pass
 
     # TODO: Should we call this update_surrogate or retrain_surrogate instead?
-    def update_model(self):
+    def update_surrogate(self):
         """
-        The ``update_model`` trains a new surrogate model based on the updated configuration/set-up defined by
+        The ``update_surrogate`` trains a new surrogate model based on the updated configuration/set-up defined by
         calling ``modify_config``
         It accepts no user input, inheriting the information provided in ``modify_config``.
         """
-        self.build_model()
+        self.train_surrogate()
         pass
 
     # def generate_expression(self, variable_list): # TODO
@@ -141,13 +141,13 @@ class SurrogateTrainer:
 
     # Get Results
 
-    def get_model(self):  # Pyomo Expression
+    def get_surrogate(self):  # Pyomo Expression
         """
-        The ``get_model`` method returns the result of the surrogate training process as a Pyomo Expression
+        The ``get_surrogate`` method returns the result of the surrogate training process as a Pyomo Expression
         Returns:
             Pyomo Expression    : Pyomo expression of surrogate model trained.
         """
-        return self._model
+        return self._surrogate
 
 
     def get_results(self):  # Metrics Object
@@ -214,7 +214,7 @@ class SurrogateTrainer:
         Returns:
             outputs(NumPy Array)    : NumPy Array containing the output predictions from the surrogate model.
         """
-        outputs = self._model(inputs)
+        outputs = self._surrogate(inputs)
         return outputs
 
     # Additional Metrics - MUST NOT OVERWRITE MODELER METRICS
@@ -294,7 +294,7 @@ class SurrogateTrainer:
             loaded_res = pickle.load(filehandler)
             self.config = loaded_res['Run settings']
             self._results = loaded_res['Results']
-            self._model = loaded_res['Expression']
+            self._surrogate = loaded_res['Expression']
             self._rdata_in = loaded_res['In data']
             self._rdata_out = loaded_res['Out data']
             print(str(filename), 'successfully loaded.')
