@@ -77,29 +77,29 @@ independently.
 .. testcode::
 
   m = model()
-  g = ModelTagGroup()
+  group = ModelTagGroup()
 
-  g["w"] = ModelTag(expr=m.w, format_string="{:.3f}")
-  g["x"] = ModelTag(expr=m.x, format_string="{:.3f}", display_units=pyo.units.g)
-  g["y"] = ModelTag(expr=m.y, format_string="{:.3f}")
-  g["z"] = ModelTag(expr=m.z, format_string="{:.3f}")
-  g["e"] = ModelTag(expr=m.e, format_string="{:.3f}")
-  g["f"] = ModelTag(expr=m.f, format_string="{:.3f}")
-  g["g"] = ModelTag(expr=m.g, format_string="{:.3f}")
+  group["w"] = ModelTag(expr=m.w, format_string="{:.3f}")
+  group["x"] = ModelTag(expr=m.x, format_string="{:.3f}", display_units=pyo.units.g)
+  group["y"] = ModelTag(expr=m.y, format_string="{:.3f}")
+  group["z"] = ModelTag(expr=m.z, format_string="{:.3f}")
+  group["e"] = ModelTag(expr=m.e, format_string="{:.3f}")
+  group["f"] = ModelTag(expr=m.f, format_string="{:.3f}")
+  group["g"] = ModelTag(expr=m.g, format_string="{:.3f}")
 
-  g.set_in_display_units = True
-  g.str_include_units = False
+  group.set_in_display_units = True
+  group.str_include_units = False
 
-  g["x"].set(2)
-  g["x"].setlb(1)
-  g["x"].setub(3)
+  group["x"].set(2)
+  group["x"].setlb(1)
+  group["x"].setub(3)
 
-  assert str(g["x"][1]) == "2.000"
-  assert abs(g["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
-  assert abs(g["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
+  assert str(group["x"][1]) == "2.000"
+  assert abs(group["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
+  assert abs(group["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
 
 
-Available Methods
+Available Classes
 -----------------
 
 .. autoclass:: idaes.core.util.tags.ModelTag
