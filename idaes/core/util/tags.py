@@ -138,7 +138,7 @@ class ModelTag:
             # Probably trying to put None through the numeric format.  This
             # can happen for example when variables don't have values.  I'll
             # allow 'None' to be printed.  It's not uncommon to happen, and I
-            # don't want to raise an exception. 
+            # don't want to raise an exception.
             return str(val)
 
     def _join_units(self, index=None, format_string=None):
@@ -271,14 +271,7 @@ class ModelTag:
 
     @property
     def is_indexed(self):
-        """Returns whether the tagged expression is a indexed.
-
-        Args:
-            None
-
-        Returns:
-            True if tagged expression is a variable
-        """
+        """Returns whether the tagged expression is a indexed."""
         try:
             return self.expression.is_indexed()
         except AttributeError:
