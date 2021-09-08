@@ -29,7 +29,6 @@ from idaes.surrogate.my_surrogate_base import SurrogateTrainer, SurrogateObject
 from idaes.core.util.exceptions import ConfigurationError
 
 
-# TODO: Custom basis functions
 # TODO: Adaptive sampling
 
 alamo = Executable('alamo')

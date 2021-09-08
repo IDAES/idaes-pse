@@ -66,19 +66,19 @@ class GeneralSurrogate(SurrogateTrainer):
         # models = []
 
         modeler_krig = Pysmo_kriging(**self._pysmo_krg_settings)
-        modeler_krig.regressed_data(self._rdata_in, self._rdata_out)
+        modeler_krig.set_regressed_data(self._rdata_in, self._rdata_out)
         if self.config['pysmo_kriging']:
             modeler_krig.train_surrogate()
             self._surrogates.append(modeler_krig)
 
         modeler_rbf = Pysmo_rbf(**self._pysmo_rbf_settings)
-        modeler_rbf.regressed_data(self._rdata_in, self._rdata_out)
+        modeler_rbf.set_regressed_data(self._rdata_in, self._rdata_out)
         if self.config['pysmo_rbf']:
             modeler_rbf.train_surrogate()
             self._surrogates.append(modeler_rbf)
 
         modeler_pr = Pysmo_polyregression(**self._pysmo_pr_settings)
-        modeler_pr.regressed_data(self._rdata_in, self._rdata_out)
+        modeler_pr.set_regressed_data(self._rdata_in, self._rdata_out)
         if self.config['pysmo_polyregression']:
             modeler_pr.train_surrogate()
             self._surrogates.append(modeler_pr)

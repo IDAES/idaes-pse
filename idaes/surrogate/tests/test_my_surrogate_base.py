@@ -57,7 +57,7 @@ def test_pysmo_krig(branin_dataset):
                           'pyomo_vars': [m.x[1], m.x[2]]}
     modeler = Pysmo_kriging(**pysmo_krg_settings)
 
-    modeler.regressed_data(x, y)
+    modeler.set_regressed_data(x, y)
     modeler.train_surrogate()
 
     m.obj = Objective(expr=modeler._surrogate)
@@ -79,7 +79,7 @@ def test_pysmo_rbf(branin_dataset):
                           'pyomo_vars': [m.x[1], m.x[2]]}
     modeler = Pysmo_rbf(**pysmo_rbf_settings)
 
-    modeler.regressed_data(x, y)
+    modeler.set_regressed_data(x, y)
     modeler.train_surrogate()
 
     m.obj = Objective(expr=modeler._surrogate)
@@ -104,7 +104,7 @@ def test_pysmo_poly(branin_dataset):
                          'additional_features_list': ['ft[0] * ft[0] * ft[1] * ft[1]', 'pyo.exp(ft[0])', 'pyo.exp(ft[1])']}
     modeler = Pysmo_polyregression(**pysmo_pr_settings)
 
-    modeler.regressed_data(x, y)
+    modeler.set_regressed_data(x, y)
     modeler.train_surrogate()
 
     m.obj = Objective(expr=modeler._surrogate)
@@ -135,7 +135,7 @@ def test_general_interface(branin_dataset):
 
     modeler = GeneralSurrogate(**general_settings)
 
-    modeler.regressed_data(x, y)
+    modeler.set_regressed_data(x, y)
     modeler.train_surrogate()
 
     m.obj = Objective(expr=modeler._surrogate)

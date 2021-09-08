@@ -110,8 +110,6 @@ class SurrogateTrainer:
         _b_built = False
         self.config = self.CONFIG(kwargs)
 
-    # Build
-    # TODO: Should we call this train_surrogate instead?
     def train_surrogate(self):
         """
         The ``train_surrogate`` method trains a surrogate model to an input dataset.
@@ -126,7 +124,6 @@ class SurrogateTrainer:
 
         pass
 
-    # TODO: Should we call this update_surrogate or retrain_surrogate instead?
     def update_surrogate(self):
         """
         The ``update_surrogate`` trains a new surrogate model based on the updated configuration/set-up defined by
@@ -163,6 +160,24 @@ class SurrogateTrainer:
         return self._results
 
     # Data Handling
+    def set_input_labels(self, labels):
+        # TODO: argument validation, docs and tests
+        self._input_labels = labels
+        self._n_inputs = len(labels)
+
+    def set_output_labels(self, labels):
+        # TODO: argument validation, docs and tests
+        self._output_labels = labels
+        self._n_outputs = len(labels)
+
+    def set_input_bounds(self, bounds):
+        # TODO: argument validation, docs and tests
+        # TODO: Store as tuples, and make Alamopy break them apart when used
+        self._input_min = []
+        self._input_max = []
+        for i in bounds:
+            self._input_min.append(i[0])
+            self._input_max.append(i[1])
 
     def get_regressed_data(self):
         """
@@ -173,13 +188,28 @@ class SurrogateTrainer:
         """
         return (self._rdata_in, self._rdata_out)
 
-    def regressed_data(self, r_in, r_out):  # 2D Numparray
+    def set_regressed_data(self, r_in, r_out):  # 2D Numparray
         """
-        The ``regressed_data`` method initializes the Surrogate class with the data for training the surrogate model.
+        The ``set_regressed_data`` method initializes the Surrogate class with the data for training the surrogate model.
         Args:
             r_in  (NumPy Array)  : Two-dimensional NumPy Array containing the samples/features.
             r_out (NumPy Array)  : Two-dimensional NumPy Array containing the output values.
         """
+        # Check shape of data matches expectations
+        # TODO: Add tests for this
+        if (self._input_labels is not None and
+                r_in.shape[0] != len(self._input_labels)):
+            raise ValueError(
+                f"Number of entries in input data ({r_in.shape[1]}) does not "
+                f"match the expected number of inputs "
+                f"({len(self._input_labels)}).")
+        if (self._output_labels is not None and
+                r_out.shape[0] != len(self._output_labels)):
+            raise ValueError(
+                f"Number of entries in output data ({r_out.shape[1]}) does "
+                f"not match the expected number of outputs "
+                f"({len(self._output_labels)}).")
+
         self._rdata_in = r_in
         self._rdata_out = r_out
 
@@ -192,14 +222,28 @@ class SurrogateTrainer:
         """
         return (self._vdata_in, self._vdata_out)
 
-    # TODO: This should be part of the SurrogateModel object instead
-    def validation_data(self, v_in, v_out):  # 2D Numparray
+    def set_validation_data(self, v_in, v_out):  # 2D Numparray
         """
-        The ``validation_data`` method initializes the Surrogate class with data for validating/testing the surrogate model after generation.
+        The ``set_validation_data`` method initializes the Surrogate class with data for validating/testing the surrogate model after generation.
         Args:
             v_in  (NumPy Array)  : Two-dimensional NumPy Array containing the validation samples/features.
             v_out (NumPy Array)  : Two-dimensional NumPy Array containing the output values of the validation samples.
         """
+        # Check shape of data matches expectations
+        # TODO: Add tests for this
+        if (self._input_labels is not None and
+                v_in.shape[0] != len(self._input_labels)):
+            raise ValueError(
+                f"Number of entries in input data ({v_in.shape[1]}) does not "
+                f"match the expected number of inputs "
+                f"({len(self._input_labels)}).")
+        if (self._output_labels is not None and
+                v_out.shape[0] != len(self._output_labels)):
+            raise ValueError(
+                f"Number of entries in output data ({v_out.shape[1]}) does "
+                f"not match the expected number of outputs "
+                f"({len(self._output_labels)}).")
+
         self._vdata_in = v_in
         self._vdata_out = v_out
 
