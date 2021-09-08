@@ -54,7 +54,7 @@ Now we an use the tag to set model input and display model output.
   assert str(tag[1, "b"]) == "3000.000 g"
   assert str(tag[2, "b"]) == "3000.000 g"
   assert str(tag[3, "b"]) == "3000.000 g"
-  assert tag[3, "b"].fixed
+  assert tag[3, "b"].expression.fixed
 
   # if no units are provided setting set_in_display_units to True will assume
   # the display units. If it is False, the native units of the quantity will be
