@@ -2,8 +2,8 @@ Tagging Classes
 ===============
 
 IDAES contains classes for tagging model quantities and grouping them.  The tags
-allow a convenient short cut to important model inputs and outputs.  There are
-also facilities for numeric formatting and displaying output in desired units.
+provide a convenient short cut to important model inputs and outputs and 
+facilities for numeric formatting and displaying output in desired units.
 
 Examples:
 ---------
@@ -33,15 +33,14 @@ of tags.
 
 The next code snippet creates a single tag object for the model variable ``w``.
 While the structure of the example model is simple, IDAES models often have a
-complex structure. Tags generally provide a much shorter means to reference a
-quantity.
+complex structure, so tags provide a much shorter means to reference a quantity.
 
 .. testcode::
 
   m = model()
   tag = ModelTag(expr=m.w, format_string="{:.3f}", display_units=pyo.units.g)
 
-Now we an use the tag to set model input and display model output.
+Now we can use the tag to set model input and display model output.
 
 .. testcode::
 
