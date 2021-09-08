@@ -41,7 +41,7 @@ quantity.
   m = model()
   tag = ModelTag(expr=m.w, format_string="{:.3f}", display_units=pyo.units.g)
 
-Now we an use the tag for set model input and display model output.
+Now we an use the tag to set model input and display model output.
 
 .. testcode::
 
@@ -57,7 +57,7 @@ Now we an use the tag for set model input and display model output.
   assert tag[3, "b"].fixed
 
   # if no units are provided setting set_in_display_units to True will assume
-  # the display units. If it is False the native units of the quantity will be
+  # the display units. If it is False, the native units of the quantity will be
   #used.
   tag.set_in_display_units = True
   tag[:,"a"].set(2)
@@ -82,17 +82,21 @@ independently.
   g["w"] = ModelTag(expr=m.w, format_string="{:.3f}")
   g["x"] = ModelTag(expr=m.x, format_string="{:.3f}", display_units=pyo.units.g)
   g["y"] = ModelTag(expr=m.y, format_string="{:.3f}")
-  g["z"] = ModelTag(expr=m.y, format_string="{:.3f}")
-  g["e"] = ModelTag(expr=m.y, format_string="{:.3f}")
-  g["f"] = ModelTag(expr=m.y, format_string="{:.3f}")
-  g["g"] = ModelTag(expr=m.y, format_string="{:.3f}")
+  g["z"] = ModelTag(expr=m.z, format_string="{:.3f}")
+  g["e"] = ModelTag(expr=m.e, format_string="{:.3f}")
+  g["f"] = ModelTag(expr=m.f, format_string="{:.3f}")
+  g["g"] = ModelTag(expr=m.g, format_string="{:.3f}")
 
   g.set_in_display_units = True
   g.str_include_units = False
 
   g["x"].set(2)
+  g["x"].setlb(1)
+  g["x"].setub(3)
 
   assert str(g["x"][1]) == "2.000"
+  assert abs(g["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
+  assert abs(g["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
 
 
 Available Methods

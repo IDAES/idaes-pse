@@ -356,15 +356,85 @@ class ModelTag:
             if self._display_units is not None:
                 val *= self._display_units
 
+
         try:
-            self.expression.value = val
+            try:
+                self.expression.set_value(val)
+            except ValueError: # it's a indexed expression or slice
+                for index in self.expression:
+                    self.expression[index].set_value(val)
         except AttributeError as attr_err:
-            if self._name is None:
+            if self._name:
                 raise AttributeError(
-                    f"Tagged expression {self._name}, has no attribute 'value'."
+                    f"Tagged expression {self._name}, has no set_value()."
                 ) from attr_err
             raise AttributeError(
-                "Tagged expression has no attribute 'value'."
+                "Tagged expression has no set_value()."
+            ) from attr_err
+
+    def setlb(self, val, in_display_units=None):
+        """Set the lower bound of a tagged variable.
+
+        Args:
+            v: value
+            in_display_units: if true assume the value is in the display units
+
+        Returns:
+            None
+        """
+        if in_display_units is None:
+            in_display_units = self.set_in_display_units
+
+        if in_display_units and pyo.units.get_units(val) is None:
+            if self._display_units is not None:
+                val *= self._display_units
+
+
+        try:
+            try:
+                self.expression.setlb(val)
+            except ValueError: # it's a indexed expression or slice
+                for index in self.expression:
+                    self.expression[index].lb(val)
+        except AttributeError as attr_err:
+            if self._name:
+                raise AttributeError(
+                    f"Tagged expression {self._name}, has no setlb()."
+                ) from attr_err
+            raise AttributeError(
+                "Tagged expression has no setlb()."
+            ) from attr_err
+
+    def setub(self, val, in_display_units=None):
+        """Set the value of a tagged variable.
+
+        Args:
+            v: value
+            in_display_units: if true assume the value is in the display units
+
+        Returns:
+            None
+        """
+        if in_display_units is None:
+            in_display_units = self.set_in_display_units
+
+        if in_display_units and pyo.units.get_units(val) is None:
+            if self._display_units is not None:
+                val *= self._display_units
+
+        try:
+            try:
+                self.expression.setub(val)
+            except ValueError: # it's a indexed expression or slice
+                for index in self.expression:
+                    self.expression[index].setub(val)
+        except AttributeError as attr_err:
+            if self._name:
+                raise AttributeError(
+                    f"Tagged expression {self._name}, has no setub()."
+                ) from attr_err
+            raise AttributeError(
+                "Tagged expression has no setub()."
             ) from attr_err
 
     def fix(self, val=None, in_display_units=None):
