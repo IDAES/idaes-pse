@@ -183,6 +183,27 @@ def test_tag_ref(model):
     assert str(ry[None]) == "2.00 s"
 
 @pytest.mark.unit
+def test_tag_data_object(model):
+    m = model
+
+    rw = ModelTag(expr=m.w[1, "a"], format_string="{:.3f}", doc="Tag for rw")
+
+    m.w[1, "a"] = 3
+    assert str(rw) == "3.000 kg"
+    assert rw.is_var
+
+    rw.set(5)
+    assert str(rw) == "5.000 kg"
+
+    rw = ModelTag(expr=m.w[1, "a"], format_string="{:.3f}", display_units=pyo.units.g)
+
+    assert str(rw) == "5000.000 g"
+    rw.set_in_display_units = True
+    rw.set(5)
+    assert str(rw) == "5.000 g"
+
+
+@pytest.mark.unit
 def test_tag_group(model):
     m = model
     g = ModelTagGroup()
@@ -196,25 +217,22 @@ def test_tag_group(model):
     g.add("g", expr=m.g, format_string="{:.1f}", display_units="%")
 
     assert g["w"].doc == "make sure this works"
-    g.str_default_index = 1
     g.str_include_units = True
 
-    assert g.str_default_index == 1
     assert g.str_include_units
-    assert g["w"].str_default_index == 1
     assert g["w"].str_include_units
     assert not g.set_in_display_units
     assert not g["w"].set_in_display_units
     g["w"].fix(2)
     g["x"].fix(1)
     g["y"].fix(3)
-    assert str(g["w"]) == "2000.000 g"
-    assert str(g["x"]) == "1.000 kg"
+    assert str(g["w"][1]) == "2000.000 g"
+    assert str(g["x"][1]) == "1.000 kg"
     assert str(g["y"]) == "3.000 s"
 
     g.str_include_units = False
-    assert str(g["w"]) == "2000.000"
-    assert str(g["x"]) == "1.000"
+    assert str(g["w"][1]) == "2000.000"
+    assert str(g["x"][1]) == "1.000"
     assert str(g["y"]) == "3.000"
 
     g.set_in_display_units = True

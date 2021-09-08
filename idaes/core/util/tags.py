@@ -38,7 +38,6 @@ class ModelTag:
         "_index",
         "_group",
         "_str_units",
-        "_str_index",
         "_set_in_display_units",
     ]
 
@@ -67,7 +66,6 @@ class ModelTag:
         self._index = None  # index to get cached converted value from parent
         self._group = None  # Group object if this is a member of a group
         self._str_units = True  # include units to stringify the tag
-        self._str_index = 0  # use this index to stringify the tag
         # if _set_in_display_units is True and no units are provided for for
         # set, fix, setub, and setlb, the units will be assumed to be the
         # display units.  If it is false and no units are proided, the units are
@@ -103,7 +101,7 @@ class ModelTag:
         """Returns the default string representation of a tagged quantity. If
         the tagged expression is indexed this uses the default index.  This can
         be handy for things like the time index."""
-        return self.display(units=self.str_include_units, index=self.str_default_index)
+        return self.display(units=self.str_include_units)
 
     def __call__(self, *args, **kwargs):
         """Calling an instance of a tagged quantitiy gets the display string see
@@ -122,11 +120,6 @@ class ModelTag:
         Returns:
             str
         """
-        if self.is_indexed and index is None:
-            if self._group is not None:
-                index = self._group.str_default_index
-            else:
-                index = self._str_index
         val = self.get_display_value(index=index)
         if format_string is None:
             return self.get_format(units=units, index=index).format(val)
@@ -191,16 +184,14 @@ class ModelTag:
                 index = self._index
             return self._root.get_display_value(index=index, convert=convert)
 
-        if self.is_indexed:
-            try:
-                expr = self.expression[index]
-            except KeyError as key_err:
-                if self._name is None:
-                    raise KeyError(f"{index} not a valid key for tag") from key_err
-                raise KeyError(
-                    f"{index} not a valid key for tag {self._name}"
-                ) from key_err
-        else:
+        try:
+            expr = self.expression[index]
+        except KeyError as key_err:
+            if self._name is None:
+                raise KeyError(f"{index} not a valid key for tag") from key_err
+            raise KeyError(
+                f"{index} not a valid key for tag {self._name}") from key_err
+        except TypeError:
             expr = self.expression
 
         if (
@@ -321,30 +312,6 @@ class ModelTag:
         self._str_units = val
 
     @property
-    def str_default_index(self):
-        """Default index to use in the tag's string representation, this
-        is required for indexed quntities if you want to automatically convert
-        to string. An example use it for a time indexed tag, to display a
-        specific time point."""
-        if self.group is not None:
-            return self.group.str_default_index
-        if self._root is not None:
-            return self._root.str_default_index
-        return self._str_index
-
-    @str_default_index.setter
-    def str_default_index(self, index):
-        """Default index to use in the tag's string representation, this
-        is required for indexed quntities if you want to automatically convert
-        to string. An example use it for a time indexed tag, to display a
-        specific time point."""
-        if self.group is not None:
-            raise RuntimeError("str_default_index is superseded by the group property.")
-        if self._root is not None:
-            raise RuntimeError("str_default_index is superseded by the root property.")
-        self._str_index = index
-
-    @property
     def set_in_display_units(self):
         """Default index to use in the tag's string representation, this
         is required for indexed quntities if you want to automatically convert
@@ -459,14 +426,12 @@ class ModelTagGroup(dict):
     so dictionary methods can be used."""
 
     __slots__ = [
-        "_str_index",
         "_str_units",
         "_set_in_display_units",
     ]
 
     def __init__(self):
         super().__init__()
-        self._str_index = 0
         self._str_units = True
         self._set_in_display_units = False
 
@@ -489,7 +454,7 @@ class ModelTagGroup(dict):
         """Get a dictionary of expressions with tag keys."""
         expr_dict = {}
         for name, tag in self.items():
-            if tag.is_indexed:
+            if tag.expression.is_indexed:
                 expr_dict[name] = tag.expression[index]
             else:
                 expr_dict[name] = tag.expression
@@ -499,10 +464,7 @@ class ModelTagGroup(dict):
         """Get a dictionary of format strings with tag keys."""
         expr_dict = {}
         for name, tag in self.items():
-            if tag.is_indexed:
-                expr_dict[name] = tag.get_format(units=units, index=index)
-            else:
-                expr_dict[name] = tag.get_format(units=units)
+            expr_dict[name] = tag.get_format(units=units, index=index)
         return expr_dict
 
     @property
@@ -532,23 +494,3 @@ class ModelTagGroup(dict):
         with a value that doesn't include units, assume the display units.
         """
         self._set_in_display_units = value
-
-    @property
-    def str_default_index(self):
-        """When converting a tag in this group directly to a string, use index as
-        the default index for indexed varaibles. This can be useful when the tag
-        group where indexed expressions have a consitent index set.  For example,
-        where all the indexed expressions are indexed by time, and you want to
-        display results at a specific time point.
-        """
-        return self._str_index
-
-    @str_default_index.setter
-    def str_default_index(self, value):
-        """When converting a tag in this group directly to a string, use index as
-        the default index for indexed varaibles. This can be useful when the tag
-        group where indexed expressions have a consitent index set.  For example,
-        where all the indexed expressions are indexed by time, and you want to
-        display results at a specific time point.
-        """
-        self._str_index = value
