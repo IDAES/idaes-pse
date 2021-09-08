@@ -2,8 +2,8 @@ Tagging Classes
 ===============
 
 IDAES contains classes for tagging model quantities and grouping them.  The tags
-allow a convenient short cut to important model inputs and outputs.  There are
-also facilities for numeric formatting and displaying output in desired units.
+provide a convenient short cut to important model inputs and outputs and 
+facilities for numeric formatting and displaying output in desired units.
 
 Examples:
 ---------
@@ -33,15 +33,14 @@ of tags.
 
 The next code snippet creates a single tag object for the model variable ``w``.
 While the structure of the example model is simple, IDAES models often have a
-complex structure. Tags generally provide a much shorter means to reference a
-quantity.
+complex structure, so tags provide a much shorter means to reference a quantity.
 
 .. testcode::
 
   m = model()
   tag = ModelTag(expr=m.w, format_string="{:.3f}", display_units=pyo.units.g)
 
-Now we an use the tag to set model input and display model output.
+Now we can use the tag to set model input and display model output.
 
 .. testcode::
 
@@ -65,7 +64,7 @@ Now we an use the tag to set model input and display model output.
   assert str(tag[2, "a"]) == "2.000 g"
   assert str(tag[3, "a"]) == "2.000 g"
 
-  tags.str_include_units = False
+  tag.str_include_units = False
   assert str(tag[1, "a"]) == "2.000"
 
 In addition to creating single tag objects, a tag group can be created.  The
@@ -77,29 +76,29 @@ independently.
 .. testcode::
 
   m = model()
-  g = ModelTagGroup()
+  group = ModelTagGroup()
 
-  g["w"] = ModelTag(expr=m.w, format_string="{:.3f}")
-  g["x"] = ModelTag(expr=m.x, format_string="{:.3f}", display_units=pyo.units.g)
-  g["y"] = ModelTag(expr=m.y, format_string="{:.3f}")
-  g["z"] = ModelTag(expr=m.z, format_string="{:.3f}")
-  g["e"] = ModelTag(expr=m.e, format_string="{:.3f}")
-  g["f"] = ModelTag(expr=m.f, format_string="{:.3f}")
-  g["g"] = ModelTag(expr=m.g, format_string="{:.3f}")
+  group["w"] = ModelTag(expr=m.w, format_string="{:.3f}")
+  group["x"] = ModelTag(expr=m.x, format_string="{:.3f}", display_units=pyo.units.g)
+  group["y"] = ModelTag(expr=m.y, format_string="{:.3f}")
+  group["z"] = ModelTag(expr=m.z, format_string="{:.3f}")
+  group["e"] = ModelTag(expr=m.e, format_string="{:.3f}")
+  group["f"] = ModelTag(expr=m.f, format_string="{:.3f}")
+  group["g"] = ModelTag(expr=m.g, format_string="{:.3f}")
 
-  g.set_in_display_units = True
-  g.str_include_units = False
+  group.set_in_display_units = True
+  group.str_include_units = False
 
-  g["x"].set(2)
-  g["x"].setlb(1)
-  g["x"].setub(3)
+  group["x"].set(2)
+  group["x"].setlb(1)
+  group["x"].setub(3)
 
-  assert str(g["x"][1]) == "2.000"
-  assert abs(g["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
-  assert abs(g["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
+  assert str(group["x"][1]) == "2.000"
+  assert abs(group["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
+  assert abs(group["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
 
 
-Available Methods
+Available Classes
 -----------------
 
 .. autoclass:: idaes.core.util.tags.ModelTag
