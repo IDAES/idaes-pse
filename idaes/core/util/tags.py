@@ -242,12 +242,6 @@ class ModelTag:
     def is_var(self):
         """Whether the tagged expression is a Pyomo Var. Tagged variables
         can be fixed or set, while expressions cannot.
-
-        Args:
-            None
-
-        Returns:
-            True if tagged expression is a variable
         """
         try:
             return issubclass(self._expression.ctype, pyo.Var)
@@ -257,12 +251,6 @@ class ModelTag:
     @property
     def is_slice(self):
         """Whether the tagged expression is a Pyomo slice.
-
-        Args:
-            None
-
-        Returns:
-            True if tagged expression is a Pyomo component slice
         """
         try:
             return isinstance(self._expression, IndexedComponent_slice)
@@ -271,7 +259,8 @@ class ModelTag:
 
     @property
     def is_indexed(self):
-        """Returns whether the tagged expression is a indexed."""
+        """Returns whether the tagged expression is a indexed.
+        """
         try:
             return self.expression.is_indexed()
         except AttributeError:
@@ -279,28 +268,32 @@ class ModelTag:
 
     @property
     def indexes(self):
-        """The index set of the tagged quantity"""
+        """The index set of the tagged quantity
+        """
         if self.is_indexed:
             return list(self.expression.keys())
         return None
 
     @property
     def indices(self):
-        """The index set of the tagged qunatity"""
+        """The index set of the tagged qunatity
+        """
         if self.is_indexed:
             return list(self.expression.keys())
         return None
 
     @property
     def group(self):
-        """The ModelTagGroup object that this belongs to, if any."""
+        """The ModelTagGroup object that this belongs to, if any.
+        """
         if self._root is not None:
             return self._root.group
         return self._group
 
     @group.setter
     def group(self, val):
-        """The ModelTagGroup object that this belongs to, if any."""
+        """The ModelTagGroup object that this belongs to, if any.
+        """
         if self._root is not None:
             raise RuntimeError("group is superseded by the root property.")
         self._group = val
