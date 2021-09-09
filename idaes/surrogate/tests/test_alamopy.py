@@ -156,8 +156,8 @@ class TestAlamoTrainer:
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
-                           match="ALAMO configuration error: upper bounds is "
-                           "less than lower bounds for input x2."):
+                           match="ALAMO configuration error: upper bound is "
+                           "less than lower bound for input x2."):
             alm_obj.write_alm_to_stream(stream=stream)
 
     @pytest.mark.unit
