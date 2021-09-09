@@ -24,3 +24,4 @@ from .steamheater import SteamHeater
 from .waterpipe import WaterPipe
 from .watertank import WaterTank
 from .waterwall_section import WaterwallSection
+from .isothermal_sofc import IsothermalSofc
