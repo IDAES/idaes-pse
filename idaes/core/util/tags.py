@@ -18,6 +18,10 @@ import xml.dom.minidom
 import pyomo.environ as pyo
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
+
 __Author__ = "John Eslick"
 
 
@@ -201,8 +205,7 @@ class ModelTag:
         except KeyError as key_err:
             if self._name is None:
                 raise KeyError(f"{index} not a valid key for tag") from key_err
-            raise KeyError(
-                f"{index} not a valid key for tag {self._name}") from key_err
+            raise KeyError(f"{index} not a valid key for tag {self._name}") from key_err
         except TypeError:
             expr = self.expression
 
@@ -250,8 +253,7 @@ class ModelTag:
 
     @property
     def is_slice(self):
-        """Whether the tagged expression is a Pyomo slice.
-        """
+        """Whether the tagged expression is a Pyomo slice."""
         try:
             return isinstance(self._expression, IndexedComponent_slice)
         except AttributeError:
@@ -259,8 +261,7 @@ class ModelTag:
 
     @property
     def is_indexed(self):
-        """Returns whether the tagged expression is a indexed.
-        """
+        """Returns whether the tagged expression is a indexed."""
         try:
             return self.expression.is_indexed()
         except AttributeError:
@@ -268,32 +269,28 @@ class ModelTag:
 
     @property
     def indexes(self):
-        """The index set of the tagged quantity
-        """
+        """The index set of the tagged quantity"""
         if self.is_indexed:
             return list(self.expression.keys())
         return None
 
     @property
     def indices(self):
-        """The index set of the tagged qunatity
-        """
+        """The index set of the tagged qunatity"""
         if self.is_indexed:
             return list(self.expression.keys())
         return None
 
     @property
     def group(self):
-        """The ModelTagGroup object that this belongs to, if any.
-        """
+        """The ModelTagGroup object that this belongs to, if any."""
         if self._root is not None:
             return self._root.group
         return self._group
 
     @group.setter
     def group(self, val):
-        """The ModelTagGroup object that this belongs to, if any.
-        """
+        """The ModelTagGroup object that this belongs to, if any."""
         if self._root is not None:
             raise RuntimeError("group is superseded by the root property.")
         self._group = val
@@ -361,11 +358,10 @@ class ModelTag:
             if self._display_units is not None:
                 val *= self._display_units
 
-
         try:
             try:
                 self.expression.set_value(val)
-            except ValueError: # it's a indexed expression or slice
+            except ValueError:  # it's a indexed expression or slice
                 for index in self.expression:
                     self.expression[index].set_value(val)
         except AttributeError as attr_err:
@@ -373,9 +369,7 @@ class ModelTag:
                 raise AttributeError(
                     f"Tagged expression {self._name}, has no set_value()."
                 ) from attr_err
-            raise AttributeError(
-                "Tagged expression has no set_value()."
-            ) from attr_err
+            raise AttributeError("Tagged expression has no set_value().") from attr_err
 
     def setlb(self, val, in_display_units=None):
         """Set the lower bound of a tagged variable.
@@ -394,11 +388,10 @@ class ModelTag:
             if self._display_units is not None:
                 val *= self._display_units
 
-
         try:
             try:
                 self.expression.setlb(val)
-            except ValueError: # it's a indexed expression or slice
+            except ValueError:  # it's a indexed expression or slice
                 for index in self.expression:
                     self.expression[index].lb(val)
         except AttributeError as attr_err:
@@ -406,9 +399,7 @@ class ModelTag:
                 raise AttributeError(
                     f"Tagged expression {self._name}, has no setlb()."
                 ) from attr_err
-            raise AttributeError(
-                "Tagged expression has no setlb()."
-            ) from attr_err
+            raise AttributeError("Tagged expression has no setlb().") from attr_err
 
     def setub(self, val, in_display_units=None):
         """Set the value of a tagged variable.
@@ -430,7 +421,7 @@ class ModelTag:
         try:
             try:
                 self.expression.setub(val)
-            except ValueError: # it's a indexed expression or slice
+            except ValueError:  # it's a indexed expression or slice
                 for index in self.expression:
                     self.expression[index].setub(val)
         except AttributeError as attr_err:
@@ -438,9 +429,7 @@ class ModelTag:
                 raise AttributeError(
                     f"Tagged expression {self._name}, has no setub()."
                 ) from attr_err
-            raise AttributeError(
-                "Tagged expression has no setub()."
-            ) from attr_err
+            raise AttributeError("Tagged expression has no setub().") from attr_err
 
     def fix(self, val=None, in_display_units=None):
         """Fix the value of a tagged variable.
@@ -570,6 +559,7 @@ class ModelTagGroup(dict):
         """
         self._set_in_display_units = value
 
+
 # Author John Eslick
 def svg_tag(
     tags=None,
@@ -581,7 +571,7 @@ def svg_tag(
     show_tags=False,
     byte_encoding="utf-8",
     tag_format=None,
-    tag_format_default="{:.4e}"
+    tag_format_default="{:.4e}",
 ):
     """
     Replace text in a SVG with tag values for the model. This works by looking
@@ -608,8 +598,10 @@ def svg_tag(
 
     # Deal with soon to be depricated input by converting it to new style
     if tags is not None:
-        _log.warning("DEPRECATED: svg_tag, the tags, tag_format and "
-            "tag_format_default arguments are deprecated use tag_group instead.")
+        _log.warning(
+            "DEPRECATED: svg_tag, the tags, tag_format and "
+            "tag_format_default arguments are deprecated use tag_group instead."
+        )
         # As a temporary measure, allow a tag and tag format dict.  To simplfy
         # and make it easier to remove this option in the future, use the old
         # style input to make a ModelTagGroup object.
@@ -622,13 +614,13 @@ def svg_tag(
             tag_group.str_include_units = False
 
     # get SVG content string
-    if isinstance(svg, str): # already a string
+    if isinstance(svg, str):  # already a string
         pass
-    elif isinstance(svg, bytes): # bytes to string
-        svg = svg.decode(byte_encoding) # file-like to string
+    elif isinstance(svg, bytes):  # bytes to string
+        svg = svg.decode(byte_encoding)  # file-like to string
     elif hasattr(svg, "read"):
         svg = svg.read()
-    else: # Can't handle whatever this is.
+    else:  # Can't handle whatever this is.
         raise TypeError("SVG must either be a string or a file-like object")
 
     # Make tag map here because the tags may not make valid XML IDs if no
