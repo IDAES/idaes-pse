@@ -152,7 +152,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         name: name of class to create
         block_class: ProcessBlock or a subclass of ProcessBlock, this allows
             you to use a subclass of ProcessBlock if needed. The typical use
-            case for Subclassing ProcessBlock is to impliment methods that
+            case for Subclassing ProcessBlock is to implement methods that
             operate on elements of an indexed block.
         doc: Documentation for the class. This should play nice with sphinx.
 
