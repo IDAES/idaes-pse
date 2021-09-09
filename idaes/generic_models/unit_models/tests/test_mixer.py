@@ -835,7 +835,7 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
-        self.state_block_class = NoPressureStateBlock
+        self._state_block_class = NoPressureStateBlock
 
     @classmethod
     def define_metadata(cls, obj):

@@ -171,13 +171,6 @@ class ReactionParameterBlock(ProcessBlockData,
                 "with this reaction package. Please contact the developer of "
                 "the reaction package.".format(self.name))
 
-    @reaction_block_class.setter
-    def reaction_block_class(self, val):
-        _log.warning("DEPRECATED: reaction_block_class should not be set "
-                     "directly. Property package developers should set the "
-                     "_reaction_block_class attribute instead.")
-        self._reaction_block_class = val
-
     def build_reaction_block(self, *args, **kwargs):
         """
         Methods to construct a ReactionBlock assoicated with this

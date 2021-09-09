@@ -65,7 +65,7 @@ class ParameterData(PhysicalParameterBlock):
         self.phase_list = Set(initialize=['aq'])
         self.component_list = Set(initialize=['S', 'E', 'C', 'P', 'Solvent'])
 
-        self.state_block_class = AqueousEnzymeStateBlock
+        self._state_block_class = AqueousEnzymeStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -144,7 +144,7 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
     def build(self):
         super(EnzymeReactionParameterData, self).build()
 
-        self.reaction_block_class = EnzymeReactionBlock
+        self._reaction_block_class = EnzymeReactionBlock
 
         self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
         self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,

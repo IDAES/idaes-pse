@@ -1310,7 +1310,7 @@ class _IdealParameterBlock(PhysicalParameterBlock):
         self._phase_component_set = Set(initialize=[
             ("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")])
 
-        self.state_block_class = IdealStateBlock
+        self._state_block_class = IdealStateBlock
 
     @classmethod
     def define_metadata(cls, obj):

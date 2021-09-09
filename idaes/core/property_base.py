@@ -168,13 +168,6 @@ class PhysicalParameterBlock(ProcessBlockData,
                 "with this property package. Please contact the developer of "
                 "the property package.".format(self.name))
 
-    @state_block_class.setter
-    def state_block_class(self, val):
-        _log.warning("DEPRECATED: state_block_class should not be set "
-                     "directly. Property package developers should set the "
-                     "_state_block_class attribute instead.")
-        self._state_block_class = val
-
     @property
     def has_inherent_reactions(self):
         return self._has_inherent_reactions
