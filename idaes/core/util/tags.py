@@ -608,6 +608,8 @@ def svg_tag(
 
     # Deal with soon to be depricated input by converting it to new style
     if tags is not None:
+        _log.warning("DEPRECATED: svg_tag, the tags, tag_format and "
+            "tag_format_default arguments are deprecated use tag_group instead.")
         # As a temporary measure, allow a tag and tag format dict.  To simplfy
         # and make it easier to remove this option in the future, use the old
         # style input to make a ModelTagGroup object.
