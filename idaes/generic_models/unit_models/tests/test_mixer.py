@@ -60,6 +60,10 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
 from idaes.core.util.testing import (PhysicalParameterTestBlock,
                                      TestStateBlock,
                                      initialization_tester)
+from idaes.generic_models.properties.core.generic.generic_property import (
+    GenericParameterBlock)
+from idaes.power_generation.properties.natural_gas_PR import get_prop
+import idaes.core.util.scaling as iscale
 from idaes.core.util import get_solver
 
 
@@ -1122,6 +1126,10 @@ class TestSaponification(object):
     def test_initialize(self, sapon):
         initialization_tester(sapon)
 
+    @pytest.mark.component
+    def test_scaling(self, sapon):
+        sapon.fs.unit.calculate_scaling_factors()
+
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, sapon):
@@ -1182,3 +1190,15 @@ class TestSaponification(object):
     @pytest.mark.unit
     def test_report(self, sapon):
         sapon.fs.unit.report()
+
+@pytest.mark.component
+def test_construction_component_not_in_phase():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock()
+    m.fs.prop_params = GenericParameterBlock(
+        default=get_prop(["H2O", "H2"], ["Liq", "Vap"]))
+    m.fs.inject1 = Mixer(default={
+        "property_package": m.fs.prop_params,
+        "inlet_list":["in1", "in2"],
+        "momentum_mixing_type":MomentumMixingType.none})
+    iscale.calculate_scaling_factors(m)

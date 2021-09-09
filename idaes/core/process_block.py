@@ -83,6 +83,8 @@ class _IndexedProcessBlockMeta(type):
             bases[0].__init__(self, *args, **kwargs)
         dct["__init__"] = __init__
         dct["__process_block__"] = "indexed"
+        # provide function ``base_class_module()`` to get unit module, for visualizer
+        dct["base_class_module"] = lambda cls: bases[0].__module__
         return type.__new__(meta, name, bases, dct)
 
 
@@ -96,6 +98,8 @@ class _ScalarProcessBlockMeta(type):
             bases[1].__init__(self, *args, **kwargs)
         dct["__init__"] = __init__
         dct["__process_block__"] = "scalar"
+        # provide function ``base_class_module()`` to get unit module, for visualizer
+        dct["base_class_module"] = lambda cls: bases[0].__module__
         return type.__new__(meta, name, bases, dct)
 
 
@@ -133,33 +137,6 @@ class ProcessBlock(Block):
             n = _IndexedProcessBlockMeta(bname, (cls,), {})
             return n.__new__(n) #calls this __new__() again with indexed class
 
-    @classmethod
-    def base_class_name(cls):
-        """Name given by the user to the ProcessBase class.
-
-        Return:
-           (str) Name of the class.
-        Raises:
-           AttributeError, if no base class name was set, e.g. this class
-               was *not* wrapped by the `declare_process_block_class`
-               decorator.
-
-        """
-        return cls._orig_name  # pylint: disable=no-member
-
-    @classmethod
-    def base_class_module(cls):
-        """Return module of the associated ProcessBase class.
-
-        Return:
-           (str) Module of the class.
-        Raises:
-           AttributeError, if no base class module was set, e.g. this class
-              was *not* wrapped by the `declare_process_block_class` decorator.
-
-        """
-        return cls._orig_module  # pylint: disable=no-member
-
 
 def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
     """
@@ -175,7 +152,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         name: name of class to create
         block_class: ProcessBlock or a subclass of ProcessBlock, this allows
             you to use a subclass of ProcessBlock if needed. The typical use
-            case for Subclassing ProcessBlock is to impliment methods that
+            case for Subclassing ProcessBlock is to implement methods that
             operate on elements of an indexed block.
         doc: Documentation for the class. This should play nice with sphinx.
 
@@ -199,9 +176,9 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         c = type(name, (block_class,),
                 {"__module__": cls.__module__,
                  "_ComponentDataClass": cls,
-                 "__doc__":ds})
+                 "__doc__": ds})
         setattr(sys.modules[cls.__module__], name, c)
-        setattr(cls, '_orig_name', name)
-        setattr(cls, '_orig_module', cls.__module__)
+
         return cls
     return proc_dec  # return decorator function
+
