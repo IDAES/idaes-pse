@@ -19,7 +19,6 @@ from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
                            Set, Var, value, Param, Reals,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc, Port
-from pyomo.core.base.units_container import UnitsError
 
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -32,7 +31,9 @@ from idaes.core import (FlowsheetBlock,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        Component,
+                        Phase)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import CSTR
@@ -62,8 +63,12 @@ class ParameterData(PhysicalParameterBlock):
         super(ParameterData, self).build()
 
         # all components are in the aqueous phase
-        self.phase_list = Set(initialize=['aq'])
-        self.component_list = Set(initialize=['S', 'E', 'C', 'P', 'Solvent'])
+        self.aq = Phase()
+        self.S = Component()
+        self.E = Component()
+        self.C = Component()
+        self.P = Component()
+        self.Solvent = Component()
 
         self._state_block_class = AqueousEnzymeStateBlock
 

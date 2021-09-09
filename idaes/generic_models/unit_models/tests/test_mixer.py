@@ -25,21 +25,21 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            TerminationCondition,
                            SolverStatus,
-                           value,
-                           units)
-from pyomo.util.check_units import (assert_units_consistent,
-                                    assert_units_equivalent)
+                           value)
+from pyomo.util.check_units import assert_units_consistent
+
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock,
-                        StateBlock,
                         declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         PhysicalParameterBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType)
+                        EnergyBalanceType,
+                        Phase,
+                        Component)
 from idaes.generic_models.properties.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.generic_models.properties import iapws95
@@ -827,8 +827,11 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_NoPressureParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
+        self.p1 = Phase()
+        self.p2 = Phase()
+        self.c1 = Component()
+        self.c2 = Component()
+
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
 
         self.phase_equilibrium_list = \

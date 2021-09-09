@@ -265,96 +265,42 @@ class PhysicalParameterBlock(ProcessBlockData,
                     .format(self.name, phase))
         return obj
 
-    # TODO : Deprecate this code at some point
     def _validate_parameter_block(self):
         """
-        Backwards compatability checks.
-
-        This is code to check for old-style property packages and create
-        the necessary Phase and Component objects.
-
-        It also tries to catch some possible mistakes and provide the user with
+        Tries to catch some possible mistakes and provide the user with
         useful error messages.
         """
         try:
             # Check names in component list have matching Component objects
             for c in self.component_list:
-                try:
-                    obj = getattr(self, str(c))
-                    if not isinstance(obj, ComponentData):
-                        raise TypeError(
-                                "Property package {} has an object {} whose "
-                                "name appears in component_list but is not an "
-                                "instance of Component".format(self.name, c))
-                except AttributeError:
-                    # No object with name c, must be old-style package
-                    self._make_component_objects()
-                    break
+                obj = getattr(self, str(c))
+                if not isinstance(obj, ComponentData):
+                    raise TypeError(
+                            "Property package {} has an object {} whose "
+                            "name appears in component_list but is not an "
+                            "instance of Component".format(self.name, c))
         except AttributeError:
             # No component list
-            raise PropertyPackageError("Property package {} has not defined a "
-                                       "component list.".format(self.name))
+            raise PropertyPackageError(
+                f"Property package {self.name} has not defined any "
+                f"Components.")
 
         try:
             # Valdiate that names in phase list have matching Phase objects
             for p in self.phase_list:
-                try:
-                    obj = getattr(self, str(p))
-                    if not isinstance(obj, PhaseData):
-                        raise TypeError(
-                                "Property package {} has an object {} whose "
-                                "name appears in phase_list but is not an "
-                                "instance of Phase".format(self.name, p))
-                except AttributeError:
-                    # No object with name p, must be old-style package
-                    self._make_phase_objects()
-                    break
+                obj = getattr(self, str(p))
+                if not isinstance(obj, PhaseData):
+                    raise TypeError(
+                            "Property package {} has an object {} whose "
+                            "name appears in phase_list but is not an "
+                            "instance of Phase".format(self.name, p))
         except AttributeError:
             # No phase list
-            raise PropertyPackageError("Property package {} has not defined a "
-                                       "phase list.".format(self.name))
+            raise PropertyPackageError(
+                f"Property package {self.name} has not defined any Phases.")
 
         # Also check that the phase-component set has been created.
         self.get_phase_component_set()
-
-    def _make_component_objects(self):
-        _log.warning("DEPRECATED: {} appears to be an old-style property "
-                     "package. It will be automatically converted to a "
-                     "new-style package, however users are strongly encouraged"
-                     " to convert their property packages to use phase and "
-                     "component objects."
-                     .format(self.name))
-        for c in self.component_list:
-            if hasattr(self, c):
-                # An object with this name already exists, raise exception
-                raise PropertyPackageError(
-                    "{} could not add Component object {} - an object with "
-                    "that name already exists.".format(self.name, c))
-
-            self.add_component(str(c), Component(
-                default={"_component_list_exists": True}))
-
-    def _make_phase_objects(self):
-        _log.warning("DEPRECATED: {} appears to be an old-style property "
-                     "package. It will be automatically converted to a "
-                     "new-style package, however users are strongly encouraged"
-                     " to convert their property packages to use phase and "
-                     "component objects."
-                     .format(self.name))
-        for p in self.phase_list:
-            if hasattr(self, p):
-                # An object with this name already exists, raise exception
-                raise PropertyPackageError(
-                    "{} could not add Phase object {} - an object with "
-                    "that name already exists.".format(self.name, p))
-
-            try:
-                pc_list = self.phase_comp[p]
-            except AttributeError:
-                pc_list = None
-            self.add_component(str(p), Phase(
-                default={"component_list": pc_list,
-                         "_phase_list_exists": True}))
 
 
 class StateBlock(ProcessBlock):

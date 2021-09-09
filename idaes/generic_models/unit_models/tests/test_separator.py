@@ -31,11 +31,12 @@ from pyomo.util.check_units import assert_units_consistent
 
 from idaes.core import (FlowsheetBlock,
                         declare_process_block_class,
-                        StateBlock,
                         MaterialBalanceType,
                         StateBlockData,
                         StateBlock,
-                        PhysicalParameterBlock)
+                        PhysicalParameterBlock,
+                        Phase,
+                        Component)
 from idaes.generic_models.unit_models.separator import (Separator,
                                                         SeparatorData,
                                                         SplittingType,
@@ -1304,9 +1305,11 @@ class _IdealParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_IdealParameterBlock, self).build()
 
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"],
-                                  ordered=True)
+        self.p1 = Phase()
+        self.p2 = Phase()
+        self.c1 = Component()
+        self.c2 = Component()
+
         self._phase_component_set = Set(initialize=[
             ("p1", "c1"), ("p1", "c2"), ("p2", "c1"), ("p2", "c2")])
 
