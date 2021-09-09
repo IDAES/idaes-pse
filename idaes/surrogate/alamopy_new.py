@@ -575,8 +575,8 @@ class AlamoTrainer(SurrogateTrainer):
                     f"input {self._input_labels[i]} are equal.")
             elif self._input_max[i] < self._input_min[i]:
                 raise ConfigurationError(
-                    f"ALAMO configuration error: upper bounds is less than "
-                    f"lower bounds for input {self._input_labels[i]}.")
+                    f"ALAMO configuration error: upper bound is less than "
+                    f"lower bound for input {self._input_labels[i]}.")
 
         # Get number of data points to build alm file
         if x_reg is not None:
