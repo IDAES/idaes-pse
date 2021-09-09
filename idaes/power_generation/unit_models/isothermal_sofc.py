@@ -923,9 +923,9 @@ class IsothermalSofcData(UnitModelBlockData):
         self.o2_stoichs = pyo.Var(tset, initialize=8.0)
 
         # Eletrochemical vars
-        self.E_cell = pyo.Var(tset)
-        self.current = pyo.Var(tset, izset_cv)
-        self.total_current = pyo.Var(tset)
+        self.E_cell = pyo.Var(tset, units=pyo.units.V)
+        self.current = pyo.Var(tset, izset_cv, units=pyo.units.A)
+        self.total_current = pyo.Var(tset, units=pyo.units.A)
         self.eta_fe = pyo.Var(tset, izset_cv, initialize=2000 * _constR / _constF)
         self.eta_ae = pyo.Var(tset, izset_cv, initialize=2000 * _constR / _constF)
         self.k_fe = pyo.Var()
@@ -1093,6 +1093,10 @@ class IsothermalSofcData(UnitModelBlockData):
         @self.Expression(tset)
         def power(b, t):
             return -b.E_cell[t] * b.total_current[t]
+
+        @self.Expression(tset)
+        def total_power(b, t):
+            return -b.E_cell[t] * b.total_current[t] * b.n_cells
 
         @self.Expression(tset)
         def h2_utilization_expr(b, t):

@@ -187,6 +187,12 @@ def add_aux_boiler_steam(m):
             "tube": {"property_package": m.fs.water_prop},
         }
     )
+    m.fs.main_steam_split = HelmSplitter(
+        default={
+            "property_package": m.fs.water_prop,
+            "outlet_list": ["feed", "sweep"]
+        }
+    )
     m.fs.aux_boiler_feed_pump = HelmIsentropicCompressor(
         default={"property_package": m.fs.water_prop}
     )
@@ -197,12 +203,60 @@ def add_aux_boiler_steam(m):
             "tube": {"property_package": m.fs.water_prop},
         }
     )
+    m.fs.recover_split = HelmSplitter(
+        default={
+            "property_package": m.fs.water_prop,
+            "outlet_list": ["h_side", "o_side"]
+        }
+    )
     m.fs.fg01 = Arc(source=m.fs.cmb.outlet, destination=m.fs.bhx2.shell_inlet)
     m.fs.s02 = Arc(
         source=m.fs.aux_boiler_feed_pump.outlet,
         destination=m.fs.bhx1.tube_inlet
     )
     m.fs.fg02 = Arc(source=m.fs.bhx2.shell_outlet, destination=m.fs.bhx1.shell_inlet)
+    m.fs.s03 = Arc(
+        source=m.fs.bhx1.tube_outlet,
+        destination=m.fs.recover_split.inlet
+    )
+    m.fs.s09 = Arc(
+        source=m.fs.bhx2.tube_outlet,
+        destination=m.fs.main_steam_split.inlet
+    )
+
+
+def add_recovery_hx(m):
+    m.fs.hxh2 = gum.HeatExchanger(
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {"property_package": m.fs.h2_prop},
+            "tube": {"property_package": m.fs.water_prop},
+        }
+    )
+    m.fs.hxo2 = gum.HeatExchanger(
+        default={
+            "delta_temperature_callback": delta_temperature_underwood_callback,
+            "shell": {"property_package": m.fs.o2_prop},
+            "tube": {"property_package": m.fs.water_prop},
+        }
+    )
+    m.fs.smix1 = HelmMixer(
+        default={
+            "momentum_mixing_type": MomentumMixingType.none,
+            "inlet_list": ["hxh2", "hxo2"],
+            "property_package": m.fs.water_prop,
+        }
+    )
+    m.fs.h02 = Arc(source=m.fs.spltf1.out, destination=m.fs.hxh2.shell_inlet)
+    m.fs.s05 = Arc(source=m.fs.recover_split.h_side, destination=m.fs.hxh2.tube_inlet)
+    m.fs.o02 = Arc(source=m.fs.splta1.out, destination=m.fs.hxo2.shell_inlet)
+    m.fs.s04 = Arc(source=m.fs.recover_split.o_side, destination=m.fs.hxo2.tube_inlet)
+    m.fs.s06 = Arc(source=m.fs.hxo2.tube_outlet, destination=m.fs.smix1.hxo2)
+    m.fs.s07 = Arc(source=m.fs.hxh2.tube_outlet, destination=m.fs.smix1.hxh2)
+
+    @m.fs.smix1.Constraint(m.fs.time)
+    def pressure_eqn(b, t):
+        return b.mixed_state[t].pressure == b.hxh2_state[t].pressure
 
 def add_soec_unit(m):
     m.fs.soec = pum.IsothermalSofc(
@@ -228,7 +282,6 @@ def add_soec_unit(m):
             "outlet_list": ["out", "recycle"],
         }
     )
-
     m.fs.h01 = Arc(source=m.fs.soec.outlet_fc_mult, destination=m.fs.spltf1.inlet)
     m.fs.o01 = Arc(source=m.fs.soec.outlet_ac_mult, destination=m.fs.splta1.inlet)
 
@@ -290,6 +343,10 @@ def set_inputs(m):
     m.fs.bhx2.overall_heat_transfer_coefficient.fix(100)
     m.fs.bhx1.area.fix(200)
     m.fs.bhx1.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxh2.area.fix(200)
+    m.fs.hxh2.overall_heat_transfer_coefficient.fix(100)
+    m.fs.hxo2.area.fix(200)
+    m.fs.hxo2.overall_heat_transfer_coefficient.fix(100)
 
 
     m.fs.preheat_split.split_fraction[:, "air"].fix(0.5)
@@ -325,6 +382,9 @@ def set_inputs(m):
     m.fs.bhx2.tube_inlet.flow_mol.fix(500)
     m.fs.bhx2.tube_inlet.enth_mol.fix(iapws95.htpx(T=950*pyo.units.K, P=20.6e5*pyo.units.Pa))
     m.fs.bhx2.tube_inlet.pressure.fix(20.6e5)
+
+    m.fs.main_steam_split.split_fraction[:, "feed"].fix(0.5)
+    m.fs.recover_split.split_fraction[:, "h_side"].fix(0.5)
 
     m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(500)
     m.fs.aux_boiler_feed_pump.inlet.enth_mol.fix(
@@ -374,6 +434,22 @@ def do_initialize(m, solver):
     m.fs.spltf1.initialize()
     m.fs.splta1.initialize()
 
+    iinit.propagate_state(m.fs.s03)
+    iinit.propagate_state(m.fs.s09)
+    m.fs.recover_split.initialize()
+    m.fs.main_steam_split.initialize()
+
+    iinit.propagate_state(m.fs.h02)
+    iinit.propagate_state(m.fs.s05)
+    iinit.propagate_state(m.fs.o02)
+    iinit.propagate_state(m.fs.s04)
+    m.fs.hxh2.initialize()
+    m.fs.hxo2.initialize()
+
+    iinit.propagate_state(m.fs.s06)
+    iinit.propagate_state(m.fs.s07)
+    m.fs.smix1.initialize()
+
     solver.solve(m, tee=True)
 
 
@@ -398,6 +474,11 @@ def tag_model(m):
             m.fs,
             descend_into=False,
             additional={
+                "fg06":m.fs.ng_preheater.shell_outlet,
+                "fg07":m.fs.air_preheater.shell_outlet,
+                "s01":m.fs.aux_boiler_feed_pump.inlet,
+                "fg03":m.fs.bhx1.shell_outlet,
+                "s08":m.fs.smix1.outlet,
             },
         )
     )
@@ -448,6 +529,22 @@ def tag_model(m):
         except (KeyError, AttributeError):
             pass
 
+    tag_group["soec_power"] = iutil.ModelTag(
+        expr=m.fs.soec.total_power[0],
+        format_string="{:.2f}",
+        display_units=pyo.units.MW
+    )
+    tag_group["soec_n_cells"] = iutil.ModelTag(
+        expr=m.fs.soec.n_cells,
+        format_string="{:,.0f}",
+        display_units=None
+    )
+    tag_group["E_cell"] = iutil.ModelTag(
+        expr=m.fs.soec.E_cell[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.V
+    )
+
     m.tag_group = tag_group
 
 
@@ -478,6 +575,7 @@ def get_model(m=None, name="SOEC Module"):
     add_combustor(m)
     add_aux_boiler_steam(m)
     add_soec_unit(m)
+    add_recovery_hx(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
 
