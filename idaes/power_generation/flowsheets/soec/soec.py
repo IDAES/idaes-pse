@@ -190,7 +190,7 @@ def add_aux_boiler_steam(m):
     m.fs.main_steam_split = HelmSplitter(
         default={
             "property_package": m.fs.water_prop,
-            "outlet_list": ["feed", "sweep"]
+            "outlet_list": ["h_side", "o_side"]
         }
     )
     m.fs.aux_boiler_feed_pump = HelmIsentropicCompressor(
@@ -258,6 +258,7 @@ def add_recovery_hx(m):
     def pressure_eqn(b, t):
         return b.mixed_state[t].pressure == b.hxh2_state[t].pressure
 
+
 def add_soec_unit(m):
     m.fs.soec = pum.IsothermalSofc(
         default={
@@ -317,6 +318,85 @@ def add_soec_unit(m):
     m.fs.soec.ae.temperature.fix(temperature)
 
 
+def add_soec_inlet_mix(m):
+    m.fs.mxf1 = gum.Mixer(
+        default={
+            "property_package": m.fs.h2_prop,
+            "inlet_list": ["water", "recycle"],
+            "momentum_mixing_type": gum.MomentumMixingType.none,
+        }
+    )
+    m.fs.mxa1 = gum.Mixer(
+        default={
+            "property_package": m.fs.o2_prop,
+            "inlet_list": ["water", "recycle"],
+            "momentum_mixing_type": gum.MomentumMixingType.none,
+        }
+    )
+
+    @m.fs.mxf1.Constraint(m.fs.time)
+    def fmxpress_eqn(b, t):
+        return b.mixed_state[t].pressure == b.water_state[t].pressure
+
+    @m.fs.mxa1.Constraint(m.fs.time)
+    def amxpress_eqn(b, t):
+        return b.mixed_state[t].pressure == b.water_state[t].pressure
+
+    # Add ports to connet pure steam to steam + h2 or steam + o2
+    m.fs.main_steam_split._temperature_h_side_ref = pyo.Reference(
+        m.fs.main_steam_split.h_side_state[:].temperature
+    )
+    m.fs.main_steam_split._temperature_o_side_ref = pyo.Reference(
+        m.fs.main_steam_split.o_side_state[:].temperature
+    )
+    @m.fs.main_steam_split.Expression(m.fs.time, m.fs.soec.fc.config.comp_list)
+    def h_side_mole_frac_expr(b, t, i):
+        if i == "H2O":
+            return 1
+        else:
+            return 0
+    @m.fs.main_steam_split.Expression(m.fs.time, m.fs.soec.ac.config.comp_list)
+    def o_side_mole_frac_expr(b, t, i):
+        if i == "H2O":
+            return 1
+        else:
+            return 0
+
+    m.fs.main_steam_split.h_side_adapt = Port(
+        rule=lambda b: {
+            "flow_mol": m.fs.main_steam_split._flow_mol_h_side_ref,
+            "pressure": m.fs.main_steam_split._pressure_h_side_ref,
+            "temperature": m.fs.main_steam_split._temperature_h_side_ref,
+            "mole_frac_comp": m.fs.main_steam_split.h_side_mole_frac_expr,
+        }
+    )
+    m.fs.main_steam_split.o_side_adapt = Port(
+        rule=lambda b: {
+            "flow_mol": m.fs.main_steam_split._flow_mol_o_side_ref,
+            "pressure": m.fs.main_steam_split._pressure_o_side_ref,
+            "temperature": m.fs.main_steam_split._temperature_o_side_ref,
+            "mole_frac_comp": m.fs.main_steam_split.o_side_mole_frac_expr,
+        }
+    )
+
+    m.fs.s10 = Arc(
+        source=m.fs.main_steam_split.h_side_adapt,
+        destination=m.fs.mxf1.water,
+    )
+    m.fs.s11 = Arc(
+        source=m.fs.main_steam_split.o_side_adapt,
+        destination=m.fs.mxa1.water,
+    )
+    m.fs.hr01 = Arc(
+        source=m.fs.spltf1.recycle,
+        destination=m.fs.mxf1.recycle,
+    )
+    m.fs.or01 = Arc(
+        source=m.fs.splta1.recycle,
+        destination=m.fs.mxa1.recycle,
+    )
+
+
 def add_more_hx_connections(m):
     m.fs.fg03 = Arc(
         source=m.fs.bhx1.shell_outlet,
@@ -327,6 +407,21 @@ def add_more_hx_connections(m):
         destination=m.fs.bhx2.tube_inlet
     )
 
+
+def add_constraints(m):
+    @m.fs.Constraint(m.fs.time)
+    def heat_duty_soec_zero_eqn(b, t):
+        return b.soec.heat_duty[t] == 0
+
+    m.fs.soec_cmb_temperature = pyo.Var(m.fs.time, initialize=2000, units=pyo.units.K)
+    @m.fs.Constraint(m.fs.time)
+    def soec_cmb_temperature_eqn(b, t):
+        return m.fs.cmb.outlet.temperature[t] == m.fs.soec_cmb_temperature[t]
+
+    m.fs.soec_steam_temperature = pyo.Var(m.fs.time, initialize=1073.15, units=pyo.units.K)
+    @m.fs.Constraint(m.fs.time)
+    def soec_steam_temperature_eqn(b, t):
+        return m.fs.bhx2.tube.properties_out[t].temperature == m.fs.soec_steam_temperature[t]
 
 def set_guess(m):
     fg_comp_guess = {
@@ -346,21 +441,23 @@ def set_guess(m):
 
 
 def set_inputs(m):
-    m.fs.air_preheater.area.fix(1000)
+    m.fs.soec_cmb_temperature.fix(2000)
+    m.fs.soec_steam_temperature.fix(1073.15)
+    m.fs.air_preheater.area.fix(3000)
     m.fs.air_preheater.overall_heat_transfer_coefficient.fix(100)
-    m.fs.ng_preheater.area.fix(1000)
+    m.fs.ng_preheater.area.fix(300)
     m.fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
-    m.fs.bhx2.area.fix(1000)
+    m.fs.bhx2.area.fix(3000)
     m.fs.bhx2.overall_heat_transfer_coefficient.fix(100)
-    m.fs.bhx1.area.fix(900)
+    m.fs.bhx1.area.fix(500)
     m.fs.bhx1.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxh2.area.fix(2000)
+    m.fs.hxh2.area.fix(4000)
     m.fs.hxh2.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxo2.area.fix(2000)
+    m.fs.hxo2.area.fix(4000)
     m.fs.hxo2.overall_heat_transfer_coefficient.fix(100)
 
 
-    m.fs.preheat_split.split_fraction[:, "air"].fix(0.5)
+    m.fs.preheat_split.split_fraction[:, "air"].fix(0.9)
 
     air_comp = {
         "CH4": 0.0,
@@ -385,24 +482,24 @@ def set_inputs(m):
         "Ar": 0.0,
     }
     _set_port(
-        m.fs.air_preheater.tube_inlet, F=1500, T=330, P=1.04e5, comp=air_comp, fix=True
+        m.fs.air_preheater.tube_inlet, F=3500, T=330, P=1.04e5, comp=air_comp, fix=True
     )
     _set_port(
-        m.fs.ng_preheater.tube_inlet, F=120, T=330, P=1.04e5, comp=ng_comp, fix=True
+        m.fs.ng_preheater.tube_inlet, F=280, T=330, P=1.04e5, comp=ng_comp, fix=True
     )
-    m.fs.bhx2.tube_inlet.flow_mol.fix(3000)
+    m.fs.bhx2.tube_inlet.flow_mol.fix(5000)
     m.fs.bhx2.tube_inlet.enth_mol.fix(iapws95.htpx(T=950*pyo.units.K, P=20.6e5*pyo.units.Pa))
     m.fs.bhx2.tube_inlet.pressure.fix(20.6e5)
 
-    m.fs.main_steam_split.split_fraction[:, "feed"].fix(0.5)
+    m.fs.main_steam_split.split_fraction[:, "h_side"].fix(0.5)
     m.fs.recover_split.split_fraction[:, "h_side"].fix(0.5)
 
-    m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(3000)
+    m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(5000)
     m.fs.aux_boiler_feed_pump.inlet.enth_mol.fix(
         iapws95.htpx(T=310*pyo.units.K, P=101325*pyo.units.Pa)
     )
     m.fs.aux_boiler_feed_pump.inlet.pressure.fix(101325)
-    m.fs.aux_boiler_feed_pump.outlet.pressure.fix(20.6e5)
+    m.fs.aux_boiler_feed_pump.outlet.pressure.fix(1.1e5)#20.6e5)
     m.fs.aux_boiler_feed_pump.efficiency_isentropic.fix(0.85)
 
     m.fs.spltf1.split_fraction[:, "out"].fix(0.98)
@@ -462,15 +559,27 @@ def do_initialize(m, solver):
     iinit.propagate_state(m.fs.s07)
     m.fs.smix1.initialize()
 
+    iinit.propagate_state(m.fs.s10)
+    iinit.propagate_state(m.fs.s11)
+    iinit.propagate_state(m.fs.hr01)
+    iinit.propagate_state(m.fs.or01)
+    m.fs.mxf1.initialize()
+    m.fs.mxa1.initialize()
+
+
     iinit.propagate_state(m.fs.fg03)
     iinit.propagate_state(m.fs.s08)
 
     m.fs.bhx2.tube_inlet.unfix()
     m.fs.fg03_expanded.deactivate()
-    #solver.solve(m, tee=True)
 
     m.fs.fg03_expanded.activate()
     m.fs.preheat_split.inlet.unfix()
+
+    m.fs.soec.E_cell.unfix()
+    m.fs.air_preheater.tube_inlet.flow_mol.unfix()
+    m.fs.ng_preheater.tube_inlet.flow_mol.unfix()
+
     solver.solve(m, tee=True)
 
 
@@ -500,6 +609,8 @@ def tag_model(m):
                 "s01":m.fs.aux_boiler_feed_pump.inlet,
                 "h03":m.fs.hxh2.shell_outlet,
                 "o03":m.fs.hxo2.shell_outlet,
+                "s12":m.fs.mxf1.outlet,
+                "s13":m.fs.mxa1.outlet,
             },
         )
     )
@@ -562,7 +673,7 @@ def tag_model(m):
     )
     tag_group["E_cell"] = iutil.ModelTag(
         expr=m.fs.soec.E_cell[0],
-        format_string="{:.3f}",
+        format_string="{:.4f}",
         display_units=pyo.units.V
     )
 
@@ -617,6 +728,8 @@ def get_model(m=None, name="SOEC Module"):
     add_soec_unit(m)
     add_recovery_hx(m)
     add_more_hx_connections(m)
+    add_soec_inlet_mix(m)
+    add_constraints(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
 
