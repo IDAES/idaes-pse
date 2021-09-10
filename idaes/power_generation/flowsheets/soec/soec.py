@@ -262,8 +262,8 @@ def add_soec_unit(m):
     m.fs.soec = pum.IsothermalSofc(
         default={
             "nz": 20,
-            "nxfe": 6,
-            "nxae": 6,
+            "nxfe": 10,
+            "nxae": 10,
             "soec": True,
             "air_side_comp_list": ["H2O", "O2"],
             "fuel_side_comp_list": ["H2O", "H2"],
@@ -286,7 +286,7 @@ def add_soec_unit(m):
     m.fs.o01 = Arc(source=m.fs.soec.outlet_ac_mult, destination=m.fs.splta1.inlet)
 
     m.fs.soec.E_cell.fix(1.28)  # unfix after initialize
-    m.fs.soec.el.thickness.fix(8e-6)
+    m.fs.soec.el.thickness.fix(9e-6)
     m.fs.soec.fe.thickness.fix(1e-3)
     m.fs.soec.ae.thickness.fix(20e-6)
     m.fs.soec.length.fix(0.05)
@@ -317,6 +317,17 @@ def add_soec_unit(m):
     m.fs.soec.ae.temperature.fix(temperature)
 
 
+def add_more_hx_connections(m):
+    m.fs.fg03 = Arc(
+        source=m.fs.bhx1.shell_outlet,
+        destination=m.fs.preheat_split.inlet
+    )
+    m.fs.s08 = Arc(
+        source=m.fs.smix1.outlet,
+        destination=m.fs.bhx2.tube_inlet
+    )
+
+
 def set_guess(m):
     fg_comp_guess = {
         "CH4": 0.0,
@@ -339,13 +350,13 @@ def set_inputs(m):
     m.fs.air_preheater.overall_heat_transfer_coefficient.fix(100)
     m.fs.ng_preheater.area.fix(1000)
     m.fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
-    m.fs.bhx2.area.fix(200)
+    m.fs.bhx2.area.fix(1000)
     m.fs.bhx2.overall_heat_transfer_coefficient.fix(100)
-    m.fs.bhx1.area.fix(200)
+    m.fs.bhx1.area.fix(900)
     m.fs.bhx1.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxh2.area.fix(200)
+    m.fs.hxh2.area.fix(2000)
     m.fs.hxh2.overall_heat_transfer_coefficient.fix(100)
-    m.fs.hxo2.area.fix(200)
+    m.fs.hxo2.area.fix(2000)
     m.fs.hxo2.overall_heat_transfer_coefficient.fix(100)
 
 
@@ -374,19 +385,19 @@ def set_inputs(m):
         "Ar": 0.0,
     }
     _set_port(
-        m.fs.air_preheater.tube_inlet, F=600, T=330, P=1.04e5, comp=air_comp, fix=True
+        m.fs.air_preheater.tube_inlet, F=1500, T=330, P=1.04e5, comp=air_comp, fix=True
     )
     _set_port(
-        m.fs.ng_preheater.tube_inlet, F=50, T=330, P=1.04e5, comp=ng_comp, fix=True
+        m.fs.ng_preheater.tube_inlet, F=120, T=330, P=1.04e5, comp=ng_comp, fix=True
     )
-    m.fs.bhx2.tube_inlet.flow_mol.fix(500)
+    m.fs.bhx2.tube_inlet.flow_mol.fix(3000)
     m.fs.bhx2.tube_inlet.enth_mol.fix(iapws95.htpx(T=950*pyo.units.K, P=20.6e5*pyo.units.Pa))
     m.fs.bhx2.tube_inlet.pressure.fix(20.6e5)
 
     m.fs.main_steam_split.split_fraction[:, "feed"].fix(0.5)
     m.fs.recover_split.split_fraction[:, "h_side"].fix(0.5)
 
-    m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(500)
+    m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(3000)
     m.fs.aux_boiler_feed_pump.inlet.enth_mol.fix(
         iapws95.htpx(T=310*pyo.units.K, P=101325*pyo.units.Pa)
     )
@@ -394,16 +405,17 @@ def set_inputs(m):
     m.fs.aux_boiler_feed_pump.outlet.pressure.fix(20.6e5)
     m.fs.aux_boiler_feed_pump.efficiency_isentropic.fix(0.85)
 
-    m.fs.spltf1.split_fraction[:, "out"].fix(0.95)
+    m.fs.spltf1.split_fraction[:, "out"].fix(0.98)
     m.fs.splta1.split_fraction[:, "out"].fix(0.85)
-    m.fs.soec.n_cells.fix(200e6)
 
-    m.fs.soec.fc.flow_mol[:, 0].fix(9e-5/10)
+    m.fs.soec.n_cells.fix(300e6)
+
+    m.fs.soec.fc.flow_mol[:, 0].fix(8e-6)
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
-    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.95)
-    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.05)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.90)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)
 
-    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4/10)
+    m.fs.soec.ac.flow_mol[:, 0].fix(1e-5)
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
@@ -450,6 +462,15 @@ def do_initialize(m, solver):
     iinit.propagate_state(m.fs.s07)
     m.fs.smix1.initialize()
 
+    iinit.propagate_state(m.fs.fg03)
+    iinit.propagate_state(m.fs.s08)
+
+    m.fs.bhx2.tube_inlet.unfix()
+    m.fs.fg03_expanded.deactivate()
+    #solver.solve(m, tee=True)
+
+    m.fs.fg03_expanded.activate()
+    m.fs.preheat_split.inlet.unfix()
     solver.solve(m, tee=True)
 
 
@@ -477,8 +498,8 @@ def tag_model(m):
                 "fg06":m.fs.ng_preheater.shell_outlet,
                 "fg07":m.fs.air_preheater.shell_outlet,
                 "s01":m.fs.aux_boiler_feed_pump.inlet,
-                "fg03":m.fs.bhx1.shell_outlet,
-                "s08":m.fs.smix1.outlet,
+                "h03":m.fs.hxh2.shell_outlet,
+                "o03":m.fs.hxo2.shell_outlet,
             },
         )
     )
@@ -506,7 +527,7 @@ def tag_model(m):
         try:
             tag_group[f"{i}_vf"] = iutil.ModelTag(
                 expr=s.phase_frac["Vap"],
-                format_string="{:.1f}",
+                format_string="{:.3f}",
                 display_units=None
         )
         except (KeyError, AttributeError):
@@ -548,6 +569,25 @@ def tag_model(m):
     m.tag_group = tag_group
 
 
+def check_scaling(m):
+    jac, nlp = iscale.get_jacobian(m, scaled=True)
+    print("Extreme Jacobian entries:")
+    for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, large=100):
+        print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]")
+    print("Unscaled constraints:")
+    for c in iscale.unscaled_constraints_generator(m):
+        print(f"    {c}")
+    print("Scaled constraints by factor:")
+    for c, s in iscale.constraints_with_scale_factor_generator(m):
+        print(f"    {c}, {s}")
+    print("Badly scaled variables:")
+    for v, sv in iscale.badly_scaled_var_generator(
+        m, large=1e2, small=1e-2, zero=1e-12
+    ):
+        print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}")
+    print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
+
+
 def write_pfd_results(m, filename, infilename=None):
     """
     Write simulation results in a template PFD in svg format and save as
@@ -576,6 +616,7 @@ def get_model(m=None, name="SOEC Module"):
     add_aux_boiler_steam(m)
     add_soec_unit(m)
     add_recovery_hx(m)
+    add_more_hx_connections(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
 
@@ -591,3 +632,4 @@ def get_model(m=None, name="SOEC Module"):
 if __name__ == "__main__":
     m = get_model()
     write_pfd_results(m, "soec_init.svg")
+    check_scaling(m)
