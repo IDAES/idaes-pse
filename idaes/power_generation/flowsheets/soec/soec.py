@@ -395,6 +395,8 @@ def add_soec_inlet_mix(m):
         source=m.fs.splta1.recycle,
         destination=m.fs.mxa1.recycle,
     )
+    m.fs.s12 = Arc(source=m.fs.mxf1.outlet, destination=m.fs.soec.inlet_fc_mult)
+    m.fs.s13 = Arc(source=m.fs.mxa1.outlet, destination=m.fs.soec.inlet_ac_mult)
 
 
 def add_more_hx_connections(m):
@@ -571,16 +573,31 @@ def do_initialize(m, solver):
     iinit.propagate_state(m.fs.s08)
 
     m.fs.bhx2.tube_inlet.unfix()
-    m.fs.fg03_expanded.deactivate()
-
-    m.fs.fg03_expanded.activate()
     m.fs.preheat_split.inlet.unfix()
 
     m.fs.soec.E_cell.unfix()
     m.fs.air_preheater.tube_inlet.flow_mol.unfix()
     m.fs.ng_preheater.tube_inlet.flow_mol.unfix()
 
+    m.fs.s12_expanded.deactivate()
+    m.fs.s13_expanded.deactivate()
     solver.solve(m, tee=True)
+
+    m.fs.s12_expanded.activate()
+    m.fs.s13_expanded.activate()
+
+    m.fs.soec.fc.pressure[:, 0].unfix()
+    m.fs.soec.fc.temperature[:, 0].unfix()
+    m.fs.soec.fc.mole_frac_comp[:, 0, :].unfix()
+
+    m.fs.soec.ac.pressure[:, 0].unfix()
+    m.fs.soec.ac.temperature[:, 0].unfix()
+    m.fs.soec.ac.mole_frac_comp[:, 0, :].unfix()
+    m.fs.main_steam_split.split_fraction[:, "h_side"].unfix()
+    m.fs.aux_boiler_feed_pump.inlet.flow_mol.unfix()
+
+    solver.solve(m, tee=True)
+
 
 
 def get_solver():
