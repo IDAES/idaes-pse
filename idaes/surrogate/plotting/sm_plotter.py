@@ -163,7 +163,7 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
     Plots model output against data output, with confidence interval data
     if provided to the method.
     """
-    numouts = np.shape(zdata)[1]  # number of output variables
+    numouts = np.shape(zdata)[0]  # number of output variables
 
     # check and add labels if missing
 
@@ -177,8 +177,8 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
         fig.append(plt.figure())
         ax.append(fig[j].add_subplot())
 
-        ax[j].plot(zdata[:, j], zdata[:, j], c='b', label='Data')
-        ax[j].scatter(zdata[:, j], zfit[:, j], c='r', marker='s',
+        ax[j].plot(zdata[j, :], zdata[j, :], c='b', label='Data')
+        ax[j].scatter(zdata[j, :], zfit[j, :], c='r', marker='s',
                       label='Predictions')
 
         # plot confidence intervals if given data
@@ -205,7 +205,7 @@ def residual(zdata, e, zlabels=None, elabel=None, show=True, PDF=False,
     Plots model error against data output.
     """
 
-    numouts = np.shape(zdata)[1]  # number of output variables
+    numouts = np.shape(zdata)[0]  # number of output variables
 
     # check and add labels if missing
 
@@ -221,7 +221,7 @@ def residual(zdata, e, zlabels=None, elabel=None, show=True, PDF=False,
 
         fig.append(plt.figure())
         ax.append(fig[j].add_subplot())
-        ax[j].scatter(zdata[:, j], e[:, j], c='b', marker='s',
+        ax[j].scatter(zdata[j, :], e[j, :], c='b', marker='s',
                       label=elabel)
         ax[j].set_xlabel(zlabels[j])
         ax[j].set_ylabel(elabel)
