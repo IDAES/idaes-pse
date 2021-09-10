@@ -61,6 +61,41 @@ def test_tag_display(model):
     assert str(tz) == "7.0"
 
 @pytest.mark.unit
+def test_tag_conditional_formatting(model):
+    m = model
+
+    tx = ModelTag(
+        expr=m.x,
+        format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
+        doc="Tag for x",
+        display_units=pyo.units.g
+    )
+
+    tx.set(1*pyo.units.g)
+    assert str(tx[1]) == "1.00 g"
+    tx.set(1*pyo.units.kg)
+    assert str(tx[1]) == "1,000 g"
+
+@pytest.mark.unit
+def test_tag_errors(model):
+    m = model
+
+    tx = ModelTag(
+        expr=m.x,
+        format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
+        display_units=pyo.units.g
+    )
+    tg = ModelTag(
+        expr=m.g,
+        format_string="{:,.0f}",
+        display_units=None
+    )
+    m.x.fix(0)
+    assert str(tg[1, "a"]) == "ZeroDivisionError"
+    m.x.fix(None)
+    assert str(tg[1, "a"]) == "None"
+
+@pytest.mark.unit
 def test_tag_display_convert(model):
     m = model
     tw = ModelTag(expr=m.w, format_string="{:.3f}", doc="Tag for w", display_units=pyo.units.g)
