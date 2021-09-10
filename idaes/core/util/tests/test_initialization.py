@@ -16,7 +16,7 @@ Tests for math util methods.
 
 import pytest
 from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
-                           Set, Var, value, Param, Reals,
+                           Set, Var, value, Param, Reals, units as pyunits,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc, Port
 
@@ -74,12 +74,11 @@ class ParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _AqueousEnzymeStateBlock(StateBlock):
@@ -191,12 +190,11 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _EnzymeReactionBlock(ReactionBlockBase):

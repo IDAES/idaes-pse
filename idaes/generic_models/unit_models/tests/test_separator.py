@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
                            Set,
                            SolverStatus,
                            value,
-                           Var)
+                           Var,
+                           units as pyunits)
 
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
@@ -1317,13 +1318,11 @@ class _IdealParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 @declare_process_block_class("IdealStateBlock", block_class=StateBlock)

@@ -25,7 +25,8 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            TerminationCondition,
                            SolverStatus,
-                           value)
+                           value,
+                           units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
 from pyomo.network import Port
@@ -842,13 +843,11 @@ class _NoPressureParameterBlock(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.g,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 @declare_process_block_class("NoPressureStateBlock",

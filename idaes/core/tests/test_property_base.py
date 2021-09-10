@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
@@ -72,6 +72,12 @@ def test_get_phase_component_set():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
@@ -107,6 +113,12 @@ def test_get_phase_component_set_subset():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
@@ -140,6 +152,12 @@ def test_get_component():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
@@ -199,6 +217,12 @@ def test_validate_parameter_block_no_phase_list():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
@@ -233,6 +257,12 @@ def test_validate_parameter_block_invalid_phase_object():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
@@ -383,6 +413,12 @@ class _Parameters(PhysicalParameterBlock):
                             'not_supported': {'method': False},
                             'does_not_create_component': {
                                 'method': '_does_not_create_component'}})
+        obj.add_default_units({
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "length": pyunits.m,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K})
 
 
 @declare_process_block_class("StateTest", block_class=StateBlock)
