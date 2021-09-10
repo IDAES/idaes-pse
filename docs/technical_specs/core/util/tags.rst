@@ -109,6 +109,7 @@ string. A simple example is given below.
   tagw = ModelTag(
     expr=m.w,
     format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
+    display_units=pyo.units.g,
   )
 
   tagw.set(1*pyo.units.g)

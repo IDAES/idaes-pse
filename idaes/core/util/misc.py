@@ -14,6 +14,7 @@
 """
 This module contains miscellaneous utility functions for use in IDAES models.
 """
+from pyomo.common.deprecation import deprecated
 
 import pyomo.environ as pyo
 from pyomo.core.base.expression import _GeneralExpressionData
@@ -25,7 +26,7 @@ from pyomo.common.config import ConfigBlock
 
 import idaes.logger as idaeslog
 import idaes.core.solvers
-from idaes.core.util.tags import svg_tag
+from idaes.core.util.tags import svg_tag as svg_tag_new
 
 _log = idaeslog.getLogger(__name__)
 
@@ -117,7 +118,6 @@ def TagReference(s, description=""):
     return r
 
 
-# Author: John Eslick
 def copy_port_values(destination=None, source=None, arc=None,
         direction="forward"):
     """
@@ -130,6 +130,17 @@ def copy_port_values(destination=None, source=None, arc=None,
     from idaes.core.util.initialization import propagate_state
     propagate_state(destination=destination, source=source, arc=arc,
             direction=direction)
+
+@deprecated(
+    "idaes.core.util.misc.svg_tag has moved to idaes.core.util.tags.svg_tag",
+    version=1.12
+)
+def svg_tag(*args, **kwargs):
+    """
+    Moved to idaes.core.util.tags.svg_tag
+    Leaving redirection function here for deprecation warning.
+    """
+    return svg_tag_new(*args, **kwargs)
 
 
 def set_param_from_config(b, param, config=None, index=None):
