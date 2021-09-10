@@ -411,9 +411,10 @@ def add_more_hx_connections(m):
 
 
 def add_constraints(m):
+    m.fs.soec_heat_duty = pyo.Var(m.fs.time, units=pyo.units.W)
     @m.fs.Constraint(m.fs.time)
     def heat_duty_soec_zero_eqn(b, t):
-        return b.soec.heat_duty[t] == 0
+        return b.soec.heat_duty[t] == b.soec_heat_duty[t]
 
     m.fs.soec_cmb_temperature = pyo.Var(m.fs.time, initialize=2000, units=pyo.units.K)
     @m.fs.Constraint(m.fs.time)
@@ -508,6 +509,7 @@ def set_inputs(m):
     m.fs.splta1.split_fraction[:, "out"].fix(0.85)
 
     m.fs.soec.n_cells.fix(300e6)
+    m.fs.soec_heat_duty.fix(0) # going for the theroneutral point here
 
     m.fs.soec.fc.flow_mol[:, 0].fix(8e-6)
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
@@ -588,13 +590,16 @@ def do_initialize(m, solver):
 
     m.fs.soec.fc.pressure[:, 0].unfix()
     m.fs.soec.fc.temperature[:, 0].unfix()
-    m.fs.soec.fc.mole_frac_comp[:, 0, :].unfix()
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].unfix()
 
     m.fs.soec.ac.pressure[:, 0].unfix()
     m.fs.soec.ac.temperature[:, 0].unfix()
-    m.fs.soec.ac.mole_frac_comp[:, 0, :].unfix()
+    m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].unfix()
     m.fs.main_steam_split.split_fraction[:, "h_side"].unfix()
     m.fs.aux_boiler_feed_pump.inlet.flow_mol.unfix()
+
+    m.fs.spltf1.split_fraction[:, "out"].unfix()
+    m.fs.splta1.split_fraction[:, "out"].unfix()
 
     solver.solve(m, tee=True)
 
@@ -614,7 +619,115 @@ def get_solver():
     return pyo.SolverFactory("ipopt")
 
 
-def tag_model(m):
+def tag_inputs_opt_vars(m):
+    tags = iutil.ModelTagGroup()
+    tags["single_cell_h2_side_inlet_flow"] = iutil.ModelTag(
+        expr=m.fs.soec.fc.flow_mol[0, 0],
+        format_string="{:.3f}",
+        display_units=pyo.units.micromol/pyo.units.s,
+        doc="Single cell H2 side inlet flow (feed)",
+    )
+    tags["single_cell_sweep_flow"] = iutil.ModelTag(
+        expr=m.fs.soec.ac.flow_mol[0, 0],
+        format_string="{:.3f}",
+        display_units=pyo.units.micromol/pyo.units.s,
+        doc="Single cell O2 side inlet flow (sweep)",
+    )
+    tags["feed_h2_frac"] = iutil.ModelTag(
+        expr=m.fs.soec.fc.mole_frac_comp[0, 0, "H2"],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="H2 side inlet H2 mole frac (from recycle)",
+    )
+    tags["sweep_o2_frac"] = iutil.ModelTag(
+        expr=m.fs.soec.ac.mole_frac_comp[0, 0, "O2"],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="O2 side inlet O2 mole frac (from recycle)",
+    )
+    tags["single_cell_heat_required"] = iutil.ModelTag(
+        expr=m.fs.soec_heat_duty[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.W,
+        doc="Heat duty of a singel SOEC cell",
+    )
+    tags["combustor_temperature"] = iutil.ModelTag(
+        expr=m.fs.soec_cmb_temperature[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.K,
+        doc="Combustor temperature",
+    )
+    tags["steam_temperature"] = iutil.ModelTag(
+        expr=m.fs.soec_steam_temperature[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.K,
+        doc="Steam temperature (should be same as SOEC)",
+    )
+    tags["preheat_fg_split_to_air"] = iutil.ModelTag(
+        expr=m.fs.preheat_split.split_fraction[0, "air"],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="Split fraction of flue gas to air preheater, rest goes to NG heater",
+    )
+    tags["recover_split_to_hxh2"] = iutil.ModelTag(
+        expr=m.fs.recover_split.split_fraction[0, "h_side"],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="Split fraction of steam to H2 recovery HX, rest goes to O2 HX",
+    )
+    tags["n_cells"] = iutil.ModelTag(
+        expr=m.fs.soec.n_cells,
+        format_string="{:,.0f}",
+        display_units=None,
+        doc="Number of SOEC cells",
+    )
+    tags["cell_pressure"] = iutil.ModelTag(
+        expr=m.fs.aux_boiler_feed_pump.outlet.pressure[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kPa,
+        doc="Steam and SOEC pressure",
+    )
+    tags["air_preheater_area"] = iutil.ModelTag(
+        expr=m.fs.air_preheater.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="Air preheater area",
+    )
+    tags["ng_preheater_area"] = iutil.ModelTag(
+        expr=m.fs.ng_preheater.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="NG preheater area",
+    )
+    tags["bhx1_area"] = iutil.ModelTag(
+        expr=m.fs.bhx1.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="bhx1 area",
+    )
+    tags["bhx2_area"] = iutil.ModelTag(
+        expr=m.fs.bhx2.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="bhx2 area",
+    )
+    tags["hxh2_area"] = iutil.ModelTag(
+        expr=m.fs.hxh2.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="hxh2 area",
+    )
+    tags["hxo2_area"] = iutil.ModelTag(
+        expr=m.fs.hxo2.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="hxo2 area",
+    )
+    m.tag_input = tags
+    display_input_tags(m)
+
+
+def tag_for_pfd_and_tables(m):
     tag_group = iutil.ModelTagGroup()
     stream_states = tables.stream_states_dict(
         tables.arcs_to_stream_dict(
@@ -626,8 +739,6 @@ def tag_model(m):
                 "s01":m.fs.aux_boiler_feed_pump.inlet,
                 "h03":m.fs.hxh2.shell_outlet,
                 "o03":m.fs.hxo2.shell_outlet,
-                "s12":m.fs.mxf1.outlet,
-                "s13":m.fs.mxa1.outlet,
             },
         )
     )
@@ -694,7 +805,20 @@ def tag_model(m):
         display_units=pyo.units.V
     )
 
-    m.tag_group = tag_group
+    m.tag_pfd = tag_group
+
+
+def display_input_tags(m):
+    # this is special for this model.  The input tags are not indexed
+    print("")
+    for key, tag in m.tag_input.items():
+        print(key)
+        print(f"    {tag.doc}")
+        print(f"    display units: {tag._display_units}")
+        print(f"    native units: {pyo.units.get_units(tag.expression)}")
+        print(f"    value {tag}, fixed: {tag.expression.fixed}")
+        print("")
+
 
 
 def check_scaling(m):
@@ -733,7 +857,7 @@ def write_pfd_results(m, filename, infilename=None):
     if infilename is None:
         infilename = os.path.join(this_file_dir(), "soec.svg")
     with open(infilename, "r") as f:
-        iutil.svg_tag(svg=f, tag_group=m.tag_group, outfile=filename)
+        iutil.svg_tag(svg=f, tag_group=m.tag_pfd, outfile=filename)
 
 
 def get_model(m=None, name="SOEC Module"):
@@ -750,11 +874,13 @@ def get_model(m=None, name="SOEC Module"):
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
 
-    tag_model(m)
+    tag_inputs_opt_vars(m)
+    tag_for_pfd_and_tables(m)
     set_guess(m)
     set_inputs(m)
     solver = get_solver()
     do_initialize(m, solver)
+    display_input_tags(m)
     return m
 
 

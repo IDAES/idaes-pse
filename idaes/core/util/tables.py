@@ -91,7 +91,10 @@ def stream_states_dict(streams, time_point=0):
     for n in streams.keys():
         if isinstance(streams[n], Arc):
             for i, a in streams[n].items():
-                sb = _get_state_from_port(a.ports[1], time_point)
+                try:
+                    sb = _get_state_from_port(a.ports[1], time_point)
+                except:
+                    sb = _get_state_from_port(a.ports[0], time_point)
                 _stream_dict_add(sb, n, i)
         elif isinstance(streams[n], Port):
             sb = _get_state_from_port(streams[n], time_point)

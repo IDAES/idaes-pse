@@ -220,18 +220,25 @@ class ModelTag:
                 return pyo.value(expr, exception=False)
             except ZeroDivisionError:
                 return "ZeroDivisionError"
+            except ValueError: # no value
+                return None
 
         try:
             val = pyo.value(expr, exception=False)
         except ZeroDivisionError:
             return "ZeroDivisionError"
+        except ValueError: # no value
+            return None
 
         cache_validate = self._cache_validation_value
         cache_value = self._cache_display_value
-        if val == cache_validate.get(index, None):
+        if index in cache_validate and val == cache_validate[index]:
             return cache_value[index]
         cache_validate[index] = val
-        cache_value[index] = pyo.value(pyo.units.convert(expr, self._display_units))
+        try:
+            cache_value[index] = pyo.value(pyo.units.convert(expr, self._display_units), exception=False)
+        except ValueError:
+            return None
         return cache_value[index]
 
     def get_unit_str(self, index=None):

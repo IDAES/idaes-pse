@@ -334,13 +334,13 @@ class IsothermalSofcChannelData(UnitModelBlockData):
         else:
             self.width = pyo.Reference(self.config.width)
 
-        self.conc = pyo.Var(tset, izset, comps, doc="Component concentration")
-        self.pressure = pyo.Var(tset, izset, doc="Pressure")
-        self.temperature = pyo.Var(tset, izset, doc="Temperature")
-        self.thickness = pyo.Var(doc="Thickness in x direction")
+        self.conc = pyo.Var(tset, izset, comps, doc="Component concentration", units=pyo.units.mol/pyo.units.m**3)
+        self.pressure = pyo.Var(tset, izset, doc="Pressure", units=pyo.units.Pa)
+        self.temperature = pyo.Var(tset, izset, doc="Temperature", units=pyo.units.K)
+        self.thickness = pyo.Var(doc="Thickness in x direction", units=pyo.units.m)
         self.mole_frac_comp = pyo.Var(tset, izset, comps, doc="Component mole fraction")
-        self.velocity = pyo.Var(tset, izset, doc="Gas velocity")
-        self.flow_mol = pyo.Var(tset, izset)
+        self.velocity = pyo.Var(tset, izset, doc="Gas velocity", units=pyo.units.m/pyo.units.s)
+        self.flow_mol = pyo.Var(tset, izset, units=pyo.units.mol/pyo.units.s)
         self.xflux = pyo.Var(
             tset, izset, comps, doc="Component flux to electrode", initialize=0
         )
