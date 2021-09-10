@@ -277,3 +277,7 @@ def test_tag_reference_tag_format_conditional():
     assert("10,000 kPa" in xml_str)
     assert("1.10 kPa" in xml_str)
     assert("4.50 kPa" in xml_str)
+
+if __name__ == "__main__":
+    # Check deprication warnings
+    test_tag_reference_tag_format_conditional()

@@ -16,6 +16,7 @@ and group them, for easy display, formatting, and input.
 import xml.dom.minidom
 
 import pyomo.environ as pyo
+from pyomo.common.deprecation import deprecation_warning
 from pyomo.core.base.indexed_component_slice import IndexedComponent_slice
 
 import idaes.logger as idaeslog
@@ -53,8 +54,8 @@ class ModelTag:
                 expression to tag. This can be a scalar or indexed.
             format_string: A formating string used to print an elememnt of the
                 tagged expression (e.g. '{:.3f}').
-            doc: A description of the tagged qunatity.
-            display_units: Pyomo units to display the qunatity in. If a string
+            doc: A description of the tagged quantity.
+            display_units: Pyomo units to display the quantity in. If a string
                 is provided it will be used to display as the unit, but will not
                 be used to convert units. If None, use native units of the
                 quantity.
@@ -261,7 +262,7 @@ class ModelTag:
 
     @property
     def is_indexed(self):
-        """Returns whether the tagged expression is a indexed."""
+        """Returns whether the tagged expression is an indexed."""
         try:
             return self.expression.is_indexed()
         except AttributeError:
@@ -276,7 +277,7 @@ class ModelTag:
 
     @property
     def indices(self):
-        """The index set of the tagged qunatity"""
+        """The index set of the tagged quantity"""
         if self.is_indexed:
             return list(self.expression.keys())
         return None
@@ -361,7 +362,7 @@ class ModelTag:
         try:
             try:
                 self.expression.set_value(val)
-            except ValueError:  # it's a indexed expression or slice
+            except ValueError:  # it's an indexed expression or slice
                 for index in self.expression:
                     self.expression[index].set_value(val)
         except AttributeError as attr_err:
@@ -391,7 +392,7 @@ class ModelTag:
         try:
             try:
                 self.expression.setlb(val)
-            except ValueError:  # it's a indexed expression or slice
+            except ValueError:  # it's an indexed expression or slice
                 for index in self.expression:
                     self.expression[index].lb(val)
         except AttributeError as attr_err:
@@ -421,7 +422,7 @@ class ModelTag:
         try:
             try:
                 self.expression.setub(val)
-            except ValueError:  # it's a indexed expression or slice
+            except ValueError:  # it's an indexed expression or slice
                 for index in self.expression:
                     self.expression[index].setub(val)
         except AttributeError as attr_err:
@@ -598,9 +599,10 @@ def svg_tag(
 
     # Deal with soon to be depricated input by converting it to new style
     if tags is not None:
-        _log.warning(
+        deprecation_warning(
             "DEPRECATED: svg_tag, the tags, tag_format and "
-            "tag_format_default arguments are deprecated use tag_group instead."
+            "tag_format_default arguments are deprecated use tag_group instead.",
+            version=1.12,
         )
         # As a temporary measure, allow a tag and tag format dict.  To simplfy
         # and make it easier to remove this option in the future, use the old
