@@ -199,37 +199,42 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
         pdfPrint(fig, filename)
 
 
-def residual(zdata, e, zlabels=None, elabel=None, show=True, PDF=False,
+def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,
              filename='results_residual.pdf'):
     """
     Plots model error against data output.
     """
-
-    numouts = np.shape(zdata)[0]  # number of output variables
+    numins = np.shape(xdata)[0]  # number of input variables
+    numouts = np.shape(e)[0]  # number of output variables
 
     # check and add labels if missing
 
-    if zlabels is None:
-        zlabels = []
-        for j in range(numouts):
-            zlabels.append('z' + str(j+1))
-    if elabel is None:
-        elabel = 'Model Error'
+    if xlabels is None:
+        xlabels = []
+        for j in range(numins):
+            xlabels.append('x' + str(j+1))
+    if elabels is None:
+        for i in range(numouts):
+            elabels.append('z'+str(j+1)+' Error')
 
     fig, ax = [], []
-    for j in range(numouts):  # loop over all outputs, zj
+    count = 0
+    for i in range(numins):
+        for j in range(numouts):  # loop over all outputs, zj
+    
+            fig.append(plt.figure())
+            ax.append(fig[count].add_subplot())
+            ax[count].scatter(xdata[i, :], e[j, :], c='b', marker='s',
+                          label=elabels[j])
+            ax[count].set_xlabel(xlabels[i])
+            ax[count].set_ylabel(elabels[j])
+            ax[count].set_title('Residual Plot')
+            ax[count].legend()
+    
+            if show is True:
+                plt.show()
+            count += 1
 
-        fig.append(plt.figure())
-        ax.append(fig[j].add_subplot())
-        ax[j].scatter(zdata[j, :], e[j, :], c='b', marker='s',
-                      label=elabel)
-        ax[j].set_xlabel(zlabels[j])
-        ax[j].set_ylabel(elabel)
-        ax[j].set_title('Residual Plot')
-        ax[j].legend()
-
-        if show is True:
-            plt.show()
     if PDF is True:
         pdfPrint(fig, filename)
 
