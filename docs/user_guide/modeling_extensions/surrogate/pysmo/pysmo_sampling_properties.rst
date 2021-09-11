@@ -17,7 +17,7 @@ The following code snippet shows basic usage of the package for generating sampl
    >>> from idaes.surrogate.pysmo import sampling as sp
 
    # Declaration of lower and upper bounds of 3D space to be sampled
-   >>> bounds = [[0, 0, 0], [1.2, 0.1, 1]]
+   >>> bounds_list = [[0, 0, 0], [1.2, 0.1, 1]]
 
    # Initialize the Halton sampling method and generate 10 samples
    >>> space_init = sp.HaltonSampling(bounds_list, sampling_type='creation', number_of_samples=10)

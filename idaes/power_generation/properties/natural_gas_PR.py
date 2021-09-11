@@ -29,6 +29,7 @@ of state.
 # Import Python libraries
 import logging
 import copy
+import enum
 
 # Import Pyomo units
 import pyomo.environ as pyo
@@ -39,10 +40,12 @@ from idaes.core import VaporPhase, LiquidPhase, Component, PhaseType
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
+from idaes.generic_models.properties.core.eos.ideal import Ideal
+from idaes.generic_models.properties.core.phase_equil.forms import fugacity, log_fugacity
 from idaes.generic_models.properties.core.phase_equil import SmoothVLE
-
-from idaes.generic_models.properties.core.pure import NIST, RPP4, RPP5
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
+        IdealBubbleDew
+from idaes.generic_models.properties.core.pure import NIST, RPP4, RPP5, Perrys
 
 from idaes.generic_models.properties.core.reactions.dh_rxn import \
     constant_dh_rxn
@@ -58,6 +61,11 @@ import idaes.generic_models.properties.core.reactions as rxn
 # Set up logger
 _log = logging.getLogger(__name__)
 
+
+class EosType(enum.Enum):
+    PR = 1
+    IDEAL = 2
+
 # Property Sources
 
 # Source: NIST webbook
@@ -69,11 +77,23 @@ _log = logging.getLogger(__name__)
 # Properties: Critical temperatures and pressures. Omega.
 # Heat capacity coefficients for ethane, propane, and butane.
 
-_phase_dicts = {
+_phase_dicts_pr = {
     "Vap": {
         "type": VaporPhase,
         "equation_of_state": Cubic,
         "equation_of_state_options": {"type": CubicType.PR}
+    },
+    "Liq": {
+        "type": LiquidPhase,
+        "equation_of_state": Cubic,
+        "equation_of_state_options": {"type": CubicType.PR}
+    },
+}
+
+_phase_dicts_ideal = {
+    "Vap": {
+        "type": VaporPhase,
+        "equation_of_state": Ideal,
     },
     "Liq": {
         "type": LiquidPhase,
@@ -400,7 +420,7 @@ _component_params = {
 
 
 # returns a configuration dictionary for the list of specified components
-def get_prop(components=None, phases="Vap"):
+def get_prop(components=None, phases="Vap", eos=EosType.PR):
     if components is None:
         components = list(_component_params.keys())
     configuration = {
@@ -429,7 +449,13 @@ def get_prop(components=None, phases="Vap"):
     if isinstance(phases, str):
         phases = [phases]
     for k in phases:
-        configuration["phases"][k] = copy.deepcopy(_phase_dicts[k])
+        if eos==EosType.PR:
+            configuration["phases"][k] = copy.deepcopy(_phase_dicts_pr[k])
+        elif eos==EosType.IDEAL:
+            configuration["phases"][k] = copy.deepcopy(_phase_dicts_ideal[k])
+            configuration["bubble_dew_method"] = IdealBubbleDew
+        else:
+            raise ValueError("Invalid EoS.")
     if len(phases) > 1:
         p = tuple(phases)
         configuration["phases_in_equilibrium"] = [p]
