@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Author: Andrew Lee, Alejandro Garciadiego
 """
@@ -24,6 +24,7 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
@@ -38,7 +39,6 @@ from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 
 from idaes.generic_models.properties.core.examples.HC_PR_vap \
     import configuration_vap
@@ -47,6 +47,7 @@ from idaes.generic_models.properties.core.examples.HC_PR_vap \
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
+
 
 # Test for configuration dictionaries with parameters from Properties of Gases
 # and liquids 4th edition
@@ -84,18 +85,23 @@ class TestParamBlock(object):
         assert isinstance(model.params._phase_component_set, Set)
         assert len(model.params._phase_component_set) == 13
         for i in model.params._phase_component_set:
-            assert i in [("Vap", "hydrogen"), ("Vap", "methane"), ("Vap", "ethane"),
-                         ("Vap", "propane"), ("Vap", "nbutane"), ("Vap", "ibutane"),
-                         ("Vap", "ethylene"), ("Vap", "propene"), ("Vap", "butene"),
-                         ("Vap", "pentene"), ("Vap", "hexene"), ("Vap", "heptene"),
-                         ("Vap", "octene")]
+            assert i in [
+                ("Vap", "hydrogen"), ("Vap", "methane"), ("Vap", "ethane"),
+                ("Vap", "propane"), ("Vap", "nbutane"), ("Vap", "ibutane"),
+                ("Vap", "ethylene"), ("Vap", "propene"), ("Vap", "butene"),
+                ("Vap", "pentene"), ("Vap", "hexene"), ("Vap", "heptene"),
+                ("Vap", "octene")]
 
         assert model.params.config.state_definition == FTPx
 
-        assert model.params.config.state_bounds == {
-            "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
-            "temperature": (273.15, 300, 1500, pyunits.K),
-            "pressure": (5e4, 1e5, 1e7, pyunits.Pa)}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            { "flow_mol": (0, 100, 1000, pyunits.mol/pyunits.s),
+              "temperature": (273.15, 300, 1500, pyunits.K),
+              "pressure": (5e4, 1e5, 1e7, pyunits.Pa) },
+            item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.pressure_ref.value == 101325
         assert model.params.temperature_ref.value == 298.15
@@ -208,7 +214,7 @@ class TestStateBlock(object):
         assert len(model.props[1].mole_frac_comp) == 13
         for i in model.props[1].mole_frac_comp:
             assert value(model.props[1].mole_frac_comp[i]) == \
-                pytest.approx(0.077, abs=1e-2)    
+                pytest.approx(0.077, abs=1e-2)
 
         # Check supporting variables
         assert isinstance(model.props[1].flow_mol_phase, Var)
@@ -235,32 +241,29 @@ class TestStateBlock(object):
     def test_get_material_flow_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
-                assert model.props[1].get_material_flow_terms(p, j) == (
-                    model.props[1].flow_mol_phase[p] *
-                    model.props[1].mole_frac_phase_comp[p, j])
+                assert str(model.props[1].get_material_flow_terms(p, j)) == \
+                    str(model.props[1].flow_mol_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, model):
         for p in model.params.phase_list:
-            assert model.props[1].get_enthalpy_flow_terms(p) == (
-                model.props[1].flow_mol_phase[p] *
-                model.props[1].enth_mol_phase[p])
+            assert str(model.props[1].get_enthalpy_flow_terms(p)) == str(
+                model.props[1]._enthalpy_flow_term[p])
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, model):
         for p in model.params.phase_list:
             for j in model.params.component_list:
                 if j == "hydrogen":
-                    assert model.props[1].get_material_density_terms(p, j) == (
-                        model.props[1].dens_mol_phase[p] *
-                        model.props[1].mole_frac_phase_comp[p, j])
+                    assert str(
+                        model.props[1].get_material_density_terms(p, j)) == \
+                        str(model.props[1]._material_density_term[p, j])
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, model):
         for p in model.params.phase_list:
-            assert model.props[1].get_energy_density_terms(p) == (
-                model.props[1].dens_mol_phase[p] *
-                model.props[1].energy_internal_mol_phase[p])
+            assert str(model.props[1].get_energy_density_terms(p)) == str(
+                model.props[1]._energy_density_term[p])
 
     @pytest.mark.unit
     def test_default_material_balance_type(self, model):
@@ -310,12 +313,9 @@ class TestStateBlock(object):
                          "Temperature",
                          "Pressure"]
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_initialize(self, model):
-
 
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -335,7 +335,6 @@ class TestStateBlock(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solve(self, model):
@@ -346,8 +345,6 @@ class TestStateBlock(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.initialize
-    @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):

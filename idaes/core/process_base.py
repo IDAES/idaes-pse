@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base for IDAES process model objects.
 """
@@ -21,7 +21,7 @@ import textwrap
 from pandas import DataFrame
 
 from pyomo.core.base.block import _BlockData
-from pyomo.core.base.misc import tabular_writer
+from pyomo.common.formatting import tabular_writer
 from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
@@ -98,7 +98,7 @@ class ProcessBlockData(_BlockData):
         The the build method should usually be overloaded in a subclass derived
         from ProcessBlockData. This method would generally add Pyomo components
         such as variables, expressions, and constraints to the object. It is
-        important for build() methods implimented in derived classes to call
+        important for build() methods implemented in derived classes to call
         build() from the super class.
 
         Args:
@@ -170,21 +170,21 @@ class ProcessBlockData(_BlockData):
                 # Try to fix material_accumulation @ first time point
                 try:
                     obj.material_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
                     obj.element_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix energy_accumulation @ first time point
                 try:
                     obj.energy_accumulation[
-                            obj.flowsheet().config.time.first(), ...].fix(0.0)
+                            obj.flowsheet().time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -205,21 +205,21 @@ class ProcessBlockData(_BlockData):
             # Try to unfix material_accumulation @ first time point
             try:
                 obj.material_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
                 obj.element_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix energy_accumulation @ first time point
             try:
                 obj.energy_accumulation[
-                        obj.flowsheet().config.time.first(), ...].unfix()
+                        obj.flowsheet().time.first(), ...].unfix()
             except AttributeError:
                 pass
 
@@ -268,6 +268,9 @@ class ProcessBlockData(_BlockData):
                           f"Activated Blocks: {nb}")
 
         if performance is not None:
+            # PYLINT-WHY: pylint has no way of knowing that performance is supposed to be dict-like
+            # pylint: disable=unsubscriptable-object
+            # PYLINT-TODO: alternatively, have the function return an empty dict and test with `if performance:`
             ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Unit Performance")
             ostream.write("\n"*2)

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for FcPh state formulation
 
@@ -1165,28 +1165,35 @@ class TestCommon(object):
     @pytest.mark.unit
     def test_get_material_flow_terms(self, frame):
         for (p, j) in frame.params._phase_component_set:
-            assert frame.props[1].get_material_flow_terms(p, j) == (
-                frame.props[1].flow_mol_phase[p] *
-                frame.props[1].mole_frac_phase_comp[p, j])
+            assert str(frame.props[1].get_material_flow_terms(p, j)) == str(
+                frame.props[1].flow_mol_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_enthalpy_flow_terms(self, frame):
         for p in frame.params.phase_list:
-            assert frame.props[1].get_enthalpy_flow_terms(p) == (
+            assert str(frame.props[1].get_enthalpy_flow_terms(p)) == str(
+                frame.props[1]._enthalpy_flow_term[p])
+            assert str(frame.props[1]._enthalpy_flow_term[p].expr) == str(
                 frame.props[1].flow_mol_phase[p] *
                 frame.props[1].enth_mol_phase[p])
 
     @pytest.mark.unit
     def test_get_material_density_terms(self, frame):
         for (p, j) in frame.params._phase_component_set:
-            assert frame.props[1].get_material_density_terms(p, j) == (
+            assert str(frame.props[1].get_material_density_terms(p, j)) == str(
+                frame.props[1]._material_density_term[p, j])
+            assert str(
+                frame.props[1]._material_density_term[p, j].expr) == str(
                 frame.props[1].dens_mol_phase[p] *
                 frame.props[1].mole_frac_phase_comp[p, j])
 
     @pytest.mark.unit
     def test_get_energy_density_terms(self, frame):
         for p in frame.params.phase_list:
-            assert frame.props[1].get_energy_density_terms(p) == (
+            assert str(frame.props[1].get_energy_density_terms(p)) == str(
+                frame.props[1]._energy_density_term[p])
+            assert str(
+                frame.props[1]._energy_density_term[p].expr) == str(
                 frame.props[1].dens_mol_phase[p] *
                 frame.props[1].energy_internal_mol_phase[p])
 

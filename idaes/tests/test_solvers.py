@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 from pyomo.environ import SolverFactory
 import pyomo.environ as pyo
 import pytest
@@ -72,12 +72,7 @@ def test_sipopt_available():
         raise Exception("Could not find ipopt_sens.")
 
 @pytest.mark.unit
-def test_clp_available():
-    if not SolverFactory('clp').available():
-        raise Exception("Could not find clp.")
-
-@pytest.mark.unit
-def test_clp_available():
+def test_cbc_available():
     if not SolverFactory('cbc').available():
         raise Exception("Could not find cbc.")
 
@@ -112,18 +107,6 @@ def test_couenne_idaes_solve():
     m, x = minlp()
     solver = SolverFactory('couenne')
     solver.solve(m)
-    assert pytest.approx(x) == pyo.value(m.x)
-
-@pytest.mark.unit
-def test_clp_idaes_solve():
-    """
-    Make sure there is no issue with the solver class or default settings that
-    break the solver object.  Passing a bad solver option will result in failure
-    """
-    m, x = lp()
-    solver = SolverFactory('clp')
-    solver.solve(m)
-    m.display()
     assert pytest.approx(x) == pyo.value(m.x)
 
 @pytest.mark.unit

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Hydrocarbon processing phase equilibrium package using Peng-Robinson EoS.
 
@@ -33,14 +33,14 @@ from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.core.phases import PhaseType as PT
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
-from idaes.generic_models.properties.core.phase_equil import smooth_VLE
+from idaes.generic_models.properties.core.phase_equil import SmoothVLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         LogBubbleDew
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 
-import idaes.generic_models.properties.core.pure.Perrys as Perrys
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
-import idaes.generic_models.properties.core.pure.RPP5 as RPP5
+from idaes.generic_models.properties.core.pure import Perrys
+from idaes.generic_models.properties.core.pure import RPP4
+from idaes.generic_models.properties.core.pure import RPP5
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -581,7 +581,7 @@ configuration = {
 
     # Defining phase equilibria
     "phases_in_equilibrium": [("Vap", "Liq")],
-    "phase_equilibrium_state": {("Vap", "Liq"): smooth_VLE},
+    "phase_equilibrium_state": {("Vap", "Liq"): SmoothVLE},
     "bubble_dew_method": LogBubbleDew,
     "parameter_data": {"PR_kappa": {("hydrogen", "hydrogen"): 0.000,
                                     ("hydrogen", "methane"): 0.000,

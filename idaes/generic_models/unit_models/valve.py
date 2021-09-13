@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This provides standard valve models for adiabatic control valves.  Beyond the
 most common valve models, and adiabatic valve model can be added by supplying
@@ -48,7 +48,7 @@ def linear_cb(valve):
     """
     Linear opening valve function callback.
     """
-    @valve.Expression(valve.flowsheet().config.time)
+    @valve.Expression(valve.flowsheet().time)
     def valve_function(b, t):
         return b.valve_opening[t]
 
@@ -57,7 +57,7 @@ def quick_cb(valve):
     """
     Quick opening valve function callback.
     """
-    @valve.Expression(valve.flowsheet().config.time)
+    @valve.Expression(valve.flowsheet().time)
     def valve_function(b, t):
         return pyo.sqrt(b.valve_opening[t])
 
@@ -68,7 +68,7 @@ def equal_percentage_cb(valve):
     """
     valve.alpha = pyo.Var(initialize=100, doc="Valve function parameter")
     valve.alpha.fix()
-    @valve.Expression(valve.flowsheet().config.time)
+    @valve.Expression(valve.flowsheet().time)
     def valve_function(b, t):
         return b.alpha ** (b.valve_opening[t] - 1)
 
@@ -90,7 +90,7 @@ def pressure_flow_default_callback(valve):
     valve.flow_var = pyo.Reference(valve.control_volume.properties_in[:].flow_mol)
     valve.pressure_flow_equation_scale = lambda x : x**2
 
-    @valve.Constraint(valve.flowsheet().config.time)
+    @valve.Constraint(valve.flowsheet().time)
     def pressure_flow_equation(b, t):
         Po = b.control_volume.properties_out[t].pressure
         Pi = b.control_volume.properties_in[t].pressure
@@ -145,7 +145,7 @@ variables, expressions, or constraints required can also be added by the callbac
         super().build()
 
         self.valve_opening = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=1,
             doc="Fraction open for valve from 0 to 1",
         )
@@ -171,7 +171,7 @@ variables, expressions, or constraints required can also be added by the callbac
         state_args=None,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Initialize the valve based on a deltaP guess.
@@ -184,7 +184,7 @@ variables, expressions, or constraints required can also be added by the callbac
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
 
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if (self.deltaP[t].fixed or self.ratioP[t].fixed or
                 self.outlet.pressure[t].fixed):
                 continue
@@ -247,7 +247,7 @@ variables, expressions, or constraints required can also be added by the callbac
         # Calculate and set the pressure-flow relation scale.
         if hasattr(self, "pressure_flow_equation"):
             for t, c in self.pressure_flow_equation.items():
-                iscale.set_scaling_factor(
+                iscale.constraint_scaling_transform(
                     c,
                     ff(iscale.get_scaling_factor(
                         self.flow_var[t],
@@ -262,6 +262,6 @@ variables, expressions, or constraints required can also be added by the callbac
             pc["vars"]["Valve Coefficient"] = self.Cv
         except AttributeError:
             pass
-        if self.config.valve_function == ValveFunctionType.equal_percentage:
+        if self.config.valve_function_callback == ValveFunctionType.equal_percentage:
             pc["vars"]["alpha"] = self.alpha
         return pc

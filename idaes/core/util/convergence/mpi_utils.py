@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 from collections import OrderedDict
 import importlib
 """
@@ -47,7 +47,7 @@ class MPIInterface:
         self._rank = None
 
         if self.have_mpi:
-            self._comm = MPI.COMM_WORLD
+            self._comm = MPI.COMM_WORLD  # pylint: disable=undefined-variable
             self._size = self._comm.Get_size()
             self._rank = self._comm.Get_rank()
 
@@ -134,6 +134,9 @@ class ParallelTaskManager:
         comm = self._mpi_interface.comm
         global_data_list = comm.allgather(local_data)
 
+        # PYLINT-TODO-FIX fix the error due to the
+        # non-existing global_data_list_of_lists variable
+        # pylint: disable=undefined-variable
         return self._stack_global_data(global_data_list_of_lists)
 
     def gather_global_data(self, local_data):

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This file contains 0D feedwater heater models. These models are suitable for
 steady state calculations. For dynamic modeling 1D models are required. There
@@ -155,7 +155,7 @@ class FWHCondensing0DData(CondenserData):
                                    doc="Inside diameter of FWH tank")
         self.cond_sect_length = Var(initialize=10,
                                     doc="Length of condensing section")
-        self.level = Var(self.flowsheet().config.time,
+        self.level = Var(self.flowsheet().time,
                          initialize=1,
                          doc="Water level in condensing section")
 
@@ -166,13 +166,13 @@ class FWHCondensing0DData(CondenserData):
 
         # Expressure for the angle from the tank cylinder center to
         # the circumference point at water level between -pi/2 and pi/2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Angle of water level")
         def alpha(b, t):
             return asin((b.level[t]-b.heater_radius)/b.heater_radius)
 
         # Constraint to calculate the shell side liquid volume
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Calculate the volume of "
                          "shell side based on water level")
         def shell_volume_eqn(b, t):
@@ -183,7 +183,7 @@ class FWHCondensing0DData(CondenserData):
                 * b.cond_sect_length*b.vol_frac_shell)
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure drop")
         def pressure_change_total_eqn(b, t):
             return b.shell.deltaP[t] == const.acceleration_gravity*b.level[t]\
@@ -270,7 +270,7 @@ class FWH0DDynamicData(UnitModelBlockData):
                        }
             self.drain_mix = Mixer(default=mix_cfg)
 
-            @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
+            @self.drain_mix.Constraint(self.drain_mix.flowsheet().time)
             def mixer_pressure_constraint(b, t):
                 """
                 Constraint to set the drain mixer pressure to the pressure of
@@ -441,9 +441,9 @@ class FWH0DDynamicData(UnitModelBlockData):
             for t, c in self.mixer_pressure_constraint.items():
                 sf = iscale.get_scaling_factor(
                     self.steam_state[t].pressure, default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)
         if hasattr(self, "pressure_change_total_eqn"):
             for t, c in self.pressure_change_total_eqn.items():
                 sf = iscale.get_scaling_factor(
                     self.steam_state[t].pressure, default=1, warning=True)
-                iscale.constraint_scaling_transform(c, sf)
+                iscale.constraint_scaling_transform(c, sf, overwrite=False)

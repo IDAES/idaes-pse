@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains utility functions for reporting structural statistics of
 IDAES models.
@@ -324,7 +324,7 @@ def activated_equalities_generator(block):
     for c in block.component_data_objects(
                 Constraint, active=True, descend_into=True):
         if (c.upper is not None and c.lower is not None and
-                c.upper == c.lower):
+                value(c.upper) == value(c.lower)):
             yield c
 
 
@@ -672,7 +672,8 @@ def number_unfixed_variables(block):
     return len(unfixed_variables_set(block))
 
 
-def variables_near_bounds_generator(block, tol=1e-4, relative=True, skip_lb = False, skip_ub = False):
+def variables_near_bounds_generator(
+        block, tol=1e-4, relative=True, skip_lb=False, skip_ub=False):
     """
     Generator which returns all Var components in a model which have a value
     within tol (default: relative) of a bound.
@@ -693,12 +694,12 @@ def variables_near_bounds_generator(block, tol=1e-4, relative=True, skip_lb = Fa
         # To avoid errors, check that v has a value
         if v.value is None:
             continue
-            
+
         if relative:
             # First, determine absolute tolerance to apply to bounds
             if v.ub is not None and v.lb is not None:
                 # Both upper and lower bounds, apply tol to (upper - lower)
-                    atol = value((v.ub - v.lb)*tol)
+                atol = value((v.ub - v.lb)*tol)
             elif v.ub is not None:
                 # Only upper bound, apply tol to bound value
                 atol = abs(value(v.ub*tol))
@@ -712,11 +713,13 @@ def variables_near_bounds_generator(block, tol=1e-4, relative=True, skip_lb = Fa
 
         if v.ub is not None and not skip_lb and value(v.ub - v.value) <= atol:
             yield v
-        elif v.lb is not None and not skip_ub and value(v.value - v.lb) <= atol:
+        elif (v.lb is not None and not skip_ub and
+              value(v.value - v.lb) <= atol):
             yield v
 
 
-def variables_near_bounds_set(block, tol=1e-4, relative=True, skip_lb = False, skip_ub = False):
+def variables_near_bounds_set(
+        block, tol=1e-4, relative=True, skip_lb=False, skip_ub=False):
     """
     Method to return a ComponentSet of all Var components in a model which have
     a value within tol (relative) of a bound.
@@ -732,11 +735,9 @@ def variables_near_bounds_set(block, tol=1e-4, relative=True, skip_lb = False, s
         A ComponentSet including all Var components block that are close to a
         bound
     """
-    return ComponentSet(variables_near_bounds_generator(block, 
-                                                        tol, 
-                                                        relative, 
-                                                        skip_lb,
-                                                        skip_ub))
+    return ComponentSet(variables_near_bounds_generator(
+        block, tol, relative, skip_lb, skip_ub))
+
 
 def number_variables_near_bounds(block, tol=1e-4):
     """
@@ -1290,21 +1291,24 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
     Args:
         block : model to be studied
         tol : residual threshold for inclusion in ComponentSet
-        return_residual_values: boolean, if true return dictionary with residual values
+        return_residual_values: boolean, if true return dictionary with
+            residual values
 
     Returns:
-        large_residual_set: A ComponentSet including all Constraint components with a residual
-        greater than tol which appear in block (if return_residual_values is false)
-        residual_values: dictionary with constraint as key and residual (float) as value (if return_residual_values is true)
+        large_residual_set: A ComponentSet including all Constraint components
+        with a residual greater than tol which appear in block (if
+        return_residual_values is false) residual_values: dictionary with
+        constraint as key and residual (float) as value (if
+        return_residual_values is true)
     """
     large_residuals_set = ComponentSet()
     if return_residual_values:
         residual_values = dict()
     for c in block.component_data_objects(
             ctype=Constraint, active=True, descend_into=True):
-            
-        r = 0.0 # residual
-        
+
+        r = 0.0  # residual
+
         # skip if no lower bound set
         if c.lower is None:
             r_temp = 0
@@ -1313,7 +1317,7 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
         # update the residual
         if r_temp > r:
             r = r_temp
-    
+
         # skip if no upper bound set
         if c.upper is None:
             r_temp = 0
@@ -1323,14 +1327,14 @@ def large_residuals_set(block, tol=1e-5, return_residual_values=False):
         # update the residual
         if r_temp > r:
             r = r_temp
-        
+
         # save residual if it is above threshold
         if r > tol:
             large_residuals_set.add(c)
-            
+
             if return_residual_values:
                 residual_values[c] = r
-    
+
     if return_residual_values:
         return residual_values
     else:

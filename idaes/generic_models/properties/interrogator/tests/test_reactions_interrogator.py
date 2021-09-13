@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for Reaction Interrogator Tool
 
@@ -19,9 +19,9 @@ Tests for Reaction Interrogator Tool
 """
 import pytest
 
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, units as pyunits
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, LiquidPhase, Solute
 from idaes.generic_models.unit_models import CSTR, PFR
 from idaes.generic_models.properties.interrogator import (
         PropertyInterrogatorBlock, ReactionInterrogatorBlock)
@@ -212,7 +212,8 @@ def test_interrogator_initialize_method():
 @pytest.fixture(scope="module")
 def model():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
+    m.fs = FlowsheetBlock(default={"dynamic": True,
+                                   "time_units": pyunits.s})
 
     m.fs.params = PropertyInterrogatorBlock()
     m.fs.rxn_params = ReactionInterrogatorBlock(
@@ -343,3 +344,35 @@ The following reaction properties are required by model fs.R01:
     dh_rxn
     reaction_rate
 """
+
+
+@pytest.mark.unit
+def test_interrogator_rxn_block_unindexed_call_custom_phase_comp():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.params = PropertyInterrogatorBlock(default={
+        "phase_list": {"P1": LiquidPhase, "P2": None},
+        "component_list": {"c1": Solute, "c2": None}})
+    m.fs.rxn_params = ReactionInterrogatorBlock(
+            default={"property_package": m.fs.params})
+
+    m.fs.props = m.fs.params.build_state_block([0])
+    m.fs.rxns = m.fs.rxn_params.build_reaction_block(
+            [0], default={"state_block": m.fs.props})
+
+    # Check phase and component lists
+    assert m.fs.rxn_params.phase_list == ["P1", "P2"]
+    assert m.fs.rxn_params.component_list == ["c1", "c2"]
+
+    # Check get_term methods return an unindexed dummy var
+    assert m.fs.rxns[0].prop_unindexed is \
+        m.fs.rxns[0]._dummy_var
+
+    # Call again to make sure duplicates are skipped in required_properties
+    assert m.fs.rxns[0].prop_unindexed is \
+        m.fs.rxns[0]._dummy_var
+
+    # Check that get_term calls were logged correctly
+    assert m.fs.rxn_params.required_properties == {
+            "prop_unindexed": ["fs.rxns"]}

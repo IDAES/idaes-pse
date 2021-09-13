@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for cubic equations of state.
 
@@ -35,7 +35,8 @@ from idaes.core.util.math import safe_log
 from .eos_base import EoSBase
 from idaes import bin_directory
 import idaes.logger as idaeslog
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import \
+    BurntToast, ConfigurationError, PropertyNotSupportedError
 
 
 # Set up logger
@@ -83,6 +84,19 @@ class Cubic(EoSBase):
 
     @staticmethod
     def common(b, pobj):
+        # TODO: determine if Henry's Law applies to Cubic EoS systems
+        # For now, raise an exception if found
+        # Follow on questions:
+        # If Henry's law is used for a component, how does that effect
+        # calculating A, B and phi?
+        for j in b.component_list:
+            cobj = b.params.get_component(j)
+            if (cobj.config.henry_component is not None and
+                    pobj.local_name in cobj.config.henry_component):
+                raise PropertyNotSupportedError(
+                    "{} Cubic equations of state do not support Henry's "
+                    "components [{}, {}].".format(b.name, pobj.local_name, j))
+
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
 
@@ -136,7 +150,7 @@ class Cubic(EoSBase):
             try:
                 rule = m.params.get_phase(p).config.equation_of_state_options[
                     "mixing_rule_a"]
-            except KeyError:
+            except (KeyError, TypeError):
                 rule = MixingRuleA.default
 
             a = getattr(m, cname+"_a")
@@ -154,7 +168,7 @@ class Cubic(EoSBase):
             try:
                 rule = m.params.get_phase(p).config.equation_of_state_options[
                     "mixing_rule_b"]
-            except KeyError:
+            except (KeyError, TypeError):
                 rule = MixingRuleB.default
 
             b = getattr(m, cname+"_b")
@@ -239,7 +253,7 @@ class Cubic(EoSBase):
                 try:
                     rule = m.params.get_phase(p3).config.equation_of_state_options[
                         "mixing_rule_a"]
-                except KeyError:
+                except (KeyError, TypeError):
                     rule = MixingRuleA.default
 
                 a = getattr(m, "_"+cname+"_a_eq")
@@ -566,7 +580,7 @@ class Cubic(EoSBase):
         return exp(_log_fug_coeff_phase_comp_eq(blk, p, j, pp))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Tbub(blk, p, j, pp):
+    def log_fug_phase_comp_Tbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -616,10 +630,16 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk._mole_frac_tbub[pp[0], pp[1], j]
+        else:
+            mole_frac = blk.mole_frac_comp[j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure/blk.pressure._units))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Tdew(blk, p, j, pp):
+    def log_fug_phase_comp_Tdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -669,10 +689,16 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk.mole_frac_comp[j]
+        else:
+            mole_frac = blk._mole_frac_tdew[pp[0], pp[1], j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure/blk.pressure._units))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Pbub(blk, p, j, pp):
+    def log_fug_phase_comp_Pbub(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -715,10 +741,17 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk._mole_frac_pbub[pp[0], pp[1], j]
+        else:
+            mole_frac = blk.mole_frac_comp[j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure_bubble[pp] /
+                                     blk.pressure_bubble._units))
 
     @staticmethod
-    def log_fug_coeff_phase_comp_Pdew(blk, p, j, pp):
+    def log_fug_phase_comp_Pdew(blk, p, j, pp):
         pobj = blk.params.get_phase(p)
         ctype = pobj._cubic_type
         cname = pobj.config.equation_of_state_options["type"].name
@@ -760,7 +793,14 @@ class Cubic(EoSBase):
 
         Z = proc(f, A, B)
 
-        return _log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype)
+        if pobj.is_vapor_phase():
+            mole_frac = blk.mole_frac_comp[j]
+        else:
+            mole_frac = blk._mole_frac_pdew[pp[0], pp[1], j]
+
+        return (_log_fug_coeff_method(A, b[j], bm, B, delta, Z, ctype) +
+                log(mole_frac) + log(blk.pressure_dew[pp] /
+                                     blk.pressure_dew._units))
 
     @staticmethod
     def gibbs_mol_phase(b, p):
@@ -771,6 +811,16 @@ class Cubic(EoSBase):
         return (b.enth_mol_phase_comp[p, j] -
                 b.entr_mol_phase_comp[p, j] *
                 b.temperature)
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        pobj = b.params.get_phase(p)
+        if pobj.is_vapor_phase() or pobj.is_liquid_phase():
+            return (Cubic.gas_constant(b)*b.temperature *
+                    b.compress_fact_phase[p] /
+                    b.pressure)
+        else:
+            raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def _invalid_phase_msg(name, phase):

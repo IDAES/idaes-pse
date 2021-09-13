@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Basic property package for flue gas.
 
@@ -323,22 +323,12 @@ class _FlueGasStateBlock(StateBlock):
 
     def initialize(
         self,
-        state_args={
-            "flow_mol_comp": {
-                "N2": 1.0,
-                "CO2": 1.0,
-                "NO": 1.0,
-                "O2": 1.0,
-                "H2O": 1.0,
-                "SO2": 1.0
-            },
-            "pressure": 1e5,
-            "temperature": 495.0},
+        state_args=None,
         hold_state=False,
         state_vars_fixed=False,
-        outlvl=0,
+        outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={}
+        optarg=None
     ):
         """Initialisation routine for property package.
 
@@ -358,8 +348,9 @@ class _FlueGasStateBlock(StateBlock):
                          be False if this state block is used with 0D blocks.
                 - False - states have not been fixed. The state block will deal
                           with fixing/unfixing.
-            optarg: solver options dictionary object (default={})
-            solver: str indicating whcih solver to use during
+            optarg: solver options dictionary object (default=None, use
+                    default solver options)
+            solver: str indicating which solver to use during
                      initialization (default = None, use default solver)
             hold_state: flag indicating whether the initialization routine
                 should unfix any state variables fixed during initialization
@@ -376,10 +367,20 @@ class _FlueGasStateBlock(StateBlock):
         """
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="properties")
         solve_log = idaeslog.getSolveLogger(
-            self.name,outlvl, tag="properties")
+            self.name, outlvl, tag="properties")
 
         # Create solver
         opt = get_solver(solver, optarg)
+
+        if state_args is None:
+            state_args = {"flow_mol_comp": {"N2": 1.0,
+                                            "CO2": 1.0,
+                                            "NO": 1.0,
+                                            "O2": 1.0,
+                                            "H2O": 1.0,
+                                            "SO2": 1.0},
+                          "pressure": 1e5,
+                          "temperature": 495.0}
 
         if state_vars_fixed is False:
             flags = fix_state_vars(self, state_args)
@@ -827,40 +828,50 @@ class FlueGasStateBlockData(StateBlockData):
             iscale.constraint_scaling_transform(
                 self.heat_cap_correlation,
                 iscale.get_scaling_factor(self.cp_mol) *
-                iscale.get_scaling_factor(self.flow_mol)
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
             )
         if self.is_property_constructed("enthalpy_correlation"):
             for p, c in self.enthalpy_correlation.items():
                 iscale.constraint_scaling_transform(
                     c,
                     iscale.get_scaling_factor(self.enth_mol) *
-                    iscale.get_scaling_factor(self.flow_mol)
+                    iscale.get_scaling_factor(self.flow_mol),
+                    overwrite=False
                 )
         if self.is_property_constructed("entropy_correlation"):
             iscale.constraint_scaling_transform(
                 self.entropy_correlation,
-                iscale.get_scaling_factor(self.entr_mol)*
-                iscale.get_scaling_factor(self.flow_mol)
+                iscale.get_scaling_factor(self.entr_mol) *
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
             )
         if self.is_property_constructed("vapor_pressure_correlation"):
             iscale.constraint_scaling_transform(
                 self.vapor_pressure_correlation,
                 log(iscale.get_scaling_factor(self.pressure_sat)) *
-                iscale.get_scaling_factor(self.flow_mol)
+                iscale.get_scaling_factor(self.flow_mol),
+                overwrite=False
             )
         if self.is_property_constructed("therm_cond_con"):
             for i, c in self.therm_cond_con.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.therm_cond_comp[i]))
+                    c,
+                    iscale.get_scaling_factor(self.therm_cond_comp[i]),
+                    overwrite=False)
         if self.is_property_constructed("therm_mix_con"):
             iscale.constraint_scaling_transform(
                 self.therm_mix_con,
-                iscale.get_scaling_factor(self.therm_cond))
+                iscale.get_scaling_factor(self.therm_cond),
+                overwrite=False)
         if self.is_property_constructed("visc_d_con"):
             for i, c in self.visc_d_con.items():
                 iscale.constraint_scaling_transform(
-                    c, iscale.get_scaling_factor(self.visc_d_comp[i]))
+                    c,
+                    iscale.get_scaling_factor(self.visc_d_comp[i]),
+                    overwrite=False)
         if self.is_property_constructed("visc_d_mix_con"):
             iscale.constraint_scaling_transform(
                 self.visc_d_mix_con,
-                iscale.get_scaling_factor(self.visc_d))
+                iscale.get_scaling_factor(self.visc_d),
+                overwrite=False)

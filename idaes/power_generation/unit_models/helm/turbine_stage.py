@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Steam turbine stage model. This is a standard isentropic turbine. Under off-design
 conditions the base efficiency and pressure ratio do not change much for the stages
@@ -44,7 +44,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
 
         self.efficiency_mech = Var(initialize=1.0, doc="Turbine mechanical efficiency")
         self.efficiency_mech.fix()
-        time_set = self.flowsheet().config.time
+        time_set = self.flowsheet().time
         self.shaft_speed = Var(time_set,
                                doc="Shaft speed [1/s]",
                                initialize=60.0,
@@ -63,7 +63,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
@@ -71,7 +71,7 @@ class HelmTurbineStageData(HelmIsentropicTurbineData):
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         Initialize the turbine stage model.  This deactivates the

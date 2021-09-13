@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Authors: Anuja Deshpande, Andrew Lee
 """
@@ -17,7 +17,6 @@ import pytest
 import numpy as np
 
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Set,
                            SolverStatus,
                            TerminationCondition,
@@ -25,11 +24,9 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 
 from idaes.core.flowsheet_model import FlowsheetBlock
 
@@ -83,11 +80,15 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FTPx
 
-        assert model.params.config.state_bounds == {
-            "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
-            "temperature": (273.15, 323.15, 1000, pyunits.K),
-            "pressure": (5e4, 108900, 1e7, pyunits.Pa),
-            "mole_frac_comp": {"H2O": (0,0.5,1),"CO2": (0,0.5,1)}}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            { "flow_mol": (0, 10, 20, pyunits.mol/pyunits.s),
+              "temperature": (273.15, 323.15, 1000, pyunits.K),
+              "pressure": (5e4, 108900, 1e7, pyunits.Pa),
+              "mole_frac_comp": {"H2O": (0, 0.5, 1),"CO2": (0, 0.5, 1)} },
+             item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): SmoothVLE}
@@ -302,7 +303,7 @@ class TestStateBlock(object):
                 / value(m.fs.flash.inlet.flow_mol[0])
             assert frac == pytest.approx(expected_sol[t][0], abs=1e-4)
             hduty = value(m.fs.flash.heat_duty[0])
-            assert hduty == pytest.approx(expected_sol[t][1], abs=1e-4)
+            assert hduty == pytest.approx(expected_sol[t][1], rel=1e-4)
 
     @pytest.mark.unit
     def test_report(self, model):

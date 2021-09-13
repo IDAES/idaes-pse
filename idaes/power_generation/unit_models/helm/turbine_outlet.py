@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Steam turbine outlet stage model.  This model is based on:
 
@@ -60,19 +60,56 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         self.flow_coeff.fix()
         self.efficiency_mech.fix()
 
-        @self.Expression(self.flowsheet().config.time, doc="Eff. fact. correlation")
+
+        self.tel_c0 = Var(
+            initialize=0.0064*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c0 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c1 = Var(
+            initialize=-0.0328*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c1 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c2 = Var(
+            initialize=0.0638*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c2 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c3 = Var(
+            initialize=-0.0542*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c3 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c4 = Var(
+            initialize=0.022*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c4 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c5 = Var(
+            initialize=-0.0035*1e6,
+            units=pyunits.J/pyunits.mol,
+            doc="c5 in tel = c0 + c1*fr + c2*fr**2 + ... + c5*fr**5 (fr is ratio"
+                " of exhaust volumetric flow to design exhaust volumetric flow)")
+        self.tel_c0.fix()
+        self.tel_c1.fix()
+        self.tel_c2.fix()
+        self.tel_c3.fix()
+        self.tel_c4.fix()
+        self.tel_c5.fix()
+        @self.Expression(self.flowsheet().time, doc="Total exhaust loss curve")
         def tel(b, t):
             f = b.control_volume.properties_out[t].flow_vol / b.design_exhaust_flow_vol
-            return 1e6 * (
-                -0.0035 * f ** 5
-                + 0.022 * f ** 4
-                - 0.0542 * f ** 3
-                + 0.0638 * f ** 2
-                - 0.0328 * f
-                + 0.0064
-            )*pyunits.J/pyunits.mol
+            return (
+                + self.tel_c5 * f ** 5
+                + self.tel_c4 * f ** 4
+                + self.tel_c3 * f ** 3
+                + self.tel_c2 * f ** 2
+                + self.tel_c1 * f
+                + self.tel_c0
+            )
 
-        @self.Constraint(self.flowsheet().config.time, doc="Stodola eq. choked flow")
+        @self.Constraint(self.flowsheet().time, doc="Stodola eq. choked flow")
         def stodola_equation(b, t):
             flow = b.control_volume.properties_in[t].flow_mol
             mw = b.control_volume.properties_in[t].mw
@@ -84,7 +121,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
             return flow ** 2 * mw ** 2 * (Tin) == (
                 cf ** 2 * Pin ** 2 * (1 - Pr ** 2))
 
-        @self.Constraint(self.flowsheet().config.time, doc="Efficiency correlation")
+        @self.Constraint(self.flowsheet().time, doc="Efficiency correlation")
         def efficiency_correlation(b, t):
             x = b.control_volume.properties_out[t].vapor_frac
             eff = b.efficiency_isentropic[t]
@@ -92,20 +129,19 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
             tel = b.tel[t]
             return eff == b.eff_dry * x * (1 - 0.65 * (1 - x)) * (1 + tel / dh_isen)
 
-        @self.Expression(self.flowsheet().config.time, doc="Thermodynamic power [J/s]")
+        @self.Expression(self.flowsheet().time, doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t] * b.efficiency_mech
 
     def initialize(
         self,
-        state_args={},
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
         calculate_cf=True,
     ):
         """
@@ -114,7 +150,6 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         then reactivates the constraints and solves.
 
         Args:
-            state_args (dict): Initial state for property initialization
             outlvl : sets output level of initialization routine
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
@@ -129,13 +164,12 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.ratioP[t] = value(
                     self.outlet.pressure[t]/self.inlet.pressure[t])
                 self.deltaP[t] = value(
                     self.outlet.pressure[t] - self.inlet.pressure[t])
-
 
         # Deactivate special constraints
         self.stodola_equation.deactivate()
@@ -148,7 +182,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
 
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             mw = self.control_volume.properties_in[t].mw
             Tin = self.control_volume.properties_in[t].temperature
             Pin = self.control_volume.properties_in[t].pressure
@@ -162,7 +196,7 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         super().initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         self.control_volume.properties_out[:].pressure.fix()
 
-        # Free eff_isen and activate sepcial constarints
+        # Free eff_isen and activate special constarints
         self.efficiency_isentropic.unfix()
         self.outlet.pressure.fix()
         if calculate_cf:
@@ -189,7 +223,8 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = slvr.solve(self, tee=slc.tee)
         init_log.info(
-            "Initialization Complete (Outlet Stage): {}".format(idaeslog.condition(res))
+            "Initialization Complete (Outlet Stage): {}".format(
+                idaeslog.condition(res))
         )
 
         # reload original spec
@@ -208,4 +243,4 @@ class HelmTurbineOutletStageData(HelmIsentropicTurbineData):
                 self.control_volume.properties_in[t].flow_mol,
                 default=1,
                 warning=True)**2
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

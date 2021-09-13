@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for generic property package core code
 
@@ -798,7 +798,7 @@ class TestGenericParameterBlock(object):
         for i in m.params.reaction_e1.reaction_order:
             order = {("p1", "a"): -3, ("p1", "b"): 4,
                      ("p2", "a"): 0, ("p2", "b"): 0, ("p2", "c"): 0}
-            assert m.params.reaction_e1.reaction_order[i] == order[i]
+            assert m.params.reaction_e1.reaction_order[i].value == order[i]
 
     @pytest.mark.unit
     def test_inherent_reactions_no_stoichiometry(self):
@@ -1071,3 +1071,27 @@ class TestGenericStateBlock(object):
             pytest.approx(100*0.75*(2*0.1 + 3*0.2 + 4*0.7), rel=1e-4)
         assert value(frame.props[1].flow_mass_phase["p2"]) == \
             pytest.approx(100*0.25*(2*0.7 + 3*0.2 + 4*0.1), rel=1e-4)
+
+    class dummy_prop():
+        def return_expression(*args, **kwargs):
+            return 4
+
+    @pytest.mark.unit
+    def test_diffus_phase_comp(self, frame):
+        frame.params.p1.config.diffus_phase_comp = \
+            TestGenericStateBlock.dummy_prop
+        frame.params.p2.config.diffus_phase_comp = \
+            TestGenericStateBlock.dummy_prop
+
+        for p, j in frame.props[1].phase_component_set:
+            assert value(frame.props[1].diffus_phase_comp[p, j]) == 4
+
+    @pytest.mark.unit
+    def test_visc_d_phase(self, frame):
+        frame.params.p1.config.visc_d_phase = \
+            TestGenericStateBlock.dummy_prop
+        frame.params.p2.config.visc_d_phase = \
+            TestGenericStateBlock.dummy_prop
+
+        for p in frame.props[1].phase_list:
+            assert value(frame.props[1].visc_d_phase[p]) == 4

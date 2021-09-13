@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Reference state sub-methods for eNRTL activity coefficient method.
 
@@ -33,6 +33,34 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+
+# Near-zero value to use for unsymmetric reference state
+EPS = 1e-20
+
+
+class Unsymmetric(object):
+    """
+    Sub-methods for the symmetric (fused-salt) reference state
+    """
+    @staticmethod
+    def ref_state(b, pname):
+        def rule_x_ref(b, i):
+            if i in b.params.solvent_set or i in b.params.solute_set:
+                # Eqn 66
+                return (b.mole_frac_phase_comp_true[pname, i] /
+                        sum(b.mole_frac_phase_comp_true[pname, j]
+                            for j in b.params.solvent_set|b.params.solute_set))
+            else:
+                return EPS
+
+        b.add_component(pname+"_x_ref",
+                        Expression(b.params.true_species_set, rule=rule_x_ref))
+
+    @staticmethod
+    def ndIdn(b, pname, i):
+        # Eqn 71
+        return 0
 
 
 class Symmetric(object):

@@ -1,21 +1,22 @@
 # -*- coding: UTF-8 -*-
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, Var, TerminationCondition, Constraint
+from pyomo.environ import (
+    Block, Constraint, Param, TerminationCondition, Var, value)
 from pyomo.network import Arc
 from pyomo.dae import ContinuousSet
 from pyomo.core.expr.visitor import identify_variables
@@ -23,17 +24,18 @@ from pyomo.core.expr.visitor import identify_variables
 from idaes.core import FlowsheetBlock
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.util.dyn_utils import (get_activity_dict,
-        deactivate_model_at, deactivate_constraints_unindexed_by,
-        fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
-        get_implicit_index_of_set)
+from idaes.core.util.dyn_utils import (
+    get_activity_dict,
+    deactivate_model_at, deactivate_constraints_unindexed_by,
+    fix_vars_unindexed_by, get_derivatives_at, copy_values_at_time,
+    get_implicit_index_of_set)
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 
 __author__ = "Andrew Lee, John Siirola, Robert Parker"
 
 
-def fix_state_vars(blk, state_args={}):
+def fix_state_vars(blk, state_args=None):
     """
     Method for fixing state variables within StateBlocks. Method takes an
     optional argument of values to use when fixing variables.
@@ -121,43 +123,84 @@ def revert_state_vars(blk, flags):
                         'correct StateBlock.')
 
 
-def propagate_state(stream, direction="forward"):
+def propagate_state(destination=None, source=None, arc=None,
+        direction="forward"):
     """
     This method propagates values between Ports along Arcs. Values can be
     propagated in either direction using the direction argument.
 
     Args:
-        stream : Arc object along which to propagate values
-        direction: direction in which to propagate values. Default = 'forward'
-                Valid value: 'forward', 'backward'.
+        destination (Port): Port to copy values to or None if specifying arc
+        source (Port): Port to copy values from or None if specifying arc
+        arc (Arc): If arc is provided, use arc to define source and destination
+        direction (str): Direction in which to propagate values.
+                Default = 'forward' Valid values: 'forward', 'backward'.
 
     Returns:
         None
     """
-    if not isinstance(stream, Arc):
-        raise TypeError("Unexpected type of stream argument. Value must be "
-                        "a Pyomo Arc.")
+    _log = idaeslog.getLogger(__name__)
+    # Allow an arc to be passed as a positional arg
+    if destination is not None and source is None and destination.ctype is Arc:
+        arc = destination
+        if source in ("forward", "backward"):
+            direction = source
+        destination = None
+        source = None
+    # Check that only arc or source and destination are passed
+    if arc is None and (destination is None or source is None):
+        raise RuntimeError(
+            "In propagate_state(), must provide source and destination or arc")
+    if arc is not None:
+        if destination is not None or source is not None:
+            raise RuntimeError("In propagate_state(), provide only arc or "
+                    "source and destination")
+        try:
+            source = arc.src
+            destination = arc.dest
+        except AttributeError:
+            _log.error("In propagate_state(), unexpected type of arc "
+                    "argument. Value must be a Pyomo Arc")
+            raise
 
     if direction == "forward":
-        value_source = stream.source
-        value_dest = stream.destination
+        pass
     elif direction == "backward":
-        value_source = stream.destination
-        value_dest = stream.source
+        source, destination = destination, source
     else:
         raise ValueError("Unexpected value for direction argument: ({}). "
                          "Value must be either 'forward' or 'backward'."
                          .format(direction))
 
-    for v in value_source.vars:
-        for i in value_source.vars[v]:
-            if not isinstance(value_dest.vars[v], Var):
-                raise TypeError("Port contains one or more members which are "
-                                "not Vars. propogate_state works by assigning "
-                                "to the value attribute, thus can only be "
-                                "when Port members are Pyomo Vars.")
-            if not value_dest.vars[v][i].fixed:
-                value_dest.vars[v][i].value = value_source.vars[v][i].value
+    try:
+        destination_vars = destination.vars
+    except AttributeError:
+        _log.error("In propagate_state(), unexpected type of destination "
+                "port argument. Value must be a Pyomo Port")
+        raise
+    try:
+        source_vars = source.vars
+    except AttributeError:
+        _log.error("In propagate_state(), unexpected type of destination "
+                "source argument. Value must be a Pyomo Port")
+        raise
+
+    # Copy values
+    for k, v in destination_vars.items():
+        try:
+            for i in v:
+                if not (v[i].is_variable_type() and v[i].fixed):
+                    v[i].value = value(source_vars[k][i])
+
+        except (AttributeError, ValueError):
+            if getattr(v, 'ctype', None) not in {Var, Param}:
+                _log.error("Port (%s) contains a member (%s) that "
+                           "is not a Var / mutable Param. propagate_state() "
+                           "works by assigning to the 'value' attribute, "
+                           "thus can only be used when Port members are "
+                           "Pyomo Vars or mutable Params."
+                           % (destination.name, k))
+            raise
 
 
 # HACK, courtesy of J. Siirola

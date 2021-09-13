@@ -1,24 +1,24 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import sys
 import os
+from unittest.mock import patch
 sys.path.append(os.path.abspath('..')) # current folder is ~/tests
 import numpy as np
 import pandas as pd
 from scipy import sparse
 import pytest
 from pytest import approx
-from mock import patch
 from idaes.apps.uncertainty_propagation.uncertainties import quantify_propagate_uncertainty, propagate_uncertainty,clean_variable_name
 from pyomo.opt import SolverFactory
 from pyomo.environ import *
@@ -28,12 +28,12 @@ ipopt_available = SolverFactory('ipopt').available()
 kaug_available = SolverFactory('k_aug').available()
 dotsens_available = SolverFactory('dot_sens').available()
 
+@pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
+@pytest.mark.skipif(not kaug_available, reason="The 'k_aug' command is not available")
+@pytest.mark.skipif(not dotsens_available, reason="The 'dot_sens' command is not available")
 class TestUncertaintyPropagation:
 
     @pytest.mark.unit
-    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_quantify_propagate_uncertainty1(self):
         '''
         It tests the function quantify_propagate_uncertainty with rooney & biegler's model.
@@ -58,7 +58,7 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]])) 
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
-
+    @pytest.mark.component
     def test_quantify_propagate_uncertainty2(self):
         '''
         This is the same test as test_quantify_propagate_uncertainty1,
@@ -88,7 +88,7 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.cov, np.array([[6.30579403, -0.4395341], [-0.4395341, 0.04193591]]))
         assert results.propagation_f == pytest.approx(5.45439337747349)
 
-
+    @pytest.mark.component
     def test_propagate_uncertainty(self):
         '''
         It tests the function propagate_uncertainty with rooney & biegler's model.
@@ -116,6 +116,7 @@ class TestUncertaintyPropagation:
         assert list(propagate_results.propagation_c) == []
         assert propagate_results.propagation_f == pytest.approx(5.45439337747349)
 
+    @pytest.mark.component
     def test_propagate_uncertainty1(self):
         '''
         It tests the function propagate_uncertainty with
@@ -305,6 +306,7 @@ class TestUncertaintyPropagation:
         # Check the uncertainty propagation results for the objective matches
         assert results.propagation_f == pytest.approx(sigma_f)
 
+    @pytest.mark.component
     def test_propagate_uncertainty_error(self):
         '''
         It tests a TypeError when the modle_uncertian of function propagate_uncertainty is neither python function nor Pyomo ConcreteModel
@@ -326,10 +328,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             propagate_results =  propagate_uncertainty(1, theta, cov, variable_name)
 
-    @pytest.mark.unit
-    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
+    @pytest.mark.integration
     def test_quantify_propagate_uncertainty_NRTL(self):
         '''
         It tests the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -350,12 +349,8 @@ class TestUncertaintyPropagation:
         np.testing.assert_array_almost_equal(results.gradient_f[0], [-0.19649493])
         np.testing.assert_almost_equal(results.cov, np.array([[0.01194738, -0.02557055], [-0.02557055, 0.05490639]]))
         assert results.propagation_f == pytest.approx(0.0021199499778127204)
-        
 
-    @pytest.mark.unit
-    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
+    @pytest.mark.integration
     def test_quantify_propagate_uncertainty_NRTL_exception(self):
         '''
         It tests an exception error when the ipopt fails for the function quantify_propagate_uncertainty with IDAES NRTL model.
@@ -373,10 +368,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(Exception):
             results =  quantify_propagate_uncertainty(NRTL_model,NRTL_model_opt_infeasible, data, variable_name, SSE)
 
-
-    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
+    @pytest.mark.unit
     def test_Exception1(self):
         '''
         It tests an ValueError when the tee is not bool for the function quantify_propagate_uncertainty with rooney & biegler's model.
@@ -393,11 +385,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee)
 
-
     @pytest.mark.unit
-    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception2(self):
         '''
         It tests an ValueError when the diagnostic_mode is not bool for the function quantify_propagate_uncertainty with rooney & biegler's model.
@@ -415,11 +403,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode)
 
-
     @pytest.mark.unit
-    @pytest.mark.skipif(not ipopt_available, reason="The 'ipopt' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'k_aug' command is not available")
-    @pytest.mark.skipif(not ipopt_available, reason="The 'dot_sens' command is not available")
     def test_Exception3(self):
         '''
         It tests an ValeError when solver_options is not a dictionary for the function quantify_propagate_uncertainty with rooney & biegler's model.
@@ -438,6 +422,7 @@ class TestUncertaintyPropagation:
         with pytest.raises(TypeError):
             results =  quantify_propagate_uncertainty(rooney_biegler_model,rooney_biegler_model_opt, data, variable_name, SSE,tee,diagnostic_mode,solver_options)
 
+    @pytest.mark.unit
     def test_clean_variable_name1(self):
         '''
         It tests the function clean_variable_name when variable names contain ' and spaces.
@@ -454,7 +439,8 @@ class TestUncertaintyPropagation:
         assert len(theta_names) == len(var_dic.values())
         assert all([a == b for a, b in zip(sorted(theta_names), sorted(var_dic.values()))])
         assert clean == True
-     
+
+    @pytest.mark.unit
     def test_clean_variable_name2(self):
         '''
         It tests the function clean_variable_name when variable names do not contain any ' and spaces.

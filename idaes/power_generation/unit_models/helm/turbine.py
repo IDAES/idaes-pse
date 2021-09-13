@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class
@@ -94,14 +94,14 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         te = ThermoExpr(blk=self, parameters=config.property_package)
 
         eff = self.efficiency_isentropic = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.9,
             doc="Isentropic efficiency"
         )
         eff.fix()
 
         pratio = self.ratioP = pyo.Var(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             initialize=0.7,
             doc="Ratio of outlet to inlet pressure"
         )
@@ -111,21 +111,21 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         properties_out = self.control_volume.properties_out
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Outlet isentropic enthalpy"
         )
         def h_is(b, t):
             return te.h(s=properties_in[t].entr_mol, p=properties_out[t].pressure)
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Isentropic enthalpy change"
         )
         def delta_enth_isentropic(b, t):
             return self.h_is[t] - properties_in[t].enth_mol
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Isentropic work"
         )
         def work_isentropic(b, t):
@@ -133,23 +133,23 @@ class HelmIsentropicTurbineData(BalanceBlockData):
                 properties_in[t].enth_mol - self.h_is[t])
 
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Outlet enthalpy"
         )
         def h_o(b, t): # Early access to the outlet enthalpy and work
             return properties_in[t].enth_mol - eff[t]*(
                 properties_in[t].enth_mol - self.h_is[t])
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def eq_work(b, t): # Work from energy balance
             return properties_out[t].enth_mol == self.h_o[t]
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def eq_pressure_ratio(b, t):
             return (pratio[t]*properties_in[t].pressure ==
                 properties_out[t].pressure)
 
-        @self.Expression(self.flowsheet().config.time)
+        @self.Expression(self.flowsheet().time)
         def work_mechanical(b, t):
             return b.control_volume.work[t]
 
@@ -164,7 +164,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         self,
         outlvl=idaeslog.NOTSET,
         solver=None,
-        optarg={},
+        optarg=None,
     ):
         """
         For simplicity this initialization requires you to set values for the
@@ -182,7 +182,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Check for alternate pressure specs
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if self.outlet.pressure[t].fixed:
                 self.ratioP[t] = pyo.value(
                     self.outlet.pressure[t]/self.inlet.pressure[t])
@@ -199,7 +199,7 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         self.ratioP.fix()
         self.deltaP.unfix()
         self.efficiency_isentropic.fix()
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             self.outlet.pressure[t] = pyo.value(
                 self.inlet.pressure[t]*self.ratioP[t])
             self.deltaP[t] = pyo.value(
@@ -222,8 +222,8 @@ class HelmIsentropicTurbineData(BalanceBlockData):
         for t, c in self.eq_pressure_ratio.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.properties_in[t].pressure)
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)
         for t, c in self.eq_work.items():
             s = iscale.get_scaling_factor(
                 self.control_volume.work[t])
-            iscale.constraint_scaling_transform(c, s)
+            iscale.constraint_scaling_transform(c, s, overwrite=False)

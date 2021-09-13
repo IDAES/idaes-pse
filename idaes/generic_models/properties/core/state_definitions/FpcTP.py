@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for setting up FpcTP as the state variables in a generic property
 package
@@ -119,8 +119,19 @@ def define_state(b):
             units=None)
 
     def rule_mole_frac_phase_comp(b, p, j):
-        return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
-            b.flow_mol_phase_comp[p, j]
+        # Calcualting mole frac phase comp is degenerate if there is only one
+        # component in phase.
+        # Count components
+        comp_count = 0
+        for p1, j1 in b.phase_component_set:
+            if p1 == p:
+                comp_count += 1
+
+        if comp_count > 1:
+            return b.mole_frac_phase_comp[p, j] * b.flow_mol_phase[p] == \
+                b.flow_mol_phase_comp[p, j]
+        else:
+            return b.mole_frac_phase_comp[p, j] == 1
     b.mole_frac_phase_comp_eq = Constraint(
         b.phase_component_set, rule=rule_mole_frac_phase_comp)
 
@@ -280,7 +291,7 @@ def calculate_scaling_factors(b):
         sf = iscale.get_scaling_factor(b.flow_mol_phase_comp[
             p, j], default=1, warning=True)
         iscale.constraint_scaling_transform(
-            b.mole_frac_phase_comp_eq[p, j], sf)
+            b.mole_frac_phase_comp_eq[p, j], sf, overwrite=False)
 
     if b.params._electrolyte:
         calculate_electrolyte_scaling(b)

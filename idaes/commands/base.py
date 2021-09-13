@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Base command for 'idaes' commandline script
 """
@@ -22,7 +22,7 @@ import logging
 # separate command logging from normal IDAES logging
 _log = logging.getLogger("idaes.commands")
 _h = logging.StreamHandler()
-_h.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+_h.setFormatter(logging.Formatter("%(levelname)-7s %(name)s: %(message)s"))
 _log.addHandler(_h)
 _log.propagate = False
 
@@ -103,6 +103,12 @@ def copyright():
 """
     )
 
+@command_base.command(help="Show how long it takes to import command modules")
+def import_time(name="import-time"):
+    from idaes.commands import _command_import_total_time
+    click.echo(f"Time: {_command_import_total_time}")
 
 if __name__ == "__main__":
+    # PYLINT-TODO-FIX fix error bypassed by directive
+    # pylint: disable=no-value-for-parameter
     command_base()

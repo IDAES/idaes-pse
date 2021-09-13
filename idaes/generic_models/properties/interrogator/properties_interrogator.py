@@ -1,23 +1,25 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tool to interrogate IDAES flowsheets and list the physical properties
 required to simulate it.
 """
 import sys
+from inspect import isclass
 
 # Import Pyomo libraries
-from pyomo.environ import Set, Var
+from pyomo.environ import Set, Var, units as pyunits
+from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -28,9 +30,11 @@ from idaes.core import (declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         UnitModelBlockData,
+                        Phase,
                         LiquidPhase,
                         VaporPhase,
                         Component)
+from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 # Some more information about this module
@@ -49,6 +53,15 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
     This class contains the methods and attributes for recording and displaying
     the properties requried by the flowsheet.
     """
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("phase_list", ConfigValue(
+        domain=dict,
+        description="User defined phase list. Dict with form {name: Type}"))
+    CONFIG.declare("component_list", ConfigValue(
+        domain=dict,
+        description="User defined component list. Dict with form {name: Type}"
+        ))
 
     def build(self):
         '''
@@ -59,13 +72,33 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
         self._state_block_class = InterrogatorStateBlock
 
         # Phase objects
-        # TODO : Allow users to define custom Phase obejcts/phase list
-        self.Liq = LiquidPhase()
-        self.Vap = VaporPhase()
+        if self.config.phase_list is None:
+            self.Liq = LiquidPhase()
+            self.Vap = VaporPhase()
+        else:
+            for p, t in self.config.phase_list.items():
+                if t is None:
+                    t = Phase
+                elif not isclass(t) or not issubclass(t, Phase):
+                    raise ConfigurationError(
+                        f"{self.name} invalid phase type {t} (for phase {p})."
+                        f" Type must be a subclass of Phase.")
+                self.add_component(p, t())
 
         # Component objects
-        self.A = Component()
-        self.B = Component()
+        if self.config.component_list is None:
+            self.A = Component()
+            self.B = Component()
+        else:
+            for j, t in self.config.component_list.items():
+                if t is None:
+                    t = Component
+                elif not isclass(t) or not issubclass(t, Component):
+                    raise ConfigurationError(
+                        f"{self.name} invalid component type {t} (for "
+                        f"component {j}). Type must be a subclass of "
+                        f"Component.")
+                self.add_component(j, t())
 
         # Set up dict to record property calls
         self.required_properties = {}
@@ -224,13 +257,11 @@ class PropertyInterrogatorData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({'time': pyunits.s,
+                               'length': pyunits.m,
+                               'mass': pyunits.kg,
+                               'amount': pyunits.mol,
+                               'temperature': pyunits.K})
 
 
 class _InterrogatorStateBlock(StateBlock):

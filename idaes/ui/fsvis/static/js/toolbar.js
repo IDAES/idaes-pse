@@ -33,14 +33,15 @@ export class Toolbar {
         };
     };
 
-    addSpinner($this, loadingText) {
+    addSpinner($this, loadingText, timeout) {
+        // Add a spinner to a button for the length of timeout (in milliseconds)
         if ($this.html() !== loadingText) {
             $this.data('original-text', $this.html());
             $this.html(loadingText);
         }
         setTimeout(function() {
             $this.html($this.data('original-text'));
-        }, 1000);
+        }, timeout);
     }
 
     setupPageToolbar() {
@@ -48,6 +49,22 @@ export class Toolbar {
         const model_id = $("#idaes-fs-name").data("flowsheetId");
         const url = `/fs?id=${ model_id }`;
         const model_server_url = $("#model-server-url").data("modelurl");
+
+        // Moved spinner adding before other events so the spinner gets added first
+        let app = this;
+        // Add spinner to refresh button on click
+        $('#refresh-btn').on('click', function() {
+            var $this = $(this);
+            var loadingText = '<i class="fa fa-circle-o-notch fa-spin"></i>Refresh';
+            app.addSpinner($this, loadingText, 1000)
+         });
+
+        // Add spinner to save button on click
+        $('#save-btn').on('click', function() {
+            var $this = $(this);
+            var loadingText = '<i class="fa fa-circle-o-notch fa-spin"></i>Save';
+            app.addSpinner($this, loadingText, 1000)
+         });
 
         // Save event listener
         document.querySelector("#save-btn").addEventListener("click", () => {
@@ -105,21 +122,6 @@ export class Toolbar {
                 container.style.display = "none";
             };
         });
-
-        let app = this;
-        // Add spinner to refresh button on click
-        $('#refresh-btn').on('click', function() {
-            var $this = $(this);
-            var loadingText = '<i class="fa fa-circle-o-notch fa-spin"></i>Refresh';
-            app.addSpinner($this, loadingText)
-         });
-
-        // Add spinner to save button on click
-        $('#save-btn').on('click', function() {
-            var $this = $(this);
-            var loadingText = '<i class="fa fa-circle-o-notch fa-spin"></i>Save';
-            app.addSpinner($this, loadingText)
-         });
     };
 
     setupFlowsheetToolbar() {

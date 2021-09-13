@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 """This is an example supercritical pulverized coal (SCPC) power plant steam cycle
 model.  This model doesn't represent any specific power plant, but it represents
@@ -181,6 +181,12 @@ def create_model():
     @m.fs.condenser_mix.Constraint(m.fs.time)
     def mixer_pressure_constraint(b, t):
         return b.main_state[t].pressure == b.mixed_state[t].pressure
+    # PYLINT-TODO the name "mixer_pressure_constraint" is reused below to define other constraint functions,
+    # causing pylint to report function-redefined errors
+    # this likely does not actually cause issues at runtime,
+    # but it could be worth to check anyway if the pylint errors can be addressed
+    # e.g. by giving a unique name to each of the affected functions
+    # pylint: disable=function-redefined
 
     # The condenser model uses the physical property model with TPx state
     # variables, while the rest of the model uses PH state variables. To
@@ -205,7 +211,7 @@ def create_model():
         }
     )
 
-    
+
     # Add NTU condenser model
     m.fs.condenser = Condenser(
         default={"dynamic": False,
@@ -213,8 +219,8 @@ def create_model():
                            "property_package": m.fs.prop_water},
                  "tube": {"has_pressure_change": False,
                           "property_package": m.fs.prop_water}
-                 })    
-    
+                 })
+
     # Add the condenser hotwell.  In steady state a mixer will work.  This is
     # where makeup water is added if needed.
     m.fs.hotwell = HelmMixer(
@@ -457,11 +463,11 @@ def create_model():
     m.fs.EXHST_MAIN = Arc(
         source=m.fs.turb.outlet_stage.outlet, destination=m.fs.condenser_mix.main
     )
-    
+
     m.fs.condenser_mix_to_condenser = Arc(
         source=m.fs.condenser_mix.outlet, destination=m.fs.condenser.inlet_1
     )
-    
+
     m.fs.COND_01 = Arc(
         source=m.fs.condenser.outlet_1, destination=m.fs.hotwell.condensate
     )
@@ -764,19 +770,19 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
 
     iscale.set_scaling_factor(m.fs.fwh4.condense.side_1.heat, 1e-7)
     iscale.set_scaling_factor(m.fs.fwh4.condense.side_2.heat, 1e-7)
-    
+
     iscale.set_scaling_factor(m.fs.fwh6.condense.side_1.heat, 1e-7)
     iscale.set_scaling_factor(m.fs.fwh6.condense.side_2.heat, 1e-7)
-    
+
     iscale.set_scaling_factor(m.fs.fwh7.condense.side_1.heat, 1e-7)
     iscale.set_scaling_factor(m.fs.fwh7.condense.side_2.heat, 1e-7)
-    
+
     iscale.set_scaling_factor(m.fs.fwh8.condense.side_1.heat, 1e-7)
     iscale.set_scaling_factor(m.fs.fwh8.condense.side_2.heat, 1e-7)
 
     iscale.calculate_scaling_factors(m)
-    
-    
+
+
     solver = get_solver()
 
     if fileinput is not None:
@@ -847,10 +853,10 @@ def initialize(m, fileinput=None, outlvl=idaeslog.NOTSET):
     _set_port(m.fs.condenser.inlet_1, m.fs.condenser_mix.outlet)
     _set_port(m.fs.condenser.outlet_2, m.fs.condenser.inlet_2)
     m.fs.condenser.initialize(outlvl=outlvl, optarg=solver.options)
-    
+
     # initialize hotwell
     _set_port(m.fs.hotwell.condensate, m.fs.condenser.outlet_1)
-    
+
     m.fs.hotwell.initialize(outlvl=outlvl, optarg=solver.options)
     m.fs.hotwell.condensate.unfix()
     # initialize condensate pump
@@ -953,7 +959,7 @@ def pfd_result(m, df, svg):
         tags[i + "_T"] = df.loc[i, "T (K)"]
         tags[i + "_P"] = df.loc[i, "P (Pa)"]
         tags[i + "_X"] = df.loc[i, "Vapor Fraction"]
-    # Add some addtional quntities from the model to report
+    # Add some additional quntities from the model to report
     tags["gross_power"] = -pyo.value(m.fs.turb.power[0])
     tags["gross_power_mw"] = -pyo.value(m.fs.turb.power[0]) * 1e-6
     tags["steam_mass_flow"] = df.loc["STEAM_MAIN", "Mass Flow (kg/s)"]

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """Commandline Utilities for Managing the IDAES Data Directory"""
 
 __author__ = "John Eslick"
@@ -89,6 +89,22 @@ def print_extensions_version(library_only=False):
     "--show-platforms",
     is_flag=True,
     help="Show the platform options")
+@click.option(
+    "--show-extras",
+    is_flag=True,
+    help="Show list of binary extras")
+@click.option(
+    "--extra",
+    multiple=True,
+    help="Install extras")
+@click.option(
+    "--extras-only",
+    is_flag=True,
+    help="Only install extras")
+@click.option(
+    "--to",
+    default=None,
+    help="Put extensions in a alternate location")
 @click.option("--verbose", help="Show details", is_flag=True)
 def get_extensions(
     release,
@@ -101,18 +117,28 @@ def get_extensions(
     library_only,
     no_download,
     show_current_version,
-    show_platforms):
+    show_platforms,
+    show_extras,
+    extras_only,
+    extra,
+    to):
 
     if show_platforms:
-        click.echo("\nBuild platforms for IDAES binary Extensions.  Most Linux")
-        click.echo("platforms are interchangeable.")
-        for key, mes in idaes.config.known_binary_platform.items():
-            click.echo("    {}: {}".format(key, mes))
+        click.echo("\nSupported platforms for IDAES binary extensions.")
+        for key, mes in sorted(idaes.config.known_binary_platform.items()):
+            click.echo(f"    {key}: {mes}")
+        click.echo("\nBinaries compiled on these platforms:")
+        for k in sorted(idaes.config.basic_platforms()):
+            click.echo(f"    {k}")
+        return
+    elif show_extras:
+        click.echo("\nBinary Extras")
+        for k in sorted(idaes.config.extra_binaries):
+            click.echo(f"    {k}")
         return
     elif show_current_version:
         print_extensions_version()
         return
-
     if url is None and release is None:
         # the default release is only used if neither a release or url is given
         release = idaes.config.default_binary_release
@@ -130,7 +156,10 @@ def get_extensions(
                 platform,
                 nochecksum,
                 library_only,
-                no_download)
+                no_download,
+                extras_only,
+                extra,
+                alt_path=to)
             click.echo("Done")
         except idaes.util.download_bin.UnsupportedPlatformError as e:
             click.echo("")
@@ -152,3 +181,41 @@ def get_extensions(
             print_extensions_version(library_only)
     else:
         click.echo("\n* You must provide a download URL for IDAES binary files.")
+
+
+@cb.command(name="hash-extensions", help="Calculate release hashes")
+@click.option(
+    "--release",
+    help="Optional, specify an official binary release to download",
+    default=None,
+    required=True)
+@click.option(
+    "--path",
+    help="Directory of release files",
+    default=None,
+    required=True)
+def hash_extensions(release, path):
+    hfile = f"sha256sum_{release}.txt"
+    if path is not None:
+        hfile = os.path.join(path, hfile)
+
+    def _write_hash(fp, pack, plat):
+        f = f"idaes-{pack}-{plat}-64.tar.gz"
+        if path is not None:
+            h = idaes.util.download_bin.hash_file_sha256(os.path.join(path, f))
+        else:
+            h = idaes.util.download_bin.hash_file_sha256(f)
+        fp.write(h)
+        fp.write("  ")
+        fp.write(f)
+        fp.write("\n")
+
+    with open(hfile, "w") as f:
+        for plat in idaes.config.basic_platforms():
+            for pack in ["solvers", "lib"]:
+                _write_hash(f, pack, plat)
+        for plat in idaes.config.basic_platforms():
+            for pack, sp in idaes.config.extra_binaries.items():
+                if plat not in sp:
+                    continue
+                _write_hash(f, pack, plat)

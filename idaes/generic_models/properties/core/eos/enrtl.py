@@ -1,19 +1,22 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Methods for eNRTL activity coefficient method.
 
 Only applicable to liquid/electrolyte phases
+
+Many thanks to C.-C. Chen for his assistance and suggestions on testing and
+verifying the model.
 
 Reference:
 
@@ -25,13 +28,15 @@ ionic charge.
 """
 from pyomo.environ import Expression, exp, log, Set, units as pyunits
 
-from .eos_base import EoSBase
+from .ideal import Ideal
 from .enrtl_reference_states import Symmetric
 from .enrtl_parameters import ConstantAlpha, ConstantTau
 from idaes.generic_models.properties.core.generic.utility import (
     get_method, get_component_object as cobj)
+from idaes.generic_models.properties.core.generic.generic_property import \
+    StateIndex
 from idaes.core.util.constants import Constants
-from idaes.core.util.exceptions import BurntToast
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 import idaes.logger as idaeslog
 
 
@@ -41,11 +46,6 @@ _log = idaeslog.getLogger(__name__)
 
 DefaultAlphaRule = ConstantAlpha
 DefaultTauRule = ConstantTau
-# TODO: Whilst the basic framework for supporting different reference states is
-# in place, it is likely that the unsymmetric reference state will need
-# x, X and I0 calcuated for each species individually (the symmetric
-# reference state only needs these to be calcuated once). Thi has not been
-# implemented in the current version
 DefaultRefState = Symmetric
 
 # Closest appraoch parameter - implemented as a global constant for now
@@ -53,10 +53,11 @@ DefaultRefState = Symmetric
 ClosestApproach = 14.9
 
 
-class ENRTL(EoSBase):
+class ENRTL(Ideal):
     # Add attribute indicating support for electrolyte systems
     electrolyte_support = True
 
+    @staticmethod
     def build_parameters(b):
         # Build additional indexing sets
         pblock = b.parent_block()
@@ -94,6 +95,7 @@ class ENRTL(EoSBase):
         else:
             DefaultTauRule.build_parameters(b)
 
+    @staticmethod
     def common(b, pobj):
         pname = pobj.local_name
 
@@ -119,7 +121,7 @@ class ENRTL(EoSBase):
         if (pobj.config.equation_of_state_options is not None and
                 "reference_state" in pobj.config.equation_of_state_options):
             ref_state = pobj.config.equation_of_state_options[
-                "reference_state"].return_expression
+                "reference_state"]
         else:
             ref_state = DefaultRefState
 
@@ -168,7 +170,7 @@ class ENRTL(EoSBase):
             elif j in b.params.cation_set or j in b.params.anion_set:
                 return (x[j]*abs(cobj(b, j).config.charge))
             else:
-                return 0
+                return x[j]
 
         b.add_component(
             pname+"_X_ref",
@@ -198,12 +200,10 @@ class ENRTL(EoSBase):
         def rule_vol_mol_solvent(b):  # Eqn 77
             if len(b.params.solvent_set) == 1:
                 s = b.params.solvent_set.first()
-                return 1/get_method(b, "dens_mol_liq_comp", s)(
-                    b, cobj(b, s), b.temperature)
+                return ENRTL.get_vol_mol_pure(b, "liq", s, b.temperature)
             else:
-                return (sum(b.mole_frac_phase_comp_true[pname, s] /
-                            get_method(b, "dens_mol_liq_comp", s)(
-                                b, cobj(b, s), b.temperature)
+                return (sum(b.mole_frac_phase_comp_true[pname, s] *
+                            ENRTL.get_vol_mol_pure(b, "liq", s, b.temperature)
                             for s in b.params.solvent_set) /
                         sum(b.mole_frac_phase_comp_true[pname, s]
                             for s in b.params.solvent_set))
@@ -236,7 +236,7 @@ class ENRTL(EoSBase):
             # Note: Where the paper refers to the dielectric constant, it
             # actually means the electric permittivity of the solvent
             # eps = eps_r*eps_0 (units F/m)
-            # Note that paper is misisng a required 4*pi term
+            # Note that paper is missing a required 4*pi term
             v = pyunits.convert(getattr(b, pname+"_vol_mol_solvent"),
                                 pyunits.m**3/pyunits.mol)
             eps = getattr(b, pname+"_relative_permittivity_solvent")
@@ -324,16 +324,20 @@ class ENRTL(EoSBase):
                     for k in b.params.cation_set)
             elif (i in b.params.cation_set and j in b.params.anion_set):
                 # Eqn 34
-                return sum(Y[k]*alpha_rule(
-                               b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                           for k in b.params.cation_set
-                           if i != k)
+                if len(b.params.cation_set) > 1:
+                    return sum(Y[k]*alpha_rule(
+                        b, pobj, (i+", "+j), (k+", "+j), b.temperature)
+                               for k in b.params.cation_set)
+                else:
+                    return 0.2
             elif (i in b.params.anion_set and j in b.params.cation_set):
                 # Eqn 35
-                return sum(Y[k]*alpha_rule(
-                               b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                           for k in b.params.anion_set
-                           if i != k)
+                if len(b.params.anion_set) > 1:
+                    return sum(Y[k]*alpha_rule(
+                        b, pobj, (j+", "+i), (j+", "+k), b.temperature)
+                               for k in b.params.anion_set)
+                else:
+                    return 0.2
             elif ((i in b.params.cation_set and j in b.params.cation_set) or
                   (i in b.params.anion_set and j in b.params.anion_set)):
                 # No like-ion interactions
@@ -354,8 +358,11 @@ class ENRTL(EoSBase):
             Y = getattr(b, pname+"_Y")
 
             def _G_appr(b, pobj, i, j, T):  # Eqn 23
-                return exp(-alpha_rule(b, pobj, i, j, T) *
-                           tau_rule(b, pobj, i, j, T))
+                if i != j:
+                    return exp(-alpha_rule(b, pobj, i, j, T) *
+                               tau_rule(b, pobj, i, j, T))
+                else:
+                    return 1
 
             if ((pname, i) not in b.params.true_phase_component_set or
                     (pname, j) not in b.params.true_phase_component_set):
@@ -389,8 +396,7 @@ class ENRTL(EoSBase):
                 if len(b.params.cation_set) > 1:
                     return sum(Y[k] * _G_appr(
                         b, pobj, (i+", "+j), (k+", "+j), b.temperature)
-                        for k in b.params.cation_set
-                        if i != k)
+                        for k in b.params.cation_set)
                 else:
                     # This term does not exist for single cation systems
                     # However, need a valid result to calculate tau
@@ -400,8 +406,7 @@ class ENRTL(EoSBase):
                 if len(b.params.anion_set) > 1:
                     return sum(Y[k] * _G_appr(
                         b, pobj, (j+", "+i), (j+", "+k), b.temperature)
-                        for k in b.params.anion_set
-                        if i != k)
+                        for k in b.params.anion_set)
                 else:
                     # This term does not exist for single anion systems
                     # However, need a valid result to calculate tau
@@ -436,12 +441,8 @@ class ENRTL(EoSBase):
             else:
                 alpha = getattr(b, pname+"_alpha")
                 G = getattr(b, pname+"_G")
-                if G[i, j].expr != 1:
-                    # Eqn 44
-                    return -log(G[i, j])/alpha[i, j]
-                else:
-                    # Catch for cases of single cation/anion systems
-                    return 0
+                # Eqn 44
+                return -log(G[i, j])/alpha[i, j]
 
         b.add_component(pname+"_tau",
                         Expression(b.params.true_species_set,
@@ -504,28 +505,103 @@ class ENRTL(EoSBase):
                 rule=rule_log_gamma,
                 doc="Log of activity coefficient"))
 
+        # Activity coefficient of apparent species
+        def rule_log_gamma_pm(b, j):
+            cobj = b.params.get_component(j)
+
+            if "dissociation_species" in cobj.config:
+                dspec = cobj.config.dissociation_species
+
+                n = 0
+                d = 0
+                for s in dspec:
+                    dobj = b.params.get_component(s)
+                    ln_g = getattr(b, pname+"_log_gamma")[s]
+                    n += abs(dobj.config.charge)*ln_g
+                    d += abs(dobj.config.charge)
+
+                return n/d
+            else:
+                return getattr(b, pname+"_log_gamma")[j]
+
+        b.add_component(
+            pname+"_log_gamma_appr",
+            Expression(
+                b.params.apparent_species_set,
+                rule=rule_log_gamma_pm,
+                doc="Log of mean activity coefficient"))
+
     @staticmethod
     def calculate_scaling_factors(b, pobj):
         pass
 
     @staticmethod
-    def log_act_coeff(b, p, j):
-        # Overall log gamma
-        pdh = getattr(p, +"_log_gamma_pdh")
-        lc = getattr(p, +"_log_gamma_lc")
-        return pdh[j] + lc[j]
+    def act_phase_comp(b, p, j):
+        return b.mole_frac_phase_comp[p, j]*b.act_coeff_phase_comp[p, j]
 
     @staticmethod
-    def dens_mol_phase(b, p):
-        return 55e3
+    def act_phase_comp_true(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return b.mole_frac_phase_comp_true[p, j]*exp(ln_gamma[j])
 
     @staticmethod
-    def enth_mol_phase(b, p):
-        return 1e2*b.temperature
+    def act_phase_comp_appr(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return b.mole_frac_phase_comp_apparent[p, j]*exp(ln_gamma[j])
 
     @staticmethod
-    def enth_mol_phase_comp(b, p, j):
-        return 1e2*b.temperature
+    def log_act_phase_comp(b, p, j):
+        if b.params.config.state_components == StateIndex.true:
+            ln_gamma = getattr(b, p+"_log_gamma")
+        else:
+            ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return log(b.mole_frac_phase_comp[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def log_act_phase_comp_true(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return log(b.mole_frac_phase_comp_true[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def log_act_phase_comp_appr(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return log(b.mole_frac_phase_comp_apparent[p, j]) + ln_gamma[p, j]
+
+    @staticmethod
+    def act_coeff_phase_comp(b, p, j):
+        if b.params.config.state_components == StateIndex.true:
+            ln_gamma = getattr(b, p+"_log_gamma")
+        else:
+            ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return exp(ln_gamma[j])
+
+    @staticmethod
+    def act_coeff_phase_comp_true(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma")
+        return exp(ln_gamma[j])
+
+    @staticmethod
+    def act_coeff_phase_comp_appr(b, p, j):
+        ln_gamma = getattr(b, p+"_log_gamma_appr")
+        return exp(ln_gamma[j])
+
+    @staticmethod
+    def pressure_osm_phase(b, p):
+        return (-ENRTL.gas_constant(b)*b.temperature *
+                log(sum(b.act_phase_comp[p, j]
+                        for j in b.params.solvent_set)) /
+                b.vol_mol_phase[p])
+
+    @staticmethod
+    def vol_mol_phase(b, p):
+        # eNRTL model uses apparent species for calculating molar volume
+        # TODO : Need something more rigorus to handle concentrated solutions
+        v_expr = 0
+        for j in b.params.apparent_species_set:
+            v_comp = ENRTL.get_vol_mol_pure(b, "liq", j, b.temperature)
+            v_expr += b.mole_frac_phase_comp_apparent[p, j]*v_comp
+
+        return v_expr
 
 
 def log_gamma_lc(b, pname, s, X, G, tau):

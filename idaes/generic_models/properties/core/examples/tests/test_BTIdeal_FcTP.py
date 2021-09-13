@@ -1,21 +1,20 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
                            Expression,
                            Set,
                            SolverStatus,
@@ -24,11 +23,9 @@ from pyomo.environ import (ConcreteModel,
                            Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
+from pyomo.common.unittest import assertStructuredAlmostEqual
 
-from idaes.core import (MaterialBalanceType,
-                        EnergyBalanceType,
-                        MaterialFlowBasis,
-                        Component)
+from idaes.core import Component
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set)
@@ -163,10 +160,14 @@ class TestParamBlock(object):
 
         assert model.params.config.state_definition == FcTP
 
-        assert model.params.config.state_bounds == {
-                "flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
-                "temperature": (273.15, 300, 450, pyunits.K),
-                "pressure": (5e4, 1e5, 1e6, pyunits.Pa)}
+        assertStructuredAlmostEqual(
+            model.params.config.state_bounds,
+            {"flow_mol_comp": (0, 100, 1000, pyunits.mol/pyunits.s),
+             "temperature": (273.15, 300, 450, pyunits.K),
+              "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
+            item_callback=lambda x: value(x) * (
+                pyunits.get_units(x) or pyunits.dimensionless)._get_pint_unit()
+        )
 
         assert model.params.config.phase_equilibrium_state == {
             ("Vap", "Liq"): SmoothVLE}
@@ -199,6 +200,11 @@ class TestStateBlock(object):
 
         model.props[1].calculate_scaling_factors()
 
+        # Fix state
+        model.props[1].flow_mol_comp.fix(0.5)
+        model.props[1].temperature.fix(368)
+        model.props[1].pressure.fix(101325)
+
         return model
 
     @pytest.mark.unit
@@ -207,17 +213,17 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].flow_mol, Expression)
         assert isinstance(model.props[1].flow_mol_comp, Var)
         for j in model.params.component_list:
-            assert value(model.props[1].flow_mol_comp[j]) == 100
+            assert value(model.props[1].flow_mol_comp[j]) == 0.5
             assert model.props[1].flow_mol_comp[j].ub == 1000
             assert model.props[1].flow_mol_comp[j].lb == 0
 
         assert isinstance(model.props[1].pressure, Var)
-        assert value(model.props[1].pressure) == 1e5
+        assert value(model.props[1].pressure) == 101325
         assert model.props[1].pressure.ub == 1e6
         assert model.props[1].pressure.lb == 5e4
 
         assert isinstance(model.props[1].temperature, Var)
-        assert value(model.props[1].temperature) == 300
+        assert value(model.props[1].temperature) == 368
         assert model.props[1].temperature.ub == 450
         assert model.props[1].temperature.lb == 273.15
 
@@ -314,14 +320,9 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_dof(self, model):
-        # Fix state
-        model.props[1].flow_mol_comp.fix(0.5)
-        model.props[1].temperature.fix(368)
-        model.props[1].pressure.fix(101325)
-
         assert degrees_of_freedom(model.props[1]) == 0
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_initialize(self, model):
         orig_fixed_vars = fixed_variables_set(model)
         orig_act_consts = activated_constraints_set(model)
@@ -341,7 +342,7 @@ class TestStateBlock(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solve(self, model):
         results = solver.solve(model)
 
@@ -350,7 +351,7 @@ class TestStateBlock(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-    @pytest.mark.unit
+    @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
         assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \

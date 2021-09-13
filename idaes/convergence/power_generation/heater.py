@@ -1,3 +1,15 @@
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 
 __author__ = "John Eslick"
 
@@ -8,21 +20,21 @@ from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.generic_models.unit_models import Heater
 from idaes.generic_models.properties import iapws95
 from idaes.core.util import copy_port_values as _set_port, get_solver
-from idaes.core.util.plot import stitch_dynamic
+
 
 def create_model_steady_state(f=100, p=5e5, h=5e4):
     """ Create a steady state heater model.
     """
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
-    m.fs = FlowsheetBlock(default={"dynamic":False})
+    m.fs = FlowsheetBlock(default={"dynamic": False})
     # Create a property parameter block
     m.fs.prop_water = iapws95.Iapws95ParameterBlock(
-        default={"phase_presentation":iapws95.PhaseType.MIX})
+        default={"phase_presentation": iapws95.PhaseType.MIX})
     m.fs.heater = Heater(default={
-        "has_holdup":False,
-        "has_pressure_change":True,
-        "material_balance_type":MaterialBalanceType.componentTotal,
-        "property_package":m.fs.prop_water})
+        "has_holdup": False,
+        "has_pressure_change": True,
+        "material_balance_type": MaterialBalanceType.componentTotal,
+        "property_package": m.fs.prop_water})
 
     m.fs.heater.inlet.enth_mol.fix(50000)
     m.fs.heater.inlet.pressure.fix(5e5)
@@ -37,14 +49,14 @@ def create_model_steady_state(f=100, p=5e5, h=5e4):
 
 
 def create_model_dynamic(
-    p_in=5e5,
-    p_out=101325,
-    h=5e4,
-    time_set=[0,5],
-    nfe=10,
-    dae_transform='dae.collocation',
-    dae_scheme='LAGRANGE-RADAU'
-    ):
+        p_in=5e5,
+        p_out=101325,
+        h=5e4,
+        time_set=None,
+        nfe=10,
+        dae_transform='dae.collocation',
+        dae_scheme='LAGRANGE-RADAU'
+        ):
     """ Create a test dynamic heater model and solver.  For dynamic testing
     a valve is added to the heater outlet to set up pressure driven flow.
 
@@ -54,6 +66,9 @@ def create_model_dynamic(
     Returns:
         (tuple): (ConcreteModel, Solver)
     """
+    if time_set is None:
+        time_set = [0,5]
+
     m = pyo.ConcreteModel(name="Dynamic Heater Test")
     m.fs = FlowsheetBlock(default={"dynamic":True, "time_set":time_set})
     # Create a property parameter block

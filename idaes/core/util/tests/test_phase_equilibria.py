@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 This module contains phase equilibria utility functions for use in IDAES models.
 """
@@ -20,9 +20,10 @@ import pytest
 
 import idaes.logger as idaeslog
 
-from pyomo.environ import ConcreteModel, Expression, Set, Block, Var
+from pyomo.environ import ConcreteModel
 # Import Pyomo units
 from pyomo.environ import units as pyunits
+from pyomo.util.check_units import assert_units_equivalent
 
 from idaes.core import LiquidPhase, VaporPhase, Component
 from idaes.core.phases import PhaseType as PT
@@ -33,35 +34,43 @@ from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.generic_models.properties.core.phase_equil import smooth_VLE
 from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
         IdealBubbleDew, LogBubbleDew
-from idaes.generic_models.properties.core.phase_equil.forms import fugacity, log_fugacity
+from idaes.generic_models.properties.core.phase_equil.forms import \
+    fugacity, log_fugacity
 
 import idaes.generic_models.properties.core.pure.NIST as NIST
-import idaes.generic_models.properties.core.pure.RPP4 as RPP4
 import idaes.generic_models.properties.core.pure.RPP5 as RPP5
-
-from idaes.core import FlowsheetBlock
 
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterBlock)
 
-from idaes.core.util.phase_equilibria import (TXYDataClass,Txy_data)
+from idaes.core.util.phase_equilibria import (TXYDataClass, Txy_data)
+
 
 @pytest.mark.unit
 def test_Txy_dataclass():
 
-    TD = TXYDataClass('benzene', 'toluene', pyunits.kg / pyunits.m / pyunits.s ** 2, pyunits.K, 101325)
+    TD = TXYDataClass('benzene', 'toluene',
+                      pyunits.kg / pyunits.m / pyunits.s ** 2, pyunits.K,
+                      101325)
     TD.TBubb = [353.3205, 365.3478, 383.8817]
     TD.TDew = [353.3237, 372.0203, 383.8845]
     TD.x = [0.9999, 0.5, 0.01]
 
     assert TD.Component_1 == 'benzene'
     assert TD.Component_2 == 'toluene'
-    assert TD.Punits == pyunits.kg / pyunits.m / pyunits.s ** 2
-    assert TD.Tunits == pyunits.K
+    assert_units_equivalent(TD.Punits, pyunits.kg / pyunits.m / pyunits.s ** 2)
+    assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
-    assert TD.TBubb == [pytest.approx(353.3205, abs=1e-4), pytest.approx(365.3478, abs=1e-4), pytest.approx(383.8817, abs=1e-4)]
-    assert TD.TDew == [pytest.approx(353.3237, abs=1e-4), pytest.approx(372.0203, abs=1e-4), pytest.approx(383.8845, abs=1e-4)]
-    assert TD.x == [pytest.approx(0.9999, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
+    assert TD.TBubb == [pytest.approx(353.3205, abs=1e-4),
+                        pytest.approx(365.3478, abs=1e-4),
+                        pytest.approx(383.8817, abs=1e-4)]
+    assert TD.TDew == [pytest.approx(353.3237, abs=1e-4),
+                       pytest.approx(372.0203, abs=1e-4),
+                       pytest.approx(383.8845, abs=1e-4)]
+    assert TD.x == [pytest.approx(0.9999, abs=1e-4),
+                    pytest.approx(0.5, abs=1e-4),
+                    pytest.approx(0.01, abs=1e-4)]
+
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
@@ -120,17 +129,25 @@ def test_Txy_data():
 
     model.params = GenericParameterBlock(default=configuration)
 
-    TD = Txy_data(model, 'benzene', 'toluene', 101325, num_points = 3, temperature = 298.15,
-    print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
+    TD = Txy_data(model, 'benzene', 'toluene', 101325,
+                  num_points=3, temperature=298.15,
+                  print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'benzene'
     assert TD.Component_2 == 'toluene'
-    assert TD.Punits == pyunits.kg / pyunits.m / pyunits.s ** 2
-    assert TD.Tunits == pyunits.K
+    assert_units_equivalent(TD.Punits, pyunits.kg / pyunits.m / pyunits.s ** 2)
+    assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
-    assert TD.TBubb == [pytest.approx(353.4853, abs=1e-4), pytest.approx(365.2127, abs=1e-4), pytest.approx(383.2909, abs=1e-4)]
-    assert TD.TDew == [pytest.approx(353.7978, abs=1e-2), pytest.approx(371.8702, abs=1e-4), pytest.approx(383.5685, abs=1e-4)]
-    assert TD.x == [pytest.approx(0.99, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
+    assert TD.TBubb == [pytest.approx(353.4853, abs=1e-4),
+                        pytest.approx(365.2127, abs=1e-4),
+                        pytest.approx(383.2909, abs=1e-4)]
+    assert TD.TDew == [pytest.approx(353.7978, abs=1e-2),
+                       pytest.approx(371.8702, abs=1e-4),
+                       pytest.approx(383.5685, abs=1e-4)]
+    assert TD.x == [pytest.approx(0.99, abs=1e-4),
+                    pytest.approx(0.5, abs=1e-4),
+                    pytest.approx(0.01, abs=1e-4)]
+
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
@@ -197,17 +214,23 @@ def test_Txy_data_no_dew():
 
     model.params = GenericParameterBlock(default=configuration)
 
-    TD = Txy_data(model, "carbon_dioxide", "bmimPF6", 101325, num_points = 3, temperature = 150.15,
-    print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
+    TD = Txy_data(model, "carbon_dioxide", "bmimPF6", 101325,
+                  num_points=3, temperature=150.15,
+                  print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'carbon_dioxide'
     assert TD.Component_2 == 'bmimPF6'
-    assert TD.Punits == pyunits.kg / pyunits.m / pyunits.s ** 2
-    assert TD.Tunits == pyunits.K
+    assert_units_equivalent(TD.Punits, pyunits.kg / pyunits.m / pyunits.s ** 2)
+    assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
-    assert TD.TBubb == [pytest.approx(185.6468, abs=1e-4), pytest.approx(191.4697, abs=1e-4), pytest.approx(331.1625, abs=1e-4)]
+    assert TD.TBubb == [pytest.approx(185.6468, abs=1e-4),
+                        pytest.approx(191.4697, abs=1e-4),
+                        pytest.approx(331.1625, abs=1e-4)]
     assert TD.TDew == []
-    assert TD.x == [pytest.approx(0.99, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
+    assert TD.x == [pytest.approx(0.99, abs=1e-4),
+                    pytest.approx(0.5, abs=1e-4),
+                    pytest.approx(0.01, abs=1e-4)]
+
 
 # Author: Alejandro Garciadiego
 @pytest.mark.component
@@ -273,14 +296,19 @@ def test_Txy_data_no_liq():
 
     model.params = GenericParameterBlock(default=configuration)
 
-    TD = Txy_data(model, 'methane', 'ethane', 101325 , num_points = 3, temperature = 298,
-    print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
+    TD = Txy_data(model, 'methane', 'ethane', 101325,
+                  num_points=3, temperature=298,
+                  print_level=idaeslog.CRITICAL, solver_op={'tol': 1e-6})
 
     assert TD.Component_1 == 'methane'
     assert TD.Component_2 == 'ethane'
-    assert TD.Punits == pyunits.kg / pyunits.m / pyunits.s ** 2
-    assert TD.Tunits == pyunits.K
+    assert_units_equivalent(TD.Punits, pyunits.kg / pyunits.m / pyunits.s ** 2)
+    assert_units_equivalent(TD.Tunits, pyunits.K)
     assert TD.P == 101325
     assert TD.TBubb == []
-    assert TD.TDew == [pytest.approx(126.9025, abs=1e-2), pytest.approx(172.1489, abs=1e-4), pytest.approx(184.2534, abs=1e-4)]
-    assert TD.x == [pytest.approx(0.99, abs=1e-4), pytest.approx(0.5, abs=1e-4), pytest.approx(0.01, abs=1e-4)]
+    assert TD.TDew == [pytest.approx(126.9025, abs=1e-2),
+                       pytest.approx(172.1489, abs=1e-4),
+                       pytest.approx(184.2534, abs=1e-4)]
+    assert TD.x == [pytest.approx(0.99, abs=1e-4),
+                    pytest.approx(0.5, abs=1e-4),
+                    pytest.approx(0.01, abs=1e-4)]

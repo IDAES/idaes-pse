@@ -11,25 +11,33 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Update pip and other packaging tools
-      shell: bash
+      # IMPORTANT this requires the Conda env setup to be run before this action
+    - name: Update pip and other packaging tools using Conda
+      # -l: login shell, needed when using Conda run:
+      shell: bash -l {0}
       run: |
-        ${{ inputs.install-command }} pip setuptools wheel
+        echo '::group::Output of "conda install" command'
+        conda install --yes --quiet pip=21.1 setuptools wheel
+        conda list
+        echo '::endgroup::'
     - name: Install idaes and dependencies
-      shell: bash
+      shell: bash -l {0}
       run: |
         echo '::group::Output of "pip install" command'
         ${{ inputs.install-command }} ${{ inputs.install-target}}
-        # added temporary additional installation of pysp while waiting for Pyomo/pyomo#1778 to get merged
-        # see https://github.com/IDAES/idaes-pse/pull/249#issuecomment-816108862 for more details
-        ${{ inputs.install-command }} https://github.com/Pyomo/pysp/archive/master.zip
+        echo '::endgroup::'
+        echo '::group::Output of "conda list"'
+        conda list
+        echo '::endgroup::'
+        echo '::group::Output of "pip list"'
+        pip list
         echo '::endgroup::'
         echo '::group::Output of "pip show pyomo idaes-pse"'
         pip show pyomo idaes-pse
         echo '::endgroup::'
-        idaes --version
+        # idaes --version
     - name: Install extensions
-      shell: bash
+      shell: bash -l {0}
       run: |
         echo '::group::Output of "idaes get-extensions" command'
         idaes get-extensions --verbose

@@ -1,15 +1,15 @@
-##############################################################################
-# Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2020, by the
-# software owners: The Regents of the University of California, through
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
-# University Research Corporation, et al. All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
 #
-# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
-# license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
 Tests for generic reaction package core code
 
@@ -43,6 +43,7 @@ from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
 
 from idaes.core.util.exceptions import ConfigurationError
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -208,19 +209,26 @@ class TestGenericReactionParameterBlock(object):
                            "rate_form": "foo"}}})
 
     @pytest.mark.unit
-    def test_rate_build_no_form(self, m):
-        with pytest.raises(ConfigurationError,
-                           match="rxn_params rate reaction r1 was not "
-                           "provided with a rate_form configuration "
-                           "argument."):
-            m.rxn_params = GenericReactionParameterBlock(default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "rate_reactions": {
-                    "r1": {"stoichiometry": {("p1", "c1"): -1,
-                                             ("p1", "c2"): 2},
-                           "heat_of_reaction": "foo"}}})
-            
+    def test_rate_build_no_form(self, m, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger=("idaes.generic_models.properties.core."
+                    "generic.generic_reaction"))
+
+        m.rxn_params = GenericReactionParameterBlock(default={
+            "property_package": m.params,
+            "base_units": base_units,
+            "rate_reactions": {
+                "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                         ("p1", "c2"): 2},
+                       "heat_of_reaction": "foo"}}})
+
+        assert ("rxn_params rate reaction r1 was not provided with a "
+                "rate_form configuration argument. This is suitable for "
+                "processes using stoichiometric reactors, but not for those "
+                "using unit operations which rely on reaction rate."
+                in caplog.text)
+
     @pytest.mark.unit
     def test_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
@@ -500,6 +508,16 @@ class TestGenericReactionBlock(object):
         assert value(model.rblock[1].reaction_rate["r1"]) == value(
             model.rblock[1].k_rxn["r1"] *
             model.sblock[1].mole_frac_phase_comp["p1", "c1"]**1)
+
+    @pytest.mark.unit
+    def test_reaction_rate_None(self, model):
+        model.rxn_params.config.rate_reactions.r1.rate_form = None
+
+        with pytest.raises(ConfigurationError,
+                           match="rblock\[1\] Generic Reaction r1 was not "
+                           "provided with a rate_form configuration "
+                           "argument."):
+            model.rblock[1].reaction_rate
 
     @pytest.mark.unit
     def test_equilibrium_constant(self, model):
