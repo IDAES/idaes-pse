@@ -16,27 +16,55 @@ gas-solid interaction between both phases through reaction, mass and heat transf
 
 * Property packages contain temperature and pressure variables.
 
-The FixedBed0D model equations are derived from a similar moving-bed model:
+The FixedBed0D model equations are derived from spacially simplying an existing model of similar geometry and adding time-variant behavior:
 
 A. Ostace, A. Lee, C.O. Okoli, A.P. Burgard, D.C. Miller, D. Bhattacharyya, Mathematical modeling of a moving-bed reactor for chemical looping combustion of methane, in: M.R. Eden, M. Ierapetritou, G.P. Towler (Eds.),13th Int. Symp. Process Syst. Eng. (PSE 2018), Computer-Aided Chemical Engineering 2018, pp. 325–330 , San Diego, CA.
 
 Degrees of Freedom
 ------------------
 
-FixedBed0D Reactors generally have at least 0 (or more) degrees of freedom, consisting of design and operating variables. At a minimum, the inlet stream properties must be specified (no need to specify geometric or design parameters).
+FixedBed0D Reactors generally have at least 0 (or more) degrees of freedom, consisting of design and operating variables. At a minimum, the inlet stream and initial solid properties must be specified (specifying geometric or design parameters is optional).
 
 Model Structure
 ---------------
 
-The FixedBed0D model does not use ControlVolume blocks, and instead writes a set of material and energy balances for the solid phase. The gas phase conditions are considered to be fixed at the inlet values.
+The FixedBed0D model assumes a single control volume, and writes a set of material and energy balances for the solid phase. The gas phase conditions are considered to be fixed at the inlet values.
 
-Construction Arguments (need to update)
----------------------------------------
+Construction Arguments
+----------------------
 
-placeholder text
+The IDAES FixedBed0D model has construction arguments specific to the whole unit and to the individual regions.
 
-Constraints (need to update)
-----------------------------
+**Arguments that are applicable to the FixedBed0D unit as a whole are:**
+
+* dynamic - indicates whether the model will be dynamic or not, must be True (default = True).
+* has_holdup - indicates whether holdup terms are constructed or not, must be True (default = True).
+* energy_balance_type - indicates what type of energy balance should be constructed (default = useDefault):
+  
+  - EnergyBalanceType.useDefault - refer to property package for default balance type
+  - EnergyBalanceType.none - exclude energy balances
+  - EnergyBalanceType.enthalpyTotal - single enthalpy balance for material
+  - EnergyBalanceType.enthalpyPhase - enthalpy balances for each phase
+  - EnergyBalanceType.energyTotal - single energy balance for material
+  - EnergyBalanceType.energyPhase - energy balances for each phase
+
+**Arguments that are applicable to a specific region:**
+
+* gas_property_package - property package to use when calculating properties for the gas phase (default = 'useDefault'). 
+  This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
+  If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
+* gas_property_package_args - set of arguments to be passed to the gas phase Property Blocks when they are created (default = 'None').
+* solid_property_package - property package to use when calculating properties for the solid phase (default = 'useDefault'). 
+  This is provided as a Physical Parameter Block by the Flowsheet when creating the model. 
+  If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
+* solid_property_package_args - set of arguments to be passed to the solid phase Property Blocks when they are created (default = 'None').
+* reaction_package - reaction package to use when calculating properties for solid phase reaction (default = None). 
+  This is provided as a Reaction Parameter Block by the Flowsheet when creating the model. 
+  If a value is not provided, the ControlVolume Block will try to use the default property package if one is defined.
+* reaction_package_args - set of arguments to be passed to the Reaction Blocks when they are created (default = None).
+
+Constraints
+-----------
 
 In the following, the subscripts :math:`g` and :math:`s` refer to the gas and solid phases, respectively. 
 FixedBed0D units write the following Constraints:
@@ -46,7 +74,7 @@ Reaction and Mass/Heat Transfer Constraints
 
 Solid material holdup:
 
-.. math:: h_{mass,s,t,j} = V_{s} \rho_{mass,s,t,j} x_{mass,s,t,j}
+.. math:: h_{mass,s,t,j} = V_{s} \rho_{mass,s,t} x_{mass,s,t,j}
 
 Solid material accumulation:
 
@@ -56,42 +84,41 @@ Total mass of solids
 
 .. math:: S_{s,t} = V_{s} {\Sigma_{j} {\rho_{mass,s,t,j}}}
 
-List of Variables (need to update)
-----------------------------------
+Sum of component mass fractions
+
+.. math:: {\Sigma_{j}} {x_{mass,s,t,j}} = 1 \space \space \space \forall \space t
+
+Solid energy holdup:
+
+.. math:: h_{energy,s,t} = V_{s} \rho_{mass,s,t} H_{mass,s,t}
+
+Solid energy accumulation:
+
+.. math:: {\dot{h}}_{energy,s,t} = - V_{s} {\Sigma}_{r} {r_{s,t,r} H_{rxn,s,t,r}}
+
+List of Variables
+-----------------
 
 .. csv-table::
    :header: "Variable", "Description", "Reference to"
 
+   ":math:`H_{mass,s,t}`", "Solid phase mass enthalpy", "``solids.enth_mass``"
+   ":math:`H_{rxn,s,t,r}`", "Solid phase reaction enthalpy", "``solids.reactions.dh_rxn``"
+   ":math:`h_{energy,s,t}`", "Energy holdup, solid phase", "``solids.energy_material_holdup``"
    ":math:`h_{mass,s,t,j}`", "Material holdup, solid phase", "``solids.solids_material_holdup``"
+   ":math:`{\dot{h}}_{energy,s,t}`", "Energy accumulation, solid phase", "``solids.solids_energy_accumulation``"
    ":math:`{\dot{h}}_{mass,s,t,j}`", "Material accumulation, solid phase", "``solids.solids_material_accumulation``"
    ":math:`r_{s,t,r}`", "Solid phase reaction rate of reaction r", "``solids.reactions.reaction_rate``"
    ":math:`S_{s,t}`", "Total mass of solids", "``solids.mass_solids``"
+   ":math:`T_{s,t,x}`", "Solid phase temperature", "``solids.temperature``"
    ":math:`x_{mass,s,t,j}`", "Mass fraction of component j, solid phase", "``solids.mass_frac_comp``"
    ":math:`V_{s}`", "Total volume of solids", "``solids.volume_solid``"
    "*Greek letters*", " ", " "
-   ":math:`\rho_{mass,s,t,j}`", "Density of solid particles of component j", "``solids.dens_mass_particle``"
-   
+   ":math:`\varepsilon`", "Reactor bed porosity", "``particle_porosity``"
+   ":math:`\rho_{mass,s,t}`", "Density of solid particles", "``solids.dens_mass_particle``"
 
-
-
-
-
-
-   
-   
-   ":math:`h_{energy,s,t}`", "Energy holdup, solid phase", "``solid_phase.heat``"
-   ":math:`a_{mass,s,t}`", "Material accumulation, solid phase", "``gas_phase.heat``"
-   ":math:`a_{energy,s,t}`", "Energy accumulation, solid phase", "``solid_phase.heat``"
-   
-   ":math:`H_{rxn,s,t,r}`", "Solid phase reaction enthalpy", "``solid_phase.reactions.reaction_rate``"
-   ":math:`T_{g,t}`", "Gas phase temperature", "``gas_phase.properties.temperature``"
-   ":math:`T_{s,t}`", "Solid phase temperature", "``solid_phase.properties.temperature``"
-   
-   
-   ":math:`\phi_{s,t}`", "Bed porosity", "``solid_phase.properties.porosity``"
-
-List of Parameters (need to update)
------------------------------------
+List of Parameters
+------------------
 
 .. csv-table::
    :header: "Parameter", "Description", "Reference to"
@@ -104,12 +131,14 @@ Initialization
 
 The initialization method for this model will save the current state of the model before
 commencing initialization and reloads it afterwards. The state of the model will be the same after
-initialization, only the initial guesses for unfixed variables will be changed.
+initialization, only the initial guesses for unfixed variables will be changed. For the FixedBed0D
+model, the initialization method is a general purpose routine for simple unit models where a single
+control volume is initalized followed by attempting to solve the entire unit.
 
 The model allows for the passing of a dictionary of values of the state variables of the gas and
 solid phases that can be used as initial guesses for the state variables throughout the time and
-spatial domains of the model. This is optional but recommended. A typical guess could be values
-of the gas and solid inlet port variables at time :math:`t=0`.
+spatial domains of the model (in this model just time). This is optional but recommended. A typical
+guess could be values of the gas and solid inlet port variables at time :math:`t=0`.
 
 The model initialization proceeds through a sequential hierarchical method where the model
 equations are deactivated at the start of the initialization routine, and the complexity of the model
@@ -117,7 +146,7 @@ is built up through activation and solution of various sub-model blocks and equa
 initialization step. At each step the model variables are updated to better guesses obtained from
 the model solution at that step.
 
-The initialization routine proceeds in as follows:
+The initialization routine proceeds as follows:
 
 *  Step 1:  Initialize the thermo-physical model blocks.
 *  Step 2:  Initialize the reaction properties.
