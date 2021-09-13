@@ -71,15 +71,24 @@ from idaes.generic_models.unit_models.pressure_changer import \
 from idaes.generic_models.unit_models.separator import SplittingType
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
+# from idaes.power_generation.properties.natural_gas_ideal import get_prop, get_rxn
 from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
 from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
     build_SOFC_ROM, initialize_SOFC_ROM
 
 import logging
 
+# # Adds Robby's research folder to path so the relevant methods can be used
+# import sys
+# sys.path.append("C:/cokoli/IDAES_2/workspace/idaes-2/idaes-pse/idaes")
+# from idaes.power_generation.properties.natural_gas_ideal import get_prop, get_rxn
+# sys.exit('stop')
+# print (sys.path)
 
-def build_power_island(m):
+
+def build_properties(m):
     # create property packages - 3 property packages and 1 reaction
+
     NG_config = get_prop(
         components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
                     'N2', 'O2', 'Ar'])
@@ -96,6 +105,26 @@ def build_power_island(m):
     m.fs.rxn_props = GenericReactionParameterBlock(
         default=get_rxn(
             m.fs.syn_props, reactions=["h2_cmb", "co_cmb", "ch4_cmb"]))
+
+def build_power_island(m):
+    # create property packages - 3 property packages and 1 reaction
+
+    # NG_config = get_prop(
+    #     components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
+    #                 'N2', 'O2', 'Ar'])
+    # m.fs.NG_props = GenericParameterBlock(default=NG_config)
+
+    # syn_config = get_prop(
+    #     components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"])
+    # m.fs.syn_props = GenericParameterBlock(default=syn_config)
+
+    # air_config = get_prop(
+    #     components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
+    # m.fs.air_props = GenericParameterBlock(default=air_config)
+
+    # m.fs.rxn_props = GenericReactionParameterBlock(
+    #     default=get_rxn(
+    #         m.fs.syn_props, reactions=["h2_cmb", "co_cmb", "ch4_cmb"]))
 
     # build anode side units
     m.fs.anode_mix = Mixer(
@@ -720,7 +749,7 @@ def set_reformer_inputs(m):
     # TODO - value of 21 psia (144790 Pa) updated to 18.4 psia (126863.5 Pa) to match NETL ASU_CPU 2015 white paper numbers
 
     # O2 from ASU to reformer    
-    m.fs.reformer_mix.oxygen_inlet.flow_mol[0] == 280  # mol/s # values is set by reformer_oxygen_rule constraint
+    m.fs.reformer_mix.oxygen_inlet.flow_mol[0] == 1280  # mol/s # values is set by reformer_oxygen_rule constraint
     m.fs.reformer_mix.oxygen_inlet.temperature.fix(288.15)  # K
     m.fs.reformer_mix.oxygen_inlet.pressure.fix(126863.5)  # Pa, 18.4 psia
     m.fs.reformer_mix.oxygen_inlet.mole_frac_comp.fix(0)
@@ -835,8 +864,8 @@ def scale_flowsheet(m):
     m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-3)
     m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-3)
 
-    iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
-    iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+    # iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
+    # iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
 
     iscale.calculate_scaling_factors(m)
     # apply scaling factors
@@ -861,7 +890,7 @@ def scale_flowsheet(m):
     m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-3)
     m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
 
-    iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
+    # iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
 
     iscale.calculate_scaling_factors(m)
 
@@ -981,7 +1010,7 @@ def initialize_power_island(m):
     copy_port_values(
         m.fs.prereformer.outlet, m.fs.prereformer.inlet)
 
-    m.fs.prereformer.gibbs_scaling = 1e-4
+    # m.fs.prereformer.gibbs_scaling = 1e-4
 
     m.fs.prereformer.lagrange_mult[0, "C"] = 9707
     m.fs.prereformer.lagrange_mult[0, "H"] = 62744
@@ -1552,19 +1581,20 @@ def main():
     #     ms.from_json(m, fname='rsofc_sofc_mode_flowsheet_init.json.gz')
 
     # else:
-    build_power_island(m)
+    # build_power_island(m)
+    build_properties(m)
     build_reformer(m)
-    set_power_island_inputs(m)
+    # set_power_island_inputs(m)
     set_reformer_inputs(m)
     scale_flowsheet(m)
-    initialize_power_island(m)
+    # initialize_power_island(m)
     initialize_reformer(m)
-    connect_reformer_to_power_island(m)
-    SOFC_ROM_setup(m)
-    print('add_SOFC_energy_balance')
-    add_SOFC_energy_balance(m)
-    print('add_result_constraints')
-    add_result_constraints(m)
+    # connect_reformer_to_power_island(m)
+    # SOFC_ROM_setup(m)
+    # print('add_SOFC_energy_balance')
+    # add_SOFC_energy_balance(m)
+    # print('add_result_constraints')
+    # add_result_constraints(m)
     # active_unfixed_vars(m)
     # print(degrees_of_freedom(m))
     # iscale.constraint_autoscale_large_jac(m)
