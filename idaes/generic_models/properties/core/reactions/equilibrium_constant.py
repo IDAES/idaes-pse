@@ -39,8 +39,9 @@ class ConstantKeq():
                 "Please ensure that this argument is included in your "
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
-              c_form == ConcentrationForm.massFraction):
-            e_units = None
+              c_form == ConcentrationForm.massFraction or
+              c_form == ConcentrationForm.activity):
+            e_units = pyunits.dimensionless
         else:
             order = 0
 
@@ -59,8 +60,7 @@ class ConstantKeq():
             for p, j in pc_set:
                 order += rblock.reaction_order[p, j].value
 
-            if (c_form == ConcentrationForm.molarity or
-                    c_form == ConcentrationForm.activity):
+            if c_form == ConcentrationForm.molarity:
                 c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
                 c_units = units["amount"]*units["mass"]**-1
@@ -105,8 +105,9 @@ class van_t_hoff():
                 "Please ensure that this argument is included in your "
                 "configuration dict.".format(rblock.name))
         elif (c_form == ConcentrationForm.moleFraction or
-              c_form == ConcentrationForm.massFraction):
-            e_units = None
+              c_form == ConcentrationForm.massFraction or
+              c_form == ConcentrationForm.activity):
+            e_units = pyunits.dimensionless
         else:
             order = 0
 
@@ -125,8 +126,7 @@ class van_t_hoff():
             for p, j in pc_set:
                 order += rblock.reaction_order[p, j].value
 
-            if (c_form == ConcentrationForm.molarity or
-                    c_form == ConcentrationForm.activity):
+            if c_form == ConcentrationForm.molarity:
                 c_units = units["density_mole"]
             elif c_form == ConcentrationForm.molality:
                 c_units = units["amount"]*units["mass"]**-1
