@@ -1,8 +1,22 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
+# by the software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
+# Research Corporation, et al.  All rights reserved.
+#
+# Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
+# license information.
+#################################################################################
 """
-Created on Thur May 14 13:45:323 2020
-@author: cokoli
+Flowsheet example of the 2-region bubbling fluidized bed (BFB) model
+for a methane combustion with iron-oxide case study
+
+Created: 05/14/2020
+
+Author: Chinedu Okoli
 """
 
 import time

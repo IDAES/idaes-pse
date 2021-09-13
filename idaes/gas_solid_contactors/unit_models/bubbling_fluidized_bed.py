@@ -32,7 +32,7 @@ Solid superficial velocity is constant throughout the bed
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, Param, Reals, SolverFactory,
+from pyomo.environ import (Var, Param, Reals,
                            TerminationCondition, Constraint,
                            TransformationFactory, sqrt, value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In

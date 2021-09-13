@@ -36,7 +36,7 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
+from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
                            TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -736,7 +736,7 @@ see reaction package for documentation.}"""))
             def prandtl_number(b, t, x):
                 return (b.Pr[t, x] *
                         b.gas_phase.properties[t, x].therm_cond ==
-                        b.solid_phase.properties[t, x].cp_mass *  # should this be gas_phase.cp_mass?
+                        b.gas_phase.properties[t, x].cp_mass *
                         b.gas_phase.properties[t, x].visc_d)
 
             # Particle Nusselt number
@@ -988,7 +988,7 @@ see reaction package for documentation.}"""))
                         for j in gas_phase.property_package.component_list:
                             (gas_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.gas_phase.config.transformation_scheme 
+                                (blk.gas_phase.config.transformation_scheme
                                     != "FORWARD"
                                  and x == blk.length_domain.first()) or
                                 (blk.gas_phase.config.transformation_scheme
@@ -1038,7 +1038,7 @@ see reaction package for documentation.}"""))
                         for j in solid_phase.property_package.component_list:
                             (solid_rxn_gen[t, x, p, j].unfix())
                             if not (
-                                (blk.solid_phase.config.transformation_scheme 
+                                (blk.solid_phase.config.transformation_scheme
                                     != "FORWARD"
                                  and x == blk.length_domain.first()) or
                                 (blk.solid_phase.config.transformation_scheme
