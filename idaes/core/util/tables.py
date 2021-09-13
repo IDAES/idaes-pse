@@ -91,7 +91,17 @@ def stream_states_dict(streams, time_point=0):
     for n in streams.keys():
         if isinstance(streams[n], Arc):
             for i, a in streams[n].items():
-                sb = _get_state_from_port(a.ports[1], time_point)
+                try: 
+                    # if getting the StateBlock from the destination port
+                    # fails for any reason try the source port. This could
+                    # happen if a port does not have an associated 
+                    # StateBlock. For example a surrogate model may not
+                    # use state blocks, unit models may handle physical
+                    # properties without state blocks, or the port could
+                    # be used to serve the purpose of a translator block.
+                    sb = _get_state_from_port(a.ports[1], time_point)
+                except:
+                    sb = _get_state_from_port(a.ports[0], time_point)
                 _stream_dict_add(sb, n, i)
         elif isinstance(streams[n], Port):
             sb = _get_state_from_port(streams[n], time_point)
@@ -269,21 +279,21 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
 
 def _get_state_from_port(port,time_point):
     """
-    Attempt to find a StateBlock-like object connected to a Port. If the 
+    Attempt to find a StateBlock-like object connected to a Port. If the
     object is indexed both in space and time, assume that the time index
     comes first.  If no components are assigned to the Port, raise a
     ValueError. If the first component's parent block has no index, raise an
     AttributeError. If different variables on the port appear to be connected
     to different state blocks, raise a RuntimeError.
-    
+
     Args:
-        port (pyomo.network.Port): a port with variables derived from some 
+        port (pyomo.network.Port): a port with variables derived from some
             single StateBlock
         time_point : point in the time domain at which to index StateBlock
             (default = 0)
 
     Returns:
-        (StateBlock-like) : an object containing all the components contained 
+        (StateBlock-like) : an object containing all the components contained
             in the port.
     """
     vlist = list(port.iter_vars())
