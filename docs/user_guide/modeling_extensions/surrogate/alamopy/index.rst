@@ -41,7 +41,7 @@ Possible arguments to be passed to ALAMO through do alamo and additional argumen
 * zlabels - list of strings to label the output variables
 * functions - logfcns, expfcns, cosfcns, sinfcns, linfcns, intercept. These are '0-1' options to activate these functions
 * monomialpower, multi2power, multi3power, ratiopower. List of terms to be used in the respective basis functions
-* modeler - integer 1-7 determines the choice of fitness metrice
+* modeler - integer 1-7 determines the choice of fitness metric
 * solvemip - '0-1' option that will force the solving of the .gms file
 
 

@@ -81,7 +81,7 @@ The output for HELMET is a single equation representing Helmholtz energy. Partia
 HELMET Examples
 ----------------
 
-The provided HELMET example uses data modified for this application and made available by the IAPWS orgnization at http://www.iapws.org/95data.html for IAPWS Formulation 1995 for Thermodynamic Properties of Odrinary Water Substance for General and Scientific Use.
+The provided HELMET example uses data modified for this application and made available by the IAPWS orgnization at http://www.iapws.org/95data.html for IAPWS Formulation 1995 for Thermodynamic Properties of Ordinary Water Substance for General and Scientific Use.
 
 
 ..   import helmet.Helmet as Helmet
