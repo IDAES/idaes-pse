@@ -72,13 +72,13 @@ from idaes.generic_models.unit_models.separator import SplittingType
 from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
 # from idaes.power_generation.properties.natural_gas_ideal import get_prop, get_rxn
-from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn
+from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
 from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
     build_SOFC_ROM, initialize_SOFC_ROM
 
 import logging
 
-# # Adds Robby's research folder to path so the relevant methods can be used
+# # Adds path so the relevant methods can be used
 # import sys
 # sys.path.append("C:/cokoli/IDAES_2/workspace/idaes-2/idaes-pse/idaes")
 # from idaes.power_generation.properties.natural_gas_ideal import get_prop, get_rxn
@@ -91,15 +91,15 @@ def build_properties(m):
 
     NG_config = get_prop(
         components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
-                    'N2', 'O2', 'Ar'])
+                    'N2', 'O2', 'Ar'], phases=["Vap"], eos=EosType.IDEAL)
     m.fs.NG_props = GenericParameterBlock(default=NG_config)
 
     syn_config = get_prop(
-        components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"])
+        components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"], phases=["Vap"], eos=EosType.IDEAL)
     m.fs.syn_props = GenericParameterBlock(default=syn_config)
 
     air_config = get_prop(
-        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'])
+        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'], phases=["Vap"], eos=EosType.IDEAL)
     m.fs.air_props = GenericParameterBlock(default=air_config)
 
     m.fs.rxn_props = GenericReactionParameterBlock(
@@ -864,8 +864,8 @@ def scale_flowsheet(m):
     m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-3)
     m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-3)
 
-    # iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
-    # iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+    iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
+    iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
 
     iscale.calculate_scaling_factors(m)
     # apply scaling factors
@@ -891,8 +891,108 @@ def scale_flowsheet(m):
     m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
 
     # iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
+  
+    # Scale power island sub-flowsheet variables   
+    for (t, x), v in m.fs.anode_mix.minimum_pressure.items():
+        iscale.set_scaling_factor(m.fs.anode_mix.minimum_pressure, 1e-5)       
+    for (t, x), v in m.fs.cathode_mix.minimum_pressure.items():
+        iscale.set_scaling_factor(m.fs.cathode_mix.minimum_pressure, 1e-5)    
+    for (t, x), v in m.fs.combustor_mix.minimum_pressure.items():
+        iscale.set_scaling_factor(m.fs.combustor_mix.minimum_pressure, 1e-5)     
+    
+    # Scale reformer sub-flowsheet variables
+    for (t, x), v in m.fs.reformer_mix.minimum_pressure.items():
+        iscale.set_scaling_factor(m.fs.reformer_mix.minimum_pressure, 1e-5)    
+        
+    for (t, x), v in m.fs.bypass_rejoin.minimum_pressure.items():
+        iscale.set_scaling_factor(m.fs.bypass_rejoin.minimum_pressure, 1e-5)
+        
+    for (t, e), v in m.fs.reformer.lagrange_mult.items():
+        iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-3)
+        
+    for t, v in m.fs.reformer_recuperator.area.items():
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-2)
+
 
     iscale.calculate_scaling_factors(m)
+
+
+    # # Scale some power island constraints
+    # # TODO - reformer model only solves when this is scaled to 1e-20
+    for (t, p, j), c in m.fs.prereformer.gibbs_minimization.items():
+        iscale.constraint_scaling_transform(c, 1e-20, overwrite=True)
+    for (t, p, j), c in m.fs.anode.gibbs_minimization.items():
+        iscale.constraint_scaling_transform(c, 1e-20, overwrite=True)
+
+    for (t, n), c in m.fs.cathode_mix.minimum_pressure_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for (t, n), c in m.fs.combustor_mix.minimum_pressure_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for (t, n), c in m.fs.anode_mix.minimum_pressure_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for t, c in m.fs.anode_translator.anode_translator_P.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for t, c in m.fs.cathode_translator.cathode_translator_P.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for t, c in m.fs.recycle_translator.recycle_translator_P.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for t, c in m.fs.fuel_cell_mix.ion_mix_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for t, c in m.fs.anode_mix.mixture_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)    
+    for t, c in m.fs.cathode_mix.mixture_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True) 
+    for t, c in m.fs.combustor_mix.mixture_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True) 
+
+    for t, c in m.fs.anode_hx.heat_transfer_equation.items():
+        iscale.constraint_scaling_transform(c, 1e-4, overwrite=True)     
+    for t, c in m.fs.cathode_hx.heat_transfer_equation.items():
+        iscale.constraint_scaling_transform(c, 1e-4, overwrite=True)
+    for t, c in m.fs.anode_hx.unit_heat_balance.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True) 
+    for t, c in m.fs.cathode_hx.unit_heat_balance.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for (t, e), c in m.fs.prereformer.control_volume.element_balances.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (t, e), c in m.fs.anode.control_volume.element_balances.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+
+    for t, c in m.fs.anode_translator.anode_translator_F.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True) 
+    for t, c in m.fs.cathode_translator.cathode_translator_F.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True) 
+    for t, c in m.fs.recycle_translator.recycle_translator_F.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True) 
+
+    # Scale some power island constraints
+    # TODO - reformer model only solves when this is scaled to 1e-20
+    for (t, p, j), c in m.fs.reformer.gibbs_minimization.items():
+        iscale.constraint_scaling_transform(c, 1e-20, overwrite=True)
+
+    for t, c in m.fs.bypass_rejoin.mixture_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for t, c in m.fs.reformer_mix.mixture_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for t, c in m.fs.reformer_recuperator.unit_heat_balance.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for t, c in m.fs.reformer_recuperator.heat_transfer_equation.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+        
+    for (t, n), c in m.fs.reformer_mix.minimum_pressure_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for (t, n), c in m.fs.bypass_rejoin.minimum_pressure_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    iscale.calculate_scaling_factors(m)
+
+    # m.fs.reformer.control_volume.properties_in[0.0].mole_frac_comp.setlb(0)
 
 
 def initialize_power_island(m):
@@ -1559,16 +1659,29 @@ def main():
     # solver and options
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
-        'bound_push': 1e-16,
-        # 'tol': 1e-3,
-        # "bound_push": 1e-10,
-        'halt_on_ampl_error': 'yes',
+        'bound_push': 1e-8,
+        'tol': 1e-3,
+        # 'halt_on_ampl_error': 'yes',
         'max_iter': 200,
+        "nlp_scaling_method": "user-scaling",
         # 'mu_init':1e-3,
-        # 'ma27_pivtol': 0.05,
-        # 'ma27_pivtolmax': 0.9,
-        'linear_solver': 'ma27'
+        'ma57_pivtol': 0.8,
+        'ma57_pivtolmax': 0.9,
+        'linear_solver': 'ma57'
                     }
+
+# def get_solver():
+#     use_idaes_solver_configuration_defaults()
+#     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
+#     idaes.cfg.ipopt["options"]["tol"] = 1e-7
+#     # due to a lot of component mole fractions being on their lower bound of 0
+#     # bound push result in much longer solve times, so set it low.
+#     idaes.cfg.ipopt["options"]["bound_push"] = 1e-9
+#     idaes.cfg.ipopt["options"]["linear_solver"] = "ma27"
+#     idaes.cfg.ipopt["options"]["max_iter"] = 400
+#     #idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-1
+#     #idaes.cfg.ipopt["options"]["ma57_pivtol"] = 1e-1
+#     return pyo.SolverFactory("ipopt")
 
     # if os.path.exists('rsofc_sofc_mode_flowsheet_init.json.gz'):
     #     build_power_island(m)
@@ -1581,26 +1694,27 @@ def main():
     #     ms.from_json(m, fname='rsofc_sofc_mode_flowsheet_init.json.gz')
 
     # else:
-    # build_power_island(m)
     build_properties(m)
+    build_power_island(m)
     build_reformer(m)
-    # set_power_island_inputs(m)
+    set_power_island_inputs(m)
     set_reformer_inputs(m)
     scale_flowsheet(m)
-    # initialize_power_island(m)
+    initialize_power_island(m)
     initialize_reformer(m)
-    # connect_reformer_to_power_island(m)
+    connect_reformer_to_power_island(m)
     # SOFC_ROM_setup(m)
     # print('add_SOFC_energy_balance')
     # add_SOFC_energy_balance(m)
     # print('add_result_constraints')
     # add_result_constraints(m)
     # active_unfixed_vars(m)
-    # print(degrees_of_freedom(m))
+    print(degrees_of_freedom(m))
     # iscale.constraint_autoscale_large_jac(m)
+    # check_scaling(m)
     print('solve_flowsheet')
     solver.solve(m, tee=True, symbolic_solver_labels=True)
-    ms.to_json(m, fname='rsofc_sofc_mode_flowsheet_init.json.gz')
+    # ms.to_json(m, fname='rsofc_sofc_mode_flowsheet_init.json.gz')
 
     # # uncomment to report results
     # make_stream_dict(m)
@@ -1612,4 +1726,4 @@ def main():
 # %%       # ------------------------------------------------------------------
 if __name__ == "__main__":
     m = main()
-    # check_scaling(m)
+    check_scaling(m)
