@@ -617,8 +617,9 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
         2. Maintenance labor
         3. Admin and support labor
         4. Property taxes and insurance
-        5. Total fixed O&M cost
-        6. Maintenance materials (actually a variable cost, but scales off TPC)
+        5. Other fixed costs
+        6. Total fixed O&M cost
+        7. Maintenance materials (actually a variable cost, but scales off TPC)
     These costs apply to the project as a whole and are scaled based on the
     total TPC.
     Args:
@@ -711,6 +712,14 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
         initialize=4,
         bounds=(0, 100),
         doc="total fixed O&M costs in $MM/yr")
+
+    # variable for user to assign other fixed costs to, fixed to 0 by default
+    m.fs.costing.other_fixed_costs = Var(
+        initialize=0,
+        bounds=(0, 100),
+        doc="other fixed costs in $MM/yr")
+    m.fs.costing.other_fixed_costs.fix(0)
+
     # maintenance material cost is technically a variable cost, but it makes
     # more sense to include with the fixed costs becuase it uses TPC
     m.fs.costing.maintenance_material_cost = Var(
@@ -752,7 +761,8 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
         return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
                                          c.maintenance_labor_cost +
                                          c.admin_and_support_labor_cost +
-                                         c.property_taxes_and_insurance)
+                                         c.property_taxes_and_insurance +
+                                         c.other_fixed_costs)
 
     # technology specific percentage of TPC
     @m.fs.costing.Constraint()
