@@ -839,7 +839,8 @@ def test_initialize_by_time_element():
     ntcp = 2
     m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True,
-                                   'time_set': time_set})
+                                   'time_set': time_set,
+                                   'time_units': pyunits.s})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
