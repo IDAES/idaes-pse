@@ -16,6 +16,19 @@ def create_test_model(p):
     m.c3 = pyo.Constraint(expr = m.y1+m.y2>=p)
     return m
 
+def create_no_args_model():
+    m = pyo.ConcreteModel()
+
+    m.x1 = pyo.Var(within=pyo.NonNegativeReals)
+    m.y1 = pyo.Var(within=pyo.NonNegativeReals)
+    m.x2 = pyo.Var(within=pyo.NonNegativeReals)
+    m.y2 = pyo.Var(within=pyo.NonNegativeReals)
+
+    m.c1 = pyo.Constraint(expr = m.x1+m.y1==2)
+    m.c2 = pyo.Constraint(expr = m.x1+m.x2<=3)
+    m.c3 = pyo.Constraint(expr = m.y1+m.y2>=3)
+    return m
+
 def get_link_variables(b1,b2):
     return [(b1.x2,b2.x1),(b1.y2,b2.y1)]
 
@@ -77,3 +90,25 @@ def test_advance_time():
 
     assert m.nvariables() == 16
     assert m.nconstraints() == 12 + 6 + 1
+
+@pytest.mark.unit
+def test_build_model_no_args():
+    n_time_points = 4
+    mp = MultiPeriodModel(n_time_points, create_no_args_model, get_link_variables,
+    periodic_variable_func=get_periodic_variables)
+
+    assert mp.current_time == None
+    assert mp.n_time_points == 4
+    assert mp.create_process_model == create_no_args_model
+    assert mp.get_linking_variable_pairs == get_link_variables
+    assert mp.get_periodic_variable_pairs == get_periodic_variables
+
+    mp.build_multi_period_model()
+    m = mp.pyomo_model
+
+    assert len(m.TIME) == 4
+    assert m.nvariables() == 16
+    assert m.nconstraints() == 12 + 6 + 1
+
+    blks = mp.get_active_process_blocks()
+    assert len(blks) == 4

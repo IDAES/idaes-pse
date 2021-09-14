@@ -43,7 +43,7 @@ class MultiPeriodModel:
         #self.initialization_points = None   #library of possible initial points
         #self.initialize_func = None         #function to perform the initialize
 
-    def build_multi_period_model(self, model_data_kwargs={}):
+    def build_multi_period_model(self, model_data_kwargs=None):
         """
             Build a multi-period capable model using user-provided functions
 
@@ -53,7 +53,11 @@ class MultiPeriodModel:
                                    `time` dictionary is passed to the
                                    `create_process_model` function
         """
+        #use default empty dictionaries if no kwargs dict provided
+        if model_data_kwargs == None:
+            model_data_kwargs = {t:{} for t in range(self.n_time_points)}
         assert(list(range(len(model_data_kwargs)))==sorted(model_data_kwargs))
+
         m = pyo.ConcreteModel()
         m.TIME = pyo.Set(initialize=range(self.n_time_points))
 
@@ -138,34 +142,39 @@ class MultiPeriodModel:
         #                       m.blocks[current_time].process,
         #                       state_variable_pairs)
 
-    """
-        Retrieve the underlying pyomo model
-    """
+
     @property
     def pyomo_model(self):
+        """
+            Retrieve the underlying pyomo model
+        """
         return self._pyomo_model
 
-    """
-        Retrieve the current multiperiod model time
-    """
     @property
     def current_time(self):
+        """
+            Retrieve the current multiperiod model time
+        """
         return self._first_active_time
 
-    """
-        Retrieve the active time blocks of the pyomo model
-    """
     def get_active_process_blocks(self):
+        """
+            Retrieve the active time blocks of the pyomo model
+        """
         return [b.process for b in self._pyomo_model.blocks.values() if b.process.active]
 
-    #create linking constraint on the "from block"
     def _create_linking_constraints(self,b1,variable_pairs):
+        """
+            Create linking constraint on `b1` using `variable_pairs`
+        """
         b1.link_constraints = pyo.Constraint(range(len(variable_pairs)))
         for (i,pair) in enumerate(variable_pairs):
             b1.link_constraints[i] = pair[0]==pair[1]
 
-    #create periodic constraint on the "from block"
     def _create_periodic_constraints(self,b1,variable_pairs):
+        """
+            Create periodic linking constraint on `b1` using `variable_pairs`
+        """
         b1.periodic_constraints = pyo.Constraint(range(len(variable_pairs)))
         for (i,pair) in enumerate(variable_pairs):
             b1.periodic_constraints[i] = pair[0]==pair[1]

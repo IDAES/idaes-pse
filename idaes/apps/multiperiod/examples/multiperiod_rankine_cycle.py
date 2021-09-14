@@ -1,12 +1,11 @@
-from simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
-from idaes.apps.multiperiod.multiperiod import MultiPeriodModel
 import pyomo.environ as pyo
 import numpy as np
 from random import random
+from idaes.apps.multiperiod.multiperiod import MultiPeriodModel
+from idaes.apps.multiperiod.examples.simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
 
-"""
-    Example driver for multiperiod.py using a simple rankine cycle
-"""
+#Example driver for multiperiod.py using a simple rankine cycle
+
 #Create a steady-state ranking cycle model, note yet multi-period capable
 def create_ss_rankine_model():
     p_lower_bound = 300
@@ -35,6 +34,9 @@ def create_ss_rankine_model():
 #Create a multiperiod capable steady-state rankine cycle model. This is a
 #user-provided function to a MultiPeriod class
 def create_mp_rankine_block(lmp_signal):
+    """
+        lmp_signal: price for time period
+    """
     m = create_ss_rankine_model()
     b1 = m.rankine
 
@@ -70,9 +72,13 @@ def create_mp_rankine_block(lmp_signal):
     m.cost = pyo.Expression(expr=-(m.revenue - b1.fs.operating_cost))
     return m
 
-#Function to retrieve variable pairs linked between time steps. This is a
-#user-provided function to a MultiPeriod class
+#Function to retrieve variable pairs linked between time steps.
+#This is a user-provided function to a MultiPeriod class
 def get_rankine_link_variable_pairs(b1,b2):
+    """
+        b1: current time block
+        b2: next time block
+    """
     return [(b1.rankine.next_power_output,b2.rankine.power_output),
             (b1.battery.next_soc,b2.battery.soc)]
 
