@@ -48,7 +48,7 @@ are mixed before entering drum
 Created: August 19 2020
 """
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 import pyomo.environ as pyo
 # Import IDAES cores
 from idaes.core import (
@@ -62,9 +62,9 @@ from idaes.core import (
 )
 import idaes.logger as idaeslog
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 # Additional import for the unit operation
-from pyomo.environ import SolverFactory, Var, asin, cos
+from pyomo.environ import Var, asin, cos
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 from pyomo.network import Port
@@ -88,7 +88,7 @@ class DrumData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
@@ -99,7 +99,7 @@ class DrumData(UnitModelBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -145,7 +145,7 @@ Must be True if dynamic = True,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -154,7 +154,7 @@ Must be True if dynamic = True,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
