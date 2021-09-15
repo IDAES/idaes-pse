@@ -16,7 +16,6 @@ from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
 
-from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 
 _log = idaeslog.getLogger(__name__)
@@ -90,23 +89,35 @@ def stream_states_dict(streams, time_point=0):
         stream_dict[key] = sb
 
     for n in streams.keys():
-        try:
-            if isinstance(streams[n], Arc):
-                for i, a in streams[n].items():
+        if isinstance(streams[n], Arc):
+            for i, a in streams[n].items():
+                try: 
+                    # if getting the StateBlock from the destination port
+                    # fails for any reason try the source port. This could
+                    # happen if a port does not have an associated 
+                    # StateBlock. For example a surrogate model may not
+                    # use state blocks, unit models may handle physical
+                    # properties without state blocks, or the port could
+                    # be used to serve the purpose of a translator block.
                     sb = _get_state_from_port(a.ports[1], time_point)
-                    _stream_dict_add(sb, n, i)
-            elif isinstance(streams[n], Port):
-                sb = _get_state_from_port(streams[n], time_point)
-                _stream_dict_add(sb, n)
-            else:
+                except:
+                    sb = _get_state_from_port(a.ports[0], time_point)
+                _stream_dict_add(sb, n, i)
+        elif isinstance(streams[n], Port):
+            sb = _get_state_from_port(streams[n], time_point)
+            _stream_dict_add(sb, n)
+        else:
+            # _IndexedStateBlock is a private class, so cannot directly test
+            # whether  streams[n] is one or not.
+            try:
                 sb = streams[n][time_point]
-                _stream_dict_add(sb, n)
-        except (AttributeError, KeyError):
-            raise TypeError(
-                f"Unrecognised component type for stream argument {streams[n]}."
-                f" The stream_states_dict function only supports Arcs, "
-                f"Ports or StateBlocks."
-            )
+            except KeyError as err:
+                raise TypeError(
+                    f"Either component type of stream argument {streams[n]} "
+                    f"is unindexed or {time_point} is not a member of its "
+                    f"indexing set."
+                ) from err
+            _stream_dict_add(sb, n)
     return stream_dict
 
 
@@ -266,22 +277,58 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
         na_rep=na_rep, justify=justify, float_format=float_format, **kwargs
     )
 
+def _get_state_from_port(port,time_point):
+    """
+    Attempt to find a StateBlock-like object connected to a Port. If the
+    object is indexed both in space and time, assume that the time index
+    comes first.  If no components are assigned to the Port, raise a
+    ValueError. If the first component's parent block has no index, raise an
+    AttributeError. If different variables on the port appear to be connected
+    to different state blocks, raise a RuntimeError.
 
-def _get_state_from_port(port, time_point):
-    # Check port for _state_block attribute
+    Args:
+        port (pyomo.network.Port): a port with variables derived from some
+            single StateBlock
+        time_point : point in the time domain at which to index StateBlock
+            (default = 0)
+
+    Returns:
+        (StateBlock-like) : an object containing all the components contained
+            in the port.
+    """
+    vlist = list(port.iter_vars())
+    states = [v.parent_block().parent_component() for v in vlist]
+
+    if len(vlist) == 0:
+        raise ValueError(
+            f"No block could be retrieved from Port {port.name} "
+            f"because it contains no components."
+            )
+    # Check the number of indices of the parent property block. If its indexed
+    # both in space and time, keep the second, spatial index and throw out the
+    # first, temporal index. If that ordering is changed, this method will
+    # need to be changed as well.
     try:
-        if len(port._state_block) == 1:
-            return port._state_block[0][time_point]
-        else:
-            return port._state_block[0][time_point, port._state_block[1]]
-    except AttributeError:
-        # Port was not created by IDAES add_port methods. Return exception for
-        # the user to fix.
-        raise ConfigurationError(
-            f"Port {port.name} does not have a _state_block attribute, "
-            f"thus cannot determine StateBlock to use for collecting data."
-            f" Please provide the associated StateBlock instead, or use "
-            f"the IDAES add_port methods to create the Port."
+        idx = vlist[0].parent_block().index()
+    except AttributeError as err:
+        raise AttributeError(
+                f"No block could be retrieved from Port {port.name} "
+                f"because block {vlist[0].parent_block().name} has no index."
+                ) from err
+    # Assuming the time index is always first and the spatial indices are all
+    # the same
+    if isinstance(idx,tuple):
+        idx = (time_point,vlist[0].parent_block().index()[1:])
+
+    else:
+        idx = (time_point,)
+    # This method also assumes that ports with different spatial indices won't
+    # end up at the same port. Otherwise this check is insufficient.
+    if all(states[0] is s for s in states):
+        return states[0][idx]
+    raise RuntimeError(
+        f"No block could be retrieved from Port {port.name} "
+        f"because components are derived from multiple blocks."
         )
 
 
