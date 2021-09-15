@@ -36,10 +36,10 @@ from __future__ import division
 import matplotlib.pyplot as plt
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, Param, Reals, value, SolverFactory,
+from pyomo.environ import (Var, Param, Reals, value,
                            TransformationFactory, Constraint,
                            TerminationCondition)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.dae import ContinuousSet
 
@@ -162,7 +162,7 @@ solid side flows from 1 to 0"""))
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -184,7 +184,7 @@ constructed,
     _PhaseTemplate = UnitModelBlockData.CONFIG()
     _PhaseTemplate.declare("has_equilibrium_reactions", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
