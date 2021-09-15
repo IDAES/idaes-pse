@@ -439,6 +439,9 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
         # by the user.
         measurements = [dae_map[var] for var in measurements]
         category_list_map[VariableCategory.MEASUREMENT] = measurements
+    if inputs is not None:
+        inputs = [dae_map[var] for var in inputs]
+        category_list_map[VariableCategory.INPUT] = inputs
     # NOTE: `ref` could be a regular time-indexed component (not a reference),
     # and thus won't have a `referent` attribute. Can check with `is_reference`
     category_dict = {
