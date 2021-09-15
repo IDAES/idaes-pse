@@ -21,13 +21,17 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (
     Var,
+    Param,
+    Expression,
     log,
     Reference,
     PositiveReals,
     SolverFactory,
     ExternalFunction,
     Block,
-    units as pyunits
+    units as pyunits,
+    NonNegativeReals,
+    value,
 )
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -136,6 +140,34 @@ def delta_temperature_lmtd_callback(b):
     @b.Expression(b.flowsheet().time)
     def delta_temperature(b, t):
         return (dT1[t] - dT2[t]) / log(dT1[t] / dT2[t])
+
+def delta_temperature_lmtd2_callback(b):
+    """
+    This is a callback for a temperature difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD).  It can be supplied to "delta_temperature_callback"
+    HeatExchanger configuration option.
+    """
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+
+    @b.Expression(b.flowsheet().time)
+    def delta_temperature(b, t):
+        return (dT2[t] - dT1[t]) / log(dT2[t] / dT1[t])
+
+def delta_temperature_lmtd3_callback(b):
+    """
+    This is a callback for a temperature difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD).  It can be supplied to "delta_temperature_callback"
+    HeatExchanger configuration option.
+    """
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+
+    @b.Expression(b.flowsheet().time)
+    def delta_temperature(b, t):
+        return (dT2[t] - dT1[t]) / (log(dT2[t]) - log(dT1[t]))
 
 
 def delta_temperature_amtd_callback(b):

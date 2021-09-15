@@ -565,17 +565,14 @@ objects linked to all inlet states and the mixed state,
                 doc="Material mixing equations",
             )
             def material_mixing_equations(b, t, p, j):
-                if (p, j) in pc_set:
-                    return 0 == (
-                        sum(
-                            inlet_blocks[i][t].get_material_flow_terms(p, j)
-                            for i in range(len(inlet_blocks))
-                        )
-                        - mixed_block[t].get_material_flow_terms(p, j)
-                        + phase_equilibrium_term(b, t, p, j)
+                return 0 == (
+                    sum(
+                        inlet_blocks[i][t].get_material_flow_terms(p, j)
+                        for i in range(len(inlet_blocks))
                     )
-                else:
-                    return Constraint.Skip
+                    - mixed_block[t].get_material_flow_terms(p, j)
+                    + phase_equilibrium_term(b, t, p, j)
+                )
 
         elif mb_type == MaterialBalanceType.componentTotal:
             # Write phase-component balances
@@ -998,19 +995,16 @@ objects linked to all inlet states and the mixed state,
         if hasattr(self, "material_mixing_equations"):
             if mb_type == MaterialBalanceType.componentPhase:
                 for (t, p, j), c in self.material_mixing_equations.items():
-                    try: # not all phases contain all components
-                        flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
-                    except KeyError:
-                        continue
+                    flow_term = self.mixed_state[t].get_material_flow_terms(p, j)
                     s = iscale.get_scaling_factor(flow_term, default=1)
                     iscale.constraint_scaling_transform(c, s, overwrite=False)
             elif mb_type == MaterialBalanceType.componentTotal:
                 for (t, j), c in self.material_mixing_equations.items():
                     for i, p in enumerate(self.mixed_state.phase_list):
-                        try: # not all phases contain all components
+                        try:
                             ft = self.mixed_state[t].get_material_flow_terms(p, j)
-                        except KeyError:
-                            continue
+                        except (KeyError, AttributeError):
+                            continue # component not in phase
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:
@@ -1021,10 +1015,7 @@ objects linked to all inlet states and the mixed state,
                 pc_set = self.mixed_state.phase_component_set
                 for t, c in self.material_mixing_equations.items():
                     for i, (p, j) in enumerate(pc_set):
-                        try: # not all phases contain all components
-                            ft = self.mixed_state[t].get_material_flow_terms(p, j)
-                        except KeyError:
-                            continue
+                        ft = self.mixed_state[t].get_material_flow_terms(p, j)
                         if i == 0:
                             s = iscale.get_scaling_factor(ft, default=1)
                         else:

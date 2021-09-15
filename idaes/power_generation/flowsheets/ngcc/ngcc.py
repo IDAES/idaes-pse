@@ -577,7 +577,7 @@ def get_model():
     iscale.constraint_scaling_transform(m.fs.costing.annual_labor_cost_rule, 1e-6)
     for t in m.fs.reboiler.reboiler_condense_eqn:
         iscale.constraint_scaling_transform(m.fs.reboiler.reboiler_condense_eqn[t], 1e-3)
-    for t, c in m.fs.total_TPC_eq.items():
+    for t, c in m.fs.costing.total_TPC_eq.items():
         iscale.constraint_scaling_transform(c, 1e-2)
 
     return m, solver
