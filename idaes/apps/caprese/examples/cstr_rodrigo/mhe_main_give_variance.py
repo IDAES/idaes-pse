@@ -122,7 +122,8 @@ def main():
             v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
             ]
     measurement_noise_bounds = [
-            (var[c_t0].lb, var[c_t0].ub) for var in estimator.measurement_vars
+            (var[c_t0].lb, var[c_t0].ub)
+            for var in estimator.MEASUREMENT_BLOCK[:].var
             ]
     #-------------------------------------------------------------------------
     

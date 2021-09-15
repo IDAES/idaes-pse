@@ -137,7 +137,8 @@ def main():
             v.variance for v in controller.MEASUREMENT_BLOCK[:].var
             ]
     measurement_noise_bounds = [
-            (var[c_t0].lb, var[c_t0].ub) for var in controller.measurement_vars
+            (var[c_t0].lb, var[c_t0].ub)
+            for var in controller.MEASUREMENT_BLOCK[:].var
             ]
     
     # noise for inputs
