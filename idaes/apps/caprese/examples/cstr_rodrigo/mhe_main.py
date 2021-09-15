@@ -126,9 +126,12 @@ def main():
         (mhe.estimator.mod.Ca[0], 1.0E-2),
         ]
     mhe.estimator.set_variance(variance)
-    measurement_variance = [v.variance for v in estimator.measurement_vars]
+    measurement_variance = [
+            v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
+            ]
     measurement_noise_bounds = [
-            (var[c_t0].lb, var[c_t0].ub) for var in estimator.measurement_vars
+            (var[c_t0].lb, var[c_t0].ub)
+            for var in estimator.MEASUREMENT_BLOCK[:].var
             ]
     #-------------------------------------------------------------------------
 
@@ -174,6 +177,7 @@ def main():
                     measurement_variance,
                     random.gauss,
                     measurement_noise_bounds,
+                    max_number_discards=5,
                     )
 
         mhe.estimator.advance_one_sample()

@@ -25,6 +25,7 @@ from idaes.apps.caprese.common.config import (
 from idaes.apps.caprese.common.config import VariableCategory as VC
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
+        categorize_dae_variables_and_constraints,
         CATEGORY_TYPE_MAP,
         )
 from idaes.apps.caprese.dynamic_var import (
@@ -47,6 +48,7 @@ from pyomo.environ import (
         Reference,
         TransformationFactory,
         Var,
+        Constraint,
         Set,
         ComponentUID,
         Suffix,
@@ -87,6 +89,7 @@ class _DynamicBlockData(_BlockData):
         """ Generates time-indexed references and categorizes them. """
         model = self.mod
         time = self.time
+        t0 = time.first()
         try:
             inputs = self._inputs
         except AttributeError:
@@ -95,26 +98,26 @@ class _DynamicBlockData(_BlockData):
             measurements = self._measurements
         except AttributeError:
             measurements = self._measurements = None
-            
-        
-        # Categorization has already been done in estimator.py, 
-        # so we don't do it again here.
-        if hasattr(self, "already_categorized_for_MHE") and \
-            self.already_categorized_for_MHE:
-            category_dict = self.category_dict #local variable is used in the rest of this function
-            
-            # CATEGORY_TYPE_MAP[VC.ACTUALMEASUREMENT] = ActualMeasurementVar
-            # CATEGORY_TYPE_MAP[VC.MEASUREMENTERROR] = MeasurementErrorVar
-            # CATEGORY_TYPE_MAP[VC.MODELDISTURBANCE] = ModelDisturbanceVar
 
-        # TODO: Give the user the option to provide their own
-        # category_dict (they know the structure of their model
-        # better than I do...)
-        elif self._category_dict is not None:
-            category_dict = self.category_dict = self._category_dict
-            if (VC.INPUT not in category_dict and inputs is not None):
+        # TODO: The logic here is way too complicated
+        categorize_variables = False
+        categorize_constraints = False
+        if self._category_dict is None:
+            # User did not provide a category dict. We must categorize
+            # variables
+            categorize_variables = True
+        else:
+            # User provided a variable category dict
+            category_dict = self._category_dict
+            self.category_dict = self._category_dict
+            if VC.INPUT not in category_dict and inputs is not None:
+                # If the user provided inputs but did not put them in
+                # the category dict
                 self.category_dict[VC.INPUT] = inputs
-            if (VC.MEASUREMENT not in category_dict and measurements is not None):
+            if (VC.MEASUREMENT not in category_dict
+                    and measurements is not None):
+                # If the user provided measurements but did not put them
+                # in the category dict
                 self.category_dict[VC.MEASUREMENT] = measurements
             self.dae_vars = []
             for categ, varlist in category_dict.items():
@@ -122,22 +125,68 @@ class _DynamicBlockData(_BlockData):
                     # Assume that measurements are duplicates
                     self.dae_vars.extend(varlist)
 
+        if self._con_category_dict is None:
+            if self._categorize_constraints:
+                # User (a) requested constraint categorization and (b)
+                # did not provided a constraint category dict
+                categorize_constraints = True
         else:
+            # User provided a constraint category dict
+            con_category_dict = self._con_category_dict
+            self.con_category_dict = self._con_category_dict
+
+        if categorize_constraints and not categorize_variables:
+            raise RuntimeError(
+                "If constraint categorization is requested, both or "
+                "neither category dicts must be provided. \n"
+                "Variable category dict was provided but constraint "
+                "category dict was not."
+            )
+
+        if categorize_variables or categorize_constraints:
+            # Either way, we need flattened variables
             scalar_vars, dae_vars = flatten_dae_components(
-                    model,
-                    time,
-                    ctype=Var,
-                    )
+                model, time, ctype=Var
+            )
             self.scalar_vars = scalar_vars
             self.dae_vars = dae_vars
-            category_dict = categorize_dae_variables(
-                    dae_vars,
-                    time,
-                    inputs,
-                    measurements=measurements,
-                    )
-            self.category_dict = category_dict
-            
+            if not categorize_constraints:
+                category_dict = categorize_dae_variables(
+                        dae_vars,
+                        time,
+                        inputs,
+                        measurements=measurements,
+                        )
+                self.category_dict = category_dict
+            else:
+                # Categorize variables and constraints
+                scalar_cons, dae_cons = flatten_dae_components(
+                    model, time, ctype=Constraint,
+                )
+                dae_map = ComponentMap((var[t0], var) for var in dae_vars)
+
+                # user-provided inputs should be inputs_at_t0
+                if inputs is None:
+                    input_vars = None
+                else:
+                    input_vars = [dae_map[var] for var in inputs]
+
+                # user-provided measurements should be measurements_at_t0
+                if measurements is None:
+                    meas_vars = []
+                else:
+                    meas_vars = [dae_map[var] for var in measurements]
+
+                var_cat, con_cat = categorize_dae_variables_and_constraints(
+                    model, dae_vars, dae_cons, time, input_vars=input_vars
+                )
+                self.category_dict = var_cat
+                # Local variable is defined here for compatibility with
+                # rest of routine.
+                category_dict = var_cat
+                self.con_category_dict = con_cat
+                self.category_dict[VC.MEASUREMENT] = meas_vars
+
         keys = list(category_dict)
         for categ in keys:
             if not self.category_dict[categ]:
@@ -145,8 +194,8 @@ class _DynamicBlockData(_BlockData):
                 # due empty (unknown dimension) slices.
                 category_dict.pop(categ)
 
-        self._add_category_blocks()
-        self._add_category_references()
+        self._add_category_blocks(self.category_dict)
+        self._add_category_references(self.category_dict)
 
         self.categories = set(category_dict)
 
@@ -164,7 +213,11 @@ class _DynamicBlockData(_BlockData):
         if VC.FIXED in category_dict:
             self.fixed_vars = category_dict[VC.FIXED]
         if VC.MEASUREMENT in category_dict:
-            self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+            #self.measurement_vars = category_dict.pop(VC.MEASUREMENT)
+            # I comment this out because I want MEASUREMENT to be in the
+            # category dict for MHE. Is this necessary? Even though it has
+            # already been added to the category block/reference?
+            self.measurement_vars = category_dict[VC.MEASUREMENT]
 
         # The categories in category_dict now form a partition of the
         # time-indexed variables. This is necessary to have a well-defined
@@ -183,15 +236,12 @@ class _DynamicBlockData(_BlockData):
         # NOTE: looking up var[t] instead of iterating over values() 
         # appears to be ~ 5x faster
 
-        # These should be overridden by a call to `set_sample_time`
-        # The defaults assume that the entire model is one sample.
         if self._sample_time is None:
+            # Default is to assume that the entire model is one sample.
             self.sample_points = [time.first(), time.last()]
             self.sample_point_indices = [1, len(time)]
-        # If self._sample_time is provided, sample_points for the plant and the controller 
-        # will be created in mhe.py or controller.py.
-        # else: 
-        #     self.set_sample_time(self._sample_time)
+        else: 
+            self.set_sample_time(self._sample_time)
 
     _var_name = 'var'
     _block_suffix = '_BLOCK'
@@ -207,11 +257,11 @@ class _DynamicBlockData(_BlockData):
         """ Gets set name from name of enum entry """
         return categ.name + cls._set_suffix
 
-    def _add_category_blocks(self):
+    def _add_category_blocks(self, category_dict):
         """ Adds an indexed block for each category of variable and
         attach a reference to each variable to one of the BlockDatas.
         """
-        category_dict = self.category_dict
+        #category_dict = self.category_dict
         var_name = self._var_name
         for categ, varlist in category_dict.items():
             ctype = CATEGORY_TYPE_MAP.get(categ, DynamicVar)
@@ -250,15 +300,16 @@ class _DynamicBlockData(_BlockData):
 
     _vectors_name = 'vectors'
 
-    def _add_category_references(self):
+    def _add_category_references(self, category_dict):
         """ Create a "time-indexed vector" for each category of variables. """
-        category_dict = self.category_dict
+        #category_dict = self.category_dict
 
         # Add a deactivated block to store all my `_DynamicVector`s
         # These be will vars, named by category, indexed by the index
         # into the list of that category and by time. E.g.
         # self.vectors.differential
-        self.add_component(self._vectors_name, Block())
+        if not hasattr(self, self._vectors_name):
+            self.add_component(self._vectors_name, Block())
         self.vectors.deactivate()
 
         for categ in category_dict:
@@ -847,8 +898,14 @@ class DynamicBlock(Block):
                 treat_sequences_as_mappings=False)
         self._init_category_dict = Initializer(kwds.pop('category_dict', None),
                 treat_sequences_as_mappings=False)
-        self._init_con_category_dict = Initializer(kwds.pop('con_category_dict', None),
-                treat_sequences_as_mappings=False)
+        self._init_categorize_constraints = Initializer(
+                kwds.pop('categorize_constraints', False),
+                treat_sequences_as_mappings=False,
+                )
+        self._init_con_category_dict = Initializer(
+                kwds.pop('con_category_dict', None),
+                treat_sequences_as_mappings=False,
+                )
         Block.__init__(self, *args, **kwds)
 
     def _getitem_when_not_present(self, idx):
@@ -877,6 +934,13 @@ class DynamicBlock(Block):
             block._category_dict = self._init_category_dict(parent, idx)
         else:
             block._category_dict = None
+
+        if self._init_categorize_constraints is not None:
+            block._categorize_constraints = self._init_categorize_constraints(
+                parent, idx
+            )
+        else:
+            block._categorize_constraints = False
 
         if self._init_con_category_dict is not None:
             block._con_category_dict = self._init_con_category_dict(parent, idx)
