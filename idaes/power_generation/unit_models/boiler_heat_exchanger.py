@@ -41,7 +41,7 @@ from enum import Enum
 from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 # Additional import for the unit operation
 from pyomo.environ import value, Var, Param, exp, sqrt,\
-    log, PositiveReals, NonNegativeReals, units as pyunits
+    log, PositiveReals, NonNegativeReals, ExternalFunction, units as pyunits
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -56,6 +56,7 @@ from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
+from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
