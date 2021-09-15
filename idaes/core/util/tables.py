@@ -92,6 +92,13 @@ def stream_states_dict(streams, time_point=0):
         if isinstance(streams[n], Arc):
             for i, a in streams[n].items():
                 try:
+                    # if getting the StateBlock from the destination port
+                    # fails for any reason try the source port. This could
+                    # happen if a port does not have an associated
+                    # StateBlock. For example a surrogate model may not
+                    # use state blocks, unit models may handle physical
+                    # properties without state blocks, or the port could
+                    # be used to serve the purpose of a translator block.
                     sb = _get_state_from_port(a.ports[1], time_point)
                 except:
                     sb = _get_state_from_port(a.ports[0], time_point)
