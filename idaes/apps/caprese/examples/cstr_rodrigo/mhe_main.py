@@ -130,7 +130,7 @@ def main():
             v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
             ]
     measurement_noise_bounds = [
-            (var[c_t0].lb, var[c_t0].ub)
+            (var[e_t0].lb, var[e_t0].ub)
             for var in estimator.MEASUREMENT_BLOCK[:].var
             ]
     #-------------------------------------------------------------------------
@@ -148,7 +148,7 @@ def main():
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
-    mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.Tjinb[p_ts].value])
+    mhe.estimator.load_inputs_for_MHE(mhe.plant.generate_inputs_at_time(p_ts))
 
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)

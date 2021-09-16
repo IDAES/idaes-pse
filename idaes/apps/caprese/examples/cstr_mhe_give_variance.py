@@ -154,7 +154,7 @@ def main():
             v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
             ]
     measurement_noise_bounds = [
-            (0.0, var[c_t0].ub) for var in estimator.MEASUREMENT_BLOCK[:].var
+            (0.0, var[e_t0].ub) for var in estimator.MEASUREMENT_BLOCK[:].var
             ]
     #-------------------------------------------------------------------------
     
@@ -171,18 +171,17 @@ def main():
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
-    mhe.estimator.load_inputs_for_MHE([mhe.plant.mod.fs.mixer.S_inlet.flow_vol[p_ts].value,
-                                       mhe.plant.mod.fs.mixer.E_inlet.flow_vol[p_ts].value])
-        
+    mhe.estimator.load_inputs_for_MHE(mhe.plant.generate_inputs_at_time(p_ts))
+
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
     data_manager.save_estimator_data(iteration = 0)
         
-    cinput1 = [0.5608456705408656, 3.4818166997491384, 5.0, 0.9629431563506397, 2.0623866186035156, 
-               4.9999999797327686, 2.285805028476981, 3.913753219840146, 3.4585265451075538, 5.0]
-    cinput2 = [0.28666548361218924, 0.01, 0.01, 0.01, 0.12654063510571273,
-               0.01, 0.9999996329001195, 0.242203179025321, 0.7110096123027149, 0.01]
+    cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06, 
+               5.00, 2.29, 3.91, 3.46, 5.0]
+    cinput2 = [0.29, 0.01, 0.01, 0.01, 0.13,
+               0.01, 1.00, 0.24, 0.71, 0.01]
     
     for i in range(1,11):
         print('\nENTERING MHE LOOP ITERATION %s\n' % i)
