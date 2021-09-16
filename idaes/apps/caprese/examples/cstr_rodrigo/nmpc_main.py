@@ -133,9 +133,12 @@ def main():
         (nmpc.controller.mod.Ca[0], 1.0E-5),
         ]
     nmpc.controller.set_variance(variance)
-    measurement_variance = [v.variance for v in controller.measurement_vars]
+    measurement_variance = [
+            v.variance for v in controller.MEASUREMENT_BLOCK[:].var
+            ]
     measurement_noise_bounds = [
-            (var[c_t0].lb, var[c_t0].ub) for var in controller.measurement_vars
+            (var[c_t0].lb, var[c_t0].ub)
+            for var in controller.MEASUREMENT_BLOCK[:].var
             ]
     
     # noise for inputs

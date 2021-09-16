@@ -189,7 +189,7 @@ ValveFunctionType.custom}""",
             domain=int,
             description="HP Turbine stages to not connect to next with an arc.",
             doc="HP Turbine stages to not connect to next with an arc. This is "
-                "usually used to insert addtional units between stages on a "
+                "usually used to insert additional units between stages on a "
                 "flowsheet, such as a reheater",
         ),
     )
@@ -200,7 +200,7 @@ ValveFunctionType.custom}""",
             domain=int,
             description="IP Turbine stages to not connect to next with an arc.",
             doc="IP Turbine stages to not connect to next with an arc. This is "
-            "usually used to insert addtional units between stages on a "
+            "usually used to insert additional units between stages on a "
             "flowsheet, such as a reheater",
         ),
     )
@@ -211,7 +211,7 @@ ValveFunctionType.custom}""",
             domain=int,
             description="LP Turbine stages to not connect to next with an arc.",
             doc="LP Turbine stages to not connect to next with an arc. This is "
-            "usually used to insert addtional units between stages on a "
+            "usually used to insert additional units between stages on a "
             "flowsheet, such as a reheater",
         ),
     )
@@ -495,8 +495,8 @@ class HelmTurbineMultistageData(UnitModelBlockData):
             )
 
         self.power = pyo.Var(
-            self.flowsheet().config.time, initialize=-1e8, doc="power (W)")
-        @self.Constraint(self.flowsheet().config.time)
+            self.flowsheet().time, initialize=-1e8, doc="power (W)")
+        @self.Constraint(self.flowsheet().time)
         def power_eqn(b, t):
             return (b.power[t] ==
                 b.outlet_stage.control_volume.work[t]*b.outlet_stage.efficiency_mech

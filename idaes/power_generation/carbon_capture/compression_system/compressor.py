@@ -61,13 +61,13 @@ class VaneDiffuserType(Enum):
 
 
 def _build_cover_impeller_equations(blk):
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def impeller_work_coeff_eqn(b, t):
         phi = blk.mass_flow_coeff[t]
         return b.impeller_work_coeff[t] * 100 * phi == (
                           0.62 * phi - phi * (phi / 0.4)**3 + 0.0014) * 100
 
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def polytropic_head_coeff_vaned_diffuser_eqn(b, t):
         phi = blk.mass_flow_coeff[t]
         return b.mu_p_v[t] * 100 * phi == (
@@ -75,13 +75,13 @@ def _build_cover_impeller_equations(blk):
 
 
 def _build_open_impeller_equations(blk):
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def impeller_work_coeff_eqn(b, t):
         phi = blk.mass_flow_coeff[t]
         return b.impeller_work_coeff[t] * phi == (
                       0.68 * phi - phi * (phi / 0.37)**3 + 0.002)
 
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def polytropic_head_coeff_vaned_diffuser_eqn(b, t):
         phi = blk.mass_flow_coeff[t]
         return b.mu_p_v[t] * phi == 0.5 * (1 + (phi - 0.065) / abs(
@@ -91,21 +91,21 @@ def _build_open_impeller_equations(blk):
 
 
 def _build_vane_diffuser_equations(blk):
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def polytropic_head_coeff_eqn(b, t):
         return b.mu_p[t] == b.mu_p_v[t]
 
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def polytropic_efficiency_eqn(b, t):
         return b.eff_p[t] == b.eff_p_v[t]
 
 
 def _build_vaneless_diffuser_equations(blk):
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def polytropic_head_coeff_eqn(b, t):
         return b.mu_p[t] == b.impeller_work_coeff[t] * b.eff_p[t]
 
-    @blk.Constraint(blk.flowsheet().config.time)
+    @blk.Constraint(blk.flowsheet().time)
     def polytropic_efficiency_eqn(b, t):
         phi = blk.mass_flow_coeff[t]
         return (b.eff_p[t] - b.eff_p_v[t]) * (
@@ -179,55 +179,55 @@ VaneDiffuserType.custom}""",
         properties_in = self.control_volume.properties_in
         properties_out = self.control_volume.properties_out
 
-        self.mass_flow_coeff = Var(self.flowsheet().config.time,
+        self.mass_flow_coeff = Var(self.flowsheet().time,
                                    initialize=0.07,
                                    doc="Compressor Flow Coefficient",
                                    bounds=(0.01, 0.15))
-        self.rspeed = Var(self.flowsheet().config.time,
+        self.rspeed = Var(self.flowsheet().time,
                           initialize=70.0,
                           doc='Rotation Speed of The Impeller',
                           bounds=(0.5, 8000),
                           units=1 / pyunits.s)
-        self.U2 = Var(self.flowsheet().config.time,
+        self.U2 = Var(self.flowsheet().time,
                       initialize=300,
                       doc="Impeller Tip Speed",
                       bounds=(0, 500),
                       units=pyunits.m / pyunits.s)
-        self.delta_enth_polytropic = Var(self.flowsheet().config.time,
+        self.delta_enth_polytropic = Var(self.flowsheet().time,
                                          initialize=2500,
                                          doc="Polytropic Enthalpy Change",
                                          units=pyunits.J / pyunits.mol,
                                          within=NonNegativeReals)
-        self.impeller_work_coeff = Var(self.flowsheet().config.time,
+        self.impeller_work_coeff = Var(self.flowsheet().time,
                                        initialize=0.60,
                                        doc="Impeller Work Coefficient",
                                        bounds=(0.001, 1))
-        self.mu_p_v = Var(self.flowsheet().config.time,
+        self.mu_p_v = Var(self.flowsheet().time,
                           initialize=0.60,
                           doc="Polytropic Head Coefficient Vaned Diffuser",
                           bounds=(0.001, 1))
-        self.mu_p = Var(self.flowsheet().config.time,
+        self.mu_p = Var(self.flowsheet().time,
                         initialize=0.60,
                         doc="Polytropic Head Coefficient",
                         bounds=(0.001, 1))
-        self.eff_p_v = Var(self.flowsheet().config.time,
+        self.eff_p_v = Var(self.flowsheet().time,
                            initialize=0.85,
                            doc="Polytropic Efficiency Vaned Diffuser",
                            bounds=(0.001, 1))
-        self.eff_p = Var(self.flowsheet().config.time,
+        self.eff_p = Var(self.flowsheet().time,
                          initialize=0.85,
                          doc="Polytropic Efficiency",
                          bounds=(0.001, 1.0))
-        self.Ma = Var(self.flowsheet().config.time,
+        self.Ma = Var(self.flowsheet().time,
                       initialize=0.10,
                       doc='Rotational Mach Number',
                       bounds=(0.5, 1.5))
-        self.psi_3 = Var(self.flowsheet().config.time,
+        self.psi_3 = Var(self.flowsheet().time,
                          initialize=0.01,
                          doc="Dimensionless Exit Flow Coefficient",
                          within=NonNegativeReals,
                          units=pyunits.dimensionless)
-        self.psi_s = Var(self.flowsheet().config.time,
+        self.psi_s = Var(self.flowsheet().time,
                          initialize=0.01,
                          doc="Dimensionless Isentropic Head Coefficient",
                          within=NonNegativeReals,
@@ -255,14 +255,14 @@ VaneDiffuserType.custom}""",
 
         ###########################################################
         # Calculate Mach number and tip impeller speed
-        @self.Constraint(self.flowsheet().config.time, doc="Mach Number")
+        @self.Constraint(self.flowsheet().time, doc="Mach Number")
         def Ma_con(b, t):
             # assume single vapor phase.
             speed_of_sound = self.control_volume.properties_in[
                 t].speed_sound_phase['Vap']
             return b.Ma[t] == b.U2[t] / speed_of_sound
 
-        @self.Constraint(self.flowsheet().config.time, doc="Rotation Speed "
+        @self.Constraint(self.flowsheet().time, doc="Rotation Speed "
                          "of the Impeller")
         def rspeed_con(b, t):
             return b.U2[t] == 2 * const.pi * b.r2 * b.rspeed[t]
@@ -298,32 +298,32 @@ VaneDiffuserType.custom}""",
             icb(self)
 
         # efficiency for vane diffuser
-        @self.Constraint(self.flowsheet().config.time, doc="Polytropic "
+        @self.Constraint(self.flowsheet().time, doc="Polytropic "
                          "Efficiency")
         def eff_p_v_cons(b, t):
             return b.eff_p_v[t] * b.impeller_work_coeff[t] == b.mu_p_v[t]
 
         # Total enthalpy and entropy change through compressor stage
         # Isentropic enthalpy change (hisen - hin)
-        @self.Expression(self.flowsheet().config.time, doc="Specific "
+        @self.Expression(self.flowsheet().time, doc="Specific "
                          "Enthalpy Change of Isentropic Process")
         def delta_enth_isentropic(b, t):
             return b.properties_isentropic[t].enth_mol - \
                 properties_in[t].enth_mol
 
         # Total enthalpy change (ho - hi)
-        @self.Expression(self.flowsheet().config.time, doc="Actual Enthalpy "
+        @self.Expression(self.flowsheet().time, doc="Actual Enthalpy "
                          "Change")
         def delta_enth_actual(b, t):
             return properties_out[t].enth_mol - properties_in[t].enth_mol
 
         # Entropy change
-        @self.Expression(self.flowsheet().config.time, doc="Entropy change in"
+        @self.Expression(self.flowsheet().time, doc="Entropy change in"
                          "Compressor Stage")
         def deltaS(b, t):
             return properties_out[t].entr_mol - properties_in[t].entr_mol
 
-        @self.Constraint(self.flowsheet().config.time, doc="Polytropic "
+        @self.Constraint(self.flowsheet().time, doc="Polytropic "
                          "Enthalpy Correlation")
         def polytropic_correlation(b, t):
             return b.delta_enth_polytropic[t] == b.mu_p[t] * \
@@ -331,7 +331,7 @@ VaneDiffuserType.custom}""",
 
         # Correlation between actual enthalpy and polytropic enthalpy
         # This equation is obtained by Eq. (2.13) from Aungier textbook (2000)
-        @self.Constraint(self.flowsheet().config.time, doc="Equation for"
+        @self.Constraint(self.flowsheet().time, doc="Equation for"
                          "Polytropic Enthalpy")
         def delta_enth_polytropic_con(b, t):
             Tout = properties_out[t].temperature
@@ -341,27 +341,27 @@ VaneDiffuserType.custom}""",
 
         # Maximum impeller speed for individual stage
         @self.Expression(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Maximum Allowable Impeller Tip Speed")
         def U2max(b, t):
             phi = b.mass_flow_coeff[t]
             return sqrt((1984.1 * phi**2 - 616.88 * phi + 215.97) * 0.7 * 830)
 
         # Thermodynamic power
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Thermodynamic Power")
         def fluid_pow(b, t):
             flow = properties_in[t].flow_mol
             return b.delta_enth_actual[t] * flow
 
         # Electricity power
-        @self.Expression(self.flowsheet().config.time, doc="Shaft Power")
+        @self.Expression(self.flowsheet().time, doc="Shaft Power")
         def elec_pow(b, t):
             return b.fluid_pow[t] / (b.efficiency_mech * b.eff_drive)
 
         # -------------------------------------------------------------------
         # Static Volumetric Flow at Suction Inlet
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Static Volumetric Flow at Suction Inlet")
         def Vsdot(b, t):
             flow_in = properties_in[t].flow_mol
@@ -370,13 +370,13 @@ VaneDiffuserType.custom}""",
 
         # Mass flow coefficient
         @self.Constraint(
-            self.flowsheet().config.time, doc="Mass Flow Coefficient")
+            self.flowsheet().time, doc="Mass Flow Coefficient")
         def mass_flow_coeff_eqn(b, t):
             phi = b.mass_flow_coeff[t]
             return phi == b.Vsdot[t] / (const.pi * b.r2**2 * b.U2[t])
 
         # Static volumetric flow at impeller exit
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Static volumetric flow at impeller exit")
         def V3dot(b, t):
             Tin = properties_in[t].temperature
@@ -387,7 +387,7 @@ VaneDiffuserType.custom}""",
             return b.Vsdot[t] * (b.z_d / b.z_s) * (Tout / Tin) * (Ps / Pd)
 
         # Dimensionless Exit Flow Coefficient (Performance Curve)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Dimensionless Exit Flow Coefficient")
         def psi_3_eqn(b, t):
             b2 = 0.076 * 2 * b.r2
@@ -395,7 +395,7 @@ VaneDiffuserType.custom}""",
                 const.pi * 2 * b.r2 * b2 * b.U2[t])
 
         # Isentropic head
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Isentropic Head")
         def ys_model(b, t):
             k_v = self.control_volume.properties_in[t].heat_capacity_ratio
@@ -408,7 +408,7 @@ VaneDiffuserType.custom}""",
             return b.z_s * (gas_const / mw) * Tin * (1 / a) * ((Pd/Ps)**a - 1)
 
         # Dimensionless Isentropic Head Coefficient (Performance Curve)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Dimensionless Isentropic Head Coefficient")
         def psi_s_eqn(b, t):
             return b.psi_s[t] == 2 * b.ys_model[t] / (b.U2[t]**2)
@@ -434,7 +434,7 @@ VaneDiffuserType.custom}""",
         opt = get_solver(solver, optarg)
 
         unfix_ratioP = {}
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             # if there is not a good guess for efficiency or outlet pressure
             # provide something reasonable.
             eff = self.efficiency_isentropic[t]
@@ -483,7 +483,7 @@ VaneDiffuserType.custom}""",
             state_args=state_args, outlvl=outlvl, solver=solver, optarg=optarg)
 
         self.efficiency_isentropic.unfix()
-        for t in self.flowsheet().config.time:
+        for t in self.flowsheet().time:
             if unfix_ratioP.get(t, False):
                 self.ratioP[t].unfix()
         # Activate special constraints

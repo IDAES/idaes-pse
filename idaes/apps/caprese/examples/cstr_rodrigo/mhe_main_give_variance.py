@@ -118,9 +118,12 @@ def main():
     #-------------------------------------------------------------------------
     # Set up measurement noises that will be applied to measurements
     mhe.estimator.set_variance(measurement_noise_variances)
-    measurement_variance = [v.variance for v in estimator.measurement_vars]
+    measurement_variance = [
+            v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
+            ]
     measurement_noise_bounds = [
-            (var[e_t0].lb, var[e_t0].ub) for var in estimator.measurement_vars
+            (var[c_t0].lb, var[c_t0].ub)
+            for var in estimator.MEASUREMENT_BLOCK[:].var
             ]
     #-------------------------------------------------------------------------
     

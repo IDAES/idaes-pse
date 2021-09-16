@@ -132,7 +132,7 @@ def main():
         (plant.mod.Tjinb[0], 0.01),
         ]
     dyna.plant.set_variance(variance)
-    input_variance = [v.variance for v in plant.input_vars]
+    input_variance = [v.variance for v in plant.INPUT_BLOCK[:].var]
     input_noise_bounds = [(var[p_t0].lb, var[p_t0].ub) for var in plant.input_vars]
     #--------------------------------------------------------------------------
 
@@ -164,7 +164,9 @@ def main():
         (dyna.estimator.mod.Ca[0], 1.0E-2),
         ]
     dyna.estimator.set_variance(variance)
-    measurement_variance = [v.variance for v in estimator.measurement_vars]
+    measurement_variance = [
+            v.variance for v in estimator.MEASUREMENT_BLOCK[:].var
+            ]
     measurement_noise_bounds = [
             (var[e_t0].lb, var[e_t0].ub) for var in estimator.measurement_vars
             ]

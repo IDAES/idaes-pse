@@ -49,7 +49,7 @@ class DynamicSim(object):
                  inputs_at_t0 = None,
                  measurements_at_t0 = None,
                  sample_time = None,):
-        
+
         self.input_cuids = [
                             ComponentUID(
                             slice_component_along_sets(comp, (plant_time_set,)))
@@ -68,11 +68,10 @@ class DynamicSim(object):
         #----------------------------------------------------------------------                
         if plant_model:
             self.has_plant = True
-            
             # Capture vars in plant model
             plant_inputs_t0 = inputs_at_t0
             plant_measurements_t0 = measurements_at_t0
-            
+
             self.plant = DynamicBlock(
                     model=plant_model,
                     time=plant_time_set,
@@ -141,7 +140,7 @@ class DynamicSim(object):
 
             if sample_time is not None:
                 self.controller.set_sample_time(sample_time)
-             
+
             # Controller should know whether the estimator exists or not    
             if self.has_estimator:
                 self.controller.has_estimator = True

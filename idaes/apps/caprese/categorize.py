@@ -70,7 +70,7 @@ def _get_disc_eq(deriv):
 
 def _identify_derivative_if_differential(condata, wrt, include_fixed=False):
     parent = condata.parent_component()
-    if parent.local_name.endswith("_disc_eq"):
+    if parent.local_name.endswith(DAE_DISC_SUFFIX):
         return False, None
     deriv = None
     for var in identify_variables(condata.expr, include_fixed=include_fixed):
@@ -109,7 +109,7 @@ def categorize_dae_variables_and_constraints(
         # Use the first non-initial time point as a "representative
         # index." Don't use get_finite_elements so this will be valid
         # for general ordered sets.
-        t1 = time[2]
+        t1 = time.at(2)
 
     if input_vars is None:
         input_vars = []
@@ -329,8 +329,21 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
         infer_measurements = True
         updated_user_measurements = ComponentSet()
 
-    dae_map = ComponentMap([(v[t0], v) for v in dae_vars])
-    t0_vardata = list(dae_map.keys())
+    already_added = ComponentSet()
+    t0_vardata = []
+    unique_dae_vars = []
+    for var in dae_vars:
+        vardata = var[t0]
+        if vardata not in already_added:
+            already_added.add(vardata)
+            t0_vardata.append(vardata)
+            unique_dae_vars.append(var)
+    dae_map = ComponentMap(zip(t0_vardata, unique_dae_vars))
+
+    # Create a "volatile" copy of dae_map that we will alter
+    # as we scan for variables.
+    volatile_dae_map = ComponentMap(dae_map)
+    #t0_vardata = list(dae_map.keys())
 
     if inputs is None:
         inputs = []
@@ -340,13 +353,13 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
     for var0 in t0_vardata:
         if var0 in input_set:
             updated_input_set.remove(var0)
-            time_slice = dae_map.pop(var0)
+            time_slice = volatile_dae_map.pop(var0)
             input_vars.append(time_slice)
 
         if var0 in updated_user_measurements:
             updated_user_measurements.remove(var0)
             # Don't pop measured vars. They will be popped elsewhere.
-            time_slice = dae_map[var0]
+            time_slice = volatile_dae_map[var0]
             user_measured_vars.append(time_slice)
 
         parent = var0.parent_component()
@@ -355,15 +368,15 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
         if not time in ComponentSet(parent.get_continuousset_list()):
             continue
         index0 = var0.index()
-        var1 = dae_map[var0][t1]
+        var1 = volatile_dae_map[var0][t1]
         index1 = var1.index()
         state = parent.get_state_var()
 
         if state[index1].fixed:
             # Assume state var is fixed everywhere, so derivative
             # 'isn't really' a derivative.
-            # Should be safe to remove state from dae_map here
-            state_slice = dae_map.pop(state[index0])
+            # Should be safe to remove state from volatile_dae_map here
+            state_slice = volatile_dae_map.pop(state[index0])
             fixed_vars.append(state_slice)
             continue
         if state[index0] in input_set:
@@ -371,7 +384,7 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
             # is 'not really a derivative'
             continue
 
-        deriv_slice = dae_map.pop(var0)
+        deriv_slice = volatile_dae_map.pop(var0)
 
         if var1.fixed:
             # Assume derivative has been fixed everywhere.
@@ -381,14 +394,14 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
             # In this case the derivative has been used as an initial condition. 
             # Still want to include it in the list of derivatives.
             measured_vars.append(deriv_slice)
-            state_slice = dae_map.pop(state[index0])
+            state_slice = volatile_dae_map.pop(state[index0])
             if state[index0].fixed:
                 measured_vars.append(state_slice)
             deriv_vars.append(deriv_slice)
             diff_vars.append(state_slice)
         else:
             # Neither is fixed. This should be the most common case.
-            state_slice = dae_map.pop(state[index0])
+            state_slice = volatile_dae_map.pop(state[index0])
             if state[index0].fixed:
                 measured_vars.append(state_slice)
             deriv_vars.append(deriv_slice)
@@ -398,7 +411,7 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
         raise RuntimeError('Not all inputs could be found')
     assert len(deriv_vars) == len(diff_vars)
 
-    for var0, time_slice in dae_map.items():
+    for var0, time_slice in volatile_dae_map.items():
         var1 = time_slice[t1]
         # If the variable is still in the list of time-indexed vars,
         # it must either be fixed (not a var) or be an algebraic var
@@ -421,7 +434,14 @@ def categorize_dae_variables(dae_vars, time, inputs, measurements=None):
         # If the user provided their own measurements,
         # override the inferred measurements. Assume the user
         # will modify the state of their variables appropriately.
-        category_list_map[VariableCategory.MEASUREMENT] = user_measured_vars
+        #
+        # This ensures the order of measurements is as specified
+        # by the user.
+        measurements = [dae_map[var] for var in measurements]
+        category_list_map[VariableCategory.MEASUREMENT] = measurements
+    if inputs is not None:
+        inputs = [dae_map[var] for var in inputs]
+        category_list_map[VariableCategory.INPUT] = inputs
     # NOTE: `ref` could be a regular time-indexed component (not a reference),
     # and thus won't have a `referent` attribute. Can check with `is_reference`
     category_dict = {

@@ -266,17 +266,17 @@ discretizing length domain (default=3)"""))
 
         # connect internal units (Mixer to Water Tank Model)
         # Mixer Outlet (mixed_state) to unit control volume.properties_in
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_material_balance(b, t):
             return b.mixer.mixed_state[t].flow_mol == \
                 b.control_volume.properties_in[t].flow_mol
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_enthalpy_balance(b, t):
             return b.mixer.mixed_state[t].enth_mol == \
                 b.control_volume.properties_in[t].enth_mol
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_pressure_balance(b, t):
             return b.mixer.mixed_state[t].pressure == \
                 b.control_volume.properties_in[t].pressure
@@ -401,40 +401,40 @@ discretizing length domain (default=3)"""))
         self.pressure_amb = Param(initialize=1.0E5, doc="Ambient Pressure")
 
         # Ambient temperature
-        self.temperature_ambient = Var(self.flowsheet().config.time,
+        self.temperature_ambient = Var(self.flowsheet().time,
                                        initialize=298.15,
                                        doc="Ambient Temperature")
 
         # Inside heat transfer coefficient
-        self.heat_transfer_in = Var(self.flowsheet().config.time,
+        self.heat_transfer_in = Var(self.flowsheet().time,
                                     initialize=1,
                                     doc="Inside Heat Transfer Coefficient")
 
         # Outside heat transfer coefficient
-        self.heat_transfer_out = Var(self.flowsheet().config.time,
+        self.heat_transfer_out = Var(self.flowsheet().time,
                                      initialize=1,
                                      doc="Outside Heat Transfer Coefficient")
 
         # Insulation free convection heat transfer coefficient
-        self.heat_transfer_free_conv = Var(self.flowsheet().config.time,
+        self.heat_transfer_free_conv = Var(self.flowsheet().time,
                                            initialize=1,
                                            doc="Insulation Free Convection"
                                            "Heat Transfer Coefficient")
 
         # Ra number of free convection
-        self.N_Ra_root6 = Var(self.flowsheet().config.time, initialize=80,
+        self.N_Ra_root6 = Var(self.flowsheet().time, initialize=80,
                               doc="1/6 Power of Ra"
                               "Number of Free Convection of Air")
 
         # Nu number  of free convection
-        self.N_Nu = Var(self.flowsheet().config.time, initialize=1,
+        self.N_Nu = Var(self.flowsheet().time, initialize=1,
                         doc="Nu Number of Free Convection of Air")
 
         # Define the continuous domains for model
         self.radial_domain = ContinuousSet(bounds=(self.drum_ri, self.drum_ro))
 
         # Temperature across wall thickness
-        self.drum_wall_temperature = Var(self.flowsheet().config.time,
+        self.drum_wall_temperature = Var(self.flowsheet().time,
                                          self.radial_domain,
                                          bounds=(280, 800),
                                          initialize=550)
@@ -442,7 +442,7 @@ discretizing length domain (default=3)"""))
         # Declare derivatives in the model
         if self.config.dynamic is True:
             self.dTdt = DerivativeVar(self.drum_wall_temperature,
-                                      wrt=self.flowsheet().config.time)
+                                      wrt=self.flowsheet().time)
         self.dTdr = DerivativeVar(self.drum_wall_temperature,
                                   wrt=self.radial_domain)
         self.d2Tdr2 = DerivativeVar(self.drum_wall_temperature,
@@ -457,25 +457,25 @@ discretizing length domain (default=3)"""))
 
         # Add performance variables
         self.level = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc='Water Level from the Bottom of the Drum')
 
         # Velocity of fluid inside downcomer pipe
         self.velocity_downcomer = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=10.0,
                 doc='Liquid Water Velocity at the Top of Downcomer')
 
         # Pressure change due to contraction
         self.deltaP_contraction = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=-1.0,
                 doc='Pressure Change due to Contraction')
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc='Pressure Change due to Gravity')
 
@@ -486,19 +486,19 @@ discretizing length domain (default=3)"""))
 
         # Expressure for the angle from the drum center
         # to the circumference point at water level
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Angle of Water Level")
         def alpha_drum(b, t):
             return asin((b.level[t] - b.drum_ri) / b.drum_ri)
 
         # Expressure for the fraction of wet area
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Fraction of Wet Area")
         def frac_wet_area(b, t):
             return (b.alpha_drum[t] + const.pi / 2) / const.pi
 
         # Constraint for volume liquid in drum
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Volume of Liquid in Drum")
         def volume_eqn(b, t):
             return b.volume[t] == \
@@ -507,7 +507,7 @@ discretizing length domain (default=3)"""))
                     * (b.level[t] - b.drum_ri)) * b.drum_length
 
         # Equation for velocity at the entrance of downcomer
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Velocity at Entrance of Downcomer")
         def velocity_eqn(b, t):
             return b.velocity_downcomer[t] * 0.25 * const.pi \
@@ -518,7 +518,7 @@ discretizing length domain (default=3)"""))
         # -0.5*1/2*density*velocity^2 for stagnation head loss
         # plus 1/2*density*velocity^2 dynamic head
         # (acceleration pressure change)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure Change due To Contraction")
         def pressure_change_contraction_eqn(b, t):
             return b.deltaP_contraction[t] == \
@@ -527,7 +527,7 @@ discretizing length domain (default=3)"""))
                    b.velocity_downcomer[t]**2
 
         # Pressure change equation for gravity, density*gravity*height
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Pressure Change due to Gravity")
         def pressure_change_gravity_eqn(b, t):
             return b.deltaP_gravity[t] == \
@@ -536,12 +536,12 @@ discretizing length domain (default=3)"""))
                    * b.level[t]
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time, doc="Pressure Drop")
+        @self.Constraint(self.flowsheet().time, doc="Pressure Drop")
         def pressure_change_total_eqn(b, t):
             return b.deltaP[t] == b.deltaP_contraction[t] + b.deltaP_gravity[t]
 
         # Constraint for heat conduction equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          self.radial_domain,
                          doc="1-D Heat Conduction Equation Through Radius")
         def heat_conduction_eqn(b, t, r):
@@ -554,7 +554,7 @@ discretizing length domain (default=3)"""))
                 return 0 == b.diff_therm_metal * b.d2Tdr2[t, r]\
                             + b.diff_therm_metal * (1 / r) * b.dTdr[t, r]
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Inner Wall Boundary")
         def inner_wall_bc_eqn(b, t):
             return b.heat_transfer_in[t] \
@@ -562,7 +562,7 @@ discretizing length domain (default=3)"""))
                    - b.drum_wall_temperature[t, b.radial_domain.first()]) == \
                 - b.dTdr[t, b.radial_domain.first()] * b.therm_cond_metal
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Outer Wall Boundary")
         def outer_wall_bc_eqn(b, t):
             return b.heat_transfer_out[t] * \
@@ -571,7 +571,7 @@ discretizing length domain (default=3)"""))
                 - b.dTdr[t, b.radial_domain.last()] * b.therm_cond_metal
 
         # Inner wall BC for dTdt
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Extra Inner Wall Temperature Derivative")
         def extra_at_inner_wall_eqn(b, t):
             if self.config.dynamic is True:
@@ -591,7 +591,7 @@ discretizing length domain (default=3)"""))
                 * (b.control_volume.properties_out[t].temperature
                    - b.drum_wall_temperature[t, b.radial_domain.first()])
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Extra Outer Wall Temperature Derivative")
         def extra_at_outer_wall_eqn(b, t):
             if self.config.dynamic is True:
@@ -612,7 +612,7 @@ discretizing length domain (default=3)"""))
                     - b.drum_wall_temperature[t, b.radial_domain.last()])
 
         # Reduced pressure expression
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Reduced Pressure")
         def pres_reduced(b, t):
             return b.control_volume.properties_out[t].pressure / 2.2048e7
@@ -621,7 +621,7 @@ discretizing length domain (default=3)"""))
         # with minimum temperature difference set to sqrt(0.1)
         # multipling wet area fraction to convert it
         # to the value based on total circumference
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Inner Side Heat Transfer Coefficient")
         def h_in_eqn(b, t):
             return b.heat_transfer_in[t] == 2178.6 \
@@ -643,7 +643,7 @@ discretizing length domain (default=3)"""))
 
         # heat_transfer_out equation considering conduction through insulation
         # and free convection between insulation and ambient
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Outer Side Heat Transfer Coefficient")
         def h_out_eqn(b, t):
             return b.heat_transfer_out[t] * (b.resistance_insulation
@@ -651,7 +651,7 @@ discretizing length domain (default=3)"""))
                                              heat_transfer_free_conv[t]) == 1.0
 
         # Expressure for outside insulation wall temperature (skin temperature)
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Outside Insulation Wall Temperature")
         def temp_insulation_outside(b, t):
             return b.temperature_ambient[t] + (
@@ -660,7 +660,7 @@ discretizing length domain (default=3)"""))
                 / b.heat_transfer_free_conv[t]
 
         # Ra number equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Ra Number of Free Convection")
         def Ra_number_eqn(b, t):
            return b.N_Ra_root6[t] == b.const_Ra_root6 * sqrt(
@@ -669,20 +669,20 @@ discretizing length domain (default=3)"""))
                     - b.temperature_ambient[t])**0.166667
 
         # Nu number equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Nu Number of Free Convection")
         def Nu_number_eqn(b, t):
             return b.N_Nu[t] == (0.6 + b.const_Nu * b.N_Ra_root6[t])**2
 
         # Free convection coefficient based on the drum metal outside diameter
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Free Convection Heat Transfer Coefficient"
                          "between Insulation Wall and Ambient")
         def h_free_conv_eqn(b, t):
             return b.heat_transfer_free_conv[t] == b.N_Nu[t] \
                 * b.therm_cond_air / b.drum_do
 
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Heat Loss of Water")
         def heat_loss_eqn(b, t):
             return b.heat_duty[t] == b.drum_area * b.heat_transfer_in[t] * (
@@ -698,7 +698,7 @@ discretizing length domain (default=3)"""))
                             doc="Integer Indexing for Radius Domain")
 
         # calculate integral point for mean temperature in the wall
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Mean Temperature across the Wall")
         def mean_temperature(b, t):
             return 2 * (b.radial_domain[2] - b.radial_domain[1]) / (
@@ -713,7 +713,7 @@ discretizing length domain (default=3)"""))
         for index_r, value_r in enumerate(self.radial_domain, 1):
             self.rindex[value_r] = index_r
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Discrete Point Mean Temperature")
         def discrete_mean_temperature(b, t, r):
@@ -732,7 +732,7 @@ discretizing length domain (default=3)"""))
                                 ) for j in range(2, b.rindex[r].value
                                                  + 1)))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Thermal Stress at Radial Direction for Drum")
         def therm_sigma_r(b, t, r):
@@ -744,7 +744,7 @@ discretizing length domain (default=3)"""))
                         b.mean_temperature[t]
                         - b.discrete_mean_temperature[t, r]))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Thermal Stress at Circumferential Direction"
                          "for Drum")
@@ -756,7 +756,7 @@ discretizing length domain (default=3)"""))
                                            discrete_mean_temperature[t, r]
                                            - 2 * b.drum_wall_temperature[t, r])
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Thermal Stress at Axial Direction for Drum")
         def therm_sigma_z(b, t, r):
@@ -764,7 +764,7 @@ discretizing length domain (default=3)"""))
                 1 - b.Poisson_ratio) * (b.mean_temperature[t]
                                         - b.drum_wall_temperature[t, r])
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Mechanical Stress at Radial Direction for Drum")
         def mech_sigma_r(b, t, r):
@@ -784,7 +784,7 @@ discretizing length domain (default=3)"""))
                                           * b.drum_ro**2 / (r**2 * (
                                               b.drum_ro**2 - b.drum_ri**2))))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Mechanical Stress at Circumferential Direction"
                          "for Drum")
@@ -798,7 +798,7 @@ discretizing length domain (default=3)"""))
                     ) * b.drum_ri**2 * b.drum_ro**2 / (
                         r**2 * (b.drum_ro**2 - b.drum_ri**2))))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="Mechanical Stress at Axial Direction"
                          "for Drum")
         def mech_sigma_z(b, t):
@@ -807,7 +807,7 @@ discretizing length domain (default=3)"""))
                 - b.pressure_amb*b.drum_ro**2
                 ) / (b.drum_ro**2 - b.drum_ri**2))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Principal Structural Stress"
                          "at Radial Direction for Drum")
@@ -820,7 +820,7 @@ discretizing length domain (default=3)"""))
                 return b.mech_sigma_r[t, r] + \
                                 b.therm_sigma_r[t, r]
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Principal Structural Stress"
                              "at Circumferential Direction for Drum")
@@ -828,14 +828,14 @@ discretizing length domain (default=3)"""))
             return b.mech_sigma_theta[t, r] \
                         + b.therm_sigma_theta[t, r]
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc="Principal Structural Stress"
                              "at Axial Direction for Drum")
         def sigma_z(b, t, r):
             return b.mech_sigma_z[t] + b.therm_sigma_z[t, r]
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc='Equivalent von Mises Stress for Drum')
         def sigma_von_Mises(b, t, r):
@@ -849,21 +849,21 @@ discretizing length domain (default=3)"""))
                            + b.sigma_theta[t, r]
                            * b.sigma_z[t, r]))
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc='Variation Principal Stress'
                          'between Radial-Circumferential Directions for Drum')
         def delta_sigma_r_theta(b, t, r):
             return abs(b.sigma_r[t, r] - b.sigma_theta[t, r])
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc='Variation Principal Stress'
                          'between Circumferential-Axial Directions for Drum')
         def delta_sigma_theta_z(b, t, r):
             return abs(b.sigma_theta[t, r]-b.sigma_z[t, r])
 
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          self.radial_domain,
                          doc='Variation Principal Stress'
                          'between Axial-Radial Directions for Drum')
@@ -904,7 +904,7 @@ discretizing length domain (default=3)"""))
                    + 0.81 * k_t_A**2)
 
         # mechanical stress at circumferential direction
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Mechanical Stress '
                          'at Circumferential Direction'
                          'for Drum (EN 12952-3)')
@@ -913,7 +913,7 @@ discretizing length domain (default=3)"""))
                     pressure * r_ms_drum / self.drum_thickness
 
         # thermal stress at circumferential direction
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Thermal Stress at Circumferential'
                              'Direction for Drum (EN 12952-3)')
         def sigma_t(b, t):
@@ -927,27 +927,27 @@ discretizing length domain (default=3)"""))
         # stress at crotch corner P1 and location P2
 
         # mechanical stress by pressure at crotch corner
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Mechanical Stress at Crotch Corner'
                          'for Drum')
         def sigma_p_P1(b, t):
             return b.sigma_p[t] * k_m
 
         # mechanical stress at location P2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Mechanical Stress at'
                              'Critical Point P2 for Drum')
         def sigma_p_P2(b, t):
             return b.sigma_p[t] * k_m / 5
 
         # thermal stress at crotch corner
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Thermal Stress at Crotch Corner for Drum')
         def sigma_t_P1(b, t):
             return b.sigma_t[t] * k_t
 
         # thermal stress at location P2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Thermal Stress'
                          'at Critical Point P2 for Drum')
         def sigma_t_P2(b, t):
@@ -955,14 +955,14 @@ discretizing length domain (default=3)"""))
 
         # total circumferential stress with notch effect
         # crotch corner P1
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Circumferential Stress'
                          'at Crotch Corner for Drum')
         def sigma_theta_P1(b, t):
             return b.sigma_p_P1[t] + b.sigma_t_P1[t]
 
         # location P2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Circumferential Stress'
                          'at Critical Point P2 for Drum')
         def sigma_theta_P2(b, t):
@@ -970,14 +970,14 @@ discretizing length domain (default=3)"""))
 
         # total stress with notch effect // f1 - f2
         # crotch corner
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Total Stress at Crotch Corner for Drum')
         def sigma_notch_P1(b, t):
             return b.sigma_theta_P1[t] \
                 + 1e-6 * b.control_volume.properties_out[t].pressure
 
         # location P2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Total Stress at Critial Point P2 for Header')
         def sigma_notch_P2(b, t):
             return b.sigma_theta_P2[t] \
@@ -985,7 +985,7 @@ discretizing length domain (default=3)"""))
 
         # Von Mises equivalent stress
         # VM stress at crotch corner
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Equivalent von Mises Stress'
                              'at Crotch Corner for Drum')
         def sigma_eff_P1(b, t):
@@ -998,7 +998,7 @@ discretizing length domain (default=3)"""))
                     * (-1e-6 * p_in)))
 
         # VM stress at location P2
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc='Equivalent von Mises Stress'
                          'at Critical Point P2 for Drum')
         def sigma_eff_P2(b, t):
@@ -1120,7 +1120,7 @@ discretizing length domain (default=3)"""))
         blk.drum_wall_temperature[:, :].unfix()
 
         # Fix outlet enthalpy and pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.fix(
                 value(blk.control_volume.properties_in[0].pressure) - 5000.0)
             blk.control_volume.properties_out[t].enth_mol.fix(
@@ -1135,7 +1135,7 @@ discretizing length domain (default=3)"""))
                     idaeslog.condition(res)))
 
         # Unfix outlet enthalpy and pressure
-        for t in blk.flowsheet().config.time:
+        for t in blk.flowsheet().time:
             blk.control_volume.properties_out[t].pressure.unfix()
             blk.control_volume.properties_out[t].enth_mol.unfix()
         blk.pressure_change_total_eqn.activate()

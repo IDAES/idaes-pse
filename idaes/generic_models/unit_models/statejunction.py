@@ -95,7 +95,7 @@ see property package for documentation.}""",
         super(StateJunctionData, self).build()
 
         self.properties = self.config.property_package.build_state_block(
-            self.flowsheet().config.time,
+            self.flowsheet().time,
             doc="Material properties",
             default={
                 "has_phase_equilibrium": False,

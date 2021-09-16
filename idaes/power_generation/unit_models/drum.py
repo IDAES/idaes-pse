@@ -244,7 +244,7 @@ see property package for documentation.}"""))
 
 
         # constraint to make pressures of two inlets of drum mixer the same
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Mixter pressure identical")
         def mixer_pressure_eqn(b, t):
             return b.mixer.SaturatedWater.pressure[t]*1e-6 == \
@@ -259,17 +259,17 @@ see property package for documentation.}"""))
 
         # connect internal units (Mixer to Water Tank Model)
         # Mixer Outlet (mixed_state) to unit control volume.properties_in
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_material_balance(b, t):
             return 1e-4*b.mixer.mixed_state[t].flow_mol == \
                 b.control_volume.properties_in[t].flow_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_enthalpy_balance(b, t):
             return b.mixer.mixed_state[t].enth_mol*1e-4 == \
                 b.control_volume.properties_in[t].enth_mol*1e-4
 
-        @self.Constraint(self.flowsheet().config.time)
+        @self.Constraint(self.flowsheet().time)
         def connection_pressure_balance(b, t):
             return b.mixer.mixed_state[t].pressure*1e-6 == \
                 b.control_volume.properties_in[t].pressure*1e-6
@@ -327,7 +327,7 @@ see property package for documentation.}"""))
 
         # Add performance variables
         self.drum_level = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 within=pyo.PositiveReals,
                 initialize=1.0,
                 doc='Water level from the bottom of the drum',
@@ -335,21 +335,21 @@ see property package for documentation.}"""))
 
         # Velocity of fluid inside downcomer pipe
         self.downcomer_velocity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=10.0,
                 doc='Liquid water velocity at the top of downcomer',
                 units=units_meta.get_derived_units("velocity"))
 
         # Pressure change due to contraction
         self.deltaP_contraction = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=-1.0,
                 doc='Pressure change due to contraction',
                 units=units_meta.get_derived_units("pressure"))
 
         # Pressure change due to gravity
         self.deltaP_gravity = Var(
-                self.flowsheet().config.time,
+                self.flowsheet().time,
                 initialize=1.0,
                 doc='Pressure change due to gravity',
                 units=units_meta.get_derived_units("pressure"))
@@ -361,13 +361,13 @@ see property package for documentation.}"""))
 
         # Expression for the angle from the drum center
         # to the circumference point at water level
-        @self.Expression(self.flowsheet().config.time,
+        @self.Expression(self.flowsheet().time,
                          doc="angle of water level")
         def alpha_drum(b, t):
             return asin((b.drum_level[t]-b.drum_radius)/b.drum_radius)/pyo.units.rad
 
         # Constraint for volume liquid in drum
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="volume of liquid in drum")
         def volume_eqn(b, t):
             return b.volume[t] == \
@@ -377,7 +377,7 @@ see property package for documentation.}"""))
                        * b.drum_length
 
         # Equation for velocity at the entrance of downcomer
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="Velocity at entrance of downcomer")
         def velocity_eqn(b, t):
             return b.downcomer_velocity[t] * 0.25 * const.pi \
@@ -386,7 +386,7 @@ see property package for documentation.}"""))
 
         # Pressure change equation for contraction
         # (acceleration pressure change)
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure change due to contraction")
         def pressure_change_contraction_eqn(b, t):
             return 1e-3*b.deltaP_contraction[t] == -1e-3*0.75 \
@@ -395,7 +395,7 @@ see property package for documentation.}"""))
 
         # Pressure change equation for gravity, density*gravity*height
         g_units = units_meta.get_derived_units("acceleration")
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure change due to gravity")
         def pressure_change_gravity_eqn(b, t):
             return 1e-3 * b.deltaP_gravity[t] == 1e-3 * \
@@ -404,7 +404,7 @@ see property package for documentation.}"""))
                                     to_units=g_units) * b.drum_level[t]
 
         # Total pressure change equation
-        @self.Constraint(self.flowsheet().config.time,
+        @self.Constraint(self.flowsheet().time,
                          doc="pressure drop")
         def pressure_change_total_eqn(b, t):
             return 1e-3 * b.deltaP[t] == 1e-3 * (b.deltaP_contraction[t]

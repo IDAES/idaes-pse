@@ -90,8 +90,6 @@ class TestEstimatorBlock(object):
         assert all(i1 is i2 for i1, i2 in zip(estimator._measurements, measurements))
         assert hasattr(estimator, "category_dict")
         assert hasattr(estimator, "con_category_dict")
-        assert hasattr(estimator, "already_categorized_for_MHE")
-        assert estimator.already_categorized_for_MHE
         assert hasattr(estimator, "MHE_VARS_CONS_BLOCK")
         MHEBlock = estimator.MHE_VARS_CONS_BLOCK
         assert hasattr(MHEBlock, "MEASUREMENT_SET")
@@ -99,16 +97,6 @@ class TestEstimatorBlock(object):
         assert hasattr(MHEBlock, "DIFFERENTIAL_SET")
         assert len(MHEBlock.DIFFERENTIAL_SET.ordered_data()) == \
             len(estimator.category_dict[VariableCategory.DIFFERENTIAL])
-        assert hasattr(estimator, "actualmeasurement_vars")
-        assert estimator.actualmeasurement_vars == \
-            estimator.category_dict[VariableCategory.ACTUALMEASUREMENT]
-        assert hasattr(estimator, "measurementerror_vars")
-        assert estimator.measurementerror_vars == \
-            estimator.category_dict[VariableCategory.MEASUREMENTERROR]
-        assert hasattr(estimator, "modeldisturbance_vars")
-        assert estimator.modeldisturbance_vars == \
-            estimator.category_dict[VariableCategory.MODELDISTURBANCE]
-        
         
     @pytest.mark.unit
     def test_construct_indexed(self, sample_time=0.5):#, horizon=1., nfe=2):
@@ -147,8 +135,6 @@ class TestEstimatorBlock(object):
             assert all(i1 is i2 for i1, i2 in zip(c._measurements, measurements_map[i]))
             assert hasattr(c, "category_dict")
             assert hasattr(c, "con_category_dict")
-            assert hasattr(c, "already_categorized_for_MHE")
-            assert c.already_categorized_for_MHE
             assert hasattr(c, "MHE_VARS_CONS_BLOCK")
             MHEBlock = c.MHE_VARS_CONS_BLOCK
             assert hasattr(MHEBlock, "MEASUREMENT_SET")
@@ -156,16 +142,7 @@ class TestEstimatorBlock(object):
             assert hasattr(MHEBlock, "DIFFERENTIAL_SET")
             assert len(MHEBlock.DIFFERENTIAL_SET.ordered_data()) == \
                 len(c.category_dict[VariableCategory.DIFFERENTIAL])
-            assert hasattr(c, "actualmeasurement_vars")
-            assert c.actualmeasurement_vars == \
-                c.category_dict[VariableCategory.ACTUALMEASUREMENT]
-            assert hasattr(c, "measurementerror_vars")
-            assert c.measurementerror_vars == \
-                c.category_dict[VariableCategory.MEASUREMENTERROR]
-            assert hasattr(c, "modeldisturbance_vars")
-            assert c.modeldisturbance_vars == \
-                c.category_dict[VariableCategory.MODELDISTURBANCE]
-            
+
     @pytest.mark.unit
     def make_estimator(self, sample_time=0.5, horizon=1., nfe=2):
         model = make_model(horizon=horizon, nfe=nfe)
@@ -183,7 +160,7 @@ class TestEstimatorBlock(object):
         estimator.construct()
         estimator.set_sample_time(sample_time)
         return estimator
-    
+
     @pytest.mark.unit
     def test_use_user_given_var_con_categ_dict(self):
         model = make_model(horizon=1, nfe=2)
@@ -206,7 +183,7 @@ class TestEstimatorBlock(object):
                                                                                     time,
                                                                                     input_vars = input_vars,
                                                                                     )
-        
+
         # Provide the category_dict when constructing EstimatorBlock
         estimator = EstimatorBlock(
                 model=model,
@@ -519,8 +496,8 @@ class TestEstimatorBlock(object):
             assert all(i1 is i2 for i1, i2 in zip(curr_con.keys(), estimator.SAMPLEPOINT_SET))
             for t in time: 
                 if t in estimator.SAMPLEPOINT_SET:
-                    pred_expr = actmea_block[bind].actual_measurement[t] - \
-                                (mea_block[bind].var[t] + meaerr_block[bind].measurement_error[t]) == 0.0
+                    pred_expr = actmea_block[bind].actual_measurement[t] ==\
+                                (mea_block[bind].var[t] + meaerr_block[bind].measurement_error[t])
                     assert curr_con[t].expr.to_string() == pred_expr.to_string()
             
     @pytest.mark.unit
@@ -807,4 +784,3 @@ class TestEstimatorBlock(object):
 
         estimates = estimator.generate_estimates_at_time(tlast)
         assert estimates == [105., 205.]
-        
