@@ -660,6 +660,12 @@ class DMF(workspace.Workspace, HasTraits):
             ):
                 yield rsrc
 
+    def find_one_by_id(self, identifier: str, **kwargs):
+        """Convenience method for getting a single resource by its identifier."""
+        for result in self.find_by_id(identifier, **kwargs):
+            return result
+
+
     def find_related(
         self, rsrc, filter_dict=None, maxdepth=0, meta=None, outgoing=True
     ):

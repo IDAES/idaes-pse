@@ -26,6 +26,10 @@ import re
 # ext
 import pandas as pd
 
+# Local
+from idaes.dmf.resource import Resource
+
+
 __author__ = "Dan Gunter"
 
 
@@ -74,6 +78,39 @@ class Table:
 
     #: Shorthand for getting list of units
     units = units_list
+
+    @staticmethod
+    def read_table(path, inline, file_format):
+        fmt = file_format.lower()
+        name = path.name
+        if fmt == "infer":
+            if name.endswith(".csv"):
+                fmt = "csv"
+            elif name.endswith(".xls") or name.endswith(".xlsx"):
+                fmt = "excel"
+            else:
+                raise ValueError(f"Cannot infer file format for '{name}'")
+        elif fmt not in ("csv", "excel"):
+            raise ValueError(f"Unknown file format '{fmt}'; must be csv or excel")
+
+        # create a new table to work with
+        table = Table()
+
+        # set up keywords to read only header row if we are not including data inline
+        kwargs = {}
+        if not inline:
+            kwargs["nrows"] = 0
+
+        # read the table (or at least its header)
+        try:
+            if fmt == "csv":
+                table.read_csv(path, **kwargs)
+            elif fmt == "excel":
+                table.read_excel(path, **kwargs)
+        except Exception as err:
+            raise IOError(f"Cannot read '{path}': {err}")
+
+        return table
 
     def read_csv(self, filepath, **kwargs) -> None:
         """Read the table from a CSV file using pandas' `read_csv()`.
@@ -167,10 +204,12 @@ class Table:
         return new_name, unit
 
     def add_to_resource(self, rsrc):
+        """Add the current table to the given resource.
+        """
         rsrc.v["data"]["table"] = self.as_dict()
 
     @classmethod
-    def get_from_resource(cls, rsrc) -> "Table":
+    def from_resource(cls, rsrc: Resource) -> Dict[str, "Table"]:
         """Get an instance of this class from data in a Resource.
 
         Args:
@@ -179,21 +218,27 @@ class Table:
         Returns:
 
         """
-        try:
-            table_dict = rsrc.v["data"]["table"]
-        except KeyError:
+        data = rsrc.v["data"]
+        if Resource.TABLE_FIELD in data:
+            # Single inline resource
+            return {"": cls.from_dict(data[Resource.TABLE_FIELD])}
+        elif Resource.TABLE_INFO_FIELD in data:
+            # One or more files
+            tables = {}
+            for path in rsrc.get_datafiles():
+                table = cls.read_table(path, True, "infer")
+                tables[path.name] = table
+            return tables
+        else:
             raise KeyError("No table in resource")
-        return cls.from_dict(table_dict)
 
-    def as_dict(self) -> Dict:
+    def as_dict(self, values=True) -> Dict:
         header = list(self._data.columns)
-        d = {
-            column: {
-                "units": self._units[column],
-                "values": list(self._data[column])
-            }
-            for column in header
-        }
+        d = {}
+        for column in header:
+            d[column] = {"units": self._units[column]}
+            if values:
+                d[column]["values"] = list(self._data[column])
         return d
 
     @classmethod
