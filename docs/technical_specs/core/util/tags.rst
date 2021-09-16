@@ -2,7 +2,7 @@ Tagging Classes
 ===============
 
 IDAES contains classes for tagging model quantities and grouping them.  The tags
-provide a convenient short cut to important model inputs and outputs and 
+provide a convenient short cut to important model inputs and outputs and
 facilities for numeric formatting and displaying output in desired units.
 
 Examples:
@@ -97,6 +97,25 @@ independently.
   assert abs(group["x"][1].expression.lb - 0.001) < 1e-5 # x is in kg
   assert abs(group["x"][1].expression.ub - 0.003) < 1e-5 # x is in kg
 
+When a tagged a quantity can vary over several orders of magnitude, it can be
+helpful to provide conditional formatting. To do this a callable can be provided
+as the ``format_string`` which takes the quantity value and returns a format
+string. A simple example is given below.
+
+.. testcode::
+
+  m = model()
+
+  tagw = ModelTag(
+    expr=m.w,
+    format_string=lambda x: "{:,.0f}" if x >= 100 else "{:.2f}",
+    display_units=pyo.units.g,
+  )
+
+  tagw.set(1*pyo.units.g)
+  assert str(tagw[1, "a"]) == "1.00 g"
+  tagw.set(1*pyo.units.kg)
+  assert str(tagw[1,"a"]) == "1,000 g"
 
 Available Classes
 -----------------
@@ -106,3 +125,5 @@ Available Classes
 
 .. autoclass:: idaes.core.util.tags.ModelTagGroup
   :members:
+
+.. autofunction:: idaes.core.util.tags.svg_tag
