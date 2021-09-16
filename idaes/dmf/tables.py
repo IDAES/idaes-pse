@@ -13,11 +13,31 @@
 """
 Table handling for DMF.
 
+The main class defined here is :class:`Table`. It provides constructor methods
+for reading from Excel and CSV files. There is a convention defined for
+indicating units in column headers so that this code can split the unit from
+the column name. Other methods are defined for adding and extracting tables
+from DMF :class:`idaes.dmf.resource.Resource` objects.
 
-To use the API, create an instance of the :class:`Table` class.
-Then (or previously) use the DMF's :class:`idaes.dmf.resource.Resource` class
-to create a resource object, and call :meth:`Table.add_to_resource()` to add
-the table to the resource.
+In the simplest case, you would create a new DMF resource for a CSV table like this::
+
+    from idaes.dmf.resource import Resource
+    resource = Resource()
+    resource.add_table("my_file.csv")
+    # you can now save this resource in the DMF
+
+Then you could retrieve and use that table like this::
+
+    # retrieve resource from the DMF
+    table = resource.tables["my_file.csv"]
+    dataframe = table.data    # Pandas dataframe
+    units = table.units       # Units extracted from header row (strings)
+
+See also, on the DMF Resource class:
+
+    * :meth:`idaes.dmf.resource.Resource.add_table`
+    * :attr:`idaes.dmf.resource.Resource.tables`
+
 """
 # stdlib
 from typing import List, Tuple, Dict
@@ -80,9 +100,26 @@ class Table:
     units = units_list
 
     @staticmethod
-    def read_table(path, inline, file_format):
+    def read_table(filepath, inline: bool, file_format: str) -> "Table":
+        """Determine the input file type, then construct a new Table object
+        by calling one of :meth:`Table.read_csv` or :meth:`Table.read_excel`.
+
+        Args:
+            filepath: Any valid first argument to pandas `read_csv`
+            inline: If True, read the whole table in; otherwise just get the
+                    column names and units from the header row.
+            file_format: One of 'infer', 'csv', or 'excel'. For 'infer',
+                         use the file extension (and only the extension) to
+                         determine if it's a CSV or Excel file.
+
+        Returns:
+            Constructed Table object
+
+        Raises:
+            IOError: If the input cannot be read or parsed
+        """
         fmt = file_format.lower()
-        name = path.name
+        name = filepath.name
         if fmt == "infer":
             if name.endswith(".csv"):
                 fmt = "csv"
@@ -104,11 +141,11 @@ class Table:
         # read the table (or at least its header)
         try:
             if fmt == "csv":
-                table.read_csv(path, **kwargs)
+                table.read_csv(filepath, **kwargs)
             elif fmt == "excel":
-                table.read_excel(path, **kwargs)
+                table.read_excel(filepath, **kwargs)
         except Exception as err:
-            raise IOError(f"Cannot read '{path}': {err}")
+            raise IOError(f"Cannot read '{filepath}': {err}")
 
         return table
 
@@ -203,20 +240,33 @@ class Table:
             unit = unit.strip()
         return new_name, unit
 
-    def add_to_resource(self, rsrc):
-        """Add the current table to the given resource.
+    def add_to_resource(self, rsrc: Resource):
+        """Add the current table, inline, to the given resource.
+
+        Args:
+            rsrc: A DMF :class:`Resource` instance
+
+        Returns:
+            None
         """
-        rsrc.v["data"]["table"] = self.as_dict()
+        rsrc.data[Resource.TABLE_FIELD] = self.as_dict()
 
     @classmethod
     def from_resource(cls, rsrc: Resource) -> Dict[str, "Table"]:
-        """Get an instance of this class from data in a Resource.
+        """Get an instance of this class from data in the given resource.
 
         Args:
-            rsrc: A DMF resource instance
+            rsrc: A DMF :class:`Resource` instance
 
         Returns:
+            Dictionary of tables in resource. If there is only one inline
+            table, the dictionary is of length one with only key "" (empty string).
+            If there are multiple tables referenced by file the dictionary
+            keys are the (relative) file names.
+            If there are no tables in this resource, raises KeyError.
 
+        Raises:
+            KeyError: if there are no tables in this resource
         """
         data = rsrc.v["data"]
         if Resource.TABLE_FIELD in data:
@@ -233,6 +283,17 @@ class Table:
             raise KeyError("No table in resource")
 
     def as_dict(self, values=True) -> Dict:
+        """Get the representation of this table as a dict.
+
+        Args:
+            values: If True, include the values in the dict. Otherwise only
+                    include the units for each column.
+
+        Returns:
+            Dictionary with the structure accepted by :meth:`from_dict`.
+            If the "values" argument is False, that key will be missing from
+            the dict for each column.
+        """
         header = list(self._data.columns)
         d = {}
         for column in header:
@@ -242,12 +303,32 @@ class Table:
         return d
 
     @classmethod
-    def from_dict(cls, data) -> "Table":
+    def from_dict(cls, data: Dict) -> "Table":  # unquote in Py3.7+ see PEP563
+        """Create a new Table object from a dictionary of data and units.
+
+        Args:
+            data: Dictionary with the following structure::
+
+                {
+                    'column-name-1': {
+                        'units': 'unit',
+                        'values': [ value, value, .. ]
+                    },
+                    'column-name-2': {
+                        'units': 'unit',
+                        'values': [ value, value, .. ]
+                    },
+                    ...etc...
+                }
+
+        Returns:
+            :class:`Table` object
+        """
         tbl = Table()
         dataframe_dict = {}
         for column, info in data.items():
-            dataframe_dict[column] = info["values"]
-            tbl._units[column] = info["units"]
+            dataframe_dict[column] = info.get("values", [])
+            tbl._units[column] = info.get("units", "")
         tbl._data = pd.DataFrame(dataframe_dict)
         return tbl
 

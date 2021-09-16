@@ -334,7 +334,7 @@ class Resource:
 
         Returns:
             If there are tables, return a dictionary of the form
-              {'file': <idaes.dmf.tables.Table object>, ...}
+            ``{'file': <idaes.dmf.tables.Table object>, ...}``.
             If the table was stored inline in the resource the file will be the
             empty string.
             If there are no tables, this will return an empty dict.
@@ -345,6 +345,28 @@ class Resource:
         except KeyError:
             tables = {}
         return tables
+
+    @property
+    def table(self) -> "Table":
+        """Convenience attribute for retrieving a table from the resource when you
+         know that there is only one. If there are no tables, returns None.
+
+         Returns:
+             If one table, the Table object
+             If no tables, None
+             If multiple tables, raises an error
+
+         Raises:
+             KeyError: If there is more than one table
+        """
+        t = self.tables
+        if len(t) == 0:
+            return None
+        if len(t) == 1:
+            for v in t.values():
+                return v
+        raise KeyError(f"There are {len(t)} tables in the resource")
+
 
     def _massage_values(self):
         try:
@@ -598,6 +620,13 @@ class Resource:
         do_copy: bool = True,
     ):
         """Add a data file that represents tabular data.
+
+        To retrieve this data file (as a :class:`idaes.dmf.tables.Table` object),
+        get the `.tables` dict and use `path.name` as the key. For example::
+
+            my_resource.add_table("/path/to/my_table.csv")
+            # ...
+            dataframe = my_resource.tables["my_table.csv"].data
 
         Args:
             path: Path to the data file, as a string or Path object
