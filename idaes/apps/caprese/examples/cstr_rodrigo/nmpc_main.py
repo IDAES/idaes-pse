@@ -146,8 +146,10 @@ def main():
         (plant.mod.Tjinb[0], 0.01),
         ]
     nmpc.plant.set_variance(variance)
-    input_variance = [v.variance for v in plant.input_vars]
-    input_noise_bounds = [(var[p_t0].lb, var[p_t0].ub) for var in plant.input_vars]
+    input_variance = [v.variance for v in plant.INPUT_BLOCK[:].var]
+    input_noise_bounds = [
+        (var[p_t0].lb, var[p_t0].ub) for var in plant.INPUT_BLOCK[:].var
+        ]
 
     random.seed(246)
     #-------------------------------------------------------------------------

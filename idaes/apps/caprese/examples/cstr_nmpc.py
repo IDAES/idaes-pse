@@ -173,9 +173,9 @@ def main():
             (cstr.volume[0.0], 0.05),
             ]
     nmpc.controller.set_variance(variance)
-    measurement_variance = [v.variance for v in controller.measurement_vars]
+    measurement_variance = [v.variance for v in controller.MEASUREMENT_BLOCK[:].var]
     measurement_noise_bounds = [
-            (0.0, var[c_t0].ub) for var in controller.measurement_vars
+            (0.0, var[c_t0].ub) for var in controller.MEASUREMENT_BLOCK[:].var
             ]
 
     mx = plant.mod.fs.mixer
@@ -184,8 +184,8 @@ def main():
             (mx.E_inlet_state[0.0].flow_vol, 0.001),
             ]
     nmpc.plant.set_variance(variance)
-    input_variance = [v.variance for v in plant.input_vars]
-    input_noise_bounds = [(0.0, var[p_t0].ub) for var in plant.input_vars]
+    input_variance = [v.variance for v in plant.INPUT_BLOCK[:].var]
+    input_noise_bounds = [(0.0, var[p_t0].ub) for var in plant.INPUT_BLOCK[:].var]
 
     random.seed(246)
 
