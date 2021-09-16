@@ -14,11 +14,14 @@
 Simple rankine cycle model. Has couple of options:
 1. Recover waste heat after turbine to mimic feed water heater integration
 2. Option to include boiler efficiency which is a linear fit f(capacity factor)
+
 if no heat recovery, the flowsheet is as follows:
     Boiler --> Turbine --> Condenser --> Pump --> Boiler
+
 if heat_recovery, the flowsheet is as follows:
     Boiler --> Turbine --> pre-condenser(- Q_recovered) --> Condenser -->
     Pump --> Feed water heater(+ Q_recovered) --> Boiler
+
 Note:
 * Boiler and condenser are simple heater blocks
 * IAPWS95 for water and steam properties
@@ -176,7 +179,8 @@ def create_model(heat_recovery=False, calc_boiler_eff=False, capital_fs=False):
 def initialize_model(m, outlvl=idaeslog.INFO):
 
     # Deactivate the constraint linking the pre_condenser Q and feed water Q
-    m.fs.eq_heat_recovery.deactivate()
+    if m.heat_recovery:
+        m.fs.eq_heat_recovery.deactivate()
 
     # Check for degrees of freedom before proceeding with initialization
     assert degrees_of_freedom(m) == 0
@@ -298,6 +302,7 @@ def close_flowsheet_loop(m):
     """Closes the loop i.e. the arc between the feed water heater and
     boiler. When the pressure and enthalpy arcs are enabled, the bfw_pump
     spec for deltaP and the inlet enth_mol for the boiler need to be unfixed.
+
     Returns:
         m: model object after closing the loop
     """
@@ -340,6 +345,7 @@ def add_capital_cost(m):
     """Add capital cost expressions. Leverages costing correlations from the
     IDAES costing library. Note that the capital cost correlations are all
     based on the boiler feed water flowrate.
+
     Returns:
         m: model object after adding capital cost correlations
     """
@@ -395,6 +401,7 @@ def add_operating_cost(m, include_cooling_cost=True):
     """Add operating cost expressions. The operating cost only includes
     the cost of coal. This is computed by calculating the amount of coal
     required based on HHV value of coal and the boiler heat duty.
+
     Returns:
         m: model object after adding operating cost correlations
     """
@@ -486,6 +493,7 @@ def square_problem(heat_recovery=None,
 
     """This method simulates the simple rankine cycle by adding capital and
     operating costs.
+
     """
     m = ConcreteModel()
 
@@ -531,3 +539,12 @@ def square_problem(heat_recovery=None,
     generate_report(m, unit_model_report=False)
 
     return m
+
+
+if __name__ == "__main__":
+    #Run a square problem with rankine cycle
+    m = square_problem(
+        heat_recovery=True,
+        capital_fs=True,
+        calc_boiler_eff=True,
+        p_max=300, net_power=300)

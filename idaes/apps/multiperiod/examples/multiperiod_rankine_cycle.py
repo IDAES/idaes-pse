@@ -2,11 +2,11 @@ import pyomo.environ as pyo
 import numpy as np
 from random import random
 from idaes.apps.multiperiod.multiperiod import MultiPeriodModel
-from idaes.apps.multiperiod.examples.simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
+from idaes.apps.rankine.simple_rankine_cycle import create_model, set_inputs, initialize_model, close_flowsheet_loop, add_operating_cost
 
 #Example driver for multiperiod.py using a simple rankine cycle
 
-#Create a steady-state ranking cycle model, note yet multi-period capable
+#Create a steady-state ranking cycle model, not yet setup for multi-period
 def create_ss_rankine_model():
     p_lower_bound = 300
     p_upper_bound = 450
@@ -18,7 +18,7 @@ def create_ss_rankine_model():
     m.rankine = close_flowsheet_loop(m.rankine)
     m.rankine = add_operating_cost(m.rankine)
 
-    # Setting bounds for net cycle power output for the capex plant
+    # Setting bounds for net cycle power output for a capex design
     m.rankine.fs.eq_min_power = pyo.Constraint(
         expr=m.rankine.fs.net_cycle_power_output >= p_lower_bound*1e6)
 
@@ -28,7 +28,6 @@ def create_ss_rankine_model():
     m.rankine.fs.boiler.inlet.flow_mol[0].unfix()
     m.rankine.fs.boiler.inlet.flow_mol[0].setlb(1)
 
-    #Now add coupling information
     return m
 
 #Create a multiperiod capable steady-state rankine cycle model. This is a
