@@ -135,8 +135,9 @@ def test_resource(example_csv_file):
     validate_example_data(t)
     t.add_to_resource(rsrc)
 
-    t2 = Table.get_from_resource(rsrc)
-    validate_example_data(t2)
+    t2_dict = Table.from_resource(rsrc)
+    assert "" in t2_dict
+    validate_example_data(t2_dict[""])
 
 
 @pytest.mark.component
@@ -155,8 +156,9 @@ def test_dmf(example_csv_file, tmp_dmf):
 
     # retrieve from DMF
     r2 = tmp_dmf.find_one(name="table_test_resource")
-    t2 = Table.get_from_resource(r2)
-    validate_example_data(t2)
+    t2_dict = r2.tables
+    assert "" in t2_dict
+    validate_example_data(t2_dict[""])
 
 
 @pytest.mark.unit
@@ -164,8 +166,9 @@ def test_get_from_resource():
     # get non-existent resource
     r_no_table = resource.Resource(type_=resource.ResourceTypes.tabular)
     with pytest.raises(KeyError):
-        Table.get_from_resource(r_no_table)
-
+        tbls = Table.from_resource(r_no_table)
+    tbls = r_no_table.tables
+    assert tbls == {}
 
 # Helpers
 
