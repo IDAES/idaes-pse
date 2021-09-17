@@ -37,7 +37,8 @@ from pyomo.environ import units as pyunits
 # Import IDAES cores
 from idaes.core import VaporPhase, LiquidPhase, Component, PhaseType
 
-from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.state_definitions \
+    import FTPx, FpcTP
 from idaes.generic_models.properties.core.eos.ceos import Cubic, CubicType
 from idaes.generic_models.properties.core.phase_equil.forms import log_fugacity
 from idaes.generic_models.properties.core.phase_equil import SmoothVLE
@@ -400,7 +401,7 @@ _component_params = {
 
 
 # returns a configuration dictionary for the list of specified components
-def get_prop(components=None, phases="Vap"):
+def get_prop(components=None, phases="Vap", state_def=FTPx):
     if components is None:
         components = list(_component_params.keys())
     configuration = {
@@ -415,14 +416,26 @@ def get_prop(components=None, phases="Vap"):
                        "temperature": pyunits.K},
 
         # Specifying state definition
-        "state_definition": FTPx,
-        "state_bounds": {"flow_mol": (0, 8000, 50000, pyunits.mol/pyunits.s),
-                         "temperature": (273.15, 500, 2500, pyunits.K),
-                         "pressure": (5e4, 1.3e5, 1e7, pyunits.Pa)},
+        "state_definition": state_def,
         "pressure_ref": (101325, pyunits.Pa),
         "temperature_ref": (298.15, pyunits.K),
     }
-
+    if state_def == FTPx:
+        configuration["state_bounds"] = {
+            "flow_mol": (0, 8000, 50000, pyunits.mol/pyunits.s),
+            "temperature": (273.15, 500, 2500, pyunits.K),
+            "pressure": (5e4, 1.3e5, 1e7, pyunits.Pa)
+            }
+    elif state_def == FpcTP:
+        configuration["state_bounds"] = {
+            "flow_mol_phase_comp": (0, 8000, 50000, pyunits.mol/pyunits.s),
+            "temperature": (273.15, 500, 2500, pyunits.K),
+            "pressure": (5e2, 1.3e5, 1e7, pyunits.Pa)
+            }      
+    else:
+        raise NotImplementedError(
+            f"Support for state variables {state_def} not implemented"
+            )
     c = configuration["components"]
     for comp in components:
         c[comp] = copy.deepcopy(_component_params[comp])
