@@ -19,11 +19,10 @@ __author__ = "Jaffer Ghouse"
 import idaes.logger as idaeslog
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Arc, Port
 from pyomo.environ import value, Integers, RangeSet, TransformationFactory, \
-    Block, Reference, SolverFactory
-from pyomo.util.infeasible import log_infeasible_constraints
+    Block, Reference
 
 # Import IDAES cores
 from idaes.generic_models.unit_models.distillation import Tray, Condenser, \
@@ -100,7 +99,7 @@ bubble point i.e. total condenser,
 user specified temperature.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="heat duty to/from tray construction flag.",
         doc="""indicates if there is heat duty to/from the tray,
 **default** - False.
@@ -109,7 +108,7 @@ user specified temperature.}"""))
 **False** - exclude a heat duty term.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="pressure change term construction flag",
         doc="""indicates whether terms for pressure change should be
 constructed,
@@ -119,7 +118,7 @@ constructed,
 **False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_liquid_side_draw", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="liquid side draw construction flag.",
         doc="""indicates if there is a liquid side draw from all trays,
 **default** - False.
@@ -128,7 +127,7 @@ constructed,
 **False** - exclude a liquid side draw for all trays.}"""))
     CONFIG.declare("has_vapor_side_draw", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="vapor side draw construction flag.",
         doc="""indicates if there is a vapor side draw from all trays,
 **default** - False.
