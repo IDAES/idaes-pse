@@ -28,8 +28,7 @@ from idaes.power_generation.costing.power_plant_costing import (
 
 from idaes.core.util.unit_costing import initialize as cost_init
 from idaes.core.util.unit_costing import (
-    fired_heater_costing,
-    pressure_changer_costing)
+    fired_heater_costing)
 
 
 def add_total_plant_cost(b, project_contingency, process_contingency):
@@ -56,7 +55,8 @@ def get_soec_capital_costing(m):
     @m.fs.soec.costing.Constraint()
     def total_plant_cost_eq(c):
         soec_cost = 421  # $/kW
-        return c.total_plant_cost*1e6 == soec_cost*m.fs.soec.power[0]/1000
+        return (c.total_plant_cost*1e6 ==
+                soec_cost*m.fs.soec.total_power[0]/1000)
 
     # air preheater, ng preheaters, and bhx1 - U-tube HXs
     # costed with IDAES generic heat exchanger correlation
@@ -77,14 +77,11 @@ def get_soec_capital_costing(m):
                          ref_parameter_pressure=m.fs.bhx2.tube_inlet.pressure[0])
     add_total_plant_cost(m.fs.bhx2, 1.15, 1.15)
 
-    # H2 compressor and intercoolers
-    # costed with IDAES generic compressor and heat exchanger correlations
+    # H2 compresso
+    # costed with IDAES generic compressor correlations
+    # this is a placeholder until H2 compressor scaling is released
     for unit in [m.fs.hcmp01, m.fs.hcmp02, m.fs.hcmp03, m.fs.hcmp04]:
         unit.get_costing()
-        add_total_plant_cost(unit, 1.15, 1.15)
-
-    for unit in [m.fs.hcmp_ic01, m.fs.hcmp_ic02, m.fs.hcmp_ic03, m.fs.hcmp_ic04]:
-        unit.get_costing(hx_type='fixed_head')
         add_total_plant_cost(unit, 1.15, 1.15)
 
     # all the following equipment is scaled based on the bit baseline report
@@ -153,7 +150,7 @@ def get_soec_capital_costing(m):
                                 "12.4", "12.5", "12.6", "12.7", "12.8", "12.9"]
     m.fs.aux_load_block = pyo.Block()
 
-    aux_load = (m.fs.soec.power[0]/1000 +
+    aux_load = (m.fs.soec.total_power[0]/1000 +
                 m.fs.aux_boiler_feed_pump.work_mechanical[0]/1000)
 
     get_PP_costing(m.fs.aux_load_block, auxilliary_load_accounts, aux_load,
@@ -175,11 +172,7 @@ def get_soec_capital_costing(m):
         m.fs.hcmp01,
         m.fs.hcmp02,
         m.fs.hcmp03,
-        m.fs.hcmp04,
-        m.fs.hcmp_ic01,
-        m.fs.hcmp_ic02,
-        m.fs.hcmp_ic03,
-        m.fs.hcmp_ic04,
+        m.fs.hcmp04
         ]
 
     for u in generic_costing_units:
@@ -216,8 +209,8 @@ def get_soec_OM_costing(m):
 
     @m.fs.Constraint()
     def stack_replacement_cost(fs):
-        return fs.costing.other_fixed_costs == (
-            stack_replacement_cost*m.fs.soec.power[0])
+        return fs.costing.other_fixed_costs*1e6 == (
+            stack_replacement_cost*m.fs.soec.total_power[0]/1000)
     m.fs.costing.other_fixed_costs.unfix()
 
     # initialize fixed costs
@@ -233,7 +226,7 @@ def get_soec_OM_costing(m):
     # electricity
     @m.fs.Expression(m.fs.time)
     def plant_load(fs, t):
-        return (m.fs.soec.power[t] +
+        return (m.fs.soec.total_power[t] + m.fs.h2_compressor_power[t] +
                 m.fs.aux_boiler_feed_pump.work_mechanical[t])
 
     # natural gas
@@ -267,17 +260,18 @@ def get_soec_OM_costing(m):
     prices = {"electricity": 30*pyo.units.USD/pyo.units.MWh}
     get_variable_OM_costs(m, m.fs.H2_product, resources, rates, prices=prices)
 
-    m.fs.H2_costing.other_variable_costs.unfix()
-
-    @m.fs.Constraint(m.fs.time)
-    def other_variable_costs_rule(fs, t):
-        return (fs.H2_costing.other_variable_costs[t] ==
-                fs.costing.maintenance_material_cost)
-
     # initialize variable costs
-    for t in m.fs.time:
-        calculate_variable_from_constraint(
-            m.fs.H2_costing.other_variable_costs[t],
-            m.fs.other_variable_costs_rule[t])
-
     initialize_variable_OM_costs(m)
+
+
+def display_soec_costing(m):
+    print("Capital cost: ${:.0f}M".format(
+        pyo.value(m.fs.costing.total_TPC)))
+    print("Fixed O&M cost: ${:.1f}M/yr".format(
+        pyo.value(m.fs.costing.total_fixed_OM_cost)))
+    print("Electricity cost: ${:.2f}/kg H2".format(
+         pyo.value(m.fs.H2_costing.variable_operating_costs[0, "electricity"])))
+    print("Fuel cost: ${:.2f}/kg H2".format(
+        pyo.value(m.fs.H2_costing.variable_operating_costs[0, "natural gas"])))
+    print("Total variable O&M cost: ${:.2f}/kg H2".format(
+        pyo.value(m.fs.H2_costing.total_variable_OM_cost[0])))
