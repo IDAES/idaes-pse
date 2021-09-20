@@ -17,11 +17,8 @@ The unit has 1 inlet stream for rich CO2 inlet: inlet
 the unti has 3 outlet streams: pureCO2, water, and vent
 
 The state variables are flow_mol, mol_fraction, temperature, and pressure.
-The state variables can be accessed thotough ports named:
-    inlet
-    pure_CO2
-    water
-    vent_gas
+The state variables can be accessed via ports named: inlet, pure_CO2, water,
+and vent_gas
 
 The surrogate models were prepared varying rich inlet flowrate. Expected value
 11350 lbmol/hr, lower bound: 10850 lbmol/hr, and upper bound: 11850 lbmol/hr.
@@ -40,23 +37,22 @@ The unit has 1 inlet stream for rich CO2 inlet: inlet
 Also, the unti has 3 outlet streams: pureCO2, water, and vent
 
 The state variables are:
-    (1) flow_mol
-    (2) temperature
-    (3) pressure
-    (4) mole_frac_comp
-The state variables can be accessed thotough ports named:
-    inlet
-    pureco2
-    water
-    vent
-    
+(1) flow_mol
+(2) temperature
+(3) pressure
+(4) mole_frac_comp
+
+The state variables can be accessed via ports named: inlet, pureco2, water,
+and vent
+
 This model is only based on the inlet flow rate of the CO2 rich stream
 The degrees of freedom are the Inlet states:
-    (1) Inlet flow in mol/s
-    (2) Inlet temperature in K
-    (3) Inlet pressure in Pa
-    (4) Inlet component mol fractions: CO2, H2O, N2, Ar, O2
+(1) Inlet flow in mol/s
+(2) Inlet temperature in K
+(3) Inlet pressure in Pa
+(4) Inlet component mol fractions: CO2, H2O, N2, Ar, O2
 """
+
 # Import IDAES cores
 import numpy as np
 from idaes.core import declare_process_block_class, UnitModelBlockData
@@ -81,7 +77,7 @@ class CPUData(UnitModelBlockData):
     Assumptions:
     Fixed composition, temperature, and pressure of feed stream
     Fixed CO2 purity in the CO2 product stream
-    
+
     '''
 
     def build(self):
@@ -96,11 +92,11 @@ class CPUData(UnitModelBlockData):
         self.inlet = Port(noruleinit=True,
                           doc="A port for co2 rich inlet stream")
         self.pureco2 = Port(noruleinit=True,
-                             doc="A port for pure CO2 outlet stream")
+                            doc="A port for pure CO2 outlet stream")
         self.water = Port(noruleinit=True,
                           doc="A port for water outlet stream")
         self.vent = Port(noruleinit=True,
-                             doc="A port for vent gas outlet stream")
+                         doc="A port for vent gas outlet stream")
 
         # Add state vars to the ports
         self.inlet.add(self.inlet_flow_mol, "flow_mol")
@@ -133,7 +129,7 @@ class CPUData(UnitModelBlockData):
             (3) Component mole flows [mol/s]: [stream_name]_flow_mol_comp
             (4) Temperature [K]: [stream_name]_temperature
             (5) Pressure [Pa]: [stream_name]_pressure
-            
+
         '''
         # units declaration for vars
         flow_units = pyunits.mol/pyunits.s
@@ -258,12 +254,14 @@ class CPUData(UnitModelBlockData):
             return (
                 0 == 1 - sum(b.pureco2_mole_frac_comp[t, c]
                              for c in self.component_list))
+
         @self.Constraint(self.flowsheet().config.time,
                          doc="Water stream: component mole flow equation")
         def mole_frac_comp_water_eqn(b, t):
             return (
                 0 == 1 - sum(b.water_mole_frac_comp[t, c]
                              for c in self.component_list))
+
         @self.Constraint(self.flowsheet().config.time,
                          doc="Vent stream: component mole flow equation")
         def mole_frac_comp_vent_eqn(b, t):
@@ -318,10 +316,9 @@ class CPUData(UnitModelBlockData):
     def add_surrogates(self):
         ''' This section is to add the surrogate models'''
 
-
         # Compressure heat duty
         @self.Expression(self.flowsheet().config.time,
-                          doc="Compressor train heat duty [J/s]")
+                         doc="Compressor train heat duty [J/s]")
         def heat_duty(b, t):
             return (
                 sm.heat_duty_fun.f(
@@ -335,7 +332,7 @@ class CPUData(UnitModelBlockData):
 
         # Compressor train work
         @self.Expression(self.flowsheet().config.time,
-                          doc="Compressor train work [W]")
+                         doc="Compressor train work [W]")
         def work(b, t):
             return (
                 sm.compressor_power_fun.f(
@@ -349,7 +346,7 @@ class CPUData(UnitModelBlockData):
 
         # Refrigeration duty
         @self.Expression(self.flowsheet().config.time,
-                          doc="Refrigeration duty [W]")
+                         doc="Refrigeration duty [W]")
         def refrigeration_duty(b, t):
             return (
                 sm.refrigeration_duty_fun.f(
@@ -363,7 +360,7 @@ class CPUData(UnitModelBlockData):
 
         # Pure CO2 stream: Temperature
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Temperature: pureCO2 [K]")
+                         doc="Temperature: pureCO2 [K]")
         def pureco2_temperature_eq(b, t):
             return (
                 b.pureco2_temperature[t] ==
@@ -378,7 +375,7 @@ class CPUData(UnitModelBlockData):
 
         # Pure CO2 stream: Pressure
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Pressure: pureCO2 [Pa]")
+                         doc="Pressure: pureCO2 [Pa]")
         def pureco2_pressure_eq(b, t):
             return (
                 b.pureco2_pressure[t] ==
@@ -391,10 +388,9 @@ class CPUData(UnitModelBlockData):
                     b.inlet_mole_frac_comp[t, 'N2']
                     ))
 
-
         # Pure CO2 stream: Total flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Flow_mol Total: pureCO2 [mol/s]")
+                         doc="Flow_mol Total: pureCO2 [mol/s]")
         def pureco2_total_flow_eq(b, t):
             return (
                 b.pureco2_flow_mol[t] ==
@@ -409,7 +405,7 @@ class CPUData(UnitModelBlockData):
 
         # Pure CO2 stream: CO2 mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="co2 component flow_mol in pureco2")
+                         doc="co2 component flow_mol in pureco2")
         def pureco2_co2_flow_mol_comp_eq(b, t):
             return (
                 b.pureco2_flow_mol_comp[t, 'CO2'] ==
@@ -422,10 +418,9 @@ class CPUData(UnitModelBlockData):
                     b.inlet_mole_frac_comp[t, 'N2']
                     ))
 
-
         # Pure CO2 stream: O2 mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="o2 component flow_mol in pureco2")
+                         doc="o2 component flow_mol in pureco2")
         def pureco2_o2_flow_mol_comp_eq(b, t):
             return (
                 b.pureco2_flow_mol_comp[t, 'O2'] ==
@@ -438,10 +433,9 @@ class CPUData(UnitModelBlockData):
                     b.inlet_mole_frac_comp[t, 'N2']
                     ))
 
-
         # Pure CO2 stream: Ar mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="ar component flow_mol in pureco2")
+                         doc="ar component flow_mol in pureco2")
         def pureco2_ar_flow_mol_comp_eq(b, t):
             return (
                 b.pureco2_flow_mol_comp[t, 'Ar'] ==
@@ -454,10 +448,9 @@ class CPUData(UnitModelBlockData):
                     b.inlet_mole_frac_comp[t, 'N2']
                     ))
 
-
         # Pure CO2 stream: H2O mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="h2o component flow_mol in pureco2")
+                         doc="h2o component flow_mol in pureco2")
         def pureco2_h2o_flow_mol_comp_eq(b, t):
             return (
                 b.pureco2_flow_mol_comp[t, 'H2O'] ==
@@ -470,10 +463,9 @@ class CPUData(UnitModelBlockData):
                     b.inlet_mole_frac_comp[t, 'N2']
                     ))
 
-
         # Water stream: Total flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Flow_mol Total: water [mol/s]")
+                         doc="Flow_mol Total: water [mol/s]")
         def water_total_flow_eq(b, t):
             return (
                 b.water_flow_mol[t] ==
@@ -488,7 +480,7 @@ class CPUData(UnitModelBlockData):
 
         # Water stream: Temperature
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Temperature: water [K]")
+                         doc="Temperature: water [K]")
         def water_temperature_eq(b, t):
             return (
                 b.water_temperature[t] ==
@@ -503,7 +495,7 @@ class CPUData(UnitModelBlockData):
 
         # Water stream: Pressure
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Pressure: water [Pa]")
+                         doc="Pressure: water [Pa]")
         def water_pressure_eq(b, t):
             return (
                 b.water_pressure[t] ==
@@ -518,7 +510,7 @@ class CPUData(UnitModelBlockData):
 
         # Water stream: CO2 mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="co2 component flow_mol in water")
+                         doc="co2 component flow_mol in water")
         def water_co2_flow_mol_comp_eq(b, t):
             return (
                 b.water_flow_mol_comp[t, 'CO2'] ==
@@ -533,7 +525,7 @@ class CPUData(UnitModelBlockData):
 
         # Water stream: O2 mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="o2 component flow_mol in water")
+                         doc="o2 component flow_mol in water")
         def water_o2_flow_mol_comp_eq(b, t):
             return (
                 b.water_flow_mol_comp[t, 'O2'] ==
@@ -548,7 +540,7 @@ class CPUData(UnitModelBlockData):
 
         # Water stream: AR mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="ar component flow_mol in water")
+                         doc="ar component flow_mol in water")
         def water_ar_flow_mol_comp_eq(b, t):
             return (
                 b.water_flow_mol_comp[t, 'Ar'] ==
@@ -563,7 +555,7 @@ class CPUData(UnitModelBlockData):
 
         # Water stream: H2O mole flow
         @self.Constraint(self.flowsheet().config.time,
-                          doc="h2o component flow_mol in water")
+                         doc="h2o component flow_mol in water")
         def water_h2o_flow_mol_comp_eq(b, t):
             return (
                 b.water_flow_mol_comp[t, 'H2O'] ==
@@ -576,10 +568,9 @@ class CPUData(UnitModelBlockData):
                     b.inlet_mole_frac_comp[t, 'N2']
                     ))
 
-
         # Vent stream: Temperature
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Temperature: vent [K]")
+                         doc="Temperature: vent [K]")
         def vent_temperature_eq(b, t):
             return (
                 b.vent_temperature[t] ==
@@ -594,7 +585,7 @@ class CPUData(UnitModelBlockData):
 
         # Vent stream: Pressure
         @self.Constraint(self.flowsheet().config.time,
-                          doc="Pressure: vent [Pa]")
+                         doc="Pressure: vent [Pa]")
         def vent_pressure_eq(b, t):
             return (
                 b.vent_pressure[t] ==
@@ -671,7 +662,7 @@ class CPUData(UnitModelBlockData):
 
     def calculate_scaling_factors(self):
         super().calculate_scaling_factors()
-        
+
         # for v in self.component_data_objects(Var):
         #     iscale.set_scaling_factor(v, 1)
         for c in self.component_data_objects(Constraint):
@@ -681,26 +672,26 @@ class CPUData(UnitModelBlockData):
         iscale.set_scaling_factor(self.pureco2_flow_mol[0.0], 1e-3)
         iscale.set_scaling_factor(self.water_flow_mol[0.0], 1e-3)
         iscale.set_scaling_factor(self.vent_flow_mol[0.0], 1e-3)
-        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0,'CO2'], 1e-3)
-        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0,'H2O'], 1e-3)
-        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0,'O2'], 1e-3)
-        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0,'Ar'], 1e-3)
-        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0,'N2'], 1e-3)
-        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0,'CO2'], 1e-3)
-        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0,'H2O'], 1e-3)
-        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0,'O2'], 1e-3)
-        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0,'Ar'], 1e-3)
-        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0,'N2'], 1e-3)
-        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0,'CO2'], 1e-3)
-        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0,'H2O'], 1e-3)
-        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0,'O2'], 1e-3)
-        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0,'Ar'], 1e-3)
-        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0,'N2'], 1e-3)
-        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0,'CO2'], 1e-3)
-        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0,'H2O'], 1e-3)
-        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0,'O2'], 1e-3)
-        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0,'Ar'], 1e-3)
-        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0,'N2'], 1e-3)
+        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0, 'CO2'], 1e-3)
+        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0, 'H2O'], 1e-3)
+        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0, 'O2'], 1e-3)
+        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0, 'Ar'], 1e-3)
+        iscale.set_scaling_factor(self.inlet_flow_mol_comp[0.0, 'N2'], 1e-3)
+        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0, 'CO2'], 1e-3)
+        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0, 'H2O'], 1e-3)
+        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0, 'O2'], 1e-3)
+        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0, 'Ar'], 1e-3)
+        iscale.set_scaling_factor(self.pureco2_flow_mol_comp[0.0, 'N2'], 1e-3)
+        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0, 'CO2'], 1e-3)
+        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0, 'H2O'], 1e-3)
+        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0, 'O2'], 1e-3)
+        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0, 'Ar'], 1e-3)
+        iscale.set_scaling_factor(self.water_flow_mol_comp[0.0, 'N2'], 1e-3)
+        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0, 'CO2'], 1e-3)
+        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0, 'H2O'], 1e-3)
+        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0, 'O2'], 1e-3)
+        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0, 'Ar'], 1e-3)
+        iscale.set_scaling_factor(self.vent_flow_mol_comp[0.0, 'N2'], 1e-3)
         iscale.set_scaling_factor(self.inlet_temperature[0.0], 1e-2)
         iscale.set_scaling_factor(self.pureco2_temperature[0.0], 1e-2)
         iscale.set_scaling_factor(self.water_temperature[0.0], 1e-2)

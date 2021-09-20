@@ -38,39 +38,25 @@ import logging
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
-
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 # Additional import for the unit operation
-from pyomo.environ import (
-    SolverFactory,
-    value,
-    Var,
-    Param,
-    exp,
-    sqrt,
-    log,
-    PositiveReals,
-    NonNegativeReals,
-    ExternalFunction,
-    units as pyunits,
-)
-from pyomo.opt import TerminationCondition
+from pyomo.environ import value, Var, Param, exp, sqrt,\
+    log, PositiveReals, NonNegativeReals, ExternalFunction, units as pyunits
 
 # Import IDAES cores
-from idaes.core import (
-    ControlVolume0DBlock,
-    declare_process_block_class,
-    MaterialBalanceType,
-    EnergyBalanceType,
-    MomentumBalanceType,
-    UnitModelBlockData,
-    useDefault,
-)
-from idaes.core.util.functions import functions_lib
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core import (ControlVolume0DBlock,
+                        declare_process_block_class,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType,
+                        UnitModelBlockData,
+                        useDefault)
+
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.constants import Constants as c
 from idaes.core.util import get_solver
+from idaes.core.util.functions import functions_lib
 import idaes.core.util.scaling as iscale
 
 import idaes.logger as idaeslog
@@ -180,27 +166,21 @@ class BoilerHeatExchangerData(UnitModelBlockData):
     """
 
     CONFIG = ConfigBlock()
-    CONFIG.declare(
-        "dynamic",
-        ConfigValue(
-            domain=In([useDefault, True, False]),
-            default=useDefault,
-            description="Dynamic model flag",
-            doc="""Indicates whether this model will be dynamic or not,
+    CONFIG.declare("dynamic", ConfigValue(
+        domain=DefaultBool,
+        default=useDefault,
+        description="Dynamic model flag",
+        doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
-**False** - set as a steady-state model.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_holdup",
-        ConfigValue(
-            default=useDefault,
-            domain=In([useDefault, True, False]),
-            description="Holdup construction flag",
-            doc="""Indicates whether holdup terms should be constructed or not.
+**False** - set as a steady-state model.}"""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=useDefault,
+        domain=DefaultBool,
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
@@ -303,16 +283,12 @@ see property package for documentation.}""",
 **MomentumBalanceType.pressureTotal** - single pressure balance for material,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}""",
-        ),
-    )
-    CONFIG.declare(
-        "has_pressure_change",
-        ConfigValue(
-            default=False,
-            domain=In([True, False]),
-            description="Pressure change term construction flag",
-            doc="""Indicates whether terms for pressure change should be
+**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=False,
+        domain=Bool,
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
 constructed,
 **default** - False.
 **Valid values:** {

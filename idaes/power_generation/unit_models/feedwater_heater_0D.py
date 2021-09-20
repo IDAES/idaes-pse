@@ -27,8 +27,8 @@ are two models included here.
 
 __author__ = "John Eslick"
 
-from pyomo.common.config import ConfigValue, In, ConfigBlock
-from pyomo.environ import SolverFactory, TransformationFactory, Var, value
+from pyomo.common.config import ConfigValue, In, ConfigBlock, Bool
+from pyomo.environ import TransformationFactory, Var, value
 from pyomo.network import Arc
 
 from idaes.core import (
@@ -53,7 +53,7 @@ def _define_feedwater_heater_0D_config(config):
         "has_drain_mixer",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Add a mixer to the inlet of the condensing section",
             doc="""Add a mixer to the inlet of the condensing section to add
 water from the drain of another feedwaterheater to the steam, if True""",
@@ -63,7 +63,7 @@ water from the drain of another feedwaterheater to the steam, if True""",
         "has_desuperheat",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Add a mixer desuperheat section to the heat exchanger",
             doc="Add a mixer desuperheat section to the heat exchanger",
         ),
@@ -72,7 +72,7 @@ water from the drain of another feedwaterheater to the steam, if True""",
         "has_drain_cooling",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Add a section after condensing section cool condensate.",
             doc="Add a section after condensing section to cool condensate.",
         ),

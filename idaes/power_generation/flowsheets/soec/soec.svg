@@ -30,9 +30,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.2964562"
-     inkscape:cx="504.56628"
-     inkscape:cy="308.86264"
+     inkscape:zoom="4.4232692"
+     inkscape:cx="636.39336"
+     inkscape:cy="573.76459"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
@@ -62,7 +62,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -135,17 +135,17 @@
       <text
          xml:space="preserve"
          style="font-size:2.82223px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
-         x="171.23837"
-         y="24.909304"
+         x="165.4362"
+         y="25.148569"
          id="text1455"><tspan
            sodipodi:role="line"
            id="tspan1453"
-           x="171.23837"
-           y="24.909304"
+           x="165.4362"
+           y="25.148569"
            style="text-align:start;text-anchor:start;stroke-width:0.264583">Summary:</tspan></text>
       <path
          style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 170.65626,26.458323 h 41.01041"
+         d="m 165.36459,26.458319 46.30208,4e-6"
          id="path1457"
          sodipodi:nodetypes="cc" />
       <text
@@ -178,25 +178,25 @@
            x="193.80785"
            y="39.663612"
            style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan2022">Heat Duty hxf2:</tspan><tspan
+           id="tspan2022">Compressor Outlet P:</tspan><tspan
            sodipodi:role="line"
            x="193.80785"
            y="42.309448"
            style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan2026">Heat Duty hxa2:</tspan><tspan
+           id="tspan2026">Compressor Power:</tspan><tspan
            sodipodi:role="line"
            x="193.80785"
            y="44.955284"
            style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan2028">Electric Power/H2:</tspan><tspan
+           id="tspan2028">SOEC Power/H2:</tspan><tspan
            sodipodi:role="line"
            x="193.80785"
            y="47.601124"
            style="text-align:end;text-anchor:end;stroke-width:0.264583"
-           id="tspan2030">Heat/H2:</tspan></text>
+           id="tspan2030">Solver Status:</tspan></text>
       <path
          style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 170.65626,48.947907 h 41.01041"
+         d="m 165.36459,48.947903 46.30208,4e-6"
          id="path1457-0"
          sodipodi:nodetypes="cc" />
       <text
@@ -248,7 +248,7 @@
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
          x="196.43556"
          y="39.653168"
-         id="hxf2_heat_duty"><tspan
+         id="h2_compressor_pressure"><tspan
            sodipodi:role="line"
            id="tspan1792-9"
            x="196.43556"
@@ -259,7 +259,7 @@
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
          x="196.44972"
          y="42.347473"
-         id="hxa2_heat_duty"><tspan
+         id="h2_compressor_power"><tspan
            sodipodi:role="line"
            id="tspan1792-8"
            x="196.44972"
@@ -270,7 +270,7 @@
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
          x="196.43556"
          y="44.979156"
-         id="power_per_h2"><tspan
+         id="soec_power_per_h2"><tspan
            sodipodi:role="line"
            id="tspan1792-99"
            x="196.43556"
@@ -281,7 +281,7 @@
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
          x="196.42955"
          y="47.633125"
-         id="heat_per_h2"><tspan
+         id="status"><tspan
            sodipodi:role="line"
            id="tspan1792-81"
            x="196.42955"
@@ -1427,7 +1427,7 @@
            x="195.79169"
            y="148.16667"
            style="stroke-width:0.264583"
-           id="tspan3916">x:</tspan></text>
+           id="tspan3916">vf:</tspan></text>
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
@@ -2777,7 +2777,7 @@
            x="195.79169"
            y="148.16667"
            style="stroke-width:0.264583"
-           id="tspan3916-8">x:</tspan></text>
+           id="tspan3916-8">vf:</tspan></text>
       <text
          xml:space="preserve"
          style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
@@ -3403,17 +3403,6 @@
          style="stroke-width:0.264583">preheat_split</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;stroke-width:0.264583"
-       x="85.989594"
-       y="166.6875"
-       id="text3612"><tspan
-         sodipodi:role="line"
-         id="tspan3610"
-         x="85.989594"
-         y="166.6875"
-         style="stroke-width:0.264583">aux_boiler_feed_pump</tspan></text>
-    <text
-       xml:space="preserve"
        style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
        x="103.27174"
        y="143.98557"
@@ -3533,5 +3522,41 @@
          x="133.14076"
          y="95.262062"
          style="text-align:start;text-anchor:start;stroke-width:0.264583">smix1</tspan></text>
+    <g
+       id="g1531">
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:center;text-anchor:middle;stroke-width:0.264583"
+         x="85.989594"
+         y="166.6875"
+         id="text3612"><tspan
+           sodipodi:role="line"
+           id="tspan3610"
+           x="85.989594"
+           y="166.6875"
+           style="stroke-width:0.264583">aux_boiler_feed_pump</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:end;text-anchor:end;stroke-width:0.264583"
+         x="81.584732"
+         y="169.99478"
+         id="text1519"><tspan
+           sodipodi:role="line"
+           id="tspan1517"
+           x="81.584732"
+           y="169.99478"
+           style="stroke-width:0.264583">power:</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:2.11667px;line-height:1.25;font-family:sans-serif;text-align:start;text-anchor:start;stroke-width:0.264583"
+         x="83.357231"
+         y="169.99478"
+         id="aux_boiler_feed_pump_power"><tspan
+           sodipodi:role="line"
+           id="tspan1521"
+           x="83.357231"
+           y="169.99478"
+           style="text-align:start;text-anchor:start;stroke-width:0.264583">?</tspan></text>
+    </g>
   </g>
 </svg>

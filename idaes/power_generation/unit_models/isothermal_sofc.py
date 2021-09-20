@@ -1685,7 +1685,7 @@ def soec_example():
     m.fs.soec.ae.thickness.fix(20e-6)
     m.fs.soec.length.fix(0.05)
     m.fs.soec.width.fix(0.05)
-    m.fs.soec.k_ae.fix(8.7e7*3)
+    m.fs.soec.k_ae.fix(8.7e7*300)
     m.fs.soec.eact_ae.fix(120000)
     m.fs.soec.alpha_ae.fix(0.5)
     m.fs.soec.k_fe.fix(1.35e10)
@@ -1712,13 +1712,13 @@ def soec_example():
 
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
     m.fs.soec.fc.flow_mol[:, 0].fix(1e-4)
-    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.7)
-    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.30)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.90)
+    m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)
 
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
     m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
-    m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
-    m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.10)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.90)
 
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"

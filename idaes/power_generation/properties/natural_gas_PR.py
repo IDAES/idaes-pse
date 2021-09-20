@@ -438,7 +438,7 @@ def get_prop(components=None, phases="Vap", eos=EosType.PR):
         "state_definition": FTPx,
         "state_bounds": {"flow_mol": (0, 8000, 50000, pyunits.mol/pyunits.s),
                          "temperature": (273.15, 500, 2500, pyunits.K),
-                         "pressure": (5e4, 1.3e5, 1e7, pyunits.Pa)},
+                         "pressure": (5e4, 1.3e5, 1e8, pyunits.Pa)},
         "pressure_ref": (101325, pyunits.Pa),
         "temperature_ref": (298.15, pyunits.K),
     }

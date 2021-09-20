@@ -21,14 +21,14 @@ This model is psuedo-steady-state when used in dynamic mode.
 """
 
 from pyomo.environ import SolverFactory, Var, value
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ListOf
 
 from idaes.core import (
     declare_process_block_class,
     UnitModelBlockData,
     useDefault,
 )
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util import from_json, to_json, StoreSpec, get_solver
@@ -99,7 +99,7 @@ see property package for documentation.}""",
     CONFIG.declare(
         "outlet_list",
         ConfigValue(
-            domain=list_of_strings,
+            domain=ListOf(str),
             description="List of outlet names",
             doc="""A list containing names of outlets,
 **default** - None.
