@@ -979,7 +979,7 @@ def initialize_variable_OM_costs(m):
 def costing_initialization(fs):
     for o in fs.component_objects(descend_into=False):
         # look for costing blocks
-        if hasattr(o, 'costing'):
+        if hasattr(o, 'costing') and hasattr(o.costing, 'library'):
             if o.costing.library == 'sCO2':
 
                 if o.costing.equipment in ['Axial turbine',
@@ -1049,7 +1049,7 @@ def get_total_TPC(m):
     TPC_list = []
     for o in m.fs.component_objects(descend_into=False):
         # look for costing blocks
-        if hasattr(o, 'costing'):
+        if hasattr(o, 'costing') and hasattr(o.costing, "total_plant_cost"):
             for key in o.costing.total_plant_cost.keys():
                 TPC_list.append(o.costing.total_plant_cost[key])
 
