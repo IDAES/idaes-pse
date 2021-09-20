@@ -196,32 +196,8 @@ class GenericReactionParameterData(ReactionParameterBlock):
         super(ReactionParameterBlock, self).build()
         self.default_scaling_factor = {}
 
-        # Validate and set base units of measurement
+        # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
-        units_meta = self.get_metadata().default_units
-
-        for key, unit in self.config.base_units.items():
-            if key in ['time', 'length', 'mass', 'amount', 'temperature',
-                       "current", "luminous intensity"]:
-                if not isinstance(unit, _PyomoUnit):
-                    raise ConfigurationError(
-                        "{} recieved unexpected units for quantity {}: {}. "
-                        "Units must be instances of a Pyomo unit object."
-                        .format(self.name, key, unit))
-            else:
-                raise ConfigurationError(
-                    "{} defined units for an unexpected quantity {}. "
-                    "Generic reaction packages only support units for the 7 "
-                    "base SI quantities.".format(self.name, key))
-
-        # Check that main 5 base units are assigned
-        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
-            if not isinstance(units_meta[k], _PyomoUnit):
-                raise ConfigurationError(
-                    "{} units for quantity {} were not assigned. "
-                    "Please make sure to provide units for all base units "
-                    "when configuring the reaction package."
-                    .format(self.name, k))
 
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()

@@ -294,14 +294,14 @@ class TestFlashIntegration(object):
     @pytest.mark.component
     def test_solution(self, model):
         # Check phase equilibrium results
-        assert model.fs.unit.liq_outlet.mole_frac_comp[
-            0, "carbon_dioxide"].value == \
+        assert value(model.fs.unit.liq_outlet.mole_frac_comp[
+            0, "carbon_dioxide"]) == \
             pytest.approx(0.3119, abs=1e-4)
-        assert model.fs.unit.vap_outlet.mole_frac_comp[
-            0, "carbon_dioxide"].value == \
+        assert value(model.fs.unit.vap_outlet.mole_frac_comp[
+            0, "carbon_dioxide"]) == \
             pytest.approx(1.0000, abs=1e-4)
-        assert (model.fs.unit.vap_outlet.flow_mol[0].value /
-                model.fs.unit.liq_outlet.flow_mol[0].value) == \
+        assert value(model.fs.unit.vap_outlet.flow_mol[0] /
+                     model.fs.unit.liq_outlet.flow_mol[0]) == \
             pytest.approx(0.37619, abs=1e-4)
 
     @pytest.mark.ui

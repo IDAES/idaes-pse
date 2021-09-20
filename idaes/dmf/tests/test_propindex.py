@@ -78,6 +78,8 @@ def test_index_multiple_versions():
     dmf = DMF(path=tmp_dir, create=True)
 
     v1, v2, v3 = "1.0.0", "6.6.6", "9.9.0"
+
+
     # index initial version
     propindex.index_property_metadata(
         dmf,
