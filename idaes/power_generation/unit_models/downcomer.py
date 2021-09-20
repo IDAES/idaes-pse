@@ -20,9 +20,8 @@ Main assumptions:
 Created August 27, 2020
 """
 # Import Pyomo libraries
-from pyomo.environ import (
-    SolverFactory, value, Var, Reference, units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import value, Var, Reference, units as pyunits
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -33,7 +32,7 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 
-from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.config import is_physical_parameter_block, DefaultBool
 
 # Additional import for the unit operation
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -54,7 +53,7 @@ class DowncomerData(UnitModelBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
@@ -65,7 +64,7 @@ class DowncomerData(UnitModelBlockData):
 **False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -111,7 +110,7 @@ Must be True if dynamic = True,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
