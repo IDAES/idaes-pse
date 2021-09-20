@@ -337,11 +337,13 @@ input:checked + .slider:before {
   background-color: white;
 }
 
-.variable {
+/* Styling the Variables column in the Stream Table */
+.streamtable-variable {
   display: block;
 }
 
-.units {
+/* Styling the units in the Variables column in the Stream Table */
+.streamtable-units {
   opacity: 0.6;
   float: right;
 }

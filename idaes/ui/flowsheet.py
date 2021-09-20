@@ -449,25 +449,25 @@ class FlowsheetSerializer:
             )
         )
 
-        if ('Units' in self._stream_table_df and
-            'Variable' in self._stream_table_df):
-            # Styling the units for display
-            def apply_html(value, style=''):
-                if value is not None:
-                    return '<span class="' + style + '">' + str(value) + '</span>'
-                else:
-                    return '<span class="' + style + '">&ndash;</span>'
+        # if ('Units' in self._stream_table_df and
+        #     'Variable' in self._stream_table_df):
+        #     # Styling the units for display
+        #     def apply_html(value, style=''):
+        #         if value is not None:
+        #             return '<span class="' + style + '">' + str(value) + '</span>'
+        #         else:
+        #             return '<span class="' + style + '">&ndash;</span>'
 
-            self._stream_table_df['Units'] = self._stream_table_df.apply(
-                lambda x: apply_html(x.Units, 'units'),
-                axis=1
-            )
+        #     self._stream_table_df['Units'] = self._stream_table_df.apply(
+        #         lambda x: apply_html(x.Units, 'streamtable-units'),
+        #         axis=1
+        #     )
 
-            # Append the Units to the Variables columns and drop the Units column
-            self._stream_table_df['Variable'] = (
-                self._stream_table_df['Variable'] + self._stream_table_df['Units']
-            )
-            self._stream_table_df = self._stream_table_df.drop(['Units'], axis=1)
+        #     # Append the Units to the Variables columns and drop the Units column
+        #     self._stream_table_df['Variable'] = (
+        #         self._stream_table_df['Variable'] + self._stream_table_df['Units']
+        #     )
+        #     self._stream_table_df = self._stream_table_df.drop(['Units'], axis=1)
 
         # Change NaNs to None for JSON
         self._stream_table_df = self._stream_table_df.where(

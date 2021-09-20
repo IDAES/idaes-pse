@@ -229,8 +229,8 @@ def create_stream_table_dataframe(
         orient : orientation of stream table. Accepted values are 'columns'
             (default) where streams are displayed as columns, or 'index' where
             stream are displayed as rows.
-        add_units : Add a Units column to the dataframe representing the
-            stream values.
+        add_units : Add a Units column to the dataframe representing the units
+            of the stream values.
 
     Returns:
         A pandas DataFrame containing the stream table data.
