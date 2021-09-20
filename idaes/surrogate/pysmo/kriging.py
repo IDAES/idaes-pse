@@ -619,9 +619,16 @@ class KrigingModel:
 
         corr_expr = 1 + self.regularization_parameter - phi_var_array.T @ self.covariance_matrix_inverse @ phi_var_array
 
-        covar_expr = self.optimal_variance * corr_expr
+        # print("corr_expr=",corr_expr)
 
-        return covar_expr[0][0]
+        # print("type(corr_exp)=",type(corr_expr))
+
+        covar_expr = self.optimal_variance[0][0] * corr_expr
+        # covar_expr = corr_expr * self.optimal_variance
+
+        # print("covar_expr=",covar_expr)
+
+        return covar_expr
 
     def get_feature_vector(self):
         """
