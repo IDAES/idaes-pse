@@ -583,7 +583,7 @@ def test_OM_costing():
     m.fs.H2_prod.fix()
 
     m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2,
-                           units=pyunits.Mbtu/pyunits.s)
+                           units=pyunits.MBtu/pyunits.s)
     m.fs.NG_rate.fix()
 
     m.fs.solvent_rate = pyo.Var(m.fs.time, initialize=40,
