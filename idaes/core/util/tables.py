@@ -253,13 +253,13 @@ def create_stream_table_dataframe(
                 if i is None:
                     stream_attributes[key][k] = value(disp_dict[k][i])
                     if add_units:
-                        stream_attributes['Units'][k] = units.get_units(disp_dict[k][i])
+                        stream_attributes['Units'][k] = str(units.get_units(disp_dict[k][i]))
                     if k not in full_keys:
                         full_keys.append(k)
                 else:
                     stream_attributes[key][f"{k} {i}"] = value(disp_dict[k][i])
                     if add_units:
-                        stream_attributes['Units'][f"{k} {i}"] = units.get_units(disp_dict[k][i])
+                        stream_attributes['Units'][f"{k} {i}"] = str(units.get_units(disp_dict[k][i]))
                     if f"{k} {i}" not in full_keys:
                         full_keys.append(f"{k} {i}")
 

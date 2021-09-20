@@ -11,37 +11,43 @@
             "columns": [
                 "",
                 "Variable",
+                "Units",
                 "s01",
                 "s02"
             ],
             "data": [
                 [
                     0,
-                    "flow_mol<span class=\"units\">mol/s</span>",
+                    "flow_mol",
+                    "mol/s",
                     1.0,
                     1.0
                 ],
                 [
                     1,
-                    "mole_frac_comp benzene<span class=\"units\">&ndash;</span>",
+                    "mole_frac_comp benzene",
+                    "None",
                     0.5,
                     0.5
                 ],
                 [
                     2,
-                    "mole_frac_comp toluene<span class=\"units\">&ndash;</span>",
+                    "mole_frac_comp toluene",
+                    "None",
                     0.5,
                     0.5
                 ],
                 [
                     3,
-                    "temperature<span class=\"units\">K</span>",
+                    "temperature",
+                    "K",
                     298.15,
                     298.15
                 ],
                 [
                     4,
-                    "pressure<span class=\"units\">Pa</span>",
+                    "pressure",
+                    "Pa",
                     101325.0,
                     101325.0
                 ]
