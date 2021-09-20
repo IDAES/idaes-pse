@@ -77,6 +77,16 @@ def get_soec_capital_costing(m):
                          ref_parameter_pressure=m.fs.bhx2.tube_inlet.pressure[0])
     add_total_plant_cost(m.fs.bhx2, 1.15, 1.15)
 
+    # H2 compressor and intercoolers
+    # costed with IDAES generic compressor and heat exchanger correlations
+    for unit in [m.fs.hcmp01, m.fs.hcmp02, m.fs.hcmp03, m.fs.hcmp04]:
+        unit.get_costing()
+        add_total_plant_cost(unit, 1.15, 1.15)
+
+    for unit in [m.fs.hcmp_ic01, m.fs.hcmp_ic02, m.fs.hcmp_ic03, m.fs.hcmp_ic04]:
+        unit.get_costing(hx_type='fixed_head')
+        add_total_plant_cost(unit, 1.15, 1.15)
+
     # all the following equipment is scaled based on the bit baseline report
 
     # hxo2 and hxh2 - HRSGs
@@ -162,6 +172,14 @@ def get_soec_capital_costing(m):
         m.fs.ng_preheater,
         m.fs.bhx1,
         m.fs.bhx2,
+        m.fs.hcmp01,
+        m.fs.hcmp02,
+        m.fs.hcmp03,
+        m.fs.hcmp04,
+        m.fs.hcmp_ic01,
+        m.fs.hcmp_ic02,
+        m.fs.hcmp_ic03,
+        m.fs.hcmp_ic04,
         ]
 
     for u in generic_costing_units:
@@ -249,5 +267,17 @@ def get_soec_OM_costing(m):
     prices = {"electricity": 30*pyo.units.USD/pyo.units.MWh}
     get_variable_OM_costs(m, m.fs.H2_product, resources, rates, prices=prices)
 
+    m.fs.H2_costing.other_variable_costs.unfix()
+
+    @m.fs.Constraint(m.fs.time)
+    def other_variable_costs_rule(fs, t):
+        return (fs.H2_costing.other_variable_costs[t] ==
+                fs.costing.maintenance_material_cost)
+
     # initialize variable costs
+    for t in m.fs.time:
+        calculate_variable_from_constraint(
+            m.fs.H2_costing.other_variable_costs[t],
+            m.fs.other_variable_costs_rule[t])
+
     initialize_variable_OM_costs(m)
