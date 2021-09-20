@@ -27,7 +27,7 @@ from pyomo.util.infeasible import log_infeasible_constraints
 from idaes.core import FlowsheetBlock
 from idaes.core.util import copy_port_values
 from idaes.core.util import model_serializer as ms
-from idaes.core.util.misc import svg_tag
+from idaes.core.util.tags import svg_tag
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.tables import create_stream_table_dataframe
 
@@ -67,6 +67,8 @@ from idaes.power_generation.flowsheets.sofc.properties.natural_gas_PR_scaled_uni
 from idaes.power_generation.flowsheets.sofc.surrogates.cpu import CPU
 from idaes.power_generation.flowsheets.sofc.surrogates.sofc_rom_builder \
     import build_SOFC_ROM, initialize_SOFC_ROM
+from idaes.power_generation.flowsheets.sofc.surrogates.sofc_surrogate \
+    import build_SOFC_SM, initialize_SOFC_SM
 
 
 def build_NGFC(m):
@@ -972,9 +974,12 @@ def initialize_NGFC(m):
     m.fs.CPU.initialize()
 
 
-def SOFC_ROM_setup(m):
+def SOFC_ROM_setup(m, use_DNN=True):
     # create the ROM
-    build_SOFC_ROM(m.fs)
+    if use_DNN:  # option to use deep neural net sofc surrogate model
+        build_SOFC_ROM(m.fs)
+    else:  # option to use algebraic sofc surrogate model
+        build_SOFC_SM(m.fs)
 
     # build constraints connecting flowsheet to ROM input vars
 
@@ -1066,7 +1071,11 @@ def SOFC_ROM_setup(m):
                                        m.fs.ROM_air_inlet_temperature)
     calculate_variable_from_constraint(m.fs.SOFC.air_util,
                                        m.fs.ROM_air_utilization)
-    initialize_SOFC_ROM(m.fs.SOFC)
+
+    if use_DNN:
+        initialize_SOFC_ROM(m.fs.SOFC)
+    else:
+        initialize_SOFC_SM(m.fs.SOFC)
 
     # add constraints for power calculations
     m.fs.F = pyo.Param(initialize=96487, units=pyunits.C/pyunits.mol)
@@ -1389,6 +1398,22 @@ def add_costing(m):
 
     get_fixed_OM_costs(m, 650, tech=6, fixed_TPC=NGFC_TPC)
 
+    m.fs.costing.stack_replacement_cost = pyo.Var(
+        initialize=13.26,
+        bounds=(0, 100),
+        doc="stack replacement cost in $MM/yr")
+    m.fs.costing.stack_replacement_cost.fix()
+
+    # redefine total fixed OM cost to include stack replacement cost
+    del m.fs.costing.total_fixed_OM_cost_rule
+
+    @m.fs.costing.Constraint()
+    def total_fixed_OM_cost_rule(c):
+        return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
+                                         c.maintenance_labor_cost +
+                                         c.admin_and_support_labor_cost +
+                                         c.property_taxes_and_insurance +
+                                         c.stack_replacement_cost)
     # variable O&M costs
 
     # Natural Gas Fuel
@@ -1524,16 +1549,6 @@ def add_costing(m):
 
     get_variable_OM_costs(m, m.fs.net_power, resources, rates, prices)
 
-    # Stack Replacement
-    m.fs.costing.other_variable_costs.unfix()
-
-    @m.fs.Constraint(m.fs.time)
-    def stack_replacement(fs, t):
-        stack_replacement_cost = 13262061*pyunits.USD/pyunits.year
-        return fs.costing.other_variable_costs[t] == (
-            pyunits.convert(stack_replacement_cost/m.fs.net_power[t],
-                            pyunits.USD/pyunits.MWh))
-
 
 def initialize_costing(m):
     variables = [
@@ -1658,28 +1673,34 @@ def partial_load_setup(m):
     m.fs.SOFC.deltaT_cell.unfix()
 
     # turndown parameters
-    turndown_pct = 0.9
     max_ng_flow = 1.0946
     max_current_density = 4000
 
-    # fix new flowrate and current density
-    m.fs.anode_mix.feed_inlet.flow_mol.fix(max_ng_flow*turndown_pct)
-    m.fs.SOFC.current_density.fix(max_current_density*turndown_pct)
+    # add constraint relating ng_flow and current density
+    @m.fs.Constraint(m.fs.time)
+    def NG_current_relation(fs, t):
+        return (m.fs.anode_mix.feed_inlet.flow_mol[t]/max_ng_flow ==
+                m.fs.SOFC.current_density/max_current_density)
 
-    # solve
-    solver = pyo.SolverFactory("ipopt")
-    solver.options = {'bound_push': 1e-23, "mu_init": 1e-4}
-    solver.solve(m, tee=True)
+    # set new power output
+    m.fs.anode_mix.feed_inlet.flow_mol.unfix()
+    m.fs.SOFC.current_density.unfix()
+
+    m.fs.net_power.fix(650)
 
 
-def get_model():
+def get_model(use_DNN=True):
     # create model and flowsheet
     m = pyo.ConcreteModel()
 
-    init_fname = "sofc_init.json.gz"
+    if use_DNN:
+        init_fname = "sofc_dnn_init.json.gz"
+    else:
+        init_fname = "sofc_surrogate_init.json.gz"
+
     if os.path.exists(init_fname):
         build_NGFC(m)
-        SOFC_ROM_setup(m)
+        SOFC_ROM_setup(m, use_DNN=use_DNN)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
         add_costing(m)
@@ -1692,7 +1713,7 @@ def get_model():
         set_NGFC_inputs(m)
         # scale_NGFC(m)
         initialize_NGFC(m)
-        SOFC_ROM_setup(m)
+        SOFC_ROM_setup(m, use_DNN=use_DNN)
         add_SOFC_energy_balance(m)
         # solve model
         solver = pyo.SolverFactory("ipopt")
