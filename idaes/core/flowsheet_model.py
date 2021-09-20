@@ -265,14 +265,15 @@ within this flowsheet if not otherwise specified,
                         .format(self.name))
 
         # Validate units for time domain
-        if self.config.time_units is None and self.config.dynamic:
-            _log.warning("DEPRECATED: No units were specified for the time "
-                         "domain. Users should provide units via the "
-                         "time_units configuration argument.")
+        if self.config.time is None and fs is not None:
+            # We will get units from parent
+            pass
+        elif self.config.time_units is None and self.config.dynamic:
+            raise ConfigurationError(
+                f"{self.name} - no units were specified for the time domain. "
+                f"Units must be be specified for dynamic models.")
         elif self.config.time_units is None and not self.config.dynamic:
-            _log.info_high("DEPRECATED: No units were specified for the time "
-                            "domain. Users should provide units via the "
-                            "time_units configuration argument.")
+            _log.debug("No units specified for stady-state time domain.")
         elif not isinstance(self.config.time_units, _PyomoUnit):
             raise ConfigurationError(
                 "{} unrecognised value for time_units argument. This must be "
