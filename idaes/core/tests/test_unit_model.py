@@ -16,7 +16,7 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import Block, ConcreteModel, Constraint, Var
+from pyomo.environ import Block, ConcreteModel, Constraint, Var, units
 from pyomo.network import Port
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
@@ -138,7 +138,7 @@ def test_setup_dynamics_has_holdup():
     # Test that has_holdup argument is True when dynamic is True
     m = ConcreteModel()
 
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
 
     m.fs.u = Unit()
     m.fs.u.config.has_holdup=False
@@ -401,7 +401,8 @@ def test_add_outlet_port_CV0D_part_args():
 
 @pytest.mark.unit
 def test_fix_unfix_initial_conditions():
-    fs = Flowsheet(default={"dynamic": True, "time_set": [0, 1, 2]},
+    fs = Flowsheet(default={
+        "dynamic": True, "time_set": [0, 1, 2], "time_units": units.s},
                    concrete=True)
     fs._setup_dynamics()
 

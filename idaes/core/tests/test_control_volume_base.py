@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import inspect
 import pytest
-from pyomo.environ import ConcreteModel, Block, Set
+from pyomo.environ import ConcreteModel, Block, Set, units
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (ControlVolumeBlockData, CONFIG_Template,
                         MaterialBalanceType, EnergyBalanceType,
@@ -241,7 +241,8 @@ def test_setup_dynamics_dynamic_in_ss():
 @pytest.mark.unit
 def test_setup_dynamics_dynamic_holdup_inconsistent():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(default={"dynamic": True}, concrete=True)
+    fs = Flowsheet(default={"dynamic": True, "time_units": units.s},
+                   concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
