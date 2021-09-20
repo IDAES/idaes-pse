@@ -26,7 +26,7 @@ from pyomo.environ import (Block,
                            value,
                            Var,
                            units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -174,7 +174,7 @@ class GenericParameterData(PhysicalParameterBlock):
     # Property package options
     CONFIG.declare("include_enthalpy_of_formation", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include enthalpy of formation in property calculations",
         doc="Flag indiciating whether enthalpy of formation should be included"
         " when calculating specific enthalpies."))
