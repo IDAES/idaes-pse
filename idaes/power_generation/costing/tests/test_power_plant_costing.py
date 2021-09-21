@@ -16,18 +16,23 @@ __version__ = "1.0.0"
 
 import pytest
 
+import pyomo.environ as pyo
+from pyomo.environ import units as pyunits
+
+from idaes.core import FlowsheetBlock
+from idaes.core.util import get_solver
+from idaes.core.util.model_statistics import degrees_of_freedom
+
 from idaes.power_generation.costing.power_plant_costing import \
     (get_sCO2_unit_cost,
      get_PP_costing,
      get_ASU_cost,
      get_total_TPC,
-     costing_initialization)
-from idaes.core.util.model_statistics import (degrees_of_freedom)
-import pyomo.environ as pyo
-from idaes.generic_models.properties import iapws95
-from idaes.generic_models.properties import swco2
-from idaes.core import FlowsheetBlock
-from idaes.core.util import get_solver
+     costing_initialization,
+     get_fixed_OM_costs,
+     get_variable_OM_costs,
+     initialize_fixed_OM_costs,
+     initialize_variable_OM_costs)
 
 
 @pytest.mark.component
@@ -540,3 +545,83 @@ def test_ASU_costing():
         m.fs.ASU.costing.bare_erected_cost), abs=1) == 3.2675e6/1e3
 
     return m
+
+
+@pytest.mark.component
+def test_OM_costing():
+    # Create a Concrete Model as the top level object
+    m = pyo.ConcreteModel()
+
+    # Add a flowsheet object to the model
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.get_costing(year='2018')
+
+    # build fixed costs
+    nameplate_capacity = 650  # MW
+    labor_rate = 40
+    labor_burden = 30
+    operators_per_shift = 10
+    tech = 1
+    fixed_TPC = 800  # MM$
+
+    get_fixed_OM_costs(m,
+                       nameplate_capacity,
+                       labor_rate=labor_rate,
+                       labor_burden=labor_burden,
+                       operators_per_shift=operators_per_shift,
+                       tech=tech,
+                       fixed_TPC=fixed_TPC)
+
+    initialize_fixed_OM_costs(m)
+
+    # build variable costs
+    m.fs.net_power = pyo.Var(m.fs.time, initialize=650, units=pyunits.MW)
+    m.fs.net_power.fix()
+
+    m.fs.H2_prod = pyo.Var(m.fs.time, initialize=100000,
+                           units=pyunits.kg/pyunits.day)
+    m.fs.H2_prod.fix()
+
+    m.fs.NG_rate = pyo.Var(m.fs.time, initialize=1.2,
+                           units=pyunits.MBtu/pyunits.s)
+    m.fs.NG_rate.fix()
+
+    m.fs.solvent_rate = pyo.Var(m.fs.time, initialize=40,
+                                units=pyunits.ton/pyunits.day)
+    m.fs.solvent_rate.fix()
+
+    resources = ["natural gas", "solvent"]
+    rates = [m.fs.NG_rate, m.fs.solvent_rate]
+    prices = {"solvent": 500*pyunits.USD/pyunits.ton}
+
+    get_variable_OM_costs(m,
+                          m.fs.net_power,
+                          resources,
+                          rates,
+                          prices=prices)
+
+    get_variable_OM_costs(m,
+                          m.fs.H2_prod,
+                          resources,
+                          rates,
+                          prices=prices)
+
+    initialize_variable_OM_costs(m)
+
+    assert hasattr(m.fs, "costing")
+    assert hasattr(m.fs.costing, "total_fixed_OM_cost")
+    assert hasattr(m.fs.costing, "total_variable_OM_cost")
+
+    assert hasattr(m.fs, "H2_costing")
+    assert hasattr(m.fs.H2_costing, "total_variable_OM_cost")
+
+    assert degrees_of_freedom(m) == 0
+
+    assert pytest.approx(28.094, abs=0.1) == (
+        pyo.value(m.fs.costing.total_fixed_OM_cost))
+
+    assert pytest.approx(32.245, abs=0.1) == (
+        pyo.value(m.fs.costing.total_variable_OM_cost[0]))
+
+    assert pytest.approx(4.78, abs=0.1) == (
+        pyo.value(m.fs.H2_costing.total_variable_OM_cost[0]))

@@ -36,6 +36,7 @@ __version__ = "1.0.0"
 
 from pyomo.environ import Param, Var, Block, Constraint, Expression, value, \
     Expr_if, units as pyunits
+from pyomo.core.base.units_container import InconsistentUnitsError
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 import idaes.core.util.scaling as iscale
@@ -617,8 +618,9 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
         2. Maintenance labor
         3. Admin and support labor
         4. Property taxes and insurance
-        5. Total fixed O&M cost
-        6. Maintenance materials (actually a variable cost, but scales off TPC)
+        5. Other fixed costs
+        6. Total fixed O&M cost
+        7. Maintenance materials (actually a variable cost, but scales off TPC)
     These costs apply to the project as a whole and are scaled based on the
     total TPC.
     Args:
@@ -711,6 +713,14 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
         initialize=4,
         bounds=(0, 100),
         doc="total fixed O&M costs in $MM/yr")
+
+    # variable for user to assign other fixed costs to, fixed to 0 by default
+    m.fs.costing.other_fixed_costs = Var(
+        initialize=0,
+        bounds=(0, 100),
+        doc="other fixed costs in $MM/yr")
+    m.fs.costing.other_fixed_costs.fix(0)
+
     # maintenance material cost is technically a variable cost, but it makes
     # more sense to include with the fixed costs becuase it uses TPC
     m.fs.costing.maintenance_material_cost = Var(
@@ -752,7 +762,8 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
         return c.total_fixed_OM_cost == (c.annual_operating_labor_cost +
                                          c.maintenance_labor_cost +
                                          c.admin_and_support_labor_cost +
-                                         c.property_taxes_and_insurance)
+                                         c.property_taxes_and_insurance +
+                                         c.other_fixed_costs)
 
     # technology specific percentage of TPC
     @m.fs.costing.Constraint()
@@ -762,15 +773,18 @@ def get_fixed_OM_costs(m, nameplate_capacity, labor_rate=38.50,
              c.maintenance_material_percent/0.85/nameplate_capacity/8760)
 
 
-def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
+def get_variable_OM_costs(m, production_rate, resources, rates,
+                          prices={}):
     """
-    This function calculates the $/MWh price of resources used by the plant.
-    The function is structured to allow the user to generate all fuel,
-    consumable, and waste disposal costs at once.
-    It also creates a total variable cost for each point in m.fs.time.
+    This function is used to calculate the variable cost of producing either
+    electricity in $/MWh or hydrogen in $/kg. The function is structured to
+    allow the user to generate all fuel, consumable, and waste disposal costs
+    at once. A total variable cost is created for each point in m.fs.time.
+
     Args:
         m: pyomo concrete model
-        net_power: pyomo var indexed by m.fs.time representing net system power
+        production_rate: pyomo var indexed by m.fs.time representing the net
+        system power or the hydrogen production rate
         resources: a list of strings for the resorces to be costed
         rates: a list of pyomo vars for resource consumption rates
         prices: a dict of resource prices to be added to the premade dictionary
@@ -779,6 +793,24 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
         None.
 
     """
+
+    # check the units on production_rate
+    production_units = pyunits.get_units(production_rate)
+
+    try:
+        pyunits.convert(production_units, pyunits.MW)
+        mode = "power"
+        cost_units = pyunits.USD/pyunits.MWh
+        unit_tag = "$/MWh"
+    except InconsistentUnitsError:
+        try:
+            pyunits.convert(production_units, pyunits.kg/pyunits.s)
+            mode = "hydrogen"
+            cost_units = pyunits.USD/pyunits.kg
+            unit_tag = "$/kg"
+        except InconsistentUnitsError:
+            raise Exception("units not compatable, make sure production rate"
+                            "has dimensions of power or mass flowrate")
 
     # assert arguments are correct types
     if type(resources) is not list:
@@ -827,31 +859,42 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
     resource_rates = dict(zip(resources, rates))
     resource_prices = dict(zip(resources, prices))
 
+    # if costing power make vars in m.fs.costing, if costing hydrogen make vars
+    # in m.fs.H2_costing
+    if mode == "power":
+        costing = m.fs.costing
+    elif mode == "hydrogen":
+        m.fs.H2_costing = Block()
+        costing = m.fs.H2_costing
+
     # make vars
-    m.fs.costing.variable_operating_costs = Var(
+    costing.variable_operating_costs = Var(
         m.fs.time,
         resources,
-        doc="variable operating costs in $/MWh")
+        initialize=1,
+        doc="variable operating costs in %s" % unit_tag)
 
-    m.fs.costing.other_variable_costs = Var(
+    costing.other_variable_costs = Var(
         m.fs.time,
         initialize=0,
-        doc="a variable to include non-standard O&M costs in $/MWh")
+        doc="a variable to include non-standard O&M costs in %s" % unit_tag)
     # assume the user is not using this
-    m.fs.costing.other_variable_costs.fix(0)
+    costing.other_variable_costs.fix(0)
 
-    m.fs.costing.total_variable_OM_cost = Var(
+    costing.total_variable_OM_cost = Var(
         m.fs.time,
-        doc="total variable operating and maintenance costs in $/MWh")
+        initialize=1,
+        doc="total variable operating and maintenance costs in  %s" % unit_tag)
 
     # make constraints
-    @m.fs.costing.Constraint(m.fs.time, resources)
+    @costing.Constraint(m.fs.time, resources)
     def variable_cost_rule(c, t, r):
-        return c.variable_operating_costs[t, r] == (pyunits.convert(
-                (resource_prices[r] * resource_rates[r][t] / net_power[t]),
-                (pyunits.USD/pyunits.MWh)))
+        return c.variable_operating_costs[t, r] == (
+            pyunits.convert(
+                resource_prices[r] * resource_rates[r][t] / production_rate[t],
+                cost_units))
 
-    if hasattr(m.fs.costing, "maintenance_material_cost"):
+    if mode == "power" and hasattr(m.fs.costing, "maintenance_material_cost"):
         @m.fs.costing.Constraint(m.fs.time)
         def total_variable_cost_rule(c, t):
             return (c.total_variable_OM_cost[t] ==
@@ -859,54 +902,74 @@ def get_variable_OM_costs(m, net_power, resources, rates, prices={}):
                     c.maintenance_material_cost +
                     c.other_variable_costs[t])
     else:
-        @m.fs.costing.Constraint(m.fs.time)
+        @costing.Constraint(m.fs.time)
         def total_variable_cost_rule(c, t):
             return (c.total_variable_OM_cost[t] ==
                     sum(c.variable_operating_costs[t, r] for r in resources) +
                     c.other_variable_costs[t])
 
-        _log.warning("The variable m.fs.costing.maintenance_material_cost "
-                     "could not be found, total_variable_cost_rule was "
-                     "constructed without in. get_fixed_OM_costs should be "
-                     "called before get_variable_OM_costs")
+        if mode == "power":
+            _log.warning("The variable m.fs.costing.maintenance_material_cost "
+                         "could not be found, total_variable_cost_rule was "
+                         "constructed without in. get_fixed_OM_costs should be"
+                         " called before get_variable_OM_costs")
 
 
 def initialize_fixed_OM_costs(m):
-    calculate_variable_from_constraint(
-        m.fs.costing.annual_operating_labor_cost,
-        m.fs.costing.annual_labor_cost_rule)
+    if hasattr(m.fs, "costing") and hasattr(m.fs.costing, "total_fixed_OM_cost"):
 
-    calculate_variable_from_constraint(
-        m.fs.costing.maintenance_labor_cost,
-        m.fs.costing.maintenance_labor_cost_rule)
+        calculate_variable_from_constraint(
+            m.fs.costing.annual_operating_labor_cost,
+            m.fs.costing.annual_labor_cost_rule)
 
-    calculate_variable_from_constraint(
-        m.fs.costing.admin_and_support_labor_cost,
-        m.fs.costing.admin_and_support_labor_cost_rule)
+        calculate_variable_from_constraint(
+            m.fs.costing.maintenance_labor_cost,
+            m.fs.costing.maintenance_labor_cost_rule)
 
-    calculate_variable_from_constraint(
-        m.fs.costing.property_taxes_and_insurance,
-        m.fs.costing.taxes_and_insurance_cost_rule)
+        calculate_variable_from_constraint(
+            m.fs.costing.admin_and_support_labor_cost,
+            m.fs.costing.admin_and_support_labor_cost_rule)
 
-    calculate_variable_from_constraint(
-        m.fs.costing.total_fixed_OM_cost,
-        m.fs.costing.total_fixed_OM_cost_rule)
+        calculate_variable_from_constraint(
+            m.fs.costing.property_taxes_and_insurance,
+            m.fs.costing.taxes_and_insurance_cost_rule)
 
-    calculate_variable_from_constraint(
-        m.fs.costing.maintenance_material_cost,
-        m.fs.costing.maintenance_material_cost_rule)
+        calculate_variable_from_constraint(
+            m.fs.costing.total_fixed_OM_cost,
+            m.fs.costing.total_fixed_OM_cost_rule)
+
+        calculate_variable_from_constraint(
+            m.fs.costing.maintenance_material_cost,
+            m.fs.costing.maintenance_material_cost_rule)
 
 
 def initialize_variable_OM_costs(m):
-    for key in m.fs.costing.variable_operating_costs.keys():
-        calculate_variable_from_constraint(
-            m.fs.costing.variable_operating_costs[key],
-            m.fs.costing.variable_cost_rule[key])
+    # initialization for power generation costs
+    if hasattr(m.fs, "costing") and hasattr(m.fs.costing, "variable_operating_costs"):
 
-    for t in m.fs.costing.total_variable_OM_cost.keys():
-        calculate_variable_from_constraint(
-            m.fs.costing.total_variable_OM_cost[t],
-            m.fs.costing.total_variable_cost_rule[t])
+        for i in m.fs.costing.variable_operating_costs.keys():
+            calculate_variable_from_constraint(
+                m.fs.costing.variable_operating_costs[i],
+                m.fs.costing.variable_cost_rule[i])
+
+        for i in m.fs.costing.total_variable_OM_cost.keys():
+            calculate_variable_from_constraint(
+                m.fs.costing.total_variable_OM_cost[i],
+                m.fs.costing.total_variable_cost_rule[i])
+
+    # initialization for H2 production costs
+    if hasattr(m.fs, "H2_costing") and hasattr(m.fs.H2_costing, "variable_operating_costs"):
+
+        for i in m.fs.H2_costing.variable_operating_costs.keys():
+            calculate_variable_from_constraint(
+                m.fs.H2_costing.variable_operating_costs[i],
+                m.fs.H2_costing.variable_cost_rule[i])
+
+        for i in m.fs.H2_costing.total_variable_OM_cost.keys():
+            calculate_variable_from_constraint(
+                m.fs.H2_costing.total_variable_OM_cost[i],
+                m.fs.H2_costing.total_variable_cost_rule[i])
+
 
 # -----------------------------------------------------------------------------
 # Costing Library Utility Functions
@@ -916,7 +979,7 @@ def initialize_variable_OM_costs(m):
 def costing_initialization(fs):
     for o in fs.component_objects(descend_into=False):
         # look for costing blocks
-        if hasattr(o, 'costing'):
+        if hasattr(o, 'costing') and hasattr(o.costing, 'library'):
             if o.costing.library == 'sCO2':
 
                 if o.costing.equipment in ['Axial turbine',
@@ -986,7 +1049,7 @@ def get_total_TPC(m):
     TPC_list = []
     for o in m.fs.component_objects(descend_into=False):
         # look for costing blocks
-        if hasattr(o, 'costing'):
+        if hasattr(o, 'costing') and hasattr(o.costing, "total_plant_cost"):
             for key in o.costing.total_plant_cost.keys():
                 TPC_list.append(o.costing.total_plant_cost[key])
 
