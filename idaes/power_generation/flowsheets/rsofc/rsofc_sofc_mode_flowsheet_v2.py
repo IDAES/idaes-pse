@@ -73,8 +73,10 @@ from idaes.generic_models.unit_models.mixer import MomentumMixingType
 
 # from idaes.power_generation.properties.natural_gas_ideal import get_prop, get_rxn
 from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
-from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
-    build_SOFC_ROM, initialize_SOFC_ROM
+# from idaes.power_generation.properties.NGFC.ROM.SOFC_ROM import \
+#     build_SOFC_ROM, initialize_SOFC_ROM
+from idaes.power_generation.flowsheets.sofc.surrogates.sofc_rom_builder \
+    import build_SOFC_ROM, initialize_SOFC_ROM
 
 import logging
 
@@ -91,15 +93,15 @@ def build_properties(m):
 
     NG_config = get_prop(
         components=['H2', 'CO', "H2O", 'CO2', 'CH4', "C2H6", "C3H8", "C4H10",
-                    'N2', 'O2', 'Ar'], phases=["Vap"], eos=EosType.IDEAL)
+                    'N2', 'O2', 'Ar'], phases=["Vap"])
     m.fs.NG_props = GenericParameterBlock(default=NG_config)
 
     syn_config = get_prop(
-        components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"], phases=["Vap"], eos=EosType.IDEAL)
+        components=["H2", "CO", "H2O", "CO2", "CH4", "N2", "O2", "Ar"], phases=["Vap"])
     m.fs.syn_props = GenericParameterBlock(default=syn_config)
 
     air_config = get_prop(
-        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'], phases=["Vap"], eos=EosType.IDEAL)
+        components=['H2O', 'CO2', 'N2', 'O2', 'Ar'], phases=["Vap"])
     m.fs.air_props = GenericParameterBlock(default=air_config)
 
     m.fs.rxn_props = GenericReactionParameterBlock(
@@ -907,13 +909,18 @@ def scale_flowsheet(m):
     for (t, x), v in m.fs.bypass_rejoin.minimum_pressure.items():
         iscale.set_scaling_factor(m.fs.bypass_rejoin.minimum_pressure, 1e-5)
         
-    for (t, e), v in m.fs.reformer.lagrange_mult.items():
-        iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-3)
-        
     for t, v in m.fs.reformer_recuperator.area.items():
-        iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-2)
-
-
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-4)
+        
+    # for (t, e), v in m.fs.reformer.lagrange_mult.items():
+    #     iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-6)
+        
+    # for (t, e), v in m.fs.anode.lagrange_mult.items():
+    #     iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-6)
+        
+    # for (t, e), v in m.fs.prereformer.lagrange_mult.items():
+    #     iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-6)        
+        
     iscale.calculate_scaling_factors(m)
 
 
@@ -970,7 +977,7 @@ def scale_flowsheet(m):
     # Scale some power island constraints
     # TODO - reformer model only solves when this is scaled to 1e-20
     for (t, p, j), c in m.fs.reformer.gibbs_minimization.items():
-        iscale.constraint_scaling_transform(c, 1e-20, overwrite=True)
+        iscale.constraint_scaling_transform(c, 1e-15, overwrite=True)
 
     for t, c in m.fs.bypass_rejoin.mixture_pressure.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
@@ -989,6 +996,7 @@ def scale_flowsheet(m):
 
     for (t, n), c in m.fs.bypass_rejoin.minimum_pressure_constraint.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+        
 
     iscale.calculate_scaling_factors(m)
 
@@ -1661,7 +1669,7 @@ def main():
     solver.options = {
         'bound_push': 1e-8,
         'tol': 1e-3,
-        # 'halt_on_ampl_error': 'yes',
+        'halt_on_ampl_error': 'yes',
         'max_iter': 200,
         "nlp_scaling_method": "user-scaling",
         # 'mu_init':1e-3,
@@ -1703,11 +1711,13 @@ def main():
     initialize_power_island(m)
     initialize_reformer(m)
     connect_reformer_to_power_island(m)
-    # SOFC_ROM_setup(m)
-    # print('add_SOFC_energy_balance')
-    # add_SOFC_energy_balance(m)
-    # print('add_result_constraints')
-    # add_result_constraints(m)
+    iscale.scale_arc_constraints(m)
+    iscale.calculate_scaling_factors(m)
+    SOFC_ROM_setup(m)
+    print('add_SOFC_energy_balance')
+    add_SOFC_energy_balance(m)
+    print('add_result_constraints')
+    add_result_constraints(m)
     # active_unfixed_vars(m)
     print(degrees_of_freedom(m))
     # iscale.constraint_autoscale_large_jac(m)
