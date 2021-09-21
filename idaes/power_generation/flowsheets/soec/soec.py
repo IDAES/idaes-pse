@@ -49,6 +49,7 @@ from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, 
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.generic_models.properties import iapws95
+from idaes.power_generation.flowsheets.soec import soec_costing as soec_cost
 
 from idaes.generic_models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
@@ -725,7 +726,6 @@ def do_scaling(m):
     iscale.constraint_scaling_transform(m.fs.hydrogen_product_rate_eqn[0.0], 1e-3)
 
 
-
 def do_initialize(m, solver):
     m.fs.preheat_split.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.fg04)
@@ -1117,7 +1117,6 @@ def get_model(m=None, name="SOEC Module"):
     add_constraints(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
-
     tag_inputs_opt_vars(m)
     tag_for_pfd_and_tables(m)
     set_guess(m)
@@ -1125,6 +1124,10 @@ def get_model(m=None, name="SOEC Module"):
     do_scaling(m)
     solver = get_solver()
     do_initialize(m, solver)
+    soec_cost.get_soec_capital_costing(m)
+    m.fs.soec.costing.total_plant_cost.fix(130)
+    m.fs.soec.costing.total_plant_cost_eq.deactivate()
+    iscale.calculate_scaling_factors(m.fs.costing)
     return m, solver
 
 
@@ -1133,11 +1136,20 @@ if __name__ == "__main__":
     m, solver = get_model()
     write_pfd_results(m, "soec_init.svg")
     #check_scaling(m)
+    #soec_cost.get_soec_capital_costing(m)
+    #soec_cost.get_soec_OM_costing(m)
     print(f"Hydrogen product rate {m.tag_input['hydrogen_product_rate']}.")
 
     m.tag_input["hydrogen_product_rate"].fix()
     m.tag_input["single_cell_h2_side_inlet_flow"].unfix()
     solver.solve(m, tee=True)
+    soec_cost.lock_capital_cost(m)
+    soec_cost.get_soec_OM_costing(m)
+    solver.solve(m, tee=True)
+
+
+    m.fs.costing.display()
+
 
     #strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
     #strip_bounds.apply_to(m, reversible=False)
@@ -1180,4 +1192,5 @@ if __name__ == "__main__":
         res = solver.solve(m, tee=True)
         stat = idaeslog.condition(res)
         m.tag_pfd["status"]._expression = stat
+        #soec_cost.display_soec_costing(m)
         write_pfd_results(m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg")

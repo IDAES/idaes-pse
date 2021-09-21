@@ -33,13 +33,17 @@ from idaes.core.util.unit_costing import (
 
 def add_total_plant_cost(b, project_contingency, process_contingency):
 
-    b.costing.total_plant_cost = pyo.Var(bounds=(0, 1e4))
+    #b.costing.total_plant_cost = pyo.Var(bounds=(0, 1e4))
+    try:
+        b.parent_block().generic_costing_units.append(b)
+    except AttributeError:
+        b.parent_block().generic_costing_units = []
+        b.parent_block().generic_costing_units.append(b)
 
-    @b.costing.Constraint()
-    def total_plant_cost_eq(c):
-        return c.total_plant_cost*1e6 == (c.purchase_cost *
-                                          project_contingency *
-                                          process_contingency)
+
+    @b.costing.Expression()
+    def total_plant_cost(c):
+        return c.purchase_cost * project_contingency * process_contingency / 1e6
 
 
 def get_soec_capital_costing(m):
@@ -48,8 +52,8 @@ def get_soec_capital_costing(m):
 
     # soec stack cost - fixed price per kW
     m.fs.soec.costing = pyo.Block()
-    m.fs.soec.costing.total_plant_cost = pyo.Var(initialize=30,
-                                                 bounds=(0, 1e4),
+    m.fs.soec.costing.total_plant_cost = pyo.Var(initialize=130,
+                                                 #bounds=(0, 1e4),
                                                  doc='total plant cost in $MM')
 
     @m.fs.soec.costing.Constraint()
@@ -90,7 +94,7 @@ def get_soec_capital_costing(m):
     HRSG_accounts = ["7.1", "7.2"]
 
     # get process parameters in correct units
-    MMBtu_per_hr = pyo.units.Mbtu/pyo.units.hr
+    MMBtu_per_hr = pyo.units.MBtu/pyo.units.hr
     hxo2_duty = pyo.units.convert(m.fs.hxo2.heat_duty[0], MMBtu_per_hr)
     hxh2_duty = pyo.units.convert(m.fs.hxh2.heat_duty[0], MMBtu_per_hr)
 
@@ -164,6 +168,7 @@ def get_soec_capital_costing(m):
         m.fs.soec.costing.total_plant_cost,
         m.fs.soec.costing.total_plant_cost_eq)
 
+    """
     generic_costing_units = [
         m.fs.air_preheater,
         m.fs.ng_preheater,
@@ -181,28 +186,26 @@ def get_soec_capital_costing(m):
         calculate_variable_from_constraint(
             u.costing.total_plant_cost,
             u.costing.total_plant_cost_eq)
-
+    """
     costing_initialization(m.fs)
-
     calculate_variable_from_constraint(m.fs.costing.total_TPC,
                                        m.fs.costing.total_TPC_eq)
 
+def lock_capital_cost(m):
+    for b in m.fs.generic_costing_units:
+        for v in b.costing.total_plant_cost.values():
+            print(b)
+            v.display()
+            v.set_value(pyo.value(v))
 
-def get_soec_OM_costing(m):
+        b.costing.deactivate()
+    m.fs.costing.deactivate()
+    m.fs.costing.total_TPC.fix()
+
+
+def get_soec_OM_costing(m, design_h2_production=2.5*pyo.units.kg/pyo.units.s):
     # fixed O&M costs
-    m.fs.H2_product = pyo.Var(m.fs.time, initialize=3, bounds=(0, 100),
-                              units=pyo.units.kg/pyo.units.s)  # kg/s
-
-    @m.fs.Constraint(m.fs.time)
-    def H2_product_rule(fs, t):
-        H2_molar_mass = 2*pyo.units.g/pyo.units.mol
-        return fs.H2_product[t] == (
-            pyo.units.convert(
-                H2_molar_mass * m.fs.hxh2.shell_outlet.flow_mol[0] *
-                m.fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"],
-                pyo.units.kg/pyo.units.s))
-
-    get_fixed_OM_costs(m, pyo.value(m.fs.H2_product[0]), tech=6)
+    get_fixed_OM_costs(m, design_h2_production, tech=6)
 
     # stack replacement cost
     stack_replacement_cost = 24.29  # $/yr/kW
@@ -214,9 +217,9 @@ def get_soec_OM_costing(m):
     m.fs.costing.other_fixed_costs.unfix()
 
     # initialize fixed costs
-    for t in m.fs.time:
-        calculate_variable_from_constraint(m.fs.H2_product[t],
-                                           m.fs.H2_product_rule[t])
+    #for t in m.fs.time:
+    #    calculate_variable_from_constraint(m.fs.H2_product[t],
+    #                                       m.fs.H2_product_rule[t])
     calculate_variable_from_constraint(m.fs.costing.other_fixed_costs,
                                        m.fs.stack_replacement_cost)
     initialize_fixed_OM_costs(m)
@@ -258,7 +261,12 @@ def get_soec_OM_costing(m):
     rates = [m.fs.plant_load, m.fs.NG_energy_rate,
              m.fs.water_withdrawal, m.fs.water_treatment_use]
     prices = {"electricity": 30*pyo.units.USD/pyo.units.MWh}
-    get_variable_OM_costs(m, m.fs.H2_product, resources, rates, prices=prices)
+    @m.fs.Expression(m.fs.time)
+    def h2_product_rate_mass(b, t):
+        return m.fs.hydrogen_product_rate[t]*0.002*pyo.units.kg/pyo.units.mol
+    print(pyo.units.convert(m.fs.h2_product_rate_mass[0], pyo.units.g/pyo.units.s))
+    m.fs.h2_product_rate_mass.display()
+    get_variable_OM_costs(m, m.fs.h2_product_rate_mass, resources, rates, prices=prices)
 
     # initialize variable costs
     initialize_variable_OM_costs(m)
