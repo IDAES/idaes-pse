@@ -128,7 +128,7 @@ def add_flowsheet(m=None, name="SOEC Module"):
 
 
 def add_properties(m):
-    comps = {  # components present
+    fuel_comp = {  # components present
         "CH4",
         "C2H6",
         "C3H8",
@@ -139,11 +139,24 @@ def add_properties(m):
         "N2",
         "Ar",
     }
+    air_comp = {  # components present
+        "O2",
+        "H2O",
+        "CO2",
+        "N2",
+        "Ar",
+    }
     m.fs.fg_prop = GenericParameterBlock(
-        default=get_prop(components=comps, phases=["Vap"], eos=EosType.IDEAL)
+        default=get_prop(components=fuel_comp, phases=["Vap"], eos=EosType.IDEAL)
     )
-    m.fs.fg_prop.set_default_scaling("mole_frac_comp", 10)
-    m.fs.fg_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.fg_prop.set_default_scaling("mole_frac_comp", 1e2)
+    m.fs.fg_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
+    # m.fs.fg_prop.set_default_scaling("flow_mol", 1)
+    # m.fs.fg_prop.set_default_scaling("flow_mol_phase", 1)
+    # m.fs.fg_prop.set_default_scaling("temperature", 1e-3)
+    # m.fs.fg_prop.set_default_scaling("pressure", 1e-2)
+    # m.fs.fg_prop.set_default_scaling("enth_mol_phase", 1e-4)
+    # m.fs.fg_prop.set_default_scaling("entr_mol_phase", 1e-2)    
     rxns = {  # reactions and key components for conversion
         "ch4_cmb": "CH4",
         "c2h6_cmb": "C2H6",
@@ -160,47 +173,47 @@ def add_properties(m):
         default=get_prop(components={"O2", "H2O"}, phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.air_prop = GenericParameterBlock(
-        default=get_prop(components={'H2O', 'CO2', 'N2', 'O2', 'Ar'},
-                         phases=["Vap"])
+        default=get_prop(components=air_comp, phases=["Vap"], eos=EosType.IDEAL)
     )
-    m.fs.air_prop.set_default_scaling("mole_frac_comp", 10)
-    m.fs.air_prop.set_default_scaling("mole_frac_phase_comp", 10)
+    m.fs.air_prop.set_default_scaling("mole_frac_comp", 1e2)
+    m.fs.air_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
+    # m.fs.air_prop.set_default_scaling("flow_mol", 1)
+    # m.fs.air_prop.set_default_scaling("flow_mol_phase", 1)
+    # m.fs.air_prop.set_default_scaling("temperature", 1e-3)
+    # m.fs.air_prop.set_default_scaling("pressure", 1e-2)
+    # m.fs.air_prop.set_default_scaling("enth_mol_phase", 1e-4)
+    # m.fs.air_prop.set_default_scaling("entr_mol_phase", 1e-2)
 
 def add_asu(m):   
     # build ASU, oxycombustor
     m.fs.air_compressor_s1 = gum.PressureChanger(
         default={"compressor": True,
-                 "property_package": m.fs.fg_prop,
+                 "property_package": m.fs.air_prop,
                  "thermodynamic_assumption":
                      ThermodynamicAssumption.isentropic})
 
     m.fs.intercooler_s1 = gum.Heater(
-        default={"property_package": m.fs.fg_prop,
+        default={"property_package": m.fs.air_prop,
                  "has_pressure_change": True})
 
     m.fs.air_compressor_s2 = gum.PressureChanger(
         default={"compressor": True,
-                 "property_package": m.fs.fg_prop,
+                 "property_package": m.fs.air_prop,
                  "thermodynamic_assumption":
                      ThermodynamicAssumption.isentropic})
 
     m.fs.intercooler_s2 = gum.Heater(
-        default={"property_package": m.fs.fg_prop,
+        default={"property_package": m.fs.air_prop,
                  "has_pressure_change": True})
 
     m.fs.ASU = gum.Separator(
         default={"outlet_list": ["N2_outlet", "O2_outlet"],
                  "split_basis": SplittingType.componentFlow,
-                 "property_package": m.fs.fg_prop})
+                 "property_package": m.fs.air_prop})
 
     # m.fs.ASU_O2_outlet = gum.Heater(
     #     default={"has_pressure_change": True,
     #              "property_package": m.fs.fg_prop})
-
-    # m.fs.oxycombustor_translator = gum.Translator(
-    #     default={"outlet_state_defined": True,
-    #              "inlet_property_package": m.fs.air_props,
-    #              "outlet_property_package": m.fs.syn_props})
 
     # arcs for ASU, oxycombustor and CPU
     m.fs.STAGE_1_OUT = Arc(
@@ -219,30 +232,25 @@ def add_asu(m):
         source=m.fs.intercooler_s2.outlet,
         destination=m.fs.ASU.inlet)
 
-    # m.fs.ASU_OUT = Arc(
-    #     source=m.fs.ASU.O2_outlet,
-    #     destination=m.fs.ASU_O2_outlet.inlet)
-    
-
 
 def add_preheater(m):
     m.fs.air_preheater = gum.HeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_underwood_callback,
-            "shell": {"property_package": m.fs.fg_prop},
-            "tube": {"property_package": m.fs.fg_prop},
+            "shell": {"property_package": m.fs.air_prop},
+            "tube": {"property_package": m.fs.air_prop},
         }
     )
     m.fs.ng_preheater = gum.HeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_underwood_callback,
-            "shell": {"property_package": m.fs.fg_prop},
+            "shell": {"property_package": m.fs.air_prop},
             "tube": {"property_package": m.fs.fg_prop},
         }
     )
     m.fs.preheat_split = gum.Separator(
         default={
-            "property_package": m.fs.fg_prop,
+            "property_package": m.fs.air_prop,
             "outlet_list": ["air", "ng"],
         }
     )
@@ -260,6 +268,33 @@ def add_preheater(m):
         )
 
 def add_combustor(m):
+    m.fs.pre_oxycombustor_translator = gum.Translator(
+        default={"outlet_state_defined": True,
+                  "inlet_property_package": m.fs.air_prop,
+                  "outlet_property_package": m.fs.fg_prop})
+
+    # Additional constraints to specify the translator block
+    @m.fs.pre_oxycombustor_translator.Constraint(m.fs.time)
+    def pre_oxycombustor_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.pre_oxycombustor_translator.Constraint(m.fs.time)
+    def pre_oxycombustor_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.pre_oxycombustor_translator.Constraint(m.fs.time)
+    def pre_oxycombustor_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    @m.fs.pre_oxycombustor_translator.Constraint(m.fs.time,
+                                             m.fs.air_prop.component_list)
+    def pre_oxycombustor_translator_x(b, t, j):
+        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
+
+    for j in m.fs.fg_prop.component_list:
+        if j not in m.fs.air_prop.component_list:
+            m.fs.pre_oxycombustor_translator.outlet.mole_frac_comp[0, j].fix(0)
+
     m.fs.cmb_mix = gum.Mixer(default={
         "property_package": m.fs.fg_prop,
         "inlet_list":["ng", "air"],
@@ -280,8 +315,40 @@ def add_combustor(m):
         stc = -m.fs.fg_combust.rate_reaction_stoichiometry[r, "Vap", k]
         extent = b.rate_reaction_extent[t, r]
         return extent*stc == prp.flow_mol*prp.mole_frac_comp[k]
+
+    m.fs.post_oxycombustor_translator = gum.Translator(
+        default={"outlet_state_defined": True,
+                  "inlet_property_package": m.fs.fg_prop,
+                  "outlet_property_package": m.fs.air_prop})
+
+    # Additional constraints to specify the translator block
+    @m.fs.post_oxycombustor_translator.Constraint(m.fs.time)
+    def post_oxycombustor_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.post_oxycombustor_translator.Constraint(m.fs.time)
+    def post_oxycombustor_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.post_oxycombustor_translator.Constraint(m.fs.time)
+    def post_oxycombustor_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    @m.fs.post_oxycombustor_translator.Constraint(m.fs.time,
+                                             m.fs.air_prop.component_list)
+    def post_oxycombustor_translator_x(b, t, j):
+        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
+
+    # for j in m.fs.fg_prop.component_list:
+    #     if j not in m.fs.air_prop.component_list:
+    #         m.fs.post_oxycombustor_translator.outlet.mole_frac_comp[0, j].fix(0)
+    m.fs.cmb_mix_in = Arc(  # TODO - rename arc
+        source=m.fs.air_preheater.tube_outlet,
+        destination=m.fs.pre_oxycombustor_translator.inlet
+    )
     m.fs.ba03 = Arc(
-        source=m.fs.air_preheater.tube_outlet, destination=m.fs.cmb_mix.air
+        source=m.fs.pre_oxycombustor_translator.outlet,
+        destination=m.fs.cmb_mix.air
     )
     m.fs.bng03 = Arc(
         source=m.fs.ng_preheater.tube_outlet, destination=m.fs.cmb_mix.ng
@@ -289,13 +356,16 @@ def add_combustor(m):
     m.fs.bng04 = Arc(
         source=m.fs.cmb_mix.outlet, destination=m.fs.cmb.inlet
     )
-
+    m.fs.cmb_out = Arc(  # TODO - rename arc
+        source=m.fs.cmb.outlet,
+        destination=m.fs.post_oxycombustor_translator.inlet
+    )
 
 def add_aux_boiler_steam(m):
     m.fs.bhx2 = gum.HeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_underwood_callback,
-            "shell": {"property_package": m.fs.fg_prop},
+            "shell": {"property_package": m.fs.air_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
@@ -311,7 +381,7 @@ def add_aux_boiler_steam(m):
     m.fs.bhx1 = gum.HeatExchanger(
         default={
             "delta_temperature_callback": delta_temperature_underwood_callback,
-            "shell": {"property_package": m.fs.fg_prop},
+            "shell": {"property_package": m.fs.air_prop},
             "tube": {"property_package": m.fs.water_prop},
         }
     )
@@ -321,7 +391,8 @@ def add_aux_boiler_steam(m):
             "outlet_list": ["h_side", "o_side"]
         }
     )
-    m.fs.fg01 = Arc(source=m.fs.cmb.outlet, destination=m.fs.bhx2.shell_inlet)
+    m.fs.fg01 = Arc(source=m.fs.post_oxycombustor_translator.outlet,
+                    destination=m.fs.bhx2.shell_inlet)
     m.fs.s02 = Arc(
         source=m.fs.aux_boiler_feed_pump.outlet,
         destination=m.fs.bhx1.tube_inlet
@@ -550,11 +621,7 @@ def add_constraints(m):
         return m.fs.bhx2.tube.properties_out[t].temperature == m.fs.soec_steam_temperature[t]
 
 def set_guess(m):
-    fg_comp_guess = {
-        "CH4": 1e-5,
-        "C2H6": 1e-5,
-        "C3H8": 1e-5,
-        "C4H10": 1e-5,
+    fg_comp_guess = { # air_prop is used as assumption is all fuel is combusted
         "O2": 0.049,
         "H2O": 0.2,
         "CO2": 0.2,
@@ -562,7 +629,8 @@ def set_guess(m):
         "Ar": 0.001,
     }
     _set_port(
-        m.fs.preheat_split.inlet, F=1650, T=550, P=1.04e5, comp=fg_comp_guess, fix=True
+        m.fs.preheat_split.inlet, F=1650, T=550, P=1.04e5,
+        comp=fg_comp_guess, fix=True
     )
 
 
@@ -575,7 +643,7 @@ def set_inputs(m):
     m.fs.ng_preheater.area.fix(300)
     m.fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
     # TODO - reduced as choice of the bxh2 area affects convergence of bxh2
-    m.fs.bhx2.area.fix(700)
+    m.fs.bhx2.area.fix(4000)
     m.fs.bhx2.overall_heat_transfer_coefficient.fix(100)
     m.fs.bhx1.area.fix(500)
     m.fs.bhx1.overall_heat_transfer_coefficient.fix(100)
@@ -588,10 +656,6 @@ def set_inputs(m):
     m.fs.preheat_split.split_fraction[:, "air"].fix(0.9)
 
     air_comp = {
-        "CH4": 1e-5,
-        "C2H6": 1e-5,
-        "C3H8": 1e-5,
-        "C4H10": 1e-5,
         "O2": 0.2074,
         "H2O": 0.0099,
         "CO2": 0.0003,
@@ -615,7 +679,7 @@ def set_inputs(m):
     _set_port(
         m.fs.ng_preheater.tube_inlet, F=280, T=330, P=1.04e5, comp=ng_comp, fix=True
     )
-    _set_port(
+    _set_port(  # TODO - increased flow to 10K to avoid log eval error in solve step 2
         m.fs.mxa1.air, F=10000, T=1073.15, P=1.11e5,
         comp={"O2": 0.2074, "H2O": 0.0099, "CO2": 0.0003,
               "N2": 0.7732, "Ar": 0.0092,}, fix=True
@@ -654,33 +718,34 @@ def set_inputs(m):
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.1)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.9)
     # TODO - fixed N2, Ar and CO2 for air feed
-    m.fs.soec.ac.mole_frac_comp[:, 0, "N2"].fix(1e-5)
-    m.fs.soec.ac.mole_frac_comp[:, 0, "Ar"].fix(1e-5)
-    m.fs.soec.ac.mole_frac_comp[:, 0, "CO2"].fix(1e-5)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "N2"].fix(0)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "Ar"].fix(0)
+    m.fs.soec.ac.mole_frac_comp[:, 0, "CO2"].fix(0)
 
     # air compressors and intercoolers
-    m.fs.air_compressor_s1.outlet.pressure.fix(234422)  # Pa (34 psia)
+    m.fs.air_compressor_s1.outlet.pressure.fix(111422)  # Pa (34 psia)
     m.fs.air_compressor_s1.efficiency_isentropic.fix(0.84)
     m.fs.intercooler_s1.outlet.temperature.fix(310.93)  # K (100 F)
     m.fs.intercooler_s1.deltaP.fix(-3447)  # Pa (-0.5 psi)
-    m.fs.air_compressor_s2.outlet.pressure.fix(544686)  # Pa (79 psia)
+    m.fs.air_compressor_s2.outlet.pressure.fix(130686)  # Pa (79 psia)
     m.fs.air_compressor_s2.efficiency_isentropic.fix(0.84)
     m.fs.intercooler_s2.outlet.temperature.fix(310.93)  # K (100 F)
     m.fs.intercooler_s2.deltaP.fix(-3447)  # Pa (-0.5 psi)
 
     # air seperation unit
-    m.fs.ASU.split_fraction[0, "O2_outlet", "CO2"].fix(1e-8)
-    m.fs.ASU.split_fraction[0, "O2_outlet", "H2O"].fix(1e-8)
+    m.fs.ASU.split_fraction[0, "O2_outlet", "CO2"].fix(0)
+    m.fs.ASU.split_fraction[0, "O2_outlet", "H2O"].fix(0)
     m.fs.ASU.split_fraction[0, "O2_outlet", "N2"].fix(0.0005)
     m.fs.ASU.split_fraction[0, "O2_outlet", "O2"].fix(0.9691)
     m.fs.ASU.split_fraction[0, "O2_outlet", "Ar"].fix(0.0673)
-    m.fs.ASU.split_fraction[0, "O2_outlet", "CH4"].fix(1e-8)
-    m.fs.ASU.split_fraction[0, "O2_outlet", "C2H6"].fix(1e-8)
-    m.fs.ASU.split_fraction[0, "O2_outlet", "C3H8"].fix(1e-8)
-    m.fs.ASU.split_fraction[0, "O2_outlet", "C4H10"].fix(1e-8)
 
 
 def do_initialize(m, solver):
+
+    m.fs.preheat_split.initialize(outlvl=idaeslog.DEBUG)
+    iinit.propagate_state(m.fs.fg04)
+    iinit.propagate_state(m.fs.fg05)
+
     m.fs.air_compressor_s1.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.STAGE_1_OUT)
     m.fs.intercooler_s1.initialize(outlvl=idaeslog.DEBUG)
@@ -691,17 +756,19 @@ def do_initialize(m, solver):
     iinit.propagate_state(m.fs.TO_ASU)
     m.fs.ASU.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.ba02)
-
-    m.fs.preheat_split.initialize(outlvl=idaeslog.DEBUG)
-    iinit.propagate_state(m.fs.fg04)
-    iinit.propagate_state(m.fs.fg05)
     m.fs.air_preheater.initialize(outlvl=idaeslog.DEBUG)
-    m.fs.ng_preheater.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.ba03)
+    m.fs.pre_oxycombustor_translator.initialize()
+    iinit.propagate_state(m.fs.cmb_mix_in)
+    
+
+
+    m.fs.ng_preheater.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.bng03)
     m.fs.cmb_mix.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.bng04)
     m.fs.cmb.initialize(outlvl=idaeslog.DEBUG)
+    iinit.propagate_state(m.fs.cmb_out)
     # residual_checker(m.fs.cmb)
     # m.fs.cmb.inlet.display()
     # m.fs.cmb.outlet.display()
@@ -710,7 +777,7 @@ def do_initialize(m, solver):
     # print('dof = ', degrees_of_freedom(m.fs.cmb))   # check_scaling(m.fs.cmb)
     # import sys
     # sys.exit('stop')
-
+    m.fs.pre_oxycombustor_translator.initialize()
     iinit.propagate_state(m.fs.fg01)
     m.fs.bhx2.initialize(outlvl=idaeslog.DEBUG)
 
@@ -764,13 +831,14 @@ def do_initialize(m, solver):
     m.fs.air_compressor_s1.inlet.flow_mol.unfix()
 
     m.fs.ng_preheater.tube_inlet.flow_mol.unfix()
-
+    m.fs.soec.E_cell.unfix()
     m.fs.s12_expanded.deactivate()
     m.fs.s13_expanded.deactivate()
 
     iscale.calculate_scaling_factors(m)    
     # TODO - this solve isn't robust
     # strip_bounds=True # strip bounds
+    # print('dof = ', degrees_of_freedom(m))
     solver.solve(m, tee=True,
                   options={"max_iter":400}
                   )
@@ -780,7 +848,6 @@ def do_initialize(m, solver):
     # import sys
     # sys.exit('stop')
 
-    m.fs.soec.E_cell.unfix()
     m.fs.s12_expanded.activate()
     m.fs.s13_expanded.activate()
 
@@ -845,9 +912,9 @@ def additional_scaling(m):
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
 
     for t, c in m.fs.cmb_mix.enthalpy_mixing_equations.items():
-        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+        iscale.constraint_scaling_transform(c, 1e-6, overwrite=True)
     for t, c in m.fs.cmb.control_volume.enthalpy_balances.items():
-        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+        iscale.constraint_scaling_transform(c, 1e-6, overwrite=True)
     for t, c in m.fs.cmb.control_volume.properties_in[t].total_flow_balance.items():
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     for t, c in m.fs.cmb.control_volume.properties_in[0].component_flow_balances.items():
@@ -857,11 +924,34 @@ def additional_scaling(m):
     for (t, p, j), c in m.fs.cmb.control_volume.rate_reaction_stoichiometry_constraint.items():
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True) 
 
+    for t, c in m.fs.pre_oxycombustor_translator.pre_oxycombustor_translator_F.items():
+        iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    for t, c in m.fs.pre_oxycombustor_translator.pre_oxycombustor_translator_P.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    for t, c in m.fs.post_oxycombustor_translator.post_oxycombustor_translator_F.items():
+        iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    for t, c in m.fs.post_oxycombustor_translator.post_oxycombustor_translator_P.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.air_compressor_s1.isentropic_energy_balance.items():
+    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    # for t, c in m.fs.air_compressor_s1.control_volume.enthalpy_balances.items():
+    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    # for t, c in m.fs.air_compressor_s2.isentropic_energy_balance.items():
+    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    # for t, c in m.fs.air_compressor_s2.control_volume.enthalpy_balances.items():
+    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    # for t, c in m.fs.intercooler_s1.control_volume.enthalpy_balances.items():
+    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+    # for t, c in m.fs.intercooler_s2.control_volume.enthalpy_balances.items():
+    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+
+
     # for t, v in m.fs.aux_boiler_feed_pump.properties_out[t].enth_mol.items():
     #     iscale.set_scaling_factor(m.fs.aux_boiler_feed_pump.properties_out[t].enth_mol, 1e3) 
 
-    # for t, c in m.fs.aux_boiler_feed_pump.eq_work.items():
-    #     iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for t, c in m.fs.aux_boiler_feed_pump.eq_work.items():
+        iscale.constraint_scaling_transform(c, 1e-10, overwrite=True)
     # for (t, r), c in m.fs.cmb.control_volume.rate_reaction_extent.items():
     #     iscale.constraint_scaling_transform(c, 1e3, overwrite=True)
         # iscale.set_scaling_factor(m.fs.cmb.rate_reaction_extent, 1e3)
@@ -900,11 +990,11 @@ def additional_scaling(m):
 def get_solver():
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
-    idaes.cfg.ipopt["options"]["tol"] = 1e-7
+    idaes.cfg.ipopt["options"]["tol"] = 1e-4
     # due to a lot of component mole fractions being on their lower bound of 0
     # bound push result in much longer solve times, so set it low.
     idaes.cfg.ipopt["options"]["halt_on_ampl_error"] = 'yes'
-    idaes.cfg.ipopt["options"]["bound_push"] = 1e-16
+    idaes.cfg.ipopt["options"]["bound_push"] = 1e-9
     idaes.cfg.ipopt["options"]["linear_solver"] = "ma57"
     idaes.cfg.ipopt["options"]["max_iter"] = 400
     #idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-1
@@ -1188,7 +1278,7 @@ def get_model(m=None, name="SOEC Module"):
     # sys.exit('stop')
     additional_scaling(m)
     iscale.calculate_scaling_factors(m)
-    iscale.scale_arc_constraints(m)
+    # iscale.scale_arc_constraints(m)
     # print(iscale.get_scaling_factor(m.fs.aux_boiler_feed_pump.eq_work[0]))
     # print(pyo.value(m.fs.aux_boiler_feed_pump.eq_work[0]))
 
@@ -1337,7 +1427,7 @@ if __name__ == "__main__":
     m = get_model()
     # write_pfd_results(m, "soec_init.svg")
     print('dof = ', degrees_of_freedom(m))
-    check_scaling(m)
+    # check_scaling(m)
     residual_checker(m)
     generator=variables_above_bounds_generator(m)
     generator2=variables_near_bounds_generator(m, tol=1e-6)
