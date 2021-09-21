@@ -20,7 +20,7 @@ import pytest
 from pyomo.environ import (Block, ConcreteModel, Constraint, Expression,
                            Set, SolverFactory, Var, value, Param, Reals,
                            TransformationFactory, TerminationCondition,
-                           exp)
+                           exp, units as pyunits)
 from pyomo.network import Arc, Port
 from pyomo.dae import DerivativeVar
 from pyomo.common.collections import ComponentMap
@@ -60,7 +60,8 @@ def make_model(horizon=6, ntfe=60, ntcp=2, inlet_E=11.91, inlet_S=12.92):
 
     m = ConcreteModel(name='CSTR with level control')
     m.fs = FlowsheetBlock(default={'dynamic': True,
-                                   'time_set': time_set})
+                                   'time_set': time_set,
+                                   'time_units': pyunits.s})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
