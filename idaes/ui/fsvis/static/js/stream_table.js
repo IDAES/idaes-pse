@@ -75,7 +75,7 @@ export class StreamTable {
                 if (columns[col_index] === "Units") {
                     console.log("data[col_index]:", data[col_index]);
                     if (data[col_index] && data[col_index] !== 'None') {
-                        row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index] + '</span>';
+                        row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">' + data[col_index].html + '</span>';
                     }
                     else {
                         row_object[variable_col] = row_object[variable_col] + '<span class="streamtable-units">&ndash;</span>';

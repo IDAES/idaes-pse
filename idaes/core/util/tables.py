@@ -250,18 +250,21 @@ def create_stream_table_dataframe(
             disp_dict = sb.define_display_vars()
         for k in disp_dict:
             for i in disp_dict[k]:
-                if i is None:
-                    stream_attributes[key][k] = value(disp_dict[k][i])
-                    if add_units:
-                        stream_attributes['Units'][k] = str(units.get_units(disp_dict[k][i]))
-                    if k not in full_keys:
-                        full_keys.append(k)
-                else:
-                    stream_attributes[key][f"{k} {i}"] = value(disp_dict[k][i])
-                    if add_units:
-                        stream_attributes['Units'][f"{k} {i}"] = str(units.get_units(disp_dict[k][i]))
-                    if f"{k} {i}" not in full_keys:
-                        full_keys.append(f"{k} {i}")
+                stream_key = k if i is None else f"{k} {i}"
+                stream_attributes[key][stream_key] = value(disp_dict[k][i])
+                if add_units:
+                    pyomo_unit = units.get_units(disp_dict[k][i])
+                    if pyomo_unit:
+                        pint_unit = pyomo_unit._get_pint_unit()
+                        stream_attributes['Units'][stream_key] = {
+                            'raw': str(pyomo_unit),
+                            'html': '{:~H}'.format(pint_unit),
+                            'latex': '{:~L}'.format(pint_unit)
+                        }
+                    else:
+                        stream_attributes['Units'][stream_key] = None
+                if stream_key not in full_keys:
+                    full_keys.append(stream_key)
 
     # Check for missing rows in any stream, and fill with "-" if needed
     for k, v in stream_attributes.items():
