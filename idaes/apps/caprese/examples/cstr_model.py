@@ -16,7 +16,7 @@ Test for Cappresse's module for NMPC.
 
 import pytest
 from pyomo.environ import (Block, ConcreteModel,  Constraint, Expression,
-                           Set, SolverFactory, Var, value, 
+                           Set, SolverFactory, Var, value, units as pyunits,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc
 from pyomo.common.collections import ComponentSet
@@ -56,7 +56,8 @@ def make_model(horizon=6, ntfe=60, ntcp=2,
         m.fs = FlowsheetBlock(default={'dynamic': False})
     else:
         m.fs = FlowsheetBlock(default={'dynamic': True,
-                                       'time_set': time_set})
+                                       'time_set': time_set,
+                                       'time_units': pyunits.minute})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
