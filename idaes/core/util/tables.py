@@ -239,7 +239,7 @@ def create_stream_table_dataframe(
     stream_states = stream_states_dict(streams=streams, time_point=time_point)
     full_keys = []  # List of all rows in dataframe to fill in missing data
 
-    if add_units and stream_states.items():
+    if add_units and stream_states:
         stream_attributes['Units'] = {}
 
     for key, sb in stream_states.items():
