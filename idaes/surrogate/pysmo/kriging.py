@@ -556,6 +556,67 @@ class KrigingModel:
         self.pickle_save({'model' : self})
         return self
 
+    def set_hyperparameters(self, params):
+        """
+        This function bypasses the training of the kriging model and fixes the kriging
+        model parameters to values provided in params (dict) and subsequently performs
+        precomputations with the model features
+
+        Args
+            params (dict)      :       Dictionary of values to fix the kriging model hyperparameters at
+
+        Returns
+            tuple   : self object (**results**) containing the all information about the Kriging model defined using provided parameters, including:
+                - the Kriging model hyperparameters  (**results.optimal_weights**),
+                - when relevant, the regularization parameter :math:`\lambda` (**results.regularization_parameter**),
+                - the Kriging mean (**results.optimal_mean**),
+                - the Kriging variance (**results.optimal_variance**),
+                - the Kriging model regularized co-variance matrix (**results.optimal_covariance_matrix**),
+                - the inverse of the co-variance matrix (**results.covariance_matrix_inverse**),
+                - the RBF predictions for the training data (**results.output_predictions**),
+                - the RMSE of the training output predictions (**results.training_rmse**), and
+                - the :math:`R^{2}` value on the training data (**results.R2**)
+        """
+
+        # exponent
+        set_p = params["p"]
+
+        # weigts
+        set_theta = params["theta"]
+
+        # regularization parameter
+        set_reg_param = params["reg_param"]
+
+        # kriging mean
+        set_mean = params["mean"]
+
+        # kriging variance
+        set_variance = params["variance"]
+
+        # computations
+        set_cov_mat = self.covariance_matrix_generator(self.x_data_scaled,set_theta,set_reg_param,set_p)
+        set_cov_inv = self.covariance_inverse_generator(set_cov_mat)
+        set_ymu = self.y_mu_calculation(self.y_data, set_mean)
+
+        # evaluate kriging model performance
+        set_ss_error, rmse_error, y_set_predictions = self.error_calculation(set_theta, set_p, set_mean, set_cov_inv, set_ymu, self.x_data_scaled, self.y_data)
+        r2_set = self.r2_calculation(self.y_data, y_set_predictions)
+
+        # Return results
+        self.optimal_weights = set_theta
+        self.optimal_p = set_p
+        self.optimal_mean = set_mean
+        self.optimal_variance = set_variance
+        self.regularization_parameter = set_reg_param
+        self.optimal_covariance_matrix = set_cov_mat
+        self.covariance_matrix_inverse = set_cov_inv
+        self.optimal_y_mu = set_ymu
+        self.output_predictions = y_set_predictions
+        self.training_R2 = r2_set
+        self.training_rmse = rmse_error
+        self.pickle_save({'model' : self})
+        return self
+
     def generate_expression(self, variable_list):
         """
         The ``generate_expression`` method returns the Pyomo expression for the Kriging model trained.
