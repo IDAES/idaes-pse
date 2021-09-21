@@ -1174,7 +1174,7 @@ if __name__ == "__main__":
     m.fs.obj = pyo.Objective(expr=m.fs.ng_preheater.tube_inlet.flow_mol[0]/10)
     #m.fs.obj = pyo.Objective(expr=-m.fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
 
-    for h in np.linspace(1.4, 0.3, 12):
+    for h in np.linspace(1.4, 0.2, 25):
         m.tag_input["hydrogen_product_rate"].fix(float(h)*pyo.units.kmol/pyo.units.s)
         print(f"Hydrogen product rate {m.tag_input['hydrogen_product_rate']}.")
         res = solver.solve(m, tee=True)
