@@ -795,7 +795,10 @@ def get_variable_OM_costs(m, production_rate, resources, rates,
     """
 
     # check the units on production_rate
-    production_units = pyunits.get_units(production_rate)
+    if isinstance(production_rate, Expression) and production_rate.is_indexed:
+        production_units = pyunits.get_units(production_rate[production_rate.index_set().first()])
+    else:
+        production_units = pyunits.get_units(production_rate)
 
     try:
         pyunits.convert(production_units, pyunits.MW)
