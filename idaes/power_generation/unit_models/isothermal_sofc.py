@@ -591,7 +591,7 @@ class IsothermalSofcElectrodeData(UnitModelBlockData):
         self.tortuosity = pyo.Var(doc="Electrode tortuosity")
         self.k_res = pyo.Var()
         self.E_res = pyo.Var()
-        if is_dynamic and has_holdup:
+        if is_dynamic and self.config.has_holdup:
             self.dcdt = DerivativeVar(
                 self.conc,
                 wrt=tset,
