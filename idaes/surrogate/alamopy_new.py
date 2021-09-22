@@ -531,7 +531,7 @@ class AlamoTrainer(SurrogateTrainer):
 
             self._temp_context.add_tempfile(almfile, exists=False)
 
-        trcfile = almfile.split(".")[0] + ".trc"
+        trcfile = os.path.splitext(almfile)[0] + ".trc"
         self._temp_context.add_tempfile(trcfile, exists=False)
 
         # Set attributes to track file names
@@ -700,12 +700,14 @@ class AlamoTrainer(SurrogateTrainer):
 
         # Add lst file to temp file manager
         cwd = os.getcwd()
-        lstfname = os.path.basename(self._almfile).split(".")[0] + ".lst"
+        lstfname = os.path.splitext(
+            os.path.basename(self._almfile))[0] + ".lst"
         lstpath = os.path.join(cwd, lstfname)
         self._temp_context.add_tempfile(lstpath, exists=False)
 
         try:
             with TeeStream(*ostreams) as t:
+                # Pass temp_dir to set the scratch directory
                 results = subprocess.run(
                     [alamo.executable, str(self._almfile), str(temp_dir)],
                     stdout=t.STDOUT,
@@ -872,14 +874,6 @@ class AlamoObject(SurrogateObject):
             self, surrogate, input_labels, output_labels, input_bounds=None):
         super().__init__(surrogate, input_labels, output_labels, input_bounds)
 
-        # Create a set of lambda functions for evaluating the surrogate.
-        self._fcn = {}
-        for o in self._output_labels:
-            self._fcn[o] = eval(
-                f"lambda {', '.join(self._input_labels)}: "
-                f"{self._surrogate[o].split('==')[1]}",
-                GLOBAL_FUNCS)
-
     def evaluate_surrogate(self, inputs):
         """
         Method to evaluate ALAMO surrogate at a set of input values.
@@ -892,12 +886,20 @@ class AlamoObject(SurrogateObject):
             outputs: numpy array of values for all outputs evaluated at input
                 points.
         """
+        # Create a set of lambda functions for evaluating the surrogate.
+        fcn = dict()
+        for o in self._output_labels:
+            fcn[o] = eval(
+                f"lambda {', '.join(self._input_labels)}: "
+                f"{self._surrogate[o].split('==')[1]}",
+                GLOBAL_FUNCS)
+
         outputs = np.zeros(shape=(len(self._output_labels), inputs.shape[1]))
 
         for i in range(inputs.shape[1]):
             for o in range(len(self._output_labels)):
                 o_name = self._output_labels[o]
-                outputs[o, i] = value(self._fcn[o_name](*inputs[:, i]))
+                outputs[o, i] = value(fcn[o_name](*inputs[:, i]))
         return outputs
 
     def populate_block(
