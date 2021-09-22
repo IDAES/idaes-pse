@@ -690,7 +690,7 @@ def set_inputs(m):
     m.fs.bhx2.overall_heat_transfer_coefficient.fix(100)
     # m.fs.bhx1.area.fix(500)
     # htpx(T=None, P=None, x=None)
-    h_bhx1 = pyo.value(iapws95.htpx(None,1.1e5*pyo.units.Pa, x=0)) # enthalpy outlet at saturated conditions
+    h_bhx1 = pyo.value(iapws95.htpx(None,1.1e5*pyo.units.Pa, x=0)) # enthalpy outlet
     m.fs.bhx1.tube_outlet.enth_mol[0].fix(h_bhx1)
     m.fs.bhx1.overall_heat_transfer_coefficient.fix(100)
     # m.fs.hxh2.area.fix(5000)
@@ -928,7 +928,7 @@ def do_initialize(m, solver):
 
     # TODO - unfix bhx2 area and fix shell outlet temperature instead
     m.fs.bhx2.area.unfix()
-    m.fs.bhx2.shell_outlet.temperature[0].fix(800)
+    m.fs.bhx2.shell_outlet.temperature[0].fix(700)
 
     # TODO - this solve isn't robust
     # strip_bounds=True # strip bounds
