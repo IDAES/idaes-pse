@@ -69,6 +69,10 @@ class _ControllerBlockData(_DynamicBlockData):
     models to be used by a controller. These include methods for
     calculating a setpoint and adding objective functions.
     """
+    
+    def _construct(self):
+        super(_ControllerBlockData, self)._construct()
+        self.has_estimator = False
 
     def solve_setpoint(self, solver, **kwargs):
         """ This method performs a "real time optimization-type"

@@ -359,7 +359,7 @@ class TestControllerBlock(object):
         controller.set_sample_time(sample_time)
 
         #case 1: estimator doesn't exist
-        controller.estimator_is_existing = False
+        controller.has_estimator = False
         ics = [10., 20.]
         controller.load_initial_conditions(ics)
 
@@ -367,7 +367,7 @@ class TestControllerBlock(object):
         assert controller.vectors.measurement[1, t0].value == 20.
         
         #case 2: estimator does exist
-        controller.estimator_is_existing = True
+        controller.has_estimator = True
         ics = [11., 21.]
         controller.load_initial_conditions(ics)
 

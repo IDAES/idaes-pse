@@ -74,9 +74,9 @@ class TestDynamicBuilder(object):
                           sample_time = sample_time)
         
         assert type(dyna) is DynamicSim
-        assert dyna.plant_is_existing
-        assert not dyna.controller_is_existing
-        assert not dyna.estimator_is_existing
+        assert dyna.has_plant
+        assert not dyna.has_controller
+        assert not dyna.has_estimator
         assert hasattr(dyna, "plant")
         assert hasattr(dyna.plant, "sample_points")
         assert dyna.plant.sample_points == [0, 0.5]
@@ -127,10 +127,10 @@ class TestDynamicBuilder(object):
             
             
         assert type(dyna) is DynamicSim
-        assert dyna.plant_is_existing
-        assert dyna.controller_is_existing
-        assert not dyna.estimator_is_existing
-        assert not dyna.controller.estimator_is_existing
+        assert dyna.has_plant
+        assert dyna.has_controller
+        assert not dyna.has_estimator
+        assert not dyna.controller.has_estimator
         assert hasattr(dyna, "plant")
         assert hasattr(dyna, "controller")
         assert hasattr(dyna.plant, "sample_points")
@@ -164,9 +164,9 @@ class TestDynamicBuilder(object):
                           sample_time = sample_time)
     
         assert type(dyna) is DynamicSim
-        assert dyna.plant_is_existing
-        assert not dyna.controller_is_existing
-        assert dyna.estimator_is_existing
+        assert dyna.has_plant
+        assert not dyna.has_controller
+        assert dyna.has_estimator
         assert hasattr(dyna, "plant")
         assert hasattr(dyna, "estimator")
         assert hasattr(dyna.plant, "sample_points")
@@ -205,10 +205,10 @@ class TestDynamicBuilder(object):
                           sample_time = sample_time)
     
         assert type(dyna) is DynamicSim
-        assert dyna.plant_is_existing
-        assert dyna.controller_is_existing
-        assert dyna.controller.estimator_is_existing
-        assert dyna.estimator_is_existing
+        assert dyna.has_plant
+        assert dyna.has_controller
+        assert dyna.controller.has_estimator
+        assert dyna.has_estimator
         assert hasattr(dyna, "plant")
         assert hasattr(dyna, "controller")
         assert hasattr(dyna, "estimator")
