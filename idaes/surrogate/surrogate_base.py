@@ -88,9 +88,6 @@ class SurrogateTrainer:
         """
         raise NotImplementedError('get_surrogate called, but not implemented on the derived class')
 
-
-    CRASH HERE....
-
     def get_results(self):  # Metrics Object
         """
         The ``get_results`` method returns the performance metrics of the surrogate model(s) generated.
@@ -107,21 +104,13 @@ class SurrogateTrainer:
     def set_input_labels(self, labels):
         # TODO: argument validation, docs and tests
         self._input_labels = labels
-        self._n_inputs = len(labels)
 
     def set_output_labels(self, labels):
         # TODO: argument validation, docs and tests
         self._output_labels = labels
-        self._n_outputs = len(labels)
 
     def set_input_bounds(self, bounds):
-        # TODO: argument validation, docs and tests
-        # TODO: Store as tuples, and make Alamopy break them apart when used
-        self._input_min = []
-        self._input_max = []
-        for i in bounds:
-            self._input_min.append(i[0])
-            self._input_max.append(i[1])
+        self._input_bounds = bounds
 
     def get_regressed_data(self):
         """

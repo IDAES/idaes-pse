@@ -25,7 +25,7 @@ from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core.base.global_set import UnindexedComponent_set
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateObject
+from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -444,6 +444,11 @@ class AlamoTrainer(SurrogateTrainer):
         domain=str,
         description="File name to use for ALAMO files - must be full path. "
         "If this option is not None, then working files will not be deleted."))
+    CONFIG.declare("working_directory", ConfigValue(
+        default=None,
+        domain=str,
+        description="Full path to working directory for ALAMO to use. "
+        "If this option is not None, then working files will not be deleted."))
     CONFIG.declare("overwrite_files", ConfigValue(
         default=False,
         domain=Bool,
@@ -474,8 +479,6 @@ class AlamoTrainer(SurrogateTrainer):
             rc : return code from calling ALAMO executable
             almlog : log of output from ALAMO executable
         """
-        super().train_surrogate()
-
         # Get paths for temp files
         self.get_files()
 
@@ -533,10 +536,16 @@ class AlamoTrainer(SurrogateTrainer):
 
         trcfile = os.path.splitext(almfile)[0] + ".trc"
         self._temp_context.add_tempfile(trcfile, exists=False)
+        
+        if self.config.working_directory is None:
+            wrkdir = self._temp_context.create_tempdir()
+        else:
+            wrkdir = self.config.working_directory
 
         # Set attributes to track file names
         self._almfile = almfile
         self._trcfile = trcfile
+        self._wrkdir = wrkdir
 
     def write_alm_to_stream(
             self, stream, trace_fname=None, x_reg=None,
@@ -559,13 +568,13 @@ class AlamoTrainer(SurrogateTrainer):
             None
         """
         if x_reg is None:
-            x_reg = self._rdata_in
+            x_reg = self._training_data_in
         if z_reg is None:
-            z_reg = self._rdata_out
+            z_reg = self._training_data_out
         if x_val is None:
-            x_val = self._vdata_in
+            x_val = self._validation_data_in
         if z_val is None:
-            z_val = self._vdata_out
+            z_val = self._validation_data_out
 
         # Check bounds on inputs to avoid potential ALAMO failures
         input_max = list()
@@ -703,15 +712,13 @@ class AlamoTrainer(SurrogateTrainer):
         ostreams = [StringIO(), sys.stdout]
 
         if self._temp_context is None:
-            self._temp_context = TempfileManager.push()
-        temp_dir = self._temp_context.create_tempdir()
+            self.get_files()
+
+        # Set working directory
+        cwd = os.getcwd()
+        os.chdir(self._wrkdir)
 
         # Add lst file to temp file manager
-        cwd = os.getcwd()
-
-        # TODO: Testing temp folder for list file
-        # os.chdir(temp_dir)  # Commenting this out should make the code run
-
         lstfname = os.path.splitext(
             os.path.basename(self._almfile))[0] + ".lst"
         lstpath = os.path.join(cwd, lstfname)
@@ -719,9 +726,8 @@ class AlamoTrainer(SurrogateTrainer):
 
         try:
             with TeeStream(*ostreams) as t:
-                # Pass temp_dir to set the scratch directory
                 results = subprocess.run(
-                    [alamo.executable, str(self._almfile), str(temp_dir)],
+                    [alamo.executable, str(self._almfile)],
                     stdout=t.STDOUT,
                     stderr=t.STDERR,
                     universal_newlines=True,
@@ -736,9 +742,9 @@ class AlamoTrainer(SurrogateTrainer):
             raise OSError(
                 f'Could not execute the command: alamo {str(self._almfile)}. '
                 f'Error message: {sys.exc_info()[1]}.')
-        # finally:
-        #     # TODO: Reset cwd
-        #     os.chdir(cwd)
+        finally:
+            # Revert cwd to where it started
+            os.chdir(cwd)
 
         if "ALAMO terminated with termination code " in almlog:
             self.remove_temp_files()
@@ -872,7 +878,7 @@ class AlamoTrainer(SurrogateTrainer):
         self._temp_context = None
 
 
-class AlamoObject(SurrogateObject):
+class AlamoObject(SurrogateBase):
     """
     Standard SurrogateObject for surrogates trained using ALAMO.
 
