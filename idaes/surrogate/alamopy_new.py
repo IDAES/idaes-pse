@@ -25,7 +25,7 @@ from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core.base.global_set import UnindexedComponent_set
 
-from idaes.surrogate.my_surrogate_base import SurrogateTrainer, SurrogateObject
+from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateObject
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -883,7 +883,8 @@ class AlamoObject(SurrogateObject):
 
     def __init__(
             self, surrogate, input_labels, output_labels, input_bounds=None):
-        super().__init__(surrogate, input_labels, output_labels, input_bounds)
+        super(AlamoObject,self).__init__(
+            surrogate, input_labels, output_labels, input_bounds)
 
     def evaluate_surrogate(self, inputs):
         """
@@ -913,13 +914,16 @@ class AlamoObject(SurrogateObject):
                 outputs[o, i] = value(fcn[o_name](*inputs[:, i]))
         return outputs
 
-    def populate_block(
-            self, block, variables=None, index_set=None):
+    def populate_block(self, block, **kwargs):
         """
         Method to populate a Pyomo Block with surrogate model constraints.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
+        """
+        # TODO: Let's discuss the use of variables and index_set - this should
+        # be promoted to the SurrogateBlock if needed?
+        """
             variables: dict mapping surrogate variable labels to existing
                 Pyomo Vars (default=None). If no mapping provided,
                 construct_variables will be called to create a set of new Vars.
@@ -930,6 +934,11 @@ class AlamoObject(SurrogateObject):
         Returns:
             None
         """
+        # TODO: Let's discuss the use of index_set
+        """
+        variables = kwargs.pop('variables', None)
+        index_set = kwargs.pop('index_set', None)
+        
         if index_set is None:
             var_index_set = UnindexedComponent_set
             con_index_set = Set(initialize=self._output_labels)
@@ -944,6 +953,8 @@ class AlamoObject(SurrogateObject):
         def alamo_rule(b, o, *args):
             # If we have more than 1 argument, it means we have an index_set
             # Need to get the var_data from the indexed vars
+    
+            # ** TODO ** This deepcopy was breaking things
             lvars = deepcopy(variables)
             if len(args) > 0:
                 for k, v in variables.items():
@@ -954,3 +965,22 @@ class AlamoObject(SurrogateObject):
             "alamo_constraint",
             Constraint(con_index_set,
                        rule=alamo_rule))
+        """
+        # TODO: do we need to add the index_set stuff back in?
+        output_set = Set(initialize=self._output_labels, ordered=True)
+        def alamo_rule(b, o):
+            lvars = block._input_vars_as_dict()
+            lvars.update(block._output_vars_as_dict())
+            return eval(self._surrogate[o], GLOBAL_FUNCS, lvars)
+
+        block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
+
+    def save(self, filename):
+        # this is mocked up for now
+        pass
+
+    @staticmethod
+    def load(filename):
+        # this is mocked up for now
+        pass
+
