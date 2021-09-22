@@ -35,7 +35,7 @@ from idaes.power_generation.unit_models.helm import (
     HelmMixer,
     MomentumMixingType,
     HelmSplitter,
-    HelmIsentropicCompressor
+    HelmIsentropicCompressor,
 )
 import idaes.generic_models.unit_models as gum  # generic unit models
 import idaes.power_generation.unit_models as pum  # power unit models
@@ -160,33 +160,36 @@ def add_preheater(m):
 
 
 def add_combustor(m):
-    m.fs.cmb_mix = gum.Mixer(default={
-        "property_package": m.fs.fg_prop,
-        "inlet_list":["ng", "air"],
-        "momentum_mixing_type":gum.MomentumMixingType.none})
-    m.fs.cmb = gum.StoichiometricReactor(default={
-        "property_package": m.fs.fg_prop,
-        "reaction_package": m.fs.fg_combust,
-        "has_pressure_change": False})
+    m.fs.cmb_mix = gum.Mixer(
+        default={
+            "property_package": m.fs.fg_prop,
+            "inlet_list": ["ng", "air"],
+            "momentum_mixing_type": gum.MomentumMixingType.none,
+        }
+    )
+    m.fs.cmb = gum.StoichiometricReactor(
+        default={
+            "property_package": m.fs.fg_prop,
+            "reaction_package": m.fs.fg_combust,
+            "has_pressure_change": False,
+        }
+    )
+
     @m.fs.cmb_mix.Constraint(m.fs.time)
     def pressure_eqn(b, t):
         return b.mixed_state[t].pressure == b.air_state[t].pressure
+
     @m.fs.cmb.Constraint(m.fs.time, m.rxns.keys())
     def reaction_extent(b, t, r):
         k = m.rxns[r]
         prp = b.control_volume.properties_in[t]
         stc = -m.fs.fg_combust.rate_reaction_stoichiometry[r, "Vap", k]
         extent = b.rate_reaction_extent[t, r]
-        return extent == prp.flow_mol*prp.mole_frac_comp[k]/stc
-    m.fs.ba03 = Arc(
-        source=m.fs.air_preheater.tube_outlet, destination=m.fs.cmb_mix.air
-    )
-    m.fs.bng03 = Arc(
-        source=m.fs.ng_preheater.tube_outlet, destination=m.fs.cmb_mix.ng
-    )
-    m.fs.bng04 = Arc(
-        source=m.fs.cmb_mix.outlet, destination=m.fs.cmb.inlet
-    )
+        return extent == prp.flow_mol * prp.mole_frac_comp[k] / stc
+
+    m.fs.ba03 = Arc(source=m.fs.air_preheater.tube_outlet, destination=m.fs.cmb_mix.air)
+    m.fs.bng03 = Arc(source=m.fs.ng_preheater.tube_outlet, destination=m.fs.cmb_mix.ng)
+    m.fs.bng04 = Arc(source=m.fs.cmb_mix.outlet, destination=m.fs.cmb.inlet)
 
 
 def add_aux_boiler_steam(m):
@@ -200,7 +203,7 @@ def add_aux_boiler_steam(m):
     m.fs.main_steam_split = HelmSplitter(
         default={
             "property_package": m.fs.water_prop,
-            "outlet_list": ["h_side", "o_side"]
+            "outlet_list": ["h_side", "o_side"],
         }
     )
     m.fs.aux_boiler_feed_pump = HelmIsentropicCompressor(
@@ -216,22 +219,17 @@ def add_aux_boiler_steam(m):
     m.fs.recover_split = HelmSplitter(
         default={
             "property_package": m.fs.water_prop,
-            "outlet_list": ["h_side", "o_side"]
+            "outlet_list": ["h_side", "o_side"],
         }
     )
     m.fs.fg01 = Arc(source=m.fs.cmb.outlet, destination=m.fs.bhx2.shell_inlet)
     m.fs.s02 = Arc(
-        source=m.fs.aux_boiler_feed_pump.outlet,
-        destination=m.fs.bhx1.tube_inlet
+        source=m.fs.aux_boiler_feed_pump.outlet, destination=m.fs.bhx1.tube_inlet
     )
     m.fs.fg02 = Arc(source=m.fs.bhx2.shell_outlet, destination=m.fs.bhx1.shell_inlet)
-    m.fs.s03 = Arc(
-        source=m.fs.bhx1.tube_outlet,
-        destination=m.fs.recover_split.inlet
-    )
+    m.fs.s03 = Arc(source=m.fs.bhx1.tube_outlet, destination=m.fs.recover_split.inlet)
     m.fs.s09 = Arc(
-        source=m.fs.bhx2.tube_outlet,
-        destination=m.fs.main_steam_split.inlet
+        source=m.fs.bhx2.tube_outlet, destination=m.fs.main_steam_split.inlet
     )
 
 
@@ -359,12 +357,14 @@ def add_soec_inlet_mix(m):
     m.fs.main_steam_split._temperature_o_side_ref = pyo.Reference(
         m.fs.main_steam_split.o_side_state[:].temperature
     )
+
     @m.fs.main_steam_split.Expression(m.fs.time, m.fs.soec.fc.config.comp_list)
     def h_side_mole_frac_expr(b, t, i):
         if i == "H2O":
             return 1
         else:
             return 0
+
     @m.fs.main_steam_split.Expression(m.fs.time, m.fs.soec.ac.config.comp_list)
     def o_side_mole_frac_expr(b, t, i):
         if i == "H2O":
@@ -410,23 +410,22 @@ def add_soec_inlet_mix(m):
 
 
 def add_more_hx_connections(m):
-    m.fs.fg03 = Arc(
-        source=m.fs.bhx1.shell_outlet,
-        destination=m.fs.preheat_split.inlet
-    )
-    m.fs.s08 = Arc(
-        source=m.fs.smix1.outlet,
-        destination=m.fs.bhx2.tube_inlet
-    )
+    m.fs.fg03 = Arc(source=m.fs.bhx1.shell_outlet, destination=m.fs.preheat_split.inlet)
+    m.fs.s08 = Arc(source=m.fs.smix1.outlet, destination=m.fs.bhx2.tube_inlet)
 
 
 def add_h2_compressor(m):
     @m.fs.hxh2.Expression(m.fs.time, {"H2"})
     def waterless_mole_frac_expr(b, t, i):
         return 1
+
     @m.fs.hxh2.Expression(m.fs.time)
     def waterless_flow_expr(b, t):
-        return m.fs.hxh2._flow_mol_shell_outlet_ref[t]*m.fs.hxh2._mole_frac_comp_shell_outlet_ref[t, "H2"]
+        return (
+            m.fs.hxh2._flow_mol_shell_outlet_ref[t]
+            * m.fs.hxh2._mole_frac_comp_shell_outlet_ref[t, "H2"]
+        )
+
     m.fs.hxh2.shell_outlet_drop_water = Port(
         rule=lambda b: {
             "flow_mol": m.fs.hxh2.waterless_flow_expr,
@@ -444,60 +443,49 @@ def add_h2_compressor(m):
     m.fs.hcmp_ic04 = gum.Heater(default={"property_package": m.fs.h2_compress_prop})
     m.fs.hcmp04 = gum.Compressor(default={"property_package": m.fs.h2_compress_prop})
     m.fs.h04 = Arc(
-        source=m.fs.hxh2.shell_outlet_drop_water,
-        destination=m.fs.hcmp_ic01.inlet
+        source=m.fs.hxh2.shell_outlet_drop_water, destination=m.fs.hcmp_ic01.inlet
     )
-    m.fs.h05 = Arc(
-        source=m.fs.hcmp_ic01.outlet,
-        destination=m.fs.hcmp01.inlet
-    )
-    m.fs.h06 = Arc(
-        source=m.fs.hcmp01.outlet,
-        destination=m.fs.hcmp_ic02.inlet
-    )
-    m.fs.h07 = Arc(
-        source=m.fs.hcmp_ic02.outlet,
-        destination=m.fs.hcmp02.inlet
-    )
-    m.fs.h08 = Arc(
-        source=m.fs.hcmp02.outlet,
-        destination=m.fs.hcmp_ic03.inlet
-    )
-    m.fs.h09 = Arc(
-        source=m.fs.hcmp_ic03.outlet,
-        destination=m.fs.hcmp03.inlet
-    )
-    m.fs.h10 = Arc(
-        source=m.fs.hcmp03.outlet,
-        destination=m.fs.hcmp_ic04.inlet
-    )
-    m.fs.h11 = Arc(
-        source=m.fs.hcmp_ic04.outlet,
-        destination=m.fs.hcmp04.inlet
-    )
+    m.fs.h05 = Arc(source=m.fs.hcmp_ic01.outlet, destination=m.fs.hcmp01.inlet)
+    m.fs.h06 = Arc(source=m.fs.hcmp01.outlet, destination=m.fs.hcmp_ic02.inlet)
+    m.fs.h07 = Arc(source=m.fs.hcmp_ic02.outlet, destination=m.fs.hcmp02.inlet)
+    m.fs.h08 = Arc(source=m.fs.hcmp02.outlet, destination=m.fs.hcmp_ic03.inlet)
+    m.fs.h09 = Arc(source=m.fs.hcmp_ic03.outlet, destination=m.fs.hcmp03.inlet)
+    m.fs.h10 = Arc(source=m.fs.hcmp03.outlet, destination=m.fs.hcmp_ic04.inlet)
+    m.fs.h11 = Arc(source=m.fs.hcmp_ic04.outlet, destination=m.fs.hcmp04.inlet)
 
 
 def add_constraints(m):
     m.fs.soec_heat_duty = pyo.Var(m.fs.time, units=pyo.units.W)
+
     @m.fs.Constraint(m.fs.time)
     def heat_duty_soec_zero_eqn(b, t):
         return b.soec.heat_duty[t] == b.soec_heat_duty[t]
 
     m.fs.soec_cmb_temperature = pyo.Var(m.fs.time, initialize=2000, units=pyo.units.K)
+
     @m.fs.Constraint(m.fs.time)
     def soec_cmb_temperature_eqn(b, t):
         return m.fs.cmb.outlet.temperature[t] == m.fs.soec_cmb_temperature[t]
 
-    m.fs.soec_steam_temperature = pyo.Var(m.fs.time, initialize=1073.15, units=pyo.units.K)
+    m.fs.soec_steam_temperature = pyo.Var(
+        m.fs.time, initialize=1073.15, units=pyo.units.K
+    )
+
     @m.fs.Constraint(m.fs.time)
     def soec_steam_temperature_eqn(b, t):
-        return m.fs.bhx2.tube.properties_out[t].temperature == m.fs.soec_steam_temperature[t]
+        return (
+            m.fs.bhx2.tube.properties_out[t].temperature
+            == m.fs.soec_steam_temperature[t]
+        )
 
     @m.fs.Expression(m.fs.time)
     def hydrogen_product_rate_expr(b, t):
-        return b.hxh2.shell_outlet.flow_mol[t]*b.hxh2.shell_outlet.mole_frac_comp[t, "H2"]
+        return (
+            b.hxh2.shell_outlet.flow_mol[t]
+            * b.hxh2.shell_outlet.mole_frac_comp[t, "H2"]
+        )
 
-    m.fs.hydrogen_product_rate = pyo.Var(m.fs.time, units=pyo.units.mol/pyo.units.s)
+    m.fs.hydrogen_product_rate = pyo.Var(m.fs.time, units=pyo.units.mol / pyo.units.s)
 
     @m.fs.Constraint(m.fs.time)
     def hydrogen_product_rate_eqn(b, t):
@@ -505,15 +493,19 @@ def add_constraints(m):
 
     @m.fs.Expression(m.fs.time)
     def soec_power_per_h2(b, t):
-        return b.soec.total_power[t]/b.hydrogen_product_rate_expr[t]/(0.002*pyo.units.kg/pyo.units.mol)
+        return (
+            b.soec.total_power[t]
+            / b.hydrogen_product_rate_expr[t]
+            / (0.002 * pyo.units.kg / pyo.units.mol)
+        )
 
     @m.fs.Expression(m.fs.time)
     def h2_compressor_power(b, t):
         return (
-            m.fs.hcmp01.control_volume.work[t] +
-            m.fs.hcmp02.control_volume.work[t] +
-            m.fs.hcmp03.control_volume.work[t] +
-            m.fs.hcmp04.control_volume.work[t]
+            m.fs.hcmp01.control_volume.work[t]
+            + m.fs.hcmp02.control_volume.work[t]
+            + m.fs.hcmp03.control_volume.work[t]
+            + m.fs.hcmp04.control_volume.work[t]
         )
 
 
@@ -550,7 +542,6 @@ def set_inputs(m):
     m.fs.hxo2.area.fix(1000)
     m.fs.hxo2.overall_heat_transfer_coefficient.fix(100)
 
-
     m.fs.preheat_split.split_fraction[:, "air"].fix(0.9)
 
     air_comp = {
@@ -582,7 +573,9 @@ def set_inputs(m):
         m.fs.ng_preheater.tube_inlet, F=240, T=330, P=1.04e5, comp=ng_comp, fix=True
     )
     m.fs.bhx2.tube_inlet.flow_mol.fix(5000)
-    m.fs.bhx2.tube_inlet.enth_mol.fix(iapws95.htpx(T=600*pyo.units.K, P=20.6e5*pyo.units.Pa))
+    m.fs.bhx2.tube_inlet.enth_mol.fix(
+        iapws95.htpx(T=600 * pyo.units.K, P=20.6e5 * pyo.units.Pa)
+    )
     m.fs.bhx2.tube_inlet.pressure.fix(20.6e5)
 
     m.fs.main_steam_split.split_fraction[:, "h_side"].fix(0.5)
@@ -590,17 +583,17 @@ def set_inputs(m):
 
     m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(5000)
     m.fs.aux_boiler_feed_pump.inlet.enth_mol.fix(
-        iapws95.htpx(T=310*pyo.units.K, P=101325*pyo.units.Pa)
+        iapws95.htpx(T=310 * pyo.units.K, P=101325 * pyo.units.Pa)
     )
     m.fs.aux_boiler_feed_pump.inlet.pressure.fix(101325)
-    m.fs.aux_boiler_feed_pump.outlet.pressure.fix(1.1e5)#20.6e5)
+    m.fs.aux_boiler_feed_pump.outlet.pressure.fix(1.1e5)  # 20.6e5)
     m.fs.aux_boiler_feed_pump.efficiency_isentropic.fix(0.85)
 
     m.fs.spltf1.split_fraction[:, "out"].fix(0.98)
     m.fs.splta1.split_fraction[:, "out"].fix(0.85)
 
     m.fs.soec.n_cells.fix(60e6)
-    m.fs.soec_heat_duty.fix(0) # going for the theroneutral point here
+    m.fs.soec_heat_duty.fix(0)  # going for the theroneutral point here
 
     m.fs.soec.fc.flow_mol[:, 0].fix(4e-5)
     m.fs.soec.fc.pressure[:, 0].fix(1e5)
@@ -642,63 +635,120 @@ def do_scaling(m):
     iscale.set_scaling_factor(m.fs.aux_boiler_feed_pump.control_volume.work[0.0], 1e-03)
     iscale.set_scaling_factor(m.fs.bhx1.delta_temperature_in[0.0], 1e-2)
     iscale.set_scaling_factor(m.fs.bhx1.delta_temperature_out[0.0], 1e-2)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_extent[0.0, "ch4_cmb"], 1e-2)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "CH4"], 1e-2)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "H2O"], 1e-2)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap" , "CO2"], 1e-2)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "O2"], 1e-2)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_extent[0.0, "ch4_cmb"], 1e-2)
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_extent[0.0, "ch4_cmb"], 1e-2
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "CH4"], 1e-2
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "H2O"], 1e-2
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "CO2"], 1e-2
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_generation[0.0, "Vap", "O2"], 1e-2
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_extent[0.0, "ch4_cmb"], 1e-2
+    )
 
-    iscale.set_scaling_factor(m.fs.air_preheater.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.air_preheater.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.air_preheater.tube.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.air_preheater.tube.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.air_preheater.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.air_preheater.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.air_preheater.tube.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.air_preheater.tube.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
     iscale.set_scaling_factor(m.fs.air_preheater.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.air_preheater.tube.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.air_preheater.overall_heat_transfer_coefficient[0.0], 1e-2)
+    iscale.set_scaling_factor(
+        m.fs.air_preheater.overall_heat_transfer_coefficient[0.0], 1e-2
+    )
     iscale.set_scaling_factor(m.fs.air_preheater.area, 1e-3)
 
-
-    iscale.set_scaling_factor(m.fs.ng_preheater.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.ng_preheater.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.ng_preheater.tube.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.ng_preheater.tube.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.ng_preheater.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.ng_preheater.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.ng_preheater.tube.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.ng_preheater.tube.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
     iscale.set_scaling_factor(m.fs.ng_preheater.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.ng_preheater.tube.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.ng_preheater.overall_heat_transfer_coefficient[0.0], 1e-2)
+    iscale.set_scaling_factor(
+        m.fs.ng_preheater.overall_heat_transfer_coefficient[0.0], 1e-2
+    )
     iscale.set_scaling_factor(m.fs.ng_preheater.area, 1e-3)
 
     iscale.set_scaling_factor(m.fs.cmb_mix.ng_state[0.0].enth_mol_phase["Vap"], 1e-4)
     iscale.set_scaling_factor(m.fs.cmb_mix.air_state[0.0].enth_mol_phase["Vap"], 1e-4)
     iscale.set_scaling_factor(m.fs.cmb_mix.mixed_state[0.0].enth_mol_phase["Vap"], 1e-4)
 
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_extent[0.0, "c2h6_cmb"], 1e-1)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_extent[0.0, "c3h8_cmb"], 1e-1)
-    iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_extent[0.0, "c4h10_cmb"], 1e-1)
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_extent[0.0, "c2h6_cmb"], 1e-1
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_extent[0.0, "c3h8_cmb"], 1e-1
+    )
+    iscale.set_scaling_factor(
+        m.fs.cmb.control_volume.rate_reaction_extent[0.0, "c4h10_cmb"], 1e-1
+    )
 
-    iscale.set_scaling_factor(m.fs.bhx2.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.bhx2.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.bhx2.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.bhx2.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
     iscale.set_scaling_factor(m.fs.bhx2.overall_heat_transfer_coefficient[0.0], 1e-2)
     iscale.set_scaling_factor(m.fs.bhx2.area, 1e-3)
 
-    iscale.set_scaling_factor(m.fs.bhx1.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.bhx1.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.bhx1.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.bhx1.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
     iscale.set_scaling_factor(m.fs.bhx1.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.bhx1.tube.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.bhx1.overall_heat_transfer_coefficient[0.0], 1e-2)
     iscale.set_scaling_factor(m.fs.bhx1.area, 1e-2)
 
-    iscale.set_scaling_factor(m.fs.hxh2.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.hxh2.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.hxh2.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.hxh2.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
     iscale.set_scaling_factor(m.fs.hxh2.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxh2.tube.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxh2.overall_heat_transfer_coefficient[0.0], 1e-2)
     iscale.set_scaling_factor(m.fs.hxh2.area, 1e-3)
 
-    iscale.set_scaling_factor(m.fs.hxo2.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4)
-    iscale.set_scaling_factor(m.fs.hxo2.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4)
+    iscale.set_scaling_factor(
+        m.fs.hxo2.shell.properties_in[0.0].enth_mol_phase["Vap"], 1e-4
+    )
+    iscale.set_scaling_factor(
+        m.fs.hxo2.shell.properties_out[0.0].enth_mol_phase["Vap"], 1e-4
+    )
     iscale.set_scaling_factor(m.fs.hxo2.shell.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxo2.tube.heat, 1e-6)
     iscale.set_scaling_factor(m.fs.hxo2.overall_heat_transfer_coefficient[0.0], 1e-2)
@@ -824,7 +874,7 @@ def get_solver():
     idaes.cfg.ipopt["options"]["linear_solver"] = "ma27"
     idaes.cfg.ipopt["options"]["max_iter"] = 400
     idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-3
-    #idaes.cfg.ipopt["options"]["ma57_pivtol"] = 1e-1
+    # idaes.cfg.ipopt["options"]["ma57_pivtol"] = 1e-1
     return pyo.SolverFactory("ipopt")
 
 
@@ -833,13 +883,13 @@ def tag_inputs_opt_vars(m):
     tags["single_cell_h2_side_inlet_flow"] = iutil.ModelTag(
         expr=m.fs.soec.fc.flow_mol[0, 0],
         format_string="{:.3f}",
-        display_units=pyo.units.micromol/pyo.units.s,
+        display_units=pyo.units.micromol / pyo.units.s,
         doc="Single cell H2 side inlet flow (feed)",
     )
     tags["single_cell_sweep_flow"] = iutil.ModelTag(
         expr=m.fs.soec.ac.flow_mol[0, 0],
         format_string="{:.3f}",
-        display_units=pyo.units.micromol/pyo.units.s,
+        display_units=pyo.units.micromol / pyo.units.s,
         doc="Single cell O2 side inlet flow (sweep)",
     )
     tags["feed_h2_frac"] = iutil.ModelTag(
@@ -899,44 +949,44 @@ def tag_inputs_opt_vars(m):
     tags["air_preheater_area"] = iutil.ModelTag(
         expr=m.fs.air_preheater.area,
         format_string="{:.3f}",
-        display_units=pyo.units.m**2,
+        display_units=pyo.units.m ** 2,
         doc="Air preheater area",
     )
     tags["ng_preheater_area"] = iutil.ModelTag(
         expr=m.fs.ng_preheater.area,
         format_string="{:.3f}",
-        display_units=pyo.units.m**2,
+        display_units=pyo.units.m ** 2,
         doc="NG preheater area",
     )
     tags["bhx1_area"] = iutil.ModelTag(
         expr=m.fs.bhx1.area,
         format_string="{:.3f}",
-        display_units=pyo.units.m**2,
+        display_units=pyo.units.m ** 2,
         doc="bhx1 area",
     )
     tags["bhx2_area"] = iutil.ModelTag(
         expr=m.fs.bhx2.area,
         format_string="{:.3f}",
-        display_units=pyo.units.m**2,
+        display_units=pyo.units.m ** 2,
         doc="bhx2 area",
     )
     tags["hxh2_area"] = iutil.ModelTag(
         expr=m.fs.hxh2.area,
         format_string="{:.3f}",
-        display_units=pyo.units.m**2,
+        display_units=pyo.units.m ** 2,
         doc="hxh2 area",
     )
     tags["hxo2_area"] = iutil.ModelTag(
         expr=m.fs.hxo2.area,
         format_string="{:.3f}",
-        display_units=pyo.units.m**2,
+        display_units=pyo.units.m ** 2,
         doc="hxo2 area",
     )
 
     tags["hydrogen_product_rate"] = iutil.ModelTag(
         expr=m.fs.hydrogen_product_rate[0],
         format_string="{:.3f}",
-        display_units=pyo.units.kmol/pyo.units.s,
+        display_units=pyo.units.kmol / pyo.units.s,
         doc="Rate of hydrogen production",
     )
     m.tag_input = tags
@@ -949,11 +999,11 @@ def tag_for_pfd_and_tables(m):
             m.fs,
             descend_into=False,
             additional={
-                "fg06":m.fs.ng_preheater.shell_outlet,
-                "fg07":m.fs.air_preheater.shell_outlet,
-                "s01":m.fs.aux_boiler_feed_pump.inlet,
-                "h03":m.fs.hxh2.shell_outlet,
-                "o03":m.fs.hxo2.shell_outlet,
+                "fg06": m.fs.ng_preheater.shell_outlet,
+                "fg07": m.fs.air_preheater.shell_outlet,
+                "s01": m.fs.aux_boiler_feed_pump.inlet,
+                "h03": m.fs.hxh2.shell_outlet,
+                "o03": m.fs.hxo2.shell_outlet,
             },
         )
     )
@@ -961,45 +1011,37 @@ def tag_for_pfd_and_tables(m):
         tag_group[f"{i}_Fmol"] = iutil.ModelTag(
             expr=s.flow_mol,
             format_string="{:.3f}",
-            display_units=pyo.units.kmol/pyo.units.s
+            display_units=pyo.units.kmol / pyo.units.s,
         )
         tag_group[f"{i}_Fmass"] = iutil.ModelTag(
             expr=s.flow_mass,
             format_string="{:.3f}",
-            display_units=pyo.units.kg/pyo.units.s
+            display_units=pyo.units.kg / pyo.units.s,
         )
         tag_group[f"{i}_P"] = iutil.ModelTag(
-            expr=s.pressure,
-            format_string="{:.3f}",
-            display_units=pyo.units.bar
+            expr=s.pressure, format_string="{:.3f}", display_units=pyo.units.bar
         )
         tag_group[f"{i}_T"] = iutil.ModelTag(
-            expr=s.temperature,
-            format_string="{:.2f}",
-            display_units=pyo.units.K
+            expr=s.temperature, format_string="{:.2f}", display_units=pyo.units.K
         )
         try:
             tag_group[f"{i}_vf"] = iutil.ModelTag(
-                expr=s.phase_frac["Vap"],
-                format_string="{:.3f}",
-                display_units=None
-        )
+                expr=s.phase_frac["Vap"], format_string="{:.3f}", display_units=None
+            )
         except (KeyError, AttributeError):
             pass
         try:
             for c in s.mole_frac_comp:
                 tag_group[f"{i}_y{c}"] = iutil.ModelTag(
-                    expr=s.mole_frac_comp[c]*100,
+                    expr=s.mole_frac_comp[c] * 100,
                     format_string="{:.3f}",
-                    display_units="%"
+                    display_units="%",
                 )
         except (KeyError, AttributeError):
             pass
         try:
             tag_group[f"{i}_y"] = iutil.ModelTag(
-                expr=s.mole_frac_comp,
-                format_string="{:.3f}",
-                display_units=None
+                expr=s.mole_frac_comp, format_string="{:.3f}", display_units=None
             )
         except (KeyError, AttributeError):
             pass
@@ -1007,48 +1049,39 @@ def tag_for_pfd_and_tables(m):
     tag_group["soec_power"] = iutil.ModelTag(
         expr=m.fs.soec.total_power[0],
         format_string="{:.2f}",
-        display_units=pyo.units.MW
+        display_units=pyo.units.MW,
     )
     tag_group["soec_power_per_h2"] = iutil.ModelTag(
         expr=m.fs.soec_power_per_h2[0],
         format_string="{:.2f}",
-        display_units=pyo.units.MJ/pyo.units.kg
+        display_units=pyo.units.MJ / pyo.units.kg,
     )
     tag_group["soec_n_cells"] = iutil.ModelTag(
-        expr=m.fs.soec.n_cells,
-        format_string="{:,.0f}",
-        display_units=None
+        expr=m.fs.soec.n_cells, format_string="{:,.0f}", display_units=None
     )
     tag_group["E_cell"] = iutil.ModelTag(
-        expr=m.fs.soec.E_cell[0],
-        format_string="{:.4f}",
-        display_units=pyo.units.V
+        expr=m.fs.soec.E_cell[0], format_string="{:.4f}", display_units=pyo.units.V
     )
     tag_group["h2_compressor_power"] = iutil.ModelTag(
         expr=m.fs.h2_compressor_power[0],
         format_string="{:.2f}",
-        display_units=pyo.units.MW
+        display_units=pyo.units.MW,
     )
     tag_group["h2_compressor_pressure"] = iutil.ModelTag(
         expr=m.fs.hcmp04.outlet.pressure[0],
         format_string="{:.3f}",
-        display_units=pyo.units.bar
+        display_units=pyo.units.bar,
     )
     tag_group["aux_boiler_feed_pump_power"] = iutil.ModelTag(
         expr=m.fs.aux_boiler_feed_pump.control_volume.work[0],
         format_string="{:.2f}",
-        display_units=pyo.units.kW
+        display_units=pyo.units.kW,
     )
     tag_group["soec_heat_duty"] = iutil.ModelTag(
-        expr=m.fs.soec_heat_duty[0],
-        format_string="{:.4f}",
-        display_units=pyo.units.MW
+        expr=m.fs.soec_heat_duty[0], format_string="{:.4f}", display_units=pyo.units.MW
     )
 
-    tag_group["status"] = iutil.ModelTag(
-        expr=None,
-        format_string="{}"
-    )
+    tag_group["status"] = iutil.ModelTag(expr=None, format_string="{}")
     m.tag_pfd = tag_group
 
 
@@ -1131,13 +1164,12 @@ def get_model(m=None, name="SOEC Module"):
     return m, solver
 
 
-
 if __name__ == "__main__":
     m, solver = get_model()
     write_pfd_results(m, "soec_init.svg")
-    #check_scaling(m)
-    #soec_cost.get_soec_capital_costing(m)
-    #soec_cost.get_soec_OM_costing(m)
+    # check_scaling(m)
+    # soec_cost.get_soec_capital_costing(m)
+    # soec_cost.get_soec_OM_costing(m)
     print(f"Hydrogen product rate {m.tag_input['hydrogen_product_rate']}.")
 
     m.tag_input["hydrogen_product_rate"].fix()
@@ -1147,14 +1179,15 @@ if __name__ == "__main__":
     soec_cost.get_soec_OM_costing(m)
     solver.solve(m, tee=True)
 
-
     m.fs.costing.display()
 
+    # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
+    # strip_bounds.apply_to(m, reversible=False)
 
-    #strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
-    #strip_bounds.apply_to(m, reversible=False)
-
-    m.fs.sweep_constraint = pyo.Constraint(expr=m.tag_input["single_cell_sweep_flow"].expression == 1.0*m.tag_input["single_cell_h2_side_inlet_flow"].expression)
+    m.fs.sweep_constraint = pyo.Constraint(
+        expr=m.tag_input["single_cell_sweep_flow"].expression
+        == 1.0 * m.tag_input["single_cell_h2_side_inlet_flow"].expression
+    )
     m.tag_input["single_cell_sweep_flow"].unfix()
     m.tag_input["sweep_o2_frac"].unfix()
     m.tag_input["sweep_o2_frac"].setlb(0.05)
@@ -1164,9 +1197,9 @@ if __name__ == "__main__":
     m.tag_input["feed_h2_frac"].setlb(0.02)
     m.tag_input["feed_h2_frac"].setub(0.15)
 
-    #m.tag_input["preheat_fg_split_to_air"].unfix()
-    #m.tag_input["preheat_fg_split_to_air"].setlb(0.85)
-    #m.tag_input["preheat_fg_split_to_air"].setub(0.95)
+    # m.tag_input["preheat_fg_split_to_air"].unfix()
+    # m.tag_input["preheat_fg_split_to_air"].setlb(0.85)
+    # m.tag_input["preheat_fg_split_to_air"].setub(0.95)
 
     m.tag_input["recover_split_to_hxh2"].unfix()
     m.tag_input["recover_split_to_hxh2"].setlb(0.20)
@@ -1179,18 +1212,29 @@ if __name__ == "__main__":
     m.fs.splta1.split_fraction[:, "out"].setub(0.95)
 
     m.fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
-    #m.fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
-    #m.fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
+    # m.fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
+    # m.fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
 
+    # m.fs.obj = pyo.Objective(expr=m.fs.ng_preheater.tube_inlet.flow_mol[0]/10)
+    # m.fs.obj = pyo.Objective(expr=-m.fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
+    m.fs.obj = pyo.Objective(expr=m.fs.H2_costing.total_variable_OM_cost[0])
 
-    m.fs.obj = pyo.Objective(expr=m.fs.ng_preheater.tube_inlet.flow_mol[0]/10)
-    #m.fs.obj = pyo.Objective(expr=-m.fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
+    m.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
+        expr=m.fs.H2_costing.total_variable_OM_cost[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.USD / pyo.units.kg,
+        doc="Variable Hydrogen Production Cost",
+    )
 
     for h in np.linspace(1.4, 0.2, 25):
-        m.tag_input["hydrogen_product_rate"].fix(float(h)*pyo.units.kmol/pyo.units.s)
+        m.tag_input["hydrogen_product_rate"].fix(
+            float(h) * pyo.units.kmol / pyo.units.s
+        )
         print(f"Hydrogen product rate {m.tag_input['hydrogen_product_rate']}.")
         res = solver.solve(m, tee=True)
         stat = idaeslog.condition(res)
         m.tag_pfd["status"]._expression = stat
-        #soec_cost.display_soec_costing(m)
-        write_pfd_results(m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg")
+        # soec_cost.display_soec_costing(m)
+        write_pfd_results(
+            m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
+        )
