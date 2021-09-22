@@ -19,7 +19,7 @@ Test for dynamic builder.
 import pytest
 import pyomo.environ as pyo
 from idaes.apps.caprese.dynamic_builder import (
-            use_CUID_to_capture_vars_t0_in_given_model,
+            capture_vars_t0_w_CUID,
             DynamicSim,)
 from idaes.apps.caprese.tests.test_simple_model import (
             make_model,)
@@ -37,7 +37,7 @@ else:
 class TestDynamicBuilder(object):
     
     @pytest.mark.unit
-    def test_use_CUID_to_capture_vars_t0_in_given_model(self):
+    def test_capture_vars_t0_w_CUID(self):
         mod1 = make_model(horizon = 0.5, nfe = 2)
         mod2 = make_model(horizon = 1., nfe = 2)
         
@@ -46,9 +46,7 @@ class TestDynamicBuilder(object):
         mod1_cuids = [pyo.ComponentUID(var) for var in mod1_varlist]
         
         mod2t0 = mod2.time.first()
-        mod2_varlist = use_CUID_to_capture_vars_t0_in_given_model(mod1_cuids,
-                                                                  mod2t0,
-                                                                  mod2,)
+        mod2_varlist = capture_vars_t0_w_CUID(mod1_cuids, mod2t0, mod2)
 
         # Make sure return variables are in mod2
         assert all(var.model() is mod2 for var in mod2_varlist)
