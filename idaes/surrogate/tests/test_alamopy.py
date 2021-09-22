@@ -58,13 +58,14 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_get_files_default(self, alm_obj):
-        with TempfileManager:
-            alm_obj.get_files()
+        alm_obj.get_files()
 
-            assert alm_obj._almfile is not None
-            assert os.path.exists(alm_obj._almfile)
-            assert str(alm_obj._trcfile).split(".")[0] == str(
-                alm_obj._almfile).split(".")[0]
+        assert alm_obj._almfile is not None
+        assert os.path.exists(alm_obj._almfile)
+        assert str(alm_obj._trcfile).split(".")[0] == str(
+            alm_obj._almfile).split(".")[0]
+
+        alm_obj.remove_temp_files()
 
         # Check that we cleaned-up after ourselves
         assert not os.path.exists(alm_obj._almfile)

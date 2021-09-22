@@ -512,7 +512,7 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             None
         """
-        self._temp_context = TempfileManager.push()
+        self._temp_context = TempfileManager.new_context()
 
         if self.config.filename is None:
             # Get a temporary file from the manager
@@ -700,6 +700,10 @@ class AlamoTrainer(SurrogateTrainer):
 
         # Add lst file to temp file manager
         cwd = os.getcwd()
+
+        # TODO: Testing temp folder for list file
+        os.chdir(temp_dir)  # Commenting this out should make the code run
+
         lstfname = os.path.splitext(
             os.path.basename(self._almfile))[0] + ".lst"
         lstpath = os.path.join(cwd, lstfname)
@@ -724,6 +728,9 @@ class AlamoTrainer(SurrogateTrainer):
             raise OSError(
                 f'Could not execute the command: alamo {str(self._almfile)}. '
                 f'Error message: {sys.exc_info()[1]}.')
+        finally:
+            # TODO: Reset cwd
+            os.chdir(cwd)
 
         if "ALAMO terminated with termination code " in almlog:
             raise RuntimeError(
