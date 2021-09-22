@@ -13,139 +13,83 @@
 """
 Common Surrogate interface for IDAES.
 """
-from pathlib import Path
-from typing import Dict
-import yaml
 from pyomo.environ import Var
 from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
 
-class Metrics:
-    """
-
-    Names for known types of metrics.
-
-    Use these as keys in dictionaries, e.g.:
-    m = {Metrics.RMSE: self.rmse}
-    When adding attributes to this class, please include a comment with the
-    prefix "#:" immediately above it, so Sphinx knows that this is documentation
-    for the attribute.
-
-    """
-
-    #: Root mean-squared error
-    RMSE = "RMSE"
-
-    #: Mean-squared error
-    MSE = "MSE"
-
-    #: Sum of squared error
-    SSE = "SSE"
-
-    #: Time
-    Time = "Time"
-
-    #: Order
-    Order = "Order"
-
-    #: R-squared
-    R2 = "R2"
-
-
-# Single Surrogate Modeler
 class SurrogateTrainer:
     CONFIG = ConfigBlock()
 
-    def __init__(self, **settings):
+    # TODO: self._surrogate is *not* a pyomo expression
+    def __init__(self, input_labels, output_labels, input_bounds=None, **settings):
         """
-        Initialization for the Surrogate Class.
-        Keyword Args:
-            settings            : Dictionary of user-defined configurations and settings for the selected surrogate model tool(s).
-        Returns:
-            *self** object containing all the input information and run results, including:
-                - **self.config** (Dict)                                    : The configuration of the selected tool
-                - **self._results** (Tuple)                                 : Performance metrics of the surrogate(s) trained
-                - **self._surrogate**   (Pyomo Expression)                      : Pyomo representation of resulting surrogate
-                - **self._r_data_in**, **self._r_data_out** (NumPy Array)   : Sample points and output values used in training the surrogate
-                - **self._v_data_in**, **self._v_data_out** (NumPy Array)   : Validation/test sample points and their true output values
-                - **self.pkl_info** (Python Object)                         : Python object containing relevant surrogate model information.
-        """
-
-        # Config
-        self.config = self.CONFIG(settings)
-        self.modeler = None
-
-        # Results
-        self._results = {}
-        self._metrics = None
-        self._surrogate = None
-        self._b_built = False  # flag for regression
-
-        # Data
-        self._input_labels = None
-        self._output_labels = None
-        self._input_max = None
-        self._input_min = None
-        self._rdata_in = None
-        self._rdata_out = None
-        self._vdata_in = None
-        self._vdata_out = None
-        self._n_inputs = None
-        self._n_outputs = None
-
-        self.pkl_info = None
-
-    # TODO: Do we need this? It is not hard to set config args directly
-    def modify_config(self, **kwargs):
-        """
-        The ``modify_config`` method allows users to define a new surrogate instance simply by modifying one or more of the
-        settings or keywords of a previously-defined surrogate instance.
-        The values of the new keywords defined in **settings will directly replace the previous values stored in self.CONFIG.
-        All other keywords remain unchanged.
+        TODO : document this method
         Args:
-            **kwargs (dict)             : Dictionary containing (key, val) entries for the settings to be modified in self.CONFIG
+           input_labels: list
+              list of labels corresponding to the inputs (in order)
+           output_labels: list
+              list of labels corresponding to the outputs (in order)
+           input_bounds: None, or dict of tuples
+              if None, these are set later from the provided data
+              if provided, it should be a dictionary where the keys correspond
+              to the input label, and the values are tuples of bounds (lower,upper)
+           settings: keyword arguments
+              configuration options for the derived class
         """
-        _b_built = False
-        self.config = self.CONFIG(kwargs)
+
+        # Set the config block from passed settings
+        self.config = self.CONFIG(settings)
+
+        # Objects known to the base class
+        self._training_status = dict()
+        self._training_metrics = dict()
+
+        # TODO: make these exceptions
+        assert input_labels is not None
+        assert output_labels is not None
+        self._input_labels = input_labels
+        self._output_labels = output_labels
+        self._input_bounds = input_bounds
+
+        self._training_data_in = None
+        self._training_data_out = None
+        self._validation_data_in = None
+        self._validation_data_out = None
+
+    def n_inputs(self):
+        return len(self._input_labels)
+
+    def n_outputs(self):
+        return len(self._output_labels)
 
     def train_surrogate(self):
         """
+        This method should be overridden by the derived classes.
+
         The ``train_surrogate`` method trains a surrogate model to an input dataset.
         It calls the core method which is called during surrogate generation: ``train_surrogate`` sets up the surrogate problem,
         trains the surrogate, computes the metrics, creates a results object and generates the Pyomo representation of the model.
         It accepts no user input, inheriting the information passed in class initialization.
         """
-        self._b_built = True
+        raise NotImplementedError('train_surrogate called, but not implemented on the derived class')
+    
 
-        self.pkl_info = {'In data': self._rdata_in.tolist(),
-                         'Out data': self._rdata_out.tolist()}
-
-        pass
-
-    def update_surrogate(self):
+    def get_surrogate(self):  # SurrogateObject of the appropriate derived class
         """
-        The ``update_surrogate`` trains a new surrogate model based on the updated configuration/set-up defined by
-        calling ``modify_config``
-        It accepts no user input, inheriting the information provided in ``modify_config``.
-        """
-        self.train_surrogate()
-        pass
+        The ``get_surrogate`` method returns the result of the surrogate training process as as an IDAES surrogate object of the appropriate derived class.
 
-    # def generate_expression(self, variable_list): # TODO
-    #     pass
+        This surrogate object can be used to evaluate the surrogate, build an IDAES 
+        block, or save the surrogate for use later
 
-    # Get Results
-
-    def get_surrogate(self):  # Pyomo Expression
-        """
-        The ``get_surrogate`` method returns the result of the surrogate training process as a Pyomo Expression
         Returns:
-            Pyomo Expression    : Pyomo expression of surrogate model trained.
+            derived from SurrogateBase
         """
-        return self._surrogate
+        raise NotImplementedError('get_surrogate called, but not implemented on the derived class')
 
+
+    CRASH HERE....
 
     def get_results(self):  # Metrics Object
         """
@@ -304,9 +248,11 @@ class SurrogateTrainer:
         # Ensure overwrite option, when entered, is boolean
         if not isinstance(overwrite, bool):
             raise Exception('overwrite must be boolean.')
+
         # Check if filename is a string with pickle extension
         if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
             raise Exception('filename must be a string with extension ".pickle". Please correct.')
+
         # If overwite is false, throw up error if the filename already exists in the destination folder
         if os.path.exists(filename) and overwrite is False:
             raise Exception(filename, 'already exists!.\n')
@@ -346,8 +292,7 @@ class SurrogateTrainer:
         except:
             raise Exception('File could not be loaded.')
 
-
-class SurrogateObject():
+class SurrogateBase():
     """
     Base class for standard IDAES Surrogate Object
     """
@@ -412,6 +357,16 @@ class SurrogateObject():
         raise NotImplementedError(
             "SurrogateModel class has not implemented an evaluate_surrogate "
             "method.")
+
+    # todo: this should serialize to a stream
+    def save(self, filename):
+        """
+        Save an instance of this surrogate to be used in a model later
+        """
+        raise NotImplementedError('"save" should be implemented in the derived'
+                                  ' SurrogateObject class')
+    # TODO: it is recommended that you add a "load" static method to build
+    #       a derived surrogate object from the file on disk
 
     def _construct_variables(self, block, index_set=UnindexedComponent_set):
         """

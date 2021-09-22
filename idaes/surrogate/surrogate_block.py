@@ -1,5 +1,6 @@
 from pyomo.core.base.block import declare_custom_block, _BlockData
 from pyomo.environ import Var, Set
+from pyomo.core.base.var import ScalarVar, IndexedVar
 
 @declare_custom_block(name='SurrogateBlock')
 class SurrogateBlockData(_BlockData):

@@ -958,8 +958,16 @@ class AlamoObject(SurrogateObject):
         def alamo_rule(b, o):
             lvars = block._input_vars_as_dict()
             lvars.update(block._output_vars_as_dict())
-            print(lvars)
-            print(self._surrogate[o])
             return eval(self._surrogate[o], GLOBAL_FUNCS, lvars)
 
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
+
+    def save(self, filename):
+        # this is mocked up for now
+        pass
+
+    @staticmethod
+    def load(filename):
+        # this is mocked up for now
+        pass
+

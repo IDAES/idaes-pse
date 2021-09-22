@@ -19,6 +19,7 @@ Author: B. Paul
 # Import statements
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn
 from matplotlib.backends.backend_pdf import PdfPages
 
 from itertools import combinations  # used to pick xvar pairs in scatter3D
@@ -69,9 +70,9 @@ def scatter2D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, dz=None,
             pointidx += 1
             fig.append(plt.figure())
             ax.append(fig[pointidx].add_subplot())
-            ax[pointidx].scatter(xdata[:, i], zdata[:, j], c='b', marker='s',
+            ax[pointidx].scatter(xdata[:, i], zdata[:, j], c='grey', marker='s',
                                  label='Data')
-            ax[pointidx].scatter(xtest[:, i], zfit[:, j], c='r',
+            ax[pointidx].scatter(xtest[:, i], zfit[:, j], c='b',
                                  marker='.', label='Model')
 
             # plot confidence intervals if given data
@@ -90,9 +91,9 @@ def scatter2D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, dz=None,
                 pointidx += 1
                 fig.append(plt.figure())
                 ax.append(fig[pointidx].add_subplot())
-                ax[pointidx].scatter(xdata[:, i], dz[:, j], c='b', marker='s',
+                ax[pointidx].scatter(xdata[:, i], dz[:, j], c='grey', marker='s',
                                      label='Data')
-                ax[pointidx].scatter(xdata[:, i], dzfit[:, j], c='r',
+                ax[pointidx].scatter(xdata[:, i], dzfit[:, j], c='b',
                                      marker='.', label='Model')
                 ax[pointidx].set_xlabel(xlabels[i])
                 ax[pointidx].set_ylabel('d[' + str(zlabels[j]) + ']/d[' +
@@ -141,9 +142,9 @@ def scatter3D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, show=True,
             fig.append(plt.figure())
             ax.append(fig[pairidx].add_subplot(projection='3d'))
 
-            ax[pairidx].scatter(xdata[:, a], xdata[:, b], zdata[:, j], c='b',
+            ax[pairidx].scatter(xdata[:, a], xdata[:, b], zdata[:, j], c='grey',
                                 marker='s', label='Data')
-            ax[pairidx].scatter(xtest[:, a], xtest[:, b], zfit[:, j], c='r',
+            ax[pairidx].scatter(xtest[:, a], xtest[:, b], zfit[:, j], c='b',
                                 marker='.', label='Model')
             ax[pairidx].set_xlabel(xlabels[a])
             ax[pairidx].set_ylabel(xlabels[b])
@@ -177,9 +178,11 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
         fig.append(plt.figure())
         ax.append(fig[j].add_subplot())
 
-        ax[j].plot(zdata[j, :], zdata[j, :], c='b', label='Data')
-        ax[j].scatter(zdata[j, :], zfit[j, :], c='r', marker='s',
-                      label='Predictions')
+        # ax[j].plot(zdata[j, :], zdata[j, :], c='grey', label='Data')
+        # ax[j].scatter(zdata[j, :], zfit[j, :], s=3, c='b', marker='.',
+        #               label='Predictions')
+        ax[j].plot(zdata[j, :], zdata[j, :], c='grey', label='Data')
+        ax[j].scatter(zdata[j, :], zfit[j, :], marker='.', label='Predictions')
 
         # plot confidence intervals if given data
         if clo is not None and chi is not None:
@@ -224,8 +227,7 @@ def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,
     
             fig.append(plt.figure())
             ax.append(fig[count].add_subplot())
-            ax[count].scatter(xdata[i, :], e[j, :], c='b', marker='s',
-                          label=elabels[j])
+            ax[count].scatter(xdata[i, :], e[j, :], marker='.', label=elabels[j])
             ax[count].set_xlabel(xlabels[i])
             ax[count].set_ylabel(elabels[j])
             ax[count].set_title('Residual Plot')
