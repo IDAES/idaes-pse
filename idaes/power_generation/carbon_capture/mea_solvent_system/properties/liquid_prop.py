@@ -87,19 +87,17 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Create Component objects
         self.MEA = Component()
-        self.CO2 = Component()
+        self.CO2 = Component(default={"henry_component": {"Liq": None}})
         self.H2O = Component()
 
         # component list for true species
-        self.component_list_true = Set(
+        self.true_species_set = Set(
             initialize=['CO2', 'H2O', 'MEA', 'MEA+', 'MEACOO-', 'HCO3-'])
         # component list for solvent species
         self.component_list_solvent = Set(initialize=['H2O', 'MEA'])
         # list of all diffusing components aside the excess solvent
         self.component_list_diffus = Set(
             initialize=['CO2', 'MEA', 'MEA+', 'MEACOO-'])
-        # list of diffusing component into/from the vapor phase
-        self.component_list_d = Set(initialize=['CO2', 'H2O'])
 
         # Reaction index
         self.reaction_idx = Set(initialize=['R1', 'R2'])
@@ -637,7 +635,7 @@ class LiquidStateBlockData(StateBlockData):
         self._make_speciation_model()
 
     def _make_speciation_model(self):
-        self.conc_mol_comp_true = Var(self.params.component_list_true,
+        self.conc_mol_comp_true = Var(self.params.true_species_set,
                                       domain=NonNegativeReals,
                                       initialize=10,
                                       units=pyunits.mol / pyunits.m**3,
@@ -646,7 +644,7 @@ class LiquidStateBlockData(StateBlockData):
         def rule_logC(blk, i):
             return log(blk.conc_mol_comp_true[i])
 
-        self.logC = Expression(self.params.component_list_true,
+        self.logC = Expression(self.params.true_species_set,
                                rule=rule_logC,
                                doc='Logarithm of true species concentration')
 
