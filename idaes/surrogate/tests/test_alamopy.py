@@ -35,17 +35,13 @@ class TestAlamoTrainer:
     def alm_obj(self):
         alm_obj = AlamoTrainer()
 
-        alm_obj._n_inputs = 2
-        alm_obj._n_outputs = 1
-
         alm_obj._input_labels = ["x1", "x2"]
         alm_obj._output_labels = ["z1"]
 
-        alm_obj._input_min = [0, 0]
-        alm_obj._input_max = [5, 10]
+        alm_obj._input_bounds = {"x1": (0, 5), "x2": (0, 10)}
 
-        alm_obj._rdata_in = np.array([[1, 2, 3, 4], [5, 6, 7, 8]])
-        alm_obj._rdata_out = np.array([10, 20, 30, 40], ndmin=2)
+        alm_obj._rdata_in = np.array([[1, 5], [2, 6], [3, 7], [4, 8]])
+        alm_obj._rdata_out = np.array([[10], [20], [30], [40]])
 
         return alm_obj
 
@@ -141,8 +137,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_equal(self, alm_obj):
-        alm_obj._input_max = [5, 10]
-        alm_obj._input_min = [0, 10]
+        alm_obj._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -152,8 +147,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_reversed(self, alm_obj):
-        alm_obj._input_max = [5, 10]
-        alm_obj._input_min = [0, 15]
+        alm_obj._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -191,8 +185,8 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_vdata(self, alm_obj):
-        alm_obj._vdata_in = np.array([[2.5], [6.5]])
-        alm_obj._vdata_out = np.array([25], ndmin=2)
+        alm_obj._vdata_in = np.array([[2.5, 6.5]])
+        alm_obj._vdata_out = np.array([[25]], ndmin=2)
 
         stream = io.StringIO()
         alm_obj.write_alm_to_stream(stream=stream)
@@ -386,6 +380,8 @@ class TestAlamoTrainer:
                            "information."):
             alm_obj.call_alamo()
 
+        assert alm_obj._temp_context is None
+
     @pytest.mark.component
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
     def test_call_alamo_w_input(self, alm_obj):
@@ -487,7 +483,6 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_read_trace_multi(self, alm_obj):
-        alm_obj._n_outputs = 2
         alm_obj._output_labels = ["z1", "z2"]
 
         alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
@@ -589,7 +584,6 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_read_trace_label_mismatch(self, alm_obj):
-        alm_obj._n_outputs = 2
         alm_obj._output_labels = ["z1", "z3"]
 
         alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
@@ -955,27 +949,27 @@ def test_workflow():
     # Test end-to-end workflow with a simple problem.
     alm_obj = AlamoTrainer()
 
-    alm_obj._n_inputs = 2
-    alm_obj._n_outputs = 1
-
     alm_obj._input_labels = ["x1", "x2"]
     alm_obj._output_labels = ["z1"]
 
-    alm_obj._input_min = [-1.5, -1.5]
-    alm_obj._input_max = [1.5, 1.5]
+    alm_obj._input_bounds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
 
-    alm_obj._rdata_in = np.array([
-        [0.353837234435, 0.904978848612, 0.643706630938, 1.29881420688,
-         1.35791650867, 0.938369314089, -1.46593541641, -0.374378293218,
-         0.690326213554, -0.961163301329],
-        [0.99275270941666, -0.746908518721, -0.617496599522, 0.305594881575,
-         0.351045058258, -0.525167416293, 0.383902178482, -0.689730440659,
-         0.569364994374, 0.499471920546]])
+    alm_obj._rdata_in = np.array([[0.353837234435, 0.99275270941666],
+                                  [0.904978848612, -0.746908518721],
+                                  [0.643706630938, -0.617496599522],
+                                  [1.29881420688, 0.305594881575],
+                                  [1.35791650867, 0.351045058258],
+                                  [0.938369314089, -0.525167416293],
+                                  [-1.46593541641, 0.383902178482],
+                                  [-0.374378293218, -0.689730440659],
+                                  [0.690326213554, 0.569364994374],
+                                  [-0.961163301329, 0.499471920546]])
 
     alm_obj._rdata_out = np.array(
-        [0.762878272854, 0.387963718723, -0.0205375902284, 2.43011137696,
-         2.36989368612, 0.829756159423, 1.14054797964, -0.219122783909,
-         0.982068847698, 0.936855365038],
+        [[0.762878272854], [0.387963718723], [-0.0205375902284],
+         [2.43011137696], [2.36989368612], [0.829756159423],
+         [1.14054797964], [-0.219122783909], [0.982068847698],
+         [0.936855365038]],
         ndmin=2)
 
     alm_obj.config.linfcns = True

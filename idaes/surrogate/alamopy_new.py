@@ -568,33 +568,41 @@ class AlamoTrainer(SurrogateTrainer):
             z_val = self._vdata_out
 
         # Check bounds on inputs to avoid potential ALAMO failures
-        for i in range(len(self._input_labels)):
-            if self._input_max[i] == self._input_min[i]:
+        input_max = list()
+        input_min = list()
+        for k, b in self._input_bounds.items():
+            if b is None or b[0] is None or b[1] is None:
+                raise ConfigurationError(
+                    f"ALAMO configuration error: invalid bounds on input {k} "
+                    f"({b}).")
+            elif b[0] == b[1]:
                 raise ConfigurationError(
                     f"ALAMO configuration error: upper and lower bounds on "
-                    f"input {self._input_labels[i]} are equal.")
-            elif self._input_max[i] < self._input_min[i]:
+                    f"input {k} are equal.")
+            elif b[1] < b[0]:
                 raise ConfigurationError(
                     f"ALAMO configuration error: upper bound is less than "
-                    f"lower bound for input {self._input_labels[i]}.")
+                    f"lower bound for input {k}.")
+            input_min.append(b[0])
+            input_max.append(b[1])
 
         # Get number of data points to build alm file
         if x_reg is not None:
-            n_inputs, n_rdata = x_reg.shape
+            n_rdata, n_inputs = x_reg.shape
         else:
             n_rdata = 0
         if x_val is not None:
-            n_inputs, n_vdata = x_val.shape
+            n_vdata, n_inputs = x_val.shape
         else:
             n_vdata = 0
 
         stream.write("# IDAES Alamopy input file\n")
-        stream.write(f"NINPUTS {self._n_inputs}\n")
-        stream.write(f"NOUTPUTS {self._n_outputs}\n")
+        stream.write(f"NINPUTS {len(self._input_labels)}\n")
+        stream.write(f"NOUTPUTS {len(self._output_labels)}\n")
         stream.write(f"XLABELS {' '.join(map(str, self._input_labels))}\n")
         stream.write(f"ZLABELS {' '.join(map(str, self._output_labels))}\n")
-        stream.write(f"XMIN {' '.join(map(str, self._input_min))}\n")
-        stream.write(f"XMAX {' '.join(map(str, self._input_max))}\n")
+        stream.write(f"XMIN {' '.join(map(str, input_min))}\n")
+        stream.write(f"XMAX {' '.join(map(str, input_max))}\n")
         stream.write(f"NDATA {n_rdata}\n")
         if x_val is not None:
             stream.write(f"NVALDATA {n_vdata}\n")
@@ -637,12 +645,12 @@ class AlamoTrainer(SurrogateTrainer):
             stream.write(f"TRACEFNAME {trace_fname}\n")
 
         stream.write("\nBEGIN_DATA\n")
-        nin = self._n_inputs
-        nout = self._n_outputs
+        nin = len(self._input_labels)
+        nout = len(self._output_labels)
         for row in range(n_rdata):
             stream.write(
-                f"{' '.join(map(str, (x_reg[x][row] for x in range(nin))))}"
-                f" {' '.join(map(str, (z_reg[z][row] for z in range(nout))))}\n")
+                f"{' '.join(map(str, (x_reg[row][x] for x in range(nin))))}"
+                f" {' '.join(map(str, (z_reg[row][z] for z in range(nout))))}\n")
         stream.write("END_DATA\n")
 
         if x_val is not None:
@@ -650,8 +658,8 @@ class AlamoTrainer(SurrogateTrainer):
             stream.write("\nBEGIN_VALDATA\n")
             for row in range(n_vdata):
                 stream.write(
-                    f"{' '.join(map(str, (x_val[x][row] for x in range(nin))))}"
-                    f" {' '.join(map(str, (z_val[z][row] for z in range(nout))))}\n")
+                    f"{' '.join(map(str, (x_val[row][x] for x in range(nin))))}"
+                    f" {' '.join(map(str, (z_val[row][z] for z in range(nout))))}\n")
             stream.write("END_VALDATA\n")
 
         if self.config.custom_basis_functions is not None:
@@ -702,7 +710,7 @@ class AlamoTrainer(SurrogateTrainer):
         cwd = os.getcwd()
 
         # TODO: Testing temp folder for list file
-        os.chdir(temp_dir)  # Commenting this out should make the code run
+        # os.chdir(temp_dir)  # Commenting this out should make the code run
 
         lstfname = os.path.splitext(
             os.path.basename(self._almfile))[0] + ".lst"
@@ -728,11 +736,12 @@ class AlamoTrainer(SurrogateTrainer):
             raise OSError(
                 f'Could not execute the command: alamo {str(self._almfile)}. '
                 f'Error message: {sys.exc_info()[1]}.')
-        finally:
-            # TODO: Reset cwd
-            os.chdir(cwd)
+        # finally:
+        #     # TODO: Reset cwd
+        #     os.chdir(cwd)
 
         if "ALAMO terminated with termination code " in almlog:
+            self.remove_temp_files()
             raise RuntimeError(
                 "ALAMO executable returned non-zero return code. Check "
                 "the ALAMO output for more information.")
@@ -768,8 +777,8 @@ class AlamoTrainer(SurrogateTrainer):
         # Get trace output from final line(s) of file
         # ALAMO will append new lines to existing trace files
         # For multiple outputs, each output has its own line in trace file
-        for j in range(self._n_outputs):
-            trace = lines[-self._n_outputs+j].split(", ")
+        for j in range(len(self._output_labels)):
+            trace = lines[-len(self._output_labels)+j].split(", ")
 
             for i in range(len(headers)):
                 header = headers[i].strip("#\n")
@@ -837,16 +846,11 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             NOne
         """
-        input_bounds = {}
-        for i in range(len(self._input_labels)):
-            iname = self._input_labels[i]
-            input_bounds[iname] = (self._input_min[i], self._input_max[i])
-
         self._surrogate = AlamoObject(
             surrogate=self._results["Model"],
             input_labels=self._input_labels,
             output_labels=self._output_labels,
-            input_bounds=input_bounds)
+            input_bounds=self._input_bounds)
 
     def remove_temp_files(self):
         """
