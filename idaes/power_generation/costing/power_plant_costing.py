@@ -875,19 +875,22 @@ def get_variable_OM_costs(m, production_rate, resources, rates,
         m.fs.time,
         resources,
         initialize=1,
-        doc="variable operating costs in %s" % unit_tag)
+        doc="variable operating costs",
+        units=cost_units)
 
     costing.other_variable_costs = Var(
         m.fs.time,
         initialize=0,
-        doc="a variable to include non-standard O&M costs in %s" % unit_tag)
+        doc="a variable to include non-standard O&M costs",
+        units=cost_units)
     # assume the user is not using this
     costing.other_variable_costs.fix(0)
 
     costing.total_variable_OM_cost = Var(
         m.fs.time,
         initialize=1,
-        doc="total variable operating and maintenance costs in  %s" % unit_tag)
+        doc="total variable operating and maintenance costs",
+        units=cost_units)
 
     # make constraints
     @costing.Constraint(m.fs.time, resources)

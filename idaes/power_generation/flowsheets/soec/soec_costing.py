@@ -306,10 +306,6 @@ def get_soec_OM_costing(m, design_h2_production=2.5 * pyo.units.kg / pyo.units.s
     ]
     prices = {"electricity": 30 * pyo.units.USD / pyo.units.MWh}
 
-    @m.fs.Expression(m.fs.time)
-    def h2_product_rate_mass(b, t):
-        return m.fs.hydrogen_product_rate[t] * 0.002 * pyo.units.kg / pyo.units.mol
-
     print(pyo.units.convert(m.fs.h2_product_rate_mass[0], pyo.units.g / pyo.units.s))
     m.fs.h2_product_rate_mass.display()
     get_variable_OM_costs(m, m.fs.h2_product_rate_mass, resources, rates, prices=prices)

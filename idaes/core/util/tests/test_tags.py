@@ -60,6 +60,61 @@ def test_tag_display(model):
     m.z = 7
     assert str(tz) == "7.0"
 
+
+@pytest.mark.unit
+def test_basic_str_float_int():
+    ti = ModelTag(expr=1, format_string="{:.3f}", doc="Tag for just an int")
+    tf = ModelTag(expr=2.0, format_string="{:.3f}", doc="Tag for just a float")
+    ts = ModelTag(expr="hi", format_string="{:.3f}", doc="Tag for just a str")
+    tn = ModelTag(expr=None, format_string="{:.3f}", doc="Tag for just None")
+
+    assert ti.value == 1
+    assert tf.value == 2.0
+    assert ts.value == "hi"
+    assert tn.value == None
+
+    ti.set("new")
+    tf.set("new")
+    ts.set("new")
+    tn.set("new")
+
+    assert ti.value == "new"
+    assert tf.value == "new"
+    assert ts.value == "new"
+    assert tn.value == "new"
+
+
+@pytest.mark.unit
+def test_tag_dict_like(model):
+    m = model
+    tw = ModelTag(expr=m.w, format_string="{:.3f}", doc="Tag for w")
+    ty = ModelTag(expr=m.y, format_string="{:.3f}", doc="Tag for y")
+
+    assert len(tw) == 6
+    assert len(ty) == 1
+
+    for i in ty.keys():
+        assert i == None
+        ty[i].set(1)
+
+    check_w_keys = [(1, "a"), (1, "b"), (2, "a"), (2, "b"), (3, "a"), (3, "b")]
+    for i, k in enumerate(tw.keys()):
+        assert check_w_keys[i] == k
+        tw[k].set(i)
+
+    for i, v in enumerate(tw.values()):
+        assert pyo.value(v.expression) == i
+
+    for i, (k, v) in enumerate(tw.items()):
+        assert pyo.value(v.expression) == i
+        assert check_w_keys[i] == k
+
+    assert tw[1, "a"].value == 0
+    assert tw[1, "b"].value == 1
+    assert tw.value[1, "b"] == 1
+    assert ty.value == 1
+
+
 @pytest.mark.unit
 def test_tag_conditional_formatting(model):
     m = model
@@ -291,6 +346,49 @@ def test_tag_group(model):
     assert str(g["w"][1]) == "4000.000"
     assert str(g["w"][2]) == "4000.000"
     assert str(g["w"][2]) == "4000.000"
+
+@pytest.mark.unit
+def test_tabulate_runs(model):
+    m = model
+    g = ModelTagGroup()
+    g.add("w", expr=m.w, format_string="{:.3f}", display_units=pyo.units.g)
+    g.add("x", expr=m.x, format_string="{:.3f}")
+    g.add("y", expr=m.y, format_string="{:.3f}")
+    g.add("z", expr=m.z, format_string="{:.3f}")
+    g.add("e", expr=m.e, format_string="{:.3f}")
+    g.add("f", ModelTag(expr=m.f, format_string="{:.3f}"))
+    g.add("g", expr=m.g, format_string="{:.1f}", display_units="%")
+
+    columns = (
+        ("w", (1, "a")),
+        ("w", (2, "a")),
+        ("y", None),
+    )
+
+    head = g.table_heading(tags=columns, units=True)
+
+    assert head[0] == "w[(1, 'a')] (g)"
+    assert head[1] == "w[(2, 'a')] (g)"
+    assert head[2] == "y (s)"
+
+    g["w"][1, "a"].set(1*pyo.units.g)
+    g["w"][2, "a"].set(2*pyo.units.g)
+    g["y"].set(1*pyo.units.s)
+
+    row = g.table_row(tags=columns, units=False)
+    assert row[0] == "1.000"
+    assert row[1] == "2.000"
+    assert row[2] == "1.000"
+
+    row = g.table_row(tags=columns, units=True)
+    assert row[0] == "1.000 g"
+    assert row[1] == "2.000 g"
+    assert row[2] == "1.000 s"
+
+    row = g.table_row(tags=columns, numeric=True)
+    assert row[0] == pytest.approx(1.000)
+    assert row[1] == pytest.approx(2.000)
+    assert row[2] == pytest.approx(1.000)
 
 
 @pytest.mark.unit
