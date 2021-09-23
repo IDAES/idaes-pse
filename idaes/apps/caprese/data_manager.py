@@ -164,7 +164,8 @@ def add_variable_setpoints_to_dataframe(dataframe,
     
     for var in variables:
         column_name = str(ComponentUID(var.referent)) + "_setpoint"
-        # Get column index for "iat", which is used later
+        # Get column index for "iat", which is a method to locate the position 
+        # in a pandas dataframe and is used later.
         column_ind = dataframe.columns.get_loc(column_name)
         start_row_ind = len(dataframe.index) - len(time_subset)
         for pt in range(len(time_subset)):
