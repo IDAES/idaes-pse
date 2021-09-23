@@ -508,6 +508,18 @@ def add_constraints(m):
             + m.fs.hcmp04.control_volume.work[t]
         )
 
+    @m.fs.Expression(m.fs.time)
+    def h2_product_rate_mass(b, t):
+        return m.fs.hydrogen_product_rate[t] * 0.002 * pyo.units.kg / pyo.units.mol
+
+    @m.fs.Expression(m.fs.time)
+    def co2_product_rate(b, t):
+        return m.fs.preheat_split.inlet.flow_mol[t] * m.fs.preheat_split.inlet.mole_frac_comp[t, "CO2"]
+
+    @m.fs.Expression(m.fs.time)
+    def co2_product_rate_mass(b, t):
+        return m.fs.co2_product_rate[t] * 0.04401 * pyo.units.kg / pyo.units.mol
+
 
 def set_guess(m):
     fg_comp_guess = {
@@ -1067,6 +1079,11 @@ def tag_for_pfd_and_tables(m):
         format_string="{:.2f}",
         display_units=pyo.units.MW,
     )
+    tag_group["feed_pump_power"] = iutil.ModelTag(
+        expr=m.fs.aux_boiler_feed_pump.control_volume.work[0],
+        format_string="{:.4f}",
+        display_units=pyo.units.MW,
+    )
     tag_group["h2_compressor_pressure"] = iutil.ModelTag(
         expr=m.fs.hcmp04.outlet.pressure[0],
         format_string="{:.3f}",
@@ -1080,7 +1097,31 @@ def tag_for_pfd_and_tables(m):
     tag_group["soec_heat_duty"] = iutil.ModelTag(
         expr=m.fs.soec_heat_duty[0], format_string="{:.4f}", display_units=pyo.units.MW
     )
-
+    tag_group["h2_product_rate_mass"] = iutil.ModelTag(
+        expr=m.fs.h2_product_rate_mass[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kg/pyo.units.s,
+    )
+    tag_group["co2_product_rate"] = iutil.ModelTag(
+        expr=m.fs.co2_product_rate[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kmol/pyo.units.s,
+    )
+    tag_group["co2_product_rate_mass"] = iutil.ModelTag(
+        expr=m.fs.co2_product_rate_mass[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kg/pyo.units.s,
+    )
+    tag_group["fuel_rate"] = iutil.ModelTag(
+        expr=m.fs.ng_preheater.shell.properties_in[0].flow_mol,
+        format_string="{:.3f}",
+        display_units=pyo.units.kmol/pyo.units.s,
+    )
+    tag_group["fuel_rate_mass"] = iutil.ModelTag(
+        expr=m.fs.ng_preheater.shell.properties_in[0].flow_mass,
+        format_string="{:.3f}",
+        display_units=pyo.units.kg/pyo.units.s,
+    )
     tag_group["status"] = iutil.ModelTag(expr=None, format_string="{}")
     m.tag_pfd = tag_group
 
@@ -1215,9 +1256,9 @@ if __name__ == "__main__":
     # m.fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
     # m.fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
 
-    # m.fs.obj = pyo.Objective(expr=m.fs.ng_preheater.tube_inlet.flow_mol[0]/10)
-    # m.fs.obj = pyo.Objective(expr=-m.fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
-    m.fs.obj = pyo.Objective(expr=m.fs.H2_costing.total_variable_OM_cost[0])
+    m.fs.obj = pyo.Objective(expr=m.fs.ng_preheater.tube_inlet.flow_mol[0]/10)
+    #m.fs.obj = pyo.Objective(expr=-m.fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
+    #m.fs.obj = pyo.Objective(expr=m.fs.H2_costing.total_variable_OM_cost[0])
 
     m.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
         expr=m.fs.H2_costing.total_variable_OM_cost[0],
@@ -1226,6 +1267,27 @@ if __name__ == "__main__":
         doc="Variable Hydrogen Production Cost",
     )
 
+    cols_input = (
+        "hydrogen_product_rate",
+    )
+    cols_pfd = (
+        "status",
+        "total_variable_OM_cost",
+        "h2_product_rate_mass",
+        "co2_product_rate",
+        "co2_product_rate_mass",
+        "soec_power",
+        "h2_compressor_power",
+        "feed_pump_power",
+        "fuel_rate",
+        "fuel_rate_mass"
+    )
+
+    head_1 = m.tag_input.table_heading(tags=cols_input, units=True)
+    head_2 = m.tag_pfd.table_heading(tags=cols_pfd, units=True)
+    with open("opt_res.csv", "w", newline='') as f:
+        w = csv.writer(f)
+        w.writerow(head_1 + head_2)
     for h in np.linspace(1.4, 0.2, 25):
         m.tag_input["hydrogen_product_rate"].fix(
             float(h) * pyo.units.kmol / pyo.units.s
@@ -1233,8 +1295,13 @@ if __name__ == "__main__":
         print(f"Hydrogen product rate {m.tag_input['hydrogen_product_rate']}.")
         res = solver.solve(m, tee=True)
         stat = idaeslog.condition(res)
-        m.tag_pfd["status"]._expression = stat
+        m.tag_pfd["status"].set(stat)
         # soec_cost.display_soec_costing(m)
+        row_1 = m.tag_input.table_row(tags=cols_input, numeric=True)
+        row_2 = m.tag_pfd.table_row(tags=cols_pfd, numeric=True)
+        with open("opt_res.csv", "a", newline='') as f:
+            w = csv.writer(f)
+            w.writerow(row_1 + row_2)
         write_pfd_results(
             m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
         )
