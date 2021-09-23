@@ -765,7 +765,7 @@ def set_inputs(m):
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2O"].fix(0.90)
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)
 
-    m.fs.soec.ac.flow_mol[:, 0].fix(1e-4)
+    m.fs.soec.ac.flow_mol[:, 0].fix(1e-5)
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.2074)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.0099)
