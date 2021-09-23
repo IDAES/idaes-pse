@@ -48,19 +48,8 @@ def empty_dataframe_from_variables(variables, rename_map=None):
         # to something more meaningful, such as temperature_actual.
         rename_map = ComponentMap()
     var_dict = OrderedDict()
-    hash_set = set()
     var_dict["iteration"] = []
     for var in variables:
-        # TODO: In this case, do we need to make sure we have the
-        # same indexing sets? 
-        # KHL:I think we can leave the check alone here and do it when adding values. 
-        #
-        #idx_set = var.index_set()
-        #set_hash = hash(tuple(idx_set))
-        #if len(hash_set) == 0:
-        #    hash_set.add(set_hash)
-        #elif set_hash not in hash_set:
-        #    raise ValueError()
         if var in rename_map:
             key = rename_map[var]
         else:
