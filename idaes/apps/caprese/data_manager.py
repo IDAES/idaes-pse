@@ -43,7 +43,7 @@ def empty_dataframe_from_variables(variables, rename_map=None):
     '''
     if rename_map is None:
         # Sometimes we construct a variable with a programatically
-        # generated name that is not that meaningful to th user, e.g.
+        # generated name that is not that meaningful to the user, e.g.
         # ACTUALMEASUREMENTBLOCK[1].var. This argument lets us rename
         # to something more meaningful, such as temperature_actual.
         rename_map = ComponentMap()
@@ -157,7 +157,7 @@ def add_setpoint_column_into_dataframe(dataframe, variables):
     parameters
     -------------
     dataframe: constructed dataframe
-    variables: list of variables that their setpoints will be saved in the dataframe
+    variables: list of variables whose setpoints will be saved in the dataframe
     '''
     
     for var in variables:
