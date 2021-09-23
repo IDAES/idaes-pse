@@ -526,9 +526,9 @@ def add_soec_inlet_mix(m):
         return b.mixed_state[t].pressure == b.water_state[t].pressure
 
     # TODO - removed as air stream now goes to mxa1
-    # @m.fs.mxa1.Constraint(m.fs.time)
-    # def amxpress_eqn(b, t):
-    #     return b.mixed_state[t].pressure == b.water_state[t].pressure
+    @m.fs.mxa1.Constraint(m.fs.time)
+    def amxpress_eqn(b, t):
+        return b.mixed_state[t].pressure == b.air_state[t].pressure
 
     # Add ports to connet pure steam to steam + h2 or steam + o2
     m.fs.main_steam_split._temperature_h_side_ref = pyo.Reference(
@@ -683,12 +683,12 @@ def set_inputs(m):
     m.fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
     # TODO - reduced as choice of the bxh2 area affects convergence of bxh2
     # TODO - # unfix before first solve and fix shell outlet T
-    m.fs.bhx2.area.fix(4000)
+    # m.fs.bhx2.area.fix(2500)
     # h_bhx2 = pyo.value(iapws95.htpx(1073.15*pyo.units.K, 1.1e5*pyo.units.Pa)) # enthalpy outlet
     # m.fs.bhx2.tube_outlet.enth_mol[0].fix(h_bhx2)
-    # m.fs.bhx2.shell_outlet.temperature[0].fix(1000)
+    m.fs.bhx2.shell_outlet.temperature[0].fix(700)
     m.fs.bhx2.overall_heat_transfer_coefficient.fix(100)
-    # m.fs.bhx1.area.fix(500)
+    # m.fs.bhx1.area.fix(400)
     # htpx(T=None, P=None, x=None)
     h_bhx1 = pyo.value(iapws95.htpx(None,1.1e5*pyo.units.Pa, x=0)) # enthalpy outlet
     m.fs.bhx1.tube_outlet.enth_mol[0].fix(h_bhx1)
@@ -769,7 +769,6 @@ def set_inputs(m):
     m.fs.soec.ac.pressure[:, 0].fix(1e5)
     m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].fix(0.2074)
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].fix(0.0099)
-    # TODO - fixed N2, Ar and CO2 for air feed
     m.fs.soec.ac.mole_frac_comp[:, 0, "N2"].fix(0.7732)
     m.fs.soec.ac.mole_frac_comp[:, 0, "Ar"].fix(0.0092)
     m.fs.soec.ac.mole_frac_comp[:, 0, "CO2"].fix(0.0003)
@@ -919,16 +918,18 @@ def do_initialize(m, solver):
     m.fs.air_compressor_s1.inlet.flow_mol.unfix()
 
     m.fs.ng_preheater.tube_inlet.flow_mol.unfix()
+    # Solve soec model alone before flowsheet solve to check that it converges
     solver.solve(m.fs.soec, tee=True, symbolic_solver_labels=True)
     m.fs.soec.E_cell.unfix()
     m.fs.s12_expanded.deactivate()
     m.fs.s13_expanded.deactivate()
 
-    iscale.calculate_scaling_factors(m)   
+    # TODO - this seems to improve the convergence
+    iscale.constraint_autoscale_large_jac(m)
 
     # TODO - unfix bhx2 area and fix shell outlet temperature instead
-    m.fs.bhx2.area.unfix()
-    m.fs.bhx2.shell_outlet.temperature[0].fix(700)
+    # m.fs.bhx2.area.unfix()
+    # m.fs.bhx2.shell_outlet.temperature[0].fix(700)
 
     # TODO - this solve isn't robust
     # strip_bounds=True # strip bounds
@@ -953,7 +954,7 @@ def do_initialize(m, solver):
     m.fs.soec.ac.pressure[:, 0].unfix()
     m.fs.soec.ac.temperature[:, 0].unfix()
     m.fs.soec.ac.mole_frac_comp[:, 0, "H2O"].unfix()
-    # TODO - unfixed N2, Ar and CO2 for air feed
+    m.fs.soec.ac.mole_frac_comp[:, 0, "O2"].unfix()
     m.fs.soec.ac.mole_frac_comp[:, 0, "N2"].unfix()
     m.fs.soec.ac.mole_frac_comp[:, 0, "Ar"].unfix()
     m.fs.soec.ac.mole_frac_comp[:, 0, "CO2"].unfix()
@@ -964,8 +965,9 @@ def do_initialize(m, solver):
 
     m.fs.spltf1.split_fraction[:, "out"].unfix()
     # m.fs.splta1.split_fraction[:, "out"].unfix()
-    m.fs.mxa1.air.flow_mol.unfix()
-
+    m.fs.mxa1.air.flow_mol.unfix()  # Unfix soec.ac.flow_mol if mxa1.air.flow_mol is fixed
+    # m.fs.soec.ac.flow_mol[:, 0].unfix()
+    # m.fs.mxa1.air.flow_mol.fix(29000)
     solver.solve(m, tee=True, 
                   options={
                       "max_iter":200,
@@ -974,6 +976,25 @@ def do_initialize(m, solver):
                       "linear_solver":"ma57"
                           },
                   symbolic_solver_labels=True)
+
+    print("----------------------------------------------------------")
+    print(" Final solve to ensure square algebraic jacobian - change heat exchanger specs of bhx2 and bhx1")
+
+    m.fs.bhx2.area.fix(2453.314)
+    m.fs.bhx2.shell_outlet.temperature[0].unfix()
+    
+    m.fs.bhx1.area.fix(134.779)
+    m.fs.bhx1.tube_outlet.enth_mol[0].unfix()
+
+    solver.solve(m, tee=True, 
+                  # options={
+                  #     "max_iter":200,
+                  #     "tol":1e-6,
+                  #     "bound_push":1e-12,
+                  #     "linear_solver":"ma57"
+                  #         },
+                  symbolic_solver_labels=True)
+
 
     
 def additional_scaling(m):
@@ -1009,8 +1030,8 @@ def additional_scaling(m):
     #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
     for t, c in m.fs.mxf1.fmxpress_eqn.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
-    # for t, c in m.fs.mxa1.amxpress_eqn.items():
-    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for t, c in m.fs.mxa1.amxpress_eqn.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
     for t, c in m.fs.cmb_mix.pressure_eqn.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
 
@@ -1331,7 +1352,7 @@ def check_scaling(m):
     for v, sv in iscale.badly_scaled_var_generator(m, large=1e3, small=1e-4, zero=1e-12):
         print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}", file=sourceFile4)
     sourceFile.close()
-    # print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
+    print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
 
 def write_pfd_results(m, filename, infilename=None):
