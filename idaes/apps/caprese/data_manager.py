@@ -192,18 +192,18 @@ def add_variable_setpoints_to_dataframe(dataframe,
 class PlantDataManager(PLANT_PlotLibrary):
     def __init__(self, 
                  plantblock,
-                 user_interested_states = [],
-                 user_interested_inputs = []):
+                 user_interested_states = None,
+                 user_interested_inputs = None):
                 
         # Make sure given variables are all in plantblock
-        if user_interested_states != []:
+        if user_interested_states is not None:
             cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
             self.plant_user_interested_states = [cuid.find_component_on(plantblock)
                                                  for cuid in cuid_states]
         else:
             self.plant_user_interested_states = []
             
-        if user_interested_inputs != []:
+        if user_interested_inputs is not None:
             cuid_inputs = [ComponentUID(var.referent) for var in user_interested_inputs]
             self.plant_user_interested_inputs = [cuid.find_component_on(plantblock)
                                                  for cuid in cuid_inputs]
@@ -241,8 +241,8 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
     def __init__(self, 
                  plantblock, 
                  controllerblock, 
-                 user_interested_states = [],
-                 user_interested_inputs = []):
+                 user_interested_states = None,
+                 user_interested_inputs = None):
         
         if not hasattr(self, "plant_df"):
             super(ControllerDataManager, self).__init__(plantblock, 
@@ -251,14 +251,14 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
         
         self.controllerblock = controllerblock
         # Convert vars in plant to vars in controller
-        if user_interested_states != []:
+        if user_interested_states is not None:
             cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
             self.controller_user_interested_states = [cuid.find_component_on(controllerblock)
                                                       for cuid in cuid_states]
         else:
             self.controller_user_interested_states = []
             
-        if user_interested_inputs != []:
+        if user_interested_inputs is not None:
             cuid_inputs = [ComponentUID(var.referent) for var in user_interested_inputs]
             self.controller_user_interested_inputs = [cuid.find_component_on(controllerblock)
                                                       for cuid in cuid_inputs]
@@ -307,7 +307,7 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
     def __init__(self, 
                  plantblock, 
                  estimatorblock, 
-                 user_interested_states = [],):
+                 user_interested_states = None,):
         
         if not hasattr(self, "plant_df"):
             super(EstimatorDataManager, self).__init__(plantblock, 
@@ -315,7 +315,7 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
         
         self.estimatorblock = estimatorblock
         # Convert vars in plant to vars in estimator
-        if user_interested_states != []:
+        if user_interested_states is not None:
             cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
             self.estimator_user_interested_states = [cuid.find_component_on(estimatorblock)
                                                      for cuid in cuid_states]
@@ -343,8 +343,8 @@ class DynamicDataManager(ControllerDataManager, EstimatorDataManager):
                  plantblock,
                  controllerblock,
                  estimatorblock,
-                 user_interested_states = [],
-                 user_interested_inputs = [],):
+                 user_interested_states = None,
+                 user_interested_inputs = None,):
         
         # Create plant dataframe
         super(EstimatorDataManager, self).__init__(plantblock,
