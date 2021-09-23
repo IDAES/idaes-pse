@@ -343,7 +343,7 @@ class PlateHeatExchangerData(UnitModelBlockData):
     def _make_performance_method(self):
 
         solvent_list = \
-            self.config.hot_side.property_package.component_list_solvent
+            self.config.hot_side.property_package.solvent_set
 
         def rule_trh(blk, t):
             return (blk.hot_side.properties_out[t].temperature /

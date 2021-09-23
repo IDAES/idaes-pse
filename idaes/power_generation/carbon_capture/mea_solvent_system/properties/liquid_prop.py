@@ -36,7 +36,8 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock,
-                        Component,
+                        Solvent,
+                        Solute,
                         LiquidPhase)
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
@@ -86,15 +87,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.Liq = LiquidPhase()
 
         # Create Component objects
-        self.MEA = Component()
-        self.CO2 = Component(default={"henry_component": {"Liq": None}})
-        self.H2O = Component()
+        self.MEA = Solvent()
+        self.CO2 = Solute(default={"henry_component": {"Liq": None}})
+        self.H2O = Solvent()
 
         # component list for true species
         self.true_species_set = Set(
             initialize=['CO2', 'H2O', 'MEA', 'MEA+', 'MEACOO-', 'HCO3-'])
-        # component list for solvent species
-        self.component_list_solvent = Set(initialize=['H2O', 'MEA'])
         # list of all diffusing components aside the excess solvent
         self.component_list_diffus = Set(
             initialize=['CO2', 'MEA', 'MEA+', 'MEACOO-'])
@@ -185,7 +184,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             ('H2O', 4): h2o_K4,
             ('H2O', 5): h2o_K5
         }
-        self.cp_param = Param(self.component_list_solvent,
+        self.cp_param = Param(self.solvent_set,
                               range(1, 6),
                               mutable=False,
                               initialize=cp_param_dict,
@@ -220,7 +219,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             ('H2O', 2): 0.00165,
             ('H2O', 3): 0.793,
         }
-        self.vol_mol_comp_param = Param(self.component_list_solvent,
+        self.vol_mol_comp_param = Param(self.solvent_set,
                                         range(1, 4),
                                         mutable=False,
                                         initialize=vol_mol_comp_param_dict,
@@ -364,7 +363,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             ('H2O', 4): 4.05e-6
         }
         self.pressure_sat_param = \
-            Param(self.component_list_solvent, range(1, 5),
+            Param(self.solvent_set, range(1, 5),
                   initialize=pressure_sat_param_dict,
                   units=pyunits.Pa,
                   doc="Vapor pressure  parameters")
@@ -528,7 +527,7 @@ class LiquidStateBlockMethods(StateBlock):
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
-            for j in blk[k].params.component_list_solvent:
+            for j in blk[k].params.solvent_set:
                 if hasattr(blk[k], "cp_mass_comp_eqn"):
                     calculate_variable_from_constraint(blk[k].cp_mass_comp[j],
                                                        blk[k].cp_mass_comp_eqn[j])
@@ -761,10 +760,10 @@ class LiquidStateBlockData(StateBlockData):
         def rule_mass_frac_co2_free(blk, j):
             return blk.mole_frac_comp[j] * blk.mw_comp[j] /\
                 sum(blk.mole_frac_comp[i] * blk.mw_comp[i]
-                    for i in blk.params.component_list_solvent)
+                    for i in blk.params.solvent_set)
 
         try:
-            self.mass_frac_co2_free = Expression(self.params.component_list_solvent,
+            self.mass_frac_co2_free = Expression(self.params.solvent_set,
                                                  rule=rule_mass_frac_co2_free,
                                                  doc="Mass fraction on CO2 free basis"
                                                  "[-]")
@@ -781,7 +780,7 @@ class LiquidStateBlockData(StateBlockData):
             return mw[j] * 1e3 / (c[j, 1] * T**2 + c[j, 2] * T + c[j, 3])
 
         try:
-            self.vol_mol_comp = Expression(self.params.component_list_solvent,
+            self.vol_mol_comp = Expression(self.params.solvent_set,
                                            rule=rule_vol_mol_comp,
                                            doc="Pure solvent molar volume")
         except AttributeError:
@@ -869,7 +868,7 @@ class LiquidStateBlockData(StateBlockData):
             raise
 
     def _cp_mass_comp(self):
-        self.cp_mass_comp = Var(self.params.component_list_solvent,
+        self.cp_mass_comp = Var(self.params.solvent_set,
                                 domain=Reals,
                                 initialize=1.0,
                                 units=pyunits.J / pyunits.K / pyunits.kg,
@@ -885,7 +884,7 @@ class LiquidStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mass_comp_eqn = Constraint(self.params.component_list_solvent,
+            self.cp_mass_comp_eqn = Constraint(self.params.solvent_set,
                                                rule=rule_cp_mass_comp)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -895,7 +894,7 @@ class LiquidStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component liquid heat capacities J/mol.K
-        self.cp_mol_comp = Var(self.params.component_list_solvent,
+        self.cp_mol_comp = Var(self.params.solvent_set,
                                domain=Reals,
                                initialize=1.0,
                                units=pyunits.J / pyunits.K / pyunits.mol,
@@ -906,7 +905,7 @@ class LiquidStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mol_comp_eqn = Constraint(self.params.component_list_solvent,
+            self.cp_mol_comp_eqn = Constraint(self.params.solvent_set,
                                               rule=rule_cp_mol_comp)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -922,7 +921,7 @@ class LiquidStateBlockData(StateBlockData):
 
         def rule_cp_mol(blk):
             return blk.cp_mol == sum(blk.cp_mol_comp[j] * blk.mole_frac_comp[j]
-                                     for j in blk.params.component_list_solvent)
+                                     for j in blk.params.solvent_set)
 
         try:
             # Try to build constraint
@@ -935,7 +934,7 @@ class LiquidStateBlockData(StateBlockData):
 
     def _cp_mass_comp_mean(self):
         # mean Pure component liquid heat capacities
-        self.cp_mass_comp_mean = Var(self.params.component_list_solvent,
+        self.cp_mass_comp_mean = Var(self.params.solvent_set,
                                      domain=Reals,
                                      initialize=1.0,
                                      units=pyunits.J / pyunits.K / pyunits.kg,
@@ -955,7 +954,7 @@ class LiquidStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.cp_mass_comp_mean_eqn =\
-                Constraint(self.params.component_list_solvent,
+                Constraint(self.params.solvent_set,
                            rule=rule_cp_mass_comp_mean)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -965,7 +964,7 @@ class LiquidStateBlockData(StateBlockData):
 
     def _cp_mol_comp_mean(self):
         # average Pure component liquid heat capacities btw T and T_ref
-        self.cp_mol_comp_mean = Var(self.params.component_list_solvent,
+        self.cp_mol_comp_mean = Var(self.params.solvent_set,
                                     domain=Reals,
                                     initialize=1.0,
                                     units=pyunits.J / pyunits.K / pyunits.mol,
@@ -978,7 +977,7 @@ class LiquidStateBlockData(StateBlockData):
 
         try:
             # Try to build constraint
-            self.cp_mol_comp_mean__eqn = Constraint(self.params.component_list_solvent,
+            self.cp_mol_comp_mean__eqn = Constraint(self.params.solvent_set,
                                                     rule=rule_cp_mol_comp_mean)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -996,7 +995,7 @@ class LiquidStateBlockData(StateBlockData):
         def rule_cp_mol_mean(blk):
             return blk.cp_mol_mean == sum(blk.cp_mol_comp_mean[j] *
                                           blk.mole_frac_comp[j]
-                                          for j in blk.params.component_list_solvent)
+                                          for j in blk.params.solvent_set)
 
         try:
             # Try to build constraint
@@ -1118,7 +1117,7 @@ class LiquidStateBlockData(StateBlockData):
             r = blk.mass_frac_co2_free['MEA']
             T = blk.temperature
             Tc = blk._params.temperature_crit
-            if j in blk.params.component_list_solvent:
+            if j in blk.params.solvent_set:
                 return blk._params.surf_tens_param[j, 1] * (1 - T / Tc[j]) **\
                     (blk._params.surf_tens_param[j, 2] +
                      blk._params.surf_tens_param[j, 3] * T / Tc[j] +
@@ -1179,7 +1178,7 @@ class LiquidStateBlockData(StateBlockData):
                         blk._params.pressure_sat_param[j, 4] * T * T))
 
         try:
-            self.pressure_sat = Expression(self.params.component_list_solvent,
+            self.pressure_sat = Expression(self.params.solvent_set,
                                            rule=rule_pressure_sat_comp,
                                            doc="Vapor pressure [Pa]")
         except AttributeError:

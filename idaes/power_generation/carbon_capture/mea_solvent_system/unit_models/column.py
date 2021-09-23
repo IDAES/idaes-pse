@@ -1309,7 +1309,7 @@ documentation for supported schemes,
         init_log.info_high("Step 2: {}.".format(idaeslog.condition(res)))
 
         # ---------------------------------------------------------------------
-        init_log.info('Step 3: Add Mass tranfer terms')
+        init_log.info('Step 3: Add Mass transfer terms')
         # Initialize : Velocities, Interface pressure, Enhancement factor
 
         # velocity
