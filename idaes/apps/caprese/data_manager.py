@@ -319,6 +319,8 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
             cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
             self.estimator_user_interested_states = [cuid.find_component_on(estimatorblock)
                                                      for cuid in cuid_states]
+        else:
+            self.estimator_user_interested_states = []
             
         self.estimator_vars_of_interest = self.estimator_user_interested_states + \
                                                 estimatorblock.differential_vars
