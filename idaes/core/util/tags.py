@@ -81,6 +81,8 @@ class ModelTag:
     def __getitem__(self, k):
         """Returns a new ModelTag for a scalar element of a tagged indexed
         quantity or a ModelTag with a slice as the expression."""
+        if k is None and not self.is_indexed:
+            return self
         try:
             tag = ModelTag(
                 expr=self.expression[k],
@@ -102,6 +104,28 @@ class ModelTag:
             tag._root = self._root
         tag._index = k
         return tag
+
+    def __len__(self):
+        """Number of elements in a tag"""
+        return len(self.indexes)
+
+    def keys(self):
+        """Iterator of keys in the tag.  If scalar, is a single None."""
+        indx_set = self.indexes
+        for i in indx_set:
+            yield i
+
+    def values(self):
+        """Iterator for scalar elements in a tag (The elements are scalar tags)"""
+        indx_set = self.indexes
+        for i in indx_set:
+            yield self[i]
+
+    def items(self):
+        """Iterator for key scalar elements pairs in a tag"""
+        indx_set = self.indexes
+        for i in indx_set:
+            yield i, self[i]
 
     def __str__(self):
         """Returns the default string representation of a tagged quantity. If
@@ -165,6 +189,28 @@ class ModelTag:
         return self._expression
 
     @property
+    def value(self):
+        """The numeric value of the tagged expression in the display units"""
+        if not self.is_indexed:
+            return self.get_display_value()
+        else:
+            val_dict = dict.fromkeys(self.indexes)
+            for k, v in self.items():
+                val_dict[k] = v.get_display_value()
+            return val_dict
+
+    @property
+    def native_value(self):
+        """The numeric value of the tagged expression in the native units"""
+        if not self.is_indexed:
+            return self.get_display_value(convert=False)
+        else:
+            val_dict = dict.fromkeys(self.indexes)
+            for k, v in self.items():
+                val_dict[k] = v.get_display_value(convert=False)
+            return val_dict
+
+    @property
     def doc(self):
         """Tag documentation string"""
         return self._doc
@@ -220,14 +266,14 @@ class ModelTag:
                 return pyo.value(expr, exception=False)
             except ZeroDivisionError:
                 return "ZeroDivisionError"
-            except ValueError: # no value
+            except ValueError:  # no value
                 return None
 
         try:
             val = pyo.value(expr, exception=False)
         except ZeroDivisionError:
             return "ZeroDivisionError"
-        except ValueError: # no value
+        except ValueError:  # no value
             return None
 
         cache_validate = self._cache_validation_value
@@ -235,10 +281,15 @@ class ModelTag:
         if index in cache_validate and val == cache_validate[index]:
             return cache_value[index]
         cache_validate[index] = val
-        try:
-            cache_value[index] = pyo.value(pyo.units.convert(expr, self._display_units), exception=False)
-        except ValueError:
-            return None
+        if self._display_units is None:
+            cache_value[index] = pyo.value(expr, exception=False)
+        else:
+            try:
+                cache_value[index] = pyo.value(
+                    pyo.units.convert(expr, self._display_units), exception=False
+                )
+            except ValueError:
+                return None
         return cache_value[index]
 
     def get_unit_str(self, index=None):
@@ -280,14 +331,14 @@ class ModelTag:
         """The index set of the tagged quantity"""
         if self.is_indexed:
             return list(self.expression.keys())
-        return None
+        return (None,)
 
     @property
     def indices(self):
         """The index set of the tagged quantity"""
         if self.is_indexed:
             return list(self.expression.keys())
-        return None
+        return (None,)
 
     @property
     def group(self):
@@ -353,12 +404,19 @@ class ModelTag:
         """Set the value of a tagged variable.
 
         Args:
-            v: value
+            val: value
             in_display_units: if true assume the value is in the display units
 
         Returns:
             None
         """
+        # If tag is a common immutable then allow it to be set
+        if self.expression is None or isinstance(
+            self.expression, (str, float, int, tuple)
+        ):
+            self._expression = val
+            return
+
         if in_display_units is None:
             in_display_units = self.set_in_display_units
 
@@ -522,22 +580,92 @@ class ModelTagGroup(dict):
         else:
             self[name] = ModelTag(expr=expr, **kwargs)
 
-    def expr_dict(self, index=None):
-        """Get a dictionary of expressions with tag keys."""
-        expr_dict = {}
-        for name, tag in self.items():
-            if tag.expression.is_indexed:
-                expr_dict[name] = tag.expression[index]
-            else:
-                expr_dict[name] = tag.expression
-        return expr_dict
+    def table_heading(self, tags=None, units=True):
+        """Create a table heading with a given set of tags, for tabulating model
+        results.
 
-    def format_dict(self, units=True, index=None):
-        """Get a dictionary of format strings with tag keys."""
-        expr_dict = {}
-        for name, tag in self.items():
-            expr_dict[name] = tag.get_format(units=units, index=index)
-        return expr_dict
+        Args:
+            tags: List of tags or tuples of tags and an index.  If a tag is for
+                an indexed value and no index is given the tag will be flattened
+                to create a column for each index.
+            units: If true include the units of measure in the coulmn heading
+                names.
+
+        Returns:
+            list of column headings
+        """
+        if tags is None:
+            tags = list(self.keys())
+
+        tag_list = []
+        indexes = []
+        for i, tag in enumerate(tags):
+            if not isinstance(tag, str):
+                tag_list.append(tag[0])
+                indexes.append(tag[1])
+            else:
+                if not self[tag].is_indexed:
+                    tag_list.append(tag)
+                    indexes.append(None)
+                else:
+                    for k in self[tag].keys():
+                        tag_list.append(tag)
+                        indexes.append(k)
+
+        row = [None] * len(tag_list)
+        for i, tag in enumerate(tag_list):
+            if indexes[i] is None:
+                name = tag
+            else:
+                name = f"{tag}[{indexes[i]}]"
+            if units:
+                row[i] = f"{name} ({self[tag].get_unit_str(index=indexes[i])})"
+            else:
+                row[i] = name
+        return row
+
+    def table_row(self, tags=None, units=True, numeric=False):
+        """Create a table row with a given set of tags, for tabulating model
+        results.  The row contains values of tagged quntities either as strings
+        of numeric values.
+
+        Args:
+            tags: List of tags or tuples of tags and an index.  If a tag is for
+                an indexed value and no index is given the tag will be flattened
+                to create a column for each index.
+            units: If true include the units of measure in the value, if the
+                values are not numeric.
+            numeric: If true provide numeric values rather than a formatted
+                string.
+
+        Returns:
+            list of values for a table row either numeric or as formatted strings
+        """
+        if tags is None:
+            tags = list(self.keys())
+
+        tag_list = []
+        indexes = []
+        for i, tag in enumerate(tags):
+            if not isinstance(tag, str):
+                tag_list.append(tag[0])
+                indexes.append(tag[1])
+            else:
+                if not self[tag].is_indexed:
+                    tag_list.append(tag)
+                    indexes.append(None)
+                else:
+                    for k in self[tag].keys():
+                        tag_list.append(tag)
+                        indexes.append(k)
+
+        row = [None] * len(tag_list)
+        for i, tag in enumerate(tag_list):
+            if numeric:
+                row[i] = self[tag][indexes[i]].value
+            else:
+                row[i] = self[tag][indexes[i]].display(units=units)
+        return row
 
     @property
     def str_include_units(self):
@@ -568,7 +696,6 @@ class ModelTagGroup(dict):
         self._set_in_display_units = value
 
 
-# Author John Eslick
 def svg_tag(
     tags=None,
     svg=None,
