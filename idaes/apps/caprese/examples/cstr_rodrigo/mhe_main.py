@@ -61,7 +61,7 @@ def main():
             # m_plant.Tall[0, "Tj"],
             m_plant.Ca[0],
             ]
-    
+
     # Construct the "MHE simulator" object
     mhe = DynamicSim(
             plant_model=m_plant,
