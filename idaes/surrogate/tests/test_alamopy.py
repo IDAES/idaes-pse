@@ -18,6 +18,7 @@ import numpy as np
 import io
 import os
 from math import sin, cos, log, exp
+from pathlib import Path
 
 from pyomo.environ import Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
@@ -28,7 +29,7 @@ from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
 
 
-dirpath = os.path.dirname(__file__)
+dirpath = Path(__file__).parent.resolve()
 
 
 class TestAlamoTrainer:
@@ -383,21 +384,25 @@ class TestAlamoTrainer:
     @pytest.mark.component
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
     def test_call_alamo_w_input(self, alm_obj):
-        with TempfileManager as t:
-            # TODO : Is there something else we should do here to be safe?
-            # This could potentially delete existing files if they happen to
-            # have the names used here. Unfortunately, we don't have direct
-            # control over the creation of these files.
-            t.add_tempfile("GUI_trace.trc", exists=False)
-            t.add_tempfile("alamo_test.lst", exists=False)
-            alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
-            rc, almlog = alm_obj.call_alamo()
-            assert rc == 0
-            assert "Normal termination" in almlog
+        cwd = os.getcwd()
+
+        alm_obj._temp_context = TempfileManager.new_context()
+        alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
+        alm_obj._wrkdir = dirpath
+
+        alm_obj._temp_context.add_tempfile(
+            os.path.join(dirpath, "GUI_trace.trc"), exists=False)
+        alm_obj._temp_context.add_tempfile(
+            os.path.join(dirpath, "alamo_test.lst"), exists=False)
+        rc, almlog = alm_obj.call_alamo()
+        assert rc == 0
+        assert "Normal termination" in almlog
 
         # Check for clean up
-        assert not os.path.exists("GUI_trace.trc")
-        assert not os.path.exists("alamo_test.lst")
+        alm_obj._temp_context.release(remove=True)
+        assert not os.path.exists(os.path.join(dirpath, "GUI_trace.trc"))
+        assert not os.path.exists(os.path.join(dirpath, "alamo_test.lst"))
+        assert cwd == os.getcwd()
 
     @pytest.mark.unit
     def test_read_trace_single(self, alm_obj):
