@@ -927,15 +927,10 @@ def do_initialize(m, solver):
     # TODO - this seems to improve the convergence
     iscale.constraint_autoscale_large_jac(m)
 
-    # TODO - unfix bhx2 area and fix shell outlet temperature instead
-    # m.fs.bhx2.area.unfix()
-    # m.fs.bhx2.shell_outlet.temperature[0].fix(700)
 
-    # TODO - this solve isn't robust
-    # strip_bounds=True # strip bounds
-    print('dof = ', degrees_of_freedom(m))
+
     solver.solve(m, tee=True,
-                  options={"max_iter":200},
+                  # options={"max_iter":200},
                   symbolic_solver_labels=True
                   )
     
@@ -966,17 +961,17 @@ def do_initialize(m, solver):
     m.fs.spltf1.split_fraction[:, "out"].unfix()
     # m.fs.splta1.split_fraction[:, "out"].unfix()
     m.fs.mxa1.air.flow_mol.unfix()  # Unfix soec.ac.flow_mol if mxa1.air.flow_mol is fixed
-    # m.fs.soec.ac.flow_mol[:, 0].unfix()
-    # m.fs.mxa1.air.flow_mol.fix(29000)
+
     solver.solve(m, tee=True, 
-                  options={
-                      "max_iter":200,
-                      "tol":1e-6,
-                      "bound_push":1e-12,
-                      "linear_solver":"ma57"
-                          },
+                  # options={
+                  #     "max_iter":200,
+                  #     "tol":1e-7,
+                  #     "bound_push":1e-12,
+                  #     "linear_solver":"ma27"
+                  #         },
                   symbolic_solver_labels=True)
 
+    print(" ")
     print("----------------------------------------------------------")
     print(" Final solve to ensure square algebraic jacobian - change heat exchanger specs of bhx2 and bhx1")
 
