@@ -28,8 +28,8 @@ from idaes.core.util.testing import initialization_tester
 from idaes.core.util import get_solver
 from idaes.power_generation.carbon_capture.mea_solvent_system.properties.liquid_prop \
     import LiquidParameterBlock
-from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.phe \
-    import PHE
+from idaes.power_generation.carbon_capture.mea_solvent_system.unit_models.plate_heat_exchanger \
+    import PlateHeatExchanger as PHE
 
 
 solver = get_solver()
