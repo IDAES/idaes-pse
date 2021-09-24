@@ -3096,6 +3096,11 @@ class GenericStateBlockData(StateBlockData):
                 doc="Log of molality of component by phase")
 
             def rule_log_molality_phase_comp(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
                 return exp(b.log_molality_phase_comp[p, j]) == (
                     b.molality_phase_comp[p, j])
             self.log_molality_phase_comp_eq = Constraint(
@@ -3116,6 +3121,11 @@ class GenericStateBlockData(StateBlockData):
                 doc="Log of molality of component by phase")
 
             def rule_log_molality_phase_comp_appr(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
                 return exp(b.log_molality_phase_comp_apparent[p, j]) == (
                     b.molality_phase_comp_apparent[p, j])
             self.log_molality_phase_comp_apparent_eq = Constraint(
@@ -3136,6 +3146,11 @@ class GenericStateBlockData(StateBlockData):
                 doc="Log of molality of component by phase")
 
             def rule_log_molality_phase_comp_true(b, p, j):
+                pobj = b.params.get_phase(p)
+                if not isinstance(pobj, LiquidPhase):
+                    # Molality is defined per mass of solvent so only makes
+                    # sense in liquid phases
+                    return Expression.Skip
                 return exp(b.log_molality_phase_comp_true[p, j]) == (
                     b.molality_phase_comp_true[p, j])
             self.log_molality_phase_comp_true_eq = Constraint(
