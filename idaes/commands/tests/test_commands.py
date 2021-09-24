@@ -28,7 +28,7 @@ from click.testing import CliRunner
 import pytest
 
 # package
-from idaes.commands import examples, extensions, convergence, config
+from idaes.commands import examples, extensions, convergence, config, env_info
 from idaes.util.system import TemporaryDirectory
 from . import create_module_scratch, rmtree_scratch
 import idaes
@@ -665,3 +665,13 @@ def test_conf_set(runner):
     _tst(["--global", "--file", fname, "--file_as_global"])
     _tst(["--local", "--file", fname, "--file_as_local"])
     _tst(["--file", fname])
+
+
+##############
+# env info   #
+##############
+
+@pytest.mark.unit
+def test_env_info1(runner):
+    result = runner.invoke(env_info.environment_info)
+    assert result.exit_code == 0

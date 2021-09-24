@@ -112,7 +112,7 @@ def convergence_eval(
 @click.option('-r', '--regex', default=None, type=str,
     help="Optional regular expression to filter registered convergence classes")
 @click.option('-m', '--convergence_module', default=None, type=str, required=False,
-    help="Optional addtional module that registers convergence classes")
+    help="Optional additional module that registers convergence classes")
 def convergence_search(regex, convergence_module):
     import idaes.convergence
     if convergence_module is not None:

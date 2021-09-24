@@ -42,7 +42,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
 
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+import idaes.logger as idaeslog
 
 
 # -----------------------------------------------------------------------------
@@ -131,9 +132,9 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_invalid_unit(self, m):
         with pytest.raises(
-                ConfigurationError,
-                match="rxn_params recieved unexpected units for quantity time:"
-                " foo. Units must be instances of a Pyomo unit object."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(foo\)"):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
                 "rate_reactions": {
@@ -150,10 +151,9 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_missing_required_quantity(self, m):
         with pytest.raises(
-                ConfigurationError,
-                match="rxn_params units for quantity time were not assigned. "
-                "Please make sure to provide units for all base units "
-                "when configuring the reaction package."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(None\)"):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
                 "rate_reactions": {
@@ -208,19 +208,26 @@ class TestGenericReactionParameterBlock(object):
                            "rate_form": "foo"}}})
 
     @pytest.mark.unit
-    def test_rate_build_no_form(self, m):
-        with pytest.raises(ConfigurationError,
-                           match="rxn_params rate reaction r1 was not "
-                           "provided with a rate_form configuration "
-                           "argument."):
-            m.rxn_params = GenericReactionParameterBlock(default={
-                "property_package": m.params,
-                "base_units": base_units,
-                "rate_reactions": {
-                    "r1": {"stoichiometry": {("p1", "c1"): -1,
-                                             ("p1", "c2"): 2},
-                           "heat_of_reaction": "foo"}}})
-            
+    def test_rate_build_no_form(self, m, caplog):
+        caplog.set_level(
+            idaeslog.DEBUG,
+            logger=("idaes.generic_models.properties.core."
+                    "generic.generic_reaction"))
+
+        m.rxn_params = GenericReactionParameterBlock(default={
+            "property_package": m.params,
+            "base_units": base_units,
+            "rate_reactions": {
+                "r1": {"stoichiometry": {("p1", "c1"): -1,
+                                         ("p1", "c2"): 2},
+                       "heat_of_reaction": "foo"}}})
+
+        assert ("rxn_params rate reaction r1 was not provided with a "
+                "rate_form configuration argument. This is suitable for "
+                "processes using stoichiometric reactors, but not for those "
+                "using unit operations which rely on reaction rate."
+                in caplog.text)
+
     @pytest.mark.unit
     def test_equil_build(self, m):
         m.rxn_params = GenericReactionParameterBlock(default={
@@ -500,6 +507,16 @@ class TestGenericReactionBlock(object):
         assert value(model.rblock[1].reaction_rate["r1"]) == value(
             model.rblock[1].k_rxn["r1"] *
             model.sblock[1].mole_frac_phase_comp["p1", "c1"]**1)
+
+    @pytest.mark.unit
+    def test_reaction_rate_None(self, model):
+        model.rxn_params.config.rate_reactions.r1.rate_form = None
+
+        with pytest.raises(ConfigurationError,
+                           match="rblock\[1\] Generic Reaction r1 was not "
+                           "provided with a rate_form configuration "
+                           "argument."):
+            model.rblock[1].reaction_rate
 
     @pytest.mark.unit
     def test_equilibrium_constant(self, model):
