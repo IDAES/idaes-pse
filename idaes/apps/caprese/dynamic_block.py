@@ -619,9 +619,15 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    def inject_inputs(self, inputs):
+    def inject_inputs(self, inputs, time_subset = None, quick_option = None):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
+        
+        # Better way to do this?
+        if quick_option == "last_sample_time":
+            time_subset = [tp for tp in self.time if tp > self.sample_points[-2]
+                                                 and tp <= self.sample_points[-1]]
+
         if VC.INPUT in self.categories:
             for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
                 # Would like:
@@ -629,7 +635,11 @@ class _DynamicBlockData(_BlockData):
                 # This is an example of setting a matrix from a vector.
                 # Could even aspire towards:
                 # self.vectors.input[:,t0:t1].fix(inputs)
-                var[:].fix(val)
+                if time_subset is None:
+                    var[:].fix(val)
+                else:
+                    for tind in time_subset:
+                        var[tind].fix(val)
         else:
             raise RuntimeError(
                     "Trying to set input values but no input "

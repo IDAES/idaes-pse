@@ -553,15 +553,15 @@ class _EstimatorBlockData(_DynamicBlockData):
             dof = degrees_of_freedom(self)
             assert dof == correct_dof  
 
-    def load_inputs_for_MHE(self, inputs):
-        last_sampt = self.sample_points[-1]
-        secondlast_sampt = self.sample_points[-2]
-        time_list = [tp for tp in self.time if tp > secondlast_sampt 
-                                                 and tp <= last_sampt]
+    # def load_inputs_for_MHE(self, inputs):
+    #     last_sampt = self.sample_points[-1]
+    #     secondlast_sampt = self.sample_points[-2]
+    #     time_list = [tp for tp in self.time if tp > secondlast_sampt 
+    #                                              and tp <= last_sampt]
 
-        for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
-            for tind in time_list:
-                var[tind].set_value(val)
+    #     for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
+    #         for tind in time_list:
+    #             var[tind].set_value(val)
 
     def generate_estimates_at_time(self, t):
         return [val for val in self.vectors.differential[:, t].value]
