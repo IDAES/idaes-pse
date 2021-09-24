@@ -483,10 +483,10 @@ class _EstimatorBlockData(_DynamicBlockData):
             raise RuntimeError("Wrong argument 'givenform' is given. "
                    "Please assign either 'weight' or 'variance'.")
 
-        diff_id_list = [id(var[t0]) for var in self.differential_vars]
+        diff_id_set = {id(var[t0]) for var in self.differential_vars}
         for var, val in model_disturbance_weights:  
             #Check whether the given variable is classified under diffvar
-            if id(var) not in diff_id_list:
+            if id(var) not in diff_id_set:
                 raise RuntimeError(var.name, 
                                    " is not a differential variable.")
 
@@ -495,10 +495,10 @@ class _EstimatorBlockData(_DynamicBlockData):
             elif givenform == "variance":
                 self.diffvar_map_moddis[var].weight = 1./val
 
-        mea_id_list = [id(var[t0]) for var in self.measurement_vars]
+        mea_id_set = {id(var[t0]) for var in self.measurement_vars}
         for var, val in measurement_noise_weights:
             #Check whether the given variable is declared as a measurement before
-            if id(var) not in mea_id_list:
+            if id(var) not in mea_id_set:
                 raise RuntimeError(var.name, 
                                    " is not declared as a measurement.")
 
