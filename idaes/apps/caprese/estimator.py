@@ -454,7 +454,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.solve_steady_state(solver)
 
         self.initialize_actualmeasurements_at_t0()
-        self.initialize_to_initial_conditions(ctype=(DiffVar, AlgVar, DerivVar, InputVar,))
+        self.initialize_to_initial_conditions(
+            ctype=(DiffVar, AlgVar, DerivVar, InputVar, ActualMeasurementVar)
+                )
 
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,

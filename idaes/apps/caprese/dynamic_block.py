@@ -493,8 +493,6 @@ class _DynamicBlockData(_BlockData):
         ctypes for all time points.
         """
         
-        if ActualMeasurementVar in self.collect_ctypes():
-            ctype += (ActualMeasurementVar,)
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
