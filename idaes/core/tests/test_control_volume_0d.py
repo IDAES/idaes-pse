@@ -592,7 +592,7 @@ def test_add_phase_component_balances_dynamic():
 @pytest.mark.unit
 def test_add_phase_component_balances_dynamic_no_geometry():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1163,7 +1163,7 @@ def test_add_total_component_balances_dynamic():
 @pytest.mark.unit
 def test_add_total_component_balances_dynamic_no_geometry():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1700,7 +1700,7 @@ def test_add_total_element_balances_dynamic():
 @pytest.mark.unit
 def test_add_total_element_balances_dynamic_no_geometry():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -1970,7 +1970,7 @@ def test_add_total_enthalpy_balances_dynamic():
 @pytest.mark.unit
 def test_add_total_enthalpy_balances_dynamic_no_geometry():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs = Flowsheet(default={"dynamic": True, "time_units": units.s})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
