@@ -170,23 +170,6 @@ constructed, **default** - False.
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
-# TODO : Enums for options
-    _PhaseCONFIG.declare("pressure_drop_type", ConfigValue(
-        default=None,
-        domain=In(["Billet_Schultes_correlation",
-                   "Stichlmair_Fair_Bravo_correlation",
-                   "GPDC-Kister"]),
-        description="Construction flag for type of pressure drop",
-        doc="""Indicates what type of pressure drop correlation should be used,
-**default**- None.
-**Valid values:** {
-**None** - set pressure drop to zero,
-**'Stichlmair_Fair_Bravo_correlation'** - Use the Stichlmair-Fair-Bravo
-correlation model
-**'GPDC-Kister'** - Use the Generalized Pressure Drop Correlation of Kister
-(2007)
-**'Billet_Schultes_correlation'** - Use the Billet-Schultes correlation model}
-"""))
     _PhaseCONFIG.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -303,26 +286,6 @@ documentation for supported schemes,
                 f"fix_column_pressure is set to "
                 f"{self.config.fix_column_pressure}. Set fix_column_pressure "
                 f"to False if has_pressure_change is True.")
-
-        # TO DO
-        # pressure drop calculation
-        # Correlations for pressure drop and flooding required for design cases
-        if (self.config.vapor_side.has_pressure_change and
-            self.config.vapor_side.pressure_drop_type ==
-                "Stichlmair_Fair_Bravo_correlation"):
-            raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "pressure drop. Please contact the "
-                "developer of the property_package you are using."
-                .format(self.name))
-
-        if (self.config.vapor_side.has_pressure_change and
-                self.config.vapor_side.pressure_drop_type == "GPDC-Kister"):
-            raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "pressure drop. Please contact the "
-                "developer of the property_package you are using."
-                .format(self.name))
 
         self.vapor_phase.apply_transformation()
 
