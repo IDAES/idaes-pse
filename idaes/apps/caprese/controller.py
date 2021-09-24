@@ -74,157 +74,157 @@ class _ControllerBlockData(_DynamicBlockData):
         super(_ControllerBlockData, self)._construct()
         self.has_estimator = False
 
-    def solve_setpoint(self, solver, **kwargs):
-        """ This method performs a "real time optimization-type"
-        solve on the model, using only the variables and constraints
-        at the first point in time. The purpose is to calculate a
-        (possibly steady state) setpoint.
+    # def solve_setpoint(self, solver, **kwargs):
+    #     """ This method performs a "real time optimization-type"
+    #     solve on the model, using only the variables and constraints
+    #     at the first point in time. The purpose is to calculate a
+    #     (possibly steady state) setpoint.
 
-        Parameters:
-            solver: A Pyomo solver object that will be used to solve
-                    the model with only variables and constraints at t0
-                    active.
-            require_steady: Whether derivatives should be fixed to zero
-                            for the solve. Default is `True`.
+    #     Parameters:
+    #         solver: A Pyomo solver object that will be used to solve
+    #                 the model with only variables and constraints at t0
+    #                 active.
+    #         require_steady: Whether derivatives should be fixed to zero
+    #                         for the solve. Default is `True`.
 
-        """
-        require_steady = kwargs.pop('require_steady', True)
-        config = self.CONFIG(kwargs)
-        model = self.mod
-        time = self.time
-        t0 = time.first()
+    #     """
+    #     require_steady = kwargs.pop('require_steady', True)
+    #     config = self.CONFIG(kwargs)
+    #     model = self.mod
+    #     time = self.time
+    #     t0 = time.first()
         
-        # Determine initial conditions depend on measurements or differential variables
-        if self.has_estimator:
-            # In this case, the number of measurements may be smaller than the 
-            # number differential variables.
-            ics_vector_var = self.vectors.differential
-            ictype = VC.DIFFERENTIAL
-        else:
-            # In this case, the number of measurements is required to equal to 
-            # the number of differential variables. 
-            ics_vector_var = self.vectors.measurement
-            ictype = VC.MEASUREMENT
+    #     # Determine initial conditions depend on measurements or differential variables
+    #     if self.has_estimator:
+    #         # In this case, the number of measurements may be smaller than the 
+    #         # number differential variables.
+    #         ics_vector_var = self.vectors.differential
+    #         ictype = VC.DIFFERENTIAL
+    #     else:
+    #         # In this case, the number of measurements is required to equal to 
+    #         # the number of differential variables. 
+    #         ics_vector_var = self.vectors.measurement
+    #         ictype = VC.MEASUREMENT
 
-        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
-                model.component_data_objects((Constraint, Block))])
-        non_initial_time = list(time)[1:]
-        deactivated = deactivate_model_at(
-                model,
-                time,
-                non_initial_time,
-                allow_skip=True,
-                suppress_warnings=True,
-                )
-        was_fixed = ComponentMap()
+    #     was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+    #             model.component_data_objects((Constraint, Block))])
+    #     non_initial_time = list(time)[1:]
+    #     deactivated = deactivate_model_at(
+    #             model,
+    #             time,
+    #             non_initial_time,
+    #             allow_skip=True,
+    #             suppress_warnings=True,
+    #             )
+    #     was_fixed = ComponentMap()
 
-        # Cache "important" values to re-load after solve
-        init_input = list(self.vectors.input[:, t0].value) \
-                if VC.INPUT in self.categories else []
-        init_ics = list(ics_vector_var[:, t0].value) \
-                if ictype in self.categories else []
+    #     # Cache "important" values to re-load after solve
+    #     init_input = list(self.vectors.input[:, t0].value) \
+    #             if VC.INPUT in self.categories else []
+    #     init_ics = list(ics_vector_var[:, t0].value) \
+    #             if ictype in self.categories else []
 
-        # Fix/unfix variables as appropriate
-        # Order matters here. If a derivative is used as an IC, we still want
-        # it to be fixed if steady state is required.
-        if ictype in self.categories:
-            ics_vector_var[:,t0].unfix()
+    #     # Fix/unfix variables as appropriate
+    #     # Order matters here. If a derivative is used as an IC, we still want
+    #     # it to be fixed if steady state is required.
+    #     if ictype in self.categories:
+    #         ics_vector_var[:,t0].unfix()
 
-        if VC.INPUT in self.categories:
-            input_vars = self.vectors.input
-            was_fixed = ComponentMap(
-                    (var, var.fixed) for var in input_vars[:,t0]
-                    )
-            input_vars[:,t0].unfix()
-        if VC.DERIVATIVE in self.categories:
-            if require_steady == True:
-                self.vectors.derivative[:,t0].fix(0.)
+    #     if VC.INPUT in self.categories:
+    #         input_vars = self.vectors.input
+    #         was_fixed = ComponentMap(
+    #                 (var, var.fixed) for var in input_vars[:,t0]
+    #                 )
+    #         input_vars[:,t0].unfix()
+    #     if VC.DERIVATIVE in self.categories:
+    #         if require_steady == True:
+    #             self.vectors.derivative[:,t0].fix(0.)
 
-        self.setpoint_objective.activate()
+    #     self.setpoint_objective.activate()
 
-        # Solve single-time point optimization problem
-        #
-        # If these sets do not necessarily exist, then I don't think
-        # I can make any assertion about the number of degrees of freedom
-        #dof = degrees_of_freedom(model)
-        #if require_steady:
-        #    assert dof == len(self.INPUT_SET)
-        #else:
-        #    assert dof == (len(self.INPUT_SET) +
-        #            len(self.DIFFERENTIAL_SET))
-        results = solver.solve(self, tee=config.tee)
-        if results.solver.termination_condition == TerminationCondition.optimal:
-            pass
-        else:
-            msg = 'Failed to solve for full state setpoint values'
-            raise RuntimeError(msg)
+    #     # Solve single-time point optimization problem
+    #     #
+    #     # If these sets do not necessarily exist, then I don't think
+    #     # I can make any assertion about the number of degrees of freedom
+    #     #dof = degrees_of_freedom(model)
+    #     #if require_steady:
+    #     #    assert dof == len(self.INPUT_SET)
+    #     #else:
+    #     #    assert dof == (len(self.INPUT_SET) +
+    #     #            len(self.DIFFERENTIAL_SET))
+    #     results = solver.solve(self, tee=config.tee)
+    #     if results.solver.termination_condition == TerminationCondition.optimal:
+    #         pass
+    #     else:
+    #         msg = 'Failed to solve for full state setpoint values'
+    #         raise RuntimeError(msg)
 
-        self.setpoint_objective.deactivate()
+    #     self.setpoint_objective.deactivate()
 
-        # Revert changes. Again, order matters
-        if VC.DERIVATIVE in self.categories:
-            if require_steady == True:
-                self.vectors.derivative[:,t0].unfix()
-        if ictype in self.categories:
-            ics_vector_var[:,t0].fix()
+    #     # Revert changes. Again, order matters
+    #     if VC.DERIVATIVE in self.categories:
+    #         if require_steady == True:
+    #             self.vectors.derivative[:,t0].unfix()
+    #     if ictype in self.categories:
+    #         ics_vector_var[:,t0].fix()
 
-        # Reactivate components that were deactivated
-        for t, complist in deactivated.items():
-            for comp in complist:
-                if was_originally_active[comp]:
-                    comp.activate()
+    #     # Reactivate components that were deactivated
+    #     for t, complist in deactivated.items():
+    #         for comp in complist:
+    #             if was_originally_active[comp]:
+    #                 comp.activate()
 
-        # Fix inputs that were originally fixed
-        if VC.INPUT in self.categories:
-            for var in self.vectors.input[:,t0]:
-                if was_fixed[var]:
-                    var.fix()
+    #     # Fix inputs that were originally fixed
+    #     if VC.INPUT in self.categories:
+    #         for var in self.vectors.input[:,t0]:
+    #             if was_fixed[var]:
+    #                 var.fix()
 
-        setpoint_ctype = (DiffVar, AlgVar, InputVar,
-                          FixedVar, DerivVar, MeasuredVar)
-        for var in self.component_objects(setpoint_ctype):
-            var.setpoint = var[t0].value
+    #     setpoint_ctype = (DiffVar, AlgVar, InputVar,
+    #                       FixedVar, DerivVar, MeasuredVar)
+    #     for var in self.component_objects(setpoint_ctype):
+    #         var.setpoint = var[t0].value
 
-        # Restore cached values
-        if VC.INPUT in self.categories:
-            self.vectors.input.values = init_input
-        if ictype in self.categories:
-            ics_vector_var.values = init_ics
+    #     # Restore cached values
+    #     if VC.INPUT in self.categories:
+    #         self.vectors.input.values = init_input
+    #     if ictype in self.categories:
+    #         ics_vector_var.values = init_ics
 
-    def add_setpoint_objective(self, 
-            setpoint,
-            weights,
-            ):
-        """ This method uses user-provided setpoints and weights
-        to directly construct a least-squares objective for the
-        specified variables at the first time point. The purpose
-        is to then use the first time point to solve for a "proper
-        setpoint" that provides a value for every variable.
+    # def add_setpoint_objective(self, 
+    #         setpoint,
+    #         weights,
+    #         ):
+    #     """ This method uses user-provided setpoints and weights
+    #     to directly construct a least-squares objective for the
+    #     specified variables at the first time point. The purpose
+    #     is to then use the first time point to solve for a "proper
+    #     setpoint" that provides a value for every variable.
 
-        Parameters:
-            setpoint: List of vardata, value tuples describing the
-                      setpoint values of these specified variables.
-            weights: List of vardata, value tuples describing the
-                     weight for each variable's term in the objective.
+    #     Parameters:
+    #         setpoint: List of vardata, value tuples describing the
+    #                   setpoint values of these specified variables.
+    #         weights: List of vardata, value tuples describing the
+    #                  weight for each variable's term in the objective.
 
-        """
-        vardata_map = self.vardata_map
-        for vardata, weight in weights:
-            nmpc_var = vardata_map[vardata]
-            nmpc_var.weight = weight
+    #     """
+    #     vardata_map = self.vardata_map
+    #     for vardata, weight in weights:
+    #         nmpc_var = vardata_map[vardata]
+    #         nmpc_var.weight = weight
 
-        weight_vector = []
-        for vardata, sp in setpoint:
-            nmpc_var = vardata_map[vardata]
-            if nmpc_var.weight is None:
-                self.logger.warning('Weight not supplied for %s' % var.name)
-                nmpc_var.weight = 1.0
-            weight_vector.append(nmpc_var.weight)
+    #     weight_vector = []
+    #     for vardata, sp in setpoint:
+    #         nmpc_var = vardata_map[vardata]
+    #         if nmpc_var.weight is None:
+    #             self.logger.warning('Weight not supplied for %s' % var.name)
+    #             nmpc_var.weight = 1.0
+    #         weight_vector.append(nmpc_var.weight)
 
-        obj_expr = sum(
-            weight_vector[i]*(var - sp)**2 for
-            i, (var, sp) in enumerate(setpoint))
-        self.setpoint_objective = Objective(expr=obj_expr)
+    #     obj_expr = sum(
+    #         weight_vector[i]*(var - sp)**2 for
+    #         i, (var, sp) in enumerate(setpoint))
+    #     self.setpoint_objective = Objective(expr=obj_expr)
 
     def add_tracking_objective(self,
             weights,

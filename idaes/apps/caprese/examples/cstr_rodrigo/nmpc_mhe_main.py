@@ -112,8 +112,12 @@ def main():
     setpoint = [(controller.mod.Ca[0], 0.018)]
     setpoint_weights = [(controller.mod.Ca[0], 1.)]
     
-    dyna.controller.add_setpoint_objective(setpoint, setpoint_weights)
-    dyna.controller.solve_setpoint(solver)
+    dyna.controller.add_single_time_optimization_objective(setpoint,
+                                                           setpoint_weights)
+    dyna.controller.solve_single_time_optimization(solver,
+                                                   ic_type = "differential_var",
+                                                   require_steady = True,
+                                                   load_setpoints = True)
     
     # Now we are ready to construct the tracking NMPC problem
     tracking_weights = [
@@ -196,7 +200,7 @@ def main():
     dyna.estimator.load_measurements(measurements,
                                      target = "actualmeasurement",
                                      timepoint = estimator.time.last())
-    dyna.estimator.load_inputs_for_MHE(inputs)
+    dyna.estimator.inject_inputs(inputs, quick_option = "last_sample_time")
     
     # Solve the first estimation problem
     dyna.estimator.check_var_con_dof(skip_dof_check = False)
@@ -241,7 +245,7 @@ def main():
         dyna.estimator.load_measurements(measurements,
                                          target = "actualmeasurement",
                                          timepoint = estimator.time.last())
-        dyna.estimator.load_inputs_for_MHE(inputs)
+        dyna.estimator.inject_inputs(inputs, quick_option = "last_sample_time")
         
         dyna.estimator.check_var_con_dof(skip_dof_check = False)
         solver.solve(dyna.estimator, tee = True)
