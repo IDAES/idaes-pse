@@ -255,7 +255,7 @@ def add_preheater(m):
     # m.fs.ng_preheater.area.fix(200)
     # m.fs.ng_preheater.tube_outlet.temperature[0].fix(450)
     m.fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
-    m.fs.ng_preheater.delta_temperature_out.fix(100) # fix DT for pinch side
+    m.fs.ng_preheater.delta_temperature_in.fix(30) # fix DT for pinch side
 
     m.fs.preheat_split.split_fraction[:, "air"].fix(0.9)    
     
@@ -666,11 +666,11 @@ def add_soec_inlet_mix(m):
 
     
 def add_more_hx_connections(m):
-    m.fs.fg02 = Arc(
-        source=m.fs.air_preheater_2.shell_outlet,
-        destination=m.fs.preheat_split.inlet
-        # destination=m.fs.bhx1.shell_inlet
-        )
+    # m.fs.fg02 = Arc(
+    #     source=m.fs.air_preheater_2.shell_outlet,
+    #     destination=m.fs.preheat_split.inlet
+    #     # destination=m.fs.bhx1.shell_inlet
+    #     )
     # m.fs.fg03 = Arc(
     #     source=m.fs.bhx1.shell_outlet,
     #     destination=m.fs.preheat_split.inlet
@@ -679,6 +679,10 @@ def add_more_hx_connections(m):
                    destination=m.fs.bhx1.shell_inlet)
     m.fs.o02 = Arc(source=m.fs.splta1.out,
                     destination=m.fs.air_preheater_1.shell_inlet)
+    m.fs.o03 = Arc(
+        source=m.fs.air_preheater_1.shell_outlet,
+        destination=m.fs.preheat_split.inlet
+        )
 
 def add_constraints(m):
     m.fs.soec_heat_duty = pyo.Var(m.fs.time, units=pyo.units.W)
@@ -724,17 +728,17 @@ def add_constraints(m):
        
 def set_guess(m):
     # Set guess for tear streams (preheat_split.inlet and bhx2.tube_inlet)
-    fg_comp_guess = { # air_prop is used as assumption is all fuel is combusted
-        "O2": 0.049,
-        "H2O": 0.2,
-        "CO2": 0.2,
-        "N2": 0.55,
-        "Ar": 0.001,
+    comp_guess = { # air_prop is used as assumption is all fuel is combusted
+        "O2": 0.2074,
+        "H2O": 0.0099,
+        "CO2": 0.0003,
+        "N2": 0.7732,
+        "Ar": 0.0092
     }
     # TODO - update tear stream to bhx2.shell_inlet?
     _set_port(
-        m.fs.preheat_split.inlet, F=1650, T=700, P=1.04e5,
-        comp=fg_comp_guess, fix=True
+        m.fs.preheat_split.inlet, F=6000, T=700, P=1.04e5,
+        comp=comp_guess, fix=True
     )
 
     # m.fs.bhx2.tube_inlet.flow_mol.fix(2000)
@@ -789,14 +793,14 @@ def set_inputs(m):
         m.fs.air_compressor_s1.inlet, F=5000, T=330, P=1.01325e5, comp=air_comp, fix=True
     )
     _set_port(
-        m.fs.ng_preheater.tube_inlet, F=780, T=330, P=1.04e5, comp=ng_comp, fix=True
+        m.fs.ng_preheater.tube_inlet, F=380, T=330, P=1.04e5, comp=ng_comp, fix=True
     )
     _set_port(  # TODO - replaced mxa1 with air blower inlet
-        m.fs.air_blower.inlet, F=2000, T=330, P=1.01325e5,
+        m.fs.air_blower.inlet, F=3000, T=330, P=1.01325e5,
         comp=air_comp, fix=True
     )
     _set_port(  # TODO - remove alongside mxa1 as recycle is no longer spec'd
-        m.fs.mxa1.recycle, F=1, T=1073.15, P=1.04e5,
+        m.fs.mxa1.recycle, F=1e-3, T=1073.15, P=1.04e5,  # Flow set to tiny val
         comp={"O2": 0.2074, "H2O": 0.0099, "CO2": 0.0003,
               "N2": 0.7732, "Ar": 0.0092,}, fix=True
     )
@@ -820,107 +824,97 @@ def do_initialize(m, solver):
     # TODO - update copy_port_values to propagate_state
     m.fs.preheat_split.initialize()
     copy_port_values(source=m.fs.preheat_split.air,
-                 destination=m.fs.oxygen_preheater.shell_inlet)
+                     destination=m.fs.oxygen_preheater.shell_inlet)
     copy_port_values(source=m.fs.preheat_split.ng,
-                 destination=m.fs.ng_preheater.shell_inlet)
+                     destination=m.fs.ng_preheater.shell_inlet)
     # iinit.propagate_state(m.fs.fg04)
     # iinit.propagate_state(m.fs.fg05)
 
     m.fs.air_compressor_s1.initialize()
     copy_port_values(source=m.fs.air_compressor_s1.outlet,
-                 destination=m.fs.intercooler_s1.inlet)
+                     destination=m.fs.intercooler_s1.inlet)
     # iinit.propagate_state(m.fs.STAGE_1_OUT)
     m.fs.intercooler_s1.initialize()
     copy_port_values(source=m.fs.intercooler_s1.outlet,
-                 destination=m.fs.air_compressor_s2.inlet)
+                     destination=m.fs.air_compressor_s2.inlet)
     # iinit.propagate_state(m.fs.IC_1_OUT)
     m.fs.air_compressor_s2.initialize()
     copy_port_values(source=m.fs.air_compressor_s2.outlet,
-                 destination=m.fs.intercooler_s2.inlet)
+                     destination=m.fs.intercooler_s2.inlet)
     # iinit.propagate_state(m.fs.STAGE_2_OUT)
     m.fs.intercooler_s2.initialize()
     copy_port_values(source=m.fs.intercooler_s2.outlet,
-                 destination=m.fs.ASU.inlet)
+                     destination=m.fs.ASU.inlet)
     # iinit.propagate_state(m.fs.TO_ASU)
-    m.fs.ASU.initialize(outlvl=idaeslog.DEBUG)
+    m.fs.ASU.initialize()
     copy_port_values(source=m.fs.ASU.O2_outlet,
-                 destination=m.fs.oxygen_preheater.tube_inlet)
+                     destination=m.fs.oxygen_preheater.tube_inlet)
     # iinit.propagate_state(m.fs.ba02)
     m.fs.oxygen_preheater.initialize()
     copy_port_values(source=m.fs.oxygen_preheater.tube_outlet,
-                 destination=m.fs.pre_oxycombustor_translator.inlet)
+                     destination=m.fs.pre_oxycombustor_translator.inlet)
     # iinit.propagate_state(m.fs.ba03)
     m.fs.pre_oxycombustor_translator.initialize()
     copy_port_values(source=m.fs.pre_oxycombustor_translator.outlet,
-                 destination=m.fs.cmb_mix.air)
+                     destination=m.fs.cmb_mix.air)
     # iinit.propagate_state(m.fs.cmb_mix_in)
 
     m.fs.ng_preheater.initialize()
     copy_port_values(source=m.fs.ng_preheater.tube_outlet,
-                 destination=m.fs.cmb_mix.ng)
+                     destination=m.fs.cmb_mix.ng)
     # iinit.propagate_state(m.fs.bng03)
     m.fs.cmb_mix.initialize()
     copy_port_values(source=m.fs.cmb_mix.outlet,
-                 destination=m.fs.cmb.inlet)
+                     destination=m.fs.cmb.inlet)
     # iinit.propagate_state(m.fs.bng04)
     m.fs.cmb.initialize()
     copy_port_values(source=m.fs.cmb.outlet,
-                 destination=m.fs.post_oxycombustor_translator.inlet)
+                     destination=m.fs.post_oxycombustor_translator.inlet)
     # iinit.propagate_state(m.fs.cmb_out)
     # residual_checker(m.fs.cmb)
 
     m.fs.post_oxycombustor_translator.initialize()
     copy_port_values(source=m.fs.post_oxycombustor_translator.outlet,
-                  destination=m.fs.air_preheater_2.shell_inlet)
+                     destination=m.fs.air_preheater_2.shell_inlet)
     # iinit.propagate_state(m.fs.fg01)
     m.fs.soec.initialize()
     iinit.propagate_state(m.fs.h01)
     iinit.propagate_state(m.fs.o01)
     m.fs.spltf1.initialize()
     iinit.propagate_state(m.fs.h02)
+    iinit.propagate_state(m.fs.hr01)
     m.fs.splta1.initialize()
     iinit.propagate_state(m.fs.o02)
 
     m.fs.aux_boiler_feed_pump.initialize()
     copy_port_values(source=m.fs.aux_boiler_feed_pump.outlet,
-                 destination=m.fs.bhx1.tube_inlet)
+                     destination=m.fs.bhx1.tube_inlet)
     m.fs.bhx1.initialize()
     copy_port_values(source=m.fs.bhx1.tube_outlet,
-                 destination=m.fs.bhx2.inlet)
+                     destination=m.fs.bhx2.inlet)
     # iinit.propagate_state(m.fs.s03)
     m.fs.bhx2.initialize()
     copy_port_values(source=m.fs.bhx2.outlet,
-                 destination=m.fs.main_steam_split.inlet)
+                     destination=m.fs.main_steam_split.inlet)
     # iinit.propagate_state(m.fs.s09)
-    
-    # m.fs.recover_split.initialize()
+
     m.fs.main_steam_split.initialize()
-
-    # iinit.propagate_state(m.fs.h02)
-    # iinit.propagate_state(m.fs.s05)
-    # iinit.propagate_state(m.fs.o02)
-    # iinit.propagate_state(m.fs.s04)
-
-    # iinit.propagate_state(m.fs.s06)
-    # iinit.propagate_state(m.fs.s07)
-
     iinit.propagate_state(m.fs.s10)
-    iinit.propagate_state(m.fs.hr01)
 
     m.fs.mxf1.initialize()
-    
+    iinit.propagate_state(m.fs.s12)
+
     m.fs.air_blower.initialize(outlvl=idaeslog.DEBUG)
     iinit.propagate_state(m.fs.a01)
     m.fs.air_preheater_1.initialize()
     iinit.propagate_state(m.fs.a02)
     m.fs.air_preheater_2.initialize()
     iinit.propagate_state(m.fs.a03)
-    iinit.propagate_state(m.fs.fg02)
+    iinit.propagate_state(m.fs.o03)
     m.fs.mxa1.initialize()
     iinit.propagate_state(m.fs.s13)
 
     # Unfix tear streams
-    # m.fs.bhx2.tube_inlet.unfix()
     m.fs.preheat_split.inlet.unfix()
 
     # Unfix some dof
@@ -934,13 +928,14 @@ def do_initialize(m, solver):
     m.fs.s12_expanded.deactivate()
     m.fs.s13_expanded.deactivate()
 
-    # # TODO - this seems to improve the convergence
-    # iscale.constraint_autoscale_large_jac(m)
+    # TODO - this seems to improve the convergence in some cases
+    iscale.constraint_autoscale_large_jac(m)
 
     solver.solve(m, tee=True,
-                   options={"max_iter":100},
-                  symbolic_solver_labels=True)
-  
+                 # options={"max_iter":100},
+                 symbolic_solver_labels=True
+                 )
+
     # residual_checker(m)
     # check_scaling(m)
 
@@ -980,27 +975,7 @@ def do_initialize(m, solver):
                   #         },
                   symbolic_solver_labels=True)
 
-    print(" ")
-    print("----------------------------------------------------------")
-    print(" Final solve to ensure square algebraic jacobian - change heat exchanger specs of bhx2 and bhx1")
 
-    # m.fs.bhx2.shell_outlet.temperature[0].unfix()
-    # m.fs.bhx2.area.fix(pyo.value(m.fs.bhx2.area))
-    
-    # m.fs.bhx1.tube_outlet.enth_mol[0].unfix()
-    # m.fs.bhx1.area.fix(pyo.value(m.fs.bhx1.area))
-    
-    solver.solve(m, tee=True, 
-                  # options={
-                  #     "max_iter":200,
-                  #     "tol":1e-6,
-                  #     "bound_push":1e-12,
-                  #     "linear_solver":"ma57"
-                  #         },
-                  symbolic_solver_labels=True)
-
-
-    
 def additional_scaling(m):
     for t, c in m.fs.oxygen_preheater.heat_transfer_equation.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
@@ -1057,7 +1032,6 @@ def additional_scaling(m):
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     for t, c in m.fs.post_oxycombustor_translator.post_oxycombustor_translator_P.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
-
     # for t, c in m.fs.air_compressor_s1.isentropic_energy_balance.items():
     #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     # for t, c in m.fs.air_compressor_s1.control_volume.enthalpy_balances.items():
@@ -1070,6 +1044,10 @@ def additional_scaling(m):
     #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     # for t, c in m.fs.intercooler_s2.control_volume.enthalpy_balances.items():
     #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
+
+
+    # for t, v in m.fs.aux_boiler_feed_pump.properties_out[t].enth_mol.items():
+    #     iscale.set_scaling_factor(m.fs.aux_boiler_feed_pump.properties_out[t].enth_mol, 1e3) 
 
     for t, c in m.fs.aux_boiler_feed_pump.eq_work.items():
         iscale.constraint_scaling_transform(c, 1e-10, overwrite=True)
