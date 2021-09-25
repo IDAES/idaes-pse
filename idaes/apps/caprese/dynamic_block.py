@@ -520,6 +520,7 @@ class _DynamicBlockData(_BlockData):
         was_fixed = ComponentMap() #I think we can delete this?
 
         # Cache "important" values to re-load after solve
+        # TODO: Really we should cache all variable values
         init_input = list(self.vectors.input[:, t0].value) \
                 if VC.INPUT in self.categories else []
         init_ics = list(ics_vector_var[:, t0].value) \
@@ -547,6 +548,7 @@ class _DynamicBlockData(_BlockData):
             for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
                 indexcon[t0].activate()
 
+        # TODO: Hard-coding the name of the objective here is not great.
         self.single_time_optimization_objective.activate()
 
         # Solve single-time point optimization problem
