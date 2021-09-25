@@ -74,6 +74,10 @@ class _ControllerBlockData(_DynamicBlockData):
         super(_ControllerBlockData, self)._construct()
         self.has_estimator = False
 
+    def solve_setpoint(self, solver, **kwargs):
+        self.solve_single_time_optimization(
+            solver, ic_type="measurement_var", load_setpoints=True, **kwargs
+        )
     # def solve_setpoint(self, solver, **kwargs):
     #     """ This method performs a "real time optimization-type"
     #     solve on the model, using only the variables and constraints
