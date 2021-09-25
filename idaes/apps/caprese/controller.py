@@ -208,9 +208,7 @@ class _ControllerBlockData(_DynamicBlockData):
                                    timepoint = self.time.first())                     
         else:
             raise RuntimeError("Declared type of initial conditions does not support."
-                               "Please use either 'measurement' or 'estimate'.")            
-        
-        
+                               "Please use either 'measurement' or 'estimate'.")
 
 
 class ControllerBlock(DynamicBlock):
