@@ -435,7 +435,7 @@ class _DynamicBlockData(_BlockData):
         self.sample_points = sample_points
         self.sample_point_indices = sample_indices
 
-    def add_single_time_optimization_objective(self, 
+    def add_single_time_optimization_objective(self,
             setpoint,
             weights,
             ):
@@ -470,8 +470,8 @@ class _DynamicBlockData(_BlockData):
             i, (var, sp) in enumerate(setpoint))
         self.single_time_optimization_objective = Objective(expr=obj_expr)
 
-    def solve_single_time_optimization(self, 
-                                       solver, 
+    def solve_single_time_optimization(self,
+                                       solver,
                                        ic_type = "differential_var",
                                        require_steady = True,
                                        load_setpoints = False,
