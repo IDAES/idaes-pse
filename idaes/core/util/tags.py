@@ -581,20 +581,6 @@ class ModelTagGroup(dict):
             self[name] = ModelTag(expr=expr, **kwargs)
 
     def table_heading(self, tags=None, units=True):
-<<<<<<< HEAD
-        if tags is None:
-            tag_list = list(self.keys())
-            indexes = [None] * len(tag_list)
-        else:
-            tag_list = [None] * len(tags)
-            indexes = [None] * len(tags)
-            for i, tag in enumerate(tags):
-                if not isinstance(tag, str):
-                    tag_list[i] = tag[0]
-                    indexes[i] = tag[1]
-                else:
-                    tag_list[i] = tag
-=======
         """Create a table heading with a given set of tags, for tabulating model
         results.
 
@@ -625,7 +611,6 @@ class ModelTagGroup(dict):
                     for k in self[tag].keys():
                         tag_list.append(tag)
                         indexes.append(k)
->>>>>>> b82e575aa39c9303643fa0416df266cd1f5cd7fc
 
         row = [None] * len(tag_list)
         for i, tag in enumerate(tag_list):
@@ -638,22 +623,6 @@ class ModelTagGroup(dict):
             else:
                 row[i] = name
         return row
-<<<<<<< HEAD
-
-    def table_row(self, tags=None, units=True, numeric=False):
-        if tags is None:
-            tag_list = list(self.keys())
-            indexes = [None] * len(tag_list)
-        else:
-            tag_list = [None] * len(tags)
-            indexes = [None] * len(tags)
-            for i, tag in enumerate(tags):
-                if not isinstance(tag, str):
-                    tag_list[i] = tag[0]
-                    indexes[i] = tag[1]
-                else:
-                    tag_list[i] = tag
-=======
 
     def table_row(self, tags=None, units=True, numeric=False):
         """Create a table row with a given set of tags, for tabulating model
@@ -689,7 +658,6 @@ class ModelTagGroup(dict):
                     for k in self[tag].keys():
                         tag_list.append(tag)
                         indexes.append(k)
->>>>>>> b82e575aa39c9303643fa0416df266cd1f5cd7fc
 
         row = [None] * len(tag_list)
         for i, tag in enumerate(tag_list):
