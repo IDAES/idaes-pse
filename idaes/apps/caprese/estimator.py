@@ -370,6 +370,13 @@ class _EstimatorBlockData(_DynamicBlockData):
     #         i, (var, sp) in enumerate(desired_ss))
     #     self.steadystate_objective = Objective(expr=obj_expr)
 
+    def solve_steady_state(self, solver, **kwargs):
+        self.solve_single_time_optimization(
+            solver,
+            ic_type="differential_var",
+            isMHE_block=True,
+            **kwargs,
+        )
     # def solve_steady_state(self, solver):
     #     '''
     #     This function solve for a steady state, which will be used to initialize
