@@ -548,16 +548,16 @@ class TestEstimatorBlock(object):
         estimator.mod.flow_in[:].set_value(3.0)
         initialize_t0(estimator.mod)
         
-        estimator.add_steady_state_objective(desiredss, weights)
+        estimator.add_single_time_optimization_objective(desiredss, weights)
 
-        assert hasattr(estimator, 'steadystate_objective')
+        assert hasattr(estimator, 'single_time_optimization_objective')
 
         pred_obj_expr = (2.0*(estimator.mod.flow_in[t0] - 3.0)**2)
-        obj_expr = estimator.steadystate_objective.expr
+        obj_expr = estimator.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
 
-        estimator.del_component(estimator.steadystate_objective)
+        estimator.del_component(estimator.single_time_optimization_objective)
 
         desiredss = [
                 (estimator.mod.flow_in[t0], 3.0),
@@ -567,12 +567,12 @@ class TestEstimatorBlock(object):
                 (estimator.mod.flow_in[t0], 1.0),
                 (estimator.mod.conc[t0,'A'], 5.0),
                 ]
-        estimator.add_steady_state_objective(desiredss, weights)
+        estimator.add_single_time_optimization_objective(desiredss, weights)
         pred_obj_expr = (
                 1.0*(estimator.mod.flow_in[t0] - 3.0)**2 + 
                 5.0*(estimator.mod.conc[t0,'A'] - 1.5)**2
                 )
-        obj_expr = estimator.steadystate_objective.expr
+        obj_expr = estimator.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
         
@@ -588,7 +588,7 @@ class TestEstimatorBlock(object):
         weights = [
                 (estimator.mod.flow_in[t0], 1.0),
                 ]
-        estimator.add_steady_state_objective(desiredss, weights)
+        estimator.add_single_time_optimization_objective(desiredss, weights)
         estimator.mod.flow_in[:].set_value(3.0)
         initialize_t0(estimator.mod)
 
