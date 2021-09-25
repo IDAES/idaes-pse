@@ -339,100 +339,10 @@ class _EstimatorBlockData(_DynamicBlockData):
             #Deactivate the original/undisturbed differential equs
             curr_difeq.deactivate() 
 
-    # def add_steady_state_objective(self, desired_ss, ss_weights):
-    #     '''
-    #     Add an objective function for solving a steady state, which is used to 
-    #     initialize past information (measurements, states, etc.)
-
-    #     Parameters
-    #     ----------
-    #     desired_ss : List of vardata, value tuples describing the
-    #                  desired steady stsates of these specified variables.
-    #     ss_weights : List of vardata, value tuples describing the
-    #                  weightss of these specified variables.
-    #     '''
-
-    #     vardata_map = self.vardata_map
-    #     for vardata, weight in ss_weights:
-    #         nmpc_var = vardata_map[vardata]
-    #         nmpc_var.weight = weight
-
-    #     weight_vector = []
-    #     for vardata, sp in desired_ss:
-    #         nmpc_var = vardata_map[vardata]
-    #         if nmpc_var.weight is None:
-    #             self.logger.warning('Weight not supplied for %s' % var.name)
-    #             nmpc_var.weight = 1.0
-    #         weight_vector.append(nmpc_var.weight)
-
-    #     obj_expr = sum(
-    #         weight_vector[i]*(var - sp)**2 for
-    #         i, (var, sp) in enumerate(desired_ss))
-    #     self.steadystate_objective = Objective(expr=obj_expr)
-
     def solve_steady_state(self, solver, **kwargs):
         self.solve_single_time_optimization(
-            solver,
-            ic_type="differential_var",
-            isMHE_block=True,
-            **kwargs,
+            solver, **kwargs
         )
-    # def solve_steady_state(self, solver):
-    #     '''
-    #     This function solve for a steady state, which will be used to initialize
-    #     past information.
-    #     '''
-
-    #     model = self.mod
-    #     time = self.time
-    #     t0 = time.first()
-
-    #     was_originally_active = ComponentMap([(comp, comp.active) for comp in 
-    #             model.component_data_objects((Constraint, Block))])
-    #     non_initial_time = list(time)[1:]
-    #     deactivated = deactivate_model_at(
-    #             model,
-    #             time,
-    #             non_initial_time,
-    #             allow_skip=True,
-    #             suppress_warnings=True,
-    #             )
-
-    #     self.vectors.differential[:, t0].unfix()
-    #     self.vectors.input[:, t0].unfix() #dof
-    #     self.vectors.derivative[:, t0].fix(0.)
-    #     # Solving for steady state doesn't need MHE block.
-    #     self.MHE_VARS_CONS_BLOCK.deactivate()
-    #     # Activate the original/undisturbed differential equations at t0
-    #     for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
-    #         indexcon[t0].activate()
-
-    #     self.steadystate_objective.activate()
-
-    #     dof = degrees_of_freedom(model)
-    #     # This should be True for solving a steady state.
-    #     assert dof == len(self.INPUT_SET)
-
-    #     results = solver.solve(self, tee=True)
-    #     if results.solver.termination_condition == TerminationCondition.optimal:
-    #         pass
-    #     else:
-    #         msg = 'Failed to solve for full steady state values'
-    #         raise RuntimeError(msg)
-
-    #     self.steadystate_objective.deactivate()
-
-    #     for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
-    #         indexcon[t0].deactivate()
-    #     self.MHE_VARS_CONS_BLOCK.activate()
-    #     self.vectors.derivative[:, t0].unfix()
-    #     self.vectors.input[:, t0].fix()
-    #     self.vectors.differential[:, t0].fix()
-
-    #     for t, complist in deactivated.items():
-    #         for comp in complist:
-    #             if was_originally_active[comp]:
-    #                 comp.activate()
 
     def initialize_actualmeasurements_at_t0(self):
         t0 = self.time.first()
