@@ -507,7 +507,7 @@ class _DynamicBlockData(_BlockData):
         time = self.time
         t0 = time.first()
 
-        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in
                 model.component_data_objects((Constraint, Block))])
         non_initial_time = list(time)[1:]
         deactivated = deactivate_model_at(
@@ -557,8 +557,8 @@ class _DynamicBlockData(_BlockData):
         # I can make any assertion about the number of degrees of freedom
         dof = degrees_of_freedom(model)
         #I think we should at least keep this check?
-        if require_steady:
-            assert dof == len(self.INPUT_SET)
+        #if require_steady:
+        #    assert dof == len(self.INPUT_SET)
         #else:
         #    assert dof == (len(self.INPUT_SET) +
         #            len(self.DIFFERENTIAL_SET))
