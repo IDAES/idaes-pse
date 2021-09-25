@@ -18,7 +18,7 @@ Author : Paul Akula
 
 # Import Pyomo libraries
 from pyomo.environ import Expression, Constraint, value, Var, units
-from pyomo.common.config import ConfigBlock, ConfigValue
+from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -43,6 +43,16 @@ class KettleReboilerData(UnitModelBlockData):
 
     # Configuration template for Phase specific  arguments
     _PhaseCONFIG = ConfigBlock()
+
+    CONFIG.declare("specify_heat_duty", ConfigValue(
+        default=True,
+        domain=Bool,
+        description="Indicates if reboiler duty is specified",
+        doc="""Indicates if the user specifies the reboiler duty or not
+       **default** - True.
+        **Valid values:** {
+        **True** - heat duty is specified,
+        **False** - heat duty is not specified}"""))
 
     CONFIG.declare("heat_duty", ConfigValue(
         default=430.61,
@@ -269,9 +279,10 @@ class KettleReboilerData(UnitModelBlockData):
             return blk.vapor_phase.properties_in[t].pressure ==\
                   blk.liquid_phase.properties_in[t].pressure
 
-        # fix heat duty
-        for t in self.flowsheet().time:
-            self.heat_duty[t].fix(self.config.heat_duty)
+        # fix heat duty if provided
+        if self.config.specify_heat_duty:
+            for t in self.flowsheet().time:
+                self.heat_duty[t].fix(self.config.heat_duty)
 
     def initialize(blk, liquid_state_args=None,
                    outlvl=idaeslog.NOTSET, solver=None, optarg=None):
@@ -351,4 +362,6 @@ class KettleReboilerData(UnitModelBlockData):
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high(
             "STEP 2 Complete: {}.".format(idaeslog.condition(res)))
+        if not blk.config.specify_heat_duty:
+            blk.heat_duty.unfix()
         init_log.info('INITIALIZATION COMPLETED')

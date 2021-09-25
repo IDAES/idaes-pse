@@ -126,10 +126,10 @@ class TestKettleReboiler(object):
         assert_units_equivalent(reb.fs.unit.vapor_outlet.flow_mol[0], units.mol/units.s)
         assert_units_equivalent(reb.fs.unit.heat_duty[0], units.kW)
 
-
     @pytest.mark.unit
     def test_dof(self, reb):
         assert degrees_of_freedom(reb) == 0
+
 
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
