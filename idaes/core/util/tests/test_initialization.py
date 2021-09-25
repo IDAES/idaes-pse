@@ -695,6 +695,13 @@ def test_propagate_state_indexed_fixed():
     assert m.b1.v1.fixed is False
     assert m.b2.v1.fixed is True
 
+    propagate_state(m.s1[1], overwrite_fixed=True)
+
+    # Check that values were propagated correctly
+    assert m.b2.v1.value == 10
+    assert m.b1.v1.fixed is False
+    assert m.b2.v1.fixed is True
+
     propagate_state(m.s1[2])
 
     # Check that values were propagated correctly
