@@ -434,7 +434,7 @@ class _DynamicBlockData(_BlockData):
         self.fe_per_sample = fe_per_sample_dict
         self.sample_points = sample_points
         self.sample_point_indices = sample_indices
-        
+
     def add_single_time_optimization_objective(self, 
             setpoint,
             weights,
@@ -469,7 +469,7 @@ class _DynamicBlockData(_BlockData):
             weight_vector[i]*(var - sp)**2 for
             i, (var, sp) in enumerate(setpoint))
         self.single_time_optimization_objective = Objective(expr=obj_expr)
-        
+
     def solve_single_time_optimization(self, 
                                        solver, 
                                        ic_type = "differential_var",
@@ -491,7 +491,7 @@ class _DynamicBlockData(_BlockData):
                             for the solve. Default is `True`.
 
         """
-        
+
         # I think if we re-define the measurements in the controller, we propbably 
         # don't need this if statement.
         if ic_type == "differential_var":
@@ -502,11 +502,11 @@ class _DynamicBlockData(_BlockData):
             ictype = VC.MEASUREMENT
         else:
             raise RuntimeError("Not valid type of initial condition.")
-            
+
         model = self.mod
         time = self.time
         t0 = time.first()
-        
+
         was_originally_active = ComponentMap([(comp, comp.active) for comp in 
                 model.component_data_objects((Constraint, Block))])
         non_initial_time = list(time)[1:]
@@ -540,7 +540,7 @@ class _DynamicBlockData(_BlockData):
         if VC.DERIVATIVE in self.categories:
             if require_steady == True:
                 self.vectors.derivative[:,t0].fix(0.)
-                
+
         if isMHE_block:
             self.MHE_VARS_CONS_BLOCK.deactivate()
             # Activate the original/undisturbed differential equations at t0
