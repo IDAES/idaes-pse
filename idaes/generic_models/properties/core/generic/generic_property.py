@@ -1248,8 +1248,8 @@ class _GenericStateBlock(StateBlock):
                 if blk[k].is_property_constructed("log_"+prop):
                     comp = getattr(blk[k], prop)
                     lcomp = getattr(blk[k], "log_"+prop)
-                    for k, v in lcomp.items():
-                        c = value(comp[k])
+                    for k2, v in lcomp.items():
+                        c = value(comp[k2])
                         if c == 0:
                             c = 1e-8
                         lc = log(c)
