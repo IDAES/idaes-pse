@@ -141,6 +141,13 @@ def add_properties(m):
     )
     m.fs.air_prop.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.air_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
+    m.fs.h2_compress_prop = GenericParameterBlock(
+        default=get_prop(components={"H2"}, phases=["Vap"], eos=EosType.PR)
+    )
+    m.fs.h2_compress_prop.set_default_scaling("mole_frac_comp", 1e2)
+    m.fs.h2_compress_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
+    # m.fs.h2_compress_prop.set_default_scaling("pressure", 1e-5)
+
     # m.fs.air_prop.set_default_scaling("flow_mol", 1)
     # m.fs.air_prop.set_default_scaling("flow_mol_phase", 1)
     # m.fs.air_prop.set_default_scaling("temperature", 1e-3)
@@ -664,25 +671,108 @@ def add_soec_inlet_mix(m):
         destination=m.fs.mxa1.air
     )
 
-    
+
+def add_h2_compressor(m):
+    ###########################################################################
+    #  Build unit operations
+    ###########################################################################
+    m.fs.hcmp_ic01 = gum.Heater(default=
+                                {"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp01 = gum.Compressor(default=
+                                 {"property_package": m.fs.h2_compress_prop,
+                                 "thermodynamic_assumption":
+                                     ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic02 = gum.Heater(default=
+                                {"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp02 = gum.Compressor(default=
+                                 {"property_package": m.fs.h2_compress_prop,
+                                 "thermodynamic_assumption":
+                                     ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic03 = gum.Heater(default=
+                                {"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp03 = gum.Compressor(default=
+                                 {"property_package": m.fs.h2_compress_prop,
+                                 "thermodynamic_assumption":
+                                     ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic04 = gum.Heater(default=
+                                {"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp04 = gum.Compressor(default=
+                                 {"property_package": m.fs.h2_compress_prop,
+                                 "thermodynamic_assumption":
+                                     ThermodynamicAssumption.isentropic})
+
+    ###########################################################################
+    #  Specify performance variables of unit operations
+    ###########################################################################
+    @m.fs.bhx1.Expression(m.fs.time, {"H2"})
+    def waterless_mole_frac_expr(b, t, i):
+        return 1
+
+    @m.fs.bhx1.Expression(m.fs.time)
+    def waterless_flow_expr(b, t):
+        return (
+            m.fs.bhx1._flow_mol_shell_outlet_ref[t]
+            * m.fs.bhx1._mole_frac_comp_shell_outlet_ref[t, "H2"]
+        )
+
+    m.fs.bhx1.shell_outlet_drop_water = Port(
+        rule=lambda b: {
+            "flow_mol": m.fs.bhx1.waterless_flow_expr,
+            "pressure": m.fs.bhx1._pressure_shell_outlet_ref,
+            "temperature": m.fs.bhx1._temperature_shell_outlet_ref,
+            "mole_frac_comp": m.fs.bhx1.waterless_mole_frac_expr,
+        }
+    )
+
+    m.fs.hcmp_ic01.outlet.temperature.fix(320)
+    m.fs.hcmp01.outlet.pressure.fix(40e5)
+    m.fs.hcmp01.efficiency_isentropic.fix(0.9)
+
+    m.fs.hcmp_ic02.outlet.temperature.fix(320)
+    m.fs.hcmp02.outlet.pressure.fix(80e5)
+    m.fs.hcmp02.efficiency_isentropic.fix(0.9)
+
+    m.fs.hcmp_ic03.outlet.temperature.fix(320)
+    m.fs.hcmp03.outlet.pressure.fix(160e5)
+    m.fs.hcmp03.efficiency_isentropic.fix(0.9)
+
+    m.fs.hcmp_ic04.outlet.temperature.fix(320)
+    m.fs.hcmp04.outlet.pressure.fix(320e5)
+    m.fs.hcmp04.efficiency_isentropic.fix(0.9)
+
+    ###########################################################################
+    #  Add stream connections
+    ###########################################################################
+    m.fs.h04 = Arc(
+        source=m.fs.bhx1.shell_outlet_drop_water,
+        destination=m.fs.hcmp_ic01.inlet
+    )
+    m.fs.h05 = Arc(source=m.fs.hcmp_ic01.outlet,
+                   destination=m.fs.hcmp01.inlet)
+    m.fs.h06 = Arc(source=m.fs.hcmp01.outlet,
+                   destination=m.fs.hcmp_ic02.inlet)
+    m.fs.h07 = Arc(source=m.fs.hcmp_ic02.outlet,
+                   destination=m.fs.hcmp02.inlet)
+    m.fs.h08 = Arc(source=m.fs.hcmp02.outlet,
+                   destination=m.fs.hcmp_ic03.inlet)
+    m.fs.h09 = Arc(source=m.fs.hcmp_ic03.outlet,
+                   destination=m.fs.hcmp03.inlet)
+    m.fs.h10 = Arc(source=m.fs.hcmp03.outlet,
+                   destination=m.fs.hcmp_ic04.inlet)
+    m.fs.h11 = Arc(source=m.fs.hcmp_ic04.outlet,
+                   destination=m.fs.hcmp04.inlet)
+
+
 def add_more_hx_connections(m):
-    # m.fs.fg02 = Arc(
-    #     source=m.fs.air_preheater_2.shell_outlet,
-    #     destination=m.fs.preheat_split.inlet
-    #     # destination=m.fs.bhx1.shell_inlet
-    #     )
-    # m.fs.fg03 = Arc(
-    #     source=m.fs.bhx1.shell_outlet,
-    #     destination=m.fs.preheat_split.inlet
-    # )
     m.fs.h02 = Arc(source=m.fs.spltf1.out,
                    destination=m.fs.bhx1.shell_inlet)
     m.fs.o02 = Arc(source=m.fs.splta1.out,
-                    destination=m.fs.air_preheater_1.shell_inlet)
+                   destination=m.fs.air_preheater_1.shell_inlet)
     m.fs.o03 = Arc(
         source=m.fs.air_preheater_1.shell_outlet,
         destination=m.fs.preheat_split.inlet
         )
+
 
 def add_constraints(m):
     m.fs.soec_heat_duty = pyo.Var(m.fs.time, units=pyo.units.W)
@@ -725,7 +815,42 @@ def add_constraints(m):
     @m.fs.Constraint(m.fs.time)
     def combustor_heat(b, t):
         return 1e-6*m.fs.cmb.heat_duty[t] == 1e-6* -1 *(m.fs.bhx2.heat_duty[t])
-       
+
+    @m.fs.Expression(m.fs.time)
+    def hydrogen_product_rate_expr(b, t):
+        return (
+            b.bhx1.shell_outlet.flow_mol[t]
+            * b.bhx1.shell_outlet.mole_frac_comp[t, "H2"]
+        )
+
+    m.fs.hydrogen_product_rate = pyo.Var(m.fs.time, units=pyo.units.mol / pyo.units.s)
+
+    @m.fs.Constraint(m.fs.time)
+    def hydrogen_product_rate_eqn(b, t):
+        return b.hydrogen_product_rate[t] == b.hydrogen_product_rate_expr[t]
+
+    @m.fs.Expression(m.fs.time)
+    def soec_power_per_h2(b, t):
+        return (
+            b.soec.total_power[t]
+            / b.hydrogen_product_rate_expr[t]
+            / (0.002 * pyo.units.kg / pyo.units.mol)
+        )
+
+    @m.fs.Expression(m.fs.time)
+    def h2_compressor_power(b, t):
+        return (
+            m.fs.hcmp01.control_volume.work[t]
+            + m.fs.hcmp02.control_volume.work[t]
+            + m.fs.hcmp03.control_volume.work[t]
+            + m.fs.hcmp04.control_volume.work[t]
+        )
+
+    @m.fs.Expression(m.fs.time)
+    def h2_product_rate_mass(b, t):
+        return m.fs.hydrogen_product_rate[t] * 0.002 * pyo.units.kg / pyo.units.mol
+
+
 def set_guess(m):
     # Set guess for tear streams (preheat_split.inlet and bhx2.tube_inlet)
     comp_guess = { # air_prop is used as assumption is all fuel is combusted
@@ -904,7 +1029,7 @@ def do_initialize(m, solver):
     m.fs.mxf1.initialize()
     iinit.propagate_state(m.fs.s12)
 
-    m.fs.air_blower.initialize(outlvl=idaeslog.DEBUG)
+    m.fs.air_blower.initialize()
     iinit.propagate_state(m.fs.a01)
     m.fs.air_preheater_1.initialize()
     iinit.propagate_state(m.fs.a02)
@@ -913,6 +1038,32 @@ def do_initialize(m, solver):
     iinit.propagate_state(m.fs.o03)
     m.fs.mxa1.initialize()
     iinit.propagate_state(m.fs.s13)
+
+    copy_port_values(source=m.fs.bhx1.shell_outlet,
+                     destination=m.fs.hcmp_ic01.inlet)    
+    # iinit.propagate_state(m.fs.h04)
+    m.fs.hcmp_ic01.initialize()
+    iinit.propagate_state(m.fs.h05)
+    m.fs.hcmp01.initialize()
+    iinit.propagate_state(m.fs.h06)
+    m.fs.hcmp_ic02.initialize()
+    iinit.propagate_state(m.fs.h07)
+    m.fs.hcmp02.initialize()
+    iinit.propagate_state(m.fs.h08)
+    m.fs.hcmp_ic03.initialize()
+    iinit.propagate_state(m.fs.h09)
+    m.fs.hcmp03.initialize(outlvl=idaeslog.DEBUG)
+    
+    residual_checker(m.fs.hcmp03)
+    check_scaling(m.fs.hcmp03)
+    
+    # return m
+    # import sys
+    # sys.exit('stop')
+    iinit.propagate_state(m.fs.h10)
+    m.fs.hcmp_ic04.initialize()
+    iinit.propagate_state(m.fs.h11)
+    m.fs.hcmp04.initialize(outlvl=idaeslog.DEBUG)
 
     # Unfix tear streams
     m.fs.preheat_split.inlet.unfix()
@@ -1032,6 +1183,10 @@ def additional_scaling(m):
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     for t, c in m.fs.post_oxycombustor_translator.post_oxycombustor_translator_P.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+        
+    for t, c in m.fs.hcmp03.isentropic_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-6, overwrite=True)        
+        # hcmp03.isentropic_pressure[0.0]
     # for t, c in m.fs.air_compressor_s1.isentropic_energy_balance.items():
     #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     # for t, c in m.fs.air_compressor_s1.control_volume.enthalpy_balances.items():
@@ -1091,9 +1246,9 @@ def get_solver():
     # bound push result in much longer solve times, so set it low.
     idaes.cfg.ipopt["options"]["halt_on_ampl_error"] = 'yes'
     idaes.cfg.ipopt["options"]["bound_push"] = 1e-12
-    idaes.cfg.ipopt["options"]["linear_solver"] = "ma27"
+    idaes.cfg.ipopt["options"]["linear_solver"] = "ma57"
     idaes.cfg.ipopt["options"]["max_iter"] = 200
-    #idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-1
+    # idaes.cfg.ipopt["options"]["ma27_pivtol"] = 1e-1
     # idaes.cfg.ipopt["options"]["ma57_pivtol"] = 1e-1
     # idaes.cfg.ipopt["options"]["ma57_pivtolmax"] = 1e-1
     return pyo.SolverFactory("ipopt")
@@ -1363,6 +1518,7 @@ def get_model(m=None, name="SOEC Module"):
     # add_recovery_hx(m)
     add_more_hx_connections(m)
     add_soec_inlet_mix(m)
+    add_h2_compressor(m)
     add_constraints(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
