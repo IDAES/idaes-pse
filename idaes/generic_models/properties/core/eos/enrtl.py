@@ -555,17 +555,17 @@ class ENRTL(Ideal):
             ln_gamma = getattr(b, p+"_log_gamma")
         else:
             ln_gamma = getattr(b, p+"_log_gamma_appr")
-        return log(b.mole_frac_phase_comp[p, j]) + ln_gamma[p, j]
+        return log(b.mole_frac_phase_comp[p, j]) + ln_gamma[j]
 
     @staticmethod
     def log_act_phase_comp_true(b, p, j):
         ln_gamma = getattr(b, p+"_log_gamma")
-        return log(b.mole_frac_phase_comp_true[p, j]) + ln_gamma[p, j]
+        return log(b.mole_frac_phase_comp_true[p, j]) + ln_gamma[j]
 
     @staticmethod
     def log_act_phase_comp_appr(b, p, j):
         ln_gamma = getattr(b, p+"_log_gamma_appr")
-        return log(b.mole_frac_phase_comp_apparent[p, j]) + ln_gamma[p, j]
+        return log(b.mole_frac_phase_comp_apparent[p, j]) + ln_gamma[j]
 
     @staticmethod
     def act_coeff_phase_comp(b, p, j):
