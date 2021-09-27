@@ -81,7 +81,7 @@ def add_variable_values_to_dataframe(
     Parameters
     ----------
     dataframe : pandas dataframe that we want to append the data to.
-    variables : list of variables of interest.
+    variables : list of variables of interest
     iteration : current iteration.
     time_subset : time indices of interset in the variables.
     rename_map : dictionary or componentmap that maps the variable to a 
@@ -89,15 +89,21 @@ def add_variable_values_to_dataframe(
     initial_time : initial time for this data saving process.
     time_map : map the time in time_subset to real time points
     '''
-    
+
     if rename_map is None:
         rename_map = ComponentMap()
-    
+
     if initial_time is None:
         if len(dataframe.index) == 0:
             initial_time = 0.0
         else:
             initial_time = dataframe.index[-1]
+
+    if (len(dataframe.index) != 0 and time_subset is not None
+            and time_subset[0] == 0 and time_map is None):
+        # The data frame has data in it that we would override with
+        # the provided time subset.
+        raise RuntimeError()
 
     df_map = OrderedDict()
     hash_set = set()
@@ -108,7 +114,9 @@ def add_variable_values_to_dataframe(
             hash_set.add(set_hash)
 
             if time_subset is None:
-                time_subset = idx_set
+                time_subset = list(idx_set)
+                if time_subset[0] == 0 and len(dataframe.index) != 0:
+                    time_subset = time_subset[1:]
                 
             df_map["iteration"] = len(time_subset)*[iteration]
 
@@ -132,9 +140,12 @@ def add_variable_values_to_dataframe(
         time_points = [time_map[t] for t in time_subset]
     else:
         time_points = [initial_time + t for t in time_subset]
-        
+        # If we aren't using initial_time, we should avoid doing floating
+        # point arithmetic.
+        #time_points = [t for t in time_subset]
+
     df = pd.DataFrame(df_map, index=time_points)
-    
+
     return dataframe.append(df)
 
 
@@ -142,13 +153,13 @@ def add_setpoint_column_into_dataframe(dataframe, variables):
     '''
     This function adds additional columns to save the setpoint of states for NMPC 
     right after the dataframe is constructed.
-    
+
     parameters
     -------------
     dataframe: constructed dataframe
     variables: list of variables whose setpoints will be saved in the dataframe
     '''
-    
+
     for var in variables:
         column_name = str(ComponentUID(var.referent)) + "_setpoint"
         dataframe[column_name] = []
@@ -161,7 +172,7 @@ def add_variable_setpoints_to_dataframe(dataframe,
     '''
     Save the setpoints for states of interest in nmpc's dataframe.
     '''
-    
+
     for var in variables:
         column_name = str(ComponentUID(var.referent)) + "_setpoint"
         # Get column index for "iat", which is a method to locate the position 
@@ -217,7 +228,6 @@ class PlantDataManager(PLANT_PlotLibrary):
                                                          plant_states_to_save, #no inputs
                                                          iteration = 0,
                                                          time_subset = [self.plantblock.time.first()])
-        
 
     def save_plant_data(self, iteration):
         #skip time.first()
@@ -273,10 +283,9 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
         self.user_given_vars_map_nmpcvar = ComponentMap((var, vardata_map[var[t0]]) 
                                                         for var in self.controller_user_interested_states)
 
-  
     def get_controller_dataframe(self):
         return self.controller_df
-    
+
     def save_controller_data(self, iteration):
         #skip time.first()
         time = self.controllerblock.time
@@ -292,7 +301,7 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
                                                                  self.states_need_setpoints,
                                                                  time_subset,
                                                                  self.user_given_vars_map_nmpcvar,)
-        
+
 class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
     def __init__(self, 
                  plantblock, 
@@ -315,10 +324,10 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
         self.estimator_vars_of_interest = self.estimator_user_interested_states + \
                                                 estimatorblock.differential_vars
         self.estimator_df = empty_dataframe_from_variables(self.estimator_vars_of_interest)
-        
+
     def get_estimator_dataframe(self):
         return self.estimator_df
-    
+
     def save_estimator_data(self, iteration):
         time = self.estimatorblock.time
         t_last = time.last()
@@ -329,7 +338,7 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
                                                              iteration,
                                                              time_subset = [t_last],
                                                              time_map = time_map,)
-        
+
 class DynamicDataManager(ControllerDataManager, EstimatorDataManager):
     def __init__(self,
                  plantblock,
@@ -337,7 +346,7 @@ class DynamicDataManager(ControllerDataManager, EstimatorDataManager):
                  estimatorblock,
                  user_interested_states = None,
                  user_interested_inputs = None,):
-        
+
         # Create plant dataframe
         super(EstimatorDataManager, self).__init__(plantblock,
                                                    user_interested_states,
