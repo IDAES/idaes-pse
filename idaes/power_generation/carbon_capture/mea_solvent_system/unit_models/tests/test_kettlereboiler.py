@@ -187,6 +187,6 @@ class TestKettleReboiler(object):
 
         assert abs(value(reb.fs.unit.heat_duty[0]  -
                 (reb.fs.unit.heat_latent[0] + reb.fs.unit.heat_sens[0])*
-                 reb.fs.unit.liquid_inlet.flow_mol[0]) <= 1e-5)
+                 reb.fs.unit.liquid_inlet.flow_mol[0]*1e-3) <= 1e-5)
 
 
