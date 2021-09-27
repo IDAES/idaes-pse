@@ -493,8 +493,6 @@ class _DynamicBlockData(_BlockData):
         ctypes for all time points.
         """
         
-        if ActualMeasurementVar in self.collect_ctypes():
-            ctype += (ActualMeasurementVar,)
         # There should be negligible overhead to initializing
         # in many small loops as opposed to one big loop here.
         for i in range(len(self.sample_points)):
@@ -621,9 +619,10 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    def inject_inputs(self, inputs):
+    def inject_inputs(self, inputs, time_subset = None, quick_option = None):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
+
         if VC.INPUT in self.categories:
             for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
                 # Would like:
@@ -631,7 +630,11 @@ class _DynamicBlockData(_BlockData):
                 # This is an example of setting a matrix from a vector.
                 # Could even aspire towards:
                 # self.vectors.input[:,t0:t1].fix(inputs)
-                var[:].fix(val)
+                if time_subset is None:
+                    var[:].fix(val)
+                else:
+                    for tind in time_subset:
+                        var[tind].fix(val)
         else:
             raise RuntimeError(
                     "Trying to set input values but no input "

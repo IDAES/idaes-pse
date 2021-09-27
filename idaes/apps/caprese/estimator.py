@@ -428,11 +428,11 @@ class _EstimatorBlockData(_DynamicBlockData):
                     comp.activate()
 
     def initialize_actualmeasurements_at_t0(self):
-        t0 = self.sample_points[0]
+        t0 = self.time.first()
         for ind in self.MEASUREMENT_SET:
             actmea_block = self.ACTUALMEASUREMENT_BLOCK[ind]
             mea_block = self.MEASUREMENT_BLOCK[ind]
-            actmea_block.var[0].set_value(mea_block.var[0].value)  
+            actmea_block.var[t0].set_value(mea_block.var[t0].value)  
 
     def initialize_past_info_with_steady_state(self, 
                                                desired_ss, 
@@ -454,7 +454,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         self.solve_steady_state(solver)
 
         self.initialize_actualmeasurements_at_t0()
-        self.initialize_to_initial_conditions(ctype=(DiffVar, AlgVar, DerivVar, InputVar,))
+        self.initialize_to_initial_conditions(
+            ctype=(DiffVar, AlgVar, DerivVar, InputVar, ActualMeasurementVar)
+                )
 
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,
@@ -475,15 +477,16 @@ class _EstimatorBlockData(_DynamicBlockData):
         givenform: The form of given lists. It should be either "weight" (default)
                     or "variance".
         '''
+        t0 = self.time.first()
 
         if givenform not in ["weight", "variance"]:
             raise RuntimeError("Wrong argument 'givenform' is given. "
                    "Please assign either 'weight' or 'variance'.")
 
-        diff_id_list = [id(var[0]) for var in self.differential_vars]
+        diff_id_set = {id(var[t0]) for var in self.differential_vars}
         for var, val in model_disturbance_weights:  
             #Check whether the given variable is classified under diffvar
-            if id(var) not in diff_id_list:
+            if id(var) not in diff_id_set:
                 raise RuntimeError(var.name, 
                                    " is not a differential variable.")
 
@@ -492,10 +495,10 @@ class _EstimatorBlockData(_DynamicBlockData):
             elif givenform == "variance":
                 self.diffvar_map_moddis[var].weight = 1./val
 
-        mea_id_list = [id(var[0]) for var in self.measurement_vars]
+        mea_id_set = {id(var[t0]) for var in self.measurement_vars}
         for var, val in measurement_noise_weights:
             #Check whether the given variable is declared as a measurement before
-            if id(var) not in mea_id_list:
+            if id(var) not in mea_id_set:
                 raise RuntimeError(var.name, 
                                    " is not declared as a measurement.")
 
@@ -551,14 +554,13 @@ class _EstimatorBlockData(_DynamicBlockData):
             assert dof == correct_dof  
 
     def load_inputs_for_MHE(self, inputs):
-        last_sampt = self.sample_points[-1]
-        secondlast_sampt = self.sample_points[-2]
-        time_list = [tp for tp in self.time if tp > secondlast_sampt 
-                                                 and tp <= last_sampt]
-
-        for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
-            for tind in time_list:
-                var[tind].set_value(val)
+        sample_points = self.sample_points
+        # Accessing these entries is valid because sample_points
+        # should always have length of at least two.
+        t1 = sample_points[-2]
+        t2 = sample_points[-1]
+        time_subset = [t for t in self.time if t > t1 and t <= t2]
+        self.inject_inputs(inputs, time_subset=time_subset)
 
     def generate_estimates_at_time(self, t):
         return [val for val in self.vectors.differential[:, t].value]
