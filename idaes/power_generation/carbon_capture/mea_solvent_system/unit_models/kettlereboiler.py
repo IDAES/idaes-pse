@@ -91,7 +91,7 @@ class KettleReboilerData(UnitModelBlockData):
 
         # Build Control Volume for liquid Phase
         self.liquid_phase = ControlVolume0DBlock(default={
-            "dynamic": self.config.dynamic,
+            "dynamic": False,
             "property_package": self.config.liquid_side.property_package,
             "property_package_args": self.config.liquid_side.property_package_args})
 
@@ -108,7 +108,7 @@ class KettleReboilerData(UnitModelBlockData):
         # ======================================================================
         # Build Control Volume for vapor Phase
         self.vapor_phase = ControlVolume0DBlock(default={
-            "dynamic": self.config.dynamic,
+            "dynamic": False,
             "property_package": self.config.vapor_side.property_package,
             "property_package_args": self.config.vapor_side.property_package_args})
 
