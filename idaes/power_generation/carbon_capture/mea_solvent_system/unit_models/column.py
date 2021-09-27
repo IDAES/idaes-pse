@@ -904,21 +904,21 @@ documentation for supported schemes,
             rule=rule_conc_mol_comp_interface_CO2,
             doc='Concentration of CO2 at the interface ]')
 
-        def rule_Hatta(blk, t, x):
-            if x == self.liquid_phase.length_domain.last():
-                return Expression.Skip
-            else:
-                return (
-                    (blk.liquid_phase.properties[t, x].k2_rxn *
-                     blk.liquid_phase.properties[
-                         t, x].conc_mol_comp_true['MEA'] *
-                     blk.liquid_phase.properties[t, x].diffus['CO2'])**0.5 /
-                    blk.k_l_CO2[t, x])
+        # def rule_Hatta(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return Expression.Skip
+        #     else:
+        #         return (
+        #             (blk.liquid_phase.properties[t, x].k2_rxn *
+        #              blk.liquid_phase.properties[
+        #                  t, x].conc_mol_comp_true['MEA'] *
+        #              blk.liquid_phase.properties[t, x].diffus['CO2'])**0.5 /
+        #             blk.k_l_CO2[t, x])
 
-        self.Hatta = Expression(self.flowsheet().time,
-                                self.liquid_phase.length_domain,
-                                rule=rule_Hatta,
-                                doc='Hatta number')
+        # self.Hatta = Expression(self.flowsheet().time,
+        #                         self.liquid_phase.length_domain,
+        #                         rule=rule_Hatta,
+        #                         doc='Hatta number')
 
         def rule_yb_CO2(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
@@ -935,21 +935,26 @@ documentation for supported schemes,
             doc='Dimensionless concentration of CO2, driving force term where '
             'absortion implies yb_CO2 < 1 and desorption impies yb_CO2 > 1')
 
-        def rule_instantaneous_E(blk, t, x):
-            if x == self.liquid_phase.length_domain.last():
-                return Expression.Skip
-            else:
-                return (
-                    1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
-                         blk.liquid_phase.properties[
-                             t, x].conc_mol_comp_true['MEA']) /
-                    (2 * blk.liquid_phase.properties[t, x].diffus['CO2'] *
-                     blk.conc_mol_comp_CO2_eq[t, x]))
+        # def rule_instantaneous_E(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return Expression.Skip
+        #     else:
+        #         return (
+        #             1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
+        #                  blk.liquid_phase.properties[
+        #                      t, x].conc_mol_comp_true['MEA']) /
+        #             (2 * blk.liquid_phase.properties[t, x].diffus['CO2'] *
+        #              blk.conc_mol_comp_CO2_eq[t, x]))
 
-        self.instant_E = Expression(self.flowsheet().time,
-                                    self.liquid_phase.length_domain,
-                                    rule=rule_instantaneous_E,
-                                    doc='Instantaneous Enhancement factor')
+        # self.instant_E = Expression(self.flowsheet().time,
+        #                             self.liquid_phase.length_domain,
+        #                             rule=rule_instantaneous_E,
+        #                             doc='Instantaneous Enhancement factor')
+        
+        self.instant_E = Param(self.flowsheet().time,
+                               self.liquid_phase.length_domain,
+                               initialize=100,
+                               doc='Instantaneous Enhancement factor')
 
         def rule_yi_MEACOO(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
@@ -999,38 +1004,38 @@ documentation for supported schemes,
                 return blk.yeq_CO2[t, x] * blk.yi_MEA[t, x]**4 == \
                     blk.yb_CO2[t, x] * blk.yi_MEAH[t, x] * blk.yi_MEACOO[t, x]
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc='Enhancement factor model Eqn 1')
-        def E1_eqn(blk, t, x):
-            if x == self.liquid_phase.length_domain.last():
-                return blk.enhancement_factor[t, x] == 1
-            else:
-                return ((blk.enhancement_factor[t, x] - 1) *
-                        (1 - blk.yb_CO2[t, x]) ==
-                        (blk.instant_E[t, x] - 1) *
-                        (1 - blk.yi_MEA[t, x]**2))
+        # @self.Constraint(self.flowsheet().time,
+        #                  self.liquid_phase.length_domain,
+        #                  doc='Enhancement factor model Eqn 1')
+        # def E1_eqn(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return blk.enhancement_factor[t, x] == 1
+        #     else:
+        #         return ((blk.enhancement_factor[t, x] - 1) *
+        #                 (1 - blk.yb_CO2[t, x]) ==
+        #                 (blk.instant_E[t, x] - 1) *
+        #                 (1 - blk.yi_MEA[t, x]**2))
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc='Enhancement factor model Eqn 2')
-        def E2_eqn(blk, t, x):
-            if x == self.liquid_phase.length_domain.last():
-                return blk.yi_MEA[t, x] == 0
-            else:
-                return (blk.enhancement_factor[t, x] *
-                        (1 - blk.yb_CO2[t, x]) ==
-                        blk.Hatta[t, x] * blk.yi_MEA[t, x] *
-                        (1 - blk.yeq_CO2[t, x]))
+        # @self.Constraint(self.flowsheet().time,
+        #                  self.liquid_phase.length_domain,
+        #                  doc='Enhancement factor model Eqn 2')
+        # def E2_eqn(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return blk.yi_MEA[t, x] == 0
+        #     else:
+        #         return (blk.enhancement_factor[t, x] *
+        #                 (1 - blk.yb_CO2[t, x]) ==
+        #                 blk.Hatta[t, x] * blk.yi_MEA[t, x] *
+        #                 (1 - blk.yeq_CO2[t, x]))
 
-        @self.Constraint(self.flowsheet().time,
-                         self.liquid_phase.length_domain,
-                         doc='Enhancement factor lower bound ')
-        def E3_eqn(blk, t, x):
-            if x == self.liquid_phase.length_domain.last():
-                return Constraint.Skip
-            else:
-                return 1 - blk.enhancement_factor[t, x] <= 0.0
+        # @self.Constraint(self.flowsheet().time,
+        #                  self.liquid_phase.length_domain,
+        #                  doc='Enhancement factor lower bound ')
+        # def E3_eqn(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return Constraint.Skip
+        #     else:
+        #         return 1 - blk.enhancement_factor[t, x] <= 0.0
 
         if self.config.dynamic:
             self.fix_initial_condition()
