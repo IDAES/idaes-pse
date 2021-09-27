@@ -557,11 +557,11 @@ class _DynamicBlockData(_BlockData):
         # I can make any assertion about the number of degrees of freedom
         dof = degrees_of_freedom(model)
         #I think we should at least keep this check?
-        #if require_steady:
-        #    assert dof == len(self.INPUT_SET)
-        #else:
-        #    assert dof == (len(self.INPUT_SET) +
-        #            len(self.DIFFERENTIAL_SET))
+        if require_steady:
+            assert dof == len(self.INPUT_SET)
+        else:
+            assert dof == (len(self.INPUT_SET) +
+                    len(self.DIFFERENTIAL_SET))
         results = solver.solve(self, tee=True)
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
