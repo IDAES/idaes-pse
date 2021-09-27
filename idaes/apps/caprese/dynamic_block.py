@@ -799,7 +799,7 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    def inject_inputs(self, inputs, time_subset = None, quick_option = None):
+    def inject_inputs(self, inputs, time_subset = None):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
 
