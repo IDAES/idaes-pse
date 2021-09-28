@@ -351,7 +351,10 @@ documentation for supported schemes,
         # ======================================================================
         # Aliases for  Sets
         vap_comp = self.config.vapor_side.property_package.component_list
-        liq_comp = self.config.liquid_side.property_package.component_list
+        liq_comp = self.config.liquid_side.property_package.solvent_set | \
+            self.config.liquid_side.property_package.solute_set
+        liq_comp_diffus = \
+            self.config.liquid_side.property_package.component_list_diffus_apparent
         vapor_phase_list_ref = \
             self.config.vapor_side.property_package.phase_list
         liquid_phase_list_ref = \
@@ -661,11 +664,7 @@ documentation for supported schemes,
 
         # vapor mass transfer coeff. for diffusing components [mol/m2.s.Pa]
         def rule_mass_transfer_coeff_vap(blk, t, x, j):
-            if x == self.vapor_phase.length_domain.first():
-                return Expression.Skip
-            elif j == "MEA":
-                return Expression.Skip
-            else:
+            if j in liq_comp_diffus:
                 return (
                     1/(R_ref * blk.vapor_phase.properties[t, x].temperature) *
                     blk.Cv_ref / (blk.holdup_vap[t, x])**0.5 *
@@ -677,6 +676,10 @@ documentation for supported schemes,
                       blk.vapor_phase.properties[t, x].dens_mass) /
                      (blk.a_ref *
                       blk.vapor_phase.properties[t, x].visc_d))**(3/4))
+            elif x == self.vapor_phase.length_domain.first():
+                return Expression.Skip
+            else:
+                return Expression.Skip
 
         self.k_v = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
@@ -746,17 +749,17 @@ documentation for supported schemes,
 
         # mass transfer of  diffusing components
         def rule_mass_transfer(blk, t, x, j):
-            if j == "MEA":
-                return blk.interphase_mass_transfer[t, x, j] == 0.0
-            elif x == self.vapor_phase.length_domain.first():
-                return blk.interphase_mass_transfer[t, x, j] == 0.0
-            else:
+            if j in liq_comp_diffus:
                 return blk.interphase_mass_transfer[t, x, j] == (
                     blk.k_v[t, x, j] *
                     blk.area_interfacial[t, x] * blk.area_column *
                     (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
                      blk.vapor_phase.properties[t, x].pressure -
                      blk.pressure_equil[t, x, j])) * blk._homotopy_par_m
+            elif x == self.vapor_phase.length_domain.first():
+                return blk.interphase_mass_transfer[t, x, j] == 0.0
+            else:
+                return blk.interphase_mass_transfer[t, x, j] == 0.0
 
         self.mass_transfer = Constraint(self.flowsheet().time,
                                         self.vapor_phase.length_domain,
@@ -776,12 +779,12 @@ documentation for supported schemes,
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
                 zf = self.vapor_phase.length_domain[self.zi[x].value + 1]
-                if j == 'MEA':
-                    return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
-                        0.0
-                else:
+                if j in liq_comp_diffus:
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         blk.interphase_mass_transfer[t, zf, j]
+                else:
+                    return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
+                        0.0
 
         # vapor side
         @self.Constraint(self.flowsheet().time,
