@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 
-__author__ = "John Eslick"
+__author__ = "Chinedu Okoli", "John Eslick"
 
 import os
 import csv
@@ -39,6 +39,8 @@ from idaes.power_generation.unit_models.helm import (
 )
 import idaes.generic_models.unit_models as gum  # generic unit models
 import idaes.power_generation.unit_models as pum  # power unit models
+from idaes.power_generation.flowsheets.sofc.surrogates.cpu import CPU
+
 import idaes.core.util as iutil
 import idaes.core.util.tables as tables
 import idaes.core.util.scaling as iscale
@@ -48,9 +50,12 @@ from idaes.core.util.model_statistics import degrees_of_freedom, variables_near_
 
 import idaes.core.plugins
 from idaes.power_generation.properties.natural_gas_PR import get_prop, get_rxn, EosType
+from idaes.power_generation.flowsheets.sofc.properties.CO2_H2O_Ideal_VLE_scaled import \
+    configuration as CO2_H2O_VLE_config
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 from idaes.power_generation.properties import FlueGasParameterBlock
 from idaes.generic_models.properties import iapws95
+
 
 from idaes.generic_models.unit_models.heat_exchanger import (
     delta_temperature_underwood_callback,
@@ -146,14 +151,10 @@ def add_properties(m):
     )
     m.fs.h2_compress_prop.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.h2_compress_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
-    # m.fs.h2_compress_prop.set_default_scaling("pressure", 1e-5)
 
-    # m.fs.air_prop.set_default_scaling("flow_mol", 1)
-    # m.fs.air_prop.set_default_scaling("flow_mol_phase", 1)
-    # m.fs.air_prop.set_default_scaling("temperature", 1e-3)
-    # m.fs.air_prop.set_default_scaling("pressure", 1e-2)
-    # m.fs.air_prop.set_default_scaling("enth_mol_phase", 1e-4)
-    # m.fs.air_prop.set_default_scaling("entr_mol_phase", 1e-2)
+    m.fs.CO2_H2O_VLE = GenericParameterBlock(default=CO2_H2O_VLE_config)
+    m.fs.CO2_H2O_VLE.set_default_scaling("mole_frac_comp", 1e2)
+    m.fs.CO2_H2O_VLE.set_default_scaling("mole_frac_phase_comp", 1e2)
 
 
 def add_asu(m):
@@ -269,11 +270,11 @@ def add_preheater(m):
     ###########################################################################
     #  Add stream connections
     ########################################################################### 
-    m.fs.fg04 = Arc(
+    m.fs.a04 = Arc(
         source=m.fs.preheat_split.ng,
         destination=m.fs.ng_preheater.shell_inlet
     )
-    m.fs.fg05 = Arc(
+    m.fs.a05 = Arc(
         source=m.fs.preheat_split.air,
         destination=m.fs.oxygen_preheater.shell_inlet
     )
@@ -763,6 +764,111 @@ def add_h2_compressor(m):
                    destination=m.fs.hcmp04.inlet)
 
 
+def add_hrsg_and_cpu(m):
+    ###########################################################################
+    #  Build unit operations
+    ###########################################################################
+    m.fs.soec_air_HRSG_1 = gum.Heater(
+        default={"has_pressure_change": False,
+                 "property_package": m.fs.air_prop})
+    m.fs.soec_air_HRSG_2 = gum.Heater(
+        default={"has_pressure_change": False,
+                 "property_package": m.fs.air_prop})
+    m.fs.fluegas_HRSG = gum.Heater(
+        default={"has_pressure_change": False,
+                 "property_package": m.fs.air_prop})
+
+    m.fs.CPU_translator = gum.Translator(
+        default={"outlet_state_defined": True,
+                 "inlet_property_package": m.fs.air_prop,
+                 "outlet_property_package": m.fs.CO2_H2O_VLE})
+    m.fs.condenser = gum.Heater(
+        default={"has_pressure_change": False,
+                 "property_package": m.fs.CO2_H2O_VLE})
+
+    m.fs.flash = gum.Flash(
+        default={"has_heat_transfer": True,
+                 "has_pressure_change": True,
+                 "property_package": m.fs.CO2_H2O_VLE})
+    m.fs.CPU = CPU()
+
+    ###########################################################################
+    #  Specify performance variables of unit operations
+    ###########################################################################
+    m.fs.soec_air_HRSG_1.outlet.temperature.fix(405)  # K
+
+    m.fs.soec_air_HRSG_2.outlet.temperature.fix(405)  # K
+
+    m.fs.fluegas_HRSG.outlet.temperature.fix(405)  # K
+
+    m.fs.condenser.outlet.temperature.fix(310.9)  # K (100 F)
+
+    m.fs.flash.control_volume.properties_out[0].temperature.fix(310.9)  # K
+    m.fs.flash.control_volume.properties_out[0].pressure.fix(1013529)  # Pa
+
+    # CPU translator constraints
+    @m.fs.CPU_translator.Constraint(m.fs.time)
+    def CPU_translator_F(b, t):
+        return b.inlet.flow_mol[t] == b.outlet.flow_mol[t]
+
+    @m.fs.CPU_translator.Constraint(m.fs.time)
+    def CPU_translator_T(b, t):
+        return b.inlet.temperature[t] == b.outlet.temperature[t]
+
+    @m.fs.CPU_translator.Constraint(m.fs.time)
+    def CPU_translator_P(b, t):
+        return b.inlet.pressure[t] == b.outlet.pressure[t]
+
+    @m.fs.CPU_translator.Constraint(m.fs.time, m.fs.CO2_H2O_VLE.component_list)
+    def CPU_translator_x(b, t, j):
+        return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
+    for j in m.fs.air_prop.component_list:
+        if j not in m.fs.CO2_H2O_VLE.component_list:
+            m.fs.pre_oxycombustor_translator.outlet.mole_frac_comp[0, j].fix(0)
+    # CPU constraints
+    # TODO - these CPU constraints replace the flash.vap.outlet arc (8 DOFs)
+    # converting from kmol/s to mol/s
+    # @m.fs.Constraint(m.fs.time)
+    # def CPU_inlet_F(fs, t):
+    #     return fs.CPU.inlet.flow_mol[t] == fs.flash.vap_outlet.flow_mol[t]
+
+    # @m.fs.Constraint(m.fs.time)
+    # def CPU_inlet_T(fs, t):
+    #     return (fs.CPU.inlet.temperature[t] ==
+    #             fs.flash.vap_outlet.temperature[t])
+
+    # @m.fs.Constraint(m.fs.time)
+    # def CPU_inlet_P(fs, t):
+    #     return fs.CPU.inlet.pressure[t] == fs.flash.vap_outlet.pressure[t]
+
+    # @m.fs.Constraint(m.fs.time, m.fs.CO2_H2O_VLE.component_list)
+    # def CPU_inlet_x(fs, t, j):
+    #     return (fs.CPU.inlet.mole_frac_comp[t, j] ==
+    #             fs.flash.vap_outlet.mole_frac_comp[t, j])
+
+    ###########################################################################
+    #  Add stream connections
+    ###########################################################################
+    m.fs.a06 = Arc(
+        source=m.fs.oxygen_preheater.shell_outlet,
+        destination=m.fs.soec_air_HRSG_1.inlet
+    )
+    m.fs.a07 = Arc(
+        source=m.fs.ng_preheater.shell_outlet,
+        destination=m.fs.soec_air_HRSG_2.inlet
+    )
+    m.fs.fg02 = Arc(source=m.fs.air_preheater_2.shell_outlet,
+                    destination=m.fs.fluegas_HRSG.inlet)
+    m.fs.fg03 = Arc(source=m.fs.fluegas_HRSG.outlet,
+                    destination=m.fs.CPU_translator.inlet)
+    m.fs.fg04 = Arc(source=m.fs.CPU_translator.outlet,
+                    destination=m.fs.condenser.inlet)
+    m.fs.fg05 = Arc(source=m.fs.condenser.outlet,
+                    destination=m.fs.flash.inlet)
+    m.fs.fg06 = Arc(source=m.fs.flash.vap_outlet,
+                    destination=m.fs.CPU.inlet)
+
+
 def add_more_hx_connections(m):
     m.fs.h02 = Arc(source=m.fs.spltf1.out,
                    destination=m.fs.bhx1.shell_inlet)
@@ -774,7 +880,7 @@ def add_more_hx_connections(m):
         )
 
 
-def add_constraints(m):
+def add_design_constraints(m):
     m.fs.soec_heat_duty = pyo.Var(m.fs.time, units=pyo.units.W)
     @m.fs.Constraint(m.fs.time)
     def heat_duty_soec_zero_eqn(b, t):
@@ -814,8 +920,9 @@ def add_constraints(m):
     # TODO - add constraint for cmb Q to in-bed heat exchanger (produces steam)
     @m.fs.Constraint(m.fs.time)
     def combustor_heat(b, t):
-        return 1e-6*m.fs.cmb.heat_duty[t] == 1e-6* -1 *(m.fs.bhx2.heat_duty[t])
+        return m.fs.cmb.heat_duty[t] == -1 *(m.fs.bhx2.heat_duty[t])
 
+def add_results_constraints(m):
     @m.fs.Expression(m.fs.time)
     def hydrogen_product_rate_expr(b, t):
         return (
@@ -945,15 +1052,15 @@ def set_inputs(m):
     m.fs.soec.ac.flow_mol[:, 0].fix(1e-5)
 
 
-def do_initialize(m, solver):
+def initialize_plant(m, solver):
     # TODO - update copy_port_values to propagate_state
     m.fs.preheat_split.initialize()
     copy_port_values(source=m.fs.preheat_split.air,
                      destination=m.fs.oxygen_preheater.shell_inlet)
     copy_port_values(source=m.fs.preheat_split.ng,
                      destination=m.fs.ng_preheater.shell_inlet)
-    # iinit.propagate_state(m.fs.fg04)
-    # iinit.propagate_state(m.fs.fg05)
+    # iinit.propagate_state(m.fs.a04)
+    # iinit.propagate_state(m.fs.a05)
 
     m.fs.air_compressor_s1.initialize()
     copy_port_values(source=m.fs.air_compressor_s1.outlet,
@@ -1039,31 +1146,10 @@ def do_initialize(m, solver):
     m.fs.mxa1.initialize()
     iinit.propagate_state(m.fs.s13)
 
-    copy_port_values(source=m.fs.bhx1.shell_outlet,
-                     destination=m.fs.hcmp_ic01.inlet)    
+    # copy_port_values(source=m.fs.bhx1.shell_outlet,
+    #                  destination=m.fs.hcmp_ic01.inlet)    
     # iinit.propagate_state(m.fs.h04)
-    m.fs.hcmp_ic01.initialize()
-    iinit.propagate_state(m.fs.h05)
-    m.fs.hcmp01.initialize()
-    iinit.propagate_state(m.fs.h06)
-    m.fs.hcmp_ic02.initialize()
-    iinit.propagate_state(m.fs.h07)
-    m.fs.hcmp02.initialize()
-    iinit.propagate_state(m.fs.h08)
-    m.fs.hcmp_ic03.initialize()
-    iinit.propagate_state(m.fs.h09)
-    m.fs.hcmp03.initialize(outlvl=idaeslog.DEBUG)
-    
-    residual_checker(m.fs.hcmp03)
-    check_scaling(m.fs.hcmp03)
-    
-    # return m
-    # import sys
-    # sys.exit('stop')
-    iinit.propagate_state(m.fs.h10)
-    m.fs.hcmp_ic04.initialize()
-    iinit.propagate_state(m.fs.h11)
-    m.fs.hcmp04.initialize(outlvl=idaeslog.DEBUG)
+
 
     # Unfix tear streams
     m.fs.preheat_split.inlet.unfix()
@@ -1079,13 +1165,13 @@ def do_initialize(m, solver):
     m.fs.s12_expanded.deactivate()
     m.fs.s13_expanded.deactivate()
 
-    # TODO - this seems to improve the convergence in some cases
-    iscale.constraint_autoscale_large_jac(m)
+    # # TODO - this seems to improve the convergence in some cases
+    # iscale.constraint_autoscale_large_jac(m)
 
-    solver.solve(m, tee=True,
-                 # options={"max_iter":100},
-                 symbolic_solver_labels=True
-                 )
+    # solver.solve(m, tee=True,
+    #              # options={"max_iter":100},
+    #              symbolic_solver_labels=True
+    #              )
 
     # residual_checker(m)
     # check_scaling(m)
@@ -1117,6 +1203,64 @@ def do_initialize(m, solver):
     m.fs.aux_boiler_feed_pump.inlet.flow_mol.unfix()  # Unfix soec.fc.flow_mol if aux_boiler_feed_pump.inlet.flow_mol is fixed
     m.fs.air_blower.inlet.flow_mol.unfix()  # Unfix soec.ac.flow_mol if mxa1.air.flow_mol is fixed
 
+    solver.solve(m, tee=True, 
+                   options={
+                       "max_iter":200,
+                       "tol":1e-7,
+                       "bound_push":1e-12,
+                       "linear_solver":"ma27"
+                           },
+                  symbolic_solver_labels=True)
+
+
+def initialize_bop(m, solver):
+    copy_port_values(source=m.fs.bhx1.shell_outlet,
+                     destination=m.fs.hcmp_ic01.inlet) 
+    m.fs.hcmp_ic01.initialize()
+    iinit.propagate_state(m.fs.h05)
+    m.fs.hcmp01.initialize()
+    iinit.propagate_state(m.fs.h06)
+    m.fs.hcmp_ic02.initialize()
+    iinit.propagate_state(m.fs.h07)
+    m.fs.hcmp02.initialize()
+    iinit.propagate_state(m.fs.h08)
+    m.fs.hcmp_ic03.initialize()
+    iinit.propagate_state(m.fs.h09)
+    m.fs.hcmp03.initialize(outlvl=idaeslog.DEBUG)
+    iinit.propagate_state(m.fs.h10)
+    m.fs.hcmp_ic04.initialize()
+    iinit.propagate_state(m.fs.h11)
+    m.fs.hcmp04.initialize(outlvl=idaeslog.DEBUG)
+
+
+    iinit.propagate_state(m.fs.a06)
+    m.fs.soec_air_HRSG_1.initialize()
+    iinit.propagate_state(m.fs.a07)
+    m.fs.soec_air_HRSG_2.initialize()
+    iinit.propagate_state(m.fs.fg02)
+    m.fs.fluegas_HRSG.initialize()
+    iinit.propagate_state(m.fs.fg03)
+    m.fs.CPU_translator.initialize()
+
+    # print('dof = ', degrees_of_freedom(m.fs.CPU_translator))
+    # residual_checker(m.fs.CPU_translator)
+    # m.fs.CPU_translator.inlet.display()
+    # m.fs.CPU_translator.outlet.display()
+    # import sys
+    # sys.exit('stop')
+
+    iinit.propagate_state(m.fs.fg04)
+    m.fs.condenser.initialize()
+    iinit.propagate_state(m.fs.fg05)
+    m.fs.flash.initialize()
+    iinit.propagate_state(m.fs.fg06)
+    m.fs.CPU.initialize()
+    
+    # check_scaling(m)
+
+    # print('dof = ',degrees_of_freedom(m))
+    # import sys
+    # sys.exit('stop')
     solver.solve(m, tee=True, 
                   # options={
                   #     "max_iter":200,
@@ -1184,9 +1328,8 @@ def additional_scaling(m):
     for t, c in m.fs.post_oxycombustor_translator.post_oxycombustor_translator_P.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
         
-    for t, c in m.fs.hcmp03.isentropic_pressure.items():
-        iscale.constraint_scaling_transform(c, 1e-6, overwrite=True)        
-        # hcmp03.isentropic_pressure[0.0]
+
+    # hcmp03.isentropic_pressure[0.0]
     # for t, c in m.fs.air_compressor_s1.isentropic_energy_balance.items():
     #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     # for t, c in m.fs.air_compressor_s1.control_volume.enthalpy_balances.items():
@@ -1238,6 +1381,22 @@ def additional_scaling(m):
     # fs.cmb.control_volume.rate_reaction_generation[0.0,Vap,O2] -- 3343.5218620351034 -- 1
     # fs.cmb.control_volume.rate_reaction_extent[0.0,ch4_cmb] -- 1529.6407142774844 -- None
 
+def additional_scaling_2(m):
+    iscale.set_scaling_factor(m.fs.soec_air_HRSG_1.control_volume.heat, 1e-5)
+    iscale.set_scaling_factor(m.fs.soec_air_HRSG_2.control_volume.heat, 1e-5)        
+    iscale.set_scaling_factor(m.fs.fluegas_HRSG.control_volume.heat, 1e-5)
+    iscale.set_scaling_factor(m.fs.condenser.control_volume.heat, 1e-4)
+    iscale.set_scaling_factor(m.fs.flash.control_volume.heat, 1e-4)
+
+    for t, c in m.fs.hcmp03.isentropic_pressure.items():
+        iscale.constraint_scaling_transform(c, 1e-6, overwrite=True)
+
+    for t, c in m.fs.condenser.control_volume.enthalpy_balances.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for t, c in m.fs.CPU_translator.CPU_translator_F.items():
+        iscale.constraint_scaling_transform(c, 1e1, overwrite=True)
+    for t, c in m.fs.CPU_translator.CPU_translator_P.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
 def get_solver():
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
@@ -1369,7 +1528,7 @@ def tag_for_pfd_and_tables(m):
             m.fs,
             descend_into=False,
             additional={
-                "fg06":m.fs.ng_preheater.shell_outlet,
+                # "fg06":m.fs.ng_preheater.shell_outlet,
                 "fg07":m.fs.oxygen_preheater.shell_outlet,
                 "s01":m.fs.aux_boiler_feed_pump.inlet,
                 # "h03":m.fs.hxh2.shell_outlet,
@@ -1518,8 +1677,8 @@ def get_model(m=None, name="SOEC Module"):
     # add_recovery_hx(m)
     add_more_hx_connections(m)
     add_soec_inlet_mix(m)
-    add_h2_compressor(m)
-    add_constraints(m)
+
+    add_design_constraints(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
     tag_inputs_opt_vars(m)
@@ -1527,20 +1686,20 @@ def get_model(m=None, name="SOEC Module"):
     set_guess(m)
     set_inputs(m)
     solver = get_solver()
-    # print('dof = ', degrees_of_freedom(m))
-    # import sys
-    # sys.exit('stop')
+
     additional_scaling(m)
     iscale.calculate_scaling_factors(m)
     # iscale.scale_arc_constraints(m)
-    # print(iscale.get_scaling_factor(m.fs.aux_boiler_feed_pump.eq_work[0]))
-    # print(pyo.value(m.fs.aux_boiler_feed_pump.eq_work[0]))
 
-    # import sys
-    # sys.exit('stop')
-    # iscale.constraint_autoscale_large_jac(m)
-    # m.strip_bounds()  # TODO - what is this method currently called?
-    do_initialize(m, solver)
+    initialize_plant(m, solver)
+    add_h2_compressor(m)
+    add_hrsg_and_cpu(m)
+    expand_arcs = pyo.TransformationFactory("network.expand_arcs")
+    expand_arcs.apply_to(m)
+    additional_scaling_2(m)
+    iscale.calculate_scaling_factors(m)
+    initialize_bop(m, solver)
+    add_results_constraints(m)    
 
     display_input_tags(m)
     return m
@@ -1691,8 +1850,8 @@ if __name__ == "__main__":
     # write_pfd_results(m, "soec_init.svg")
     print('dof = ', degrees_of_freedom(m))
     check_heat_exchanger_DT(m)
-    residual_checker(m)
-    check_scaling(m)
+    # residual_checker(m)
+    # check_scaling(m)
     # generator=variables_above_bounds_generator(m)
     # generator2=variables_near_bounds_generator(m, tol=1e-6)
            
