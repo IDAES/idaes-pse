@@ -705,7 +705,7 @@ documentation for supported schemes,
             if x == self.vapor_phase.length_domain.first():
                 return Expression.Skip
             else:
-                zb = self.vapor_phase.length_domain[self.zi[x].value - 1]
+                zb = self.vapor_phase.length_domain.at(self.zi[x].value - 1)
                 return (blk.enhancement_factor[t, zb] *
                         blk.k_l_CO2[t, zb] /
                         blk.k_v[t, x, 'CO2'])
@@ -726,7 +726,7 @@ documentation for supported schemes,
             if x == self.vapor_phase.length_domain.first():
                 return blk.pressure_equil[t, x, j] == 0.0
             else:
-                zb = self.vapor_phase.length_domain[self.zi[x].value - 1]
+                zb = self.vapor_phase.length_domain.at(self.zi[x].value - 1)
                 lprops = blk.liquid_phase.properties[t, zb]
                 henry = lprops.params.get_component(j).config.henry_component
                 # if j == "CO2":
@@ -775,7 +775,7 @@ documentation for supported schemes,
             if x == self.liquid_phase.length_domain.last():
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
-                zf = self.vapor_phase.length_domain[self.zi[x].value + 1]
+                zf = self.vapor_phase.length_domain.at(self.zi[x].value + 1)
                 if j == 'MEA':
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         0.0
@@ -848,7 +848,7 @@ documentation for supported schemes,
             if x == self.vapor_phase.length_domain.first():
                 return blk.heat_vap[t, x] == 0
             else:
-                zb = self.vapor_phase.length_domain[value(self.zi[x]) - 1]
+                zb = self.vapor_phase.length_domain.at(value(self.zi[x]) - 1)
                 return blk.heat_vap[t, x] == blk.h_v_Ack[t, x] * \
                     (blk.liquid_phase.properties[t, zb].temperature -
                      blk.vapor_phase.properties[t, x].temperature) * \
@@ -862,7 +862,7 @@ documentation for supported schemes,
             if x == self.liquid_phase.length_domain.last():
                 return blk.heat_liq[t, x] == 0
             else:
-                zf = self.vapor_phase.length_domain[value(self.zi[x]) + 1]
+                zf = self.vapor_phase.length_domain.at(value(self.zi[x]) + 1)
                 return blk.heat_liq[t, x] == blk.heat_vap[t, zf] + \
                     (blk.liquid_phase.properties[t, x].habs *
                      blk.interphase_mass_transfer[t, zf, 'CO2'] -
@@ -894,7 +894,7 @@ documentation for supported schemes,
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
-                zf = self.liquid_phase.length_domain[self.zi[x].value + 1]
+                zf = self.liquid_phase.length_domain.at(self.zi[x].value + 1)
                 return blk.pressure_equil[t, zf, 'CO2'] /\
                     blk.liquid_phase.properties[t, x].henry_N2O_analogy
 
