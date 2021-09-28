@@ -421,6 +421,8 @@ def get_model():
     m.fs.cap_addtional_co2.fix()
     m.fs.cap_specific_compression_power = pyo.Var(initialize=0.25e6, units=pyo.units.J/pyo.units.kg)
     m.fs.cap_specific_compression_power.fix()
+    m.fs.cap_additional_reboiler_duty = pyo.Var(m.fs.time, initialize=0.0, units=pyo.units.W)
+    m.fs.cap_additional_reboiler_duty.fix()
 
 
     @m.fs.Expression(m.fs.config.time)
@@ -489,13 +491,9 @@ def get_model():
 
     @m.fs.Expression(m.fs.config.time)
     def reboiler_duty_expr(b, t): #scale to flue gas flow
-        if not hasattr(m.fs, "cap_addtional_co2"):
-            return -m.fs.cap_specific_reboiler_duty * \
-                (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol)
-        else:
-            return -m.fs.cap_specific_reboiler_duty * \
-                (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol
-                 + m.fs.cap_addtional_co2[t])
+        return -m.fs.cap_specific_reboiler_duty * \
+            (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol
+             + m.fs.cap_addtional_co2[t]) + m.fs.cap_additional_reboiler_duty[t]
 
     print("Control steam to maintain temp")
     #m.fs.steam_turbine.throttle_valve[1].deltaP[0].unfix()
@@ -612,8 +610,7 @@ def tabulated_output_dict(m, add=[]):
         ("Steam Turbine Power (MW)", -m.fs.steam_turbine.power[0]/1e6),
         ("LHV Efficiency (%)", m.fs.lhv_efficiency[0]*100),
         ("Capture Reboiler Duty (MW)", m.fs.reboiler_duty_expr[0]/1e6),
-        ("Total Plant Cost ($/hr)", m.fs.costing.total_TPC/365/24*1e6),
-        ("Fixed O&M Cost ($/hr)", m.fs.costing.total_fixed_OM_cost/365/24*1e6),
+        ("Additional CO2 (kg/s)", m.fs.cap_addtional_co2[0]),
         ("Variable O&M Cost ($/hr)", m.fs.costing.total_variable_OM_cost[0]*(-m.fs.net_power[0]/1e6)),
     ])
     for a in add:
