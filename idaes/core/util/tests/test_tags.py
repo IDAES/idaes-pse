@@ -390,8 +390,6 @@ def test_tabulate_runs(model):
     assert row[1] == pytest.approx(2.000)
     assert row[2] == pytest.approx(1.000)
 
-<<<<<<< HEAD
-=======
     g["w"][1, "a"].set(1*pyo.units.g)
     g["w"][1, "b"].set(2*pyo.units.g)
     g["w"][2, "a"].set(3*pyo.units.g)
@@ -417,7 +415,6 @@ def test_tabulate_runs(model):
     assert row[5] == "6.000 g"
     assert row[6] == "1.000 s"
 
->>>>>>> b82e575aa39c9303643fa0416df266cd1f5cd7fc
 
 @pytest.mark.unit
 def test_doc_example_and_bound(model):
