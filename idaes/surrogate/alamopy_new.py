@@ -982,7 +982,16 @@ class AlamoObject(SurrogateBase):
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
 
     def to_json(self, stream):
+        """
+        Method to serialize surrogate object data in json form and write to a
+        stream.
 
+        Args:
+            stream - output stream for json string
+
+        Retruns:
+            stream
+        """
         json.dump({"surrogate": self._surrogate,
                    "input_labels": self._input_labels,
                    "output_labels": self._output_labels,
@@ -992,6 +1001,13 @@ class AlamoObject(SurrogateBase):
         return stream
 
     def from_json(self, js):
+        """
+        Method to populate surrogate model attribtues based on data stored in
+        a json string.
+
+        Args:
+            js - string with json representation of surrogate object
+        """
         d = json.loads(js)
 
         self._surrogate = d["surrogate"]
@@ -1004,6 +1020,13 @@ class AlamoObject(SurrogateBase):
             self._input_bounds[k] = tuple(v)
 
     def save(self, filename, overwrite=False):
+        """
+        Method to save surrogate object data to file in json format.
+
+        Args:
+            filename - path of destination file
+            overwrite - wheterh to overwrite existing files (default = False)
+        """
         if overwrite:
             arg = "w"
         else:
@@ -1015,6 +1038,17 @@ class AlamoObject(SurrogateBase):
 
     @staticmethod
     def load(filename):
+        """
+        Static method to create an AlamoObject from contents of a json file.
+
+        Useage: surrogate = AlamoObject.load(filename)
+
+        Args:
+            filename - path of json file to load
+
+        Returns:
+            AlamoObject with data loaded from json file
+        """
         with open(filename, "r") as f:
             js = f.read()
         f.close()
