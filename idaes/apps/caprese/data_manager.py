@@ -72,7 +72,6 @@ def add_variable_values_to_dataframe(
         iteration,
         time_subset=None,
         rename_map=None,
-        initial_time=None,
         time_map=None,
         ):
     '''
@@ -86,18 +85,16 @@ def add_variable_values_to_dataframe(
     time_subset : time indices of interset in the variables.
     rename_map : dictionary or componentmap that maps the variable to a 
                     specific name string.
-    initial_time : initial time for this data saving process.
     time_map : map the time in time_subset to real time points
     '''
 
     if rename_map is None:
         rename_map = ComponentMap()
 
-    if initial_time is None:
-        if len(dataframe.index) == 0:
-            initial_time = 0.0
-        else:
-            initial_time = dataframe.index[-1]
+    if len(dataframe.index) == 0:
+        initial_time = 0.0
+    else:
+        initial_time = dataframe.index[-1]
 
     if (len(dataframe.index) != 0 and time_subset is not None
             and time_subset[0] == 0 and time_map is None):
