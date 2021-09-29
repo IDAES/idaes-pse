@@ -490,14 +490,6 @@ documentation for supported schemes,
                                       domain=NonNegativeReals,
                                       initialize=160,
                                       doc='Enhancement factor')
-
-        # self.yi_MEA = Var(self.flowsheet().time,
-        #                   self.liquid_phase.length_domain,
-        #                   domain=NonNegativeReals,
-        #                   initialize=0.5,
-        #                   units=None,
-        #                   doc='''Dimensionless concentration of MEA
-        #                             at interface ''')
         
         self.yi_solvent = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
