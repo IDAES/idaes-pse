@@ -149,45 +149,51 @@ def add_variable_values_to_dataframe(
     return dataframe.append(df)
 
 
-def add_setpoint_column_into_dataframe(dataframe, variables):
-    '''
-    This function adds additional columns to save the setpoint of states for NMPC 
-    right after the dataframe is constructed.
+# def add_setpoint_column_into_dataframe(dataframe, variables):
+#     '''
+#     This function adds additional columns to save the setpoint of states for NMPC 
+#     right after the dataframe is constructed.
 
-    parameters
-    -------------
-    dataframe: constructed dataframe
-    variables: list of variables whose setpoints will be saved in the dataframe
-    '''
+#     parameters
+#     -------------
+#     dataframe: constructed dataframe
+#     variables: list of variables whose setpoints will be saved in the dataframe
+#     '''
 
-    for var in variables:
-        column_name = str(ComponentUID(var.referent)) + "_setpoint"
-        dataframe[column_name] = []
-    return dataframe
+#     for var in variables:
+#         column_name = str(ComponentUID(var.referent)) + "_setpoint"
+#         dataframe[column_name] = []
+#     return dataframe
 
 def add_variable_setpoints_to_dataframe(dataframe, 
                                         variables, 
+                                        iteration,
                                         time_subset, 
                                         map_for_user_given_vars = None):
     '''
     Save the setpoints for states of interest in nmpc's dataframe.
     '''
+    df_map = OrderedDict()
+    df_map["iteration"] = len(time_subset)*[iteration]
 
     for var in variables:
-        column_name = str(ComponentUID(var.referent)) + "_setpoint"
-        # Get column index for "iat", which is a method to locate the position 
-        # in a pandas dataframe and is used later.
-        column_ind = dataframe.columns.get_loc(column_name)
-        start_row_ind = len(dataframe.index) - len(time_subset)
-        for pt in range(len(time_subset)):
-            row_ind = start_row_ind + pt
-            if var in map_for_user_given_vars:
-                # User given variables are not nmpc_var, so they don't have setpoint attribute.
-                # User a componentmap to get corresponding nmpc_var.
-                dataframe.iat[row_ind, column_ind] = map_for_user_given_vars[var].setpoint
-            else:
-                dataframe.iat[row_ind, column_ind] = var.setpoint
-    return dataframe
+        column_name = str(ComponentUID(var.referent))
+        if var in map_for_user_given_vars:
+            # User given variables are not nmpc_var, so they don't have setpoint attribute.
+            # User a componentmap to get corresponding nmpc_var.            
+            df_map[column_name] = len(time_subset)* \
+                                    [map_for_user_given_vars[var].setpoint]
+        else:
+            df_map[column_name] = len(time_subset)*[var.setpoint]
+
+    if len(dataframe.index) == 0:
+        initial_time = 0.0
+    else:
+        initial_time = dataframe.index[-1]
+    time_points = [initial_time + t for t in time_subset]
+    df = pd.DataFrame(df_map, index=time_points)         
+
+    return dataframe.append(df)
         
 
 class PlantDataManager(object):
@@ -261,13 +267,13 @@ class ControllerDataManager(object):
         
         
         self.controller_vars_of_interest = self.controller_user_interested_inputs + \
-                                                controllerblock.input_vars   
+                                                    controllerblock.input_vars   
         self.controller_df = empty_dataframe_from_variables(self.controller_vars_of_interest)
         
         self.states_need_setpoints = self.controller_user_interested_states + \
-                                        controllerblock.differential_vars
-        self.controller_df = add_setpoint_column_into_dataframe(self.controller_df, 
-                                                                self.states_need_setpoints)
+                                            controllerblock.differential_vars
+
+        self.setpoint_df = empty_dataframe_from_variables(self.states_need_setpoints)
         
         # Important!!!
         # User given variables are not nmpc_var, so they don't have setpoint attribute.
@@ -279,6 +285,9 @@ class ControllerDataManager(object):
 
     def get_controller_dataframe(self):
         return self.controller_df
+    
+    def get_setpoint_dataframe(self):
+        return self.setpoint_df
 
     def save_controller_data(self, iteration):
         #skip time.first()
@@ -291,10 +300,11 @@ class ControllerDataManager(object):
                                                               iteration,
                                                               time_subset = time_subset,)
 
-        self.controller_df = add_variable_setpoints_to_dataframe(self.controller_df,
-                                                                 self.states_need_setpoints,
-                                                                 time_subset,
-                                                                 self.user_given_vars_map_nmpcvar,)
+        self.setpoint_df = add_variable_setpoints_to_dataframe(self.setpoint_df,
+                                                               self.states_need_setpoints,
+                                                               iteration,
+                                                               time_subset,
+                                                               self.user_given_vars_map_nmpcvar,)
 
 class EstimatorDataManager(object):
     def __init__(self, 
