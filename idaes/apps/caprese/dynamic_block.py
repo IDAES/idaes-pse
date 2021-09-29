@@ -434,8 +434,8 @@ class _DynamicBlockData(_BlockData):
         self.fe_per_sample = fe_per_sample_dict
         self.sample_points = sample_points
         self.sample_point_indices = sample_indices
-        
-    def add_single_time_optimization_objective(self, 
+
+    def add_single_time_optimization_objective(self,
             setpoint,
             weights,
             ):
@@ -469,9 +469,9 @@ class _DynamicBlockData(_BlockData):
             weight_vector[i]*(var - sp)**2 for
             i, (var, sp) in enumerate(setpoint))
         self.single_time_optimization_objective = Objective(expr=obj_expr)
-        
-    def solve_single_time_optimization(self, 
-                                       solver, 
+
+    def solve_single_time_optimization(self,
+                                       solver,
                                        ic_type = "differential_var",
                                        require_steady = True,
                                        load_setpoints = False,
@@ -491,7 +491,7 @@ class _DynamicBlockData(_BlockData):
                             for the solve. Default is `True`.
 
         """
-        
+
         # I think if we re-define the measurements in the controller, we propbably 
         # don't need this if statement.
         if ic_type == "differential_var":
@@ -502,12 +502,12 @@ class _DynamicBlockData(_BlockData):
             ictype = VC.MEASUREMENT
         else:
             raise RuntimeError("Not valid type of initial condition.")
-            
+
         model = self.mod
         time = self.time
         t0 = time.first()
-        
-        was_originally_active = ComponentMap([(comp, comp.active) for comp in 
+
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in
                 model.component_data_objects((Constraint, Block))])
         non_initial_time = list(time)[1:]
         deactivated = deactivate_model_at(
@@ -520,6 +520,7 @@ class _DynamicBlockData(_BlockData):
         was_fixed = ComponentMap() #I think we can delete this?
 
         # Cache "important" values to re-load after solve
+        # TODO: Really we should cache all variable values
         init_input = list(self.vectors.input[:, t0].value) \
                 if VC.INPUT in self.categories else []
         init_ics = list(ics_vector_var[:, t0].value) \
@@ -540,13 +541,14 @@ class _DynamicBlockData(_BlockData):
         if VC.DERIVATIVE in self.categories:
             if require_steady == True:
                 self.vectors.derivative[:,t0].fix(0.)
-                
+
         if isMHE_block:
             self.MHE_VARS_CONS_BLOCK.deactivate()
             # Activate the original/undisturbed differential equations at t0
             for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
                 indexcon[t0].activate()
 
+        # TODO: Hard-coding the name of the objective here is not great.
         self.single_time_optimization_objective.activate()
 
         # Solve single-time point optimization problem
@@ -557,9 +559,9 @@ class _DynamicBlockData(_BlockData):
         #I think we should at least keep this check?
         if require_steady:
             assert dof == len(self.INPUT_SET)
-        #else:
-        #    assert dof == (len(self.INPUT_SET) +
-        #            len(self.DIFFERENTIAL_SET))
+        else:
+            assert dof == (len(self.INPUT_SET) +
+                    len(self.DIFFERENTIAL_SET))
         results = solver.solve(self, tee=True)
         if results.solver.termination_condition == TerminationCondition.optimal:
             pass
@@ -797,14 +799,9 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    def inject_inputs(self, inputs, time_subset = None, quick_option = None):
+    def inject_inputs(self, inputs, time_subset = None):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
-        
-        # Better way to do this?
-        if quick_option == "last_sample_time":
-            time_subset = [tp for tp in self.time if tp > self.sample_points[-2]
-                                                 and tp <= self.sample_points[-1]]
 
         if VC.INPUT in self.categories:
             for var, val in zip(self.INPUT_BLOCK[:].var, inputs):
