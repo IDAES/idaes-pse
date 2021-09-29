@@ -20,10 +20,13 @@ from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_rodrigo.cstr_rodrigo_model import make_model
-from idaes.apps.caprese.data_manager import DynamicDataManager
+from idaes.apps.caprese.data_manager import (
+        PlantDataManager,
+        ControllerDataManager,
+        EstimatorDataManager
+        )
 
 __author__ = "Kuan-Han Lin"
-
 
 
 # See if ipopt is available and set up solver
@@ -94,11 +97,17 @@ def main():
                           Reference(dyna.plant.mod.Tall[:, "T"])]
     inputs_of_interest = [Reference(dyna.plant.mod.Tjinb[...])]
     
-    dyna_data = DynamicDataManager(plantblock = plant, 
-                                   controllerblock = controller,
-                                   estimatorblock = estimator,
-                                   user_interested_states = states_of_interest,
-                                   user_interested_inputs = inputs_of_interest,)
+    plant_data = PlantDataManager(plant,
+                                  states_of_interest,
+                                  inputs_of_interest)
+    
+    controller_data = ControllerDataManager(controller,
+                                            states_of_interest,
+                                            inputs_of_interest)
+    
+    estimator_data = EstimatorDataManager(estimator,
+                                          states_of_interest)
+    
     #--------------------------------------------------------------------------
     # Plant setup
     solve_consistent_initial_conditions(plant, plant.time, solver)
@@ -177,13 +186,13 @@ def main():
     random.seed(246)
     #--------------------------------------------------------------------------
 
-    dyna_data.save_initial_plant_data()    
+    plant_data.save_initial_plant_data()    
 
     # Solve the first control problem
     dyna.controller.vectors.input[...].unfix()
     dyna.controller.vectors.input[:,0].fix()
     solver.solve(dyna.controller, tee=True)
-    dyna_data.save_controller_data(iteration = 0)
+    controller_data.save_controller_data(iteration = 0)
     
     # Extract inputs from controller and inject them into plant
     inputs = controller.generate_inputs_at_time(c_ts)
@@ -193,19 +202,19 @@ def main():
     dyna.plant.initialize_by_solving_elements(solver)
     dyna.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(dyna.plant, tee = True)
-    dyna_data.save_plant_data(iteration = 0)
+    plant_data.save_plant_data(iteration = 0)
     
     # Extract measurements from the plant and inject them into MHE
     measurements = dyna.plant.generate_measurements_at_time(p_ts)
     dyna.estimator.load_measurements(measurements,
                                      target = "actualmeasurement",
                                      timepoint = estimator.time.last())
-    dyna.estimator.inject_inputs(inputs, quick_option = "last_sample_time")
+    dyna.estimator.load_inputs_for_MHE(inputs)
     
     # Solve the first estimation problem
     dyna.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(dyna.estimator, tee=True)
-    dyna_data.save_estimator_data(iteration = 0)
+    estimator_data.save_estimator_data(iteration = 0)
     
     for i in range(1, 11):
         print('\nENTERING MHE LOOP ITERATION %s\n' % i)
@@ -216,7 +225,7 @@ def main():
         dyna.controller.load_initial_conditions(estimates)    
     
         solver.solve(dyna.controller, tee = True)
-        dyna_data.save_controller_data(iteration = i)
+        controller_data.save_controller_data(iteration = i)
 
         dyna.plant.advance_one_sample()
         dyna.plant.initialize_to_initial_conditions()
@@ -232,7 +241,7 @@ def main():
         dyna.plant.initialize_by_solving_elements(solver)
         dyna.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(dyna.plant, tee = True)    
-        dyna_data.save_plant_data(iteration = i)
+        plant_data.save_plant_data(iteration = i)
     
         measurements = dyna.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
@@ -245,17 +254,17 @@ def main():
         dyna.estimator.load_measurements(measurements,
                                          target = "actualmeasurement",
                                          timepoint = estimator.time.last())
-        dyna.estimator.inject_inputs(inputs, quick_option = "last_sample_time")
+        dyna.estimator.load_inputs_for_MHE(inputs)
         
         dyna.estimator.check_var_con_dof(skip_dof_check = False)
         solver.solve(dyna.estimator, tee = True)
-        dyna_data.save_estimator_data(iteration = i)
+        estimator_data.save_estimator_data(iteration = i)
         
-    dyna_data.plot_setpoint_tracking_results(states_of_interest)
-    dyna_data.plot_control_input(inputs_of_interest)
-    dyna_data.plot_estimation_results(states_of_interest)
+    # dyna_data.plot_setpoint_tracking_results(states_of_interest)
+    # dyna_data.plot_control_input(inputs_of_interest)
+    # dyna_data.plot_estimation_results(states_of_interest)
     
-    return dyna, dyna_data
+    return dyna, plant_data, controller_data, estimator_data
 
 if __name__ == '__main__':
-    dyna, dyna_data = main()
+    dyna, plant_data, controller_data, estimator_data = main()

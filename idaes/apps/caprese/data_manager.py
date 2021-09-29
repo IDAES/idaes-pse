@@ -18,10 +18,10 @@ from pyomo.core.base.componentuid import ComponentUID
 from pyomo.common.collections import ComponentMap
 import pandas as pd
 from collections import OrderedDict
-from idaes.apps.caprese.plotlibrary import (
-                        PLANT_PlotLibrary,
-                        NMPC_PlotLibrary,
-                        MHE_PlotLibrary,)
+# from idaes.apps.caprese.plotlibrary import (
+#                         PLANT_PlotLibrary,
+#                         NMPC_PlotLibrary,
+#                         MHE_PlotLibrary,)
 
 __author__ = "Robert Parker and Kuan-Han Lin"
 
@@ -190,7 +190,7 @@ def add_variable_setpoints_to_dataframe(dataframe,
     return dataframe
         
 
-class PlantDataManager(PLANT_PlotLibrary):
+class PlantDataManager(object):
     def __init__(self, 
                  plantblock,
                  user_interested_states = None,
@@ -237,17 +237,11 @@ class PlantDataManager(PLANT_PlotLibrary):
                                                          iteration,
                                                          time_subset = time_subset,)
         
-class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
+class ControllerDataManager(object):
     def __init__(self, 
-                 plantblock, 
                  controllerblock, 
                  user_interested_states = None,
                  user_interested_inputs = None):
-        
-        if not hasattr(self, "plant_df"):
-            super(ControllerDataManager, self).__init__(plantblock, 
-                                                        user_interested_states, 
-                                                        user_interested_inputs,)
         
         self.controllerblock = controllerblock
         # Convert vars in plant to vars in controller
@@ -302,15 +296,10 @@ class ControllerDataManager(PlantDataManager, NMPC_PlotLibrary):
                                                                  time_subset,
                                                                  self.user_given_vars_map_nmpcvar,)
 
-class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
+class EstimatorDataManager(object):
     def __init__(self, 
-                 plantblock, 
                  estimatorblock, 
                  user_interested_states = None,):
-        
-        if not hasattr(self, "plant_df"):
-            super(EstimatorDataManager, self).__init__(plantblock, 
-                                                       user_interested_states,)
         
         self.estimatorblock = estimatorblock
         # Convert vars in plant to vars in estimator
@@ -338,25 +327,3 @@ class EstimatorDataManager(PlantDataManager, MHE_PlotLibrary):
                                                              iteration,
                                                              time_subset = [t_last],
                                                              time_map = time_map,)
-
-class DynamicDataManager(ControllerDataManager, EstimatorDataManager):
-    def __init__(self,
-                 plantblock,
-                 controllerblock,
-                 estimatorblock,
-                 user_interested_states = None,
-                 user_interested_inputs = None,):
-
-        # Create plant dataframe
-        super(EstimatorDataManager, self).__init__(plantblock,
-                                                   user_interested_states,
-                                                   user_interested_inputs,)
-        # Create estimator dataframe
-        super(ControllerDataManager, self).__init__(plantblock = None, # plant dataframe is already there
-                                                    estimatorblock = estimatorblock,
-                                                    user_interested_states = user_interested_states,)
-        # Create controller dataframe
-        super(DynamicDataManager, self).__init__(plantblock = None, # plant dataframe is already there
-                                                 controllerblock = controllerblock,
-                                                 user_interested_states = user_interested_states,
-                                                 user_interested_inputs = user_interested_inputs,)
