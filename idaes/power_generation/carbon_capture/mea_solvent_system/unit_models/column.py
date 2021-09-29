@@ -353,10 +353,9 @@ documentation for supported schemes,
         vap_comp = self.config.vapor_side.property_package.component_list
         liq_comp = self.config.liquid_side.property_package.solvent_set | \
             self.config.liquid_side.property_package.solute_set
-        liq_comp_diffus = \
-            self.config.liquid_side.property_package.component_list_diffus_apparent
+        equilibrium_comp = vap_comp & liq_comp
         solvent_comp_list = \
-            self.config.liquid_side.property_package.component_list_solvent_apparent
+            self.config.liquid_side.property_package.solvent_set
         vapor_phase_list_ref = \
             self.config.vapor_side.property_package.phase_list
         liquid_phase_list_ref = \
@@ -668,7 +667,9 @@ documentation for supported schemes,
 
         # vapor mass transfer coeff. for diffusing components [mol/m2.s.Pa]
         def rule_mass_transfer_coeff_vap(blk, t, x, j):
-            if j in liq_comp_diffus:
+            if x == self.vapor_phase.length_domain.first():
+                return Expression.Skip
+            elif j in equilibrium_comp:
                 return (
                     1/(R_ref * blk.vapor_phase.properties[t, x].temperature) *
                     blk.Cv_ref / (blk.holdup_vap[t, x])**0.5 *
@@ -680,14 +681,10 @@ documentation for supported schemes,
                       blk.vapor_phase.properties[t, x].dens_mass) /
                      (blk.a_ref *
                       blk.vapor_phase.properties[t, x].visc_d))**(3/4))
-            elif x == self.vapor_phase.length_domain.first():
-                return Expression.Skip
-            else:
-                return Expression.Skip
 
         self.k_v = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
-                              liq_comp,
+                              equilibrium_comp,
                               rule=rule_mass_transfer_coeff_vap,
                               doc=' Vapor mass transfer coefficient ')
 
@@ -753,15 +750,15 @@ documentation for supported schemes,
 
         # mass transfer of  diffusing components
         def rule_mass_transfer(blk, t, x, j):
-            if j in liq_comp_diffus:
+            if x == self.vapor_phase.length_domain.first():
+                return blk.interphase_mass_transfer[t, x, j] == 0.0
+            elif j in equilibrium_comp:
                 return blk.interphase_mass_transfer[t, x, j] == (
                     blk.k_v[t, x, j] *
                     blk.area_interfacial[t, x] * blk.area_column *
                     (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
                      blk.vapor_phase.properties[t, x].pressure -
                      blk.pressure_equil[t, x, j])) * blk._homotopy_par_m
-            elif x == self.vapor_phase.length_domain.first():
-                return blk.interphase_mass_transfer[t, x, j] == 0.0
             else:
                 return blk.interphase_mass_transfer[t, x, j] == 0.0
 
@@ -783,7 +780,7 @@ documentation for supported schemes,
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
                 zf = self.vapor_phase.length_domain.at(self.zi[x].value + 1)
-                if j in liq_comp_diffus:
+                if j in equilibrium_comp:
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         blk.interphase_mass_transfer[t, zf, j]
                 else:
@@ -977,7 +974,7 @@ documentation for supported schemes,
         #                  t, x].conc_mol_comp_true['MEACOO-']))
         
         def rule_yi_MEACOO(blk, t, x, j):
-            if x == self.liquid_phase.length_domain.last():
+            if x == self.liquid_phase.length_domain.last() or j == 'H2O':
                 return Expression.Skip
             else:
                 return (
@@ -1010,7 +1007,7 @@ documentation for supported schemes,
         #                  t, x].conc_mol_comp_true['MEA+']))
         
         def rule_yi_MEAH(blk, t, x, j):
-            if x == self.liquid_phase.length_domain.last():
+            if x == self.liquid_phase.length_domain.last() or j == 'H2O':
                 return Expression.Skip
             else:
                 return (
@@ -1036,6 +1033,8 @@ documentation for supported schemes,
         def yeq_CO2_eqn(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
                 return blk.yeq_CO2[t, x] == 0.0
+            elif j == 'H2O':
+                return Constraint.Skip
             else:
                 return blk.yeq_CO2[t, x] * blk.yi_solvent[t, x, j]**4 == \
                     blk.yb_CO2[t, x] * blk.yi_solvent[t, x, j] * blk.yi_MEACOO[t, x]

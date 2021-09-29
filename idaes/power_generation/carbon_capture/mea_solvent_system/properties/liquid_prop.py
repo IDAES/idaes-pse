@@ -97,11 +97,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # list of all diffusing components aside the excess solvent
         self.component_list_diffus = Set(
             initialize=['CO2', 'MEA', 'MEA+', 'MEACOO-'])
-        # list of all apparent diffusing components 
-        self.component_list_diffus_apparent = Set(
-            initialize=['CO2', 'H2O'])
-        # list of apparent solvent components aside the excess solvent
-        self.component_list_solvent_apparent = self.solvent_set.remove('H2O')
 
         # Reaction index
         self.reaction_idx = Set(initialize=['R1', 'R2'])
