@@ -103,8 +103,14 @@ def main():
     setpoint = [(controller.mod.Ca[0], 0.018)]
     setpoint_weights = [(controller.mod.Ca[0], 1.)]
     
-    nmpc.controller.add_setpoint_objective(setpoint, setpoint_weights)
-    nmpc.controller.solve_setpoint(solver)
+    # nmpc.controller.add_setpoint_objective(setpoint, setpoint_weights)
+    # nmpc.controller.solve_setpoint(solver)
+    nmpc.controller.add_single_time_optimization_objective(setpoint,
+                                                           setpoint_weights)
+    nmpc.controller.solve_single_time_optimization(solver,
+                                                   ic_type = "measurement_var",
+                                                   require_steady = True,
+                                                   load_setpoints = True)
     
     # Now we are ready to construct the tracking NMPC problem
     tracking_weights = [

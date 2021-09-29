@@ -22,7 +22,10 @@ from idaes.apps.caprese.util import initialize_by_element_in_range
 from idaes.apps.caprese.common.config import (
         InputOption,
         )
-from idaes.apps.caprese.common.config import VariableCategory as VC
+from idaes.apps.caprese.common.config import (
+        VariableCategory as VC,
+        ConstraintCategory as CC,
+        )
 from idaes.apps.caprese.categorize import (
         categorize_dae_variables,
         categorize_dae_variables_and_constraints,
@@ -49,6 +52,8 @@ from pyomo.environ import (
         TransformationFactory,
         Var,
         Constraint,
+        Objective,
+        TerminationCondition,
         Set,
         ComponentUID,
         Suffix,
@@ -430,6 +435,181 @@ class _DynamicBlockData(_BlockData):
         self.sample_points = sample_points
         self.sample_point_indices = sample_indices
 
+    def add_single_time_optimization_objective(self,
+            setpoint,
+            weights,
+            ):
+        """ This method uses user-provided setpoints and weights
+        to directly construct a least-squares objective for the
+        specified variables at the first time point. The purpose
+        is to then use the first time point to solve for a "proper
+        setpoint" that provides a value for every variable.
+
+        Parameters:
+            setpoint: List of vardata, value tuples describing the
+                      setpoint values of these specified variables.
+            weights: List of vardata, value tuples describing the
+                     weight for each variable's term in the objective.
+
+        """
+        vardata_map = self.vardata_map
+        for vardata, weight in weights:
+            nmpc_var = vardata_map[vardata]
+            nmpc_var.weight = weight
+
+        weight_vector = []
+        for vardata, sp in setpoint:
+            nmpc_var = vardata_map[vardata]
+            if nmpc_var.weight is None:
+                self.logger.warning('Weight not supplied for %s' % var.name)
+                nmpc_var.weight = 1.0
+            weight_vector.append(nmpc_var.weight)
+
+        obj_expr = sum(
+            weight_vector[i]*(var - sp)**2 for
+            i, (var, sp) in enumerate(setpoint))
+        self.single_time_optimization_objective = Objective(expr=obj_expr)
+
+    def solve_single_time_optimization(self,
+                                       solver,
+                                       ic_type = "differential_var",
+                                       require_steady = True,
+                                       load_setpoints = False,
+                                       restore_ic_input_after_solve = True,
+                                       isMHE_block = False,
+                                       ):
+        """ This method performs a "real time optimization-type"
+        solve on the model, using only the variables and constraints
+        at the first point in time. The purpose is to calculate a
+        (possibly steady state) setpoint.
+
+        Parameters:
+            solver: A Pyomo solver object that will be used to solve
+                    the model with only variables and constraints at t0
+                    active.
+            require_steady: Whether derivatives should be fixed to zero
+                            for the solve. Default is `True`.
+
+        """
+
+        # I think if we re-define the measurements in the controller, we propbably 
+        # don't need this if statement.
+        if ic_type == "differential_var":
+            ics_vector_var = self.vectors.differential
+            ictype = VC.DIFFERENTIAL
+        elif ic_type == "measurement_var":
+            ics_vector_var = self.vectors.measurement
+            ictype = VC.MEASUREMENT
+        else:
+            raise RuntimeError("Not valid type of initial condition.")
+
+        model = self.mod
+        time = self.time
+        t0 = time.first()
+
+        was_originally_active = ComponentMap([(comp, comp.active) for comp in
+                model.component_data_objects((Constraint, Block))])
+        non_initial_time = list(time)[1:]
+        deactivated = deactivate_model_at(
+                model,
+                time,
+                non_initial_time,
+                allow_skip=True,
+                suppress_warnings=True,
+                )
+        was_fixed = ComponentMap() #I think we can delete this?
+
+        # Cache "important" values to re-load after solve
+        # TODO: Really we should cache all variable values
+        init_input = list(self.vectors.input[:, t0].value) \
+                if VC.INPUT in self.categories else []
+        init_ics = list(ics_vector_var[:, t0].value) \
+                if ictype in self.categories else []
+
+        # Fix/unfix variables as appropriate
+        # Order matters here. If a derivative is used as an IC, we still want
+        # it to be fixed if steady state is required.
+        if ictype in self.categories:
+            ics_vector_var[:,t0].unfix()
+
+        if VC.INPUT in self.categories:
+            input_vars = self.vectors.input
+            was_fixed = ComponentMap(
+                    (var, var.fixed) for var in input_vars[:,t0]
+                    )
+            input_vars[:,t0].unfix()
+        if VC.DERIVATIVE in self.categories:
+            if require_steady == True:
+                self.vectors.derivative[:,t0].fix(0.)
+
+        if isMHE_block:
+            self.MHE_VARS_CONS_BLOCK.deactivate()
+            # Activate the original/undisturbed differential equations at t0
+            for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
+                indexcon[t0].activate()
+
+        # TODO: Hard-coding the name of the objective here is not great.
+        self.single_time_optimization_objective.activate()
+
+        # Solve single-time point optimization problem
+        #
+        # If these sets do not necessarily exist, then I don't think
+        # I can make any assertion about the number of degrees of freedom
+        dof = degrees_of_freedom(model)
+        #I think we should at least keep this check?
+        if require_steady:
+            assert dof == len(self.INPUT_SET)
+        else:
+            assert dof == (len(self.INPUT_SET) +
+                    len(self.DIFFERENTIAL_SET))
+        results = solver.solve(self, tee=True)
+        if results.solver.termination_condition == TerminationCondition.optimal:
+            pass
+        else:
+            msg = 'Failed to solve for full value of the single time optimization'
+            raise RuntimeError(msg)
+
+        self.single_time_optimization_objective.deactivate()
+
+        # Revert changes. Again, order matters
+        if isMHE_block:
+            self.MHE_VARS_CONS_BLOCK.activate()
+            # Deactivate the original/undisturbed differential equations at t0
+            for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
+                indexcon[t0].deactivate()
+        
+        if VC.DERIVATIVE in self.categories:
+            if require_steady == True:
+                self.vectors.derivative[:,t0].unfix()
+        if ictype in self.categories:
+            ics_vector_var[:,t0].fix()
+
+        # Reactivate components that were deactivated
+        for t, complist in deactivated.items():
+            for comp in complist:
+                if was_originally_active[comp]:
+                    comp.activate()
+
+        # Fix inputs that were originally fixed
+        if VC.INPUT in self.categories:
+            for var in self.vectors.input[:,t0]:
+                if was_fixed[var]:
+                    var.fix()
+        
+        # Load setpoints to vars' attribute "setpoint"
+        if load_setpoints:
+            setpoint_ctype = (DiffVar, AlgVar, InputVar,
+                              FixedVar, DerivVar, MeasuredVar)
+            for var in self.component_objects(setpoint_ctype):
+                var.setpoint = var[t0].value
+
+        if restore_ic_input_after_solve:
+            # Restore cached values
+            if VC.INPUT in self.categories:
+                self.vectors.input.values = init_input
+            if ictype in self.categories:
+                ics_vector_var.values = init_ics
+
     def initialize_sample_to_setpoint(self, 
             sample_idx,
             ctype=(DiffVar, AlgVar, InputVar, DerivVar),
@@ -619,7 +799,7 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-    def inject_inputs(self, inputs, time_subset = None, quick_option = None):
+    def inject_inputs(self, inputs, time_subset = None):
         # To simulate computational delay, this function would 
         # need an argument for the start time of inputs.
 

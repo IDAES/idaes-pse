@@ -548,16 +548,16 @@ class TestEstimatorBlock(object):
         estimator.mod.flow_in[:].set_value(3.0)
         initialize_t0(estimator.mod)
         
-        estimator.add_steady_state_objective(desiredss, weights)
+        estimator.add_single_time_optimization_objective(desiredss, weights)
 
-        assert hasattr(estimator, 'steadystate_objective')
+        assert hasattr(estimator, 'single_time_optimization_objective')
 
         pred_obj_expr = (2.0*(estimator.mod.flow_in[t0] - 3.0)**2)
-        obj_expr = estimator.steadystate_objective.expr
+        obj_expr = estimator.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
 
-        estimator.del_component(estimator.steadystate_objective)
+        estimator.del_component(estimator.single_time_optimization_objective)
 
         desiredss = [
                 (estimator.mod.flow_in[t0], 3.0),
@@ -567,12 +567,12 @@ class TestEstimatorBlock(object):
                 (estimator.mod.flow_in[t0], 1.0),
                 (estimator.mod.conc[t0,'A'], 5.0),
                 ]
-        estimator.add_steady_state_objective(desiredss, weights)
+        estimator.add_single_time_optimization_objective(desiredss, weights)
         pred_obj_expr = (
                 1.0*(estimator.mod.flow_in[t0] - 3.0)**2 + 
                 5.0*(estimator.mod.conc[t0,'A'] - 1.5)**2
                 )
-        obj_expr = estimator.steadystate_objective.expr
+        obj_expr = estimator.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
         
@@ -588,12 +588,17 @@ class TestEstimatorBlock(object):
         weights = [
                 (estimator.mod.flow_in[t0], 1.0),
                 ]
-        estimator.add_steady_state_objective(desiredss, weights)
+        estimator.add_single_time_optimization_objective(desiredss, weights)
         estimator.mod.flow_in[:].set_value(3.0)
         initialize_t0(estimator.mod)
 
         dof_prior = degrees_of_freedom(estimator)
-        estimator.solve_steady_state(solver)
+        estimator.solve_steady_state(
+            solver,
+            isMHE_block=True,
+            ic_type="differential_var",
+            restore_ic_input_after_solve=False,
+        )
         dof_post = degrees_of_freedom(estimator)
 
         assert dof_prior == dof_post
@@ -784,3 +789,20 @@ class TestEstimatorBlock(object):
 
         estimates = estimator.generate_estimates_at_time(tlast)
         assert estimates == [105., 205.]
+
+    @pytest.mark.unit
+    def test_load_measurements(self):
+        blk = self.make_estimator()
+        time = blk.time
+        t0 = time.first()
+        vals = [0.25]
+        blk.load_measurements(vals, target = "measurement", timepoint = t0)        
+        for b, val in zip(blk.MEASUREMENT_BLOCK.values(), vals):
+            assert b.var[t0].value == val
+            
+        vals2 = [0.75]
+        t_last = time.last()
+        blk.load_measurements(vals2, target = "actualmeasurement", timepoint = t_last)        
+        for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals2):
+            assert b.var[t_last].value == val
+

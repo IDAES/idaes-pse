@@ -129,16 +129,16 @@ class TestControllerBlock(object):
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
 
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
 
-        assert hasattr(controller, 'setpoint_objective')
+        assert hasattr(controller, 'single_time_optimization_objective')
 
         pred_obj_expr = (2.0*(controller.mod.flow_in[t0] - 3.0)**2)
-        obj_expr = controller.setpoint_objective.expr
+        obj_expr = controller.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
 
-        controller.del_component(controller.setpoint_objective)
+        controller.del_component(controller.single_time_optimization_objective)
 
         setpoint = [
                 (controller.mod.flow_in[t0], 3.0),
@@ -148,12 +148,12 @@ class TestControllerBlock(object):
                 (controller.mod.flow_in[t0], 1.0),
                 (controller.mod.conc[t0,'A'], 5.0),
                 ]
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         pred_obj_expr = (
                 1.0*(controller.mod.flow_in[t0] - 3.0)**2 + 
                 5.0*(controller.mod.conc[t0,'A'] - 1.5)**2
                 )
-        obj_expr = controller.setpoint_objective.expr
+        obj_expr = controller.single_time_optimization_objective.expr
         assert pyo.value(pred_obj_expr) == pyo.value(obj_expr)
         assert pred_obj_expr.to_string() == obj_expr.to_string()
 
@@ -169,7 +169,7 @@ class TestControllerBlock(object):
         weights = [
                 (controller.mod.flow_in[t0], 1.0),
                 ]
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
 
@@ -206,7 +206,7 @@ class TestControllerBlock(object):
                 (controller.mod.flow_in[t0], 1.0),
                 (controller.mod.conc[t0,'A'], 1.0),
                 ]
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
 
@@ -244,7 +244,7 @@ class TestControllerBlock(object):
         controller.mod.flow_in[:].set_value(3.0)
         initialize_t0(controller.mod)
         copy_values_forward(controller.mod)
-        controller.add_setpoint_objective(setpoint, weights)
+        controller.add_single_time_optimization_objective(setpoint, weights)
         controller.solve_setpoint(solver)
 
         # Re-initialize inputs so they are not at the setpoint

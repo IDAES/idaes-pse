@@ -55,7 +55,6 @@ from idaes.apps.caprese.dynamic_var import (
         FixedVar,
         MeasuredVar,
         )
-from idaes.apps.caprese.tests.test_estimator import TestEstimatorBlock
 import idaes.logger as idaeslog
 import random
 import pytest
@@ -1076,23 +1075,6 @@ class TestDynamicBlock(object):
         for b, val in zip(blk.INPUT_BLOCK.values(), vals):
             for t in time:
                 assert b.var[t].value == val
-
-    @pytest.mark.unit
-    def test_load_measurements(self):
-        instance = TestEstimatorBlock()
-        blk = instance.make_estimator()
-        time = blk.time
-        t0 = time.first()
-        vals = [0.25]
-        blk.load_measurements(vals, target = "measurement", timepoint = t0)        
-        for b, val in zip(blk.MEASUREMENT_BLOCK.values(), vals):
-            assert b.var[t0].value == val
-            
-        vals2 = [0.75]
-        t_last = time.last()
-        blk.load_measurements(vals2, target = "actualmeasurement", timepoint = t_last)        
-        for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals2):
-            assert b.var[t_last].value == val
 
     @pytest.mark.unit
     def test_categories_only_measurement_input(self):
