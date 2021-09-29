@@ -556,7 +556,7 @@ class _DynamicBlockData(_BlockData):
         # If these sets do not necessarily exist, then I don't think
         # I can make any assertion about the number of degrees of freedom
         dof = degrees_of_freedom(model)
-        #I think we should at least keep this check?
+        #I think we should at least keep this check
         if require_steady:
             assert dof == len(self.INPUT_SET)
         else:
