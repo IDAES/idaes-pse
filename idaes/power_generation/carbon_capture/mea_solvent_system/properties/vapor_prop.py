@@ -163,9 +163,9 @@ class PhysicalParameterData(PhysicalParameterBlock):
         # calculated from  :C1*T^(C2)/(1+C3/T)
         # Reference: Perry and Green Handbook; McGraw Hill,8th edition 2008
         #O2 & N2
-        # calculated from Sutherland Formular
+        # calculated from Sutherland Formula
         # C1*(C2 + C3)/(T+C3)*(T/C2)^1.5:
-        # constants C1,C2,C3 in sutherlands' formular are:
+        # constants C1,C2,C3 in sutherlands' formula are:
         #C1 = vis_d_ref
         #C2 = temperature_ref
         # C3 = sutherland constant
@@ -603,8 +603,8 @@ class VaporStateBlockData(StateBlockData):
         # Average vapour heat capacities btw T and T_ref
         self.cp_mol_mean = Var(domain=Reals,
                                initialize=1.0,
-                               doc="Mean vapour heat capacities "
-                               "[J/mol.K]")
+                               units=pyunits.J / pyunits.K / pyunits.mol,
+                               doc="Mean vapour heat capacities")
 
         def rule_cp_mol_mean(b):
             return b.cp_mol_mean == sum(b.cp_mol_comp_mean[j] * b.mole_frac_comp[j]
