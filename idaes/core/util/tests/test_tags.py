@@ -360,9 +360,9 @@ def test_tabulate_runs(model):
     g.add("g", expr=m.g, format_string="{:.1f}", display_units="%")
 
     columns = (
-        ("w", (1, "a")),
-        ("w", (2, "a")),
-        ("y", None),
+        ["w", (1, "a")],
+        ["w", (2, "a")],
+        ["y", None],
     )
 
     head = g.table_heading(tags=columns, units=True)
