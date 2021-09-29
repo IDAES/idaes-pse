@@ -355,6 +355,8 @@ documentation for supported schemes,
             self.config.liquid_side.property_package.solute_set
         liq_comp_diffus = \
             self.config.liquid_side.property_package.component_list_diffus_apparent
+        solvent_comp_list = \
+            self.config.liquid_side.property_package.component_list_solvent_apparent
         vapor_phase_list_ref = \
             self.config.vapor_side.property_package.phase_list
         liquid_phase_list_ref = \
@@ -489,12 +491,22 @@ documentation for supported schemes,
                                       initialize=160,
                                       doc='Enhancement factor')
 
-        self.yi_MEA = Var(self.flowsheet().time,
+        # self.yi_MEA = Var(self.flowsheet().time,
+        #                   self.liquid_phase.length_domain,
+        #                   domain=NonNegativeReals,
+        #                   initialize=0.5,
+        #                   units=None,
+        #                   doc='''Dimensionless concentration of MEA
+        #                             at interface ''')
+        
+        self.yi_solvent = Var(self.flowsheet().time,
                           self.liquid_phase.length_domain,
+                          solvent_comp_list,
                           domain=NonNegativeReals,
                           initialize=0.5,
                           units=None,
-                          doc='''Dimensionless concentration of MEA
+                          doc='''Dimensionless concentration of solvent \
+                              components (except H2O)
                                     at interface ''')
         self.yeq_CO2 = Var(self.flowsheet().time,
                            self.liquid_phase.length_domain,
@@ -959,7 +971,20 @@ documentation for supported schemes,
                                initialize=100,
                                doc='Instantaneous Enhancement factor')
 
-        def rule_yi_MEACOO(blk, t, x):
+        # def rule_yi_MEACOO(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return Expression.Skip
+        #     else:
+        #         return (
+        #             1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
+        #                  blk.liquid_phase.properties[
+        #                      t, x].conc_mol_comp_true['MEA']) *
+        #             (1 - blk.yi_MEA[t, x] * blk.yi_MEA[t, x]) /
+        #             (2 * blk.liquid_phase.properties[t, x].diffus['MEACOO-'] *
+        #              blk.liquid_phase.properties[
+        #                  t, x].conc_mol_comp_true['MEACOO-']))
+        
+        def rule_yi_MEACOO(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
@@ -967,7 +992,7 @@ documentation for supported schemes,
                     1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
                          blk.liquid_phase.properties[
                              t, x].conc_mol_comp_true['MEA']) *
-                    (1 - blk.yi_MEA[t, x] * blk.yi_MEA[t, x]) /
+                    (1 - blk.yi_solvent[t, x, j] * blk.yi_solvent[t, x, j]) /
                     (2 * blk.liquid_phase.properties[t, x].diffus['MEACOO-'] *
                      blk.liquid_phase.properties[
                          t, x].conc_mol_comp_true['MEACOO-']))
@@ -975,10 +1000,24 @@ documentation for supported schemes,
         self.yi_MEACOO = Expression(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
+            solvent_comp_list,
             rule=rule_yi_MEACOO,
             doc='Dimensionless concentration of MEACOO-')
 
-        def rule_yi_MEAH(blk, t, x):
+        # def rule_yi_MEAH(blk, t, x):
+        #     if x == self.liquid_phase.length_domain.last():
+        #         return Expression.Skip
+        #     else:
+        #         return (
+        #             1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
+        #                  blk.liquid_phase.properties[
+        #                      t, x].conc_mol_comp_true['MEA']) *
+        #             (1 - blk.yi_MEA[t, x] * blk.yi_MEA[t, x]) /
+        #             (2 * blk.liquid_phase.properties[t, x].diffus['MEA+'] *
+        #              blk.liquid_phase.properties[
+        #                  t, x].conc_mol_comp_true['MEA+']))
+        
+        def rule_yi_MEAH(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
@@ -986,26 +1025,28 @@ documentation for supported schemes,
                     1 + (blk.liquid_phase.properties[t, x].diffus['MEA'] *
                          blk.liquid_phase.properties[
                              t, x].conc_mol_comp_true['MEA']) *
-                    (1 - blk.yi_MEA[t, x] * blk.yi_MEA[t, x]) /
+                    (1 - blk.yi_solvent[t, x, j] * blk.yi_solvent[t, x, j]) /
                     (2 * blk.liquid_phase.properties[t, x].diffus['MEA+'] *
                      blk.liquid_phase.properties[
                          t, x].conc_mol_comp_true['MEA+']))
 
         self.yi_MEAH = Expression(self.flowsheet().time,
                                   self.liquid_phase.length_domain,
+                                  solvent_comp_list,
                                   rule=rule_yi_MEAH,
                                   doc='Dimensionless concentration of MEA+')
 
         @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
+                         solvent_comp_list,
                          doc='Dimensionless concentration of CO2 '
                          'at equilibruim with the bulk')
         def yeq_CO2_eqn(blk, t, x):
             if x == self.liquid_phase.length_domain.last():
                 return blk.yeq_CO2[t, x] == 0.0
             else:
-                return blk.yeq_CO2[t, x] * blk.yi_MEA[t, x]**4 == \
-                    blk.yb_CO2[t, x] * blk.yi_MEAH[t, x] * blk.yi_MEACOO[t, x]
+                return blk.yeq_CO2[t, x] * blk.yi_solvent[t, x, j]**4 == \
+                    blk.yb_CO2[t, x] * blk.yi_solvent[t, x, j] * blk.yi_MEACOO[t, x]
 
         # @self.Constraint(self.flowsheet().time,
         #                  self.liquid_phase.length_domain,
@@ -1139,7 +1180,9 @@ documentation for supported schemes,
 
         # Enhancement factor model
         blk.enhancement_factor.fix()
-        blk.yi_MEA.fix()
+        # blk.yi_MEA.fix()
+        for j in blk.config.liquid_side.property_package.component_list_solvent_apparent:
+            blk.yi_solvent[j].fix()
         blk.yeq_CO2.fix()
 
         # heat transfer
@@ -1314,7 +1357,9 @@ documentation for supported schemes,
         for t in blk.flowsheet().time:
             for x in blk.liquid_phase.length_domain:
                 blk.enhancement_factor[t, x].value = 100
-        blk.yi_MEA.unfix()
+        for j in blk.config.liquid_side.property_package.component_list_solvent_apparent:
+            blk.yi_solvent[j].unfix()
+        # blk.yi_MEA.unfix()
         blk.yeq_CO2.unfix()
         blk.E1_eqn.activate()
         blk.E2_eqn.activate()
