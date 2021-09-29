@@ -106,19 +106,23 @@ class ModelTag:
         return tag
 
     def __len__(self):
+        """Number of elements in a tag"""
         return len(self.indexes)
 
     def keys(self):
+        """Iterator of keys in the tag.  If scalar, is a single None."""
         indx_set = self.indexes
         for i in indx_set:
             yield i
 
     def values(self):
+        """Iterator for scalar elements in a tag (The elements are scalar tags)"""
         indx_set = self.indexes
         for i in indx_set:
             yield self[i]
 
     def items(self):
+        """Iterator for key scalar elements pairs in a tag"""
         indx_set = self.indexes
         for i in indx_set:
             yield i, self[i]
@@ -577,18 +581,36 @@ class ModelTagGroup(dict):
             self[name] = ModelTag(expr=expr, **kwargs)
 
     def table_heading(self, tags=None, units=True):
+        """Create a table heading with a given set of tags, for tabulating model
+        results.
+
+        Args:
+            tags: List of tags or tuples of tags and an index.  If a tag is for
+                an indexed value and no index is given the tag will be flattened
+                to create a column for each index.
+            units: If true include the units of measure in the coulmn heading
+                names.
+
+        Returns:
+            list of column headings
+        """
         if tags is None:
-            tag_list = list(self.keys())
-            indexes = [None] * len(tag_list)
-        else:
-            tag_list = [None] * len(tags)
-            indexes = [None] * len(tags)
-            for i, tag in enumerate(tags):
-                if not isinstance(tag, str):
-                    tag_list[i] = tag[0]
-                    indexes[i] = tag[1]
+            tags = list(self.keys())
+
+        tag_list = []
+        indexes = []
+        for i, tag in enumerate(tags):
+            if not isinstance(tag, str):
+                tag_list.append(tag[0])
+                indexes.append(tag[1])
+            else:
+                if not self[tag].is_indexed:
+                    tag_list.append(tag)
+                    indexes.append(None)
                 else:
-                    tag_list[i] = tag
+                    for k in self[tag].keys():
+                        tag_list.append(tag)
+                        indexes.append(k)
 
         row = [None] * len(tag_list)
         for i, tag in enumerate(tag_list):
@@ -603,18 +625,39 @@ class ModelTagGroup(dict):
         return row
 
     def table_row(self, tags=None, units=True, numeric=False):
+        """Create a table row with a given set of tags, for tabulating model
+        results.  The row contains values of tagged quntities either as strings
+        of numeric values.
+
+        Args:
+            tags: List of tags or tuples of tags and an index.  If a tag is for
+                an indexed value and no index is given the tag will be flattened
+                to create a column for each index.
+            units: If true include the units of measure in the value, if the
+                values are not numeric.
+            numeric: If true provide numeric values rather than a formatted
+                string.
+
+        Returns:
+            list of values for a table row either numeric or as formatted strings
+        """
         if tags is None:
-            tag_list = list(self.keys())
-            indexes = [None] * len(tag_list)
-        else:
-            tag_list = [None] * len(tags)
-            indexes = [None] * len(tags)
-            for i, tag in enumerate(tags):
-                if not isinstance(tag, str):
-                    tag_list[i] = tag[0]
-                    indexes[i] = tag[1]
+            tags = list(self.keys())
+
+        tag_list = []
+        indexes = []
+        for i, tag in enumerate(tags):
+            if not isinstance(tag, str):
+                tag_list.append(tag[0])
+                indexes.append(tag[1])
+            else:
+                if not self[tag].is_indexed:
+                    tag_list.append(tag)
+                    indexes.append(None)
                 else:
-                    tag_list[i] = tag
+                    for k in self[tag].keys():
+                        tag_list.append(tag)
+                        indexes.append(k)
 
         row = [None] * len(tag_list)
         for i, tag in enumerate(tag_list):

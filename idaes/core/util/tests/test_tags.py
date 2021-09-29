@@ -390,6 +390,31 @@ def test_tabulate_runs(model):
     assert row[1] == pytest.approx(2.000)
     assert row[2] == pytest.approx(1.000)
 
+    g["w"][1, "a"].set(1*pyo.units.g)
+    g["w"][1, "b"].set(2*pyo.units.g)
+    g["w"][2, "a"].set(3*pyo.units.g)
+    g["w"][2, "b"].set(4*pyo.units.g)
+    g["w"][3, "a"].set(5*pyo.units.g)
+    g["w"][3, "b"].set(6*pyo.units.g)
+
+    head = g.table_heading(tags=('w', 'y'), units=True)
+    assert head[0] == "w[(1, 'a')] (g)"
+    assert head[1] == "w[(1, 'b')] (g)"
+    assert head[2] == "w[(2, 'a')] (g)"
+    assert head[3] == "w[(2, 'b')] (g)"
+    assert head[4] == "w[(3, 'a')] (g)"
+    assert head[5] == "w[(3, 'b')] (g)"
+    assert head[6] == "y (s)"
+
+    row = g.table_row(tags=('w', 'y'), units=True)
+    assert row[0] == "1.000 g"
+    assert row[1] == "2.000 g"
+    assert row[2] == "3.000 g"
+    assert row[3] == "4.000 g"
+    assert row[4] == "5.000 g"
+    assert row[5] == "6.000 g"
+    assert row[6] == "1.000 s"
+
 
 @pytest.mark.unit
 def test_doc_example_and_bound(model):
