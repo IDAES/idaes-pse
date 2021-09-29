@@ -19,6 +19,7 @@ import io
 import os
 from math import sin, cos, log, exp
 from pathlib import Path
+from io import StringIO
 
 from pyomo.environ import Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
@@ -30,6 +31,19 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 dirpath = Path(__file__).parent.resolve()
+
+
+# String representation of json output for testing
+jstring = (
+    '{"surrogate": {"z1": " z1 == 3.9999999999925446303450 * x1**2 - '
+    '4.0000000000020765611453 * x2**2 - '
+    '2.0999999999859380039879 * x1**4 + '
+    '4.0000000000043112180492 * x2**4 + '
+    '0.33333333332782633107172 * x1**6 + '
+    '0.99999999999972988273811 * x1*x2"}, '
+    '"input_labels": ["x1", "x2"], '
+    '"output_labels": ["z1"], '
+    '"input_bounds": {"x1": [0, 5], "x2": [0, 10]}}')
 
 
 class TestAlamoTrainer:
@@ -956,6 +970,73 @@ class TestAlamoObject():
         assert str(blk.alamo_constraint["z1"].body) == (
             "_outputs[z1] - (2*sin(_inputs[x1]**2) - 3*cos(_inputs[x2]**3) - "
             "4*log(_inputs[x1]**4) + 5*exp(_inputs[x2]**5))")
+
+    @pytest.mark.unit
+    def test_to_json(self, alm_surr1):
+        stream = StringIO()
+        alm_surr1.to_json(stream)
+        assert stream.getvalue() == jstring
+
+    @pytest.mark.unit
+    def test_from_json(self):
+        alm_surr = AlamoObject({}, [], [])
+
+        alm_surr.from_json(jstring)
+
+        assert alm_surr._surrogate == {
+            "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
+            '4.0000000000020765611453 * x2**2 - '
+            '2.0999999999859380039879 * x1**4 + '
+            '4.0000000000043112180492 * x2**4 + '
+            '0.33333333332782633107172 * x1**6 + '
+            '0.99999999999972988273811 * x1*x2'}
+        assert alm_surr._input_labels == ["x1", "x2"]
+        assert alm_surr._output_labels == ["z1"]
+        assert alm_surr._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+
+    @pytest.mark.unit
+    def test_save_load(self, alm_surr1):
+        with TempfileManager as tf:
+            fname = tf.create_tempfile(suffix=".json")
+            alm_surr1.save(fname, overwrite=True)
+
+            assert os.path.isfile(fname)
+
+            with open(fname, "r") as f:
+                js = f.read()
+            f.close()
+
+            alm_load = AlamoObject.load(fname)
+
+        # Check file contents
+        assert js == jstring
+
+        # Check loaded object
+        assert isinstance(alm_load, AlamoObject)
+        assert alm_load._surrogate == {
+            "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
+            '4.0000000000020765611453 * x2**2 - '
+            '2.0999999999859380039879 * x1**4 + '
+            '4.0000000000043112180492 * x2**4 + '
+            '0.33333333332782633107172 * x1**6 + '
+            '0.99999999999972988273811 * x1*x2'}
+        assert alm_load._input_labels == ["x1", "x2"]
+        assert alm_load._output_labels == ["z1"]
+        assert alm_load._input_bounds == {"x1": (0, 5), "x2": (0, 10)}
+
+        # Check for clean up
+        assert not os.path.isfile(fname)
+
+    @pytest.mark.unit
+    def test_save_no_overwrite(self, alm_surr1):
+        with TempfileManager as tf:
+            fname = tf.create_tempfile(suffix=".json")
+
+            with pytest.raises(FileExistsError):
+                alm_surr1.save(fname)
+
+        # Check for clean up
+        assert not os.path.isfile(fname)
 
 
 @pytest.mark.integration

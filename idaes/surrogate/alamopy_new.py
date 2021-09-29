@@ -15,8 +15,8 @@ import subprocess
 from io import StringIO
 import sys
 import os
-from copy import deepcopy
 import numpy as np
+import json
 
 from pyomo.environ import Constraint, value, sin, cos, log, exp, Set
 from pyomo.common.config import ConfigValue, In, Path, ListOf, Bool
@@ -981,12 +981,45 @@ class AlamoObject(SurrogateBase):
 
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
 
-    def save(self, filename):
-        # this is mocked up for now
-        pass
+    def to_json(self, stream):
+
+        json.dump({"surrogate": self._surrogate,
+                   "input_labels": self._input_labels,
+                   "output_labels": self._output_labels,
+                   "input_bounds": self._input_bounds},
+                  stream)
+
+        return stream
+
+    def from_json(self, js):
+        d = json.loads(js)
+
+        self._surrogate = d["surrogate"]
+        self._input_labels = d["input_labels"]
+        self._output_labels = d["output_labels"]
+
+        # Need to convert list of bounds to tuples
+        self._input_bounds = {}
+        for k, v in d["input_bounds"].items():
+            self._input_bounds[k] = tuple(v)
+
+    def save(self, filename, overwrite=False):
+        if overwrite:
+            arg = "w"
+        else:
+            arg = "x"
+
+        f = open(filename, arg)
+        self.to_json(f)
+        f.close()
 
     @staticmethod
     def load(filename):
-        # this is mocked up for now
-        pass
+        with open(filename, "r") as f:
+            js = f.read()
+        f.close()
 
+        alm_surr = AlamoObject({}, [], [])
+        alm_surr.from_json(js)
+
+        return alm_surr
