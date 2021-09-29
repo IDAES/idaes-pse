@@ -23,10 +23,9 @@ __author__ = "Jaffer Ghouse"
 from pandas import DataFrame
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Constraint, \
-    value, Set, SolverFactory
+from pyomo.environ import Reference, Expression, Var, Constraint, value, Set
 
 # Import IDAES cores
 import idaes.logger as idaeslog
@@ -57,7 +56,7 @@ class ReboilerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("has_boilup_ratio", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Boilup ratio term construction flag",
         doc="""Indicates whether terms for boilup ratio should be
 constructed,
@@ -103,7 +102,7 @@ constructed,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

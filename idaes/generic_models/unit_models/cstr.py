@@ -15,7 +15,7 @@ Standard IDAES CSTR model.
 """
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.environ import Reference, Block, Var, Constraint
 
 # Import IDAES cores
@@ -82,7 +82,7 @@ balance type
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -91,7 +91,7 @@ balance type
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -101,7 +101,7 @@ constructed,
 **False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -111,7 +111,7 @@ should be constructed,
 **False** - exclude equilibrium reaction terms.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Phase equilibrium construction flag",
         doc="""Indicates whether terms for phase equilibrium should be
 constructed,
@@ -121,7 +121,7 @@ constructed,
 **False** - exclude phase equilibrium terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat of reaction term construction flag",
         doc="""Indicates whether terms for heat of reaction terms should be
 constructed,

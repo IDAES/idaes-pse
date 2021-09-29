@@ -16,10 +16,9 @@ Tests for math util methods.
 
 import pytest
 from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
-                           Set, Var, value, Param, Reals,
+                           Set, Var, value, Param, Reals, units as pyunits,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc, Port
-from pyomo.core.base.units_container import UnitsError
 
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -32,7 +31,9 @@ from idaes.core import (FlowsheetBlock,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        Component,
+                        Phase)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import CSTR
@@ -62,19 +63,22 @@ class ParameterData(PhysicalParameterBlock):
         super(ParameterData, self).build()
 
         # all components are in the aqueous phase
-        self.phase_list = Set(initialize=['aq'])
-        self.component_list = Set(initialize=['S', 'E', 'C', 'P', 'Solvent'])
+        self.aq = Phase()
+        self.S = Component()
+        self.E = Component()
+        self.C = Component()
+        self.P = Component()
+        self.Solvent = Component()
 
-        self.state_block_class = AqueousEnzymeStateBlock
+        self._state_block_class = AqueousEnzymeStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _AqueousEnzymeStateBlock(StateBlock):
@@ -144,7 +148,7 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
     def build(self):
         super(EnzymeReactionParameterData, self).build()
 
-        self.reaction_block_class = EnzymeReactionBlock
+        self._reaction_block_class = EnzymeReactionBlock
 
         self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
         self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
@@ -186,12 +190,11 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _EnzymeReactionBlock(ReactionBlockBase):
@@ -652,7 +655,7 @@ def test_propagate_state_reverse():
 
 
 @pytest.mark.unit
-def test_propagate_state_fixed():
+def test_propagate_state_indexed_fixed():
     m = ConcreteModel()
 
     def block_rule(b):
@@ -660,15 +663,17 @@ def test_propagate_state_fixed():
         b.v1 = Var()
         b.v2 = Var(b.s)
 
-        b.p = Port()
-        b.p.add(b.v1, "V1")
-        b.p.add(b.v2, "V2")
+        b.p = Port(b.s)
+        b.p[1].add(b.v1, "V1")
+        b.p[2].add(b.v2, "V2")
         return
 
     m.b1 = Block(rule=block_rule)
     m.b2 = Block(rule=block_rule)
 
-    m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
+    def arc_rule(m,i):
+        return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
+    m.s1 = Arc([1,2], rule=arc_rule)
 
     # Set values on first block
     m.b1.v1.value = 10
@@ -683,19 +688,47 @@ def test_propagate_state_fixed():
     # Fix v1 in block 2
     m.b2.v1.fix(500)
 
-    propagate_state(m.s1)
+    propagate_state(m.s1[1])
 
     # Check that values were propagated correctly
     assert m.b2.v1.value == 500
+    assert m.b1.v1.fixed is False
+    assert m.b2.v1.fixed is True
+
+    propagate_state(m.s1[2])
+
+    # Check that values were propagated correctly
     assert m.b2.v2[1].value == m.b1.v2[1].value
     assert m.b2.v2[2].value == m.b1.v2[2].value
-
-    assert m.b1.v1.fixed is False
     assert m.b1.v2[1].fixed is False
     assert m.b1.v2[2].fixed is False
-    assert m.b2.v1.fixed is True
     assert m.b2.v2[1].fixed is False
     assert m.b2.v2[2].fixed is False
+
+
+@pytest.mark.unit
+def test_propagate_state_indexed():
+    m = ConcreteModel()
+
+    def block_rule(b):
+        b.s = Set(initialize=[1, 2])
+        b.v1 = Var()
+        b.v2 = Var(b.s)
+
+        b.p = Port(b.s)
+        b.p[1].add(b.v1, "V1")
+        b.p[2].add(b.v2, "V2")
+        return
+
+    m.b1 = Block(rule=block_rule)
+    m.b2 = Block(rule=block_rule)
+
+    def arc_rule(m,i):
+        return {'source': m.b1.p[i], 'destination':m.b2.p[i]}
+    m.s1 = Arc([1,2], rule=arc_rule)
+
+    with pytest.raises(AttributeError):
+        propagate_state(m.s1)
 
 
 @pytest.mark.unit
@@ -719,7 +752,7 @@ def test_propagate_state_Expression():
 
     m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         propagate_state(m.s1)
 
 
@@ -727,7 +760,7 @@ def test_propagate_state_Expression():
 def test_propagate_state_invalid_stream():
     m = ConcreteModel()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError):
         propagate_state(m)
 
 
@@ -806,7 +839,8 @@ def test_initialize_by_time_element():
     ntcp = 2
     m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True,
-                                   'time_set': time_set})
+                                   'time_set': time_set,
+                                   'time_units': pyunits.minute})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
