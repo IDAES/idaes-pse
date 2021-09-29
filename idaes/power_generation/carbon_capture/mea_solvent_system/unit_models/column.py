@@ -790,13 +790,8 @@ documentation for supported schemes,
             if x == self.liquid_phase.length_domain.last():
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
-<<<<<<< HEAD
-                zf = self.vapor_phase.length_domain[self.zi[x].value + 1]
-                if j in liq_comp_diffus:
-=======
                 zf = self.vapor_phase.length_domain.at(self.zi[x].value + 1)
-                if j == 'MEA':
->>>>>>> fb1f5ffab756ca2caaf9ec3f09f703aa5d14b3db
+                if j in liq_comp_diffus:
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         blk.interphase_mass_transfer[t, zf, j]
                 else:
