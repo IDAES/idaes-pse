@@ -195,10 +195,7 @@ def tmp_dmf():
         try:
             shutil.rmtree(tmpdir)
             removed = True
-            print(f"@@ removed DMF temp dir on try {i+1}")
         except Exception as err:
-            print(f"@@ error removing tempdir: {err}")
             time.sleep(1)
-    print(f"@@ tries = {i + 1}")
     if not removed:
         warnings.warn(f"failed to remove temporary directory: {tmpdir}")
