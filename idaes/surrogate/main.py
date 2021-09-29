@@ -26,31 +26,6 @@ except:
 import pyomo.environ as pyo
 from pyomo.common.config import ConfigValue
 
-# TODO: replace with enum
-class Metrics:
-    """
-    Names for known types of metrics.
-
-    Use these as keys in dictionaries, e.g.:
-    m = {Metrics.RMSE: self.rmse}
-    When adding attributes to this class, please include a comment with the
-    prefix "#:" immediately above it, so Sphinx knows that this is documentation
-    for the attribute.
-    """
-
-    #: Root mean-squared error
-    RMSE = "RMSE"
-    #: Mean-squared error
-    MSE = "MSE"
-    #: Sum of squared error
-    SSE = "SSE"
-    #: Time
-    Time = "Time"
-    #: Order
-    Order = "Order"
-    #: R-squared
-    R2 = "R2"
-
 
 class GeneralSurrogate(SurrogateTrainer):
     CONFIG = SurrogateTrainer.CONFIG()

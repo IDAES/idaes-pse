@@ -88,17 +88,7 @@ class SurrogateTrainer:
         """
         raise NotImplementedError('get_surrogate called, but not implemented on the derived class')
 
-    def get_results(self):  # Metrics Object
-        """
-        The ``get_results`` method returns the performance metrics of the surrogate model(s) generated.
-        Returns:
-            Metrics of the surrogates based on the training data, including but not limited to the:
-                - root mean squared error (RMSE),
-                - mean squared error (MSE),
-                - :math:`R^{2}`of the surrogate fit, and
-                - model run time.
-        """
-        return self._results
+    # TODO: methods to report key metrics
 
     # Data Handling
     def set_input_labels(self, labels):
