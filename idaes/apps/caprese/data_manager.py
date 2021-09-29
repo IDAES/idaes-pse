@@ -112,7 +112,8 @@ def add_variable_values_to_dataframe(
 
             if time_subset is None:
                 time_subset = list(idx_set)
-                if time_subset[0] == 0 and len(dataframe.index) != 0:
+                if (len(dataframe.index) != 0 and time_subset[0] == 0
+                    and time_map is None):
                     time_subset = time_subset[1:]
                 
             df_map["iteration"] = len(time_subset)*[iteration]
@@ -144,23 +145,6 @@ def add_variable_values_to_dataframe(
     df = pd.DataFrame(df_map, index=time_points)
 
     return dataframe.append(df)
-
-
-# def add_setpoint_column_into_dataframe(dataframe, variables):
-#     '''
-#     This function adds additional columns to save the setpoint of states for NMPC 
-#     right after the dataframe is constructed.
-
-#     parameters
-#     -------------
-#     dataframe: constructed dataframe
-#     variables: list of variables whose setpoints will be saved in the dataframe
-#     '''
-
-#     for var in variables:
-#         column_name = str(ComponentUID(var.referent)) + "_setpoint"
-#         dataframe[column_name] = []
-#     return dataframe
 
 def add_variable_setpoints_to_dataframe(dataframe, 
                                         variables, 
