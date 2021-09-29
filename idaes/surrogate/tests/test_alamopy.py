@@ -39,8 +39,8 @@ class TestAlamoTrainer:
 
         alm_obj.set_input_bounds({"x1": (0, 5), "x2": (0, 10)})
 
-        alm_obj._training_data_in = np.array([[1, 5], [2, 6], [3, 7], [4, 8]])
-        alm_obj._training_data_out = np.array([[10], [20], [30], [40]])
+        alm_obj.set_training_data(np.array([[1, 5], [2, 6], [3, 7], [4, 8]]),
+                                  np.array([[10], [20], [30], [40]]))
 
         return alm_obj
 
@@ -136,7 +136,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_equal(self, alm_obj):
-        alm_obj._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
+        alm_obj.set_input_bounds({"x1": (0, 5), "x2": (10, 10)})
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -146,7 +146,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_reversed(self, alm_obj):
-        alm_obj._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
+        alm_obj.set_input_bounds({"x1": (0, 5), "x2": (15, 10)})
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -184,8 +184,8 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_validation_data(self, alm_obj):
-        alm_obj._validation_data_in = np.array([[2.5, 6.5]])
-        alm_obj._validation_data_out = np.array([[25]], ndmin=2)
+        alm_obj.set_validation_data(np.array([[2.5, 6.5]]),
+                                    np.array([[25]], ndmin=2))
 
         stream = io.StringIO()
         alm_obj.write_alm_to_stream(stream=stream)
@@ -961,27 +961,26 @@ class TestAlamoObject():
 @pytest.mark.integration
 def test_workflow():
     # Test end-to-end workflow with a simple problem.
-    alm_obj = AlamoTrainer(input_labels = ["x1", "x2"], output_labels = ["z1"])
+    alm_obj = AlamoTrainer(input_labels=["x1", "x2"], output_labels=["z1"])
 
-    alm_obj._input_bounds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+    alm_obj.set_input_bounds({"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)})
 
-    alm_obj._training_data_in = np.array([[0.353837234435, 0.99275270941666],
-                                  [0.904978848612, -0.746908518721],
-                                  [0.643706630938, -0.617496599522],
-                                  [1.29881420688, 0.305594881575],
-                                  [1.35791650867, 0.351045058258],
-                                  [0.938369314089, -0.525167416293],
-                                  [-1.46593541641, 0.383902178482],
-                                  [-0.374378293218, -0.689730440659],
-                                  [0.690326213554, 0.569364994374],
-                                  [-0.961163301329, 0.499471920546]])
-
-    alm_obj._training_data_out = np.array(
-        [[0.762878272854], [0.387963718723], [-0.0205375902284],
-         [2.43011137696], [2.36989368612], [0.829756159423],
-         [1.14054797964], [-0.219122783909], [0.982068847698],
-         [0.936855365038]],
-        ndmin=2)
+    alm_obj.set_training_data(
+        np.array([[0.353837234435, 0.99275270941666],
+                  [0.904978848612, -0.746908518721],
+                  [0.643706630938, -0.617496599522],
+                  [1.29881420688, 0.305594881575],
+                  [1.35791650867, 0.351045058258],
+                  [0.938369314089, -0.525167416293],
+                  [-1.46593541641, 0.383902178482],
+                  [-0.374378293218, -0.689730440659],
+                  [0.690326213554, 0.569364994374],
+                  [-0.961163301329, 0.499471920546]]),
+        np.array([[0.762878272854], [0.387963718723], [-0.0205375902284],
+                  [2.43011137696], [2.36989368612], [0.829756159423],
+                  [1.14054797964], [-0.219122783909], [0.982068847698],
+                  [0.936855365038]],
+                 ndmin=2))
 
     alm_obj.config.linfcns = True
     alm_obj.config.monomialpower = [2, 3, 4, 5, 6]

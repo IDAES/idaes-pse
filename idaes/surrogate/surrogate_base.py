@@ -112,181 +112,60 @@ class SurrogateTrainer:
     def set_input_bounds(self, bounds):
         self._input_bounds = bounds
 
-    def get_regressed_data(self):
+    def get_training_data(self):
         """
-        The ``get_regressed_data`` method returns the input data used in regressing the surrogate model.
+        The ``get_training_data`` method returns the input data used in training the surrogate model.
         Returns:
-            Tuple        : Tuple of two elements containing r_in (samples) and r_out (output values).
+            Tuple : Tuple of two elements containing input (samples) and output (output values).
 
         """
-        return (self._rdata_in, self._rdata_out)
+        return (self._training_data_in, self._training_data_out)
 
-    def set_regressed_data(self, r_in, r_out):  # 2D Numparray
+    def set_training_data(self, input_data, output_data):  # 2D Numparray
         """
-        The ``set_regressed_data`` method initializes the Surrogate class with the data for training the surrogate model.
+        The ``set_training_data`` method initializes the Surrogate class with the data for training the surrogate model.
         Args:
-            r_in  (NumPy Array)  : Two-dimensional NumPy Array containing the samples/features.
-            r_out (NumPy Array)  : Two-dimensional NumPy Array containing the output values.
+            input_data (NumPy Array) : Two-dimensional NumPy Array containing the samples/features.
+            output_data (NumPy Array)  : Two-dimensional NumPy Array containing the output values.
         """
-        # Check shape of data matches expectations
-        # TODO: Add tests for this
-        if (self._input_labels is not None and
-                r_in.shape[0] != len(self._input_labels)):
-            raise ValueError(
-                f"Number of entries in input data ({r_in.shape[1]}) does not "
-                f"match the expected number of inputs "
-                f"({len(self._input_labels)}).")
-        if (self._output_labels is not None and
-                r_out.shape[0] != len(self._output_labels)):
-            raise ValueError(
-                f"Number of entries in output data ({r_out.shape[1]}) does "
-                f"not match the expected number of outputs "
-                f"({len(self._output_labels)}).")
-
-        self._rdata_in = r_in
-        self._rdata_out = r_out
+        # TODO: Support Pandas
+        # TODO: Testing of data shape based on labels
+        self._training_data_in = input_data
+        self._training_data_out = output_data
 
     def get_validation_data(self):
         """
         The ``get_validation_data`` method returns the data supplied for validating the surrogate model.
         Returns:
-            Tuple        : Tuple of two elements containing validation data v_in (samples) and v_out (output values).
+            Tuple : Tuple of two elements containing validation data samples and output values.
 
         """
-        return (self._vdata_in, self._vdata_out)
+        return (self._validation_data_in, self._validation_data_out)
 
-    def set_validation_data(self, v_in, v_out):  # 2D Numparray
+    def set_validation_data(self, validation_inputs, validation_outputs):  # 2D Numparray
         """
         The ``set_validation_data`` method initializes the Surrogate class with data for validating/testing the surrogate model after generation.
         Args:
-            v_in  (NumPy Array)  : Two-dimensional NumPy Array containing the validation samples/features.
-            v_out (NumPy Array)  : Two-dimensional NumPy Array containing the output values of the validation samples.
+            validation_inputs (NumPy Array) : Two-dimensional NumPy Array containing the validation samples/features.
+            validation_outputs (NumPy Array) : Two-dimensional NumPy Array containing the output values of the validation samples.
         """
-        # Check shape of data matches expectations
-        # TODO: Add tests for this
-        if (self._input_labels is not None and
-                v_in.shape[0] != len(self._input_labels)):
-            raise ValueError(
-                f"Number of entries in input data ({v_in.shape[1]}) does not "
-                f"match the expected number of inputs "
-                f"({len(self._input_labels)}).")
-        if (self._output_labels is not None and
-                v_out.shape[0] != len(self._output_labels)):
-            raise ValueError(
-                f"Number of entries in output data ({v_out.shape[1]}) does "
-                f"not match the expected number of outputs "
-                f"({len(self._output_labels)}).")
+        # TODO: Support Pandas
+        # TODO: Testing of data shape based on labels
+        self._validation_data_in = validation_inputs
+        self._validation_data_out = validation_outputs
 
-        self._vdata_in = v_in
-        self._vdata_out = v_out
+    # TODO: Method to get validation metrics
 
-    # Using regressed model
-    # TODO: This should be part of the SurrogateModel object instead
-    # PYLINT-TODO: check if adding self as arg to fix pylint "undefined-variable 'self'" is valid
-    def calculate_outputs(self, inputs):  # 2D Numparray, use pyomo expression
-        """
-        ``calculate_outputs`` evaluates the output predictions from the surrogate for an array of input samples **inputs**
-        Args:
-            inputs(NumPy Array)     : Two-dimensional NumPy Array containing the sample points to be evaluated.
-        Returns:
-            outputs(NumPy Array)    : NumPy Array containing the output predictions from the surrogate model.
-        """
-        outputs = self._surrogate(inputs)
-        return outputs
+    # TODO: Methods to save and load SurrogateTrainers
 
-    # Additional Metrics - MUST NOT OVERWRITE MODELER METRICS
-
-    # def get_trained_metrics():  # 2D Nparray, 2D Numparray # TODO
-    #     if not _b_built:
-    #         print("Warning: No surrogate model regressed.")
-    #         return
-    #     pass
-
-    # PYLINT-TODO: check if adding as an argument and using self._b_built in the body is valid
-    def get_validated_metrics(self, xval, zval):  # 2D, 2D Numparray, use pyomo expression
-        """
-        ``get_validated_metrics`` evaluates the performance metrics for the surrogate model based on a set of off-design points (xval, zval)
-        Args:
-            xval (NumPy Array)      : Two-dimensional array containing a set of off-design samples.
-            zval (NumPy Array)      : Array containing a true output values at off-design sample points.
-        Returns:
-            Metrics of the surrogate model evaluated based on the off-design data set (xval, zval), including but not limited to the:
-                - root mean squared error (RMSE),
-                - mean squared error (MSE), and
-                - :math:`R^{2}`of the surrogate fit based on the off-design data points.
-        """
-        if not self._b_built:
-            print("Warning: No surrogate model regressed.")
-            return
-        pass
-
-    def save_results(self, filename, overwrite=False):
-        """
-        The ``save_results`` method saves the results of the surrogate run in a pickle object
-        Args:
-            filename (str)      : The name of the file to be saved. Must be of extension .pickle
-            overwrite (bool)    : Boolean controlling whether any existing file with the same name is overwritten or not. Default is False.
-        Raises:
-            Exception:
-                * **filename** is not a string or has the wrong extension type
-             Exception:
-                * A file with the name **filename** already exists and **overwrite** is False
-             Exception:
-                * A problem is encountered while trying to save the file.
-        """
-        # Ensure overwrite option, when entered, is boolean
-        if not isinstance(overwrite, bool):
-            raise Exception('overwrite must be boolean.')
-
-        # Check if filename is a string with pickle extension
-        if not isinstance(filename, str) or os.path.splitext(filename)[-1].lower() != '.pickle':
-            raise Exception('filename must be a string with extension ".pickle". Please correct.')
-
-        # If overwite is false, throw up error if the filename already exists in the destination folder
-        if os.path.exists(filename) and overwrite is False:
-            raise Exception(filename, 'already exists!.\n')
-        # Try to save
-        try:
-            filehandler = open(filename, 'wb')
-            pickle.dump(self.pkl_info, filehandler)
-            print('\nResults saved in ', str(filename))
-        except:
-            raise Exception('File could not be saved.')
-
-    def load_results(self, filename):
-        """
-        ``load_results`` loads the results of a saved run 'filename.obj'.
-        Args:
-            filename(str)       : Pickle object file containing previous solution to be loaded.
-        Returns:
-            **self** object containing set-up information and results of the run that created **filename**.
-        Raises:
-            Exception:
-                * **filename** does not exist in the directory.
-            Exception:
-                * A problem is encountered while trying to load **filename**.
-        """
-        if os.path.exists(filename) is False:
-            raise Exception(filename, 'does not exist in directory.')
-        try:
-            filehandler = open(filename, 'rb')
-            loaded_res = pickle.load(filehandler)
-            self.config = loaded_res['Run settings']
-            self._results = loaded_res['Results']
-            self._surrogate = loaded_res['Expression']
-            self._rdata_in = loaded_res['In data']
-            self._rdata_out = loaded_res['Out data']
-            print(str(filename), 'successfully loaded.')
-            return
-        except:
-            raise Exception('File could not be loaded.')
 
 class SurrogateBase():
     """
     Base class for standard IDAES Surrogate Object
     """
 
-    def __init__(self, surrogate, input_labels=None, output_labels=None, input_bounds=None):
+    def __init__(self, surrogate, input_labels=None, output_labels=None,
+                 input_bounds=None):
         self._surrogate = surrogate
         self._input_labels = input_labels
         self._output_labels = output_labels
@@ -354,38 +233,12 @@ class SurrogateBase():
         """
         raise NotImplementedError('"save" should be implemented in the derived'
                                   ' SurrogateObject class')
+
     # TODO: it is recommended that you add a "load" static method to build
     #       a derived surrogate object from the file on disk
-
-    def _construct_variables(self, block, index_set=UnindexedComponent_set):
+    def load(self, filename):
         """
-        Private method used to construct variables when populating Pyomo Blocks
-        if no variable mapping is provided by the user. Variables will be given
-        names based on the labels used by the surroagate model.
-
-        Args:
-            block: Pyomo Block component to be populated with constraints
-            index_set: (optional) if provided, this will be used to index the
-                Vars created by this method.
-
-        Returns:
-            dict mapping surrogate variable labels to created Var components.
+        Load an instance of this surrogate from a file
         """
-        var_map = {}
-
-        for v in self._input_labels:
-            if self._input_bounds is not None:
-                bounds = self._input_bounds[v]
-            else:
-                bounds = (None, None)
-
-            vobj = Var(index_set, bounds=bounds)
-            block.add_component(v, vobj)
-            var_map[v] = vobj
-
-        for v in self._output_labels:
-            vobj = Var(index_set)
-            block.add_component(v, vobj)
-            var_map[v] = vobj
-
-        return var_map
+        raise NotImplementedError('"load" should be implemented in the derived'
+                                  ' SurrogateObject class')

@@ -889,7 +889,7 @@ class AlamoObject(SurrogateBase):
 
     def __init__(
             self, surrogate, input_labels, output_labels, input_bounds=None):
-        super(AlamoObject,self).__init__(
+        super(AlamoObject, self).__init__(
             surrogate, input_labels, output_labels, input_bounds)
 
     def evaluate_surrogate(self, inputs):
@@ -944,7 +944,7 @@ class AlamoObject(SurrogateBase):
         """
         variables = kwargs.pop('variables', None)
         index_set = kwargs.pop('index_set', None)
-        
+
         if index_set is None:
             var_index_set = UnindexedComponent_set
             con_index_set = Set(initialize=self._output_labels)
