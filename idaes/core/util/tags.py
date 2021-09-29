@@ -334,13 +334,6 @@ class ModelTag:
         return (None,)
 
     @property
-    def indices(self):
-        """The index set of the tagged quantity"""
-        if self.is_indexed:
-            return list(self.expression.keys())
-        return (None,)
-
-    @property
     def group(self):
         """The ModelTagGroup object that this belongs to, if any."""
         if self._root is not None:
@@ -580,27 +573,20 @@ class ModelTagGroup(dict):
         else:
             self[name] = ModelTag(expr=expr, **kwargs)
 
-    def table_heading(self, tags=None, units=True):
-        """Create a table heading with a given set of tags, for tabulating model
-        results.
-
-        Args:
-            tags: List of tags or tuples of tags and an index.  If a tag is for
-                an indexed value and no index is given the tag will be flattened
-                to create a column for each index.
-            units: If true include the units of measure in the coulmn heading
-                names.
-
-        Returns:
-            list of column headings
+    def _table_tagkey_index_lists(self, tags=None):
+        """PRIVATE utility function to take tags (list of tag keys or 2-element
+        list of a tag ket and index) and turn it into a list of tag keys and list
+        of indexes. Indexed tags with no index will be expanded to include all
+        indexes.
         """
+
         if tags is None:
             tags = list(self.keys())
 
         tag_list = []
         indexes = []
         for i, tag in enumerate(tags):
-            if not isinstance(tag, str):
+            if isinstance(tag, list):
                 tag_list.append(tag[0])
                 indexes.append(tag[1])
             else:
@@ -611,6 +597,23 @@ class ModelTagGroup(dict):
                     for k in self[tag].keys():
                         tag_list.append(tag)
                         indexes.append(k)
+        return tag_list, indexes
+
+    def table_heading(self, tags=None, units=True):
+        """Create a table heading with a given set of tags, for tabulating model
+        results.
+
+        Args:
+            tags: List of tag keys or 2-element list of tags key and an index.
+                If a key is for an indexed value and no index is given with the
+                key, it will be flattened to create a column for each index.
+            units: If True, include the units of measure in the column heading
+                names.
+
+        Returns:
+            list of column headings
+        """
+        tag_list, indexes = self._table_tagkey_index_lists(tags)
 
         row = [None] * len(tag_list)
         for i, tag in enumerate(tag_list):
@@ -630,9 +633,9 @@ class ModelTagGroup(dict):
         of numeric values.
 
         Args:
-            tags: List of tags or tuples of tags and an index.  If a tag is for
-                an indexed value and no index is given the tag will be flattened
-                to create a column for each index.
+            tags: List of tag keys or 2-element list of tags key and an index.
+                If a key is for an indexed value and no index is given with the
+                key, it will be flattened to create a column for each index.
             units: If true include the units of measure in the value, if the
                 values are not numeric.
             numeric: If true provide numeric values rather than a formatted
@@ -641,23 +644,7 @@ class ModelTagGroup(dict):
         Returns:
             list of values for a table row either numeric or as formatted strings
         """
-        if tags is None:
-            tags = list(self.keys())
-
-        tag_list = []
-        indexes = []
-        for i, tag in enumerate(tags):
-            if not isinstance(tag, str):
-                tag_list.append(tag[0])
-                indexes.append(tag[1])
-            else:
-                if not self[tag].is_indexed:
-                    tag_list.append(tag)
-                    indexes.append(None)
-                else:
-                    for k in self[tag].keys():
-                        tag_list.append(tag)
-                        indexes.append(k)
+        tag_list, indexes = self._table_tagkey_index_lists(tags)
 
         row = [None] * len(tag_list)
         for i, tag in enumerate(tag_list):
