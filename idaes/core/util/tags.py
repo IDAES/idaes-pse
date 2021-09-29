@@ -14,6 +14,7 @@
 and group them, for easy display, formatting, and input.
 """
 import xml.dom.minidom
+import collections
 
 import pyomo.environ as pyo
 from pyomo.common.deprecation import deprecation_warning
@@ -586,9 +587,11 @@ class ModelTagGroup(dict):
         tag_list = []
         indexes = []
         for i, tag in enumerate(tags):
-            if isinstance(tag, list):
+            if not isinstance(tag, collections.Hashable) and len(tag) == 2:
                 tag_list.append(tag[0])
                 indexes.append(tag[1])
+            elif not isinstance(tag, collections.Hashable) and len(tag) != 2:
+                raise ValueError("Key-index pairs should be a list of length 2")
             else:
                 if not self[tag].is_indexed:
                     tag_list.append(tag)
@@ -604,9 +607,10 @@ class ModelTagGroup(dict):
         results.
 
         Args:
-            tags: List of tag keys or 2-element list of tags key and an index.
-                If a key is for an indexed value and no index is given with the
-                key, it will be flattened to create a column for each index.
+            tags: List (not tuple, since a tuple can be a key) of tag keys or
+                2-element list of tags key and an index. If a key is for an
+                indexed value and no index is given with the key, it will be
+                flattened to create a column for each index.
             units: If True, include the units of measure in the column heading
                 names.
 
@@ -633,9 +637,10 @@ class ModelTagGroup(dict):
         of numeric values.
 
         Args:
-            tags: List of tag keys or 2-element list of tags key and an index.
-                If a key is for an indexed value and no index is given with the
-                key, it will be flattened to create a column for each index.
+            tags: List (not tuple, since a tuple can be a key) of tag keys or
+                2-element list of tags key and an index. If a key is for an
+                indexed value and no index is given with the key, it will be
+                flattened to create a column for each index.
             units: If true include the units of measure in the value, if the
                 values are not numeric.
             numeric: If true provide numeric values rather than a formatted
