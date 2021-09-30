@@ -79,7 +79,7 @@ def define_state(b):
                      doc=' Total molar flowrate',
                      units=units["flow_mole"])
     b.mole_frac_comp = Var(b.component_list,
-                           bounds=(0, None),
+                           bounds=(0, 1.001),
                            initialize=1 / len(b.component_list),
                            doc='Mixture mole fractions',
                            units=None)
@@ -110,7 +110,7 @@ def define_state(b):
     b.mole_frac_phase_comp = Var(
         b.phase_component_set,
         initialize=1/len(b.component_list),
-        bounds=(0, None),
+        bounds=(0, 1.001),
         doc='Phase mole fractions',
         units=None)
 
@@ -124,7 +124,7 @@ def define_state(b):
     b.phase_frac = Var(
         b.phase_list,
         initialize=1/len(b.phase_list),
-        bounds=(0, None),
+        bounds=(0, 1.001),
         doc='Phase fractions',
         units=None)
 

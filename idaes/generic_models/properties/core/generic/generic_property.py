@@ -2990,6 +2990,7 @@ class GenericStateBlockData(StateBlockData):
             self.log_conc_mol_phase_comp = Var(
                 self.phase_component_set,
                 initialize=1,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of molar concentration of component by phase")
 
@@ -3011,6 +3012,7 @@ class GenericStateBlockData(StateBlockData):
             self.log_conc_mol_phase_comp_true = Var(
                 self.phase_component_set,
                 initialize=1,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of molar concentration of component by phase")
 
@@ -3031,7 +3033,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mass_frac_phase_comp = Var(
                 self.phase_component_set,
-                initialize=1,
+                initialize=0,
+                bounds=(-50, 0),
                 units=pyunits.dimensionless,
                 doc="Log of mass fractions of component by phase")
 
@@ -3051,7 +3054,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mass_frac_phase_comp_apparent = Var(
                 self.params.apparent_phase_component_set,
-                initialize=1,
+                initialize=0,
+                bounds=(-50, 0),
                 units=pyunits.dimensionless,
                 doc="Log of mass fractions of component by phase")
 
@@ -3071,7 +3075,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mass_frac_phase_comp_true = Var(
                 self.params.true_phase_component_set,
-                initialize=1,
+                initialize=0,
+                bounds=(-50, 0),
                 units=pyunits.dimensionless,
                 doc="Log of mass fractions of component by phase")
 
@@ -3092,6 +3097,7 @@ class GenericStateBlockData(StateBlockData):
             self.log_molality_phase_comp = Var(
                 self.phase_component_set,
                 initialize=1,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of molality of component by phase")
 
@@ -3117,6 +3123,7 @@ class GenericStateBlockData(StateBlockData):
             self.log_molality_phase_comp_apparent = Var(
                 self.params.apparent_phase_component_set,
                 initialize=1,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of molality of component by phase")
 
@@ -3166,7 +3173,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp = Var(
                 self.phase_component_set,
-                initialize=1,
+                initialize=0,
+                bounds=(-50, 0),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase")
 
@@ -3186,7 +3194,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp_apparent = Var(
                 self.params.apparent_phase_component_set,
-                initialize=1,
+                initialize=0,
+                bounds=(-50, 0),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase")
 
@@ -3206,7 +3215,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_mole_frac_phase_comp_true = Var(
                 self.params.true_phase_component_set,
-                initialize=1,
+                initialize=0,
+                bounds=(-50, 0),
                 units=pyunits.dimensionless,
                 doc="Log of mole fractions of component by phase")
 
@@ -3226,7 +3236,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_pressure_phase_comp = Var(
                 self.phase_component_set,
-                initialize=1,
+                initialize=12,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of partial pressures of component by phase")
 
@@ -3246,7 +3257,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_pressure_phase_comp_apparent = Var(
                 self.params.apparent_phase_component_set,
-                initialize=1,
+                initialize=12,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of partial pressures of component by phase")
 
@@ -3266,7 +3278,8 @@ class GenericStateBlockData(StateBlockData):
         try:
             self.log_pressure_phase_comp_true = Var(
                 self.params.true_phase_component_set,
-                initialize=1,
+                initialize=12,
+                bounds=(-50, None),
                 units=pyunits.dimensionless,
                 doc="Log of partial pressures of component by phase")
 
