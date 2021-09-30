@@ -29,7 +29,7 @@ from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEo
 from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
 from idaes.core.phases import PhaseType as PT
-from idaes.core.util.exceptions import (ConfigurationError)
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
 
 
@@ -127,9 +127,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(
-                ConfigurationError,
-                match="params recieved unexpected units for quantity time: "
-                "foo. Units must be instances of a Pyomo unit object."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(foo\)"):
             m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
@@ -151,10 +151,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(
-                ConfigurationError,
-                match="params units for quantity time were not assigned. "
-                "Please make sure to provide units for all base units "
-                "when configuring the property package."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(None\)"):
             m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {

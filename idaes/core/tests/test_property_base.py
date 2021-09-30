@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var, units as pyunits
 from pyomo.common.config import ConfigBlock
 
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
@@ -71,11 +71,24 @@ def test_get_phase_component_set():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
-    m.p.phase_list = Set(initialize=["1", "2", "3"])
-    m.p.component_list = Set(initialize=["a", "b", "c"])
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
-    # Need to call this to trigger build of Phase objects for now
-    m.p._make_phase_objects()
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
+
+    m.p.p1 = Phase()
+    m.p.p2 = Phase()
+    m.p.p3 = Phase()
+    m.p.a = Component()
+    m.p.b = Component()
+    m.p.c = Component()
 
     pc_set = m.p.get_phase_component_set()
 
@@ -99,21 +112,36 @@ def test_get_phase_component_set_subset():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
-    m.p.phase_list = ["1", "2", "3"]
-    m.p.phase_comp = {"1": ["a", "b", "c"],
-                      "2": ["a", "b"],
-                      "3": ["c"]}
+    m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
-    # Need to call this to trigger build of Phase objects for now
-    m.p._make_phase_objects()
+    def get_metadata(self):
+        return m.meta_object
+    m.p.get_metadata = types.MethodType(get_metadata, m.p)
+
+    m.p.p1 = Phase()
+    m.p.p2 = Phase(default={"component_list": ["a", "b"]})
+    m.p.p3 = Phase(default={"component_list": ["c"]})
+    m.p.a = Component()
+    m.p.b = Component()
+    m.p.c = Component()
+
+    phase_comp = {"p1": ["a", "b", "c"],
+                  "p2": ["a", "b"],
+                  "p3": ["c"]}
 
     pc_set = m.p.get_phase_component_set()
 
     assert isinstance(m.p._phase_component_set, Set)
     assert len(m.p._phase_component_set) == 6
     for v in m.p._phase_component_set:
-        assert v[0] in m.p.phase_comp.keys()
-        assert v[1] in m.p.phase_comp[v[0]]
+        assert v[0] in phase_comp.keys()
+        assert v[1] in phase_comp[v[0]]
 
     assert pc_set is m.p._phase_component_set
 
@@ -124,6 +152,12 @@ def test_get_component():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
@@ -167,80 +201,13 @@ def test_get_phase():
 
 
 @pytest.mark.unit
-def test_make_component_objects():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.meta_object = PropertyClassMetadata()
-
-    def get_metadata(self):
-        return m.meta_object
-    m.p.get_metadata = types.MethodType(get_metadata, m.p)
-
-    m.p.component_list = Set(initialize=["comp1", "comp2"])
-
-    m.p._make_component_objects()
-
-    assert isinstance(m.p.comp1, Component)
-    assert isinstance(m.p.comp2, Component)
-
-
-@pytest.mark.unit
-def test_make_component_objects_already_exists():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.p.comp1 = object()
-
-    m.p.component_list = Set(initialize=["comp1", "comp2"])
-
-    with pytest.raises(PropertyPackageError,
-                       match="p could not add Component object comp1 - an "
-                       "object with that name already exists."):
-        m.p._make_component_objects()
-
-
-@pytest.mark.unit
-def test_make_phase_objects():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.p.phase_list = Set(initialize=["phase1", "phase2"])
-    m.p.phase_comp = {"phase1": [1, 2, 3],
-                      "phase2": [4, 5, 6]}
-
-    m.p._make_phase_objects()
-
-    assert isinstance(m.p.phase1, Phase)
-    assert isinstance(m.p.phase2, Phase)
-
-    assert m.p.phase1.config.component_list == [1, 2, 3]
-    assert m.p.phase2.config.component_list == [4, 5, 6]
-
-
-@pytest.mark.unit
-def test_make_phase_objects_already_exists():
-    m = ConcreteModel()
-    m.p = ParameterBlock()
-
-    m.p.phase1 = object()
-
-    m.p.phase_list = Set(initialize=["phase1", "phase2"])
-
-    with pytest.raises(PropertyPackageError,
-                       match="p could not add Phase object phase1 - an "
-                       "object with that name already exists."):
-        m.p._make_phase_objects()
-
-
-@pytest.mark.unit
 def test_validate_parameter_block_no_component_list():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
     with pytest.raises(
             PropertyPackageError,
-            match="Property package p has not defined a component list."):
+            match="Property package p has not defined any Components."):
         m.p._validate_parameter_block()
 
 
@@ -250,16 +217,23 @@ def test_validate_parameter_block_no_phase_list():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
-    m.p.component_list = Set(initialize=["c1", "c2"])
+    m.p.c1 = Component()
+    m.p.c2 = Component()
 
     with pytest.raises(
             PropertyPackageError,
-            match="Property package p has not defined a phase list."):
+            match="Property package p has not defined any Phases."):
         m.p._validate_parameter_block()
 
 
@@ -283,22 +257,32 @@ def test_validate_parameter_block_invalid_phase_object():
     m.p = ParameterBlock()
 
     m.meta_object = PropertyClassMetadata()
+    m.meta_object.add_default_units({
+        'time': pyunits.s,
+        'length': pyunits.m,
+        'mass': pyunits.kg,
+        'amount': pyunits.mol,
+        'temperature': pyunits.K})
 
     def get_metadata(self):
         return m.meta_object
     m.p.get_metadata = types.MethodType(get_metadata, m.p)
 
-    m.p.component_list = Set(initialize=["c1", "c2"])
+    m.p.c1 = Component()
+    m.p.c2 = Component()
 
     m.p.phase_list = Set(initialize=["foo"])
     m.p.foo = object()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError,
+                       match="Property package p has an object foo whose "
+                       "name appears in phase_list but is not an "
+                       "instance of Phase"):
         m.p._validate_parameter_block()
 
 
 @pytest.mark.unit
-def test_has_inherent_Reactions():
+def test_has_inherent_reactions():
     m = ConcreteModel()
     m.p = ParameterBlock()
 
@@ -416,8 +400,8 @@ class _Parameters(PhysicalParameterBlock):
     def build(self):
         super(_Parameters, self).build()
 
-        self.phase_list = ["p1"]
-        self.component_list = ["c1"]
+        self.p1 = Phase()
+        self.c1 = Component()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -429,6 +413,12 @@ class _Parameters(PhysicalParameterBlock):
                             'not_supported': {'method': False},
                             'does_not_create_component': {
                                 'method': '_does_not_create_component'}})
+        obj.add_default_units({
+            "time": pyunits.s,
+            "mass": pyunits.kg,
+            "length": pyunits.m,
+            "amount": pyunits.mol,
+            "temperature": pyunits.K})
 
 
 @declare_process_block_class("StateTest", block_class=StateBlock)
