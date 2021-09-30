@@ -153,7 +153,11 @@ def add_variable_setpoints_to_dataframe(dataframe,
                                         map_for_user_given_vars = None):
     '''
     Save the setpoints for states of interest in nmpc's dataframe.
+
+    TODO: replace this function with 'add_variable_values_to_dataframe' when we
+    don't save setpoints in attributes'
     '''
+
     df_map = OrderedDict()
     df_map["iteration"] = len(time_subset)*[iteration]
 
@@ -175,7 +179,6 @@ def add_variable_setpoints_to_dataframe(dataframe,
     df = pd.DataFrame(df_map, index=time_points)         
 
     return dataframe.append(df)
-        
 
 class PlantDataManager(object):
     def __init__(self, 
