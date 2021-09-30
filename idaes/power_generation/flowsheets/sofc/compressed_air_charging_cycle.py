@@ -53,8 +53,9 @@ from idaes.power_generation.flowsheets.\
 )
 
 # Import tank model
-from compressed_gas_tank import CompressedGasTank
-
+from idaes.power_generation.flowsheets.sofc.compressed_gas_tank import (
+    CompressedGasTank
+)
 
 def build_model(m):
 
