@@ -9,9 +9,9 @@
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 
-__author__ = "Chinedu Okoli", "John Eslick"
+__author__ = "Chinedu Okoli", "John Eslick", "Alex Noring"
 
 import os
 import csv
@@ -33,8 +33,8 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
     GenericReactionParameterBlock,
 )
 from idaes.power_generation.unit_models.helm import (
-    HelmMixer,
-    MomentumMixingType,
+    # HelmMixer,
+    # MomentumMixingType,
     HelmSplitter,
     HelmIsentropicCompressor
 )
@@ -117,16 +117,11 @@ def add_properties(m):
         "Ar",
     }
     m.fs.fg_prop = GenericParameterBlock(
-        default=get_prop(components=fuel_comp, phases=["Vap"], eos=EosType.IDEAL)
+        default=get_prop(components=fuel_comp, phases=["Vap"],
+                         eos=EosType.IDEAL)
     )
     m.fs.fg_prop.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.fg_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
-    # m.fs.fg_prop.set_default_scaling("flow_mol", 1)
-    # m.fs.fg_prop.set_default_scaling("flow_mol_phase", 1)
-    # m.fs.fg_prop.set_default_scaling("temperature", 1e-3)
-    # m.fs.fg_prop.set_default_scaling("pressure", 1e-2)
-    # m.fs.fg_prop.set_default_scaling("enth_mol_phase", 1e-4)
-    # m.fs.fg_prop.set_default_scaling("entr_mol_phase", 1e-2)    
     rxns = {  # reactions and key components for conversion
         "ch4_cmb": "CH4",
         "c2h6_cmb": "C2H6",
@@ -134,16 +129,20 @@ def add_properties(m):
         "c4h10_cmb": "C4H10",
     }
     m.rxns = rxns
-    m.fs.fg_combust = GenericReactionParameterBlock(default=get_rxn(m.fs.fg_prop, rxns))
+    m.fs.fg_combust = GenericReactionParameterBlock(
+        default=get_rxn(m.fs.fg_prop, rxns))
     m.fs.water_prop = iapws95.Iapws95ParameterBlock()
     m.fs.h2_prop = GenericParameterBlock(
-        default=get_prop(components={"H2", "H2O"}, phases=["Vap"], eos=EosType.IDEAL)
+        default=get_prop(components={"H2", "H2O"},
+                         phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.o2_prop = GenericParameterBlock(
-        default=get_prop(components={"O2", "H2O"}, phases=["Vap"], eos=EosType.IDEAL)
+        default=get_prop(components={"O2", "H2O"},
+                         phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.air_prop = GenericParameterBlock(
-        default=get_prop(components=air_comp, phases=["Vap"], eos=EosType.IDEAL)
+        default=get_prop(components=air_comp,
+                         phases=["Vap"], eos=EosType.IDEAL)
     )
     m.fs.air_prop.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.air_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
@@ -189,7 +188,7 @@ def add_asu(m):
 
     ###########################################################################
     #  Specify performance variables of unit operations
-    ###########################################################################    
+    ###########################################################################
     # air compressors and intercoolers
     m.fs.air_compressor_s1.outlet.pressure.fix(111422)  # Pa (34 psia)
     m.fs.air_compressor_s1.efficiency_isentropic.fix(0.84)
@@ -209,7 +208,7 @@ def add_asu(m):
 
     ###########################################################################
     #  Add stream connections
-    ###########################################################################     
+    ###########################################################################
     # Arcs for ASU, oxycombustor and CPU
     m.fs.STAGE_1_OUT = Arc(
         source=m.fs.air_compressor_s1.outlet,
@@ -223,7 +222,7 @@ def add_asu(m):
         source=m.fs.air_compressor_s2.outlet,
         destination=m.fs.intercooler_s2.inlet)
 
-    m.fs.TO_ASU = Arc(
+    m.fs.ba01 = Arc(
         source=m.fs.intercooler_s2.outlet,
         destination=m.fs.ASU.inlet)
 
@@ -255,27 +254,23 @@ def add_preheater(m):
 
     ###########################################################################
     #  Specify performance variables of unit operations
-    ########################################################################### 
-    # m.fs.oxygen_preheater.area.fix(1000)
-    # m.fs.oxygen_preheater.tube_outlet.temperature[0].fix(450)
+    ###########################################################################
     m.fs.oxygen_preheater.overall_heat_transfer_coefficient.fix(100)
-    m.fs.oxygen_preheater.delta_temperature_in.fix(30) # fix DT for pinch side
+    m.fs.oxygen_preheater.delta_temperature_in.fix(30)  # fix DT for pinch side
 
-    # m.fs.ng_preheater.area.fix(200)
-    # m.fs.ng_preheater.tube_outlet.temperature[0].fix(450)
     m.fs.ng_preheater.overall_heat_transfer_coefficient.fix(100)
-    m.fs.ng_preheater.delta_temperature_in.fix(30) # fix DT for pinch side
+    m.fs.ng_preheater.delta_temperature_in.fix(30)  # fix DT for pinch side
 
-    m.fs.preheat_split.split_fraction[:, "air"].fix(0.9)    
-    
+    m.fs.preheat_split.split_fraction[:, "air"].fix(0.9)
+
     ###########################################################################
     #  Add stream connections
-    ########################################################################### 
-    m.fs.a04 = Arc(
+    ###########################################################################
+    m.fs.o04 = Arc(
         source=m.fs.preheat_split.ng,
         destination=m.fs.ng_preheater.shell_inlet
     )
-    m.fs.a05 = Arc(
+    m.fs.o05 = Arc(
         source=m.fs.preheat_split.air,
         destination=m.fs.oxygen_preheater.shell_inlet
     )
@@ -306,7 +301,7 @@ def add_combustor(m):
             "reaction_package": m.fs.fg_combust,
             "has_pressure_change": False,
             "has_heat_of_reaction": True,
-            "has_heat_transfer": True  # This means a heat duty variable exists (use to provdie heat to water/steam in tubes)
+            "has_heat_transfer": True  # This means a heat duty variable exists (use to provide heat to water/steam in tubes)
             }
         )
     m.fs.post_oxycombustor_translator = gum.Translator(
@@ -317,7 +312,7 @@ def add_combustor(m):
 
     ###########################################################################
     #  Specify performance variables of unit operations
-    ###########################################################################     
+    ###########################################################################
     # Additional constraints to specify the pre combustor translator block
     @m.fs.pre_oxycombustor_translator.Constraint(m.fs.time)
     def pre_oxycombustor_translator_F(b, t):
@@ -332,7 +327,7 @@ def add_combustor(m):
         return b.inlet.pressure[t] == b.outlet.pressure[t]
 
     @m.fs.pre_oxycombustor_translator.Constraint(m.fs.time,
-                                             m.fs.air_prop.component_list)
+                                                 m.fs.air_prop.component_list)
     def pre_oxycombustor_translator_x(b, t, j):
         return b.inlet.mole_frac_comp[t, j] == b.outlet.mole_frac_comp[t, j]
 
@@ -383,10 +378,10 @@ def add_combustor(m):
         source=m.fs.pre_oxycombustor_translator.outlet,
         destination=m.fs.cmb_mix.air
     )
-    m.fs.bng03 = Arc(
+    m.fs.bng01 = Arc(
         source=m.fs.ng_preheater.tube_outlet, destination=m.fs.cmb_mix.ng
     )
-    m.fs.bng04 = Arc(
+    m.fs.bng02 = Arc(
         source=m.fs.cmb_mix.outlet, destination=m.fs.cmb.inlet
     )
     m.fs.cmb_out = Arc(  # TODO - rename arc
@@ -396,22 +391,14 @@ def add_combustor(m):
     m.fs.fg01 = Arc(source=m.fs.post_oxycombustor_translator.outlet,
                     destination=m.fs.air_preheater_2.shell_inlet)
 
-    
+
 def add_aux_boiler_steam(m):
     ###########################################################################
     #  Build unit operations
     ###########################################################################
-    # m.fs.bhx2 = gum.HeatExchanger(
-    #     default={
-    #         "delta_temperature_callback": delta_temperature_underwood_callback,
-    #         "shell": {"property_package": m.fs.air_prop},
-    #         "tube": {"property_package": m.fs.water_prop},
-    #     }
-    # )
-
-    m.fs.bhx2 = gum.Heater(
-    default={"has_pressure_change": False,
-             "property_package": m.fs.water_prop})
+    m.fs.bhx2 = gum.Heater(  # in-bed heat exchanger to the oxycombustor
+        default={"has_pressure_change": False,
+                 "property_package": m.fs.water_prop})
 
     m.fs.main_steam_split = HelmSplitter(
         default={
@@ -441,13 +428,9 @@ def add_aux_boiler_steam(m):
     # TODO - Rewrite this spec in a more elegant way - Q comes from cmb
     h_bhx2 = pyo.value(iapws95.htpx(1073.15*pyo.units.K,1.1e5*pyo.units.Pa)) # enthalpy outlet
     m.fs.bhx2.outlet.enth_mol.fix(h_bhx2)  # K (100 F) # unfix after initalize and spec Q from cmb
-    # m.fs.bhx2.deltaP.fix(-3447)  # Pa (-0.5 psi)
-    
-    # h_bhx1 = pyo.value(iapws95.htpx(None,1.1e5*pyo.units.Pa, x=0.3)) # enthalpy outlet
-    # m.fs.bhx1.tube_outlet.enth_mol[0].fix(h_bhx1)
-    # m.fs.bhx1.shell_outlet.temperature[0].fix(405)
+
     m.fs.bhx1.overall_heat_transfer_coefficient.fix(100)
-    m.fs.bhx1.delta_temperature_out.fix(100) # fix DT for pinch side
+    m.fs.bhx1.delta_temperature_out.fix(100)  # fix DT for pinch side
 
     m.fs.aux_boiler_feed_pump.outlet.pressure.fix(1.1e5)
     m.fs.aux_boiler_feed_pump.efficiency_isentropic.fix(0.85)
@@ -457,20 +440,20 @@ def add_aux_boiler_steam(m):
     ###########################################################################
     #  Add stream connections
     ###########################################################################
-    m.fs.s02 = Arc(
+    m.fs.s01 = Arc(
         source=m.fs.aux_boiler_feed_pump.outlet,
         destination=m.fs.bhx1.tube_inlet
     )
-    m.fs.s03 = Arc(
+    m.fs.s02 = Arc(
         source=m.fs.bhx1.tube_outlet,
         destination=m.fs.bhx2.inlet
     )
-    m.fs.s09 = Arc(
+    m.fs.s03 = Arc(
         source=m.fs.bhx2.outlet,
         destination=m.fs.main_steam_split.inlet
     )
 
-    
+
 def add_soec_air_side_units(m):
     ###########################################################################
     #  Build unit operations
@@ -501,8 +484,6 @@ def add_soec_air_side_units(m):
     m.fs.air_blower.outlet.pressure.fix(1.1e5)  # Pa (15.3 psi)
     m.fs.air_blower.efficiency_isentropic.fix(0.8)
 
-    # m.fs.air_preheater_1.tube_outlet.temperature[0].fix(973.15)
-    # m.fs.air_preheater_1.area.fix(500)
     m.fs.air_preheater_1.overall_heat_transfer_coefficient.fix(100)
     m.fs.air_preheater_1.delta_temperature_in.fix(50)  # fix DT for pinch side
 
@@ -514,13 +495,14 @@ def add_soec_air_side_units(m):
     #  Add stream connections
     ###########################################################################
     m.fs.a01 = Arc(source=m.fs.air_blower.outlet,
-                    destination=m.fs.air_preheater_1.tube_inlet)
+                   destination=m.fs.air_preheater_1.tube_inlet)
     m.fs.a02 = Arc(source=m.fs.air_preheater_1.tube_outlet,
-                    destination=m.fs.air_preheater_2.tube_inlet)
+                   destination=m.fs.air_preheater_2.tube_inlet)
 
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
-    
+
+
 def add_soec_unit(m):
     ###########################################################################
     #  Build unit operations
@@ -598,7 +580,7 @@ def add_soec_unit(m):
     m.fs.o01 = Arc(source=m.fs.soec.outlet_ac_mult,
                    destination=m.fs.splta1.inlet)
 
-    
+
 def add_soec_inlet_mix(m):
     ###########################################################################
     #  Build unit operations
@@ -678,30 +660,30 @@ def add_h2_compressor(m):
     ###########################################################################
     #  Build unit operations
     ###########################################################################
-    m.fs.hcmp_ic01 = gum.Heater(default=
-                                {"property_package": m.fs.h2_compress_prop})
-    m.fs.hcmp01 = gum.Compressor(default=
-                                 {"property_package": m.fs.h2_compress_prop,
-                                 "thermodynamic_assumption":
-                                     ThermodynamicAssumption.isentropic})
-    m.fs.hcmp_ic02 = gum.Heater(default=
-                                {"property_package": m.fs.h2_compress_prop})
-    m.fs.hcmp02 = gum.Compressor(default=
-                                 {"property_package": m.fs.h2_compress_prop,
-                                 "thermodynamic_assumption":
-                                     ThermodynamicAssumption.isentropic})
-    m.fs.hcmp_ic03 = gum.Heater(default=
-                                {"property_package": m.fs.h2_compress_prop})
-    m.fs.hcmp03 = gum.Compressor(default=
-                                 {"property_package": m.fs.h2_compress_prop,
-                                 "thermodynamic_assumption":
-                                     ThermodynamicAssumption.isentropic})
-    m.fs.hcmp_ic04 = gum.Heater(default=
-                                {"property_package": m.fs.h2_compress_prop})
-    m.fs.hcmp04 = gum.Compressor(default=
-                                 {"property_package": m.fs.h2_compress_prop,
-                                 "thermodynamic_assumption":
-                                     ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic01 = gum.Heater(
+                default={"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp01 = gum.Compressor(
+                default={"property_package": m.fs.h2_compress_prop,
+                         "thermodynamic_assumption":
+                             ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic02 = gum.Heater(
+                default={"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp02 = gum.Compressor(
+                default={"property_package": m.fs.h2_compress_prop,
+                         "thermodynamic_assumption":
+                             ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic03 = gum.Heater(
+                default={"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp03 = gum.Compressor(
+        default={"property_package": m.fs.h2_compress_prop,
+                 "thermodynamic_assumption":
+                     ThermodynamicAssumption.isentropic})
+    m.fs.hcmp_ic04 = gum.Heater(
+                default={"property_package": m.fs.h2_compress_prop})
+    m.fs.hcmp04 = gum.Compressor(
+                default={"property_package": m.fs.h2_compress_prop,
+                         "thermodynamic_assumption":
+                             ThermodynamicAssumption.isentropic})
 
     ###########################################################################
     #  Specify performance variables of unit operations
@@ -745,23 +727,23 @@ def add_h2_compressor(m):
     ###########################################################################
     #  Add stream connections
     ###########################################################################
-    m.fs.h04 = Arc(
+    m.fs.h03 = Arc(
         source=m.fs.bhx1.shell_outlet_drop_water,
         destination=m.fs.hcmp_ic01.inlet
     )
-    m.fs.h05 = Arc(source=m.fs.hcmp_ic01.outlet,
+    m.fs.h04 = Arc(source=m.fs.hcmp_ic01.outlet,
                    destination=m.fs.hcmp01.inlet)
-    m.fs.h06 = Arc(source=m.fs.hcmp01.outlet,
+    m.fs.h05 = Arc(source=m.fs.hcmp01.outlet,
                    destination=m.fs.hcmp_ic02.inlet)
-    m.fs.h07 = Arc(source=m.fs.hcmp_ic02.outlet,
+    m.fs.h06 = Arc(source=m.fs.hcmp_ic02.outlet,
                    destination=m.fs.hcmp02.inlet)
-    m.fs.h08 = Arc(source=m.fs.hcmp02.outlet,
+    m.fs.h07 = Arc(source=m.fs.hcmp02.outlet,
                    destination=m.fs.hcmp_ic03.inlet)
-    m.fs.h09 = Arc(source=m.fs.hcmp_ic03.outlet,
+    m.fs.h08 = Arc(source=m.fs.hcmp_ic03.outlet,
                    destination=m.fs.hcmp03.inlet)
-    m.fs.h10 = Arc(source=m.fs.hcmp03.outlet,
+    m.fs.h09 = Arc(source=m.fs.hcmp03.outlet,
                    destination=m.fs.hcmp_ic04.inlet)
-    m.fs.h11 = Arc(source=m.fs.hcmp_ic04.outlet,
+    m.fs.h10 = Arc(source=m.fs.hcmp_ic04.outlet,
                    destination=m.fs.hcmp04.inlet)
 
 
@@ -826,26 +808,6 @@ def add_hrsg_and_cpu(m):
     for j in m.fs.air_prop.component_list:
         if j not in m.fs.CO2_H2O_VLE.component_list:
             m.fs.pre_oxycombustor_translator.outlet.mole_frac_comp[0, j].fix(0)
-    # CPU constraints
-    # TODO - these CPU constraints replace the flash.vap.outlet arc (8 DOFs)
-    # converting from kmol/s to mol/s
-    # @m.fs.Constraint(m.fs.time)
-    # def CPU_inlet_F(fs, t):
-    #     return fs.CPU.inlet.flow_mol[t] == fs.flash.vap_outlet.flow_mol[t]
-
-    # @m.fs.Constraint(m.fs.time)
-    # def CPU_inlet_T(fs, t):
-    #     return (fs.CPU.inlet.temperature[t] ==
-    #             fs.flash.vap_outlet.temperature[t])
-
-    # @m.fs.Constraint(m.fs.time)
-    # def CPU_inlet_P(fs, t):
-    #     return fs.CPU.inlet.pressure[t] == fs.flash.vap_outlet.pressure[t]
-
-    # @m.fs.Constraint(m.fs.time, m.fs.CO2_H2O_VLE.component_list)
-    # def CPU_inlet_x(fs, t, j):
-    #     return (fs.CPU.inlet.mole_frac_comp[t, j] ==
-    #             fs.flash.vap_outlet.mole_frac_comp[t, j])
 
     ###########################################################################
     #  Add stream connections
@@ -866,8 +828,30 @@ def add_hrsg_and_cpu(m):
                     destination=m.fs.condenser.inlet)
     m.fs.fg05 = Arc(source=m.fs.condenser.outlet,
                     destination=m.fs.flash.inlet)
-    m.fs.fg06 = Arc(source=m.fs.flash.vap_outlet,
-                    destination=m.fs.CPU.inlet)
+
+    # TODO - copy_port method used instead of propagate_state because of issue
+    # TODO - noticed in tags with propagating flash.vap_outlet to CPU.inlet
+    # m.fs.fg06 = Arc(source=m.fs.flash.vap_outlet,
+    #                 destination=m.fs.CPU.inlet)
+    @m.fs.Constraint(m.fs.time)
+    def CPU_inlet_F(fs, t):
+        return (1e-3*fs.CPU.inlet.flow_mol[t] ==
+                1e-3*fs.flash.vap_outlet.flow_mol[t])
+
+    @m.fs.Constraint(m.fs.time)
+    def CPU_inlet_T(fs, t):
+        return (1e-3*fs.CPU.inlet.temperature[t] ==
+                1e-3*fs.flash.vap_outlet.temperature[t])
+
+    @m.fs.Constraint(m.fs.time)
+    def CPU_inlet_P(fs, t):
+        return (1e-3*fs.CPU.inlet.pressure[t] ==
+                1e-3*fs.flash.vap_outlet.pressure[t])
+
+    @m.fs.Constraint(m.fs.time, m.fs.CO2_H2O_VLE.component_list)
+    def CPU_inlet_x(fs, t, j):
+        return (1e2*fs.CPU.inlet.mole_frac_comp[t, j] ==
+                1e2*fs.flash.vap_outlet.mole_frac_comp[t, j])
 
 
 def add_more_hx_connections(m):
@@ -883,18 +867,21 @@ def add_more_hx_connections(m):
 
 def add_design_constraints(m):
     m.fs.soec_heat_duty = pyo.Var(m.fs.time, units=pyo.units.W)
+
     @m.fs.Constraint(m.fs.time)
     def heat_duty_soec_zero_eqn(b, t):
         return b.soec.heat_duty[t] == b.soec_heat_duty[t]
 
     m.fs.soec_cmb_temperature = pyo.Var(m.fs.time, initialize=2000,
                                         units=pyo.units.K)
+
     @m.fs.Constraint(m.fs.time)
     def soec_cmb_temperature_eqn(b, t):
         return m.fs.cmb.outlet.temperature[t] == m.fs.soec_cmb_temperature[t]
 
     m.fs.soec_steam_temperature = pyo.Var(m.fs.time, initialize=1073.15,
                                           units=pyo.units.K)
+
     @m.fs.Constraint(m.fs.time)
     def soec_steam_temperature_eqn(b, t):
         return (m.fs.bhx2.control_volume.properties_out[t].temperature ==
@@ -949,7 +936,8 @@ def add_result_constraints(m):
 
     @m.fs.Expression(m.fs.time)
     def h2_product_rate_mass(b, t):  # kg/s
-        return m.fs.hydrogen_product_rate[t] * 0.002 * pyo.units.kg / pyo.units.mol
+        return (m.fs.hydrogen_product_rate[t] *
+                0.002 * pyo.units.kg / pyo.units.mol)
 
     @m.fs.Expression(m.fs.time)
     def soec_power_per_h2(b, t):
@@ -982,14 +970,16 @@ def add_result_constraints(m):
 
     @m.fs.Constraint(m.fs.time)
     def HRSG_heat_duty_constraint(fs, t):
-        return (-1*fs.HRSG_heat_duty[t] ==
-                pyo.units.convert(fs.soec_air_HRSG_1.heat_duty[t], pyo.units.MW) +
-                pyo.units.convert(fs.soec_air_HRSG_2.heat_duty[t], pyo.units.MW) +
-                pyo.units.convert(fs.fluegas_HRSG.heat_duty[t], pyo.units.MW)
-                )
+        return (
+            -1*fs.HRSG_heat_duty[t] ==
+            pyo.units.convert(fs.soec_air_HRSG_1.heat_duty[t], pyo.units.MW) +
+            pyo.units.convert(fs.soec_air_HRSG_2.heat_duty[t], pyo.units.MW) +
+            pyo.units.convert(fs.fluegas_HRSG.heat_duty[t], pyo.units.MW)
+            )
 
     # steam required for ASU
-    m.fs.ASU_HP_steam_heat = pyo.Var(m.fs.time, initialize=4, units=pyo.units.MW)
+    m.fs.ASU_HP_steam_heat = pyo.Var(m.fs.time,
+                                     initialize=4, units=pyo.units.MW)
 
     @m.fs.Constraint(m.fs.time)
     def ASU_HP_steam_constraint(fs, t):
@@ -1161,6 +1151,7 @@ def add_result_constraints(m):
                     fs.hcmp04.work_mechanical[t]/0.96
                     ), pyo.units.MW))
 
+    # TODO - should the soec have transformer losses i.e. no power sent to grid
     # transformer losses
     m.fs.transformer_losses = pyo.Var(m.fs.time,
                                       initialize=2, units=pyo.units.MW)
@@ -1209,13 +1200,24 @@ def add_result_constraints(m):
         return (fs.HHV_efficiency[t] == (fs.net_power[t] +
                 pyo.units.convert(
                     (H2_HHV * fs.h2_product_rate_mass[t]),
-                    pyo.units.MW))                
+                    pyo.units.MW))
                 /
                 pyo.units.convert(
                     (NG_HHV * fs.ng_preheater.tube.properties_in[t].flow_mol),
                     pyo.units.MW))
 
-    # CO2 emissions in g/kWh
+    # CO2 captured in kg/hr
+    m.fs.CO2_captured = pyo.Var(m.fs.time, initialize=300,
+                                units=pyo.units.kg/pyo.units.hr)
+
+    @m.fs.Constraint(m.fs.time)
+    def CO2_captured_constraint(fs, t):
+        mass_flow = (fs.CPU.pureco2.flow_mol[t] *
+                     fs.CPU.pureco2.mole_frac_comp[t, 'CO2'] *
+                     0.04401*pyo.units.kg/pyo.units.mol)
+        return fs.CO2_captured[t] == pyo.units.convert(
+                            mass_flow, pyo.units.kg/pyo.units.hr)
+    # CO2 emissions in kg/hr
     m.fs.CO2_emissions = pyo.Var(m.fs.time, initialize=300,
                                  units=pyo.units.kg/pyo.units.hr)
 
@@ -1226,7 +1228,8 @@ def add_result_constraints(m):
                      0.04401*pyo.units.kg/pyo.units.mol)
         return fs.CO2_emissions[t] == pyo.units.convert(
                             -1*mass_flow, pyo.units.kg/pyo.units.hr)
-    # TODO - include results constraints for water usage/makeup water
+    # TODO - include results constraints for water usage/makeup water i.e.
+    # TODO - cooling water loss, steam cycle loss, process water for H2 gen
 
 
 def initialize_results(m):
@@ -1252,6 +1255,7 @@ def initialize_results(m):
         m.fs.transformer_losses,
         m.fs.net_power,
         m.fs.HHV_efficiency,
+        m.fs.CO2_captured,
         m.fs.CO2_emissions]
 
     constraints = [
@@ -1275,31 +1279,28 @@ def initialize_results(m):
         m.fs.transformer_losses_constraint,
         m.fs.net_power_constraint,
         m.fs.efficiency_rule,
+        m.fs.CO2_captured_constraint,
         m.fs.CO2_emission_constraint]
 
     for v, c in zip(variables, constraints):
         for t in m.fs.time:
             calculate_variable_from_constraint(v[t], c[t])
 
+
 def set_guess(m):
-    # Set guess for tear streams (preheat_split.inlet and bhx2.tube_inlet)
-    comp_guess = { # air_prop is used as assumption is all fuel is combusted
+    # Set guess for tear stream (preheat_split.inlet)
+    comp_guess = {  # air_prop is used as assumption as all fuel is combusted
         "O2": 0.2074,
         "H2O": 0.0099,
         "CO2": 0.0003,
         "N2": 0.7732,
         "Ar": 0.0092
     }
-    # TODO - update tear stream to bhx2.shell_inlet?
+
     _set_port(
         m.fs.preheat_split.inlet, F=6000, T=700, P=1.04e5,
         comp=comp_guess, fix=True
     )
-
-    # m.fs.bhx2.tube_inlet.flow_mol.fix(2000)
-    # m.fs.bhx2.tube_inlet.enth_mol.fix(iapws95.htpx(T=380*pyo.units.K,
-    #                                                P=1.1e5*pyo.units.Pa))
-    # m.fs.bhx2.tube_inlet.pressure.fix(20.6e5)
 
     # Set guess for temp, pressure and mole frac conditions to initalize soec
     m.fs.soec.fc.temperature[:, 0].fix(1073.15)
@@ -1315,8 +1316,7 @@ def set_guess(m):
     m.fs.soec.ac.mole_frac_comp[:, 0, "Ar"].fix(0.0092)
     m.fs.soec.ac.mole_frac_comp[:, 0, "CO2"].fix(0.0003)
 
-# TODO - routine order build model - set performance - expand arcs - initialize (including copy streams) - set inputs - solve
-# TODO - split initialization so soec solve separately/
+
 def set_inputs(m):
     # Set combustor outlet temperature and soec steam temperature
     m.fs.soec_cmb_temperature.fix(1300)
@@ -1344,11 +1344,13 @@ def set_inputs(m):
         "N2": 0.0160,
         "Ar": 1e-5,
     }
-    _set_port( # TODO - relate NG feed to air feed requirement
-        m.fs.air_compressor_s1.inlet, F=5000, T=330, P=1.01325e5, comp=air_comp, fix=True
+    _set_port(  # TODO - relate NG feed to air feed requirement
+        m.fs.air_compressor_s1.inlet, F=5000, T=330, P=1.01325e5,
+        comp=air_comp, fix=True
     )
     _set_port(
-        m.fs.ng_preheater.tube_inlet, F=380, T=330, P=1.04e5, comp=ng_comp, fix=True
+        m.fs.ng_preheater.tube_inlet, F=380, T=330, P=1.04e5,
+        comp=ng_comp, fix=True
     )
     _set_port(  # TODO - replaced mxa1 with air blower inlet
         m.fs.air_blower.inlet, F=3000, T=330, P=1.01325e5,
@@ -1357,7 +1359,7 @@ def set_inputs(m):
     _set_port(  # TODO - remove alongside mxa1 as recycle is no longer spec'd
         m.fs.mxa1.recycle, F=1e-3, T=1073.15, P=1.04e5,  # Flow set to tiny val
         comp={"O2": 0.2074, "H2O": 0.0099, "CO2": 0.0003,
-              "N2": 0.7732, "Ar": 0.0092,}, fix=True
+              "N2": 0.7732, "Ar": 0.0092}, fix=True
     )
 
     m.fs.aux_boiler_feed_pump.inlet.flow_mol.fix(2000)
@@ -1376,62 +1378,34 @@ def set_inputs(m):
 
 
 def initialize_plant(m, solver):
-    # TODO - update copy_port_values to propagate_state
     m.fs.preheat_split.initialize()
-    copy_port_values(source=m.fs.preheat_split.air,
-                     destination=m.fs.oxygen_preheater.shell_inlet)
-    copy_port_values(source=m.fs.preheat_split.ng,
-                     destination=m.fs.ng_preheater.shell_inlet)
-    # iinit.propagate_state(m.fs.a04)
-    # iinit.propagate_state(m.fs.a05)
+    iinit.propagate_state(m.fs.o04)
+    iinit.propagate_state(m.fs.o05)
 
     m.fs.air_compressor_s1.initialize()
-    copy_port_values(source=m.fs.air_compressor_s1.outlet,
-                     destination=m.fs.intercooler_s1.inlet)
-    # iinit.propagate_state(m.fs.STAGE_1_OUT)
+    iinit.propagate_state(m.fs.STAGE_1_OUT)
     m.fs.intercooler_s1.initialize()
-    copy_port_values(source=m.fs.intercooler_s1.outlet,
-                     destination=m.fs.air_compressor_s2.inlet)
-    # iinit.propagate_state(m.fs.IC_1_OUT)
+    iinit.propagate_state(m.fs.IC_1_OUT)
     m.fs.air_compressor_s2.initialize()
-    copy_port_values(source=m.fs.air_compressor_s2.outlet,
-                     destination=m.fs.intercooler_s2.inlet)
-    # iinit.propagate_state(m.fs.STAGE_2_OUT)
+    iinit.propagate_state(m.fs.STAGE_2_OUT)
     m.fs.intercooler_s2.initialize()
-    copy_port_values(source=m.fs.intercooler_s2.outlet,
-                     destination=m.fs.ASU.inlet)
-    # iinit.propagate_state(m.fs.TO_ASU)
+    iinit.propagate_state(m.fs.ba01)
     m.fs.ASU.initialize()
-    copy_port_values(source=m.fs.ASU.O2_outlet,
-                     destination=m.fs.oxygen_preheater.tube_inlet)
-    # iinit.propagate_state(m.fs.ba02)
+    iinit.propagate_state(m.fs.ba02)
     m.fs.oxygen_preheater.initialize()
-    copy_port_values(source=m.fs.oxygen_preheater.tube_outlet,
-                     destination=m.fs.pre_oxycombustor_translator.inlet)
-    # iinit.propagate_state(m.fs.ba03)
+    iinit.propagate_state(m.fs.cmb_mix_in)
     m.fs.pre_oxycombustor_translator.initialize()
-    copy_port_values(source=m.fs.pre_oxycombustor_translator.outlet,
-                     destination=m.fs.cmb_mix.air)
-    # iinit.propagate_state(m.fs.cmb_mix_in)
+    iinit.propagate_state(m.fs.ba03)
 
     m.fs.ng_preheater.initialize()
-    copy_port_values(source=m.fs.ng_preheater.tube_outlet,
-                     destination=m.fs.cmb_mix.ng)
-    # iinit.propagate_state(m.fs.bng03)
+    iinit.propagate_state(m.fs.bng01)
     m.fs.cmb_mix.initialize()
-    copy_port_values(source=m.fs.cmb_mix.outlet,
-                     destination=m.fs.cmb.inlet)
-    # iinit.propagate_state(m.fs.bng04)
+    iinit.propagate_state(m.fs.bng02)
     m.fs.cmb.initialize()
-    copy_port_values(source=m.fs.cmb.outlet,
-                     destination=m.fs.post_oxycombustor_translator.inlet)
-    # iinit.propagate_state(m.fs.cmb_out)
-    # residual_checker(m.fs.cmb)
+    iinit.propagate_state(m.fs.cmb_out)
 
     m.fs.post_oxycombustor_translator.initialize()
-    copy_port_values(source=m.fs.post_oxycombustor_translator.outlet,
-                     destination=m.fs.air_preheater_2.shell_inlet)
-    # iinit.propagate_state(m.fs.fg01)
+    iinit.propagate_state(m.fs.fg01)
     m.fs.soec.initialize()
     iinit.propagate_state(m.fs.h01)
     iinit.propagate_state(m.fs.o01)
@@ -1442,16 +1416,11 @@ def initialize_plant(m, solver):
     iinit.propagate_state(m.fs.o02)
 
     m.fs.aux_boiler_feed_pump.initialize()
-    copy_port_values(source=m.fs.aux_boiler_feed_pump.outlet,
-                     destination=m.fs.bhx1.tube_inlet)
+    iinit.propagate_state(m.fs.s01)
     m.fs.bhx1.initialize()
-    copy_port_values(source=m.fs.bhx1.tube_outlet,
-                     destination=m.fs.bhx2.inlet)
-    # iinit.propagate_state(m.fs.s03)
+    iinit.propagate_state(m.fs.s02)
     m.fs.bhx2.initialize()
-    copy_port_values(source=m.fs.bhx2.outlet,
-                     destination=m.fs.main_steam_split.inlet)
-    # iinit.propagate_state(m.fs.s09)
+    iinit.propagate_state(m.fs.s03)
 
     m.fs.main_steam_split.initialize()
     iinit.propagate_state(m.fs.s10)
@@ -1468,11 +1437,6 @@ def initialize_plant(m, solver):
     iinit.propagate_state(m.fs.o03)
     m.fs.mxa1.initialize()
     iinit.propagate_state(m.fs.s13)
-
-    # copy_port_values(source=m.fs.bhx1.shell_outlet,
-    #                  destination=m.fs.hcmp_ic01.inlet)    
-    # iinit.propagate_state(m.fs.h04)
-
 
     # Unfix tear streams
     m.fs.preheat_split.inlet.unfix()
@@ -1496,14 +1460,6 @@ def initialize_plant(m, solver):
     #              symbolic_solver_labels=True
     #              )
 
-    # residual_checker(m)
-    # check_scaling(m)
-
-    # return m
-
-    # import sys
-    # sys.exit('stop')
-
     # Connect soec to BOP - activate relavant arcs, unfix relevant variables
     m.fs.s12_expanded.activate()
     m.fs.s13_expanded.activate()
@@ -1521,40 +1477,39 @@ def initialize_plant(m, solver):
     m.fs.soec.ac.mole_frac_comp[:, 0, "CO2"].unfix()
 
     m.fs.spltf1.split_fraction[:, "out"].unfix()
-    
+
     # TODO - these unfixes are related to the fixed soec flow_mol for fc and ac
     m.fs.aux_boiler_feed_pump.inlet.flow_mol.unfix()  # Unfix soec.fc.flow_mol if aux_boiler_feed_pump.inlet.flow_mol is fixed
     m.fs.air_blower.inlet.flow_mol.unfix()  # Unfix soec.ac.flow_mol if mxa1.air.flow_mol is fixed
 
-    solver.solve(m, tee=True, 
-                   options={
-                       "max_iter":200,
-                       "tol":1e-7,
-                       "bound_push":1e-12,
-                       "linear_solver":"ma27"
+    solver.solve(m, tee=True,
+                 options={
+                       "max_iter": 200,
+                       "tol": 1e-7,
+                       "bound_push": 1e-12,
+                       "linear_solver": "ma27"
                            },
-                  symbolic_solver_labels=True)
+                 symbolic_solver_labels=True)
 
 
 def initialize_bop(m, solver):
     copy_port_values(source=m.fs.bhx1.shell_outlet,
-                     destination=m.fs.hcmp_ic01.inlet) 
+                     destination=m.fs.hcmp_ic01.inlet)
     m.fs.hcmp_ic01.initialize()
-    iinit.propagate_state(m.fs.h05)
+    iinit.propagate_state(m.fs.h04)
     m.fs.hcmp01.initialize()
-    iinit.propagate_state(m.fs.h06)
+    iinit.propagate_state(m.fs.h05)
     m.fs.hcmp_ic02.initialize()
-    iinit.propagate_state(m.fs.h07)
+    iinit.propagate_state(m.fs.h06)
     m.fs.hcmp02.initialize()
-    iinit.propagate_state(m.fs.h08)
+    iinit.propagate_state(m.fs.h07)
     m.fs.hcmp_ic03.initialize()
+    iinit.propagate_state(m.fs.h08)
+    m.fs.hcmp03.initialize()
     iinit.propagate_state(m.fs.h09)
-    m.fs.hcmp03.initialize(outlvl=idaeslog.DEBUG)
-    iinit.propagate_state(m.fs.h10)
     m.fs.hcmp_ic04.initialize()
-    iinit.propagate_state(m.fs.h11)
-    m.fs.hcmp04.initialize(outlvl=idaeslog.DEBUG)
-
+    iinit.propagate_state(m.fs.h10)
+    m.fs.hcmp04.initialize()
 
     iinit.propagate_state(m.fs.a06)
     m.fs.soec_air_HRSG_1.initialize()
@@ -1565,33 +1520,33 @@ def initialize_bop(m, solver):
     iinit.propagate_state(m.fs.fg03)
     m.fs.CPU_translator.initialize()
 
-    # print('dof = ', degrees_of_freedom(m.fs.CPU_translator))
-    # residual_checker(m.fs.CPU_translator)
-    # m.fs.CPU_translator.inlet.display()
-    # m.fs.CPU_translator.outlet.display()
-    # import sys
-    # sys.exit('stop')
-
     iinit.propagate_state(m.fs.fg04)
     m.fs.condenser.initialize()
     iinit.propagate_state(m.fs.fg05)
     m.fs.flash.initialize()
-    iinit.propagate_state(m.fs.fg06)
-    m.fs.CPU.initialize()
-    
-    # check_scaling(m)
 
-    # print('dof = ',degrees_of_freedom(m))
-    # import sys
-    # sys.exit('stop')
-    solver.solve(m, tee=True, 
-                  # options={
-                  #     "max_iter":200,
-                  #     "tol":1e-7,
-                  #     "bound_push":1e-12,
-                  #     "linear_solver":"ma27"
-                  #         },
-                  symbolic_solver_labels=True)
+    # TODO - copy_port method used instead of propagate_state because of issue
+    # TODO - noticed in tags with propagating flash.vap_outlet to CPU.inlet
+    # iinit.propagate_state(m.fs.fg06)
+    copy_port_values(source=m.fs.flash.vap_outlet,
+                     destination=m.fs.CPU.inlet)
+    calculate_variable_from_constraint(m.fs.CPU.inlet.flow_mol[0],
+                                       m.fs.CPU_inlet_F[0])
+    calculate_variable_from_constraint(m.fs.CPU.inlet.pressure[0],
+                                       m.fs.CPU_inlet_P[0])
+    m.fs.CPU.initialize()
+
+    # TODO - this seems to improve the convergence in some cases
+    iscale.constraint_autoscale_large_jac(m)
+
+    solver.solve(m, tee=True,
+                 # options={
+                 #     "max_iter":200,
+                 #     "tol":1e-7,
+                 #     "bound_push":1e-12,
+                 #     "linear_solver":"ma27"
+                 #         },
+                 symbolic_solver_labels=True)
 
 
 def additional_scaling(m):
@@ -1650,63 +1605,31 @@ def additional_scaling(m):
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     for t, c in m.fs.post_oxycombustor_translator.post_oxycombustor_translator_P.items():
         iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
-        
 
-    # hcmp03.isentropic_pressure[0.0]
-    # for t, c in m.fs.air_compressor_s1.isentropic_energy_balance.items():
-    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
-    # for t, c in m.fs.air_compressor_s1.control_volume.enthalpy_balances.items():
-    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
-    # for t, c in m.fs.air_compressor_s2.isentropic_energy_balance.items():
-    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
-    # for t, c in m.fs.air_compressor_s2.control_volume.enthalpy_balances.items():
-    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
-    # for t, c in m.fs.intercooler_s1.control_volume.enthalpy_balances.items():
-    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
-    # for t, c in m.fs.intercooler_s2.control_volume.enthalpy_balances.items():
-    #     iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
-
-
-    # for t, v in m.fs.aux_boiler_feed_pump.properties_out[t].enth_mol.items():
-    #     iscale.set_scaling_factor(m.fs.aux_boiler_feed_pump.properties_out[t].enth_mol, 1e3) 
-
+    # This scaling term is needed to improve model convergence
     for t, c in m.fs.aux_boiler_feed_pump.eq_work.items():
         iscale.constraint_scaling_transform(c, 1e-10, overwrite=True)
-    # for (t, r), c in m.fs.cmb.control_volume.rate_reaction_extent.items():
-    #     iscale.constraint_scaling_transform(c, 1e3, overwrite=True)
-        # iscale.set_scaling_factor(m.fs.cmb.rate_reaction_extent, 1e3)
 
-    # for (t, j), c in m.fs.bhx2.tube.material_balances.items():
-    #     iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
     for (t, n), c in m.fs.soec.fc.flow_mol_eqn.items():
         iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
     for (t, n, j), c in m.fs.soec.ac.mass_balance_eqn.items():
         iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
-    # for (t, j), c in m.fs.hxh2.shell.material_balances.items():
-    #     iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
     for (t, j), c in m.fs.mxa1.material_mixing_equations.items():
         iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
     for (t, n, j), c in m.fs.soec.ac.mass_balance_eqn.items():
         iscale.constraint_scaling_transform(c, 1e-6, overwrite=True)
 
-
     for (t, r), v in m.fs.cmb.control_volume.rate_reaction_extent.items():
         iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_extent, 1e-1) 
     for (t, p, j), v in m.fs.cmb.control_volume.rate_reaction_generation.items():
-        iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_generation, 1e-1) 
+        iscale.set_scaling_factor(m.fs.cmb.control_volume.rate_reaction_generation, 1e-1)
 
-    # for (t, n, m, j), c in m.fs.soec.ae.mass_balance_eqn.items():
-    #     iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
-    # fs.cmb.control_volume.rate_reaction_extent[0.0,ch4_cmb] -- 1529.6407142774844 -- None
-    # fs.cmb.control_volume.rate_reaction_generation[0.0,Vap,H2O] -- 3295.874621740745 -- 1
-    # fs.cmb.control_volume.rate_reaction_generation[0.0,Vap,CO2] -- 1695.5845511647303 -- 1
-    # fs.cmb.control_volume.rate_reaction_generation[0.0,Vap,CH4] -- 1529.6407142774844 -- 1
-    # fs.cmb.control_volume.rate_reaction_generation[0.0,Vap,O2] -- 3343.5218620351034 -- 1
-    # fs.cmb.control_volume.rate_reaction_extent[0.0,ch4_cmb] -- 1529.6407142774844 -- None
+    iscale.calculate_scaling_factors(m)
+
 
 def additional_scaling_2(m):
     iscale.set_scaling_factor(m.fs.soec_air_HRSG_1.control_volume.heat, 1e-5)
-    iscale.set_scaling_factor(m.fs.soec_air_HRSG_2.control_volume.heat, 1e-5)        
+    iscale.set_scaling_factor(m.fs.soec_air_HRSG_2.control_volume.heat, 1e-5)
     iscale.set_scaling_factor(m.fs.fluegas_HRSG.control_volume.heat, 1e-5)
     iscale.set_scaling_factor(m.fs.condenser.control_volume.heat, 1e-4)
     iscale.set_scaling_factor(m.fs.flash.control_volume.heat, 1e-4)
@@ -1717,9 +1640,83 @@ def additional_scaling_2(m):
     for t, c in m.fs.condenser.control_volume.enthalpy_balances.items():
         iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
     for t, c in m.fs.CPU_translator.CPU_translator_F.items():
-        iscale.constraint_scaling_transform(c, 1e1, overwrite=True)
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
     for t, c in m.fs.CPU_translator.CPU_translator_P.items():
         iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+        
+    for (p, q, j), c in m.fs.CPU_translator.properties_out[t].eq_mole_frac_tdew.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.CPU_translator.properties_out[0.0].equilibrium_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+
+    for (p, q, j), c in m.fs.condenser.control_volume.properties_in[0.0].eq_mole_frac_tdew.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.condenser.control_volume.properties_out[0.0].eq_mole_frac_tdew.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.condenser.control_volume.properties_in[0.0].equilibrium_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.condenser.control_volume.properties_out[0.0].equilibrium_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+
+    for (p, q, j), c in m.fs.flash.control_volume.properties_in[0.0].eq_mole_frac_tdew.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.flash.control_volume.properties_out[0.0].eq_mole_frac_tdew.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.flash.control_volume.properties_in[0.0].equilibrium_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for (p, q, j), c in m.fs.flash.control_volume.properties_out[0.0].equilibrium_constraint.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+        # fs.CPU_translator.properties_out[0.0].eq_mole_frac_tdew[Vap,Liq,H2O]
+        # fs.condenser.control_volume.properties_in[0.0].eq_mole_frac_tdew[Vap,Liq,H2O]
+
+    for t, c in m.fs.fluegas_HRSG.control_volume.enthalpy_balances.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+
+    # for t, c in m.fs.CO2_captured_constraint.items():
+    #     iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for t, c in m.fs.CPU.pureco2_pressure_eq.items():
+        iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    for t, c in m.fs.CPU.water_pressure_eq.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+    for t, c in m.fs.CPU.vent_pressure_eq.items():
+        iscale.constraint_scaling_transform(c, 1e-3, overwrite=True)
+
+    # for t, c in m.fs.CPU.pureco2_total_flow_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_co2_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_o2_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_ar_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_h2o_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    # for t, c in m.fs.CPU.pureco2_total_flow_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_co2_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_o2_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_ar_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.pureco2_h2o_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    # for t, c in m.fs.CPU.water_total_flow_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.water_co2_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.water_o2_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.water_ar_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+    # for t, c in m.fs.CPU.water_h2o_flow_mol_comp_eq.items():
+    #     iscale.constraint_scaling_transform(c, 1e-5, overwrite=True)
+
+    iscale.calculate_scaling_factors(m)
+
+
 def get_solver():
     use_idaes_solver_configuration_defaults()
     idaes.cfg.ipopt["options"]["nlp_scaling_method"] = "user-scaling"
@@ -1774,24 +1771,12 @@ def tag_inputs_opt_vars(m):
         display_units=pyo.units.K,
         doc="Combustor temperature",
     )
-    # tags["steam_temperature"] = iutil.ModelTag(
-    #     expr=m.fs.soec_steam_temperature[0],
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.K,
-    #     doc="Steam temperature (should be same as SOEC)",
-    # )
     tags["preheat_fg_split_to_air"] = iutil.ModelTag(
         expr=m.fs.preheat_split.split_fraction[0, "air"],
         format_string="{:.3f}",
         display_units=None,
-        doc="Split fraction of flue gas to air preheater, rest goes to NG heater",
+        doc="Split frac. of soec air to air preheater, rest goes to NG heater",
     )
-    # tags["recover_split_to_hxh2"] = iutil.ModelTag(
-    #     expr=m.fs.recover_split.split_fraction[0, "h_side"],
-    #     format_string="{:.3f}",
-    #     display_units=None,
-    #     doc="Split fraction of steam to H2 recovery HX, rest goes to O2 HX",
-    # )
     tags["n_cells"] = iutil.ModelTag(
         expr=m.fs.soec.n_cells,
         format_string="{:,.0f}",
@@ -1804,6 +1789,7 @@ def tag_inputs_opt_vars(m):
         display_units=pyo.units.kPa,
         doc="Steam and SOEC pressure",
     )
+    # TODO - HEX areas aren't optimization variables as DT is fixed.
     tags["oxygen_preheater_area"] = iutil.ModelTag(
         expr=m.fs.oxygen_preheater.area,
         format_string="{:.3f}",
@@ -1822,24 +1808,18 @@ def tag_inputs_opt_vars(m):
         display_units=pyo.units.m**2,
         doc="bhx1 area",
     )
-    # tags["bhx2_area"] = iutil.ModelTag(
-    #     expr=m.fs.bhx2.area,
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.m**2,
-    #     doc="bhx2 area",
-    # )
-    # tags["hxh2_area"] = iutil.ModelTag(
-    #     expr=m.fs.hxh2.area,
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.m**2,
-    #     doc="hxh2 area",
-    # )
-    # tags["hxo2_area"] = iutil.ModelTag(
-    #     expr=m.fs.hxo2.area,
-    #     format_string="{:.3f}",
-    #     display_units=pyo.units.m**2,
-    #     doc="hxo2 area",
-    # )
+    tags["air_preheater_1_area"] = iutil.ModelTag(
+        expr=m.fs.air_preheater_1.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="air_preheater_1 area",
+    )
+    tags["air_preheater_2_area"] = iutil.ModelTag(
+        expr=m.fs.air_preheater_2.area,
+        format_string="{:.3f}",
+        display_units=pyo.units.m**2,
+        doc="air_preheater_2 area",
+    )
     m.tag_input = tags
     display_input_tags(m)
 
@@ -1851,11 +1831,14 @@ def tag_for_pfd_and_tables(m):
             m.fs,
             descend_into=False,
             additional={
-                # "fg06":m.fs.ng_preheater.shell_outlet,
-                "fg07":m.fs.oxygen_preheater.shell_outlet,
-                "s01":m.fs.aux_boiler_feed_pump.inlet,
-                # "h03":m.fs.hxh2.shell_outlet,
-                # "o03":m.fs.hxo2.shell_outlet,
+                # TODO - include all inlet streams
+                "a08": m.fs.soec_air_HRSG_1.outlet,
+                "a09": m.fs.soec_air_HRSG_2.outlet,
+                # "fg06": m.fs.flash.vap_outlet,
+                "boiler feed water": m.fs.aux_boiler_feed_pump.inlet,
+                "H2 product": m.fs.hcmp04.outlet,
+                # "CO2 captured": m.fs.CPU.pureco2,
+                # "CO2 vented": m.fs.CPU.vent,
             },
         )
     )
@@ -1885,7 +1868,7 @@ def tag_for_pfd_and_tables(m):
                 expr=s.phase_frac["Vap"],
                 format_string="{:.3f}",
                 display_units=None
-        )
+                )
         except (KeyError, AttributeError):
             pass
         try:
@@ -1937,13 +1920,13 @@ def display_input_tags(m):
         print("")
 
 
-
 def check_scaling(m):
     import idaes.core.util.scaling as iscale
     jac, nlp = iscale.get_jacobian(m, scaled=True)
     # print("Extreme Jacobian entries:")
     sourceFile = open('extreme_jacobian.txt', 'w')
-    for i in iscale.extreme_jacobian_entries(jac=jac, nlp=nlp, small=1e-6, large=1e3):
+    for i in iscale.extreme_jacobian_entries(
+            jac=jac, nlp=nlp, small=1e-6, large=1e3):
         print(f"    {i[0]:.2e}, [{i[1]}, {i[2]}]", file=sourceFile)
     sourceFile.close()
 
@@ -1961,8 +1944,10 @@ def check_scaling(m):
 
     # print("Badly scaled variables:")
     sourceFile4 = open('badly_scaled_var.txt', 'w')
-    for v, sv in iscale.badly_scaled_var_generator(m, large=1e3, small=1e-4, zero=1e-12):
-        print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}", file=sourceFile4)
+    for v, sv in iscale.badly_scaled_var_generator(
+            m, large=1e3, small=1e-4, zero=1e-12):
+        print(f"    {v} -- {sv} -- {iscale.get_scaling_factor(v)}",
+              file=sourceFile4)
     sourceFile.close()
     print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
@@ -1982,7 +1967,7 @@ def write_pfd_results(m, filename, infilename=None):
         None
     """
     if infilename is None:
-        infilename = os.path.join(this_file_dir(), "soec.svg")
+        infilename = os.path.join(this_file_dir(), "rsofc_soec_mode.svg")
     with open(infilename, "r") as f:
         iutil.svg_tag(svg=f, tag_group=m.tag_pfd, outfile=filename)
 
@@ -1997,21 +1982,16 @@ def get_model(m=None, name="SOEC Module"):
     add_combustor(m)
     add_aux_boiler_steam(m)
     add_soec_unit(m)
-    # add_recovery_hx(m)
     add_more_hx_connections(m)
     add_soec_inlet_mix(m)
 
     add_design_constraints(m)
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
-    tag_inputs_opt_vars(m)
-    tag_for_pfd_and_tables(m)
     set_guess(m)
     set_inputs(m)
     solver = get_solver()
-
     additional_scaling(m)
-    iscale.calculate_scaling_factors(m)
     # iscale.scale_arc_constraints(m)
 
     initialize_plant(m, solver)
@@ -2020,13 +2000,14 @@ def get_model(m=None, name="SOEC Module"):
     expand_arcs = pyo.TransformationFactory("network.expand_arcs")
     expand_arcs.apply_to(m)
     additional_scaling_2(m)
-    iscale.calculate_scaling_factors(m)
     initialize_bop(m, solver)
-    add_result_constraints(m)
-    initialize_results(m)    
-
-    display_input_tags(m)
+    # add_result_constraints(m)
+    # initialize_results(m)
+    # tag_inputs_opt_vars(m)
+    # tag_for_pfd_and_tables(m)
+    # display_input_tags(m)
     return m
+
 
 def residual_checker(m):
     # Print model constraints - residual checker
@@ -2037,8 +2018,10 @@ def residual_checker(m):
                 a = " FAIL"
             else:
                 a = " PASS"
-            residual_print = [str(v.name), ": value = ", str(residual_value), a, " \n"]
+            residual_print = [str(v.name), ": value = ",
+                              str(residual_value), a, " \n"]
             f.writelines(residual_print)
+
 def variables_above_bounds_generator(
         block, tol=1e-6, relative=True, skip_lb=False, skip_ub=False):
     """
@@ -2084,46 +2067,42 @@ def variables_above_bounds_generator(
               pyo.value(v.value - v.lb) >= atol):
             yield v
 
+
 def check_heat_exchanger_DT(m):
     print('')
-    print("-----------------------------------------------------------")  
+    print("-----------------------------------------------------------")
     print("check_heat_exchanger_DT and details")
-    # print("-----------------------------------------------------------")
-    # print('')
-    # print('hxh2 DT')
-    # print('DT_out = ',pyo.value(m.fs.hxh2.delta_temperature_out[0]))
-    # print('DT_in = ', pyo.value(m.fs.hxh2.delta_temperature_in[0]))
-    # print('')
-    # print('Tube side_in T = ', pyo.value(m.fs.hxh2.cold_side.properties_in[0].temperature))
-    # print('Tube side_out T = ', pyo.value(m.fs.hxh2.cold_side.properties_out[0].temperature))
-    # print('Shell side_in T = ', pyo.value(m.fs.hxh2.hot_side.properties_in[0].temperature))
-    # print('Shell side_out T = ', pyo.value(m.fs.hxh2.hot_side.properties_out[0].temperature))
-    # print('')
-    # print('Area = ', pyo.value(m.fs.hxh2.area))
-    # print('HTC = ', pyo.value(m.fs.hxh2.overall_heat_transfer_coefficient[0]))
-    # print('')
-    print("-----------------------------------------------------------")    
+    print("-----------------------------------------------------------")
     print('bhx1 DT')
-    print('DT_out = ',pyo.value(m.fs.bhx1.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(m.fs.bhx1.delta_temperature_in[0]))
+    print('DT_out = ', pyo.value(m.fs.bhx1.delta_temperature_out[0]))
+    print('DT_in = ', pyo.value(m.fs.bhx1.delta_temperature_in[0]))
     print('')
-    print('Tube side_in T = ', pyo.value(m.fs.bhx1.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(m.fs.bhx1.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(m.fs.bhx1.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(m.fs.bhx1.hot_side.properties_out[0].temperature))
+    print('Tube side_in T = ',
+          pyo.value(m.fs.bhx1.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ',
+          pyo.value(m.fs.bhx1.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ',
+          pyo.value(m.fs.bhx1.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ',
+          pyo.value(m.fs.bhx1.hot_side.properties_out[0].temperature))
     print('')
     print('Area = ', pyo.value(m.fs.bhx1.area))
     print('HTC = ', pyo.value(m.fs.bhx1.overall_heat_transfer_coefficient[0]))
     print('')
-    print("-----------------------------------------------------------")    
+    print("-----------------------------------------------------------")
     print('air_preheater_1 DT')
-    print('DT_out = ',pyo.value(m.fs.air_preheater_1.delta_temperature_out[0]))
-    print('DT_in = ',pyo.value(m.fs.air_preheater_1.delta_temperature_in[0]))
+    print('DT_out = ',
+          pyo.value(m.fs.air_preheater_1.delta_temperature_out[0]))
+    print('DT_in = ', pyo.value(m.fs.air_preheater_1.delta_temperature_in[0]))
     print('')
-    print('Tube side_in T = ', pyo.value(m.fs.air_preheater_1.cold_side.properties_in[0].temperature))
-    print('Tube side_out T = ', pyo.value(m.fs.air_preheater_1.cold_side.properties_out[0].temperature))
-    print('Shell side_in T = ', pyo.value(m.fs.air_preheater_1.hot_side.properties_in[0].temperature))
-    print('Shell side_out T = ', pyo.value(m.fs.air_preheater_1.hot_side.properties_out[0].temperature))
+    print('Tube side_in T = ',
+          pyo.value(m.fs.air_preheater_1.cold_side.properties_in[0].temperature))
+    print('Tube side_out T = ',
+          pyo.value(m.fs.air_preheater_1.cold_side.properties_out[0].temperature))
+    print('Shell side_in T = ',
+          pyo.value(m.fs.air_preheater_1.hot_side.properties_in[0].temperature))
+    print('Shell side_out T = ',
+          pyo.value(m.fs.air_preheater_1.hot_side.properties_out[0].temperature))
     print('')
     print('Area = ', pyo.value(m.fs.air_preheater_1.area))
     print('HTC = ', pyo.value(m.fs.air_preheater_1.overall_heat_transfer_coefficient[0]))
@@ -2172,10 +2151,14 @@ def check_heat_exchanger_DT(m):
 if __name__ == "__main__":
     m = get_model()
     # write_pfd_results(m, "soec_init.svg")
-    print('dof = ', degrees_of_freedom(m))
-    check_heat_exchanger_DT(m)
+    # check_heat_exchanger_DT(m)
     # residual_checker(m)
-    # check_scaling(m)
+    check_scaling(m)
+    add_result_constraints(m)
+    initialize_results(m)
+    tag_inputs_opt_vars(m)
+    tag_for_pfd_and_tables(m)
+    display_input_tags(m)
     # generator=variables_above_bounds_generator(m)
     # generator2=variables_near_bounds_generator(m, tol=1e-6)
            
