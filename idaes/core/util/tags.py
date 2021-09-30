@@ -576,7 +576,7 @@ class ModelTagGroup(dict):
 
     def _table_tagkey_index_lists(self, tags=None):
         """PRIVATE utility function to take tags (list of tag keys or 2-element
-        list of a tag ket and index) and turn it into a list of tag keys and list
+        list of a tag key and index) and turn it into a list of tag keys and list
         of indexes. Indexed tags with no index will be expanded to include all
         indexes.
         """
