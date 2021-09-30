@@ -355,6 +355,8 @@ documentation for supported schemes,
         equilibrium_comp = vap_comp & liq_comp
         solvent_comp_list = \
             self.config.liquid_side.property_package.solvent_set
+        solute_comp_list = self.config.liquid_side.property_package.solute_set
+        vap_comp_non_diffus = vap_comp - equilibrium_comp
         electrolyte_comp_diffus = self.config.liquid_side.property_package.component_list_diffus\
             - (self.config.liquid_side.property_package.component_list_diffus & liq_comp)
         vapor_phase_list_ref = \
@@ -484,10 +486,10 @@ documentation for supported schemes,
             initialize=0.0,
             units=pyunits.mol / (pyunits.s * pyunits.m),
             doc='Moles of diffusing species transfered into liquid')
-        self.enhancement_factor = Var(self.flowsheet().time,
+        self.enhancement_factor = Param(self.flowsheet().time,
                                       self.liquid_phase.length_domain,
                                       units=None,
-                                      domain=NonNegativeReals,
+                                      mutable=True,
                                       initialize=160,
                                       doc='Enhancement factor')
         
@@ -689,37 +691,39 @@ documentation for supported schemes,
                               rule=rule_mass_transfer_coeff_vap,
                               doc=' Vapor mass transfer coefficient ')
 
-        # mass transfer coefficients of CO2 in liquid phase  [m/s]
-        def rule_mass_transfer_coeff_CO2(blk, t, x):
+        # mass transfer coefficients of diffusing components in liquid phase  [m/s]
+        def rule_mass_transfer_coeff_liq(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
                 return (blk.Cl_ref*12**(1/6) *
                         (blk.velocity_liq[t, x] *
-                         blk.liquid_phase.properties[t, x].diffus['CO2'] /
+                         blk.liquid_phase.properties[t, x].diffus[j] /
                          (blk.dh_ref * blk.holdup_liq[t, x]))**0.5)
 
-        self.k_l_CO2 = Expression(
+        self.k_l = Expression(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
-            rule=rule_mass_transfer_coeff_CO2,
-            doc='CO2 mass transfer coefficient in solvent')
+            solute_comp_list,
+            rule=rule_mass_transfer_coeff_liq,
+            doc='Mass transfer coefficient of solute in solvent')
 
         # mass tranfer terms
-        def rule_phi(blk, t, x):
+        def rule_phi(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return Expression.Skip
             else:
                 zb = self.vapor_phase.length_domain.at(self.zi[x].value - 1)
                 return (blk.enhancement_factor[t, zb] *
-                        blk.k_l_CO2[t, zb] /
-                        blk.k_v[t, x, 'CO2'])
+                        blk.k_l[t, zb, j] /
+                        blk.k_v[t, x, j])
 
         self.phi = Expression(
             self.flowsheet().time,
             self.vapor_phase.length_domain,
+            solute_comp_list,
             rule=rule_phi,
-            doc='CO2 Equilibruim partial pressure intermediate term')
+            doc='Equilibruim partial pressure intermediate term for solute')
 
         # Equilibruim partial pressure of diffusing components at interface
         @self.Constraint(self.flowsheet().time,
@@ -739,9 +743,9 @@ documentation for supported schemes,
                     return blk.pressure_equil[t, x, j] == (
                         (blk.vapor_phase.properties[t, x].mole_frac_comp[j] *
                          blk.vapor_phase.properties[
-                             t, x].pressure + blk.phi[t, x] *
+                             t, x].pressure + blk.phi[t, x, j] *
                          lprops.conc_mol_comp_true[j]) /
-                        (1 + blk.phi[t, x] /
+                        (1 + blk.phi[t, x, j] /
                          lprops.henry_N2O_analogy))
                 else:
                     return blk.pressure_equil[t, x, j] == (
@@ -749,7 +753,7 @@ documentation for supported schemes,
                         lprops.conc_mol_comp_true[j] *
                         lprops.pressure_sat[j])
 
-        # mass transfer of  diffusing components
+        # mass transfer of  diffusing components in vapor phase
         def rule_mass_transfer(blk, t, x, j):
             if x == self.vapor_phase.length_domain.first():
                 return blk.interphase_mass_transfer[t, x, j] == 0.0
@@ -767,7 +771,7 @@ documentation for supported schemes,
                                         self.vapor_phase.length_domain,
                                         liq_comp,
                                         rule=rule_mass_transfer,
-                                        doc="mass transfer to liquid")
+                                        doc="mass transfer in vapor phase")
 
         # liquid side
 
@@ -780,7 +784,7 @@ documentation for supported schemes,
             if x == self.liquid_phase.length_domain.last():
                 return blk.liquid_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
-                zf = self.vapor_phase.length_domain.at(self.zi[x].value + 1)
+                zf = self.liquid_phase.length_domain.at(self.zi[x].value + 1)
                 if j in equilibrium_comp:
                     return blk.liquid_phase.mass_transfer_term[t, x, p, j] == \
                         blk.interphase_mass_transfer[t, zf, j]
@@ -798,7 +802,7 @@ documentation for supported schemes,
             if x == self.vapor_phase.length_domain.first():
                 return blk.vapor_phase.mass_transfer_term[t, x, p, j] == 0.0
             else:
-                if j in ['N2', 'O2']:
+                if j in vap_comp_non_diffus:
                     return blk.vapor_phase.mass_transfer_term[t, x, p, j] == \
                         0.0
                 else:
@@ -956,10 +960,10 @@ documentation for supported schemes,
         #                             rule=rule_instantaneous_E,
         #                             doc='Instantaneous Enhancement factor')
         
-        self.instant_E = Param(self.flowsheet().time,
-                               self.liquid_phase.length_domain,
-                               initialize=100,
-                               doc='Instantaneous Enhancement factor')
+        # self.instant_E = Param(self.flowsheet().time,
+        #                        self.liquid_phase.length_domain,
+        #                        initialize=100,
+        #                        doc='Instantaneous Enhancement factor')
         
         def rule_yi_electrolyte_diffus(blk, t, x, j, k):
             if x == self.liquid_phase.length_domain.last() or j == 'H2O':
@@ -1129,7 +1133,7 @@ documentation for supported schemes,
         blk.liquid_phase.mass_transfer_term.fix(0.0)
 
         # Enhancement factor model
-        blk.enhancement_factor.fix()
+        #blk.enhancement_factor.fix()
         # blk.yi_MEA.fix()
         for j in blk.config.liquid_side.property_package.component_list_solvent_apparent:
             blk.yi_solvent[j].fix()
@@ -1296,14 +1300,14 @@ documentation for supported schemes,
         # Interface pressure
         blk.pressure_equil.unfix()
         blk.pressure_at_interface.activate()
-        blk.enhancement_factor.fix(1)
+        blk.enhancement_factor = 1
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
         init_log.info_high("Step 3a: {}.".format(idaeslog.condition(res)))
         # ----------------------------------------------------------------------
         # Enhancement factor model
-        blk.enhancement_factor.unfix()
+        # blk.enhancement_factor.unfix()
         for t in blk.flowsheet().time:
             for x in blk.liquid_phase.length_domain:
                 blk.enhancement_factor[t, x].value = 100
