@@ -21,7 +21,7 @@ from pyomo.environ import (ConcreteModel,
                            sqrt,
                            Var)
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, Component
 from idaes.generic_models.properties.cubic_eos.cubic_prop_pack import \
     (cubic_roots_available,
      CubicParameterBlock,
@@ -136,7 +136,10 @@ class TestStateBlock_LV_PR(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock()
-        m.fs.params.component_list = Set(initialize=["a", "b"])
+
+        m.fs.params.a = Component()
+        m.fs.params.b = Component()
+
         m.fs.params.cubic_type = CubicEoS.PR
 
         m.fs.params.gas_const = Param(default=8.314462618)
@@ -300,7 +303,10 @@ class TestStateBlock_L_PR(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={"valid_phase": "Liq"})
-        m.fs.params.component_list = Set(initialize=["a", "b"])
+
+        m.fs.params.a = Component()
+        m.fs.params.b = Component()
+
         m.fs.params.cubic_type = CubicEoS.PR
 
         m.fs.params.gas_const = Param(default=8.314462618)
@@ -407,7 +413,10 @@ class TestStateBlock_V_PR(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={"valid_phase": "Vap"})
-        m.fs.params.component_list = Set(initialize=["a", "b"])
+
+        m.fs.params.a = Component()
+        m.fs.params.b = Component()
+
         m.fs.params.cubic_type = CubicEoS.PR
 
         m.fs.params.gas_const = Param(default=8.314462618)
@@ -514,7 +523,10 @@ class TestStateBlock_LV_SRK(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock()
-        m.fs.params.component_list = Set(initialize=["a", "b"])
+
+        m.fs.params.a = Component()
+        m.fs.params.b = Component()
+
         m.fs.params.cubic_type = CubicEoS.SRK
 
         m.fs.params.gas_const = Param(default=8.314462618)
@@ -678,7 +690,10 @@ class TestStateBlock_L_SRK(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={"valid_phase": "Liq"})
-        m.fs.params.component_list = Set(initialize=["a", "b"])
+
+        m.fs.params.a = Component()
+        m.fs.params.b = Component()
+
         m.fs.params.cubic_type = CubicEoS.SRK
 
         m.fs.params.gas_const = Param(default=8.314462618)
@@ -785,7 +800,10 @@ class TestStateBlock_V_SRK(object):
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
         m.fs.params = CubicParameterBlock(default={"valid_phase": "Vap"})
-        m.fs.params.component_list = Set(initialize=["a", "b"])
+
+        m.fs.params.a = Component()
+        m.fs.params.b = Component()
+
         m.fs.params.cubic_type = CubicEoS.SRK
 
         m.fs.params.gas_const = Param(default=8.314462618)

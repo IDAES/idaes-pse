@@ -19,7 +19,7 @@ from pandas import DataFrame
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, value, Reference, Var, Block
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
 
 # Import IDAES cores
@@ -119,7 +119,7 @@ inlet,
 flows.}"""))
     CONFIG.declare("ideal_separation", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Ideal splitting flag",
         doc="""Argument indicating whether ideal splitting should be used.
 Ideal splitting assumes perfect separation of material, and attempts to
@@ -132,7 +132,7 @@ has_phase_equilibrium = True,
 **False** - use explicit splitting equations with split fractions.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -141,7 +141,7 @@ has_phase_equilibrium = True,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,

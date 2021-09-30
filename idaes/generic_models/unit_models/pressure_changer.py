@@ -19,9 +19,8 @@ Standard IDAES pressure changer model.
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var, Block, Expression,\
-    Constraint, Reference
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.environ import value, Var, Block, Expression, Constraint, Reference
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (
@@ -179,7 +178,7 @@ constructed, **default** - MomentumBalanceType.pressureTotal.
         "has_phase_equilibrium",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             description="Phase equilibrium construction flag",
             doc="""Indicates whether terms for phase equilibrium should be
 constructed, **default** = False.
@@ -192,7 +191,7 @@ constructed, **default** = False.
         "compressor",
         ConfigValue(
             default=True,
-            domain=In([True, False]),
+            domain=Bool,
             description="Compressor flag",
             doc="""Indicates whether this unit should be considered a
             compressor (True (default), pressure increase) or an expander
@@ -241,7 +240,7 @@ see property package for documentation.}""",
         "support_isentropic_performance_curves",
         ConfigValue(
             default=False,
-            domain=In([True, False]),
+            domain=Bool,
             doc="Include a block for performance curves, configure via"
                 " isentropic_performance_curves.",
         ),
