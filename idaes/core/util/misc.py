@@ -254,14 +254,39 @@ class _GeneralVarLikeExpressionData(_GeneralExpressionData):
 
     # Define methods for common APIs on Vars in case user mistakes
     # an Expression for a Var
+    def set_value(self, value, force=False):
+        """
+        Overload set_value method to provide meaningful error if user attempts
+        to set the value of the Expression. In order to support changing the
+        expression (and setting it originally), if self._expr is None or
+        force=True, the value of the expression will be updated, otherwise a
+        TypeError will be raised.
+
+        Args:
+            value: value to set for _expr
+            force: force updating of _expr if True (default = False)
+
+        Returns:
+            None
+
+        Raises:
+            TypeError if _expr is not None and force=False
+        """
+        if self._expr is None or force:
+            super().set_value(value)
+        else:
+            raise TypeError(
+                f"{self.name} is an Expression and does not have a value "
+                f"which can be set.")
+
     @property
     def value(self):
-        # Overload value so it behaves like a Var
-        return pyo.value(self.expr)
+        raise TypeError(
+            f"{self.name} is an Expression and does not have a value "
+            f"attribute. Use the 'value()' method instead.")
 
     @value.setter
     def value(self, expr):
-        # Overload value seter to prevent users changing the expression body
         raise TypeError(
             "%s is an Expression and does not have a value which can be set."
             % (self.name))

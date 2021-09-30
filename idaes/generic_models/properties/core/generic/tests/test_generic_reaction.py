@@ -42,7 +42,7 @@ from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
 
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
 
 
@@ -132,9 +132,9 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_invalid_unit(self, m):
         with pytest.raises(
-                ConfigurationError,
-                match="rxn_params recieved unexpected units for quantity time:"
-                " foo. Units must be instances of a Pyomo unit object."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(foo\)"):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
                 "rate_reactions": {
@@ -151,10 +151,9 @@ class TestGenericReactionParameterBlock(object):
     @pytest.mark.unit
     def test_missing_required_quantity(self, m):
         with pytest.raises(
-                ConfigurationError,
-                match="rxn_params units for quantity time were not assigned. "
-                "Please make sure to provide units for all base units "
-                "when configuring the reaction package."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(None\)"):
             m.rxn_params = GenericReactionParameterBlock(default={
                 "property_package": m.params,
                 "rate_reactions": {
