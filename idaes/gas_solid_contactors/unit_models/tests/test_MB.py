@@ -203,8 +203,8 @@ class TestIronOC(object):
                           Constraint)
         assert isinstance(iron_oc.fs.unit.gas_comp_hetero_rxn, Constraint)
 
-        assert number_variables(iron_oc) == 809
-        assert number_total_constraints(iron_oc) == 772
+        assert number_variables(iron_oc) == 809  # manually check, 820
+        assert number_total_constraints(iron_oc) == 772  # manually check, 783
         assert number_unused_variables(iron_oc) == 15
 
     @pytest.mark.unit

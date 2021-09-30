@@ -22,8 +22,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         EnergyBalanceType,
-                        UnitModelBlockData,
-                        useDefault)
+                        UnitModelBlockData)
 from idaes.core.util.config import (is_physical_parameter_block)
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
@@ -58,30 +57,29 @@ class FixedBed0DData(UnitModelBlockData):
 **default** - True. Fixed bed reactors must be dynamic, thus this must be
 True."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.useDefault,
+        default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.useDefault.
+**default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
-**EnergyBalanceType.useDefault - refer to property package for default
-balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("gas_property_package", ConfigValue(
-        default=useDefault,
+        default=None,
         domain=is_physical_parameter_block,
         description="Property package to use for gas phase",
         doc="""Property parameter object used to define property calculations
-for the gas phase, **default** - useDefault.
+for the gas phase, **default** - None.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
-    CONFIG.declare("gas_property_package_args", ConfigBlock(
-        implicit=True,
+    CONFIG.declare("gas_property_package_args", ConfigValue(
+        default=None,
+        domain=is_physical_parameter_block,
         description="Arguments to use for constructing gas phase "
         "property packages",
         doc="""A ConfigBlock with arguments to be passed to a gas phase
@@ -90,16 +88,17 @@ property block(s) and used when constructing these,
 **Valid values:** {
 see property package for documentation.}"""))
     CONFIG.declare("solid_property_package", ConfigValue(
-        default=useDefault,
+        default=None,
         domain=is_physical_parameter_block,
         description="Property package to use for solid phase",
         doc="""Property parameter object used to define property calculations
-for the solid phase, **default** - useDefault.
+for the solid phase, **default** - None.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
-    CONFIG.declare("solid_property_package_args", ConfigBlock(
-        implicit=True,
+    CONFIG.declare("solid_property_package_args", ConfigValue(
+        default=None,
+        domain=is_physical_parameter_block,
         description="Arguments to use for constructing solid phase "
         "property packages",
         doc="""A ConfigBlock with arguments to be passed to a solid phase
@@ -242,6 +241,7 @@ see reaction package for documentation.}"""))
 
             self.solids_energy_accumulation = DerivativeVar(
                         self.solids_energy_holdup,
+                        wrt=self.flowsheet().config.time,
                         doc="Solids energy accumulation")
 
             @self.Constraint(self.flowsheet().config.time,

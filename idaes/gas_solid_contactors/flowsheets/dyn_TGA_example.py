@@ -11,8 +11,8 @@
 # license information.
 #################################################################################
 """
-Flowsheet example of the 2-region bubbling fluidized bed (BFB) model
-for a methane combustion with iron-oxide case study
+Flowsheet example of the 0D FixedBed model for an iron-oxide reduction
+with methane case study
 
 Created: 05/14/2020
 
