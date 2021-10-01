@@ -68,6 +68,8 @@ from idaes.power_generation.flowsheets.sofc.surrogates.cpu import CPU
 from idaes.power_generation.flowsheets.sofc.surrogates.sofc_rom_builder \
     import build_SOFC_ROM, initialize_SOFC_ROM
 
+import idaes.logger as idaeslog
+
 
 def build_NGFC(m):
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -838,9 +840,9 @@ def initialize_NGFC(m):
     m.fs.anode.lagrange_mult[0, "H"] = 77156
     m.fs.anode.lagrange_mult[0, "O"] = 291729
     m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 0
-    m.fs.anode.gibbs_scaling = 1e-4
+    # m.fs.anode.gibbs_scaling = 1e-4
 
-    m.fs.anode.initialize()
+    m.fs.anode.initialize(outlvl=idaeslog.DEBUG)
 
     copy_port_values(source=m.fs.anode.outlet,
                      destination=m.fs.anode_recycle.inlet)
