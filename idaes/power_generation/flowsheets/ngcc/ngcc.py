@@ -19,6 +19,7 @@ import numpy as np
 import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from pyomo.network import Arc
+from pyomo.common.fileutils import this_file_dir
 
 import idaes
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
@@ -31,7 +32,7 @@ from idaes.power_generation.flowsheets.ngcc.ngcc_costing import (
 )
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.generic_models.unit_models as gum
-import idaes.core.util.misc as imisc
+import idaes.core.util.initialization as iinit
 import idaes.core.util.model_serializer as ms
 import idaes.core.util.scaling as iscale
 from idaes.generic_models.unit_models.heat_exchanger import (
@@ -105,7 +106,7 @@ def get_model():
         m.fs.gts3.control_volume.properties_out[0].pressure.fix(103421)
         solver.solve(m, tee=True)
 
-    m.fs.net_power_mw = pyo.Var(m.fs.config.time, initialize=600)
+    m.fs.net_power_mw = pyo.Var(m.fs.config.time, initialize=600, units=pyo.units.MW)
 
     hrsg_module.get_model(m)
     hrsg_module.set_scaling_factors(m)
@@ -124,7 +125,7 @@ def get_model():
     expand_arcs.apply_to(m)
 
     m.fs.HP_SH4.side_2_inlet.unfix()
-    imisc.copy_port_values(
+    iinit.propagate_state(
         source=m.fs.exhaust_1.inlet,
         destination=m.fs.fg_translate.inlet)
     @m.fs.fg_translate.Constraint(m.fs.time, m.fs.prop_gas.component_list)
@@ -170,7 +171,7 @@ def get_model():
     m.fs.t05 = Arc(
         source=m.fs.LP_SH.side_1_outlet,
         destination=m.fs.steam_turbine_lp_mix.hrsg)
-    imisc.copy_port_values(arc=m.fs.t05)
+    iinit.propagate_state(arc=m.fs.t05)
     expand_arcs.apply_to(m)
     m.fs.steam_turbine_lp_mix.hrsg.unfix()
     if not os.path.isfile("init_ngcc_st.json.gz"):
@@ -188,8 +189,8 @@ def get_model():
         destination=m.fs.steam_turbine.ip_stages[1].inlet)
     expand_arcs.apply_to(m)
     m.fs.IP_Splitter2.inlet.unfix()
-    imisc.copy_port_values(arc=m.fs.t02)
-    imisc.copy_port_values(arc=m.fs.t03)
+    iinit.propagate_state(arc=m.fs.t02)
+    iinit.propagate_state(arc=m.fs.t03)
     if not os.path.isfile("init_ngcc_st.json.gz"):
         solver.solve(m, tee=True)
 
@@ -219,7 +220,7 @@ def get_model():
     m.fs.cond_pump.control_volume.properties_out[0].pressure.fix(
         pyo.value(m.fs.LP_ECON.side_1_inlet.pressure[0]))
     m.fs.cond_pump.deltaP.unfix()
-    imisc.copy_port_values(arc=m.fs.t11)
+    iinit.propagate_state(arc=m.fs.t11)
     if not os.path.isfile("init_ngcc_st.json.gz"):
         solver.solve(m, tee=True)
 
@@ -231,7 +232,7 @@ def get_model():
     m.fs.hp_steam_temperature.unfix()
     m.fs.hotwell.makeup.flow_mol[:].unfix()
     m.fs.steam_turbine.inlet_split.inlet.unfix()
-    imisc.copy_port_values(arc=m.fs.t01)
+    iinit.propagate_state(arc=m.fs.t01)
     if not os.path.isfile("init_ngcc_st.json.gz"):
         solver.solve(m, tee=True)
 
@@ -281,13 +282,13 @@ def get_model():
     m.fs.feed_fuel1.pressure.unfix()
     m.fs.feed_fuel1.mole_frac_comp.unfix()
 
-    imisc.copy_port_values(
+    iinit.propagate_state(
         source=m.fs.feed_fuel1.outlet,
-        destination=m.fs.ng_preheater.tube_inlet)
-    imisc.copy_port_values(
+        destination=m.fs.ng_preheater.tube_inlet,
+        overwrite_fixed=True)
+    iinit.propagate_state(
         source=m.fs.IP_Splitter1.toNGPH,
         destination=m.fs.ng_preheater.shell_inlet)
-
 
     m.fs.fuel01dupe = Arc(
         source=m.fs.ng_preheater.tube_outlet,
@@ -347,13 +348,16 @@ def get_model():
     iscale.set_scaling_factor(m.fs.steam_turbine.outlet_stage.control_volume.properties_out[0.0].pressure, 1e-3)
 
     iscale.calculate_scaling_factors(m)
-    m#.fs.IP_Splitter1.split_fraction[0, "toNGPH"].unfix()
+    #m.fs.IP_Splitter1.split_fraction[0, "toNGPH"].unfix()
     m.fs.ng_preheater.tube_inlet.flow_mol.unfix()
     #m.fs.feed_fuel1.temperature.fix(460)
     m.fs.ng_preheater.tube_inlet.temperature.fix(311)
     if not os.path.isfile("init_preheat.json.gz"):
         m.fs.ng_preheater.initialize()
-        imisc.copy_port_values(
+        iinit.propagate_state(
+            source=m.fs.ng_preheater.shell_outlet,
+            destination=m.fs.Mixer1.Preheater)
+        iinit.propagate_state(
             source=m.fs.ng_preheater.shell_outlet,
             destination=m.fs.Mixer1.Preheater)
         solver.solve(m, tee=True)
@@ -386,10 +390,10 @@ def get_model():
         return b.control_volume.properties_out[t].enth_mol == \
             b.control_volume.properties_out[t].enth_mol_sat_phase["Liq"] - 100
     m.fs.return_mix.reboiler.unfix()
-    imisc.copy_port_values(
+    iinit.propagate_state(
         source=m.fs.return_mix.reboiler,
         destination=m.fs.reboiler.outlet)
-    imisc.copy_port_values(
+    iinit.propagate_state(
         source=m.fs.steam_turbine_lp_split.reboiler,
         destination=m.fs.reboiler.inlet)
     m.fs.t17 = Arc(
@@ -411,6 +415,16 @@ def get_model():
 
 
     # Aux power expressions
+    m.fs.cap_specific_reboiler_duty = pyo.Var(initialize=2.6e6, units=pyo.units.J/pyo.units.kg)
+    m.fs.cap_specific_reboiler_duty.fix()
+    m.fs.cap_addtional_co2 = pyo.Var(m.fs.time, initialize=0.0, units=pyo.units.kg/pyo.units.s)
+    m.fs.cap_addtional_co2.fix()
+    m.fs.cap_specific_compression_power = pyo.Var(initialize=0.25e6, units=pyo.units.J/pyo.units.kg)
+    m.fs.cap_specific_compression_power.fix()
+    m.fs.cap_additional_reboiler_duty = pyo.Var(m.fs.time, initialize=0.0, units=pyo.units.W)
+    m.fs.cap_additional_reboiler_duty.fix()
+
+
     @m.fs.Expression(m.fs.config.time)
     def gross_power(b, t):
         return b.gt_power[t] + b.steam_turbine.power[t]
@@ -430,9 +444,14 @@ def get_model():
             (b.gts2.control_volume.properties_out[t].flow_mass/1090.759)
 
     @m.fs.Expression(m.fs.config.time)
-    def aux_compression(b, t): #scale to flue gas flow
-        return 1e3*17090* \
-            (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]/1547.75)
+    def aux_compression(b, t):
+        if not hasattr(m.fs, "cap_addtional_co2"):
+            return m.fs.cap_specific_compression_power* \
+                (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol)
+        else:
+            return m.fs.cap_specific_compression_power* \
+                (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol
+                 + m.fs.cap_addtional_co2[t])
 
     @m.fs.Expression(m.fs.config.time)
     def aux_transformer(b, t): # scale to gross power
@@ -472,8 +491,9 @@ def get_model():
 
     @m.fs.Expression(m.fs.config.time)
     def reboiler_duty_expr(b, t): #scale to flue gas flow
-        return -176.35920313360697e6 * \
-            (b.gts2.control_volume.properties_out[t].flow_mass/1090.759)
+        return -m.fs.cap_specific_reboiler_duty * \
+            (b.gts2.control_volume.properties_out[0].flow_mol_comp["CO2"]*0.04401*pyo.units.kg/pyo.units.mol
+             + m.fs.cap_addtional_co2[t]) + m.fs.cap_additional_reboiler_duty[t]
 
     print("Control steam to maintain temp")
     #m.fs.steam_turbine.throttle_valve[1].deltaP[0].unfix()
@@ -590,8 +610,7 @@ def tabulated_output_dict(m, add=[]):
         ("Steam Turbine Power (MW)", -m.fs.steam_turbine.power[0]/1e6),
         ("LHV Efficiency (%)", m.fs.lhv_efficiency[0]*100),
         ("Capture Reboiler Duty (MW)", m.fs.reboiler_duty_expr[0]/1e6),
-        ("Total Plant Cost ($/hr)", m.fs.costing.total_TPC/365/24*1e6),
-        ("Fixed O&M Cost ($/hr)", m.fs.costing.total_fixed_OM_cost/365/24*1e6),
+        ("Additional CO2 (kg/s)", m.fs.cap_addtional_co2[0]),
         ("Variable O&M Cost ($/hr)", m.fs.costing.total_variable_OM_cost[0]*(-m.fs.net_power[0]/1e6)),
     ])
     for a in add:
@@ -618,7 +637,7 @@ def write_csv_row(filename, d):
 
 
 def write_pfds(m, aname=""):
-    gas_turbine.write_pfd_results(f"pfd_results_gt{aname}.svg", m.tags, m.tag_format, infilename="gas_turbine.svg")
+    gas_turbine.write_pfd_results(f"pfd_results_gt{aname}.svg", m.tags, m.tag_format, infilename=os.path.join(this_file_dir(), "gas_turbine.svg"))
     sturb_module.write_pfd_results(f"pfd_results_st{aname}.svg", m.tags, m.tag_format)
     hrsg_module.pfd_result(f"pfd_results_hrsg{aname}.svg", m)
 

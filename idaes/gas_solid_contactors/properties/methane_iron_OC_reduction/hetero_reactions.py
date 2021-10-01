@@ -33,7 +33,7 @@ from pyomo.environ import (Constraint,
                            Var,
                            units as pyunits)
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, Bool
 
 
 # Import IDAES cores
@@ -325,7 +325,7 @@ class ReactionBlockData(ReactionBlockDataBase):
             """))
     CONFIG.declare("has_equilibrium", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Equilibrium reaction construction flag",
         doc="""
         Indicates whether terms for equilibrium controlled reactions

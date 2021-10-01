@@ -21,7 +21,7 @@ from pyomo.common.fileutils import this_file_dir
 import idaes
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 from idaes.core.util.model_statistics import degrees_of_freedom
-import idaes.core.util.misc as imisc
+import idaes.core.util.initialization as iinit
 import idaes.power_generation.unit_models.helm as helm
 import idaes.generic_models.unit_models as gum
 from idaes.generic_models.properties import iapws95
@@ -354,25 +354,25 @@ def get_model(m=None, init=True):
     m.fs.steam_turbine.ip_stages[1].inlet.unfix()
     m.fs.steam_turbine.lp_stages[1].inlet.unfix()
 
-    imisc.copy_port_values(arc=m.fs.t02_dummy)
+    iinit.propagate_state(arc=m.fs.t02_dummy)
     if init:
         m.fs.dummy_reheat.initialize(outlvl=idaeslog.INFO)
-    imisc.copy_port_values(arc=m.fs.t03_dummy)
+    iinit.propagate_state(arc=m.fs.t03_dummy)
 
-    imisc.copy_port_values(arc=m.fs.t04)
+    iinit.propagate_state(arc=m.fs.t04)
     if init:
         m.fs.steam_turbine_lp_mix.initialize(outlvl=idaeslog.INFO)
-    imisc.copy_port_values(arc=m.fs.t06)
+    iinit.propagate_state(arc=m.fs.t06)
 
-    imisc.copy_port_values(arc=m.fs.t07)
+    iinit.propagate_state(arc=m.fs.t07)
     if init:
         m.fs.main_condenser.initialize(outlvl=idaeslog.INFO, unfix="pressure")
 
-    imisc.copy_port_values(arc=m.fs.t08)
+    iinit.propagate_state(arc=m.fs.t08)
     if init:
         m.fs.hotwell.initialize(outlvl=idaeslog.INFO)
 
-    imisc.copy_port_values(arc=m.fs.t09)
+    iinit.propagate_state(arc=m.fs.t09)
     if init:
         m.fs.cond_pump.initialize(outlvl=idaeslog.INFO)
 

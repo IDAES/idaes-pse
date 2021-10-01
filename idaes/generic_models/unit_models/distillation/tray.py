@@ -27,9 +27,9 @@ __author__ = "Jaffer Ghouse"
 import idaes.logger as idaeslog
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var, Set, value, SolverFactory
+from pyomo.environ import Reference, Expression, Var, Set, value
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -65,7 +65,7 @@ class TrayData(UnitModelBlockData):
 this must be False."""))
     CONFIG.declare("is_feed_tray", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="flag to indicate feed tray.",
         doc="""indicates if this is a feed tray and constructs
 corresponding ports,
@@ -75,7 +75,7 @@ corresponding ports,
 **False** - conventional tray with no feed inlet}"""))
     CONFIG.declare("has_liquid_side_draw", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="liquid side draw construction flag.",
         doc="""indicates if there is a liquid side draw from the tray,
 **default** - False.
@@ -84,7 +84,7 @@ corresponding ports,
 **False** - exclude a liquid side draw from the tray.}"""))
     CONFIG.declare("has_vapor_side_draw", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="vapor side draw construction flag.",
         doc="""indicates if there is a vapor side draw from the tray,
 **default** - False.
@@ -93,7 +93,7 @@ corresponding ports,
 **False** - exclude a vapor side draw from the tray.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="heat duty to/from tray construction flag.",
         doc="""indicates if there is heat duty to/from the tray,
 **default** - False.
@@ -102,7 +102,7 @@ corresponding ports,
 **False** - exclude a heat duty term.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="pressure change term construction flag",
         doc="""indicates whether terms for pressure change should be
     constructed,

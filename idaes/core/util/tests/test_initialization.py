@@ -16,10 +16,9 @@ Tests for math util methods.
 
 import pytest
 from pyomo.environ import (Block, ConcreteModel, Constraint, Expression, exp,
-                           Set, Var, value, Param, Reals,
+                           Set, Var, value, Param, Reals, units as pyunits,
                            TransformationFactory, TerminationCondition)
 from pyomo.network import Arc, Port
-from pyomo.core.base.units_container import UnitsError
 
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
@@ -32,7 +31,9 @@ from idaes.core import (FlowsheetBlock,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        Component,
+                        Phase)
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.generic_models.unit_models import CSTR
@@ -62,19 +63,22 @@ class ParameterData(PhysicalParameterBlock):
         super(ParameterData, self).build()
 
         # all components are in the aqueous phase
-        self.phase_list = Set(initialize=['aq'])
-        self.component_list = Set(initialize=['S', 'E', 'C', 'P', 'Solvent'])
+        self.aq = Phase()
+        self.S = Component()
+        self.E = Component()
+        self.C = Component()
+        self.P = Component()
+        self.Solvent = Component()
 
-        self.state_block_class = AqueousEnzymeStateBlock
+        self._state_block_class = AqueousEnzymeStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _AqueousEnzymeStateBlock(StateBlock):
@@ -144,7 +148,7 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
     def build(self):
         super(EnzymeReactionParameterData, self).build()
 
-        self.reaction_block_class = EnzymeReactionBlock
+        self._reaction_block_class = EnzymeReactionBlock
 
         self.rate_reaction_idx = Set(initialize=['R1', 'R2', 'R3'])
         self.rate_reaction_stoichiometry = {('R1', 'aq', 'S'): -1,
@@ -186,12 +190,11 @@ class EnzymeReactionParameterData(ReactionParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_default_units({'time': 'min',
-                               'length': 'm',
-                               'amount': 'kmol',
-                               'temperature': 'K',
-                               'energy': 'kcal',
-                               'holdup': 'kmol'})
+        obj.add_default_units({'time': pyunits.minute,
+                               'length': pyunits.m,
+                               'amount': pyunits.kmol,
+                               'temperature': pyunits.K,
+                               'mass': pyunits.kg})
 
 
 class _EnzymeReactionBlock(ReactionBlockBase):
@@ -692,6 +695,13 @@ def test_propagate_state_indexed_fixed():
     assert m.b1.v1.fixed is False
     assert m.b2.v1.fixed is True
 
+    propagate_state(m.s1[1], overwrite_fixed=True)
+
+    # Check that values were propagated correctly
+    assert m.b2.v1.value == 10
+    assert m.b1.v1.fixed is False
+    assert m.b2.v1.fixed is True
+
     propagate_state(m.s1[2])
 
     # Check that values were propagated correctly
@@ -836,7 +846,8 @@ def test_initialize_by_time_element():
     ntcp = 2
     m = ConcreteModel(name='CSTR model for testing')
     m.fs = FlowsheetBlock(default={'dynamic': True,
-                                   'time_set': time_set})
+                                   'time_set': time_set,
+                                   'time_units': pyunits.minute})
 
     m.fs.properties = AqueousEnzymeParameterBlock()
     m.fs.reactions = EnzymeReactionParameterBlock(
