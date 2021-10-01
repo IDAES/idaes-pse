@@ -126,7 +126,7 @@ Diagram
 ++++++++
 
 .. figure:: /images/ifv_screenshot_diagram.png
-    :width: 800
+    :width: 600
 
     Screenshot of the main *diagram* (or flowsheet) area of the IFV UI
 
@@ -191,7 +191,7 @@ values exist and the flowsheet adheres to the IDAES conventions for naming the i
 streams. An example of a stream table is shown below.
 
 .. figure:: /images/ifv_screenshot_streamtable.png
-    :width: 800
+    :width: 400
 
     Screenshot of an example stream table
 
