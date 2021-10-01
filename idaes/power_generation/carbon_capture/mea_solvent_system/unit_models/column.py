@@ -502,12 +502,13 @@ documentation for supported schemes,
                           doc='''Dimensionless concentration of solvent \
                               components (except H2O)
                                     at interface ''')
-        self.yeq_CO2 = Var(self.flowsheet().time,
+        self.yeq_solute = Var(self.flowsheet().time,
                            self.liquid_phase.length_domain,
+                           solute_comp_list,
                            domain=NonNegativeReals,
                            initialize=0.5,
                            units=None,
-                           doc='''Dimensionless concentration of CO2
+                           doc='''Dimensionless concentration of solute
                                       in equilibruim with the bulk''')
 
         # heat transfer
@@ -684,6 +685,8 @@ documentation for supported schemes,
                       blk.vapor_phase.properties[t, x].dens_mass) /
                      (blk.a_ref *
                       blk.vapor_phase.properties[t, x].visc_d))**(3/4))
+            else:
+                return Expression.Skip
 
         self.k_v = Expression(self.flowsheet().time,
                               self.vapor_phase.length_domain,
@@ -899,19 +902,20 @@ documentation for supported schemes,
         # reference: Jozsef Gaspar,Philip Loldrup Fosbol, (2015)
         # self.yi_MEA[z] is equivalent to sqrt(yi_MEA) in the document
 
-        def rule_conc_mol_comp_interface_CO2(blk, t, x):
+        def rule_conc_mol_comp_interface_solute(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
                 zf = self.liquid_phase.length_domain.at(self.zi[x].value + 1)
-                return blk.pressure_equil[t, zf, 'CO2'] /\
+                return blk.pressure_equil[t, zf, j] /\
                     blk.liquid_phase.properties[t, x].henry_N2O_analogy
 
-        self.conc_mol_comp_CO2_eq = Expression(
+        self.conc_mol_comp_solute_eq = Expression(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
-            rule=rule_conc_mol_comp_interface_CO2,
-            doc='Concentration of CO2 at the interface ]')
+            solute_comp_list,
+            rule=rule_conc_mol_comp_interface_solute,
+            doc='Concentration of solute at the interface')
 
         # def rule_Hatta(blk, t, x):
         #     if x == self.liquid_phase.length_domain.last():
@@ -929,20 +933,21 @@ documentation for supported schemes,
         #                         rule=rule_Hatta,
         #                         doc='Hatta number')
 
-        def rule_yb_CO2(blk, t, x):
+        def rule_yb_solute(blk, t, x, j):
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
                 return (blk.liquid_phase.properties[
-                            t, x].conc_mol_comp_true['CO2'] /
-                        blk.conc_mol_comp_CO2_eq[t, x])
+                            t, x].conc_mol_comp_true[j] /
+                        blk.conc_mol_comp_solute_eq[t, x, j])
 
-        self.yb_CO2 = Expression(
+        self.yb_solute = Expression(
             self.flowsheet().time,
             self.liquid_phase.length_domain,
-            rule=rule_yb_CO2,
-            doc='Dimensionless concentration of CO2, driving force term where '
-            'absortion implies yb_CO2 < 1 and desorption impies yb_CO2 > 1')
+            solute_comp_list,
+            rule=rule_yb_solute,
+            doc='Dimensionless concentration of solute, driving force term where '
+            'absortion implies yb_solute < 1 and desorption impies yb_solute > 1')
 
         # def rule_instantaneous_E(blk, t, x):
         #     if x == self.liquid_phase.length_domain.last():
@@ -988,18 +993,19 @@ documentation for supported schemes,
         @self.Constraint(self.flowsheet().time,
                          self.liquid_phase.length_domain,
                          solvent_comp_list,
-                         doc='Dimensionless concentration of CO2 '
+                         solute_comp_list,
+                         doc='Dimensionless concentration of solute'
                          'at equilibruim with the bulk')
-        def yeq_CO2_eqn(blk, t, x, j):
+        def yeq_solute_eqn(blk, t, x, j, m):
             if x == self.liquid_phase.length_domain.last():
-                return blk.yeq_CO2[t, x] == 0.0
+                return blk.yeq_solute[t, x, m] == 0.0
             elif j == 'H2O':
                 return Constraint.Skip
             else:
-                right_term=blk.yb_CO2[t, x]
+                right_term=blk.yb_solute[t, x, m]
                 for k in electrolyte_comp_diffus:
                     right_term *= blk.yi_electrolyte_diffus[t, x, j, k]
-                return blk.yeq_CO2[t, x] * blk.yi_solvent[t, x, j]**4 == \
+                return blk.yeq_solute[t, x, m] * blk.yi_solvent[t, x, j]**4 == \
                     right_term
 
         # @self.Constraint(self.flowsheet().time,
