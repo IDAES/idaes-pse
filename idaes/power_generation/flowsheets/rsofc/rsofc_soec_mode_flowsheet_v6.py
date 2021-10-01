@@ -61,7 +61,7 @@ from idaes.generic_models.properties.core.generic.generic_reaction import (
 )
 from idaes.power_generation.properties.natural_gas_PR import (
     get_prop, get_rxn, EosType)
-from idaes.power_generation.flowsheets.sofc.properties. \
+from idaes.power_generation.flowsheets.rsofc.properties. \
     CO2_H2O_Ideal_VLE_scaled import configuration as CO2_H2O_VLE_config
 from idaes.core.solvers import use_idaes_solver_configuration_defaults
 from idaes.generic_models.properties import iapws95
@@ -1359,7 +1359,8 @@ def set_inputs(m):
     m.fs.aux_boiler_feed_pump.inlet.pressure.fix(101325)
 
     # Set known fixed (assumed) conditions for soec
-    m.fs.soec.n_cells.fix(300e6)
+    # TODO - increased n_cells to meet 600MW usage (equiv prod from sofc stack)
+    m.fs.soec.n_cells.fix(400e6)
     m.fs.soec_heat_duty.fix(0)  # going for the thermoneutral point here
 
     m.fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)  # why not unfixed later
