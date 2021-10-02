@@ -1355,7 +1355,7 @@ documentation for supported schemes,
             for c in ["pressure_balance"]:
                 getattr(blk.vapor_phase, c).activate()
 
-            blk.vapor_phase.pressure_dx[:, :].unfix()
+            # blk.vapor_phase.pressure_dx[:, :].unfix()
 
             # Unfix pressure
             for t in blk.flowsheet().time:
