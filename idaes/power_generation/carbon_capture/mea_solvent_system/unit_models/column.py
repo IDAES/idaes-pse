@@ -1094,8 +1094,6 @@ documentation for supported schemes,
             "liquid_side_area",
             "eq_velocity_vap",
             "eq_velocity_liq",
-            "E1_eqn",
-            "E2_eqn",
             "pressure_at_interface",
             "mass_transfer",
             "liquid_phase_mass_transfer_handle",
@@ -1104,7 +1102,7 @@ documentation for supported schemes,
             "liquid_phase_heat_transfer",
             "vapor_phase_heat_transfer_handle",
             "liquid_phase_heat_transfer_handle",
-            "yeq_CO2_eqn",
+            "yeq_solute_eqn",
             "material_balances",
             "material_flow_linking_constraints",
             "material_holdup_calculation",
@@ -1112,7 +1110,6 @@ documentation for supported schemes,
             "energy_holdup_calculation",
             "material_flow_dx_disc_eq",
             "enthalpy_flow_dx_disc_eq",
-            "pressure_dx_disc_eq",
             "enthalpy_balances",
             "material_accumulation_disc_eq",
             "energy_accumulation_disc_eq",
@@ -1138,12 +1135,11 @@ documentation for supported schemes,
         blk.vapor_phase.mass_transfer_term.fix(0.0)
         blk.liquid_phase.mass_transfer_term.fix(0.0)
 
-        # Enhancement factor model
-        #blk.enhancement_factor.fix()
-        # blk.yi_MEA.fix()
-        for j in blk.config.liquid_side.property_package.component_list_solvent_apparent:
+        for j in blk.config.liquid_side.property_package.solvent_set:
             blk.yi_solvent[j].fix()
-        blk.yeq_CO2.fix()
+            
+        for k in blk.config.liquid_side.property_package.solute_set:
+            blk.yeq_solute[k].fix()
 
         # heat transfer
         blk.heat_vap.fix(0.0)
@@ -1156,8 +1152,8 @@ documentation for supported schemes,
 
         # other variables
         # Pressure_dx
-        if not blk.config.fix_column_pressure:
-            blk.vapor_phase.pressure_dx[...].fix(0.0)
+        # if not blk.config.fix_column_pressure:
+        #     blk.vapor_phase.pressure_dx[...].fix(0.0)
 
         # vapor side flow terms
         blk.vapor_phase._enthalpy_flow.fix(1.0)
@@ -1317,13 +1313,12 @@ documentation for supported schemes,
         for t in blk.flowsheet().time:
             for x in blk.liquid_phase.length_domain:
                 blk.enhancement_factor[t, x].value = 100
-        for j in blk.config.liquid_side.property_package.component_list_solvent_apparent:
+        for j in blk.config.liquid_side.property_package.solvent_set:
             blk.yi_solvent[j].unfix()
-        # blk.yi_MEA.unfix()
-        blk.yeq_CO2.unfix()
-        blk.E1_eqn.activate()
-        blk.E2_eqn.activate()
-        blk.yeq_CO2_eqn.activate()
+        for k in blk.config.liquid_side.property_package.solute_set:
+            blk.yeq_solute[k].unfix()
+
+        blk.yeq_solute_eqn.activate()
 
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(blk, tee=slc.tee)
@@ -1357,7 +1352,7 @@ documentation for supported schemes,
         if not blk.config.fix_column_pressure:
             for c in ["mechanical_equil"]:
                 getattr(blk, c).activate()
-            for c in ["pressure_balance", "pressure_dx_disc_eq"]:
+            for c in ["pressure_balance"]:
                 getattr(blk.vapor_phase, c).activate()
 
             blk.vapor_phase.pressure_dx[:, :].unfix()

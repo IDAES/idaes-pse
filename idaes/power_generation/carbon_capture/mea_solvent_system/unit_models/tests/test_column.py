@@ -87,7 +87,7 @@ class TestAbsorber:
         var_list = [
             "diameter_column", "area_column", "length_column", "velocity_vap",
             "velocity_liq", "pressure_equil", "interphase_mass_transfer",
-            "enhancement_factor", "yi_MEA", "yeq_CO2", "heat_vap", "heat_liq"]
+            "enhancement_factor", "yi_solvent", "yeq_solute", "heat_vap", "heat_liq"]
         for v in var_list:
             assert isinstance(getattr(model.fs.unit, v), Var)
 
@@ -185,7 +185,7 @@ class TestAbsorber:
 class TestStripper:
     @pytest.fixture(scope="class")
     def model(self):
-        """Setup for steady-state absorption column"""
+        """Setup for steady-state stripper column"""
 
         # Spatial domain finite elemets and finite element list
         x_nfe = 10
@@ -230,7 +230,7 @@ class TestStripper:
         var_list = [
             "diameter_column", "area_column", "length_column", "velocity_vap",
             "velocity_liq", "pressure_equil", "interphase_mass_transfer",
-            "enhancement_factor", "yi_MEA", "yeq_CO2", "heat_vap", "heat_liq"]
+            "enhancement_factor", "yi_solvent", "yeq_solute", "heat_vap", "heat_liq"]
         for v in var_list:
             assert isinstance(getattr(model.fs.unit, v), Var)
 
