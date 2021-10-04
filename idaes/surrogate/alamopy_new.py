@@ -25,9 +25,8 @@ from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core.base.global_set import UnindexedComponent_set
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase
+from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase, TrainingStatus
 from idaes.core.util.exceptions import ConfigurationError
-
 
 # TODO: Adaptive sampling
 
@@ -458,12 +457,19 @@ class AlamoTrainer(SurrogateTrainer):
     def __init__(self, **settings):
         super().__init__(**settings)
 
+        #if self._validation_data_in_ndarray is None or \
+        #   self._validation_data_out_ndarray is None:
+        #    raise ValueError('validation_dataframe is needed by the AlamoTrainer, but'
+        #                     ' was not provided.')
+
         self._temp_context = None
         self._almfile = None
         self._trcfile = None
 
         if self.config.alamo_path is not None:
             alamo.executable = self.config.alamo_path
+
+        self._results = None
 
     def train_surrogate(self):
         """
@@ -476,36 +482,49 @@ class AlamoTrainer(SurrogateTrainer):
             None
 
         Returns:
-            rc : return code from calling ALAMO executable
-            almlog : log of output from ALAMO executable
+            TrainingStatus : status of the training run in Alamo
+            AlamoObject : trained surrogate model object
         """
         # Get paths for temp files
-        self.get_files()
+        self._get_files()
 
+        rc = None
+        almlog = None
+        alamo_object = None
+        
         try:
             # Write .alm file
-            self.write_alm_file()
+            self._write_alm_file()
 
             # Call ALAMO executable
-            rc, almlog = self.call_alamo()
+            rc, almlog = self._call_alamo()
 
             # Read back results
-            trace_dict = self.read_trace_file()
+            trace_dict = self._read_trace_file()
 
             # Populate results and SurrogateModel object
-            self.populate_results(trace_dict)
-            self.build_surrogate_object()
+            self._populate_results(trace_dict)
+            alamo_object = self._build_surrogate_object()
 
         finally:
             # Clean up temporary files if required
-            self.remove_temp_files()
+            self._remove_temp_files()
 
-        return rc, almlog
+        success = False
+        if rc == 0:
+            success = True
+        status = TrainingStatus(success, rc, almlog)
 
-    def get_files(self):
+        return status, alamo_object
+
+    # TODO: let's generalize this under the metrics?
+    def get_alamo_results(self):
+        return self._results
+
+    def _get_files(self):
         """
         Method to get/set paths for .alm and .trc files based on filename
-        coniguration argument.
+        configuration argument.
 
         If filename is None, temporary files will be created.
 
@@ -547,7 +566,7 @@ class AlamoTrainer(SurrogateTrainer):
         self._trcfile = trcfile
         self._wrkdir = wrkdir
 
-    def write_alm_to_stream(
+    def _write_alm_to_stream(
             self, stream, trace_fname=None, x_reg=None,
             z_reg=None, x_val=None, z_val=None):
         """
@@ -568,13 +587,13 @@ class AlamoTrainer(SurrogateTrainer):
             None
         """
         if x_reg is None:
-            x_reg = self._training_data_in
+            x_reg = self._training_data_in_ndarray
         if z_reg is None:
-            z_reg = self._training_data_out
+            z_reg = self._training_data_out_ndarray
         if x_val is None:
-            x_val = self._validation_data_in
+            x_val = self._validation_data_in_ndarray
         if z_val is None:
-            z_val = self._validation_data_out
+            z_val = self._validation_data_out_ndarray
 
         # Check bounds on inputs to avoid potential ALAMO failures
         input_max = list()
@@ -677,7 +696,7 @@ class AlamoTrainer(SurrogateTrainer):
                 stream.write(f"{str(i)}\n")
             stream.write("END_CUSTOMBAS\n")
 
-    def write_alm_file(self, x_reg=None, z_reg=None, x_val=None, z_val=None):
+    def _write_alm_file(self, x_reg=None, z_reg=None, x_val=None, z_val=None):
         """
         Method to write an ALAMO input file (.alm) using the current settings.
         Users may provide specific data sets for training and validation.
@@ -694,10 +713,10 @@ class AlamoTrainer(SurrogateTrainer):
             None
         """
         f = open(self._almfile, "w")
-        self.write_alm_to_stream(f, self._trcfile, x_reg, z_reg, x_val, z_val)
+        self._write_alm_to_stream(f, self._trcfile, x_reg, z_reg, x_val, z_val)
         f.close()
 
-    def call_alamo(self):
+    def _call_alamo(self):
         """
         Method to call ALAMO executable from Python, passing the current .alm
         file as an argument.
@@ -712,7 +731,7 @@ class AlamoTrainer(SurrogateTrainer):
         ostreams = [StringIO(), sys.stdout]
 
         if self._temp_context is None:
-            self.get_files()
+            self._get_files()
 
         # Set working directory
         cwd = os.getcwd()
@@ -747,14 +766,14 @@ class AlamoTrainer(SurrogateTrainer):
             os.chdir(cwd)
 
         if "ALAMO terminated with termination code " in almlog:
-            self.remove_temp_files()
+            self._remove_temp_files()
             raise RuntimeError(
                 "ALAMO executable returned non-zero return code. Check "
                 "the ALAMO output for more information.")
 
         return rc, almlog
 
-    def read_trace_file(self):
+    def _read_trace_file(self):
         """
         Method to read the results of an ALAMO run from a trace (.trc) file.
         The name location of the trace file is tored on the AlamoModelTrainer
@@ -829,7 +848,7 @@ class AlamoTrainer(SurrogateTrainer):
 
         return trace_read
 
-    def populate_results(self, trace_dict):
+    def _populate_results(self, trace_dict):
         """
         Method to populate the results object with data from a trace file.
 
@@ -841,7 +860,7 @@ class AlamoTrainer(SurrogateTrainer):
         """
         self._results = trace_dict
 
-    def build_surrogate_object(self):
+    def _build_surrogate_object(self):
         """
         Method to construct an AlmaoObject from the current results
         object.
@@ -850,15 +869,15 @@ class AlamoTrainer(SurrogateTrainer):
             None
 
         Returns:
-            NOne
+            AlamoObject
         """
-        self._surrogate = AlamoObject(
+        return AlamoObject(
             surrogate=self._results["Model"],
             input_labels=self._input_labels,
             output_labels=self._output_labels,
             input_bounds=self._input_bounds)
 
-    def remove_temp_files(self):
+    def _remove_temp_files(self):
         """
         Method to remove temporary files created during the ALAMO workflow,
         i.e. the .alm and .trc files.

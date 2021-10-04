@@ -19,13 +19,21 @@ from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
 
-class SurrogateTrainer:
+class TrainingStatus(object):
+    def __init__(self, success, return_code, msg):
+        self.success = success
+        self.return_code = return_code
+        self.msg = msg
+
+
+class SurrogateTrainer(object):
     CONFIG = ConfigBlock()
 
-    # TODO: self._surrogate is *not* a pyomo expression
-    def __init__(self, input_labels, output_labels, input_bounds=None, **settings):
+    def __init__(self, input_labels, output_labels, input_bounds=None,
+                 training_dataframe=None, validation_dataframe=None, **settings):
         """
-        TODO : document this method
+        This is the base class for IDAES surrogate training objects.
+
         Args:
            input_labels: list
               list of labels corresponding to the inputs (in order)
@@ -35,120 +43,99 @@ class SurrogateTrainer:
               if None, these are set later from the provided data
               if provided, it should be a dictionary where the keys correspond
               to the input label, and the values are tuples of bounds (lower,upper)
-           settings: keyword arguments
-              configuration options for the derived class
+           training_dataframe: pandas DataFrame
+              Pandas DataFrame corresponding to the training data. Columns must include
+              all the labels in input_labels and output_labels
+           validation_dataframe: pandas DataFrame or None
+             Pandas DateFrame corresponding to the validation data. Columns must include
+             all the labels in input_labels and output_labels. If None is passed, then
+             no validation data will be used. Some derived surrogate trainers may require
+             validation data, while others may not.
         """
-
         # Set the config block from passed settings
         self.config = self.CONFIG(settings)
 
-        # Objects known to the base class
-        self._training_status = dict()
-        self._training_metrics = dict()
+        # We must have at least one input label and one output label
+        if input_labels is None or len(input_labels) < 1 \
+           or output_labels is None or len(output_labels) < 1:
+            raise ValueError('SurrogateTrainer requires a list of input_labels and a list of output_labels'
+                             ' which must both have a length of at least one')
 
-        # TODO: make these exceptions
-        assert input_labels is not None
-        assert output_labels is not None
-        self._input_labels = input_labels
-        self._output_labels = output_labels
-        self._input_bounds = input_bounds
+        self._input_labels = list(input_labels)
+        self._output_labels = list(output_labels)
 
-        self._training_data_in = None
-        self._training_data_out = None
-        self._validation_data_in = None
-        self._validation_data_out = None
+        # check that the input and output labels do not overlap
+        all_labels = set(self._input_labels)
+        all_labels.update(self._output_labels)
+        if len(all_labels) != len(self._input_labels) + len(self._output_labels):
+            raise ValueError('Duplicate label found in input_labels and/or output_labels.')
 
+        # create the data members for training and validation data
+        self._training_dataframe = training_dataframe
+        self._validation_dataframe = validation_dataframe
+
+        # check that all input labels and output labels are in the dataframes
+        if set(self._input_labels) - set(self._training_dataframe.columns):
+            raise ValueError('An input label was specified that was not found in the training data.')
+        if  self._validation_dataframe is not None and \
+            set(self._input_labels) - set(self._validation_dataframe.columns):
+            raise ValueError('An input label was specified that was not found in the validation data.')
+        if set(self._output_labels) - set(self._training_dataframe.columns):
+            raise ValueError('An input label was specified that was not found in the training data.')
+        if  self._validation_dataframe is not None and \
+            set(self._output_labels) - set(self._validation_dataframe.columns):
+            raise ValueError('An input label was specified that was not found in the validation data.')
+
+        self._training_data_in_ndarray = self._training_dataframe[self._input_labels].values
+        self._training_data_out_ndarray = self._training_dataframe[self._output_labels].values
+        self._validation_data_in_ndarray = None
+        self._validation_data_out_ndarray = None
+        if self._validation_dataframe is not None:
+            self._validation_data_in_ndarray = self._validation_dataframe[self._input_labels].values
+            self._validation_data_out_ndarray = self._validation_dataframe[self._output_labels].values
+
+        if input_bounds is not None:
+            self._input_bounds = dict(input_bounds)
+        else:
+            # get the bounds from the data
+            mx = self._training_data.max().to_dict()
+            mn = self._training_data.min().to_dict()
+            self._input_bounds = {k: (mn[k], mx[k]) for k in self._input_labels}
+        
     def n_inputs(self):
         return len(self._input_labels)
 
     def n_outputs(self):
         return len(self._output_labels)
 
+    def input_labels(self):
+        return self._input_labels
+
+    def output_labels(self):
+        return self._output_labels
+
+    def input_bounds(self):
+        return self._input_bounds
+
+    # TODO: Talk with Andrew - do we need this?
+    def set_input_bounds(self, input_bounds):
+        self._input_bounds = dict(input_bounds)
+
     def train_surrogate(self):
         """
         This method should be overridden by the derived classes.
 
-        The ``train_surrogate`` method trains a surrogate model to an input dataset.
-        It calls the core method which is called during surrogate generation: ``train_surrogate`` sets up the surrogate problem,
-        trains the surrogate, computes the metrics, creates a results object and generates the Pyomo representation of the model.
-        It accepts no user input, inheriting the information passed in class initialization.
+        The ``train_surrogate`` method is used to train a surrogate model using data provided in set_training_data.
+        This method should return an instance of a derived surrogate object (from SurrogateBase)
+
+        Returns:
+           tuple : (TrainingStatus, surrogate object)
+
         """
         raise NotImplementedError('train_surrogate called, but not implemented on the derived class')
-    
-
-    def get_surrogate(self):  # SurrogateObject of the appropriate derived class
-        """
-        The ``get_surrogate`` method returns the result of the surrogate training process as as an IDAES surrogate object of the appropriate derived class.
-
-        This surrogate object can be used to evaluate the surrogate, build an IDAES 
-        block, or save the surrogate for use later
-
-        Returns:
-            derived from SurrogateBase
-        """
-        raise NotImplementedError('get_surrogate called, but not implemented on the derived class')
-
-    # TODO: methods to report key metrics
-
-    # Data Handling
-    def set_input_labels(self, labels):
-        # TODO: argument validation, docs and tests
-        self._input_labels = labels
-
-    def set_output_labels(self, labels):
-        # TODO: argument validation, docs and tests
-        self._output_labels = labels
-
-    def set_input_bounds(self, bounds):
-        self._input_bounds = bounds
-
-    def get_training_data(self):
-        """
-        The ``get_training_data`` method returns the input data used in training the surrogate model.
-        Returns:
-            Tuple : Tuple of two elements containing input (samples) and output (output values).
-
-        """
-        return (self._training_data_in, self._training_data_out)
-
-    def set_training_data(self, input_data, output_data):  # 2D Numparray
-        """
-        The ``set_training_data`` method initializes the Surrogate class with the data for training the surrogate model.
-        Args:
-            input_data (NumPy Array) : Two-dimensional NumPy Array containing the samples/features.
-            output_data (NumPy Array)  : Two-dimensional NumPy Array containing the output values.
-        """
-        # TODO: Support Pandas
-        # TODO: Testing of data shape based on labels
-        self._training_data_in = input_data
-        self._training_data_out = output_data
-
-    def get_validation_data(self):
-        """
-        The ``get_validation_data`` method returns the data supplied for validating the surrogate model.
-        Returns:
-            Tuple : Tuple of two elements containing validation data samples and output values.
-
-        """
-        return (self._validation_data_in, self._validation_data_out)
-
-    def set_validation_data(self, validation_inputs, validation_outputs):  # 2D Numparray
-        """
-        The ``set_validation_data`` method initializes the Surrogate class with data for validating/testing the surrogate model after generation.
-        Args:
-            validation_inputs (NumPy Array) : Two-dimensional NumPy Array containing the validation samples/features.
-            validation_outputs (NumPy Array) : Two-dimensional NumPy Array containing the output values of the validation samples.
-        """
-        # TODO: Support Pandas
-        # TODO: Testing of data shape based on labels
-        self._validation_data_in = validation_inputs
-        self._validation_data_out = validation_outputs
-
-    # TODO: Method to get validation metrics
-
-    # TODO: Methods to save and load SurrogateTrainers
 
 
+# TODO: This needs to have 
 class SurrogateBase():
     """
     Base class for standard IDAES Surrogate Object
