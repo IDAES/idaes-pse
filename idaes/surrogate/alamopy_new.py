@@ -586,14 +586,20 @@ class AlamoTrainer(SurrogateTrainer):
         Returns:
             None
         """
+        #TODO: Change code below to work with the dataframe directly instead of duplicating data
+        training_data_in_ndarray, training_data_out_ndarray = \
+            self._extract_numpy_ndarrays_from_dataframe(self._training_dataframe)
+        validation_data_in_ndarray, validation_data_out_ndarray = \
+            self._extract_numpy_ndarrays_from_dataframe(self._validation_dataframe)
+        
         if x_reg is None:
-            x_reg = self._training_data_in_ndarray
+            x_reg = training_data_in_ndarray
         if z_reg is None:
-            z_reg = self._training_data_out_ndarray
+            z_reg = training_data_out_ndarray
         if x_val is None:
-            x_val = self._validation_data_in_ndarray
+            x_val = validation_data_in_ndarray
         if z_val is None:
-            z_val = self._validation_data_out_ndarray
+            z_val = validation_data_out_ndarray
 
         # Check bounds on inputs to avoid potential ALAMO failures
         input_max = list()

@@ -18,6 +18,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
+# TODO: Add a utility method partition the data between training and validation
 
 class TrainingStatus(object):
     def __init__(self, success, return_code, msg):
@@ -29,8 +30,9 @@ class TrainingStatus(object):
 class SurrogateTrainer(object):
     CONFIG = ConfigBlock()
 
-    def __init__(self, input_labels, output_labels, input_bounds=None,
-                 training_dataframe=None, validation_dataframe=None, **settings):
+    def __init__(self, input_labels, output_labels,
+                 training_dataframe, validation_dataframe=None,
+                 input_bounds=None, **settings):
         """
         This is the base class for IDAES surrogate training objects.
 
@@ -86,14 +88,6 @@ class SurrogateTrainer(object):
             set(self._output_labels) - set(self._validation_dataframe.columns):
             raise ValueError('An input label was specified that was not found in the validation data.')
 
-        self._training_data_in_ndarray = self._training_dataframe[self._input_labels].values
-        self._training_data_out_ndarray = self._training_dataframe[self._output_labels].values
-        self._validation_data_in_ndarray = None
-        self._validation_data_out_ndarray = None
-        if self._validation_dataframe is not None:
-            self._validation_data_in_ndarray = self._validation_dataframe[self._input_labels].values
-            self._validation_data_out_ndarray = self._validation_dataframe[self._output_labels].values
-
         if input_bounds is not None:
             self._input_bounds = dict(input_bounds)
         else:
@@ -101,7 +95,17 @@ class SurrogateTrainer(object):
             mx = self._training_data.max().to_dict()
             mn = self._training_data.min().to_dict()
             self._input_bounds = {k: (mn[k], mx[k]) for k in self._input_labels}
+
+    #TODO: Check if alamopy_new actually needs this
+    def _extract_numpy_ndarrays_from_dataframe(self, dataframe):
+        if dataframe is None:
+            return None, None
         
+        data_in_ndarray = dataframe[self._input_labels].values
+        data_out_ndarray = dataframe[self._output_labels].values
+
+        return data_in_ndarray, data_out_ndarray
+
     def n_inputs(self):
         return len(self._input_labels)
 
