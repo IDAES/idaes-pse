@@ -80,7 +80,7 @@ class log_power_law_equil():
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
-        return 1
+        return sf_keq
 
 
 # ----------------------------------------------------------------------------
@@ -279,4 +279,4 @@ class log_solubility_product():
 
     @staticmethod
     def calculate_scaling_factors(b, sf_keq):
-        return 1
+        return sf_keq
