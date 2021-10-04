@@ -17,6 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from sys import modules
+from math import log
 
 from pyomo.environ import (
     Block, ConcreteModel, Constraint, Expression,
@@ -37,7 +38,7 @@ from idaes.generic_models.properties.core.reactions.rate_forms import \
 from idaes.generic_models.properties.core.reactions.equilibrium_constant import \
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
-    power_law_equil
+    power_law_equil, log_power_law_equil
 
 from idaes.core.util.testing import PhysicalParameterTestBlock
 from idaes.core.util.constants import Constants as constants
@@ -453,6 +454,16 @@ class TestGenericReactionBlock(object):
                        "parameter_data": {
                            "dh_rxn_ref": -20000,
                            "k_eq_ref": 100,
+                           "T_eq_ref": 350}},
+                "e2": {"stoichiometry": {("p2", "c1"): -5,
+                                         ("p2", "c2"): 6},
+                       "heat_of_reaction": constant_dh_rxn,
+                       "equilibrium_constant": van_t_hoff,
+                       "equilibrium_form": log_power_law_equil,
+                       "concentration_form": ConcentrationForm.moleFraction,
+                       "parameter_data": {
+                           "dh_rxn_ref": -20000,
+                           "k_eq_ref": 100,
                            "T_eq_ref": 350}}}})
 
         m.rblock = m.rxn_params.build_reaction_block(
@@ -476,9 +487,10 @@ class TestGenericReactionBlock(object):
         assert model.rxn_params.reaction_e1.dh_rxn_ref.value == -20000
 
         assert isinstance(model.rblock[1].dh_rxn, Expression)
-        assert len(model.rblock[1].dh_rxn) == 2
+        assert len(model.rblock[1].dh_rxn) == 3
         assert value(model.rblock[1].dh_rxn["r1"]) == -10000
         assert value(model.rblock[1].dh_rxn["e1"]) == -20000
+        assert value(model.rblock[1].dh_rxn["e2"]) == -20000
 
     @pytest.mark.unit
     def test_rate_constant(self, model):
@@ -526,8 +538,9 @@ class TestGenericReactionBlock(object):
         assert model.rxn_params.reaction_e1.T_eq_ref.value == 350
 
         assert isinstance(model.rblock[1].k_eq, Expression)
-        assert len(model.rblock[1].k_eq) == 1
+        assert len(model.rblock[1].k_eq) == 2
         assert value(model.rblock[1].k_eq["e1"]) == value(exp(1))
+        assert value(model.rblock[1].k_eq["e2"]) == value(exp(1))
 
     @pytest.mark.unit
     def test_equilibrium_form(self, model):
@@ -539,18 +552,30 @@ class TestGenericReactionBlock(object):
         assert rblk.reaction_order["p2", "c1"].value == -3
         assert rblk.reaction_order["p2", "c2"].value == 4
 
+        rblk = model.rxn_params.reaction_e2
+        assert isinstance(rblk.reaction_order, Var)
+        assert len(rblk.reaction_order) == 4
+        assert rblk.reaction_order["p1", "c1"].value == 0
+        assert rblk.reaction_order["p1", "c2"].value == 0
+        assert rblk.reaction_order["p2", "c1"].value == -5
+        assert rblk.reaction_order["p2", "c2"].value == 6
+
         assert isinstance(model.rblock[1].equilibrium_constraint, Constraint)
-        assert len(model.rblock[1].equilibrium_constraint) == 1
+        assert len(model.rblock[1].equilibrium_constraint) == 2
         assert value(model.rblock[1].equilibrium_constraint["e1"].body) == \
             value(model.rblock[1].k_eq["e1"] -
                   model.sblock[1].mole_frac_phase_comp["p2", "c1"]**-3 *
                   model.sblock[1].mole_frac_phase_comp["p2", "c2"]**4)
+        assert value(model.rblock[1].equilibrium_constraint["e2"].body) == \
+            value(model.rblock[1].log_k_eq["e2"] -
+                  model.sblock[1].log_mole_frac_phase_comp["p2", "c1"]*-5 +
+                  model.sblock[1].log_mole_frac_phase_comp["p2", "c2"]*6)
 
     @pytest.mark.unit
     def test_basic_scaling(self, model):
         model.rblock[1].calculate_scaling_factors()
 
-        assert len(model.rblock[1].scaling_factor) == 3
+        assert len(model.rblock[1].scaling_factor) == 7
 
         assert model.rblock[1].scaling_factor[
             model.rblock[1].dh_rxn["e1"]] == 5e-5
@@ -558,6 +583,12 @@ class TestGenericReactionBlock(object):
             model.rblock[1].dh_rxn["r1"]] == 1e-4
         assert model.rblock[1].scaling_factor[
             model.rblock[1].k_eq["e1"]] == 1e-2
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].k_eq["e2"]] == 1e-2
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].log_k_eq["e1"]] == log(1e-2)
+        assert model.rblock[1].scaling_factor[
+            model.rblock[1].log_k_eq["e2"]] == log(1e-2)
 
         # Check that scaling factor was added to equilibrium constraint
         assert str(model.rblock[1].equilibrium_constraint["e1"].body) == \
@@ -567,3 +598,11 @@ class TestGenericReactionBlock(object):
                  model.sblock[1].mole_frac_phase_comp["p2", "c2"] **
                  model.rxn_params.reaction_e1.reaction_order["p2", "c2"]) *
                 0.01)
+        print(model.rblock[1].equilibrium_constraint["e2"].body)
+        assert str(model.rblock[1].equilibrium_constraint["e2"].body) == \
+            str((model.rblock[1].log_k_eq["e2"] -
+                 (model.rxn_params.reaction_e2.reaction_order["p2", "c1"] *
+                  model.sblock[1].log_mole_frac_phase_comp["p2", "c1"] +
+                  model.rxn_params.reaction_e2.reaction_order["p2", "c2"] *
+                  model.sblock[1].log_mole_frac_phase_comp["p2", "c2"])) *
+                log(0.01))

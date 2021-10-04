@@ -13,6 +13,8 @@
 """
 Framework for generic reaction packages
 """
+from math import log
+
 # Import Pyomo libraries
 from pyomo.environ import (Block,
                            Constraint,
@@ -21,7 +23,6 @@ from pyomo.environ import (Block,
                            units as pyunits,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.core.base.units_container import _PyomoUnit
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -490,11 +491,27 @@ class GenericReactionBlockData(ReactionBlockDataBase):
                             self, rblock)
                     iscale.set_scaling_factor(v, sf)
 
+        if hasattr(self, "log_k_eq"):
+            for r, v in self.log_k_eq.items():
+                if iscale.get_scaling_factor(v) is None:
+                    rblock = getattr(self.params, "reaction_"+r)
+                    carg = self.params.config.equilibrium_reactions[r]
+                    sf = carg[
+                        "equilibrium_constant"].calculate_scaling_factors(
+                            self, rblock)
+                    iscale.set_scaling_factor(v, log(sf))
+
         if hasattr(self, "equilibrium_constraint"):
             for r, v in self.equilibrium_constraint.items():
+                carg = self.params.config.equilibrium_reactions[r]
                 if iscale.get_scaling_factor(v) is None:
-                    sf = iscale.get_scaling_factor(
-                        self.k_eq[r], default=1, warning=True)
+                    if carg["equilibrium_form"].__name__.startswith("log_"):
+                        # Log form constraint
+                        sf = iscale.get_scaling_factor(
+                            self.log_k_eq[r], default=1, warning=True)
+                    else:
+                        sf = iscale.get_scaling_factor(
+                            self.k_eq[r], default=1, warning=True)
 
                 sf_const = carg["equilibrium_form"].calculate_scaling_factors(
                     self, sf)
