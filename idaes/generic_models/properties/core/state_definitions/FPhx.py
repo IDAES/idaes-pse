@@ -132,7 +132,7 @@ def define_state(b):
     b.phase_frac = Var(
         b.phase_list,
         initialize=1/len(b.phase_list),
-        bounds=(0, 1.001),
+        bounds=(0, None),
         doc='Phase fractions',
         units=None)
 
