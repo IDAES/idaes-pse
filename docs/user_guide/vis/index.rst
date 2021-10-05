@@ -40,11 +40,19 @@ passing some parameters to give it a name and optional file for saving changes::
     m.fs.visualize("My Flowsheet")
 
 The invocation of the `visualize` method will pop up a browser tab or window with the UI, displaying the
-flowsheet and, if the information is available, the stream table. In the notebook or script, you can continue
-to run more code and the UI will continue to work in the background. You can close the UI at any time. If you
-exit the script or notebook while the UI is running, you can still manipulate the diagram and stream table,
-but you will not be able to save
-or refresh, since these require communication with the Python process that no longer exists.
+flowsheet and, if the information is available, the stream table.
+
+.. note::
+    In contrast to notebooks, invoking the `visualize`
+    method as above in a script will have the background process terminate when the script finishes processing.
+    In order to keep the process running, the `loop_forever` option must be set to :code:`True`::
+
+        m.fs.visualize("My Flowsheet", loop_forever=True)
+
+You can continue to run more code and the UI will continue to work in the background. You can close the UI at any
+time. If you exit the notebook while the UI is running, you can still manipulate the diagram and stream table,
+but you will not be able to save or refresh, since these require communication with the Python process that
+no longer exists.
 
 There are three ways to invoke the `visualize` functionality, which in the end do the same thing and
 have the same arguments.
@@ -126,7 +134,7 @@ Diagram
 ++++++++
 
 .. figure:: /images/ifv_screenshot_diagram.png
-    :width: 800
+    :width: 600
 
     Screenshot of the main *diagram* (or flowsheet) area of the IFV UI
 
@@ -186,12 +194,14 @@ View actions
 Stream Table
 ++++++++++++
 
-The IFV will show a stream table with variables defined for each stream in the flowsheet, if these
-values exist and the flowsheet adheres to the IDAES conventions for naming the inlet and outlet
-streams. An example of a stream table is shown below.
+The IFV will show a stream table with variables and their units defined for
+each stream in the flowsheet, if these values exist and the flowsheet adheres
+to the IDAES conventions for naming the inlet and outlet streams. In case the
+variables are unit-less, their units would be replaced with '--'. An example
+of a stream table is shown below.
 
 .. figure:: /images/ifv_screenshot_streamtable.png
-    :width: 800
+    :width: 400
 
     Screenshot of an example stream table
 

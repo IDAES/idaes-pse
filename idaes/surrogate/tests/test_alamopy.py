@@ -50,17 +50,17 @@ jstring = (
 class TestAlamoTrainer:
     @pytest.fixture
     def alamo_trainer(self):
-        data = {'x1': [1,2,3,4], 'x2': [5,6,7,8], 'z1':[10,20,30,40]}
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
         data = pd.DataFrame(data)
 
-        input_labels=["x1", "x2"]
-        output_labels=["z1"]
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
         bnds = {"x1": (0, 5), "x2": (0, 10)}
 
-        return  AlamoTrainer(input_labels=input_labels,
-                             output_labels=output_labels,
-                             input_bounds=bnds,
-                             training_dataframe=data)
+        return AlamoTrainer(input_labels=input_labels,
+                            output_labels=output_labels,
+                            input_bounds=bnds,
+                            training_dataframe=data)
 
     @pytest.mark.unit
     def test_get_files(self, alamo_trainer):
@@ -154,7 +154,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_equal(self, alamo_trainer):
-        alamo_trainer.set_input_bounds({"x1": (0, 5), "x2": (10, 10)})
+        alamo_trainer._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -164,7 +164,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_reversed(self, alamo_trainer):
-        alamo_trainer.set_input_bounds({"x1": (0, 5), "x2": (15, 10)})
+        alamo_trainer._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -202,20 +202,21 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_validation_data(self):
-        training_data = {'x1': [1,2,3,4], 'x2': [5,6,7,8], 'z1':[10,20,30,40]}
+        training_data = {
+            'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
         training_data = pd.DataFrame(training_data)
         validation_data = {'x1': [2.5], 'x2': [6.5], 'z1': [25]}
         validation_data = pd.DataFrame(validation_data)
-        input_labels=["x1", "x2"]
-        output_labels=["z1"]
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
         bnds = {"x1": (0, 5), "x2": (0, 10)}
 
-        alamo_trainer = AlamoTrainer(input_labels=input_labels,
-                             output_labels=output_labels,
-                             input_bounds=bnds,
-                             training_dataframe=training_data,
-                             validation_dataframe=validation_data)
-
+        alamo_trainer = AlamoTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data)
 
         stream = io.StringIO()
         alamo_trainer._write_alm_to_stream(stream=stream)
@@ -1058,21 +1059,24 @@ class TestAlamoObject():
 @pytest.mark.integration
 def test_workflow():
     # Test end-to-end workflow with a simple problem.
-    training_data = np.array([[0.353837234435, 0.99275270941666, 0.762878272854],
-                              [0.904978848612, -0.746908518721, 0.387963718723],
-                              [0.643706630938, -0.617496599522, -0.0205375902284],
-                              [1.29881420688, 0.305594881575, 2.43011137696],
-                              [1.35791650867, 0.351045058258, 2.36989368612],
-                              [0.938369314089, -0.525167416293, 0.829756159423],
-                              [-1.46593541641, 0.383902178482, 1.14054797964],
-                              [-0.374378293218, -0.689730440659, -0.219122783909],
-                              [0.690326213554, 0.569364994374, 0.982068847698],
-                              [-0.961163301329, 0.499471920546, 0.936855365038]])
+    training_data = np.array(
+        [[0.353837234435, 0.99275270941666, 0.762878272854],
+         [0.904978848612, -0.746908518721, 0.387963718723],
+         [0.643706630938, -0.617496599522, -0.0205375902284],
+         [1.29881420688, 0.305594881575, 2.43011137696],
+         [1.35791650867, 0.351045058258, 2.36989368612],
+         [0.938369314089, -0.525167416293, 0.829756159423],
+         [-1.46593541641, 0.383902178482, 1.14054797964],
+         [-0.374378293218, -0.689730440659, -0.219122783909],
+         [0.690326213554, 0.569364994374, 0.982068847698],
+         [-0.961163301329, 0.499471920546, 0.936855365038]])
     training_data = pd.DataFrame(training_data, columns=["x1", "x2", "z1"])
     bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
-    alamo_trainer = AlamoTrainer(input_labels=["x1", "x2"], output_labels=["z1"],
-                           input_bounds=bnds,
-                           training_dataframe=training_data)
+    alamo_trainer = AlamoTrainer(
+        input_labels=["x1", "x2"],
+        output_labels=["z1"],
+        input_bounds=bnds,
+        training_dataframe=training_data)
 
     alamo_trainer.config.linfcns = True
     alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
@@ -1082,7 +1086,7 @@ def test_workflow():
 
     # Check execution
     assert status.return_code == 0
-    assert status.success == True
+    assert status.success is True
     assert "Normal termination" in status.msg
 
     # Check temp file clean up

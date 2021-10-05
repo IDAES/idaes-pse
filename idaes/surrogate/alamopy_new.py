@@ -25,7 +25,8 @@ from pyomo.common.fileutils import Executable
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.core.base.global_set import UnindexedComponent_set
 
-from idaes.surrogate.surrogate_base import SurrogateTrainer, SurrogateBase, TrainingStatus
+from idaes.surrogate.surrogate_base import (
+    SurrogateTrainer, SurrogateBase, TrainingStatus)
 from idaes.core.util.exceptions import ConfigurationError
 
 # TODO: Adaptive sampling
@@ -457,11 +458,6 @@ class AlamoTrainer(SurrogateTrainer):
     def __init__(self, **settings):
         super().__init__(**settings)
 
-        #if self._validation_data_in_ndarray is None or \
-        #   self._validation_data_out_ndarray is None:
-        #    raise ValueError('validation_dataframe is needed by the AlamoTrainer, but'
-        #                     ' was not provided.')
-
         self._temp_context = None
         self._almfile = None
         self._trcfile = None
@@ -491,7 +487,7 @@ class AlamoTrainer(SurrogateTrainer):
         rc = None
         almlog = None
         alamo_object = None
-        
+
         try:
             # Write .alm file
             self._write_alm_file()
@@ -555,7 +551,7 @@ class AlamoTrainer(SurrogateTrainer):
 
         trcfile = os.path.splitext(almfile)[0] + ".trc"
         self._temp_context.add_tempfile(trcfile, exists=False)
-        
+
         if self.config.working_directory is None:
             wrkdir = self._temp_context.create_tempdir()
         else:
@@ -567,8 +563,8 @@ class AlamoTrainer(SurrogateTrainer):
         self._wrkdir = wrkdir
 
     def _write_alm_to_stream(
-            self, stream, trace_fname=None, x_reg=None,
-            z_reg=None, x_val=None, z_val=None):
+            self, stream, trace_fname=None,
+            training_data=None, validation_data=None):
         """
         Method to write an ALAMO input file (.alm) to a stream.
         Users may provide specific data sets for training and validation.
@@ -578,28 +574,16 @@ class AlamoTrainer(SurrogateTrainer):
         Args:
             stream: stream that data should be writen to
             trace_fname: name for trace file (.trc) to be included in .alm file
-            x_reg: input values for regression (2D numpy array)
-            z_reg: output values for regrssion (2D numpy array)
-            x_val: input values for validation (2D numpy array)
-            z_val: output values for regression (2D numpy array)
+            training_data: Pandas dataframe to use for training surrogate
+            validation_data: Pandas dataframe to use for validating surrogate
 
         Returns:
             None
         """
-        #TODO: Change code below to work with the dataframe directly instead of duplicating data
-        training_data_in_ndarray, training_data_out_ndarray = \
-            self._extract_numpy_ndarrays_from_dataframe(self._training_dataframe)
-        validation_data_in_ndarray, validation_data_out_ndarray = \
-            self._extract_numpy_ndarrays_from_dataframe(self._validation_dataframe)
-        
-        if x_reg is None:
-            x_reg = training_data_in_ndarray
-        if z_reg is None:
-            z_reg = training_data_out_ndarray
-        if x_val is None:
-            x_val = validation_data_in_ndarray
-        if z_val is None:
-            z_val = validation_data_out_ndarray
+        if training_data is None:
+            training_data = self._training_dataframe
+        if validation_data is None:
+            validation_data = self._validation_dataframe
 
         # Check bounds on inputs to avoid potential ALAMO failures
         input_max = list()
@@ -621,12 +605,10 @@ class AlamoTrainer(SurrogateTrainer):
             input_max.append(b[1])
 
         # Get number of data points to build alm file
-        if x_reg is not None:
-            n_rdata, n_inputs = x_reg.shape
-        else:
-            n_rdata = 0
-        if x_val is not None:
-            n_vdata, n_inputs = x_val.shape
+        n_rdata, n_inputs = training_data.shape
+
+        if validation_data is not None:
+            n_vdata, n_inputs = validation_data.shape
         else:
             n_vdata = 0
 
@@ -638,7 +620,7 @@ class AlamoTrainer(SurrogateTrainer):
         stream.write(f"XMIN {' '.join(map(str, input_min))}\n")
         stream.write(f"XMAX {' '.join(map(str, input_max))}\n")
         stream.write(f"NDATA {n_rdata}\n")
-        if x_val is not None:
+        if validation_data is not None:
             stream.write(f"NVALDATA {n_vdata}\n")
         stream.write("\n")
 
@@ -679,22 +661,25 @@ class AlamoTrainer(SurrogateTrainer):
             stream.write(f"TRACEFNAME {trace_fname}\n")
 
         stream.write("\nBEGIN_DATA\n")
-        nin = len(self._input_labels)
-        nout = len(self._output_labels)
-        for row in range(n_rdata):
-            stream.write(
-                f"{' '.join(map(str, (x_reg[row][x] for x in range(nin))))}"
-                f" {' '.join(map(str, (z_reg[row][z] for z in range(nout))))}\n")
-        stream.write("END_DATA\n")
+        # Columns will be writen in order in input and output lists
+        training_data.to_string(
+            buf=stream,
+            columns=self._input_labels + self._output_labels,
+            header=False,
+            index=False,
+            float_format=lambda x: str(x).format(":g"))
+        stream.write("\nEND_DATA\n")
 
-        if x_val is not None:
+        if validation_data is not None:
             # Add validation data defintion
             stream.write("\nBEGIN_VALDATA\n")
-            for row in range(n_vdata):
-                stream.write(
-                    f"{' '.join(map(str, (x_val[row][x] for x in range(nin))))}"
-                    f" {' '.join(map(str, (z_val[row][z] for z in range(nout))))}\n")
-            stream.write("END_VALDATA\n")
+            validation_data.to_string(
+                buf=stream,
+                columns=self._input_labels + self._output_labels,
+                header=False,
+                index=False,
+                float_format=lambda x: str(x).format(":g"))
+            stream.write("\nEND_VALDATA\n")
 
         if self.config.custom_basis_functions is not None:
             stream.write("\nBEGIN_CUSTOMBAS\n")
@@ -702,7 +687,7 @@ class AlamoTrainer(SurrogateTrainer):
                 stream.write(f"{str(i)}\n")
             stream.write("END_CUSTOMBAS\n")
 
-    def _write_alm_file(self, x_reg=None, z_reg=None, x_val=None, z_val=None):
+    def _write_alm_file(self, training_data=None, validation_data=None):
         """
         Method to write an ALAMO input file (.alm) using the current settings.
         Users may provide specific data sets for training and validation.
@@ -710,16 +695,15 @@ class AlamoTrainer(SurrogateTrainer):
         AlamoModelTrainer are used.
 
         Args:
-            x_reg: input values for regression (2D numpy array)
-            z_reg: output values for regrssion (2D numpy array)
-            x_val: input values for validation (2D numpy array)
-            z_val: output values for regression (2D numpy array)
+            training_data: Pandas dataframe to use for training surrogate
+            validation_data: Pandas dataframe to use for validating surrogate
 
         Returns:
             None
         """
         f = open(self._almfile, "w")
-        self._write_alm_to_stream(f, self._trcfile, x_reg, z_reg, x_val, z_val)
+        self._write_alm_to_stream(
+            f, self._trcfile, training_data, validation_data)
         f.close()
 
     def _call_alamo(self):
