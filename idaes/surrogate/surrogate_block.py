@@ -123,10 +123,7 @@ def _extract_var_data(vars):
     elif isinstance(vars, list):
         varlist = list()
         for v in vars:
-            if v.is_indexed():
-                varlist.extend(v.values())
-            else:
-                varlist.append(v)
+            varlist.extend(_extract_vardata(v))
         return varlist
     else:
         raise ValueError("Unknown variable type {}".format(vars))
