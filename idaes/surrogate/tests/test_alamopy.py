@@ -120,6 +120,48 @@ class TestAlamoTrainer:
             "END_DATA\n")
 
     @pytest.mark.unit
+    def test_writer_reordered(self):
+        # Test case where training data is out of order and has extra columns
+        data = {'junk': [100, 200, 300, 400],
+                'x1': [1, 2, 3, 4],
+                'z1': [10, 20, 30, 40],
+                'x2': [5, 6, 7, 8]}
+        data = pd.DataFrame(data)
+
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(input_labels=input_labels,
+                                     output_labels=output_labels,
+                                     input_bounds=bnds,
+                                     training_dataframe=data)
+
+        stream = io.StringIO()
+        alamo_trainer._write_alm_to_stream(stream=stream)
+
+        assert stream.getvalue() == (
+            "# IDAES Alamopy input file\n"
+            "NINPUTS 2\n"
+            "NOUTPUTS 1\n"
+            "XLABELS x1 x2\n"
+            "ZLABELS z1\n"
+            "XMIN 0 0\n"
+            "XMAX 5 10\n"
+            "NDATA 4\n\n"
+            "linfcns 1\n"
+            "constant 1\n"
+            "maxtime 1000.0\n"
+            "numlimitbasis 1\n\n"
+            "TRACE 1\n\n"
+            "BEGIN_DATA\n"
+            "1 5 10\n"
+            "2 6 20\n"
+            "3 7 30\n"
+            "4 8 40\n"
+            "END_DATA\n")
+
+    @pytest.mark.unit
     def test_writer_custom_basis(self, alamo_trainer):
         alamo_trainer.config.custom_basis_functions = [
             "sin(x1*x2)", "x1*tanh(x2)"]
@@ -206,6 +248,53 @@ class TestAlamoTrainer:
             'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
         training_data = pd.DataFrame(training_data)
         validation_data = {'x1': [2.5], 'x2': [6.5], 'z1': [25]}
+        validation_data = pd.DataFrame(validation_data)
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data)
+
+        stream = io.StringIO()
+        alamo_trainer._write_alm_to_stream(stream=stream)
+
+        assert stream.getvalue() == (
+            "# IDAES Alamopy input file\n"
+            "NINPUTS 2\n"
+            "NOUTPUTS 1\n"
+            "XLABELS x1 x2\n"
+            "ZLABELS z1\n"
+            "XMIN 0 0\n"
+            "XMAX 5 10\n"
+            "NDATA 4\n"
+            "NVALDATA 1\n\n"
+            "linfcns 1\n"
+            "constant 1\n"
+            "maxtime 1000.0\n"
+            "numlimitbasis 1\n\n"
+            "TRACE 1\n\n"
+            "BEGIN_DATA\n"
+            "1 5 10\n"
+            "2 6 20\n"
+            "3 7 30\n"
+            "4 8 40\n"
+            "END_DATA\n"
+            "\nBEGIN_VALDATA\n"
+            "2.5 6.5 25\n"
+            "END_VALDATA\n")
+
+    @pytest.mark.unit
+    def test_writer_validation_data_reordered(self):
+        # Test case where validation data is out of order and has extra columns
+        training_data = {
+            'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        training_data = pd.DataFrame(training_data)
+        validation_data = {'junk': [100], 'z1': [25], 'x1': [2.5], 'x2': [6.5]}
         validation_data = pd.DataFrame(validation_data)
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
