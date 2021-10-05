@@ -193,16 +193,15 @@ def propagate_state(destination=None, source=None, arc=None,
             for i in v:
                 if v[i].is_variable_type() and ((not v[i].fixed) or overwrite_fixed):
                     v[i].value = value(source_vars[k][i])
-
-        except (AttributeError, ValueError):
-            if getattr(v, 'ctype', None) not in {Var, Param}:
-                _log.error("Port (%s) contains a member (%s) that "
-                           "is not a Var / mutable Param. propagate_state() "
-                           "works by assigning to the 'value' attribute, "
-                           "thus can only be used when Port members are "
-                           "Pyomo Vars or mutable Params."
-                           % (destination.name, k))
-            raise
+                elif not v[i].is_variable_type():
+                    raise TypeError(
+                        f"propagate_state() is can only change the value of "
+                        f"variables and cannot set a {v[i].ctype}.  This "
+                        f"likely indicates either a malformed port or a misuse "
+                        f"of propagate_state.")
+        except KeyError as e:
+            raise KeyError(
+                "In propagate_state, variables have incompatible index sets") from e
 
 
 # HACK, courtesy of J. Siirola
