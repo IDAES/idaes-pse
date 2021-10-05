@@ -574,16 +574,52 @@ def test_propagate_state():
         b.s = Set(initialize=[1, 2])
         b.v1 = Var()
         b.v2 = Var(b.s)
+        b.e1 = Expression(expr=b.v1)
+        @b.Expression(b.s)
+        def e2(blk, i):
+            return b.v2[i]*b.v1
+        b.p1 = Param(mutable=True, initialize=5)
+        b.p2 = Param(b.s, mutable=True, initialize=6)
 
-        b.p = Port()
-        b.p.add(b.v1, "V1")
-        b.p.add(b.v2, "V2")
+        b.port1 = Port()
+        b.port1.add(b.v1, "V1")
+        b.port1.add(b.v2, "V2")
+
+        b.port2 = Port()
+        b.port2.add(b.v1, "V1")
+        b.port2.add(b.e2, "V2")
+
+        b.port3 = Port()
+        b.port3.add(b.e1, "V1")
+        b.port3.add(b.v2, "V2")
+
+        b.port4 = Port()
+        b.port4.add(b.p1, "V1")
+        b.port4.add(b.v2, "V2")
+
+        b.port5 = Port()
+        b.port5.add(b.v1, "V1")
+        b.port5.add(b.p2, "V2")
+
+        b.port6 = Port()
+        b.port6.add(b.v1, "V1")
+        b.port6.add(b.v1, "V2")
         return
 
     m.b1 = Block(rule=block_rule)
     m.b2 = Block(rule=block_rule)
 
-    m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
+    m.s1 = Arc(source=m.b1.port1, destination=m.b2.port1)
+    m.s2 = Arc(source=m.b1.port1, destination=m.b2.port2)
+    m.s3 = Arc(source=m.b1.port1, destination=m.b2.port3)
+    m.s4 = Arc(source=m.b1.port1, destination=m.b2.port4)
+    m.s5 = Arc(source=m.b1.port1, destination=m.b2.port5)
+    m.s6 = Arc(source=m.b1.port2, destination=m.b2.port1)
+    m.s7 = Arc(source=m.b1.port3, destination=m.b2.port1)
+    m.s8 = Arc(source=m.b1.port4, destination=m.b2.port1)
+    m.s9 = Arc(source=m.b1.port5, destination=m.b2.port1)
+    m.s10 = Arc(source=m.b1.port6, destination=m.b2.port1)
+    m.s11 = Arc(source=m.b2.port6, destination=m.b1.port1)
 
     # Set values on first block
     m.b1.v1.value = 10
@@ -608,6 +644,44 @@ def test_propagate_state():
     assert m.b2.v1.fixed is False
     assert m.b2.v2[1].fixed is False
     assert m.b2.v2[2].fixed is False
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s2)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s3)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s4)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s5)
+
+    propagate_state(m.s6)
+    assert value(m.b1.v1) == value(m.b2.v1)
+    assert value(m.b1.e2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.e2[2]) == value(m.b2.v2[2])
+
+    propagate_state(m.s7)
+    assert value(m.b1.e1) == value(m.b2.v1)
+    assert value(m.b1.v2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.v2[2]) == value(m.b2.v2[2])
+
+    propagate_state(m.s8)
+    assert value(m.b1.p1) == value(m.b2.v1)
+    assert value(m.b1.v2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.v2[2]) == value(m.b2.v2[2])
+
+    propagate_state(m.s9)
+    assert value(m.b1.v1) == value(m.b2.v1)
+    assert value(m.b1.p2[1]) == value(m.b2.v2[1])
+    assert value(m.b1.p2[2]) == value(m.b2.v2[2])
+
+    with pytest.raises(KeyError):
+        propagate_state(m.s10)
+
+    with pytest.raises(KeyError):
+        propagate_state(m.s11)
 
 
 @pytest.mark.unit
@@ -759,7 +833,7 @@ def test_propagate_state_Expression():
 
     m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         propagate_state(m.s1)
 
 
