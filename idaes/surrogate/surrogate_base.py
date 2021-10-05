@@ -18,7 +18,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
-# TODO: Add a utility method partition the data between training and validation
 
 class TrainingStatus(object):
     def __init__(self, success, return_code, msg):
@@ -130,7 +129,7 @@ class SurrogateBase():
     """
     Base class for standard IDAES Surrogate Object
     """
-
+    # TODO: remove "surrogate"
     def __init__(self, surrogate, input_labels=None, output_labels=None,
                  input_bounds=None):
         self._surrogate = surrogate
@@ -138,6 +137,7 @@ class SurrogateBase():
         self._output_labels = output_labels
         self._input_bounds = input_bounds  # dict of bounds for each label
 
+    # TODO: make these properties in SurrogateTrainer as well?
     @property
     def n_inputs(self):
         return len(self._input_labels)
@@ -178,7 +178,8 @@ class SurrogateBase():
         raise NotImplementedError(
             "SurrogateModel class has not implemented populate_block method.")
 
-    def evaluate_surrogate(self, inputs):
+    # TODO: Change this to take dataframe as input - include a method that get's the numpy ndarray for this
+    def evaluate_surrogate(self, dataframe):
         """
         Placeholder method to evaluate surrogate model at a set of user
         provided values.
