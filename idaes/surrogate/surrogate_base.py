@@ -92,8 +92,8 @@ class SurrogateTrainer(object):
             self._input_bounds = dict(input_bounds)
         else:
             # get the bounds from the data
-            mx = self._training_data.max().to_dict()
-            mn = self._training_data.min().to_dict()
+            mx = self._training_dataframe.max().to_dict()
+            mn = self._training_dataframe.min().to_dict()
             self._input_bounds = {k: (mn[k], mx[k]) for k in self._input_labels}
 
     def n_inputs(self):

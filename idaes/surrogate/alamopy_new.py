@@ -509,7 +509,8 @@ class AlamoTrainer(SurrogateTrainer):
         success = False
         if rc == 0:
             success = True
-        status = TrainingStatus(success, rc, almlog)
+        almmsg = almlog.split("\n")[-3]
+        status = TrainingStatus(success, rc, almmsg)
 
         return status, alamo_object
 

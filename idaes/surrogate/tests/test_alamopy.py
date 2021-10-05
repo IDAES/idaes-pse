@@ -1087,7 +1087,7 @@ def test_workflow():
     # Check execution
     assert status.return_code == 0
     assert status.success is True
-    assert "Normal termination" in status.msg
+    assert status.msg == " Normal termination"
 
     # Check temp file clean up
     assert alamo_trainer._temp_context is None
