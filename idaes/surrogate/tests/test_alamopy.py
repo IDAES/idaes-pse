@@ -51,7 +51,7 @@ class TestAlamoTrainer:
     def alm_obj(self):
         alm_obj = AlamoTrainer(input_labels=["x1", "x2"], output_labels=["z1"])
 
-        alm_obj.set_input_bounds({"x1": (0, 5), "x2": (0, 10)})
+        alm_obj._input_bounds = {"x1": (0, 5), "x2": (0, 10)}
 
         alm_obj.set_training_data(np.array([[1, 5], [2, 6], [3, 7], [4, 8]]),
                                   np.array([[10], [20], [30], [40]]))
@@ -150,7 +150,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_equal(self, alm_obj):
-        alm_obj.set_input_bounds({"x1": (0, 5), "x2": (10, 10)})
+        alm_obj._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -160,7 +160,7 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_min_max_reversed(self, alm_obj):
-        alm_obj.set_input_bounds({"x1": (0, 5), "x2": (15, 10)})
+        alm_obj._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
@@ -1044,7 +1044,7 @@ def test_workflow():
     # Test end-to-end workflow with a simple problem.
     alm_obj = AlamoTrainer(input_labels=["x1", "x2"], output_labels=["z1"])
 
-    alm_obj.set_input_bounds({"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)})
+    alm_obj._input_bounds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
 
     alm_obj.set_training_data(
         np.array([[0.353837234435, 0.99275270941666],
