@@ -1081,7 +1081,6 @@ def test_workflow():
     alamo_trainer.config.linfcns = True
     alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
     alamo_trainer.config.multi2power = [1, 2]
-    alamo_trainer.config.filename = "alamo_workflow_test.alm"
 
     status, alamo_object = alamo_trainer.train_surrogate()
 

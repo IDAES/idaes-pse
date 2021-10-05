@@ -96,16 +96,6 @@ class SurrogateTrainer(object):
             mn = self._training_data.min().to_dict()
             self._input_bounds = {k: (mn[k], mx[k]) for k in self._input_labels}
 
-    #TODO: Check if alamopy_new actually needs this
-    def _extract_numpy_ndarrays_from_dataframe(self, dataframe):
-        if dataframe is None:
-            return None, None
-        
-        data_in_ndarray = dataframe[self._input_labels].values
-        data_out_ndarray = dataframe[self._output_labels].values
-
-        return data_in_ndarray, data_out_ndarray
-
     def n_inputs(self):
         return len(self._input_labels)
 
@@ -120,10 +110,6 @@ class SurrogateTrainer(object):
 
     def input_bounds(self):
         return self._input_bounds
-
-    # TODO: Talk with Andrew - do we need this?
-    def set_input_bounds(self, input_bounds):
-        self._input_bounds = dict(input_bounds)
 
     def train_surrogate(self):
         """

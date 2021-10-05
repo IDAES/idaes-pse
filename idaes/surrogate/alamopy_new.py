@@ -661,15 +661,24 @@ class AlamoTrainer(SurrogateTrainer):
             stream.write(f"TRACEFNAME {trace_fname}\n")
 
         stream.write("\nBEGIN_DATA\n")
-        # TODO : Need to provide order for columns
-        training_data.to_string(buf=stream, header=False, index=False)
+        # Columns will be writen in order in input and output lists
+        training_data.to_string(
+            buf=stream,
+            columns=self._input_labels + self._output_labels,
+            header=False,
+            index=False,
+            float_format=lambda x: str(x).format(":g"))
         stream.write("\nEND_DATA\n")
 
         if validation_data is not None:
             # Add validation data defintion
             stream.write("\nBEGIN_VALDATA\n")
-            # TODO : As above
-            validation_data.to_string(buf=stream, header=False, index=False)
+            validation_data.to_string(
+                buf=stream,
+                columns=self._input_labels + self._output_labels,
+                header=False,
+                index=False,
+                float_format=lambda x: str(x).format(":g"))
             stream.write("\nEND_VALDATA\n")
 
         if self.config.custom_basis_functions is not None:
