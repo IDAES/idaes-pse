@@ -18,6 +18,8 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
+from idaes.surrogate.metrics import TrainingMetrics
+
 
 class TrainingStatus(object):
     def __init__(self, success, return_code, msg):
@@ -210,3 +212,6 @@ class SurrogateBase():
         """
         raise NotImplementedError('"load" should be implemented in the derived'
                                   ' SurrogateObject class')
+
+    def calculate_metrics(self, test_data):
+        return TrainingMetrics.build_metrics(self, test_data)

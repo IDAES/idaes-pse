@@ -908,11 +908,12 @@ class AlamoObject(SurrogateBase):
         Method to evaluate ALAMO surrogate at a set of input values.
 
         Args:
-            inputs: numpy array of input values. First dimension of array
-                must match the number of input variables.
+            inputs: Pandas dataframe of input values. Column headers must
+                include input labels.
 
         Returns:
-            outputs: numpy array of values for all outputs evaluated at input
+            outputs: Pandas dataframe of values for all outputs evaluated at
+                input
                 points.
         """
         # Create a set of lambda functions for evaluating the surrogate.
