@@ -843,16 +843,17 @@ class TestAlamoObject():
              0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
         out = alm_surr1.evaluate_surrogate(inputs)
-        for i in range(inputs.shape[1]):
-            assert pytest.approx(out[0, i], rel=1e-8) == (
-                3.9999999999925446303450 * inputs[0, i]**2 -
-                4.0000000000020765611453 * inputs[1, i]**2 -
-                2.0999999999859380039879 * inputs[0, i]**4 +
-                4.0000000000043112180492 * inputs[1, i]**4 +
-                0.33333333332782633107172 * inputs[0, i]**6 +
-                0.99999999999972988273811 * inputs[0, i]*inputs[1, i])
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs["x1"][i]**2 -
+                4.0000000000020765611453 * inputs["x2"][i]**2 -
+                2.0999999999859380039879 * inputs["x1"][i]**4 +
+                4.0000000000043112180492 * inputs["x2"][i]**4 +
+                0.33333333332782633107172 * inputs["x1"][i]**6 +
+                0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
 
     @pytest.mark.unit
     def test_populate_block(self, alm_surr1):
@@ -940,26 +941,27 @@ class TestAlamoObject():
              0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
         out = alm_surr2.evaluate_surrogate(inputs)
-        for i in range(inputs.shape[1]):
-            assert pytest.approx(out[0, i], rel=1e-8) == (
-                3.9999999999925446303450 * inputs[0, i]**2 -
-                4.0000000000020765611453 * inputs[1, i]**2 -
-                2.0999999999859380039879 * inputs[0, i]**4 +
-                4.0000000000043112180492 * inputs[1, i]**4 +
-                0.33333333332782633107172 * inputs[0, i]**6 +
-                0.99999999999972988273811 * inputs[0, i]*inputs[1, i])
-            assert pytest.approx(out[1, i], rel=1e-8) == (
-                0.72267799849202937756409E-001 * inputs[0, i] +
-                0.68451684753912708791823E-001 * inputs[1, i] +
-                1.0677896915911471165117 * inputs[0, i]**2 -
-                0.70576464806224348258468 * inputs[1, i]**2 -
-                0.40286283566554989543640E-001 * inputs[0, i]**3 +
-                0.67785668021684807038607E-002 * inputs[1, i]**5 -
-                0.14017881460354553180281 * inputs[0, i]**6 +
-                0.77207049441576647286212 * inputs[1, i]**6 +
-                0.42143309951518070910481 * inputs[0, i]*inputs[1, i] -
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs["x1"][i]**2 -
+                4.0000000000020765611453 * inputs["x2"][i]**2 -
+                2.0999999999859380039879 * inputs["x1"][i]**4 +
+                4.0000000000043112180492 * inputs["x2"][i]**4 +
+                0.33333333332782633107172 * inputs["x1"][i]**6 +
+                0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                0.72267799849202937756409E-001 * inputs["x1"][i] +
+                0.68451684753912708791823E-001 * inputs["x2"][i] +
+                1.0677896915911471165117 * inputs["x1"][i]**2 -
+                0.70576464806224348258468 * inputs["x2"][i]**2 -
+                0.40286283566554989543640E-001 * inputs["x1"][i]**3 +
+                0.67785668021684807038607E-002 * inputs["x2"][i]**5 -
+                0.14017881460354553180281 * inputs["x1"][i]**6 +
+                0.77207049441576647286212 * inputs["x2"][i]**6 +
+                0.42143309951518070910481 * inputs["x1"][i]*inputs["x2"][i] -
                 0.41818729807213093907503E-001)
 
     @pytest.mark.unit
@@ -1056,12 +1058,13 @@ class TestAlamoObject():
         x = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
         out = alm_surr3.evaluate_surrogate(inputs)
-        for i in range(inputs.shape[1]):
-            assert pytest.approx(out[0, i], rel=1e-8) == (
-                2*sin(inputs[0, i]**2) - 3*cos(inputs[1, i]**3) -
-                4*log(inputs[0, i]**4) + 5*exp(inputs[1, i]**5))
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                2*sin(inputs["x1"][i]**2) - 3*cos(inputs["x2"][i]**3) -
+                4*log(inputs["x1"][i]**4) + 5*exp(inputs["x2"][i]**5))
 
     @pytest.mark.unit
     def test_populate_block_funcs(self, alm_surr3):

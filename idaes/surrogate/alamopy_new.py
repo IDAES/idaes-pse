@@ -16,6 +16,7 @@ from io import StringIO
 import sys
 import os
 import numpy as np
+import pandas as pd
 import json
 
 from pyomo.environ import Constraint, value, sin, cos, log, exp, Set
@@ -668,7 +669,7 @@ class AlamoTrainer(SurrogateTrainer):
             columns=self._input_labels + self._output_labels,
             header=False,
             index=False,
-            float_format=lambda x: str(x).format(":g"))
+            float_format=lambda x: str(x).format(":g").strip())
         stream.write("\nEND_DATA\n")
 
         if validation_data is not None:
@@ -679,7 +680,7 @@ class AlamoTrainer(SurrogateTrainer):
                 columns=self._input_labels + self._output_labels,
                 header=False,
                 index=False,
-                float_format=lambda x: str(x).format(":g"))
+                float_format=lambda x: str(x).format(":g").strip())
             stream.write("\nEND_VALDATA\n")
 
         if self.config.custom_basis_functions is not None:
@@ -922,13 +923,15 @@ class AlamoObject(SurrogateBase):
                 f"{self._surrogate[o].split('==')[1]}",
                 GLOBAL_FUNCS)
 
-        outputs = np.zeros(shape=(len(self._output_labels), inputs.shape[1]))
+        # Use numpy to do the calcuations as it is faster
+        inputdata = inputs[self._input_labels].to_numpy()
+        outputs = np.zeros(shape=(inputs.shape[0], len(self._output_labels)))
 
-        for i in range(inputs.shape[1]):
+        for i in range(inputdata.shape[0]):
             for o in range(len(self._output_labels)):
                 o_name = self._output_labels[o]
-                outputs[o, i] = value(fcn[o_name](*inputs[:, i]))
-        return outputs
+                outputs[i, o] = value(fcn[o_name](*inputdata[i, :]))
+        return pd.DataFrame(outputs, columns=self._output_labels)
 
     def populate_block(self, block, **kwargs):
         """
