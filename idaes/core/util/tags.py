@@ -369,7 +369,7 @@ class ModelTag:
     @property
     def set_in_display_units(self):
         """Default index to use in the tag's string representation, this
-        is required for indexed quntities if you want to automatically convert
+        is required for indexed quantities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
         if self.group is not None:
@@ -381,7 +381,7 @@ class ModelTag:
     @set_in_display_units.setter
     def set_in_display_units(self, val):
         """Default index to use in the tag's string representation, this
-        is required for indexed quntities if you want to automatically convert
+        is required for indexed quantities if you want to automatically convert
         to string. An example use it for a time indexed tag, to display a
         specific time point."""
         if self.group is not None:
@@ -633,7 +633,7 @@ class ModelTagGroup(dict):
 
     def table_row(self, tags=None, units=True, numeric=False):
         """Create a table row with a given set of tags, for tabulating model
-        results.  The row contains values of tagged quntities either as strings
+        results.  The row contains values of tagged quantities either as strings
         of numeric values.
 
         Args:
