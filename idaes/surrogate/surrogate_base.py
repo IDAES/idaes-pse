@@ -18,6 +18,8 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
+from idaes.surrogate.metrics import TrainingMetrics
+
 
 class TrainingStatus(object):
     def __init__(self, success, return_code, msg):
@@ -91,8 +93,8 @@ class SurrogateTrainer(object):
             self._input_bounds = dict(input_bounds)
         else:
             # get the bounds from the data
-            mx = self._training_data.max().to_dict()
-            mn = self._training_data.min().to_dict()
+            mx = self._training_dataframe.max().to_dict()
+            mn = self._training_dataframe.min().to_dict()
             self._input_bounds = {k: (mn[k], mx[k]) for k in self._input_labels}
 
     def n_inputs(self):
@@ -219,3 +221,6 @@ class SurrogateBase():
         """
         raise NotImplementedError('"load" should be implemented in the derived'
                                   ' SurrogateObject class')
+
+    def calculate_metrics(self, test_data):
+        return TrainingMetrics.build_metrics(self, test_data)

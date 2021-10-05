@@ -29,6 +29,7 @@ from idaes.surrogate.alamopy_new import \
     AlamoTrainer, AlamoObject, Modelers, Screener, alamo
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.surrogate.metrics import TrainingMetrics
 
 
 dirpath = Path(__file__).parent.resolve()
@@ -95,6 +96,48 @@ class TestAlamoTrainer:
 
     @pytest.mark.unit
     def test_writer_default(self, alamo_trainer):
+        stream = io.StringIO()
+        alamo_trainer._write_alm_to_stream(stream=stream)
+
+        assert stream.getvalue() == (
+            "# IDAES Alamopy input file\n"
+            "NINPUTS 2\n"
+            "NOUTPUTS 1\n"
+            "XLABELS x1 x2\n"
+            "ZLABELS z1\n"
+            "XMIN 0 0\n"
+            "XMAX 5 10\n"
+            "NDATA 4\n\n"
+            "linfcns 1\n"
+            "constant 1\n"
+            "maxtime 1000.0\n"
+            "numlimitbasis 1\n\n"
+            "TRACE 1\n\n"
+            "BEGIN_DATA\n"
+            "1 5 10\n"
+            "2 6 20\n"
+            "3 7 30\n"
+            "4 8 40\n"
+            "END_DATA\n")
+
+    @pytest.mark.unit
+    def test_writer_reordered(self):
+        # Test case where training data is out of order and has extra columns
+        data = {'junk': [100, 200, 300, 400],
+                'x1': [1, 2, 3, 4],
+                'z1': [10, 20, 30, 40],
+                'x2': [5, 6, 7, 8]}
+        data = pd.DataFrame(data)
+
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(input_labels=input_labels,
+                                     output_labels=output_labels,
+                                     input_bounds=bnds,
+                                     training_dataframe=data)
+
         stream = io.StringIO()
         alamo_trainer._write_alm_to_stream(stream=stream)
 
@@ -206,6 +249,53 @@ class TestAlamoTrainer:
             'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
         training_data = pd.DataFrame(training_data)
         validation_data = {'x1': [2.5], 'x2': [6.5], 'z1': [25]}
+        validation_data = pd.DataFrame(validation_data)
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data)
+
+        stream = io.StringIO()
+        alamo_trainer._write_alm_to_stream(stream=stream)
+
+        assert stream.getvalue() == (
+            "# IDAES Alamopy input file\n"
+            "NINPUTS 2\n"
+            "NOUTPUTS 1\n"
+            "XLABELS x1 x2\n"
+            "ZLABELS z1\n"
+            "XMIN 0 0\n"
+            "XMAX 5 10\n"
+            "NDATA 4\n"
+            "NVALDATA 1\n\n"
+            "linfcns 1\n"
+            "constant 1\n"
+            "maxtime 1000.0\n"
+            "numlimitbasis 1\n\n"
+            "TRACE 1\n\n"
+            "BEGIN_DATA\n"
+            "1 5 10\n"
+            "2 6 20\n"
+            "3 7 30\n"
+            "4 8 40\n"
+            "END_DATA\n"
+            "\nBEGIN_VALDATA\n"
+            "2.5 6.5 25\n"
+            "END_VALDATA\n")
+
+    @pytest.mark.unit
+    def test_writer_validation_data_reordered(self):
+        # Test case where validation data is out of order and has extra columns
+        training_data = {
+            'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        training_data = pd.DataFrame(training_data)
+        validation_data = {'junk': [100], 'z1': [25], 'x1': [2.5], 'x2': [6.5]}
         validation_data = pd.DataFrame(validation_data)
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
@@ -754,16 +844,17 @@ class TestAlamoObject():
              0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
         out = alm_surr1.evaluate_surrogate(inputs)
-        for i in range(inputs.shape[1]):
-            assert pytest.approx(out[0, i], rel=1e-8) == (
-                3.9999999999925446303450 * inputs[0, i]**2 -
-                4.0000000000020765611453 * inputs[1, i]**2 -
-                2.0999999999859380039879 * inputs[0, i]**4 +
-                4.0000000000043112180492 * inputs[1, i]**4 +
-                0.33333333332782633107172 * inputs[0, i]**6 +
-                0.99999999999972988273811 * inputs[0, i]*inputs[1, i])
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs["x1"][i]**2 -
+                4.0000000000020765611453 * inputs["x2"][i]**2 -
+                2.0999999999859380039879 * inputs["x1"][i]**4 +
+                4.0000000000043112180492 * inputs["x2"][i]**4 +
+                0.33333333332782633107172 * inputs["x1"][i]**6 +
+                0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
 
     @pytest.mark.unit
     def test_populate_block(self, alm_surr1):
@@ -851,26 +942,27 @@ class TestAlamoObject():
              0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
         out = alm_surr2.evaluate_surrogate(inputs)
-        for i in range(inputs.shape[1]):
-            assert pytest.approx(out[0, i], rel=1e-8) == (
-                3.9999999999925446303450 * inputs[0, i]**2 -
-                4.0000000000020765611453 * inputs[1, i]**2 -
-                2.0999999999859380039879 * inputs[0, i]**4 +
-                4.0000000000043112180492 * inputs[1, i]**4 +
-                0.33333333332782633107172 * inputs[0, i]**6 +
-                0.99999999999972988273811 * inputs[0, i]*inputs[1, i])
-            assert pytest.approx(out[1, i], rel=1e-8) == (
-                0.72267799849202937756409E-001 * inputs[0, i] +
-                0.68451684753912708791823E-001 * inputs[1, i] +
-                1.0677896915911471165117 * inputs[0, i]**2 -
-                0.70576464806224348258468 * inputs[1, i]**2 -
-                0.40286283566554989543640E-001 * inputs[0, i]**3 +
-                0.67785668021684807038607E-002 * inputs[1, i]**5 -
-                0.14017881460354553180281 * inputs[0, i]**6 +
-                0.77207049441576647286212 * inputs[1, i]**6 +
-                0.42143309951518070910481 * inputs[0, i]*inputs[1, i] -
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                3.9999999999925446303450 * inputs["x1"][i]**2 -
+                4.0000000000020765611453 * inputs["x2"][i]**2 -
+                2.0999999999859380039879 * inputs["x1"][i]**4 +
+                4.0000000000043112180492 * inputs["x2"][i]**4 +
+                0.33333333332782633107172 * inputs["x1"][i]**6 +
+                0.99999999999972988273811 * inputs["x1"][i]*inputs["x2"][i])
+            assert pytest.approx(out["z2"][i], rel=1e-8) == (
+                0.72267799849202937756409E-001 * inputs["x1"][i] +
+                0.68451684753912708791823E-001 * inputs["x2"][i] +
+                1.0677896915911471165117 * inputs["x1"][i]**2 -
+                0.70576464806224348258468 * inputs["x2"][i]**2 -
+                0.40286283566554989543640E-001 * inputs["x1"][i]**3 +
+                0.67785668021684807038607E-002 * inputs["x2"][i]**5 -
+                0.14017881460354553180281 * inputs["x1"][i]**6 +
+                0.77207049441576647286212 * inputs["x2"][i]**6 +
+                0.42143309951518070910481 * inputs["x1"][i]*inputs["x2"][i] -
                 0.41818729807213093907503E-001)
 
     @pytest.mark.unit
@@ -967,12 +1059,13 @@ class TestAlamoObject():
         x = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
 
         inputs = np.array([np.tile(x, len(x)), np.repeat(x, len(x))])
+        inputs = pd.DataFrame(inputs.transpose(), columns=["x1", "x2"])
 
         out = alm_surr3.evaluate_surrogate(inputs)
-        for i in range(inputs.shape[1]):
-            assert pytest.approx(out[0, i], rel=1e-8) == (
-                2*sin(inputs[0, i]**2) - 3*cos(inputs[1, i]**3) -
-                4*log(inputs[0, i]**4) + 5*exp(inputs[1, i]**5))
+        for i in range(inputs.shape[0]):
+            assert pytest.approx(out["z1"][i], rel=1e-8) == (
+                2*sin(inputs["x1"][i]**2) - 3*cos(inputs["x2"][i]**3) -
+                4*log(inputs["x1"][i]**4) + 5*exp(inputs["x2"][i]**5))
 
     @pytest.mark.unit
     def test_populate_block_funcs(self, alm_surr3):
@@ -1057,91 +1150,127 @@ class TestAlamoObject():
 
 
 @pytest.mark.integration
-def test_workflow():
-    # Test end-to-end workflow with a simple problem.
-    training_data = np.array(
-        [[0.353837234435, 0.99275270941666, 0.762878272854],
-         [0.904978848612, -0.746908518721, 0.387963718723],
-         [0.643706630938, -0.617496599522, -0.0205375902284],
-         [1.29881420688, 0.305594881575, 2.43011137696],
-         [1.35791650867, 0.351045058258, 2.36989368612],
-         [0.938369314089, -0.525167416293, 0.829756159423],
-         [-1.46593541641, 0.383902178482, 1.14054797964],
-         [-0.374378293218, -0.689730440659, -0.219122783909],
-         [0.690326213554, 0.569364994374, 0.982068847698],
-         [-0.961163301329, 0.499471920546, 0.936855365038]])
-    training_data = pd.DataFrame(training_data, columns=["x1", "x2", "z1"])
-    bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
-    alamo_trainer = AlamoTrainer(
-        input_labels=["x1", "x2"],
-        output_labels=["z1"],
-        input_bounds=bnds,
-        training_dataframe=training_data)
+class TestWorkflow():
+    @pytest.fixture(scope="class")
+    def alamo_trainer(self):
+        # Test end-to-end workflow with a simple problem.
+        training_data = np.array(
+            [[0.353837234435, 0.99275270941666, 0.762878272854],
+             [0.904978848612, -0.746908518721, 0.387963718723],
+             [0.643706630938, -0.617496599522, -0.0205375902284],
+             [1.29881420688, 0.305594881575, 2.43011137696],
+             [1.35791650867, 0.351045058258, 2.36989368612],
+             [0.938369314089, -0.525167416293, 0.829756159423],
+             [-1.46593541641, 0.383902178482, 1.14054797964],
+             [-0.374378293218, -0.689730440659, -0.219122783909],
+             [0.690326213554, 0.569364994374, 0.982068847698],
+             [-0.961163301329, 0.499471920546, 0.936855365038]])
+        training_data = pd.DataFrame(training_data, columns=["x1", "x2", "z1"])
+        bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        alamo_trainer = AlamoTrainer(
+            input_labels=["x1", "x2"],
+            output_labels=["z1"],
+            input_bounds=bnds,
+            training_dataframe=training_data)
 
-    alamo_trainer.config.linfcns = True
-    alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
-    alamo_trainer.config.multi2power = [1, 2]
+        alamo_trainer.config.linfcns = True
+        alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
+        alamo_trainer.config.multi2power = [1, 2]
 
-    status, alamo_object = alamo_trainer.train_surrogate()
+        alamo_trainer._status, alamo_trainer._alamo_object = \
+            alamo_trainer.train_surrogate()
 
-    # Check execution
-    assert status.return_code == 0
-    assert status.success is True
-    assert "Normal termination" in status.msg
+        return alamo_trainer
 
-    # Check temp file clean up
-    assert alamo_trainer._temp_context is None
-    assert not os.path.exists(alamo_trainer._almfile)
-    assert not os.path.exists(alamo_trainer._trcfile)
+    def test_execution(self, alamo_trainer):
+        # Check execution
+        assert alamo_trainer._status.return_code == 0
+        assert alamo_trainer._status.success is True
+        assert alamo_trainer._status.msg == " Normal termination"
 
-    # Check results
-    assert alamo_trainer._results is not None
-    assert alamo_trainer._results['NINPUTS'] == '2'
-    assert alamo_trainer._results['NOUTPUTS'] == '1'
-    assert alamo_trainer._results['SSEOLR'] == {'z1': '0.373E-29'}
-    assert alamo_trainer._results['SSE'] == {'z1': '0.976E-23'}
-    assert alamo_trainer._results['RMSE'] == {'z1': '0.988E-12'}
-    assert alamo_trainer._results['R2'] == {'z1': '1.00'}
-    assert alamo_trainer._results['ModelSize'] == {'z1': '6'}
-    assert alamo_trainer._results['BIC'] == {'z1': '-539.'}
-    assert alamo_trainer._results['RIC'] == {'z1': '32.5'}
-    assert alamo_trainer._results['Cp'] == {'z1': '2.00'}
-    assert alamo_trainer._results['AICc'] == {'z1': '-513.'}
-    assert alamo_trainer._results['HQC'] == {'z1': '-543.'}
-    assert alamo_trainer._results['MSE'] == {'z1': '0.325E-23'}
-    assert alamo_trainer._results['SSEp'] == {'z1': '0.976E-23'}
-    assert alamo_trainer._results['MADp'] == {'z1': '0.115E-07'}
+        # Check temp file clean up
+        assert alamo_trainer._temp_context is None
+        assert not os.path.exists(alamo_trainer._almfile)
+        assert not os.path.exists(alamo_trainer._trcfile)
 
-    assert alamo_trainer._results['Model'] == {
-            "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
-            "4.0000000000020792256805 * x2**2 - "
-            "2.0999999999859380039879 * x1**4 + "
-            "4.0000000000043085535140 * x2**4 + "
-            "0.33333333332782683067208 * x1**6 + "
-            "0.99999999999973088193883 * x1*x2"}
+    def test_alamo_results(self, alamo_trainer):
+        assert alamo_trainer._results is not None
+        assert alamo_trainer._results['NINPUTS'] == '2'
+        assert alamo_trainer._results['NOUTPUTS'] == '1'
+        assert alamo_trainer._results['SSEOLR'] == {'z1': '0.373E-29'}
+        assert alamo_trainer._results['SSE'] == {'z1': '0.976E-23'}
+        assert alamo_trainer._results['RMSE'] == {'z1': '0.988E-12'}
+        assert alamo_trainer._results['R2'] == {'z1': '1.00'}
+        assert alamo_trainer._results['ModelSize'] == {'z1': '6'}
+        assert alamo_trainer._results['BIC'] == {'z1': '-539.'}
+        assert alamo_trainer._results['RIC'] == {'z1': '32.5'}
+        assert alamo_trainer._results['Cp'] == {'z1': '2.00'}
+        assert alamo_trainer._results['AICc'] == {'z1': '-513.'}
+        assert alamo_trainer._results['HQC'] == {'z1': '-543.'}
+        assert alamo_trainer._results['MSE'] == {'z1': '0.325E-23'}
+        assert alamo_trainer._results['SSEp'] == {'z1': '0.976E-23'}
+        assert alamo_trainer._results['MADp'] == {'z1': '0.115E-07'}
 
-    assert isinstance(alamo_object, AlamoObject)
-    assert alamo_object._surrogate == {
-        'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
-        '4.0000000000020792256805 * x2**2 - '
-        '2.0999999999859380039879 * x1**4 + '
-        '4.0000000000043085535140 * x2**4 + '
-        '0.33333333332782683067208 * x1**6 + '
-        '0.99999999999973088193883 * x1*x2'}
-    assert alamo_object._input_labels == ["x1", "x2"]
-    assert alamo_object._output_labels == ["z1"]
-    assert alamo_object._input_bounds == {
-        "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+        assert alamo_trainer._results['Model'] == {
+                "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
+                "4.0000000000020792256805 * x2**2 - "
+                "2.0999999999859380039879 * x1**4 + "
+                "4.0000000000043085535140 * x2**4 + "
+                "0.33333333332782683067208 * x1**6 + "
+                "0.99999999999973088193883 * x1*x2"}
 
-    # Check populating a block to finish workflow
-    blk = SurrogateBlock(concrete=True)
+    def test_alamo_object(self, alamo_trainer):
+        alamo_object = alamo_trainer._alamo_object
+        assert isinstance(alamo_object, AlamoObject)
+        assert alamo_object._surrogate == {
+            'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
+            '4.0000000000020792256805 * x2**2 - '
+            '2.0999999999859380039879 * x1**4 + '
+            '4.0000000000043085535140 * x2**4 + '
+            '0.33333333332782683067208 * x1**6 + '
+            '0.99999999999973088193883 * x1*x2'}
+        assert alamo_object._input_labels == ["x1", "x2"]
+        assert alamo_object._output_labels == ["z1"]
+        assert alamo_object._input_bounds == {
+            "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
 
-    blk.build_model(alamo_object)
+        # Check populating a block to finish workflow
+        blk = SurrogateBlock(concrete=True)
 
-    assert isinstance(blk._inputs, Var)
-    assert blk._inputs["x1"].bounds == (-1.5, 1.5)
-    assert blk._inputs["x2"].bounds == (-1.5, 1.5)
-    assert isinstance(blk._outputs, Var)
-    assert blk._outputs["z1"].bounds == (None, None)
-    assert isinstance(blk.alamo_constraint, Constraint)
-    assert len(blk.alamo_constraint) == 1
+        blk.build_model(alamo_object)
+
+        assert isinstance(blk._inputs, Var)
+        assert blk._inputs["x1"].bounds == (-1.5, 1.5)
+        assert blk._inputs["x2"].bounds == (-1.5, 1.5)
+        assert isinstance(blk._outputs, Var)
+        assert blk._outputs["z1"].bounds == (None, None)
+        assert isinstance(blk.alamo_constraint, Constraint)
+        assert len(blk.alamo_constraint) == 1
+
+    def test_metrics(self, alamo_trainer):
+        alamo_object = alamo_trainer._alamo_object
+
+        x = [-2, -1.8, -1.6, -1.4, -1.2, -1.0, -0.8, -0.6, -0.4, -0.2, 0,
+             0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0]
+
+        inputs = np.array(
+            [np.tile(x, len(x)), np.repeat(x, len(x))]).transpose()
+        outputs = np.array(
+            [inputs[:, 0],
+             inputs[:, 1],
+             ((4 - 2.1*inputs[:, 0]**2 + inputs[:, 0]**4/3) *
+              inputs[:, 0]**2 +
+              inputs[:, 0]*inputs[:, 1] +
+              (-4 + 4*inputs[:, 1]**2)*inputs[:, 1]**2)])
+
+        test_data = pd.DataFrame(outputs.transpose(),
+                                 columns=["x1", "x2", "z1"])
+
+        metrics = alamo_object.calculate_metrics(test_data)
+
+        assert isinstance(metrics, TrainingMetrics)
+        assert isinstance(metrics._evaluated_data, pd.DataFrame)
+        assert metrics.SSE["z1"] == pytest.approx(1.196545e-18, rel=1e-8)
+        assert metrics.R2["z1"] == pytest.approx(1, rel=1e-8)
+        assert metrics.MSE["z1"] == pytest.approx(2.713254e-21, rel=1e-8)
+        assert metrics.RMSE["z1"] == pytest.approx(5.208891e-11, rel=1e-8)
