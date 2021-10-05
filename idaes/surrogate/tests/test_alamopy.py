@@ -15,6 +15,7 @@ Tests for Alampy SurrogateModelTrainer
 """
 import pytest
 import numpy as np
+import pandas as pd
 import io
 import os
 from math import sin, cos, log, exp
@@ -48,51 +49,54 @@ jstring = (
 
 class TestAlamoTrainer:
     @pytest.fixture
-    def alm_obj(self):
-        alm_obj = AlamoTrainer(input_labels=["x1", "x2"], output_labels=["z1"])
+    def alamo_trainer(self):
+        data = {'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        data = pd.DataFrame(data)
 
-        alm_obj._input_bounds = {"x1": (0, 5), "x2": (0, 10)}
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
 
-        alm_obj.set_training_data(np.array([[1, 5], [2, 6], [3, 7], [4, 8]]),
-                                  np.array([[10], [20], [30], [40]]))
-
-        return alm_obj
-
-    @pytest.mark.unit
-    def test_get_files(self, alm_obj):
-        alm_obj.config.filename = "foo.alm"
-        alm_obj.get_files()
-        assert alm_obj._almfile == "foo.alm"
-        assert alm_obj._trcfile == "foo.trc"
+        return AlamoTrainer(input_labels=input_labels,
+                            output_labels=output_labels,
+                            input_bounds=bnds,
+                            training_dataframe=data)
 
     @pytest.mark.unit
-    def test_get_files_default(self, alm_obj):
-        alm_obj.get_files()
+    def test_get_files(self, alamo_trainer):
+        alamo_trainer.config.filename = "foo.alm"
+        alamo_trainer._get_files()
+        assert alamo_trainer._almfile == "foo.alm"
+        assert alamo_trainer._trcfile == "foo.trc"
 
-        assert alm_obj._almfile is not None
-        assert os.path.exists(alm_obj._almfile)
-        assert str(alm_obj._trcfile).split(".")[0] == str(
-            alm_obj._almfile).split(".")[0]
+    @pytest.mark.unit
+    def test_get_files_default(self, alamo_trainer):
+        alamo_trainer._get_files()
 
-        alm_obj.remove_temp_files()
+        assert alamo_trainer._almfile is not None
+        assert os.path.exists(alamo_trainer._almfile)
+        assert str(alamo_trainer._trcfile).split(".")[0] == str(
+            alamo_trainer._almfile).split(".")[0]
+
+        alamo_trainer._remove_temp_files()
 
         # Check that we cleaned-up after ourselves
-        assert not os.path.exists(alm_obj._almfile)
+        assert not os.path.exists(alamo_trainer._almfile)
 
     @pytest.mark.unit
-    def test_get_files_exists(self, alm_obj):
-        alm_obj.config.filename = os.path.join(dirpath, "alamotrace.trc")
+    def test_get_files_exists(self, alamo_trainer):
+        alamo_trainer.config.filename = os.path.join(dirpath, "alamotrace.trc")
 
         with pytest.raises(
                 FileExistsError,
                 match="alamotrace.trc already exists. Either choose a new "
                 "file name or set overwrite_files = True"):
-            alm_obj.get_files()
+            alamo_trainer._get_files()
 
     @pytest.mark.unit
-    def test_writer_default(self, alm_obj):
+    def test_writer_default(self, alamo_trainer):
         stream = io.StringIO()
-        alm_obj.write_alm_to_stream(stream=stream)
+        alamo_trainer._write_alm_to_stream(stream=stream)
 
         assert stream.getvalue() == (
             "# IDAES Alamopy input file\n"
@@ -116,11 +120,11 @@ class TestAlamoTrainer:
             "END_DATA\n")
 
     @pytest.mark.unit
-    def test_writer_custom_basis(self, alm_obj):
-        alm_obj.config.custom_basis_functions = [
+    def test_writer_custom_basis(self, alamo_trainer):
+        alamo_trainer.config.custom_basis_functions = [
             "sin(x1*x2)", "x1*tanh(x2)"]
         stream = io.StringIO()
-        alm_obj.write_alm_to_stream(stream=stream)
+        alamo_trainer._write_alm_to_stream(stream=stream)
 
         assert stream.getvalue() == (
             "# IDAES Alamopy input file\n"
@@ -149,29 +153,29 @@ class TestAlamoTrainer:
             "END_CUSTOMBAS\n")
 
     @pytest.mark.unit
-    def test_writer_min_max_equal(self, alm_obj):
-        alm_obj._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
+    def test_writer_min_max_equal(self, alamo_trainer):
+        alamo_trainer._input_bounds = {"x1": (0, 5), "x2": (10, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
                            match="ALAMO configuration error: upper and lower "
                            "bounds on input x2 are equal."):
-            alm_obj.write_alm_to_stream(stream=stream)
+            alamo_trainer._write_alm_to_stream(stream=stream)
 
     @pytest.mark.unit
-    def test_writer_min_max_reversed(self, alm_obj):
-        alm_obj._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
+    def test_writer_min_max_reversed(self, alamo_trainer):
+        alamo_trainer._input_bounds = {"x1": (0, 5), "x2": (15, 10)}
         stream = io.StringIO()
 
         with pytest.raises(ConfigurationError,
                            match="ALAMO configuration error: upper bound is "
                            "less than lower bound for input x2."):
-            alm_obj.write_alm_to_stream(stream=stream)
+            alamo_trainer._write_alm_to_stream(stream=stream)
 
     @pytest.mark.unit
-    def test_writer_trace(self, alm_obj):
+    def test_writer_trace(self, alamo_trainer):
         stream = io.StringIO()
-        alm_obj.write_alm_to_stream(
+        alamo_trainer._write_alm_to_stream(
             stream=stream, trace_fname="foo.bar")
 
         assert stream.getvalue() == (
@@ -197,12 +201,25 @@ class TestAlamoTrainer:
             "END_DATA\n")
 
     @pytest.mark.unit
-    def test_writer_validation_data(self, alm_obj):
-        alm_obj.set_validation_data(np.array([[2.5, 6.5]]),
-                                    np.array([[25]], ndmin=2))
+    def test_writer_validation_data(self):
+        training_data = {
+            'x1': [1, 2, 3, 4], 'x2': [5, 6, 7, 8], 'z1': [10, 20, 30, 40]}
+        training_data = pd.DataFrame(training_data)
+        validation_data = {'x1': [2.5], 'x2': [6.5], 'z1': [25]}
+        validation_data = pd.DataFrame(validation_data)
+        input_labels = ["x1", "x2"]
+        output_labels = ["z1"]
+        bnds = {"x1": (0, 5), "x2": (0, 10)}
+
+        alamo_trainer = AlamoTrainer(
+            input_labels=input_labels,
+            output_labels=output_labels,
+            input_bounds=bnds,
+            training_dataframe=training_data,
+            validation_dataframe=validation_data)
 
         stream = io.StringIO()
-        alm_obj.write_alm_to_stream(stream=stream)
+        alamo_trainer._write_alm_to_stream(stream=stream)
 
         assert stream.getvalue() == (
             "# IDAES Alamopy input file\n"
@@ -230,59 +247,59 @@ class TestAlamoTrainer:
             "END_VALDATA\n")
 
     @pytest.mark.unit
-    def test_writer_full_config(self, alm_obj):
-        alm_obj.config.xfactor = [1.2, 1.6]
-        alm_obj.config.xscaling = True
-        alm_obj.config.scalez = True
+    def test_writer_full_config(self, alamo_trainer):
+        alamo_trainer.config.xfactor = [1.2, 1.6]
+        alamo_trainer.config.xscaling = True
+        alamo_trainer.config.scalez = True
 
-        alm_obj.config.monomialpower = [2]
-        alm_obj.config.multi2power = [1, 2, 3]
-        alm_obj.config.multi3power = [1, 2, 3, 4]
-        alm_obj.config.ratiopower = [1, 2, 3, 4, 5]
+        alamo_trainer.config.monomialpower = [2]
+        alamo_trainer.config.multi2power = [1, 2, 3]
+        alamo_trainer.config.multi3power = [1, 2, 3, 4]
+        alamo_trainer.config.ratiopower = [1, 2, 3, 4, 5]
 
-        alm_obj.config.constant = True
-        alm_obj.config.linfcns = False
-        alm_obj.config.expfcns = True
-        alm_obj.config.logfcns = False
-        alm_obj.config.sinfcns = True
-        alm_obj.config.cosfcns = False
-        alm_obj.config.grbfcns = True
-        alm_obj.config.rbfparam = 7
+        alamo_trainer.config.constant = True
+        alamo_trainer.config.linfcns = False
+        alamo_trainer.config.expfcns = True
+        alamo_trainer.config.logfcns = False
+        alamo_trainer.config.sinfcns = True
+        alamo_trainer.config.cosfcns = False
+        alamo_trainer.config.grbfcns = True
+        alamo_trainer.config.rbfparam = 7
 
-        alm_obj.config.modeler = Modelers.AICc
-        alm_obj.config.builder = True
-        alm_obj.config.backstepper = False
-        alm_obj.config.convpen = 42
-        alm_obj.config.screener = Screener.SIS
-        alm_obj.config.ncvf = 4
-        alm_obj.config.sismult = 5
+        alamo_trainer.config.modeler = Modelers.AICc
+        alamo_trainer.config.builder = True
+        alamo_trainer.config.backstepper = False
+        alamo_trainer.config.convpen = 42
+        alamo_trainer.config.screener = Screener.SIS
+        alamo_trainer.config.ncvf = 4
+        alamo_trainer.config.sismult = 5
 
-        alm_obj.config.maxiter = -50
-        alm_obj.config.maxtime = 500
-        alm_obj.config.datalimitterms = True
-        alm_obj.config.maxterms = [-1, 2]
-        alm_obj.config.minterms = [2, -1]
-        alm_obj.config.numlimitbasis = False
-        alm_obj.config.exclude = [1, 0]
-        alm_obj.config.ignore = 1
-        alm_obj.config.xisint = [1, 0]
-        alm_obj.config.zisint = 0
+        alamo_trainer.config.maxiter = -50
+        alamo_trainer.config.maxtime = 500
+        alamo_trainer.config.datalimitterms = True
+        alamo_trainer.config.maxterms = [-1, 2]
+        alamo_trainer.config.minterms = [2, -1]
+        alamo_trainer.config.numlimitbasis = False
+        alamo_trainer.config.exclude = [1, 0]
+        alamo_trainer.config.ignore = 1
+        alamo_trainer.config.xisint = [1, 0]
+        alamo_trainer.config.zisint = 0
 
-        alm_obj.config.tolrelmetric = 8.1
-        alm_obj.config.tolabsmetric = 9.2
-        alm_obj.config.tolmeanerror = 10.3
-        alm_obj.config.tolsse = 11.4
+        alamo_trainer.config.tolrelmetric = 8.1
+        alamo_trainer.config.tolabsmetric = 9.2
+        alamo_trainer.config.tolmeanerror = 10.3
+        alamo_trainer.config.tolsse = 11.4
 
-        alm_obj.config.mipoptca = 12.5
-        alm_obj.config.mipoptcr = 13.6
-        alm_obj.config.linearerror = False
-        alm_obj.config.GAMS = "foo"
-        alm_obj.config.GAMSSOLVER = "bar"
-        alm_obj.config.solvemip = False
-        alm_obj.config.print_to_screen = True
+        alamo_trainer.config.mipoptca = 12.5
+        alamo_trainer.config.mipoptcr = 13.6
+        alamo_trainer.config.linearerror = False
+        alamo_trainer.config.GAMS = "foo"
+        alamo_trainer.config.GAMSSOLVER = "bar"
+        alamo_trainer.config.solvemip = False
+        alamo_trainer.config.print_to_screen = True
 
         stream = io.StringIO()
-        alm_obj.write_alm_to_stream(stream=stream)
+        alamo_trainer._write_alm_to_stream(stream=stream)
 
         assert stream.getvalue() == (
             "# IDAES Alamopy input file\n"
@@ -349,14 +366,14 @@ class TestAlamoTrainer:
             "END_DATA\n")
 
     @pytest.mark.component
-    def test_file_writer(self, alm_obj):
-        alm_obj.get_files()
-        alm_obj.write_alm_file()
+    def test_file_writer(self, alamo_trainer):
+        alamo_trainer._get_files()
+        alamo_trainer._write_alm_file()
 
-        with open(alm_obj._almfile, "r") as f:
+        with open(alamo_trainer._almfile, "r") as f:
             fcont = f.read()
         f.close()
-        alm_obj.remove_temp_files()
+        alamo_trainer._remove_temp_files()
 
         assert fcont == (
             f"# IDAES Alamopy input file\n"
@@ -372,7 +389,7 @@ class TestAlamoTrainer:
             f"maxtime 1000.0\n"
             f"numlimitbasis 1\n\n"
             f"TRACE 1\n"
-            f"TRACEFNAME {alm_obj._trcfile}\n\n"
+            f"TRACEFNAME {alamo_trainer._trcfile}\n\n"
             f"BEGIN_DATA\n"
             f"1 5 10\n"
             f"2 6 20\n"
@@ -381,47 +398,47 @@ class TestAlamoTrainer:
             f"END_DATA\n")
 
         # Check for clean up
-        assert not os.path.exists(alm_obj._almfile)
+        assert not os.path.exists(alamo_trainer._almfile)
 
     @pytest.mark.unit
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
-    def test_call_alamo_empty(self, alm_obj):
-        alm_obj._almfile = "test"
+    def test_call_alamo_empty(self, alamo_trainer):
+        alamo_trainer._almfile = "test"
         with pytest.raises(RuntimeError,
                            match="ALAMO executable returned non-zero return "
                            "code. Check the ALAMO output for more "
                            "information."):
-            alm_obj.call_alamo()
+            alamo_trainer._call_alamo()
 
-        assert alm_obj._temp_context is None
+        assert alamo_trainer._temp_context is None
 
     @pytest.mark.component
     @pytest.mark.skipif(not alamo.available(), reason="ALAMO not available")
-    def test_call_alamo_w_input(self, alm_obj):
+    def test_call_alamo_w_input(self, alamo_trainer):
         cwd = os.getcwd()
 
-        alm_obj._temp_context = TempfileManager.new_context()
-        alm_obj._almfile = os.path.join(dirpath, "alamo_test.alm")
-        alm_obj._wrkdir = dirpath
+        alamo_trainer._temp_context = TempfileManager.new_context()
+        alamo_trainer._almfile = os.path.join(dirpath, "alamo_test.alm")
+        alamo_trainer._wrkdir = dirpath
 
-        alm_obj._temp_context.add_tempfile(
+        alamo_trainer._temp_context.add_tempfile(
             os.path.join(dirpath, "GUI_trace.trc"), exists=False)
-        alm_obj._temp_context.add_tempfile(
+        alamo_trainer._temp_context.add_tempfile(
             os.path.join(dirpath, "alamo_test.lst"), exists=False)
-        rc, almlog = alm_obj.call_alamo()
+        rc, almlog = alamo_trainer._call_alamo()
         assert rc == 0
         assert "Normal termination" in almlog
 
         # Check for clean up
-        alm_obj._temp_context.release(remove=True)
+        alamo_trainer._temp_context.release(remove=True)
         assert not os.path.exists(os.path.join(dirpath, "GUI_trace.trc"))
         assert not os.path.exists(os.path.join(dirpath, "alamo_test.lst"))
         assert cwd == os.getcwd()
 
     @pytest.mark.unit
-    def test_read_trace_single(self, alm_obj):
-        alm_obj._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alm_obj.read_trace_file()
+    def test_read_trace_single(self, alamo_trainer):
+        alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
+        trc = alamo_trainer._read_trace_file()
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                         '4.0000000000020765611453 * x2**2 - '
@@ -499,11 +516,11 @@ class TestAlamoTrainer:
             'Model': mdict}
 
     @pytest.mark.unit
-    def test_read_trace_multi(self, alm_obj):
-        alm_obj._output_labels = ["z1", "z2"]
+    def test_read_trace_multi(self, alamo_trainer):
+        alamo_trainer._output_labels = ["z1", "z2"]
 
-        alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-        trc = alm_obj.read_trace_file()
+        alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
+        trc = alamo_trainer._read_trace_file()
 
         mdict = {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -592,29 +609,29 @@ class TestAlamoTrainer:
             'Model': mdict}
 
     @pytest.mark.unit
-    def test_read_trace_number_mismatch(self, alm_obj):
-        alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
+    def test_read_trace_number_mismatch(self, alamo_trainer):
+        alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Expected OUTPUT = 1, found 2."):
-            alm_obj.read_trace_file()
+            alamo_trainer._read_trace_file()
 
     @pytest.mark.unit
-    def test_read_trace_label_mismatch(self, alm_obj):
-        alm_obj._output_labels = ["z1", "z3"]
+    def test_read_trace_label_mismatch(self, alamo_trainer):
+        alamo_trainer._output_labels = ["z1", "z3"]
 
-        alm_obj._trcfile = os.path.join(dirpath, "alamotrace2.trc")
+        alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Label of output variable in expression "
                            "\(z2\) does not match expected label \(z3\)."):
-            alm_obj.read_trace_file()
+            alamo_trainer._read_trace_file()
 
     @pytest.mark.unit
-    def test_populate_results(self, alm_obj):
-        alm_obj._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alm_obj.read_trace_file()
-        alm_obj.populate_results(trc)
+    def test_populate_results(self, alamo_trainer):
+        alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
+        trc = alamo_trainer._read_trace_file()
+        alamo_trainer._populate_results(trc)
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                         '4.0000000000020765611453 * x2**2 - '
@@ -623,7 +640,7 @@ class TestAlamoTrainer:
                         '0.33333333332782633107172 * x1**6 + '
                         '0.99999999999972988273811 * x1*x2')}
 
-        assert alm_obj._results == {
+        assert alamo_trainer._results == {
             'filename': 'GUI_camel6.alm',
             'NINPUTS': '2',
             'NOUTPUTS': '1',
@@ -692,23 +709,23 @@ class TestAlamoTrainer:
             'Model': mdict}
 
     @pytest.mark.unit
-    def test_build_surrogate_object(self, alm_obj):
-        alm_obj._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alm_obj.read_trace_file()
-        alm_obj.populate_results(trc)
-        alm_obj.build_surrogate_object()
+    def test_build_surrogate_object(self, alamo_trainer):
+        alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
+        trc = alamo_trainer._read_trace_file()
+        alamo_trainer._populate_results(trc)
+        alamo_object = alamo_trainer._build_surrogate_object()
 
-        assert isinstance(alm_obj._surrogate, AlamoObject)
-        assert alm_obj._surrogate._surrogate == {
+        assert isinstance(alamo_object, AlamoObject)
+        assert alamo_object._surrogate == {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                    '4.0000000000020765611453 * x2**2 - '
                    '2.0999999999859380039879 * x1**4 + '
                    '4.0000000000043112180492 * x2**4 + '
                    '0.33333333332782633107172 * x1**6 + '
                    '0.99999999999972988273811 * x1*x2')}
-        assert alm_obj._surrogate._input_labels == ["x1", "x2"]
-        assert alm_obj._surrogate._output_labels == ["z1"]
-        assert alm_obj._surrogate._input_bounds == {
+        assert alamo_object._input_labels == ["x1", "x2"]
+        assert alamo_object._output_labels == ["z1"]
+        assert alamo_object._input_bounds == {
             "x1": (0, 5), "x2": (0, 10)}
 
 
@@ -1042,61 +1059,61 @@ class TestAlamoObject():
 @pytest.mark.integration
 def test_workflow():
     # Test end-to-end workflow with a simple problem.
-    alm_obj = AlamoTrainer(input_labels=["x1", "x2"], output_labels=["z1"])
+    training_data = np.array(
+        [[0.353837234435, 0.99275270941666, 0.762878272854],
+         [0.904978848612, -0.746908518721, 0.387963718723],
+         [0.643706630938, -0.617496599522, -0.0205375902284],
+         [1.29881420688, 0.305594881575, 2.43011137696],
+         [1.35791650867, 0.351045058258, 2.36989368612],
+         [0.938369314089, -0.525167416293, 0.829756159423],
+         [-1.46593541641, 0.383902178482, 1.14054797964],
+         [-0.374378293218, -0.689730440659, -0.219122783909],
+         [0.690326213554, 0.569364994374, 0.982068847698],
+         [-0.961163301329, 0.499471920546, 0.936855365038]])
+    training_data = pd.DataFrame(training_data, columns=["x1", "x2", "z1"])
+    bnds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+    alamo_trainer = AlamoTrainer(
+        input_labels=["x1", "x2"],
+        output_labels=["z1"],
+        input_bounds=bnds,
+        training_dataframe=training_data)
 
-    alm_obj._input_bounds = {"x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
+    alamo_trainer.config.linfcns = True
+    alamo_trainer.config.monomialpower = [2, 3, 4, 5, 6]
+    alamo_trainer.config.multi2power = [1, 2]
+    alamo_trainer.config.filename = "alamo_workflow_test.alm"
 
-    alm_obj.set_training_data(
-        np.array([[0.353837234435, 0.99275270941666],
-                  [0.904978848612, -0.746908518721],
-                  [0.643706630938, -0.617496599522],
-                  [1.29881420688, 0.305594881575],
-                  [1.35791650867, 0.351045058258],
-                  [0.938369314089, -0.525167416293],
-                  [-1.46593541641, 0.383902178482],
-                  [-0.374378293218, -0.689730440659],
-                  [0.690326213554, 0.569364994374],
-                  [-0.961163301329, 0.499471920546]]),
-        np.array([[0.762878272854], [0.387963718723], [-0.0205375902284],
-                  [2.43011137696], [2.36989368612], [0.829756159423],
-                  [1.14054797964], [-0.219122783909], [0.982068847698],
-                  [0.936855365038]],
-                 ndmin=2))
-
-    alm_obj.config.linfcns = True
-    alm_obj.config.monomialpower = [2, 3, 4, 5, 6]
-    alm_obj.config.multi2power = [1, 2]
-
-    rc, almlog = alm_obj.train_surrogate()
+    status, alamo_object = alamo_trainer.train_surrogate()
 
     # Check execution
-    assert rc == 0
-    assert "Normal termination" in almlog
+    assert status.return_code == 0
+    assert status.success is True
+    assert "Normal termination" in status.msg
 
     # Check temp file clean up
-    assert alm_obj._temp_context is None
-    assert not os.path.exists(alm_obj._almfile)
-    assert not os.path.exists(alm_obj._trcfile)
+    assert alamo_trainer._temp_context is None
+    assert not os.path.exists(alamo_trainer._almfile)
+    assert not os.path.exists(alamo_trainer._trcfile)
 
     # Check results
-    assert alm_obj._results is not None
-    assert alm_obj._results['NINPUTS'] == '2'
-    assert alm_obj._results['NOUTPUTS'] == '1'
-    assert alm_obj._results['SSEOLR'] == {'z1': '0.373E-29'}
-    assert alm_obj._results['SSE'] == {'z1': '0.976E-23'}
-    assert alm_obj._results['RMSE'] == {'z1': '0.988E-12'}
-    assert alm_obj._results['R2'] == {'z1': '1.00'}
-    assert alm_obj._results['ModelSize'] == {'z1': '6'}
-    assert alm_obj._results['BIC'] == {'z1': '-539.'}
-    assert alm_obj._results['RIC'] == {'z1': '32.5'}
-    assert alm_obj._results['Cp'] == {'z1': '2.00'}
-    assert alm_obj._results['AICc'] == {'z1': '-513.'}
-    assert alm_obj._results['HQC'] == {'z1': '-543.'}
-    assert alm_obj._results['MSE'] == {'z1': '0.325E-23'}
-    assert alm_obj._results['SSEp'] == {'z1': '0.976E-23'}
-    assert alm_obj._results['MADp'] == {'z1': '0.115E-07'}
+    assert alamo_trainer._results is not None
+    assert alamo_trainer._results['NINPUTS'] == '2'
+    assert alamo_trainer._results['NOUTPUTS'] == '1'
+    assert alamo_trainer._results['SSEOLR'] == {'z1': '0.373E-29'}
+    assert alamo_trainer._results['SSE'] == {'z1': '0.976E-23'}
+    assert alamo_trainer._results['RMSE'] == {'z1': '0.988E-12'}
+    assert alamo_trainer._results['R2'] == {'z1': '1.00'}
+    assert alamo_trainer._results['ModelSize'] == {'z1': '6'}
+    assert alamo_trainer._results['BIC'] == {'z1': '-539.'}
+    assert alamo_trainer._results['RIC'] == {'z1': '32.5'}
+    assert alamo_trainer._results['Cp'] == {'z1': '2.00'}
+    assert alamo_trainer._results['AICc'] == {'z1': '-513.'}
+    assert alamo_trainer._results['HQC'] == {'z1': '-543.'}
+    assert alamo_trainer._results['MSE'] == {'z1': '0.325E-23'}
+    assert alamo_trainer._results['SSEp'] == {'z1': '0.976E-23'}
+    assert alamo_trainer._results['MADp'] == {'z1': '0.115E-07'}
 
-    assert alm_obj._results['Model'] == {
+    assert alamo_trainer._results['Model'] == {
             "z1": " z1 == 3.9999999999925432980774 * x1**2 - "
             "4.0000000000020792256805 * x2**2 - "
             "2.0999999999859380039879 * x1**4 + "
@@ -1104,23 +1121,23 @@ def test_workflow():
             "0.33333333332782683067208 * x1**6 + "
             "0.99999999999973088193883 * x1*x2"}
 
-    assert isinstance(alm_obj._surrogate, AlamoObject)
-    assert alm_obj._surrogate._surrogate == {
+    assert isinstance(alamo_object, AlamoObject)
+    assert alamo_object._surrogate == {
         'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
         '4.0000000000020792256805 * x2**2 - '
         '2.0999999999859380039879 * x1**4 + '
         '4.0000000000043085535140 * x2**4 + '
         '0.33333333332782683067208 * x1**6 + '
         '0.99999999999973088193883 * x1*x2'}
-    assert alm_obj._surrogate._input_labels == ["x1", "x2"]
-    assert alm_obj._surrogate._output_labels == ["z1"]
-    assert alm_obj._surrogate._input_bounds == {
+    assert alamo_object._input_labels == ["x1", "x2"]
+    assert alamo_object._output_labels == ["z1"]
+    assert alamo_object._input_bounds == {
         "x1": (-1.5, 1.5), "x2": (-1.5, 1.5)}
 
     # Check populating a block to finish workflow
     blk = SurrogateBlock(concrete=True)
 
-    blk.build_model(alm_obj._surrogate)
+    blk.build_model(alamo_object)
 
     assert isinstance(blk._inputs, Var)
     assert blk._inputs["x1"].bounds == (-1.5, 1.5)
