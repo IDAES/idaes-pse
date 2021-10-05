@@ -567,9 +567,9 @@ def test_log_solubility_no_order():
           m.thermo[1].flow_mol_phase_comp["sol", "c2"]) /
          (pyunits.mol/pyunits.s))
     Q = (m.rxn[1].log_k_eq["r1"] -
-         (m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] **
-          m.rparams.reaction_r1.reaction_order["p1", "c1"] *
-          m.thermo[1].log_mole_frac_phase_comp["p1", "c2"] **
+         (m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] *
+          m.rparams.reaction_r1.reaction_order["p1", "c1"] +
+          m.thermo[1].log_mole_frac_phase_comp["p1", "c2"] *
           m.rparams.reaction_r1.reaction_order["p1", "c2"]))
 
     assert str(rform) == str(
@@ -642,17 +642,17 @@ def test_log_solubility_product_with_order():
           m.thermo[1].flow_mol_phase_comp["sol", "c2"]) /
          (pyunits.mol/pyunits.s))
     Q = (m.rxn[1].log_k_eq["r1"] -
-         (m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] **
-         m.rparams.reaction_r1.reaction_order["p1", "c1"] *
-         m.thermo[1].log_mole_frac_phase_comp["p1", "c2"] **
-         m.rparams.reaction_r1.reaction_order["p1", "c2"] *
-         m.thermo[1].log_mole_frac_phase_comp["p2", "c1"] **
-         m.rparams.reaction_r1.reaction_order["p2", "c1"] *
-         m.thermo[1].log_mole_frac_phase_comp["p2", "c2"] **
-         m.rparams.reaction_r1.reaction_order["p2", "c2"] *
-         m.thermo[1].log_mole_frac_phase_comp["sol", "c1"] **
-         m.rparams.reaction_r1.reaction_order["sol", "c1"] *
-         m.thermo[1].log_mole_frac_phase_comp["sol", "c2"] **
+         (m.thermo[1].log_mole_frac_phase_comp["p1", "c1"] *
+         m.rparams.reaction_r1.reaction_order["p1", "c1"] +
+         m.thermo[1].log_mole_frac_phase_comp["p1", "c2"] *
+         m.rparams.reaction_r1.reaction_order["p1", "c2"] +
+         m.thermo[1].log_mole_frac_phase_comp["p2", "c1"] *
+         m.rparams.reaction_r1.reaction_order["p2", "c1"] +
+         m.thermo[1].log_mole_frac_phase_comp["p2", "c2"] *
+         m.rparams.reaction_r1.reaction_order["p2", "c2"] +
+         m.thermo[1].log_mole_frac_phase_comp["sol", "c1"] *
+         m.rparams.reaction_r1.reaction_order["sol", "c1"] +
+         m.thermo[1].log_mole_frac_phase_comp["sol", "c2"] *
          m.rparams.reaction_r1.reaction_order["sol", "c2"]))
 
     assert str(rform) == str(

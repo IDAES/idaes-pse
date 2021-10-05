@@ -241,9 +241,9 @@ class log_solubility_product():
             o = rblock.reaction_order[p, j]
 
             if e is None and o.value != 0:
-                e = get_concentration_term(b, r_idx, log=True)[p, j]**o
+                e = get_concentration_term(b, r_idx, log=True)[p, j]*o
             elif e is not None and o.value != 0:
-                e = e*get_concentration_term(b, r_idx, log=True)[p, j]**o
+                e += get_concentration_term(b, r_idx, log=True)[p, j]*o
 
             if p_obj.is_solid_phase():
                 # If solid phase, identify S
