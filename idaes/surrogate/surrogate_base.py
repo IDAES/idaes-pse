@@ -124,15 +124,24 @@ class SurrogateTrainer(object):
         raise NotImplementedError('train_surrogate called, but not implemented on the derived class')
 
 
-# TODO: This needs to have 
 class SurrogateBase():
-    """
-    Base class for standard IDAES Surrogate Object
-    """
-    # TODO: remove "surrogate"
-    def __init__(self, surrogate, input_labels=None, output_labels=None,
-                 input_bounds=None):
-        self._surrogate = surrogate
+    def __init__(self, input_labels=None, output_labels=None, input_bounds=None):
+        """
+        Base class for standard IDAES Surrogate object. This class is responsible for
+        being able to load/save a surrogate model, evaluate the model given an input
+        dataframe, and populating a block to provide an EO representation of the
+        surrogate for solving in IDAES.
+
+        Args:
+           input_labels: list
+              list of labels corresponding to the inputs (in order)
+           output_labels: list
+              list of labels corresponding to the outputs (in order)
+           input_bounds: dict of tuples
+              A dictionary where the keys correspond to the input label, 
+              and the values are tuples of bounds (lower,upper). These
+              should represent the valid range for the input variables           
+        """
         self._input_labels = input_labels
         self._output_labels = output_labels
         self._input_bounds = input_bounds  # dict of bounds for each label
