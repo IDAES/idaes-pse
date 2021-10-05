@@ -120,9 +120,9 @@ string. A simple example is given below.
 
 Tags can also be used to generate tabulated model results.  The example below
 provides an example of using the ``table_heading`` and ``table_row`` functions.
-The ``table_heading`` provides a list of string tag keys that make up the columns
-of a table.  This list can serve as the heading or column name row of a table.
-As an option the units of measure can be included in the string.  The ``table_row``
+The ``table_heading`` function provides a list of string tag keys that make up
+the columns of a table.  This list can serve as the heading of a table. As an
+option, the units of measure can be included in the string.  The ``table_row``
 function provides a list of model values corresponding to tags.  These values
 can either be numeric data or formatted strings.  If they are formatted strings,
 they can also include units of measure.  See the function documentation below
