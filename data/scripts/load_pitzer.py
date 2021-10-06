@@ -31,6 +31,7 @@ paper_meta = {
 
 PITZER_TAG = "pitzer"
 PITZER_NAME = "pitzer-paper"
+COPY_FLAG = True
 
 _log = logging.getLogger(__name__)
 _hnd = logging.StreamHandler()
@@ -46,7 +47,7 @@ def pitzer_paper():
 
 def pitzer_table(path):
     r = rsrc.Resource(type_=rsrc.ResourceTypes.tabular)
-    r.add_table(path, do_copy=False)
+    r.add_table(path, do_copy=COPY_FLAG)
     r.add_tag(PITZER_TAG)
     return r
 
@@ -54,7 +55,7 @@ def pitzer_table(path):
 def add_pitzer_data(dmf, directory) -> int:
     n = 0
     root = pitzer_paper()
-    root.add_data_file(directory / "Pitzer_1984.pdf", do_copy=False)
+    root.add_data_file(directory / "Pitzer_1984.pdf", do_copy=COPY_FLAG)
     dmf.add(root)
     for csv_file in directory.glob("pitzer_*.csv"):
         ptable = pitzer_table(csv_file)
