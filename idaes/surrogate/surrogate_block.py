@@ -123,7 +123,7 @@ def _extract_var_data(vars):
     elif isinstance(vars, list):
         varlist = list()
         for v in vars:
-            varlist.extend(_extract_vardata(v))
+            varlist.extend(_extract_var_data(v))
         return varlist
     else:
         raise ValueError("Unknown variable type {}".format(vars))
