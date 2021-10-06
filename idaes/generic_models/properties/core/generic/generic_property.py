@@ -667,7 +667,12 @@ class GenericParameterData(PhysicalParameterBlock):
                             "component in phase {}, but this is not a Liquid "
                             "phase.".format(self.name, c, p))
                     else:
-                        meth.build_parameters(cobj, p)
+                        try:
+                            meth.build_parameters(cobj, p)
+                        except AttributeError:
+                            # Method provided has no build_parameters method
+                            # Assume it is not needed and continue
+                            pass
 
         for p in self.phase_list:
             pobj = self.get_phase(p)
@@ -2563,7 +2568,7 @@ class GenericStateBlockData(StateBlockData):
                 if (cobj.config.henry_component is not None and
                         p in cobj.config.henry_component):
                     return cobj.config.henry_component[p].return_expression(
-                        b, p, j)
+                        b, p, j, b.temperature)
                 else:
                     return Expression.Skip
             self.henry = Expression(
