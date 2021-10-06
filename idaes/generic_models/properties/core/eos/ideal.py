@@ -342,6 +342,10 @@ class Ideal(EoSBase):
                 b.temperature)
 
     @staticmethod
+    def heat_capacity_ratio_phase(b, p):
+        return (b.cp_mol_phase[p] / b.cv_mol_phase[p])
+
+    @staticmethod
     def pressure_osm_phase(b, p):
         try:
             solvent_set = b.params.solvent_set
