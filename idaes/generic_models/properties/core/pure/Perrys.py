@@ -146,32 +146,59 @@ class dens_mol_liq_comp():
 
     @staticmethod
     def build_parameters(cobj):
-        cobj.dens_mol_liq_comp_coeff_1 = Var(
-                doc="Parameter 1 for liquid phase molar density",
-                units=pyunits.kmol*pyunits.m**-3)
-        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="1")
+        if cobj._name in ("water", "sulfuric_acid", "o-terphenyl"):
+            cobj.dens_mol_liq_comp_coeff_1 = Var(
+                    doc="Parameter 1 for liquid phase molar density",
+                    units=pyunits.kmol/pyunits.m**3)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="1")
 
-        cobj.dens_mol_liq_comp_coeff_2 = Var(
-                doc="Parameter 2 for liquid phase molar density",
-                units=pyunits.dimensionless)
-        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="2")
+            cobj.dens_mol_liq_comp_coeff_2 = Var(
+                    doc="Parameter 2 for liquid phase molar density",
+                    units=pyunits.kmol/pyunits.m**3/pyunits.K)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="2")
 
-        cobj.dens_mol_liq_comp_coeff_3 = Var(
-                doc="Parameter 3 for liquid phase molar density",
-                units=pyunits.K)
-        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="3")
+            cobj.dens_mol_liq_comp_coeff_3 = Var(
+                    doc="Parameter 3 for liquid phase molar density",
+                    units=pyunits.kmol/pyunits.m**3/pyunits.K**2)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="3")
 
-        cobj.dens_mol_liq_comp_coeff_4 = Var(
-                doc="Parameter 4 for liquid phase molar density",
-                units=pyunits.dimensionless)
-        set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="4")
+            cobj.dens_mol_liq_comp_coeff_4 = Var(
+                    doc="Parameter 4 for liquid phase molar density",
+                    units=pyunits.kmol/pyunits.m**3/pyunits.K**3)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="4")
+        else:
+            cobj.dens_mol_liq_comp_coeff_1 = Var(
+                    doc="Parameter 1 for liquid phase molar density",
+                    units=pyunits.kmol*pyunits.m**-3)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="1")
+
+            cobj.dens_mol_liq_comp_coeff_2 = Var(
+                    doc="Parameter 2 for liquid phase molar density",
+                    units=pyunits.dimensionless)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="2")
+
+            cobj.dens_mol_liq_comp_coeff_3 = Var(
+                    doc="Parameter 3 for liquid phase molar density",
+                    units=pyunits.K)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="3")
+
+            cobj.dens_mol_liq_comp_coeff_4 = Var(
+                    doc="Parameter 4 for liquid phase molar density",
+                    units=pyunits.dimensionless)
+            set_param_from_config(cobj, param="dens_mol_liq_comp_coeff", index="4")
 
     @staticmethod
     def return_expression(b, cobj, T):
         # pg. 2-98
         T = pyunits.convert(T, to_units=pyunits.K)
 
-        rho = (cobj.dens_mol_liq_comp_coeff_1 /
+        if cobj._name in ("water", "sulfuric_acid", "o-terphenyl"):
+            rho = (cobj.dens_mol_liq_comp_coeff_1) + \
+                (cobj.dens_mol_liq_comp_coeff_2)*T + \
+                (cobj.dens_mol_liq_comp_coeff_3)*T**2 + \
+                (cobj.dens_mol_liq_comp_coeff_4)*T**3
+        else:
+            rho = (cobj.dens_mol_liq_comp_coeff_1 /
                cobj.dens_mol_liq_comp_coeff_2**(
                    1 + (1-T/cobj.dens_mol_liq_comp_coeff_3) **
                    cobj.dens_mol_liq_comp_coeff_4))
