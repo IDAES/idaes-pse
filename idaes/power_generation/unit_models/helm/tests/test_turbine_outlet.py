@@ -17,7 +17,7 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory, value
+from pyomo.environ import ConcreteModel, TransformationFactory, units as pyunits
 
 from idaes.core import FlowsheetBlock
 from idaes.power_generation.unit_models.helm import HelmTurbineOutletStage
@@ -43,7 +43,7 @@ def build_turbine():
 @pytest.fixture()
 def build_turbine_dyn():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
+    m.fs = FlowsheetBlock(default={"dynamic": True, "time_units": pyunits.s})
     m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = HelmTurbineOutletStage(default={
         "dynamic": False,
