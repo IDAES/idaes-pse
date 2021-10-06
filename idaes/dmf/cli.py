@@ -987,7 +987,7 @@ def _related_item(id_, name, type_, pfx, t, unicode):
 
 
 @click.command(help="Remove a resource")  # aliases: delete
-@click.argument("identifier")
+@click.argument("identifier", nargs=-1)
 @click.option(
     "-y",
     "--yes",
@@ -997,42 +997,43 @@ def _related_item(id_, name, type_, pfx, t, unicode):
 @click.option("--list/--no-list", "list_resources", default=True)
 @click.option("--multiple/--no-multiple", default=False)
 def rm(identifier, yes, multiple, list_resources):
-    _log.info(f"remove resource '{identifier}'")
-    try:
-        resource.identifier_str(identifier, allow_prefix=True)
-    except ValueError as errmsg:
-        click.echo(f"Invalid identifier. Details: {errmsg}")
-        sys.exit(Code.INPUT_VALUE.value)
-    rsrc_list = list(find_by_id(identifier))
-    found_multiple = len(rsrc_list) > 1
-    if found_multiple and not multiple:
-        click.echo(
-            f"Too many ({len(rsrc_list)}) resources match prefix '{identifier}'. "
-            "Add option --multiple to allow multiple matches."
-        )
-        sys.exit(Code.DMF_OPER.value)
-    fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
-    if list_resources:
-        _print_resource_table(rsrc_list, fields, ["id"], False, False, True)
-    if yes != "yes":
+    for ident in identifier:
+        _log.info(f"remove resource '{ident}'")
+        try:
+            resource.identifier_str(ident, allow_prefix=True)
+        except ValueError as errmsg:
+            click.echo(f"Invalid identifier. Details: {errmsg}")
+            sys.exit(Code.INPUT_VALUE.value)
+        rsrc_list = list(find_by_id(ident))
+        found_multiple = len(rsrc_list) > 1
+        if found_multiple and not multiple:
+            click.echo(
+                f"Too many ({len(rsrc_list)}) resources match prefix '{ident}'. "
+                "Add option --multiple to allow multiple matches."
+            )
+            sys.exit(Code.DMF_OPER.value)
+        fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
+        if list_resources:
+            _print_resource_table(rsrc_list, fields, ["id"], False, False, True)
+        if yes != "yes":
+            if found_multiple:
+                s = f"these {len(rsrc_list)} resources"
+            else:
+                s = "this resource"
+            do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
+            if not do_remove:
+                click.echo("aborted")
+                sys.exit(Code.CANCELED.value)
+        d = DMF()
+        for r in rsrc_list:
+            _log.debug(f"begin remove-resource id={r.id}")
+            d.remove(identifier=r.id)
+            _log.debug(f"end remove-resource id={r.id}")
         if found_multiple:
-            s = f"these {len(rsrc_list)} resources"
+            s = f"{len(rsrc_list)} resources removed"
         else:
-            s = "this resource"
-        do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
-        if not do_remove:
-            click.echo("aborted")
-            sys.exit(Code.CANCELED.value)
-    d = DMF()
-    for r in rsrc_list:
-        _log.debug(f"begin remove-resource id={r.id}")
-        d.remove(identifier=r.id)
-        _log.debug(f"end remove-resource id={r.id}")
-    if found_multiple:
-        s = f"{len(rsrc_list)} resources removed"
-    else:
-        s = "resource removed"
-    click.echo(s)
+            s = "resource removed"
+        click.echo(s)
 
 
 ######################################################################################

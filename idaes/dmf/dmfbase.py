@@ -459,21 +459,36 @@ class DMF(workspace.Workspace, HasTraits):
         return resource
 
     def _copy_files(self, rsrc):
-        if rsrc.v.get("datafiles_dir", None):
-            # If there is a datafiles_dir, use it
-            ddir = rsrc.v["datafiles_dir"]
-            _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
+        # determine whether *any* of the files are being copied
+        # since, if not, we don't need the 'datafiles_dir'
+        any_copy = rsrc.do_copy
+        for datafile in rsrc.v["datafiles"]:
+            if any_copy:
+                break
+            if "do_copy" in datafile:
+                any_copy = datafile["do_copy"]
+
+        if any_copy:
+            _log.debug("Making a directory for datafiles")
+            if rsrc.v.get("datafiles_dir", None):
+                # If there is a datafiles_dir, use it
+                ddir = rsrc.v["datafiles_dir"]
+                _log.debug(f"_copy_files: use existing datafiles dir '{ddir}'")
+            else:
+                # If no datafiles_dir, create a random subdir of the DMF
+                # configured `_datafile_path`. The subdir prevents name
+                # collisions across resources.
+                random_subdir = uuid.uuid4().hex
+                ddir = os.path.join(self._datafile_path, random_subdir)
+                _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
+            try:
+                mkdir_p(ddir)
+            except os.error as err:
+                raise errors.DMFError(f"Cannot make dir for datafiles '{ddir}': {err}")
         else:
-            # If no datafiles_dir, create a random subdir of the DMF
-            # configured `_datafile_path`. The subdir prevents name
-            # collisions across resources.
-            random_subdir = uuid.uuid4().hex
-            ddir = os.path.join(self._datafile_path, random_subdir)
-            _log.debug(f"_copy_files: create new datafiles dir '{ddir}'")
-        try:
-            mkdir_p(ddir)
-        except os.error as err:
-            raise errors.DMFError('Cannot make dir "{}": {}'.format(ddir, err))
+            _log.debug("Not making a directory for datafiles")
+            ddir = ""
+
         for datafile in rsrc.v["datafiles"]:
             if "do_copy" in datafile:
                 do_copy = datafile["do_copy"]
@@ -642,7 +657,7 @@ class DMF(workspace.Workspace, HasTraits):
             return None
         result_list = list(results)
         if len(result_list) == 0:
-            return []
+            return None
         result = result_list[0]
         if attach_to_dmf:
             self.attach(result)
@@ -802,6 +817,7 @@ class DMF(workspace.Workspace, HasTraits):
         rsrc: Resource = None,
         sync_relations: bool = False,
         upsert: bool = False,
+        warn_missing = False,
     ):
         """Update/insert stored resource.
 
@@ -811,6 +827,7 @@ class DMF(workspace.Workspace, HasTraits):
                 the provided resource will be changed to the stored value.
             upsert (optional): If true, and the resource is not in the DMF, then insert it. If false, and the
                 resource is not in the DMF, then do nothing.
+            warn_missing: If True, log a warning for missing resources.
         Returns:
             bool, int: For a single resource: True if the resource was updated or added, False if nothing was done.
                 If no specific resource was given, returns the number of resources updated. You can compare this
@@ -821,7 +838,7 @@ class DMF(workspace.Workspace, HasTraits):
         did_update = False
         # with no specific resource, update all resources added to this instance
         if rsrc is None:
-            return self._update_resources(sync_relations)
+            return self._update_resources(sync_relations, warn_missing)
         # sanity-check input
         if not isinstance(rsrc, Resource):
             raise TypeError("Resource type expected, got: {}".format(type(rsrc)))
@@ -845,13 +862,14 @@ class DMF(workspace.Workspace, HasTraits):
             raise errors.DMFError("Bad value for new resource: {}".format(err))
         return did_update
 
-    def _update_resources(self, sync_relations) -> int:
+    def _update_resources(self, sync_relations, warn_missing) -> int:
         valid_resources = {}
         for key, rsrc in self._resources.items():
             try:
                 self.update(rsrc=rsrc, sync_relations=sync_relations, upsert=False)
             except errors.NoSuchResourceError as err:
-                _log.warning(f"During update, resource not found: {err}")
+                if warn_missing:
+                    _log.warning(f"During update, resource not found: {err}")
             except Exception as err:
                 _log.warning(f"During update, unknown error: {err}")
             else:

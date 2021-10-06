@@ -319,7 +319,9 @@ class Resource:
 
     @property
     def sources(self):
-        return self.v.get("sources", [])
+        if "sources" not in self.v:
+            self.v["sources"] = []
+        return self.v["sources"]
 
     @property
     def codes(self):
@@ -696,7 +698,7 @@ class Resource:
                     fp = path.open(mode=mode)
                 except FileNotFoundError:
                     if ignore_errors:
-                        _log.warning("Failed to open path '{path}' in mode '{mode}'")
+                        _log.warning(f"Failed to open path '{path}' in mode '{mode}'")
                     else:
                         raise
                 yield fp
