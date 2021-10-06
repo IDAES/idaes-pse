@@ -129,6 +129,7 @@ they can also include units of measure.  See the function documentation below
 for details.  The code below provides a simple example.
 
 .. testcode::
+
   import pyomo.environ as pyo
   import pandas as pd
   from idaes.core.util import ModelTag, ModelTagGroup
@@ -139,6 +140,7 @@ for details.  The code below provides a simple example.
   model.z.fix(5)
   model.c = pyo.Constraint(expr=model.x[1] + model.x[2] == model.z)
   solver = pyo.SolverFactory("ipopt")
+  tag_group = ModelTagGroup()
   tag_group["z"] = ModelTag(
     expr=model.z, format_string="{:.3f}", display_units=pyo.units.cm)
   tag_group["x"] = ModelTag(
@@ -162,8 +164,6 @@ for details.  The code below provides a simple example.
   assert abs(df.loc[1][0] - 500.000) < 1e-6
   assert abs(df.loc[1][1] - 100.000) < 1e-6
   assert abs(df.loc[1][2] - 400.000) < 1e-6
-
-
 
 
 Available Classes
