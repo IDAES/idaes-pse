@@ -1,0 +1,8 @@
+_id: 94a23ba68e6646a49077dececa6c53b3
+created: '2021-10-05T20:41:30.869446'
+description: Standard IDAES datasets
+htmldocs:
+- https://idaes-pse.readthedocs.io/en/stable
+- '{dmf_root}/docs/build/html'
+modified: '2021-10-05T20:41:30.869446'
+name: idaes_data
