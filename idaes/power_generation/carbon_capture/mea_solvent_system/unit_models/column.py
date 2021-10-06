@@ -11,7 +11,7 @@
 # license information.
 #################################################################################
 """
-IDAES First Generation (GEN1) MEA Rate-Based Packed Column.
+IDAES First Generation (GEN1) General Rate-Based Packed Column.
 
 Detailed model equations can be found in the supplimentary information
 of the paper :
@@ -145,6 +145,11 @@ discretizing length domain (default=3)"""))
         domain=float,
         description="Void fraction of the packing",
         doc="Packing porosity or void fraction (default= 0.97 )"))
+    CONFIG.declare("packing_channel_size", ConfigValue(
+        default=0.1,
+        domain=float,
+        description="Channel size of the packing",
+        doc="Packing channel size default = 0.1 m"))
     CONFIG.declare("fix_column_pressure", ConfigValue(
         default=True,
         domain=Bool,
@@ -371,10 +376,14 @@ documentation for supported schemes,
 
         self.a_ref = Param(initialize=self.config.packing_specific_area,
                            units=pyunits.m**2 / pyunits.m**3,
-                           doc="Packing specific surface area m2/m3")
+                           doc="Packing specific surface area (m2/m3)")
 
         self.dh_ref = Expression(expr=4 * self.eps_ref / self.a_ref,
-                                 doc="Hydraulic diameter")
+                                 doc="Hydraulic diameter (m)")
+        
+        self.S_ref = Param(initialize=self.config.packing_channel_size,
+                           units=pyunits.m,
+                           doc="Packing channel size (m)")
 
         # specific constants for volumetric mass transfer coefficients
         # reference:  Billet and Schultes, 1999
@@ -391,6 +400,7 @@ documentation for supported schemes,
 
         # Add object references - others
         R_ref = CONST.gas_constant
+        g_ref = CONST.acceleration_gravity
 
         # Unit Model Parameters/sets
         self.zi = Param(self.vapor_phase.length_domain, mutable=True,
@@ -535,9 +545,9 @@ documentation for supported schemes,
                 return Expression.Skip
             else:
                 return (blk.a_ref * blk.area_interfacial_parA * (
-                    blk.liquid_phase.properties[t, x].dens_mass /
-                    blk.liquid_phase.properties[t, x].surf_tens *
-                    (blk.velocity_liq[t, x])**(4.0 / 3.0)
+                    (blk.liquid_phase.properties[t, x].dens_mass /
+                    blk.liquid_phase.properties[t, x].surf_tens) * (g_ref)**(1/3) *
+                    (blk.velocity_liq[t, x]*blk.area_column/(CONST.pi*blk.dh_ref))**(4.0 / 3.0)
                     )**blk.area_interfacial_parB)
 
         self.area_interfacial = Expression(self.flowsheet().time,
@@ -549,7 +559,8 @@ documentation for supported schemes,
         # reference: Tsai correlation,regressed by Chinen et al. 2018
         def rule_holdup_liq(blk, t, x):
             return (blk.holdup_parA * (
-                blk.velocity_liq[t, x] *
+                (blk.velocity_liq[t, x]*blk.area_column/\
+                 (CONST.pi*blk.dh_ref*(blk.S_ref)**(2)*(g_ref)**(2/3))) *
                 (blk.liquid_phase.properties[t, x].visc_d /
                  blk.liquid_phase.properties[t, x].dens_mass)**(0.333)
                 )**blk.holdup_parB)
@@ -680,10 +691,10 @@ documentation for supported schemes,
                     (blk.a_ref / blk.dh_ref)**0.5 *
                     (blk.vapor_phase.properties[t, x].diffus[j])**(2/3) *
                     (blk.vapor_phase.properties[t, x].visc_d /
-                     blk.vapor_phase.properties[t, x].dens_mass)**(1/3) *
+                      blk.vapor_phase.properties[t, x].dens_mass)**(1/3) *
                     ((blk.velocity_vap[t, x] *
                       blk.vapor_phase.properties[t, x].dens_mass) /
-                     (blk.a_ref *
+                      (blk.a_ref *
                       blk.vapor_phase.properties[t, x].visc_d))**(3/4))
             else:
                 return Expression.Skip
@@ -699,10 +710,11 @@ documentation for supported schemes,
             if x == self.liquid_phase.length_domain.last():
                 return Expression.Skip
             else:
-                return (blk.Cl_ref*12**(1/6) *
-                        (blk.velocity_liq[t, x] *
-                         blk.liquid_phase.properties[t, x].diffus[j] /
-                         (blk.dh_ref * blk.holdup_liq[t, x]))**0.5)
+                return blk.Cl_ref*((g_ref*\
+                    blk.liquid_phase.properties[t, x].dens_mass/\
+                        blk.liquid_phase.properties[t, x].visc_d)**(0.167))*\
+                    ((blk.liquid_phase.properties[t, x].diffus[j]/blk.dh_ref)**0.5)*\
+                        (blk.velocity_liq[t, x]/blk.a_ref)**0.333
 
         self.k_l = Expression(
             self.flowsheet().time,
