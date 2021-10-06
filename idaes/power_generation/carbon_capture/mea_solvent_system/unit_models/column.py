@@ -31,9 +31,9 @@ from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint, Expression, Param, Reals, NonNegativeReals,
-                           value, Var, exp, SolverFactory, SolverStatus,
+                           value, Var, exp, SolverStatus,
                            units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES Libraries
 from idaes.core.util.constants import Constants as CONST
@@ -148,7 +148,7 @@ discretizing length domain (default=3)"""))
         doc="Packing porosity or void fraction (default= 0.97 )"))
     CONFIG.declare("fix_column_pressure", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Indicates whether the column pressure should be fixed",
         doc="""Indicates whether the column pressure should be fixed or not.
 The momentum balances are not added when this is True.
@@ -164,7 +164,7 @@ The momentum balances are not added when this is True.
     # Populate the phase side template to default values
     _PhaseCONFIG.declare("has_pressure_change", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be constructed,
 **default** - False.

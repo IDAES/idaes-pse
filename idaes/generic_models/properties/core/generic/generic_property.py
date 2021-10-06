@@ -26,7 +26,7 @@ from pyomo.environ import (Block,
                            value,
                            Var,
                            units as pyunits)
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 from pyomo.core.base.units_container import _PyomoUnit
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -174,7 +174,7 @@ class GenericParameterData(PhysicalParameterBlock):
     # Property package options
     CONFIG.declare("include_enthalpy_of_formation", ConfigValue(
         default=True,
-        domain=In([True, False]),
+        domain=Bool,
         description="Include enthalpy of formation in property calculations",
         doc="Flag indiciating whether enthalpy of formation should be included"
         " when calculating specific enthalpies."))
@@ -204,32 +204,9 @@ class GenericParameterData(PhysicalParameterBlock):
         # Call super.build() to initialize Block
         super(GenericParameterData, self).build()
 
-        # Validate and set base units of measurement
+        # Set base units of measurement
         self.get_metadata().add_default_units(self.config.base_units)
         units_meta = self.get_metadata().default_units
-
-        for key, unit in self.config.base_units.items():
-            if key in ['time', 'length', 'mass', 'amount', 'temperature',
-                       "current", "luminous intensity"]:
-                if not isinstance(unit, _PyomoUnit):
-                    raise ConfigurationError(
-                        "{} recieved unexpected units for quantity {}: {}. "
-                        "Units must be instances of a Pyomo unit object."
-                        .format(self.name, key, unit))
-            else:
-                raise ConfigurationError(
-                    "{} defined units for an unexpected quantity {}. "
-                    "Generic property packages only support units for the 7 "
-                    "base SI quantities.".format(self.name, key))
-
-        # Check that main 5 base units are assigned
-        for k in ['time', 'length', 'mass', 'amount', 'temperature']:
-            if not isinstance(units_meta[k], _PyomoUnit):
-                raise ConfigurationError(
-                    "{} units for quantity {} were not assigned. "
-                    "Please make sure to provide units for all base units "
-                    "when configuring the property package."
-                    .format(self.name, k))
 
         # Call configure method to set construction arguments
         self.configure()
