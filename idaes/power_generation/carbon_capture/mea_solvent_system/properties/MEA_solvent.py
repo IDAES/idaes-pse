@@ -33,11 +33,8 @@ References:
     [1] Hilliard thesis (1998)
     [2] Morgan et.al (2015)
 """
-# Import Python libraries
-import logging
-
 # Import Pyomo units
-from pyomo.environ import units as pyunits, Var
+from pyomo.environ import exp, log, units as pyunits, Var
 
 # Import IDAES cores
 from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
@@ -45,10 +42,11 @@ from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
 from idaes.generic_models.properties.core.state_definitions import FTPx
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.core.util.misc import set_param_from_config
+import idaes.logger as idaeslog
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = idaeslog.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------------
@@ -146,6 +144,66 @@ class EnthMolSolvent():
         return h
 
 
+class N2OAnalogy():
+    # Henry's constant N2O Analogy Jiru et.al (2012)
+    # Units of original expression are Pa*m^3/mol
+    # TODO: Handle units of H
+    def return_expression(b, p, j, T):
+        t = T - 273.15*pyunits.K
+
+        # Calculations require mass fraction of MEA and H2O on a CO2 free basis
+        m_MEA = b.mole_frac_comp['MEA']*b.params.MEA.mw
+        m_H2O = b.mole_frac_comp['H2O']*b.params.H2O.mw
+        wt_MEA = m_MEA/(m_MEA+m_H2O)
+        wt_H2O = m_H2O/(m_MEA+m_H2O)
+        H_N2O_MEA = 2.448e5 * exp(-1348*pyunits.K / T)
+        H_CO2_H2O = 3.52e6 * exp(-2113*pyunits.K / T)
+        H_N2O_H2O = 8.449e6 * exp(-2283*pyunits.K / T)
+        H_CO2_MEA = H_N2O_MEA * (H_CO2_H2O / H_N2O_H2O)
+        lwm = (1.70981 + 0.03972*pyunits.K**-1 * t -
+               4.3e-4*pyunits.K**-2 * t**2 -
+               2.20377 * wt_H2O)
+
+        return ((exp(wt_MEA * log(H_CO2_MEA) + wt_H2O * log(H_CO2_H2O) +
+                     wt_MEA * wt_H2O * lwm)) *
+                pyunits.Pa*pyunits.m**-3*pyunits.mol**-1)
+
+
+class PressureSatSolvent():
+    # Method for calculating saturation pressure ofsolvents
+    @staticmethod
+    def build_parameters(cobj):
+        cobj.pressure_sat_comp_coeff_1 = Var(
+                doc="Coefficient 1 for calculating Psat",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="pressure_sat_comp_coeff", index="1")
+
+        cobj.pressure_sat_comp_coeff_2 = Var(
+                doc="Coefficient 2 for calculating Psat",
+                units=pyunits.K)
+        set_param_from_config(cobj, param="pressure_sat_comp_coeff", index="2")
+
+        cobj.pressure_sat_comp_coeff_3 = Var(
+                doc="Coefficient 3 for calculating Psat",
+                units=pyunits.dimensionless)
+        set_param_from_config(cobj, param="pressure_sat_comp_coeff", index="3")
+
+        cobj.pressure_sat_comp_coeff_4 = Var(
+                doc="Coefficient 4 for calculating Psat",
+                units=pyunits.K**-2)
+        set_param_from_config(cobj, param="pressure_sat_comp_coeff", index="4")
+
+    @staticmethod
+    def return_expression(b, cobj, T, dT=False):
+        if dT:
+            return PressureSatSolvent.dT_expression(b, cobj, T)
+
+        return (exp(cobj.pressure_sat_comp_coeff_1 +
+                    cobj.pressure_sat_comp_coeff_2/T +
+                    cobj.pressure_sat_comp_coeff_3*log(T/pyunits.K) +
+                    cobj.pressure_sat_comp_coeff_4*T**2))*pyunits.Pa
+
+
 class VolMolSolvent():
     # Weiland Method for calculating molar volume of pure solvents [2]
 
@@ -236,6 +294,7 @@ configuration = {
         'H2O': {"type": Solvent,
                 "cp_mol_liq_comp": CpMolSolvent,
                 "enth_mol_liq_comp": EnthMolSolvent,
+                "pressure_sat_comp": PressureSatSolvent,
                 "vol_mol_liq_comp": VolMolSolvent,
                 "parameter_data": {
                     "mw": (0.01802, pyunits.kg/pyunits.mol),
@@ -248,11 +307,17 @@ configuration = {
                     "dens_mol_liq_comp_coeff": {
                         '1': (-3.2484e-6, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (0.00165, pyunits.g/pyunits.mL/pyunits.K),
-                        '3': (0.793, pyunits.g/pyunits.mL)}
+                        '3': (0.793, pyunits.g/pyunits.mL)},
+                    "pressure_sat_comp_coeff": {
+                        '1': 72.55,
+                        '2': -7206.70,
+                        '3': -7.1385,
+                        '4': 4.05e-6}
                     }},
         'MEA': {"type": Solvent,
                 "cp_mol_liq_comp": CpMolSolvent,
                 "enth_mol_liq_comp": EnthMolSolvent,
+                "pressure_sat_comp": PressureSatSolvent,
                 "vol_mol_liq_comp": VolMolSolvent,
                 "parameter_data": {
                     "mw": (0.06108, pyunits.kg/pyunits.mol),
@@ -265,10 +330,17 @@ configuration = {
                     "dens_mol_liq_comp_coeff": {
                         '1': (-5.35162e-7, pyunits.g/pyunits.mL/pyunits.K**2),  # [2]
                         '2': (-4.51417e-4, pyunits.g/pyunits.mL/pyunits.K),
-                        '3': (1.19451, pyunits.g/pyunits.mL)}}},
+                        '3': (1.19451, pyunits.g/pyunits.mL)},
+                    "pressure_sat_comp_coeff": {
+                        '1': 172.78,
+                        '2': -13492,
+                        '3': -21.914,
+                        '4': 1.38e-5}
+                    }},
         'CO2': {"type": Solute,
                 "cp_mol_liq_comp": CpMolCO2,
                 "enth_mol_liq_comp": EnthMolCO2,
+                "henry_component": {"Liq": N2OAnalogy},
                 "vol_mol_liq_comp": VolMolCO2,
                 "parameter_data": {
                     "mw": (0.04401, pyunits.kg/pyunits.mol),

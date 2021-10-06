@@ -78,13 +78,18 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_properties(self, model):
-        model.props[1].enth_mol_phase.display()
-        model.props[1].enth_mol_phase_comp.display()
+        model.props[1].pressure_sat_comp.display()
 
         assert pytest.approx(79.5139, rel=1e-5) == value(
             model.props[1].cp_mol_phase["Liq"])
         assert pytest.approx(-84000*0.01102, rel=1e-5) == value(
             model.props[1].enth_mol_phase["Liq"])
+        assert pytest.approx(2988.034, rel=1e-5) == value(
+            model.props[1].henry["Liq", "CO2"])
+        assert pytest.approx(3185.403, rel=1e-5) == value(
+            model.props[1].pressure_sat_comp["H2O"])
+        assert pytest.approx(49.2646, rel=1e-5) == value(
+            model.props[1].pressure_sat_comp["MEA"])
         assert pytest.approx(2.032875e-05, rel=1e-5) == value(
             model.props[1].vol_mol_phase["Liq"])
         assert False
