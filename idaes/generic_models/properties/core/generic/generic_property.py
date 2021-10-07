@@ -2928,6 +2928,19 @@ class GenericStateBlockData(StateBlockData):
             self.del_component(self.mole_frac_comp)
             raise
 
+    def _mw_comp(self):
+        try:
+            def rule_mw_comp(b, j):
+                return b.params.get_component(j).mw
+
+            self.mw_comp = Expression(
+                    self.component_list,
+                    doc="Molecular weight of each component",
+                    rule=rule_mw_comp)
+        except AttributeError:
+            self.del_component(self.mw_comp)
+            raise
+
     def _mw_phase(self):
         try:
             def rule_mw_phase(b, p):

@@ -922,6 +922,7 @@ class TestGenericParameterBlock(object):
         assert dsf[("mole_frac_comp", None)] == 1e3
         assert dsf[("mole_frac_phase_comp", None)] == 1e3
         assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_comp", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
     @pytest.mark.unit
@@ -956,6 +957,7 @@ class TestGenericParameterBlock(object):
         assert dsf[("mole_frac_comp", None)] == 1e3
         assert dsf[("mole_frac_phase_comp", None)] == 1e3
         assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_comp", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
 
@@ -1116,6 +1118,8 @@ class TestGenericStateBlock(object):
             pytest.approx(100*0.2*0.75 + 100*0.2*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['c']) == \
             pytest.approx(100*0.1*0.25 + 100*0.7*0.75, rel=1e-4)
+        assert value(frame.props[1].mw_comp['a']) == \
+            pytest.approx(2, rel=1e-4)
         assert value(frame.props[1].mw_phase['p1']) == \
             pytest.approx(2*0.1 + 3*0.2 + 4*0.7, rel=1e-4)
         assert value(frame.props[1].mw) == \
