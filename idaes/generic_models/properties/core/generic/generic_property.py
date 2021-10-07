@@ -771,10 +771,16 @@ class GenericParameterData(PhysicalParameterBlock):
         for v in self.component_objects(Var, descend_into=True):
             for i in v:
                 if v[i].value is None:
-                    raise ConfigurationError(
-                        "{} parameter {} was not assigned"
-                        " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name))
+                    if i is None: # Scalar Var
+                        raise ConfigurationError(
+                            "{} parameter {} was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name))
+                    else: # Indexed Var
+                        raise ConfigurationError(
+                            "{} parameter {}[{}] was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name, i))
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
