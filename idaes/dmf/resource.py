@@ -278,7 +278,7 @@ class Resource:
     ID_FIELD = "id_"  #: Identifier field name constant
     ID_LENGTH = 32  #: Full-length of identifier
     TYPE_FIELD = "type"  #: Resource type field name constant
-    TABLE_FIELD = "table" #: In data section, inline table
+    TABLE_FIELD = "table"  #: In data section, inline table
     TABLE_INFO_FIELD = "table_info"  #: In data section, info for tables
     DATA_FIELD = "data"  #: Extra data area
 
@@ -342,6 +342,7 @@ class Resource:
             If there are no tables, this will return an empty dict.
         """
         from idaes.dmf.tables import Table  # avoid circular import
+
         try:
             tables = Table.from_resource(self)
         except KeyError:
@@ -351,15 +352,15 @@ class Resource:
     @property
     def table(self) -> "Table":
         """Convenience attribute for retrieving a table from the resource when you
-         know that there is only one. If there are no tables, returns None.
+        know that there is only one. If there are no tables, returns None.
 
-         Returns:
-             If one table, the Table object
-             If no tables, None
-             If multiple tables, raises an error
+        Returns:
+            If one table, the Table object
+            If no tables, None
+            If multiple tables, raises an error
 
-         Raises:
-             KeyError: If there is more than one table
+        Raises:
+            KeyError: If there is more than one table
         """
         t = self.tables
         if len(t) == 0:
@@ -368,7 +369,6 @@ class Resource:
             for v in t.values():
                 return v
         raise KeyError(f"There are {len(t)} tables in the resource")
-
 
     def _massage_values(self):
         try:
@@ -545,6 +545,14 @@ class Resource:
             nm = ""
         return nm
 
+    @name.setter
+    def name(self, value):
+        """Set resource name (first alias)."""
+        if "aliases" not in self.v:
+            self.v["aliases"] = [value]
+        else:
+            self.v["aliases"].insert(0, value)
+
     @property
     def type(self):
         """Get resource type."""
@@ -562,13 +570,11 @@ class Resource:
 
     @property
     def tags(self):
-        """Get resource tags.
-        """
+        """Get resource tags."""
         return self.v.get("tags", [])
 
     def add_tag(self, new_tag):
-        """Add a new resource tag.
-        """
+        """Add a new resource tag."""
         if "tags" not in self.v:
             self.v["tags"] = []
         tags = self.v["tags"]
@@ -587,11 +593,12 @@ class Resource:
         else:
             self.v["tags"] = value
 
-    def add_data_file(self, path, do_copy: bool = True):
+    def add_data_file(self, path, desc: str = None, do_copy: bool = True):
         """Add a data file to the list of data files in the resource.
 
         Args:
             path: Path to the data file, as a string or Path object
+            desc: Description (otherwise use filename)
             do_copy: If True, copy file into DMF workspace; otherwise do not copy
 
         Returns:
@@ -607,7 +614,7 @@ class Resource:
         # add the datafile to the resource
         self.v["datafiles"].append(
             {
-                "desc": path.name,
+                "desc": desc if desc else path.name,
                 "path": abspath,
                 "do_copy": do_copy,
                 "sha1": file_hash,
@@ -619,6 +626,7 @@ class Resource:
         path,
         inline: bool = False,
         file_format: str = "infer",
+        desc: str = None,
         do_copy: bool = True,
     ):
         """Add a data file that represents tabular data.
@@ -634,6 +642,7 @@ class Resource:
             path: Path to the data file, as a string or Path object
             inline: If true, put data inline in resource; otherwise copy the file
             file_format: "csv", "excel", or "infer" to guess from file ext
+            desc: Description (otherwise use filename)
             do_copy: If True, copy file into DMF workspace; otherwise do not copy
 
         Returns:
@@ -644,6 +653,7 @@ class Resource:
             IOError: if reading the data file fails
         """
         from idaes.dmf.tables import Table
+
         table = Table.read_table(path, inline, file_format)
         # add the table either inline or as a datafile
         if inline:
@@ -665,7 +675,7 @@ class Resource:
                     data[self.TABLE_INFO_FIELD][key] = table.as_dict(values=False)
             else:
                 # add the table's file to the resource
-                self.add_data_file(path, do_copy=do_copy)
+                self.add_data_file(path, desc=desc, do_copy=do_copy)
                 # add the column names and units
                 data[self.TABLE_INFO_FIELD][key] = table.as_dict(values=False)
 
