@@ -2660,7 +2660,7 @@ class GenericStateBlockData(StateBlockData):
                         "material flow basis: {}"
                         .format(self.name, self.get_material_flow_basis()))
             self.flow_mol_phase_comp = Expression(
-                self.params.phase_component_set,
+                self.phase_component_set,
                 doc="Phase-component molar flow rate",
                 rule=rule_flow_mol_phase_comp)
         except AttributeError:
