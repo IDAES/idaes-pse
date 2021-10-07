@@ -885,6 +885,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
              'henry': {'method': '_henry'},
              'mw': {'method': '_mw'},
+             'mw_comp': {'method': '_mw_comp'},
              'mw_phase': {'method': '_mw_phase'},
              'pressure_bubble': {'method': '_pressure_bubble'},
              'pressure_dew': {'method': '_pressure_dew'},
@@ -2599,6 +2600,19 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_mole_frac_comp)
         except AttributeError:
             self.del_component(self.mole_frac_comp)
+            raise
+
+    def _mw_comp(self):
+        try:
+            def rule_mw_comp(b, j):
+                return b.params.get_component(j).mw
+
+            self.mw_comp = Expression(
+                    self.component_list,
+                    doc="Molecular weight of each component",
+                    rule=rule_mw_comp)
+        except AttributeError:
+            self.del_component(self.mw_comp)
             raise
 
     def _mw_phase(self):
