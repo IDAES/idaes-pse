@@ -286,8 +286,75 @@ class VolMolCO2():
 
 
 # -----------------------------------------------------------------------------
-# Configuration dictionary for aqueous MEA solvent
+# Transport property models
+class Viscosity():
+    def build_parameters(pobj):
+        pobj.visc_d_coeff_a = Var(
+                doc="Parameter a for liquid phase viscosity model",
+                units=pyunits.K**-1)
+        set_param_from_config(pobj, param="visc_d_coeff", index="a")
 
+        pobj.visc_d_coeff_b = Var(
+                doc="Parameter b for liquid phase viscosity model",
+                units=pyunits.K**-1)
+        set_param_from_config(pobj, param="visc_d_coeff", index="b")
+
+        pobj.visc_d_coeff_c = Var(
+                doc="Parameter c for liquid phase viscosity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="visc_d_coeff", index="c")
+
+        pobj.visc_d_coeff_d = Var(
+                doc="Parameter d for liquid phase viscosity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="visc_d_coeff", index="d")
+
+        pobj.visc_d_coeff_e = Var(
+                doc="Parameter e for liquid phase viscosity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="visc_d_coeff", index="e")
+
+        pobj.visc_d_coeff_f = Var(
+                doc="Parameter f for liquid phase viscosity model",
+                units=pyunits.K**-1)
+        set_param_from_config(pobj, param="visc_d_coeff", index="f")
+
+        pobj.visc_d_coeff_g = Var(
+                doc="Parameter g for liquid phase viscosity model",
+                units=pyunits.dimensionless)
+        set_param_from_config(pobj, param="visc_d_coeff", index="g")
+
+    def return_expression(blk, phase):
+        pobj = blk.params.get_phase(phase)
+
+        # Calculate mass fraction from mole fraction and molecular weights
+        r = (blk.mole_frac_comp['MEA'] *
+             blk.mw_phase["Liq"] / blk.mw_comp["MEA"] * 100)
+        T = blk.temperature
+        alpha = blk.mole_frac_comp['CO2'] / blk.mole_frac_comp['MEA']
+        mu_H2O = (1.002e-3*pyunits.Pa/pyunits.s *
+                  10**((1.3272 *
+                        (293.15*pyunits.K - T -
+                         0.001053*pyunits.K**-1 * (T - 293.15*pyunits.K)**2)) /
+                       (T - 168.15*pyunits.K)))
+        a = pobj.visc_d_coeff_a
+        b = pobj.visc_d_coeff_b
+        c = pobj.visc_d_coeff_c
+        d = pobj.visc_d_coeff_d
+        e = pobj.visc_d_coeff_e
+        f = pobj.visc_d_coeff_f
+        g = pobj.visc_d_coeff_g
+
+        # Model appears to be entirely empirical, and units are not obvious
+        # Assume each part of expression is unitless and use units to match
+        return mu_H2O * exp(r *
+                            (T * (a * r + b) + c * r + d) *
+                            (alpha * (e * r + f * T + g) + 1) /
+                            T**2 * pyunits.K**2)
+
+
+# -----------------------------------------------------------------------------
+# Configuration dictionary for aqueous MEA solvent
 configuration = {
     # Specifying components
     "components": {
@@ -354,7 +421,17 @@ configuration = {
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
-                        "equation_of_state": Ideal}},
+                        "equation_of_state": Ideal,
+                        "visc_d_phase": Viscosity,
+                        "parameter_data": {
+                            "visc_d_coeff": {
+                                "a": -0.0838,
+                                "b": 2.8817,
+                                "c": 33.651,
+                                "d": 1817.0,
+                                "e": 0.00847,
+                                "f": 0.0103,
+                                "g": -2.3890}}}},
 
     # Set base units of measurement
     "base_units": {"time": pyunits.s,

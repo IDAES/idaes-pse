@@ -15,11 +15,9 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
-                           Set,
                            SolverStatus,
                            TerminationCondition,
                            value,
-                           Var,
                            units as pyunits)
 from pyomo.util.check_units import assert_units_consistent
 
@@ -78,7 +76,7 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_properties(self, model):
-        model.props[1].pressure_sat_comp.display()
+        model.props[1].visc_d_phase.display()
 
         assert pytest.approx(79.5139, rel=1e-5) == value(
             model.props[1].cp_mol_phase["Liq"])
@@ -92,7 +90,8 @@ class TestStateBlock(object):
             model.props[1].pressure_sat_comp["MEA"])
         assert pytest.approx(2.032875e-05, rel=1e-5) == value(
             model.props[1].vol_mol_phase["Liq"])
-        assert False
+        assert pytest.approx(9.495423e-4, rel=1e-5) == value(
+            model.props[1].visc_d_phase["Liq"])
 
     @pytest.mark.component
     def test_unit_consistency(self, model):

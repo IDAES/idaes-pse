@@ -678,6 +678,29 @@ class GenericParameterData(PhysicalParameterBlock):
             pobj = self.get_phase(p)
             pobj.config.equation_of_state.build_parameters(pobj)
 
+            for a, v in pobj.config.items():
+                # Check to see if v has an attribute build_parameters
+                if hasattr(v, "build_parameters"):
+                    build_parameters = v.build_parameters
+                else:
+                    # If not, guess v is a class holding property subclasses
+                    try:
+                        build_parameters = getattr(v, a).build_parameters
+                    except AttributeError:
+                        # If all else fails, assume no build_parameters method
+                        build_parameters = None
+
+                # Call build_parameters if it exists
+                if build_parameters is not None:
+                    try:
+                        build_parameters(pobj)
+                    except KeyError:
+                        raise ConfigurationError(
+                            "{} values were not defined for parameter {} in "
+                            "phase{}. Please check the parameter_data "
+                            "argument to ensure values are provided."
+                            .format(self.name, a, p))
+
         # Next, add inherent reactions if they exist
         if len(self.config.inherent_reactions) > 0:
             # Set has_inherent_reactions flag
