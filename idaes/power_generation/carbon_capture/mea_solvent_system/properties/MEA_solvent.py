@@ -23,7 +23,7 @@ the method used to calculate theri vapor pressure:
 Additionally, the following true ionic species are requried for calculating
 transport properties:
 
-    MEA_+, MEACOO_-, HCO3_-
+    MEA+, MEACOO-, HCO3-
 
 Assumptions:
     * No heats of formation
