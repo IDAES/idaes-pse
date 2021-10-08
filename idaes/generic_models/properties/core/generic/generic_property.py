@@ -37,8 +37,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialFlowBasis)
 from idaes.core.components import Component, __all_components__
-from idaes.core.phases import Phase, AqueousPhase, __all_phases__
-from idaes.core import LiquidPhase, VaporPhase
+from idaes.core.phases import \
+    Phase, AqueousPhase, LiquidPhase, VaporPhase, __all_phases__
 from idaes.core.util.initialization import (fix_state_vars,
                                             revert_state_vars,
                                             solve_indexed_blocks)
@@ -895,8 +895,10 @@ class GenericParameterData(PhysicalParameterBlock):
              'pressure_dew': {'method': '_pressure_dew'},
              'pressure_osm_phase': {'method': '_pressure_osm_phase'},
              'pressure_sat_comp': {'method': '_pressure_sat_comp'},
+             'surf_tens_phase': {'method': '_surf_tens_phase'},
              'temperature_bubble': {'method': '_temperature_bubble'},
              'temperature_dew': {'method': '_temperature_dew'},
+             'therm_cond_phase': {'method': '_therm_cond_phase'},
              'visc_d_phase': {'method': '_visc_d_phase'},
              'vol_mol_phase': {'method': '_vol_mol_phase'},
              'dh_rxn': {'method': '_dh_rxn'}})
@@ -2653,8 +2655,9 @@ class GenericStateBlockData(StateBlockData):
                         _log.debug("{} Component {} does not have a method for"
                                    " pressure_sat_comp, but is marked as being"
                                    " Henry component in at least one phase. "
-                                   "It will be assumed that satruation "
-                                   "is not required for this component."
+                                   "It will be assumed that saturation "
+                                   "pressure is not required for this "
+                                   "component."
                                    .format(b.name, j))
                         return Expression.Skip
                     else:
@@ -2664,6 +2667,34 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_pressure_sat_comp)
         except AttributeError:
             self.del_component(self.pressure_sat_comp)
+            raise
+
+    def _surf_tens_phase(self):
+        try:
+            def rule_surf_tens_phase(b, p):
+                pobj = b.params.get_phase(p)
+                if isinstance(pobj, LiquidPhase):
+                    return get_phase_method(b, "surf_tens_phase", p)(b, p)
+                else:
+                    return Expression.Skip
+            self.surf_tens_phase = Expression(
+                    self.phase_list,
+                    doc="Surface tension for each phase",
+                    rule=rule_surf_tens_phase)
+        except AttributeError:
+            self.del_component(self.surf_tens_phase)
+            raise
+
+    def _therm_cond_phase(self):
+        try:
+            def rule_therm_cond_phase(b, p):
+                return get_phase_method(b, "therm_cond_phase", p)(b, p)
+            self.therm_cond_phase = Expression(
+                    self.phase_list,
+                    doc="Thermal conductivity for each phase",
+                    rule=rule_therm_cond_phase)
+        except AttributeError:
+            self.del_component(self.therm_cond_phase)
             raise
 
     def _visc_d_phase(self):
