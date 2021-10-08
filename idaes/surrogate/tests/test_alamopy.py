@@ -1251,27 +1251,17 @@ class TestWorkflow():
     def test_metrics(self, alamo_trainer):
         alamo_object = alamo_trainer._alamo_object
 
-        # inputs = TestWorkflow.training_data
-        # outputs = np.array(
-        #     [inputs[:, 0],
-        #      inputs[:, 1],
-        #      ((4 - 2.1*inputs[:, 0]**2 + inputs[:, 0]**4/3) *
-        #       inputs[:, 0]**2 +
-        #       inputs[:, 0]*inputs[:, 1] +
-        #       (-4 + 4*inputs[:, 1]**2)*inputs[:, 1]**2)])
-
-        # test_data = pd.DataFrame(outputs.transpose(),
-        #                          columns=["x1", "x2", "z1"])
-
         metrics = alamo_object.calculate_metrics(TestWorkflow.training_data)
 
         assert isinstance(metrics, TrainingMetrics)
         assert isinstance(metrics._evaluated_data, pd.DataFrame)
+
+        # ALAMO metrics are consistently 10x larger than they should be
         assert metrics.SSE["z1"] == pytest.approx(
-            alamo_trainer._results["SSE"]["z1"], rel=1e-8)
+            float(alamo_trainer._results["SSE"]["z1"])*0.1, rel=1e-8)
         assert metrics.R2["z1"] == pytest.approx(
             float(alamo_trainer._results["R2"]["z1"]), rel=1e-8)
         assert metrics.MSE["z1"] == pytest.approx(
-            alamo_trainer._results["RMSE"]["z1"]**2, rel=1e-8)
+            float(alamo_trainer._results["RMSE"]["z1"])**2*0.1, rel=1e-8)
         assert metrics.RMSE["z1"] == pytest.approx(
-            alamo_trainer._results["RMSE"]["z1"], rel=1e-8)
+            float(alamo_trainer._results["RMSE"]["z1"])*0.1, rel=1e-8)

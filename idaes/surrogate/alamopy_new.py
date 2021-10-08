@@ -669,7 +669,7 @@ class AlamoTrainer(SurrogateTrainer):
             columns=self._input_labels + self._output_labels,
             header=False,
             index=False,
-            float_format=lambda x: str(x).format(":g").strip())
+            float_format=lambda x: str(x).format(":g"))
         stream.write("\nEND_DATA\n")
 
         if validation_data is not None:
@@ -680,7 +680,7 @@ class AlamoTrainer(SurrogateTrainer):
                 columns=self._input_labels + self._output_labels,
                 header=False,
                 index=False,
-                float_format=lambda x: str(x).format(":g").strip())
+                float_format=lambda x: str(x).format(":g"))
             stream.write("\nEND_VALDATA\n")
 
         if self.config.custom_basis_functions is not None:
