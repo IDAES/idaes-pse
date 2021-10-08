@@ -676,7 +676,7 @@ class GenericParameterData(PhysicalParameterBlock):
 
         for p in self.phase_list:
             pobj = self.get_phase(p)
-            pobj.config.equation_of_state.build_parameters(pobj)
+            # pobj.config.equation_of_state.build_parameters(pobj)
 
             for a, v in pobj.config.items():
                 # Check to see if v has an attribute build_parameters
