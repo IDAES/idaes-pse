@@ -148,6 +148,7 @@ class N2OAnalogy():
     # Henry's constant N2O Analogy Jiru et.al (2012)
     # Units of original expression are Pa*m^3/mol
     # TODO: Handle units of H
+    @staticmethod
     def return_expression(b, p, j, T):
         t = T - 273.15*pyunits.K
 
@@ -288,6 +289,7 @@ class VolMolCO2():
 # -----------------------------------------------------------------------------
 # Transport property models
 class Viscosity():
+    @staticmethod
     def build_parameters(pobj):
         pobj.visc_d_coeff_a = Var(
                 doc="Parameter a for liquid phase viscosity model",
@@ -324,6 +326,7 @@ class Viscosity():
                 units=pyunits.dimensionless)
         set_param_from_config(pobj, param="visc_d_coeff", index="g")
 
+    @staticmethod
     def return_expression(blk, phase):
         pobj = blk.params.get_phase(phase)
 
