@@ -769,10 +769,16 @@ class GenericParameterData(PhysicalParameterBlock):
         for v in self.component_objects(Var, descend_into=True):
             for i in v:
                 if v[i].value is None:
-                    raise ConfigurationError(
-                        "{} parameter {} was not assigned"
-                        " a value. Please check your configuration "
-                        "arguments.".format(self.name, v.local_name))
+                    if i is None: # Scalar Var
+                        raise ConfigurationError(
+                            "{} parameter {} was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name))
+                    else: # Indexed Var
+                        raise ConfigurationError(
+                            "{} parameter {}[{}] was not assigned"
+                            " a value. Please check your configuration "
+                            "arguments.".format(self.name, v.local_name, i))
                 v[i].fix()
 
         self.config.state_definition.set_metadata(self)
@@ -885,6 +891,7 @@ class GenericParameterData(PhysicalParameterBlock):
              'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp'},
              'henry': {'method': '_henry'},
              'mw': {'method': '_mw'},
+             'mw_comp': {'method': '_mw_comp'},
              'mw_phase': {'method': '_mw_phase'},
              'pressure_bubble': {'method': '_pressure_bubble'},
              'pressure_dew': {'method': '_pressure_dew'},
@@ -2372,7 +2379,7 @@ class GenericStateBlockData(StateBlockData):
                         "material flow basis: {}"
                         .format(self.name, self.get_material_flow_basis()))
             self.flow_mass_phase_comp = Expression(
-                self.params.phase_component_set,
+                self.phase_component_set,
                 doc="Phase-component mass flow rate",
                 rule=rule_flow_mass_phase_comp)
         except AttributeError:
@@ -2454,7 +2461,7 @@ class GenericStateBlockData(StateBlockData):
                         "material flow basis: {}"
                         .format(self.name, self.get_material_flow_basis()))
             self.flow_mol_phase_comp = Expression(
-                self.params.phase_component_set,
+                self.phase_component_set,
                 doc="Phase-component molar flow rate",
                 rule=rule_flow_mol_phase_comp)
         except AttributeError:
@@ -2599,6 +2606,19 @@ class GenericStateBlockData(StateBlockData):
                     rule=rule_mole_frac_comp)
         except AttributeError:
             self.del_component(self.mole_frac_comp)
+            raise
+
+    def _mw_comp(self):
+        try:
+            def rule_mw_comp(b, j):
+                return b.params.get_component(j).mw
+
+            self.mw_comp = Expression(
+                    self.component_list,
+                    doc="Molecular weight of each component",
+                    rule=rule_mw_comp)
+        except AttributeError:
+            self.del_component(self.mw_comp)
             raise
 
     def _mw_phase(self):
