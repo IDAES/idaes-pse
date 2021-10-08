@@ -25,7 +25,7 @@ from io import StringIO
 from pyomo.environ import Var, Constraint
 from pyomo.common.tempfiles import TempfileManager
 
-from idaes.surrogate.alamopy_new import \
+from idaes.surrogate.alamopy import \
     AlamoTrainer, AlamoObject, Modelers, Screener, alamo
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError

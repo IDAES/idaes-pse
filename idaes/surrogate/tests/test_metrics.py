@@ -17,7 +17,7 @@ import pytest
 import pandas as pd
 
 from idaes.surrogate.metrics import TrainingMetrics
-from idaes.surrogate.alamopy_new import AlamoObject
+from idaes.surrogate import AlamoObject
 
 
 # For this test we will use a simple z = x function and calcuate metrics
