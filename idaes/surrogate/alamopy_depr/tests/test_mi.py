@@ -14,7 +14,7 @@
 # More information on this function can be found at :
 #            https://www.sfu.ca/~ssurjano/camel6.html
 # This problem utilizes ALAMO's sampling features
-from idaes.surrogate import alamopy
+from idaes.surrogate import alamopy_depr as alamopy
 
 # Import additional python modules for creating the synthetic data
 import math

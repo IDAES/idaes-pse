@@ -39,7 +39,7 @@ def doalamo(data, time, xlo, xup, rpc, rspec, sharedata):
     # r2ret    - r2 of submodels
 
     # import sympy
-    from idaes.surrogate.alamopy import multos as mos
+    from idaes.surrogate.alamopy_depr import multos as mos
     from idaes.surrogate.ripe import debug
     # from sympy import symbols
 

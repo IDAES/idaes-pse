@@ -72,7 +72,7 @@ def writemodel(aterm, ccon):
     import numpy as np
     import os
     import sys
-    from idaes.surrogate import alamopy
+    from idaes.surrogate import alamopy_depr as alamopy
     import ripe
     from alamopy import deletefile
 
