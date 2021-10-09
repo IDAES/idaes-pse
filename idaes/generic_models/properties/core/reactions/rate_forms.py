@@ -13,7 +13,7 @@
 """
 Methods for defining reaction rates
 """
-from idaes.generic_models.properties.core.generic.generic_reaction import \
+from idaes.generic_models.properties.core.generic.utility import \
     get_concentration_term
 
 
