@@ -1,4 +1,94 @@
-{% extends '!footer.html' %} {% block extrafooter %}{{ super() }}
-<br />
- <a rel="license" href="https://idaes.org/"><img alt="IDAES Website" style="border-width:10" src="_static/idaes-footer-logo.png" /></a>
+{% extends '!footer.html' %} {% block contentinfo %}
+<div style="text-align:center; padding-bottom: 35px">
+	<div>
+		<div class="footer_container">
+			<a href="https://netl.doe.gov/">
+				<img alt="National Energy Technology Laboratory logo" src="_static/footer_logo_NETL.png"/>
+			</a>
+		</div>
+		<div class="footer_container">
+			<a href="https://www.lbl.gov/">
+				<img alt="Lawrence Berkeley National Laboratory logo" src="_static/footer_logo_LBNL.jpg"/>
+			</a>
+		</div>
+		<div class="footer_container">
+			<a href="https://www.sandia.gov/">
+				<img alt="Sandia National Laboratory logo" src="_static/footer_logo_Sandia.png"/>
+			</a>
+		</div>
+	</div>
+	<div>
+		<div class="footer_container">
+			<a href="https://www.cmu.edu/">
+				<img alt="Carnegie Mellon University logo" src="_static/footer_logo_CMU.png"/>
+			</a>
+		</div>
+		<div class="footer_container">
+			<a href="https://www.wvu.edu/">
+				<img alt="West Virginia University logo" src="_static/footer_logo_West_VA_U.png"/>
+			</a>
+		</div>
+		<div class="footer_container">
+			<a href="https://www.nd.edu/">
+				<img alt="University of Notre Dame logo" src="_static/footer_logo_Notre_Dame.png"/>
+			</a>
+		</div>
+		<div class="footer_container">
+			<a href="https://www.gatech.edu/">
+				<img alt="Georgia Institute of Technology logo" src="_static/footer_logo_Georgia_Tech.png"/>
+			</a>
+		</div>
+	</div>
+	<div>
+		<div class="footer_container" style="width:33%">
+			<a href="https://idaes.org/">
+				<img alt="IDAES logo" src="_static/idaes-footer-logo.png" />
+			</a>
+		</div>
+		<div class="footer_container" style="width:33%">
+			<a href="https://www.energy.gov/">
+				<img alt="Department of Energy logo" src="_static/footer_logo_DOE.jpeg" />
+			</a>
+		</div>
+	</div>
+</div>
+ <p>
+    {%- if show_copyright %}
+      {%- if hasdoc('copyright') %}
+        {% trans path=pathto('copyright'), copyright=copyright|e %}&#169; <a href="{{ path }}">Copyright</a> {{ copyright }}.{% endtrans %}
+      {%- else %}
+        {% trans copyright=copyright|e %}&#169; Copyright {{ copyright }}.{% endtrans %}
+      {%- endif %}
+    {%- endif %}
+
+    {%- if build_id and build_url %}
+      <span class="build">
+        {# Translators: Build is a noun, not a verb #}
+        {% trans %}Build{% endtrans %}
+        <a href="{{ build_url }}">{{ build_id }}</a>.
+      </span>
+    {%- elif commit %}
+      <span class="commit">
+        {# Translators: the phrase "revision" comes from Git, referring to a commit #}
+        {% trans %}Revision{% endtrans %} <code>{{ commit }}</code>.
+      </span>
+    {%- endif %}
+    {%- if last_updated %}
+      <span class="lastupdated">
+        {% trans last_updated=last_updated|e %}Last updated on {{ last_updated }}.{% endtrans %}
+      </span>
+    {%- endif %}
+
+    </p>
+ {% endblock %}.
+      </span>
+    {%- endif %}
+    {%- if last_updated %}
+      <span class="lastupdated">
+        {% trans last_updated=last_updated|e %}Last updated on {{ last_updated }}.{% endtrans %}
+      </span>
+    {%- endif %}
+
+    </p>
  {% endblock %}
+>>>>>>> Add, format, & style all partner logos in footer

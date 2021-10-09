@@ -27,6 +27,16 @@ h1 {
 h2 {
     font-size: 140%;
 }
+
+/* Format images into inline blocks in footer*/
+.footer_container{
+    display: inline-block;
+    width:24%;
+    position:relative;
+    margin-left: auto;
+    margin-right: auto;
+    }
+    
 /* Override some of the decorations on definition lists.
  * By only modifying the "simple" class of 'dl', we do not change the display properties of
  * Python methods and classes (which also use definition lists).
