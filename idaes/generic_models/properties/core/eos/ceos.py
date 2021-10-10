@@ -904,13 +904,6 @@ class Cubic(EoSBase):
                 b.entr_mol_phase_comp[p, j] *
                 b.temperature)
 
-    @staticmethod
-    def heat_capacity_ratio_phase(blk, p):
-        pobj = blk.params.get_phase(p)
-        if not (pobj.is_vapor_phase() or pobj.is_liquid_phase()):
-            raise PropertyNotSupportedError(_invalid_phase_msg(blk.name, p))
-
-        return blk.cp_mol_phase[p] / blk.cv_mol_phase[p]
 
     @staticmethod
     def isentropic_speed_sound_phase(blk, p):

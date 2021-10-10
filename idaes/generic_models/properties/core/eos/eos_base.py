@@ -114,7 +114,8 @@ class EoSBase():
 
     @staticmethod
     def heat_capacity_ratio_phase(b, p):
-        raise NotImplementedError(_msg(b, "heat_capacity_ratio_phase"))
+        return (b.cp_mol_phase[p] /
+                b.cv_mol_phase[p])
 
     @staticmethod
     def cv_mol_ig_comp_pure(b, j):
