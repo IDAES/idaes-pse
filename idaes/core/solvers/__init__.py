@@ -12,3 +12,4 @@
 #################################################################################
 
 from .config import SolverWrapper, use_idaes_solver_configuration_defaults
+from .interogate import ipopt_has_linear_solver

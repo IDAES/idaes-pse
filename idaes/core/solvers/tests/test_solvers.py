@@ -10,27 +10,25 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
-from pyomo.environ import SolverFactory
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.interogate import (
-    lp, milp, nlp, minlp, ipopt_has_linear_solver
-)
+from idaes.core.solvers.interogate import lp, milp, nlp, minlp
+from idaes.core.solvers import ipopt_has_linear_solver
 
 @pytest.mark.unit
 def test_couenne_available():
-    if not SolverFactory('couenne').available():
+    if not pyo.SolverFactory('couenne').available():
         raise Exception("Could not find couenne.")
 
 @pytest.mark.unit
 def test_couenne_available():
-    if not SolverFactory('bonmin').available():
+    if not pyo.SolverFactory('bonmin').available():
         raise Exception("Could not find bonmin.")
 
 @pytest.mark.unit
 def test_sipopt_available():
-    if not SolverFactory('ipopt_sens').available():
+    if not pyo.SolverFactory('ipopt_sens').available():
         raise Exception("Could not find ipopt_sens.")
 
 @pytest.mark.unit
@@ -47,7 +45,7 @@ def test_ipopt_idaes_available():
 
 @pytest.mark.unit
 def test_cbc_available():
-    if not SolverFactory('cbc').available():
+    if not pyo.SolverFactory('cbc').available():
         raise Exception("Could not find cbc.")
 
 @pytest.mark.unit
@@ -57,7 +55,7 @@ def test_sipopt_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     m, x = nlp()
-    solver = SolverFactory('ipopt_sens')
+    solver = pyo.SolverFactory('ipopt_sens')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 
@@ -68,7 +66,7 @@ def test_ipopt_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     m, x = nlp()
-    solver = SolverFactory('ipopt')
+    solver = pyo.SolverFactory('ipopt')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 
@@ -88,7 +86,7 @@ def test_bonmin_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     m, x = minlp()
-    solver = SolverFactory('bonmin')
+    solver = pyo.SolverFactory('bonmin')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 
@@ -99,7 +97,7 @@ def test_couenne_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     m, x = minlp()
-    solver = SolverFactory('couenne')
+    solver = pyo.SolverFactory('couenne')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 
@@ -110,7 +108,7 @@ def test_cbc_idaes_solve():
     break the solver object.  Passing a bad solver option will result in failure
     """
     m, x = milp()
-    solver = SolverFactory('cbc')
+    solver = pyo.SolverFactory('cbc')
     solver.solve(m)
     m.display()
     assert pytest.approx(x) == pyo.value(m.x)
