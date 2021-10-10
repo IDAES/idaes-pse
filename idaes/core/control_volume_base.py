@@ -18,7 +18,7 @@ Base class for control volumes
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, Bool
 
 # Import IDAES cores
 from idaes.core import (ProcessBlockData,
@@ -26,7 +26,8 @@ from idaes.core import (ProcessBlockData,
                         useDefault,
                         declare_process_block_class)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block)
+                                    is_reaction_parameter_block,
+                                    DefaultBool)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -76,7 +77,7 @@ class FlowDirection(Enum):
 CONFIG_Template = ProcessBlockData.CONFIG()
 CONFIG_Template.declare("dynamic", ConfigValue(
     default=useDefault,
-    domain=In([useDefault, True, False]),
+    domain=DefaultBool,
     description="Dynamic model flag",
     doc="""Indicates whether this model will be dynamic,
 **default** - useDefault.
@@ -86,7 +87,7 @@ CONFIG_Template.declare("dynamic", ConfigValue(
 **False** - set as a steady-state model}"""))
 CONFIG_Template.declare("has_holdup", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Holdup construction flag",
     doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -132,7 +133,7 @@ CONFIG_Template.declare("momentum_balance_type", ConfigValue(
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
 CONFIG_Template.declare("has_rate_reactions", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Rate reaction construction flag",
     doc="""Indicates whether terms for rate controlled reactions should be
 constructed,
@@ -142,7 +143,7 @@ constructed,
 **False** - exclude kinetic reaction terms.}"""))
 CONFIG_Template.declare("has_equilibrium_reactions", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Equilibrium reaction construction flag",
     doc="""Indicates whether terms for equilibrium controlled reactions
 should be constructed,
@@ -152,7 +153,7 @@ should be constructed,
 **False** - exclude equilibrium reaction terms.}"""))
 CONFIG_Template.declare("has_phase_equilibrium", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Phase equilibrium construction flag",
     doc="""Indicates whether terms for phase equilibrium should be
 constructed,
@@ -162,7 +163,7 @@ constructed,
 **False** - exclude phase equilibrium terms.}"""))
 CONFIG_Template.declare("has_mass_transfer", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Mass transfer term construction flag",
     doc="""Indicates whether terms for mass transfer should be constructed,
 **default** - False.
@@ -171,7 +172,7 @@ CONFIG_Template.declare("has_mass_transfer", ConfigValue(
 **False** - exclude mass transfer terms.}"""))
 CONFIG_Template.declare("has_heat_of_reaction", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Heat of reaction term construction flag",
     doc="""Indicates whether terms for heat of reaction should be constructed,
 **default** - False.
@@ -180,7 +181,7 @@ CONFIG_Template.declare("has_heat_of_reaction", ConfigValue(
 **False** - exclude heat of reaction terms.}"""))
 CONFIG_Template.declare("has_heat_transfer", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Heat transfer term construction flag",
     doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False.
@@ -189,7 +190,7 @@ CONFIG_Template.declare("has_heat_transfer", ConfigValue(
 **False** - exclude heat transfer terms.}"""))
 CONFIG_Template.declare("has_work_transfer", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Work transfer term construction flag",
     doc="""Indicates whether terms for work transfer should be constructed,
 **default** - False.
@@ -198,7 +199,7 @@ CONFIG_Template.declare("has_work_transfer", ConfigValue(
 **False** - exclude work transfer terms.}"""))
 CONFIG_Template.declare("has_enthalpy_transfer", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Enthalpy transfer term construction flag",
     doc="""Indicates whether terms for enthalpy transfer due to mass trasnfer
 should be constructed, **default** - False.
@@ -207,7 +208,7 @@ should be constructed, **default** - False.
 **False** - exclude enthalpy transfer terms.}"""))
 CONFIG_Template.declare("has_pressure_change", ConfigValue(
     default=False,
-    domain=In([True, False]),
+    domain=Bool,
     description="Pressure change term construction flag",
     doc="""Indicates whether terms for pressure change should be
 constructed,
@@ -270,7 +271,7 @@ class ControlVolumeBlockData(ProcessBlockData):
 
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
@@ -281,7 +282,7 @@ class ControlVolumeBlockData(ProcessBlockData):
 **False** - set as a steady-state model}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=useDefault,
-        domain=In([useDefault, True, False]),
+        domain=DefaultBool,
         description="Holdup construction flag",
         doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True,
@@ -323,7 +324,7 @@ and used when constructing these,
 see reaction package for documentation.}"""))
     CONFIG.declare("auto_construct", ConfigValue(
         default=False,
-        domain=In([True, False]),
+        domain=Bool,
         description="Argument indicating whether ControlVolume should "
                     "automatically construct balance equations",
         doc="""If set to True, this argument will trigger the auto_construct

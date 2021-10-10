@@ -17,6 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from sys import modules
+from types import MethodType
 
 from pyomo.environ import (value, Block, ConcreteModel, Param,
                            Set, Var, units as pyunits)
@@ -29,7 +30,7 @@ from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEo
 from idaes.core import (declare_process_block_class, Component,
                         Phase, LiquidPhase, VaporPhase, MaterialFlowBasis)
 from idaes.core.phases import PhaseType as PT
-from idaes.core.util.exceptions import (ConfigurationError)
+from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
 import idaes.logger as idaeslog
 
 
@@ -127,9 +128,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(
-                ConfigurationError,
-                match="params recieved unexpected units for quantity time: "
-                "foo. Units must be instances of a Pyomo unit object."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(foo\)"):
             m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
@@ -151,10 +152,9 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
 
         with pytest.raises(
-                ConfigurationError,
-                match="params units for quantity time were not assigned. "
-                "Please make sure to provide units for all base units "
-                "when configuring the property package."):
+                PropertyPackageError,
+                match="Unrecognized units of measurment for quantity time "
+                "\(None\)"):
             m.params = DummyParameterBlock(default={
                 "components": {"a": {}, "b": {}, "c": {}},
                 "phases": {
@@ -922,6 +922,7 @@ class TestGenericParameterBlock(object):
         assert dsf[("mole_frac_comp", None)] == 1e3
         assert dsf[("mole_frac_phase_comp", None)] == 1e3
         assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_comp", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
     @pytest.mark.unit
@@ -956,6 +957,7 @@ class TestGenericParameterBlock(object):
         assert dsf[("mole_frac_comp", None)] == 1e3
         assert dsf[("mole_frac_phase_comp", None)] == 1e3
         assert dsf[("mw", None)] == 1e3
+        assert dsf[("mw_comp", None)] == 1e3
         assert dsf[("mw_phase", None)] == 1e3
 
 
@@ -965,15 +967,30 @@ def define_state(b):
     b.state_defined = True
 
 
+def get_material_flow_basis(self, *args, **kwargs):
+    return MaterialFlowBasis.molar
+
+
+def dummy_method(*args, **kwargs):
+    return 42
+
+
 class TestGenericStateBlock(object):
     @pytest.fixture()
     def frame(self):
         m = ConcreteModel()
         m.params = DummyParameterBlock(default={
-                "components": {"a": {}, "b": {}, "c": {}},
+                "components": {
+                    "a": {"pressure_sat_comp": dummy_method},
+                    "b": {"pressure_sat_comp": dummy_method},
+                    "c": {"pressure_sat_comp": dummy_method}},
                 "phases": {
-                    "p1": {"equation_of_state": DummyEoS},
-                    "p2": {"equation_of_state": DummyEoS}},
+                    "p1": {"equation_of_state": DummyEoS,
+                           "diffus_phase_comp": dummy_method,
+                           "visc_d_phase": dummy_method},
+                    "p2": {"equation_of_state": DummyEoS,
+                           "diffus_phase_comp": dummy_method,
+                           "visc_d_phase": dummy_method}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
                 "temperature_ref": 300,
@@ -981,13 +998,16 @@ class TestGenericStateBlock(object):
 
         m.props = m.params.build_state_block([1],
                                              default={"defined_state": False})
+        m.props[1].get_material_flow_basis = MethodType(
+            get_material_flow_basis, m.props[1].get_material_flow_basis)
 
         # Add necessary variables to state block
         m.props[1].flow_mol = Var(bounds=(0, 3000))
         m.props[1].pressure = Var(bounds=(1000, 3000))
         m.props[1].temperature = Var(bounds=(100, 200))
         m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
-                                              m.params.component_list)
+                                              m.params.component_list,
+                                              initialize=0.3)
         m.props[1].phase_frac = Var(m.params.phase_list)
 
         return m
@@ -1027,6 +1047,45 @@ class TestGenericStateBlock(object):
             frame.props[1].mole_frac_phase_comp["p2", "c"]] == 1000
 
     @pytest.mark.unit
+    def test_build_all(self, frame):
+        # Add necessary parameters
+        frame.params.a.mw = 1
+        frame.params.b.mw = 2
+        frame.params.c.mw = 3
+
+        # Add variables that would be built by state definition
+        frame.props[1].flow_mol_phase_comp = Var(
+            frame.props[1].phase_component_set)
+
+        # Call all properties in metadata and assert they exist.
+        for p in frame.params.get_metadata().properties:
+            if p.endswith(("apparent", "true")):
+                # True and apparent properties require electrolytes, which are
+                # not tested here
+                # Check that method exists and continue
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p]["method"])
+                continue
+            elif p.endswith(("bubble", "dew")):
+                # Bubble and dew properties require phase equilibria, which are
+                # not tested here
+                # Check that method exists and continue
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p]["method"])
+                continue
+            elif p in ["dh_rxn", "log_k_eq"]:
+                # Not testing inherent reactions here either
+                # Check that method exists and continue
+                assert hasattr(
+                    frame.props[1],
+                    frame.params.get_metadata().properties[p]["method"])
+                continue
+            else:
+                assert hasattr(frame.props[1], p)
+
+    @pytest.mark.unit
     def test_flows(self, frame):
 
         # Need to set the material flow basis for this test
@@ -1059,6 +1118,8 @@ class TestGenericStateBlock(object):
             pytest.approx(100*0.2*0.75 + 100*0.2*0.25, rel=1e-4)
         assert value(frame.props[1].flow_mol_comp['c']) == \
             pytest.approx(100*0.1*0.25 + 100*0.7*0.75, rel=1e-4)
+        assert value(frame.props[1].mw_comp['a']) == \
+            pytest.approx(2, rel=1e-4)
         assert value(frame.props[1].mw_phase['p1']) == \
             pytest.approx(2*0.1 + 3*0.2 + 4*0.7, rel=1e-4)
         assert value(frame.props[1].mw) == \
