@@ -14,47 +14,7 @@ from pyomo.environ import SolverFactory
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-
-
-def lp():
-    m = pyo.ConcreteModel()
-    m.x = pyo.Var(initialize=3)
-    m.y = pyo.Var(initialize=3)
-    m.c1 = pyo.Constraint(expr=m.x >= 1)
-    m.c2 = pyo.Constraint(expr=m.y >= 2)
-    m.c3 = pyo.Constraint(expr=m.x <= 5)
-    m.c4 = pyo.Constraint(expr=m.y <= 5)
-    m.obj = pyo.Objective(expr=m.x + m.y)
-    return m, 1
-
-def milp():
-    m = pyo.ConcreteModel()
-    m.x = pyo.Var(domain=pyo.Integers, initialize=3)
-    m.y = pyo.Var(domain=pyo.Integers, initialize=3)
-    m.c1 = pyo.Constraint(expr=m.x >= 0.5)
-    m.c2 = pyo.Constraint(expr=m.y >= 1.5)
-    m.c3 = pyo.Constraint(expr=m.x <= 5)
-    m.c4 = pyo.Constraint(expr=m.y <= 5)
-    m.obj = pyo.Objective(expr=m.x + m.y)
-    return m, 1
-
-def nlp():
-    m = pyo.ConcreteModel()
-    m.x = pyo.Var(initialize=-0.1)
-    m.y = pyo.Var(initialize=1)
-    m.c = pyo.Constraint(expr=m.x >= 1)
-    m.obj = pyo.Objective(expr=m.x**2 + m.y**2)
-    return m, 1
-
-def minlp():
-    m = pyo.ConcreteModel()
-    m.x = pyo.Var(initialize=-0.1)
-    m.y = pyo.Var(initialize=1)
-    m.i = pyo.Var(domain=pyo.Binary, initialize=1)
-    m.c = pyo.Constraint(expr=m.x >= 1)
-    m.obj = pyo.Objective(
-        expr=m.i * (m.x**2 + m.y**2) + (1 - m.i) * 4 *(m.x**2 + m.y**2))
-    return m, 1
+from idaes.core.solvers.interogate import lp, milp, nlp, minlp
 
 @pytest.mark.unit
 def test_couenne_available():
@@ -72,6 +32,18 @@ def test_sipopt_available():
         raise Exception("Could not find ipopt_sens.")
 
 @pytest.mark.unit
+def test_ipopt_idaes_available():
+    """
+    Tries to set-up the IPOPT with the IDAES SolverFactory wrapper
+    """
+    if not pyo.SolverFactory('ipopt').available():
+        raise Exception(
+            "Could not find IPOPT. Users are strongly encouraged to have a "
+            "version of IPOPT available, as it is the default solver assumed "
+            "by many IDAES examples and tests. See the IDAES install "
+            "documentation for instructions on how to get IPOPT.")
+
+@pytest.mark.unit
 def test_cbc_available():
     if not SolverFactory('cbc').available():
         raise Exception("Could not find cbc.")
@@ -84,6 +56,17 @@ def test_sipopt_idaes_solve():
     """
     m, x = nlp()
     solver = SolverFactory('ipopt_sens')
+    solver.solve(m)
+    assert pytest.approx(x) == pyo.value(m.x)
+
+@pytest.mark.unit
+def test_ipopt_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = nlp()
+    solver = SolverFactory('ipopt')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
 
