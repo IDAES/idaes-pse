@@ -937,7 +937,7 @@ class Cubic(EoSBase):
         # see reference [2]
         return sqrt(- dPdV * mw / rho**2)
 
-        
+    @staticmethod    
     def vol_mol_phase(b, p):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase() or pobj.is_liquid_phase():
