@@ -14,7 +14,9 @@ from pyomo.environ import SolverFactory
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.interogate import lp, milp, nlp, minlp
+from idaes.core.solvers.interogate import (
+    lp, milp, nlp, minlp, ipopt_has_linear_solver
+)
 
 @pytest.mark.unit
 def test_couenne_available():
@@ -69,6 +71,15 @@ def test_ipopt_idaes_solve():
     solver = SolverFactory('ipopt')
     solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)
+
+@pytest.mark.unit
+def test_ipopt_has_ma27():
+    if not ipopt_has_linear_solver("ma27"):
+        raise Exception(
+            "The ma27 linear solver is not available to Ipopt. Models may solve"
+            " more reliably with HSL linear solvers see https://www.hsl.rl.ac.uk/,"
+            " or use solvers distributed by the IDAES project. See IDAES install"
+            " guide.")
 
 @pytest.mark.unit
 def test_bonmin_idaes_solve():

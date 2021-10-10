@@ -15,18 +15,6 @@ import pytest
 import idaes
 import idaes.core.solvers as isolve
 
-@pytest.mark.unit
-def test_ipopt_idaes_available():
-    """
-    Tries to set-up the IPOPT with the IDAES SolverFactory wrapper
-    """
-    if not pyo.SolverFactory('ipopt').available():
-        raise Exception(
-            "Could not find IPOPT. Users are strongly encouraged to have a "
-            "version of IPOPT available, as it is the default solver assumed "
-            "by many IDAES examples and tests. See the IDAES install "
-            "documentation for instructions on how to get IPOPT.")
-
 @pytest.mark.skipif(not pyo.SolverFactory('ipopt').available(False), reason="no Ipopt")
 @pytest.mark.unit
 def test_ipopt_idaes_config():

@@ -11,6 +11,7 @@
 # license information.
 #################################################################################
 import pyomo.environ as pyo
+from pyomo.common.errors import ApplicationError
 
 def lp():
     m = pyo.ConcreteModel()
@@ -53,4 +54,25 @@ def minlp():
     return m, 1
 
 def ipopt_has_linear_solver(linear_solver):
-    pass
+    """Check if IPOPT can use the specified linear solver.
+
+    Args:
+        linear_solver (str): linear solver in {"ma27", "ma57", "ma77", "ma86",
+            "ma97", "pardiso", "pardisomkl", "spral", "wsmp", "mumps"} or other
+            custom solver.
+
+    Returns:
+        bool: True if Ipopt is available with the specified linear solver or False
+            if either Ipopt or the linear solver is not available.
+    """
+    m, x = nlp()
+    solver = pyo.SolverFactory('ipopt', options={"linear_solver": linear_solver})
+    try:
+        solver.solve(m)
+    except ApplicationError:
+        return False
+    try:
+        assert abs(x - pyo.value(m.x)) < 1e-8
+    except AssertionError:
+        return False # solver mysteriously doesn't work right
+    return True
