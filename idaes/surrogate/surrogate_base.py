@@ -140,39 +140,33 @@ class SurrogateBase():
            output_labels: list
               list of labels corresponding to the outputs (in order)
            input_bounds: dict of tuples
-              A dictionary where the keys correspond to the input label, 
+              A dictionary where the keys correspond to the input label,
               and the values are tuples of bounds (lower,upper). These
-              should represent the valid range for the input variables           
+              should represent the valid range for the input variables
         """
         self._input_labels = input_labels
         self._output_labels = output_labels
-        self._input_bounds = input_bounds  # dict of bounds for each label
+        self._input_bounds = input_bounds
 
-    # TODO: make these properties in SurrogateTrainer as well?
-    @property
     def n_inputs(self):
         return len(self._input_labels)
 
-    @property
     def n_outputs(self):
         return len(self._output_labels)
 
-    @property
     def input_labels(self):
         return self._input_labels
 
-    @property
     def output_labels(self):
         return self._output_labels
 
-    @property
     def input_bounds(self):
         return self._input_bounds
 
     def populate_block(self, block, **kwargs):
         """
-        Placeholder method to populate a Pyomo Block with surrogate model
-        constraints.
+        Method to populate a Pyomo Block with surrogate model
+        constraints and variables.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
