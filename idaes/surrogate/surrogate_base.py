@@ -183,7 +183,6 @@ class SurrogateBase():
         raise NotImplementedError(
             "SurrogateModel class has not implemented populate_block method.")
 
-    # TODO: Change this to take dataframe as input - include a method that get's the numpy ndarray for this
     def evaluate_surrogate(self, dataframe):
         """
         Placeholder method to evaluate surrogate model at a set of user
@@ -199,7 +198,7 @@ class SurrogateBase():
             "SurrogateModel class has not implemented an evaluate_surrogate "
             "method.")
 
-    # todo: this should serialize to a stream
+    # TODO: this should serialize to a stream instead of a file
     def save(self, filename):
         """
         Save an instance of this surrogate to be used in a model later
@@ -207,8 +206,7 @@ class SurrogateBase():
         raise NotImplementedError('"save" should be implemented in the derived'
                                   ' SurrogateObject class')
 
-    # TODO: it is recommended that you add a "load" static method to build
-    #       a derived surrogate object from the file on disk
+    @staticmethod
     def load(self, filename):
         """
         Load an instance of this surrogate from a file
@@ -216,5 +214,18 @@ class SurrogateBase():
         raise NotImplementedError('"load" should be implemented in the derived'
                                   ' SurrogateObject class')
 
-    def calculate_metrics(self, test_data):
-        return TrainingMetrics.build_metrics(self, test_data)
+    def calculate_fit_metrics(self, data):
+        """
+        This method computes a variety of metrics regarding the fit of the 
+        surrogate to the data provided.
+
+        Args:
+           data : pandas DataFrame
+              pandas DataFrame that includes columns for the inputs and the outputs.
+              Metrics for the quality of fit will be computed across all the rows in
+              the provided data.
+
+        Returns:
+           TrainingMetrics object
+        """
+        return TrainingMetrics.build_metrics(self, data)

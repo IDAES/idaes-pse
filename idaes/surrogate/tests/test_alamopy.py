@@ -806,7 +806,7 @@ class TestAlamoTrainer:
         alamo_object = alamo_trainer._build_surrogate_object()
 
         assert isinstance(alamo_object, AlamoObject)
-        assert alamo_object._surrogate == {
+        assert alamo_object._surrogate_expressions == {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                    '4.0000000000020765611453 * x2**2 - '
                    '2.0999999999859380039879 * x1**4 + '
@@ -822,7 +822,7 @@ class TestAlamoTrainer:
 class TestAlamoObject():
     @pytest.fixture
     def alm_surr1(self):
-        surrogate = {
+        surrogate_expressions = {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                    '4.0000000000020765611453 * x2**2 - '
                    '2.0999999999859380039879 * x1**4 + '
@@ -834,7 +834,7 @@ class TestAlamoObject():
         input_bounds = {"x1": (0, 5), "x2": (0, 10)}
 
         alm_surr1 = AlamoObject(
-            surrogate, input_labels, output_labels, input_bounds)
+            surrogate_expressions, input_labels, output_labels, input_bounds)
 
         return alm_surr1
 
@@ -912,7 +912,7 @@ class TestAlamoObject():
 
     @pytest.fixture
     def alm_surr2(self):
-        surrogate = {
+        surrogate_expressions = {
             'z1': ('z1 == 3.9999999999925446303450 * x1**2 - '
                    '4.0000000000020765611453 * x2**2 - '
                    '2.0999999999859380039879 * x1**4 + '
@@ -932,7 +932,7 @@ class TestAlamoObject():
         input_labels = ["x1", "x2"]
         output_labels = ["z1", "z2"]
 
-        alm_surr2 = AlamoObject(surrogate, input_labels, output_labels)
+        alm_surr2 = AlamoObject(surrogate_expressions, input_labels, output_labels)
 
         return alm_surr2
 
@@ -1044,13 +1044,13 @@ class TestAlamoObject():
 
     @pytest.fixture
     def alm_surr3(self):
-        surrogate = {
+        surrogate_expressions = {
             'z1': (' z1 == 2*sin(x1**2) - 3*cos(x2**3) - '
                    '4*log(x1**4) + 5*exp(x2**5)')}
         input_labels = ["x1", "x2"]
         output_labels = ["z1"]
 
-        alm_surr3 = AlamoObject(surrogate, input_labels, output_labels)
+        alm_surr3 = AlamoObject(surrogate_expressions, input_labels, output_labels)
 
         return alm_surr3
 
@@ -1088,12 +1088,10 @@ class TestAlamoObject():
         assert stream.getvalue() == jstring
 
     @pytest.mark.unit
-    def test_from_json(self):
-        alm_surr = AlamoObject({}, [], [])
+    def test_create_from_json(self):
+        alm_surr = AlamoObject.create_from_json(jstring)
 
-        alm_surr.from_json(jstring)
-
-        assert alm_surr._surrogate == {
+        assert alm_surr._surrogate_expressions == {
             "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
             '4.0000000000020765611453 * x2**2 - '
             '2.0999999999859380039879 * x1**4 + '
@@ -1123,7 +1121,7 @@ class TestAlamoObject():
 
         # Check loaded object
         assert isinstance(alm_load, AlamoObject)
-        assert alm_load._surrogate == {
+        assert alm_load._surrogate_expressions == {
             "z1": ' z1 == 3.9999999999925446303450 * x1**2 - '
             '4.0000000000020765611453 * x2**2 - '
             '2.0999999999859380039879 * x1**4 + '
@@ -1223,7 +1221,7 @@ class TestWorkflow():
     def test_alamo_object(self, alamo_trainer):
         alamo_object = alamo_trainer._alamo_object
         assert isinstance(alamo_object, AlamoObject)
-        assert alamo_object._surrogate == {
+        assert alamo_object._surrogate_expressions == {
             'z1': ' z1 == 3.9999999999925432980774 * x1**2 - '
             '4.0000000000020792256805 * x2**2 - '
             '2.0999999999859380039879 * x1**4 + '
@@ -1251,7 +1249,7 @@ class TestWorkflow():
     def test_metrics(self, alamo_trainer):
         alamo_object = alamo_trainer._alamo_object
 
-        metrics = alamo_object.calculate_metrics(TestWorkflow.training_data)
+        metrics = alamo_object.calculate_fit_metrics(TestWorkflow.training_data)
 
         assert isinstance(metrics, TrainingMetrics)
         assert isinstance(metrics._evaluated_data, pd.DataFrame)

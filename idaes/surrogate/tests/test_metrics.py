@@ -40,7 +40,7 @@ def metrics():
     dataset = pd.DataFrame({"x1": x, "z1": z})
 
     # Create a dummy ALAMO surrogate to use for testing
-    alm_obj = AlamoObject(surrogate={"z1": "z1 == x1"},
+    alm_obj = AlamoObject(surrogate_expressions={"z1": "z1 == x1"},
                           input_labels=["x1"],
                           output_labels=["z1"])
 
@@ -52,7 +52,7 @@ def metrics():
 @pytest.mark.unit
 def test_init(metrics):
     assert isinstance(metrics._surrogate, AlamoObject)
-    assert metrics._surrogate._surrogate["z1"] == "z1 == x1"
+    assert metrics._surrogate._surrogate_expressions["z1"] == "z1 == x1"
 
     assert isinstance(metrics._measured_data, pd.DataFrame)
 
