@@ -17,7 +17,9 @@ import pytest
 import pandas as pd
 from idaes.surrogate.data_utils import split_training_testing, split_training_testing_validation
 
+
 class TestDataUtils:
+    @pytest.mark.unit
     def test_split_training_testing(self):
         d = {'a':[1,2,3,4,5], 'b':[2,3,4,5,6]}
         df = pd.DataFrame(d)
@@ -44,6 +46,7 @@ class TestDataUtils:
         pd.testing.assert_frame_equal(df_training.reset_index(drop=True), expected_training_df)
         pd.testing.assert_frame_equal(df_testing.reset_index(drop=True), expected_testing_df)
 
+    @pytest.mark.unit
     def test_split_training_testing_validation(self):
         d = {'a':[1,2,3,4,5,6,7,8,9], 'b':[2,3,4,5,6,7,8,9,10]}
         df = pd.DataFrame(d)
