@@ -282,51 +282,51 @@ html_context = {
         "row1":[
             {
                 "alt": "National Energy Technology Laboratory logo", 
-                "src": "_static/footer_logo_NETL.png", 
+                "src": "footer_logo_NETL.png", 
                 "href": "https://netl.doe.gov/"
             },
             {
                 "alt": "Lawrence Berkeley National Laboratory logo", 
-                "src": "_static/footer_logo_LBNL.jpg", 
+                "src": "footer_logo_LBNL.jpg", 
                 "href": "https://www.lbl.gov/"
                 },
             {
                 "alt": "Sandia National Laboratory logo", 
-                "src": "_static/footer_logo_Sandia.png", 
+                "src": "footer_logo_Sandia.png", 
                 "href": "https://www.sandia.gov/"
             },
         ],
         "row2":[
             {
                 "alt": "Carnegie Mellon University logo", 
-                "src": "_static/footer_logo_CMU.png", 
+                "src": "footer_logo_CMU.png", 
                 "href": "https://www.cmu.edu/"
             },
             {
                 "alt": "West Virginia University logo", 
-                "src": "_static/footer_logo_West_VA_U.png", 
+                "src": "footer_logo_West_VA_U.png", 
                 "href": "https://www.wvu.edu/"
             },
             {
                 "alt": "University of Notre Dame logo", 
-                "src": "_static/footer_logo_Notre_Dame.png", 
+                "src": "footer_logo_Notre_Dame.png", 
                 "href": "https://www.nd.edu/"
             },
             {
                 "alt": "Georgia Institute of Technology logo", 
-                "src": "_static/footer_logo_Georgia_Tech.png", 
+                "src": "footer_logo_Georgia_Tech.png", 
                 "href": "https://www.gatech.edu/"
             },
         ],
         "row3":[
             {
                 "alt": "IDAES logo", 
-                "src": "_static/idaes-footer-logo.png", 
+                "src": "idaes-footer-logo.png", 
                 "href": "https://idaes.org/"
             },
             {
                 "alt": "Department of Energy logo", 
-                "src": "_static/footer_logo_DOE.jpeg", 
+                "src": "footer_logo_DOE.jpeg", 
                 "href": "https://www.energy.gov/"
             },
         ]

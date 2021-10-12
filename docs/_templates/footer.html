@@ -11,7 +11,7 @@
         {%- for dict_item in row %}
           <div style="width:{{img_w}}%; display:inline-block; position:relative;">
             <a href="{{ dict_item.href }}">
-              <img alt="{{ dict_item.alt }}" src="{{ pathto( dict_item.src, 1) }}"/>
+              <img alt="{{ dict_item.alt }}" src="{{ pathto('_static/' + dict_item.src, 1) }}"/>
             </a>
           </div>
         {%- endfor %}
