@@ -39,11 +39,18 @@ class SurrogateBlockData(_BlockData):
                 ub = bnd[1]
                 if v.ub is not None:
                     ub = min(ub, v.ub)
+                print('Setting bound of {} to {}.'.format(v, (lb,ub)))
                 v.setlb(lb)
                 v.setub(ub)
 
         # call populate block to fill-in the constraints
         surrogate_object.populate_block(self, **kwargs)
+
+        # test that kwargs is empty
+        # derived classes should call .pop when they use a keyword argument
+        if len(kwargs) > 0:
+            raise ValueError('Error in keyword arguments passed to build_model.'
+                             ' The following arguments were not used: {}'.format([k for k in kwargs.keys()]))
 
     def _setup_inputs_outputs(self, n_inputs, n_outputs,
                               input_vars=None, input_labels=None,

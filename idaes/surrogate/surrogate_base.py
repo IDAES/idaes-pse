@@ -18,7 +18,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
-from idaes.surrogate.metrics import TrainingMetrics
+from idaes.surrogate.metrics import compute_fit_metrics
 
 
 class TrainingStatus(object):
@@ -214,7 +214,7 @@ class SurrogateBase():
         raise NotImplementedError('"load" should be implemented in the derived'
                                   ' SurrogateObject class')
 
-    def calculate_fit_metrics(self, data):
+    def compute_fit_metrics(self, data):
         """
         This method computes a variety of metrics regarding the fit of the 
         surrogate to the data provided.
@@ -228,4 +228,4 @@ class SurrogateBase():
         Returns:
            TrainingMetrics object
         """
-        return TrainingMetrics.build_metrics(self, data)
+        return compute_fit_metrics(self, data)

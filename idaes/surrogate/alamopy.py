@@ -458,6 +458,7 @@ class AlamoTrainer(SurrogateTrainer):
         "overwritten."))
 
     #TODO: We need to do some processing of the labels since ALAMO is restrictive about the labels
+    #TODO: We need to think more carefully about "input_bounds". Alamo uses bounds during training, but we also want to consider "valid" bounds for the surrogate
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -934,7 +935,8 @@ class AlamoObject(SurrogateBase):
             for o in range(len(self._output_labels)):
                 o_name = self._output_labels[o]
                 outputs[i, o] = value(fcn[o_name](*inputdata[i, :]))
-        return pd.DataFrame(outputs, columns=self._output_labels)
+
+        return pd.DataFrame(data=outputs, index=inputs.index, columns=self._output_labels)
 
     def populate_block(self, block, **kwargs):
         """
