@@ -13,28 +13,28 @@
 import numpy as np
 import math
 
-def split_training_testing(dataframe, training_fraction, seed=None):
+def split_training_validation(dataframe, training_fraction, seed=None):
     """
-    Randomly split the dataframe into training and testing data
+    Randomly split the dataframe into training and validation data
 
     Args:
        dataframe : pandas DataFrame
           The dataframe to split
        training_fraction : float between 0 < 1
           The fraction of the overall dataframe (# rows) to include
-          as training data. The rest will be returned as testing data
+          as training data. The rest will be returned as validation data
        seed : None or int
           seed used for the random number generator. Use default behavior
           for DataFrame.sample if seed is None
 
     Returns:
-       tuple : (training_dataframe, testing_dataframe)
+       tuple : (training_dataframe, validation_dataframe)
     """
     return _split_dataframe(dataframe, [training_fraction], seed)
 
-def split_training_testing_validation(dataframe, training_fraction, testing_fraction, seed=None):
+def split_training_validation_testing(dataframe, training_fraction, validation_fraction, seed=None):
     """
-    Randomly split the dataframe into training and testing data
+    Randomly split the dataframe into training, validation, and testing data
 
     Args:
        dataframe : pandas DataFrame
@@ -42,19 +42,19 @@ def split_training_testing_validation(dataframe, training_fraction, testing_frac
        training_fraction : float between 0 < 1
           The fraction of the overall dataframe (# rows) to include
           as training data.
-          The sum of training_fraction and testing_fraction must be less than 1
-       testing_fraction : float between 0 < 1
+          The sum of training_fraction and validation_fraction must be less than 1
+       validation_fraction : float between 0 < 1
           The fraction of the overall dataframe (# rows) to include
-          as testing data. The rest will be returned as validation data.
-          The sum of training_fraction and testing_fraction must be less than 1
+          as validation data. The rest will be returned as validation data.
+          The sum of training_fraction and validation_fraction must be less than 1
        seed : None or int
           seed used for the random number generator. Use default behavior
           for DataFrame.sample if seed is None
 
     Returns:
-       tuple : (training_dataframe, testing_dataframe)
+       tuple : (training_dataframe, validation_dataframe, testing_dataframe)
     """
-    return _split_dataframe(dataframe, [training_fraction, testing_fraction], seed)
+    return _split_dataframe(dataframe, [training_fraction, validation_fraction], seed)
 
 def _split_dataframe(dataframe, fractions, seed=None):
     """

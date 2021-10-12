@@ -1252,7 +1252,6 @@ class TestWorkflow():
         metrics = alamo_object.calculate_fit_metrics(TestWorkflow.training_data)
 
         assert isinstance(metrics, TrainingMetrics)
-        assert isinstance(metrics._evaluated_data, pd.DataFrame)
 
         # ALAMO metrics are consistently 10x larger than they should be
         assert metrics.SSE["z1"] == pytest.approx(
