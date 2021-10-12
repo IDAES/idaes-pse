@@ -10,10 +10,20 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
 #################################################################################
+
+from functools import lru_cache
 import pyomo.environ as pyo
 from pyomo.common.errors import ApplicationError
 
 def lp():
+    """This provides a simple LP model form solver testing.
+
+    Args:
+        None
+
+    Returns:
+        (tuple): Pyomo ConcreteModel, correct solved value for m.x
+    """
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=3)
     m.y = pyo.Var(initialize=3)
@@ -25,6 +35,14 @@ def lp():
     return m, 1
 
 def milp():
+    """This provides a simple MILP model form solver testing.
+
+    Args:
+        None
+
+    Returns:
+        (tuple): Pyomo ConcreteModel, correct solved value for m.x
+    """
     m = pyo.ConcreteModel()
     m.x = pyo.Var(domain=pyo.Integers, initialize=3)
     m.y = pyo.Var(domain=pyo.Integers, initialize=3)
@@ -36,6 +54,14 @@ def milp():
     return m, 1
 
 def nlp():
+    """This provides a simple NLP model form solver testing.
+
+    Args:
+        None
+
+    Returns:
+        (tuple): Pyomo ConcreteModel, correct solved value for m.x
+    """
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=-0.1)
     m.y = pyo.Var(initialize=1)
@@ -44,6 +70,14 @@ def nlp():
     return m, 1
 
 def minlp():
+    """This provides a simple MINLP model form solver testing.
+
+    Args:
+        None
+
+    Returns:
+        (tuple): Pyomo ConcreteModel, correct solved value for m.x
+    """
     m = pyo.ConcreteModel()
     m.x = pyo.Var(initialize=-0.1)
     m.y = pyo.Var(initialize=1)
@@ -53,6 +87,7 @@ def minlp():
         expr=m.i * (m.x**2 + m.y**2) + (1 - m.i) * 4 *(m.x**2 + m.y**2))
     return m, 1
 
+@lru_cache(maxsize=10)
 def ipopt_has_linear_solver(linear_solver):
     """Check if IPOPT can use the specified linear solver.
 
@@ -62,7 +97,7 @@ def ipopt_has_linear_solver(linear_solver):
             custom solver.
 
     Returns:
-        bool: True if Ipopt is available with the specified linear solver or False
+        (bool): True if Ipopt is available with the specified linear solver or False
             if either Ipopt or the linear solver is not available.
     """
     m, x = nlp()
