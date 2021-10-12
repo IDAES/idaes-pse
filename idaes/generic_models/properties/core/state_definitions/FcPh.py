@@ -114,7 +114,7 @@ def define_state(b):
                         units=units["temperature"])
 
     b.mole_frac_comp = Var(b.component_list,
-                           bounds=(0, None),
+                           bounds=(1e-20, 1.001),
                            initialize=1 / len(b.component_list),
                            doc='Mixture mole fractions',
                            units=None)
@@ -122,7 +122,7 @@ def define_state(b):
     b.mole_frac_phase_comp = Var(
         b.phase_component_set,
         initialize=1/len(b.component_list),
-        bounds=(0, None),
+        bounds=(1e-20, 1.001),
         doc='Phase mole fractions',
         units=None)
 

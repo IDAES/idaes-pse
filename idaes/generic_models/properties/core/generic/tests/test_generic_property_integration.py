@@ -38,8 +38,8 @@ from idaes.generic_models.properties.core.reactions.equilibrium_constant import 
     van_t_hoff
 from idaes.generic_models.properties.core.reactions.equilibrium_forms import \
     power_law_equil
-from idaes.generic_models.properties.core.generic.generic_reaction import (
-        ConcentrationForm)
+from idaes.generic_models.properties.core.generic.utility import (
+    ConcentrationForm)
 
 from idaes.generic_models.unit_models import Heater
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -290,14 +290,14 @@ class TestInherentReactions(object):
 
         solver = get_solver()
 
-        results = solver.solve(frame, tee=True)
+        results = solver.solve(frame)
 
         assert results.solver.termination_condition == \
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-        assert value(
-            frame.fs.cv.properties[0, 1].k_eq["e1"]) == 2
+        assert pytest.approx(2, rel=1e-8) == value(
+            frame.fs.cv.properties[0, 1].k_eq["e1"])
 
         assert (
             value(frame.fs.cv.properties[0, 1].k_eq["e1"]) ==
@@ -361,8 +361,8 @@ class TestInherentReactions(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-        assert value(
-            frame.fs.cv.properties[0, 1].k_eq["e1"]) == 2
+        assert pytest.approx(2, rel=1e-8) == value(
+            frame.fs.cv.properties[0, 1].k_eq["e1"])
 
         assert (
             value(frame.fs.cv.properties[0, 1].k_eq["e1"]) ==
