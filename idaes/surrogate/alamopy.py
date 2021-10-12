@@ -444,7 +444,7 @@ class AlamoTrainer(SurrogateTrainer):
         default=None,
         domain=str,
         description="File name to use for ALAMO files - must be full path of a .alm file."
-        " Other files will be defined from this patter. If this option is not None,"
+        " Other files will be defined from this pattern. If this option is not None,"
         " then working files will not be deleted."))
     CONFIG.declare("working_directory", ConfigValue(
         default=None,
