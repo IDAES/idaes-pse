@@ -19,7 +19,7 @@ Author: B. Paul
 # Import statements
 import numpy as np
 import matplotlib.pyplot as plt
-# import seaborn
+import seaborn
 from matplotlib.backends.backend_pdf import PdfPages
 
 from itertools import combinations  # used to pick xvar pairs in scatter3D
@@ -164,7 +164,7 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
     Plots model output against data output, with confidence interval data
     if provided to the method.
     """
-    numouts = np.shape(zdata)[0]  # number of output variables
+    numouts = np.shape(zdata)[1]  # number of output variables
 
     # check and add labels if missing
 
@@ -181,8 +181,8 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
         # ax[j].plot(zdata[j, :], zdata[j, :], c='grey', label='Data')
         # ax[j].scatter(zdata[j, :], zfit[j, :], s=3, c='b', marker='.',
         #               label='Predictions')
-        ax[j].plot(zdata[j, :], zdata[j, :], c='grey', label='Data')
-        ax[j].scatter(zdata[j, :], zfit[j, :], marker='.', label='Predictions')
+        ax[j].plot(zdata[:, j], zdata[:, j], c='grey', label='Data')
+        ax[j].scatter(zdata[:, j], zfit[:, j], marker='.', label='Predictions')
 
         # plot confidence intervals if given data
         if clo is not None and chi is not None:
@@ -207,8 +207,8 @@ def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,
     """
     Plots model error against data output.
     """
-    numins = np.shape(xdata)[0]  # number of input variables
-    numouts = np.shape(e)[0]  # number of output variables
+    numins = np.shape(xdata)[1]  # number of input variables
+    numouts = np.shape(e)[1]  # number of output variables
 
     # check and add labels if missing
 
@@ -224,10 +224,10 @@ def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,
     count = 0
     for i in range(numins):
         for j in range(numouts):  # loop over all outputs, zj
-    
+
             fig.append(plt.figure())
             ax.append(fig[count].add_subplot())
-            ax[count].scatter(xdata[i, :], e[j, :], marker='.', label=elabels[j])
+            ax[count].scatter(xdata[:, i], e[:, j], marker='.', label=elabels[j])
             ax[count].set_xlabel(xlabels[i])
             ax[count].set_ylabel(elabels[j])
             ax[count].set_title('Residual Plot')
