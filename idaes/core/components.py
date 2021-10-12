@@ -131,14 +131,9 @@ class ComponentData(ProcessBlockData):
                 self._add_to_electrolyte_component_list()
 
         base_units = self.parent_block().get_metadata().default_units
-        if isinstance(base_units["mass"], _PyomoUnit):
-            # Backwards compatability check
-            p_units = (base_units["mass"] /
-                       base_units["length"] /
-                       base_units["time"]**2)
-        else:
-            # Backwards compatability check
-            p_units = None
+        p_units = (base_units["mass"] /
+                   base_units["length"] /
+                   base_units["time"]**2)
 
         # Create Param for molecular weight if provided
         if "mw" in self.config.parameter_data:
