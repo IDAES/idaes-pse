@@ -57,18 +57,6 @@ class Ideal(EoSBase):
         return b.mole_frac_phase_comp_apparent[p, j]
 
     @staticmethod
-    def log_act_phase_comp(b, p, j):
-        return log(b.mole_frac_phase_comp[p, j])
-
-    @staticmethod
-    def log_act_phase_comp_true(b, p, j):
-        return log(b.mole_frac_phase_comp_true[p, j])
-
-    @staticmethod
-    def log_act_phase_comp_appr(b, p, j):
-        return log(b.mole_frac_phase_comp_apparent[p, j])
-
-    @staticmethod
     def act_coeff_phase_comp(b, p, j):
         return 1
 

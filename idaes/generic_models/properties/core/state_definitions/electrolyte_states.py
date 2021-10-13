@@ -76,7 +76,7 @@ def _apparent_species_state(b):
     b.mole_frac_phase_comp_true = Var(
         b.params.true_phase_component_set,
         initialize=1/len(b.params.true_species_set),
-        bounds=(0, None),
+        bounds=(1e-20, 1.001),
         doc="Phase-component molar fractions of true species",
         units=pyunits.dimensionless)
 
@@ -168,7 +168,7 @@ def _true_species_state(b):
     b.mole_frac_phase_comp_apparent = Var(
         b.params.apparent_phase_component_set,
         initialize=1/len(b.params.apparent_species_set),
-        bounds=(0, None),
+        bounds=(1e-20, 1.001),
         doc="Phase-component molar fractions of apparent species",
         units=pyunits.dimensionless)
 
