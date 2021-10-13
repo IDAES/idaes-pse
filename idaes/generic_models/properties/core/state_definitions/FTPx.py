@@ -23,11 +23,14 @@ from idaes.core import (MaterialFlowBasis,
                         EnergyBalanceType)
 from idaes.generic_models.properties.core.generic.utility import \
     get_bounds_from_config, get_method, GenericPropertyPackageError
+from idaes.generic_models.properties.core.phase_equil.bubble_dew import \
+    _valid_VL_component_list
 from idaes.core.util.exceptions import ConfigurationError
 import idaes.logger as idaeslog
 from .electrolyte_states import \
     define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
+from idaes.core.util.exceptions import BurntToast
 
 
 # Set up logger
@@ -284,6 +287,148 @@ def define_state(b):
 
 
 def state_initialization(b):
+    vl_comps = []
+    henry_comps = []
+    _pe_pairs = []
+    if hasattr(b.params,'_pe_pairs'):
+        _pe_pairs = b.params._pe_pairs
+    for pp in _pe_pairs:
+        # Look for a VLE pair with this phase - should only be 1
+        if ((b.params.get_phase(pp[0]).is_liquid_phase() and
+             b.params.get_phase(pp[1]).is_vapor_phase()) or
+            (b.params.get_phase(pp[1]).is_liquid_phase() and
+             b.params.get_phase(pp[0]).is_vapor_phase())):
+            # Get bubble and dew points
+            # if hasattr(b, "eq_temperature_bubble"):
+            #     try:
+            #         tbub = b.temperature_bubble[pp].value
+            #     except KeyError:
+            #         pass
+            # if hasattr(b, "eq_temperature_dew"):
+            #     try:
+            #         tdew = b.temperature_dew[pp].value
+            #     except KeyError:
+            #         pass
+            # break
+            if len(vl_comps + henry_comps) > 0:
+                raise NotImplementedError(
+                    "Initialization for generic property blocks with more than "
+                    "one vapor-liquid equilibrium is not yet supported."
+                    )                                          
+            (l_phase,
+             v_phase,
+             vl_comps,
+             henry_comps,
+             l_only_comps,
+             v_only_comps) = _valid_VL_component_list(b, pp)
+            
+            try:
+                psat = {j: value(get_method(
+                            b, "pressure_sat_comp", j)(
+                                b,
+                                b.params.get_component(j),
+                                b.temperature)) for j in vl_comps}
+                # Calculate bubble and dew pressures for an ideal mixture
+                if len(l_only_comps) == 0:
+                    p_dew_ideal = 1/sum([value(b.mole_frac_comp[j])/psat[j]
+                                        for j in vl_comps])
+                else:
+                    p_dew_ideal = 0
+                if len(v_only_comps) == 0:
+                    p_bubble_ideal = sum([value(b.mole_frac_comp[j])*psat[j]
+                                        for j in vl_comps])
+                else:
+                    p_bubble_ideal = float('inf')
+                
+                assert p_dew_ideal <= p_bubble_ideal
+                raoult_init = True
+                
+                # Sanity check for the block's pressure. If the mixture is 
+                # strongly nonideal, we give up and assume that the 
+                # is predominantly one phase or the other
+                if value(b.pressure) <= p_dew_ideal:
+                    vapFrac = 0.995
+                elif value(b.pressure) >= p_bubble_ideal:
+                    vapFrac = 0.005
+                else:
+                    # Equation defining vapor fraction for an ideal mixture.
+                    # This equation has two roots: a trivial one at vapFrac = 1
+                    # and a nontrivial one for some 0<vapFrac<1. B is a
+                    # convex function
+                    def B(vapFrac):
+                        return (
+                            sum([value(b.mole_frac_comp[j]*psat[j]
+                                  /(vapFrac*psat[j]+(1-vapFrac)*b.pressure))
+                                for j in vl_comps])
+                            + sum([value(b.mole_frac_comp[j]/vapFrac)
+                                   for j in v_only_comps]) - 1
+                            )
+                    def dB_dvapFrac(vapFrac):
+                        return (
+                            sum([value(b.mole_frac_comp[j]*psat[j]
+                                       *(b.pressure - psat[j])
+                                  /(vapFrac*psat[j]+(1-vapFrac)*b.pressure)**2)
+                                for j in vl_comps])
+                            - sum([value(b.mole_frac_comp[j]/vapFrac**2)
+                                   for j in v_only_comps])
+                            )
+                    def d2B_dvapFrac2(vapFrac):
+                        return (
+                            sum([value(2*b.mole_frac_comp[j]*psat[j]
+                                       *(b.pressure - psat[j])**2
+                                       *(vapFrac*psat[j]+(1-vapFrac)*b.pressure)
+                                  /(vapFrac*psat[j]+(1-vapFrac)*b.pressure)**4)
+                                for j in vl_comps])
+                            + sum([value(2*b.mole_frac_comp[j]/vapFrac**3)
+                                   for j in v_only_comps])
+                            )
+                    # In order to avoid the trivial root, we first
+                    # calculate the minimum of B to ensure that we
+                    # initialize in a region where B is monotone
+                    # k = 0
+                    # vapFrac_min = 0.5
+                    # while abs(dB_dvapFrac(vapFrac_min)) > 1E-6:
+                    #     vapFrac_min -= dB_dvapFrac(vapFrac_min)/d2B_dvapFrac2(vapFrac_min)
+                    #     k += 1
+                    #     if k > 40 or vapFrac_min<-0.2 or vapFrac_min>1.2:
+                    #         raise BurntToast(
+                    #             "Could not calculate ideal vapor fraction "
+                    #             "because Newton's method did not converge "
+                    #             "to vapFrac_min. This should never happen, so "
+                    #             "contact the IDAES developers with this "
+                    #             "bug.")
+                    
+                    # assert vapFrac_min >0 and vapFrac_min <1
+                    # Now initialize vapFrac halfway between vapFrac_min, at which
+                    # B(vapFrac) is negative, and zero, where B(vapFrac) is positive
+                    k = 0
+                    vapFrac = 0.5
+                    while B(vapFrac) < 0:
+                        vapFrac /= 2
+                        k+=1
+                        if k > 40:
+                            raise BurntToast(
+                                "Could not calculate ideal vapor fraction "
+                                "because B(vapFrac) is negative for all values "
+                                "of vapFrac. This should never happen, so "
+                                "contact the IDAES developers with this "
+                                "bug.")
+                    k = 0
+                    while abs(B(vapFrac)) > 1E-6:
+                        vapFrac -= B(vapFrac)/dB_dvapFrac(vapFrac)
+                        k += 1
+                        if k > 40: #or vapFrac<-0.2 or vapFrac>vapFrac_min:
+                            raise BurntToast(
+                                "Could not calculate ideal vapor fraction "
+                                "because Newton's method did not converge "
+                                "to vapFrac. This should never happen, so "
+                                "contact the IDAES developers with this "
+                                "bug.")
+                    assert vapFrac >0 and vapFrac < 1
+            except GenericPropertyPackageError:
+                # No method for calculating Psat, use default values
+                raoult_init = False
+                
     for p in b.phase_list:
         # Start with phase mole fractions equal to total mole fractions
         for j in b.component_list:
@@ -297,8 +442,9 @@ def state_initialization(b):
         pobj = b.params.get_phase(p)
 
         if not hasattr(b.params, "_pe_pairs"):
-            return
-
+            return #TODO: Are we sure we want to end initialization instead of
+                    # breaking?
+        
         if pobj.is_liquid_phase():
             tbub = None
             tdew = None
@@ -343,31 +489,27 @@ def state_initialization(b):
                     if (p, j) in b.phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b.mole_frac_comp[j].value
-            elif tbub is not None and tdew is not None:
-                # Two-phase with bounds two-phase region
-                # Thanks to Rahul Gandhi for the method
-                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
-
-                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
-
-                try:
-                    for p2, j in b.phase_component_set:
-                        if p2 == p:
-                            psat_j = value(get_method(
-                                b, "pressure_sat_comp", j)(
-                                    b,
-                                    b.params.get_component(j),
-                                    b.temperature))
-                            kfact = value(psat_j / b.pressure)
-
-                            b.mole_frac_phase_comp["Liq", j].value = value(
-                                b.mole_frac_comp[j]/(1+vapRatio*(kfact-1)))
-                except GenericPropertyPackageError:
-                    # No method for calculating Psat, use default values
+            elif raoult_init:
+                if tbub is not None and tdew is not None:
+                    # Two-phase with bounds two-phase region
+                    # Thanks to Rahul Gandhi for the method
+                    vapFrac = value((b.temperature-tbub) / (tdew-tbub))
+                else:
+                    # Two-phase, but with non-vaporizables and/or non-condensables
+                    # Cannot take difference of tdew and tbub, so use vapor
+                    # fraction calculated with Raoult's law.
                     pass
-            else:
-                # Two-phase, but with non-vaporizables and/or non-condensables
-                pass
+                b.flow_mol_phase[p].value = value((1-vapFrac)*b.flow_mol)
+                for j in vl_comps:
+                    kfact = value(psat[j] / b.pressure)
+                    b.mole_frac_phase_comp[p, j].value = value(
+                        b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
+                for j in l_only_comps:
+                    b.mole_frac_phase_comp[p, j].value = value(
+                        b.mole_frac_comp[j]/(1-vapFrac))
+                else:
+                    # Cannot do anything without a method to calculate Psat
+                    pass
 
         elif pobj.is_vapor_phase():
             # Look for a VLE pair with this phase - will go with 1st found
@@ -413,31 +555,26 @@ def state_initialization(b):
                     if (p, j) in b.phase_component_set:
                         b.mole_frac_phase_comp[p, j].value = \
                             b._mole_frac_tbub[pp, j].value
-            elif tbub is not None and tdew is not None:
-                # Two-phase with bounds two-phase region
-                # Thanks to Rahul Gandhi for the method
-                vapRatio = value((b.temperature-tbub) / (tdew-tbub))
-
-                b.flow_mol_phase["Liq"].value = value((1-vapRatio)*b.flow_mol)
-
-                try:
-                    for p2, j in b.phase_component_set:
-                        if p2 == p:
-                            psat_j = value(get_method(
-                                b, "pressure_sat_comp", j)(
-                                    b,
-                                    b.params.get_component(j),
-                                    b.temperature))
-                            kfact = value(psat_j / b.pressure)
-
-                            b.mole_frac_phase_comp["Vap", j].value = value(
-                                b.mole_frac_comp[j] /
-                                (1+vapRatio*(kfact-1))*kfact)
-                except GenericPropertyPackageError:
-                    # No method for calculating Psat, use default values
+            elif raoult_init:
+                if tbub is not None and tdew is not None:
+                    # Two-phase with bounds two-phase region
+                    # Thanks to Rahul Gandhi for the method
+                    vapFrac = value((b.temperature-tbub) / (tdew-tbub))
+                else:
+                    # Two-phase, but with non-vaporizables and/or non-condensables
+                    # Cannot take difference of tdew and tbub, so use vapor
+                    # fraction calculated with Raoult's law.
                     pass
+                b.flow_mol_phase[p].value = value(vapFrac*b.flow_mol)
+                for j in vl_comps:
+                    kfact = value(psat[j] / b.pressure)
+                    b.mole_frac_phase_comp[p, j].value = value(
+                        b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
+                for j in v_only_comps:
+                    b.mole_frac_phase_comp[p, j].value = value(
+                        b.mole_frac_comp[j]/vapFrac)
             else:
-                # Two-phase, but with non-vaporizables and/or non-condensables
+                # Cannot do anything without a method to calculate Psat
                 pass
 
 
