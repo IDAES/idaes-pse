@@ -28,34 +28,45 @@ def compute_fit_metrics(surrogate, dataframe):
     """
     y = dataframe[surrogate.output_labels()]
     f = surrogate.evaluate_surrogate(dataframe)
-    assert f.columns == surrogate.output_labels()
+    #print(f.columns.to_list())
+    #print(surrogate.output_labels())
+    assert f.columns.to_list() == surrogate.output_labels()
 
     y_mean = y.mean(axis=0)
     SST = ((y-y_mean)**2).sum(axis=0)
     SSE = ((y-f)**2).sum(axis=0)
 
     R2 = 1-SSE/SST
+    MAE = (y-f).abs().mean(axis=0)
+    maxAE = (y-f).abs().max(axis=0)
     MSE = ((y-f)**2).mean(axis=0)
     RMSE = MSE**0.5
 
-    return TrainingMetrics(RMSE=RMSE, MSE=MSE, SSE=SSE, R2=R2)
+    return TrainingMetrics(RMSE=RMSE, MSE=MSE, MAE=MAE, maxAE=maxAE, SSE=SSE, R2=R2)
 
 
 #TODO: Maybe this should just be a dictionary (or munch)
 #TODO: think of other metrics utility functions we may want
 class TrainingMetrics(object):
-    def __init__(self, RMSE, MSE, SSE, R2):
+    def __init__(self, RMSE, MSE, MAE, maxAE, SSE, R2):
         # root mean-squared error
         self._RMSE = RMSE
 
         # mean squared error
         self._MSE = MSE
 
+        # mean absolute error
+        self._MAE = MAE
+
+        # max absolute error
+        self._maxAE = maxAE
+
         # sum of squared errors
         self._SSE = SSE
 
         # R-squared
         self._R2 = R2
+
 
         # TODO: number of datapoints out of bounds
 
@@ -68,6 +79,14 @@ class TrainingMetrics(object):
         return self._MSE
 
     @property
+    def MAE(self):
+        return self._MAE
+
+    @property
+    def maxAE(self):
+        return self._maxAE
+
+    @property
     def SSE(self):
         return self._SSE
 
@@ -78,10 +97,12 @@ class TrainingMetrics(object):
     def __str__(self):
         ret = '\n'
         for l in self.RMSE.index:
-            ret += 'Training metrics for output: {}\n'.format(l)
+            ret += '\nQuality metrics for output: {}\n'.format(l)
             ret += '---------------------------------------------------------\n'
             ret += 'RMSE:          {}\n'.format(float(self.RMSE[l]))
             ret += 'MSE:           {}\n'.format(float(self.MSE[l]))
+            ret += 'MAE:           {}\n'.format(float(self.MAE[l]))
+            ret += 'maxAE:         {}\n'.format(float(self.maxAE[l]))
             ret += 'R2:            {}\n'.format(float(self.R2[l]))
             ret += 'SSE:           {}\n'.format(float(self.SSE[l]))
 
