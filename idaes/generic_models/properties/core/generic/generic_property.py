@@ -1772,14 +1772,21 @@ class GenericStateBlockData(StateBlockData):
             component_list = self.component_list
             pc_set = self.phase_component_set
         else:
-            component_list = self.params.true_species_set
-            pc_set = self.params.true_phase_component_set
+            config = self.params.get_phase(phase).config
+            if ("property_basis" in config.equation_of_state_options and
+                    config.equation_of_state_options["property_basis"] ==
+                    "apparent"):
+                component_list = self.params.apparent_species_set
+                pc_set = self.params.apparent_phase_component_set
+            else:
+                component_list = self.params.true_species_set
+                pc_set = self.params.true_phase_component_set
 
         for j in component_list:
             if (phase, j) in pc_set:
                 yield j
 
-    def get_mole_frac(self):
+    def get_mole_frac(self, phase=None):
         """
         Property calcuations generally depend on phase_component mole fractions
         for mixing rules, but in some cases there are multiple component lists
@@ -1792,6 +1799,12 @@ class GenericStateBlockData(StateBlockData):
         if not self.params._electrolyte:
             return self.mole_frac_phase_comp
         else:
+            if phase is not None:
+                config = self.params.get_phase(phase).config
+                if ("property_basis" in config.equation_of_state_options and
+                        config.equation_of_state_options["property_basis"] ==
+                        "apparent"):
+                    return self.mole_frac_phase_comp_apparent
             return self.mole_frac_phase_comp_true
 
     # -------------------------------------------------------------------------

@@ -90,7 +90,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def cp_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.cp_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac(p)[p, j]*b.cp_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -110,7 +110,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def cv_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.cv_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac(p)[p, j]*b.cv_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -137,7 +137,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def energy_internal_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j] *
+        return sum(b.get_mole_frac(p)[p, j] *
                    b.energy_internal_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
@@ -155,16 +155,16 @@ class Ideal(EoSBase):
     def enth_mol_phase(b, p):
         pobj = b.params.get_phase(p)
         if pobj.is_vapor_phase():
-            return sum(b.get_mole_frac()[p, j]*b.enth_mol_phase_comp[p, j]
+            return sum(b.get_mole_frac(p)[p, j]*b.enth_mol_phase_comp[p, j]
                        for j in b.components_in_phase(p))
         elif pobj.is_liquid_phase():
-            return (sum(b.get_mole_frac()[p, j] *
+            return (sum(b.get_mole_frac(p)[p, j] *
                         get_method(b, "enth_mol_liq_comp", j)(
                             b, cobj(b, j), b.temperature)
                         for j in b.components_in_phase(p)) +
                     (b.pressure-b.params.pressure_ref)/b.dens_mol_phase[p])
         elif pobj.is_solid_phase():
-            return (sum(b.get_mole_frac()[p, j] *
+            return (sum(b.get_mole_frac(p)[p, j] *
                         get_method(b, "enth_mol_sol_comp", j)(
                             b, cobj(b, j), b.temperature)
                         for j in b.components_in_phase(p)) +
@@ -191,7 +191,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def entr_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.entr_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac(p)[p, j]*b.entr_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -201,7 +201,7 @@ class Ideal(EoSBase):
             return (get_method(b, "entr_mol_ig_comp", j)(
                 b, cobj(b, j), b.temperature) -
                 Ideal.gas_constant(b)*log(
-                    b.get_mole_frac()[p, j]*b.pressure /
+                    b.get_mole_frac(p)[p, j]*b.pressure /
                     b.params.pressure_ref))
         elif pobj.is_liquid_phase():
             # Assume no pressure/volume dependecy of entropy for ideal liquids
@@ -227,15 +227,15 @@ class Ideal(EoSBase):
         pobj = b.params.get_phase(p)
 
         if pobj.is_vapor_phase():
-            return log(b.get_mole_frac()[p, j]) + log(b.pressure)
+            return log(b.get_mole_frac(p)[p, j]) + log(b.pressure)
         elif pobj.is_liquid_phase():
             if (cobj(b, j).config.henry_component is not None and
                     p in cobj(b, j).config.henry_component):
                 # Use Henry's Law
-                return log(b.get_mole_frac()[p, j]) + log(b.henry[p, j])
+                return log(b.get_mole_frac(p)[p, j]) + log(b.henry[p, j])
             elif cobj(b, j).config.has_vapor_pressure:
                 # Use Raoult's Law
-                return (log(b.get_mole_frac()[p, j]) +
+                return (log(b.get_mole_frac(p)[p, j]) +
                         log(get_method(b, "pressure_sat_comp", j)(
                             b, cobj(b, j), b.temperature)))
             else:
@@ -332,7 +332,7 @@ class Ideal(EoSBase):
 
     @staticmethod
     def gibbs_mol_phase(b, p):
-        return sum(b.get_mole_frac()[p, j]*b.gibbs_mol_phase_comp[p, j]
+        return sum(b.get_mole_frac(p)[p, j]*b.gibbs_mol_phase_comp[p, j]
                    for j in b.components_in_phase(p))
 
     @staticmethod
@@ -377,7 +377,7 @@ class Ideal(EoSBase):
         for j in b.components_in_phase(p):
             # First try to get a method for vol_mol
             v_comp = Ideal.get_vol_mol_pure(b, ptype, j, b.temperature)
-            v_expr += b.get_mole_frac()[p, j]*v_comp
+            v_expr += b.get_mole_frac(p)[p, j]*v_comp
 
         return v_expr
 
@@ -392,15 +392,15 @@ def _fug_phase_comp(b, p, j, T):
     pobj = b.params.get_phase(p)
 
     if pobj.is_vapor_phase():
-        return b.get_mole_frac()[p, j] * b.pressure
+        return b.get_mole_frac(p)[p, j] * b.pressure
     elif pobj.is_liquid_phase():
         if (cobj(b, j).config.henry_component is not None and
                 p in cobj(b, j).config.henry_component):
             # Use Henry's Law
-            return b.get_mole_frac()[p, j] * b.henry[p, j]
+            return b.get_mole_frac(p)[p, j] * b.henry[p, j]
         elif cobj(b, j).config.has_vapor_pressure:
             # Use Raoult's Law
-            return (b.get_mole_frac()[p, j] *
+            return (b.get_mole_frac(p)[p, j] *
                     get_method(b, "pressure_sat_comp", j)(
                         b, cobj(b, j), T))
         else:

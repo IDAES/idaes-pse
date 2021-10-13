@@ -76,7 +76,8 @@ class TestStateBlock(object):
 
     @pytest.mark.unit
     def test_properties(self, model):
-        model.props[1].visc_d_phase.display()
+        model.props[1].phase_component_set.display()
+        model.props[1].enth_mol_phase_comp.display()
 
         assert pytest.approx(79.5139, rel=1e-5) == value(
             model.props[1].cp_mol_phase["Liq"])

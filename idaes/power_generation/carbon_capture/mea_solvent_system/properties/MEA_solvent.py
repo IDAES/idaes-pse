@@ -40,6 +40,8 @@ from pyomo.environ import exp, log, units as pyunits, Var
 from idaes.core import AqueousPhase, Solvent, Solute, Anion, Cation
 
 from idaes.generic_models.properties.core.state_definitions import FTPx
+from idaes.generic_models.properties.core.generic.generic_property import (
+        StateIndex)
 from idaes.generic_models.properties.core.eos.ideal import Ideal
 from idaes.core.util.misc import set_param_from_config
 import idaes.logger as idaeslog
@@ -197,7 +199,7 @@ class PressureSatSolvent():
     @staticmethod
     def return_expression(b, cobj, T, dT=False):
         if dT:
-            return PressureSatSolvent.dT_expression(b, cobj, T)
+            raise Exception("No dT method for pressure sat")
 
         return (exp(cobj.pressure_sat_comp_coeff_1 +
                     cobj.pressure_sat_comp_coeff_2/T +
@@ -331,10 +333,11 @@ class Viscosity():
         pobj = blk.params.get_phase(phase)
 
         # Calculate mass fraction from mole fraction and molecular weights
-        r = (blk.mole_frac_comp['MEA'] *
+        r = (blk.mole_frac_phase_comp_apparent['Liq', 'MEA'] *
              blk.mw_phase["Liq"] / blk.mw_comp["MEA"] * 100)
         T = blk.temperature
-        alpha = blk.mole_frac_comp['CO2'] / blk.mole_frac_comp['MEA']
+        alpha = (blk.mole_frac_phase_comp_apparent['Liq', 'CO2'] /
+                 blk.mole_frac_phase_comp_apparent['Liq', 'MEA'])
         mu_H2O = (1.002e-3*pyunits.Pa/pyunits.s *
                   10**((1.3272 *
                         (293.15*pyunits.K - T -
@@ -420,11 +423,19 @@ configuration = {
                         'b': (-2.2642, pyunits.mL/pyunits.mol),
                         'c': (3.0059, pyunits.mL/pyunits.mol),
                         'd': (207, pyunits.mL/pyunits.mol),
-                        'e': (-563.3701, pyunits.mL/pyunits.mol)}}}},
+                        'e': (-563.3701, pyunits.mL/pyunits.mol)}}},
+        'MEA_+': {"type": Cation,
+                  "charge": +1},
+        'MEACOO_-': {"type": Anion,
+                     "charge": -1},
+        'HCO3-': {"type": Anion,
+                  "charge": -1}},
 
     # Specifying phases
     "phases":  {'Liq': {"type": AqueousPhase,
                         "equation_of_state": Ideal,
+                        "equation_of_state_options":
+                            {"property_basis": "apparent"},
                         "visc_d_phase": Viscosity,
                         "parameter_data": {
                             "visc_d_coeff": {
@@ -448,5 +459,6 @@ configuration = {
     "state_bounds": {"flow_mol": (0, 1, 1000, pyunits.mol/pyunits.s),
                      "temperature": (273.15, 298.15, 450, pyunits.K),
                      "pressure": (5e4, 101325, 1e6, pyunits.Pa)},
+    "state_components": StateIndex.apparent,
     "pressure_ref": (101325, pyunits.Pa),
     "temperature_ref": (298.15, pyunits.K)}
