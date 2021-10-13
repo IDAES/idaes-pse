@@ -500,7 +500,7 @@ class AlamoTrainer(SurrogateTrainer):
             rc, almlog = self._call_alamo()
 
             # Read back results
-            trace_dict = self._read_trace_file()
+            trace_dict = self._read_trace_file(self._trcfile, self.output_labels())
 
             # Populate results and SurrogateModel object
             self._populate_results(trace_dict)
@@ -768,19 +768,23 @@ class AlamoTrainer(SurrogateTrainer):
 
         return rc, almlog
 
-    def _read_trace_file(self):
+    @staticmethod
+    def _read_trace_file(trcfile, output_labels):
         """
         Method to read the results of an ALAMO run from a trace (.trc) file.
         The name location of the trace file is tored on the AlamoModelTrainer
         object and is generally set automatically.
 
         Args:
-            None
+            trcfile : str
+               Path to the trcfile to read
+            output_labels : list of str
+               List of strings of the output_labels (in order)
 
         Returns:
             trace_dict: contents of trace file as a dict
         """
-        with open(self._trcfile, "r") as f:
+        with open(trcfile, "r") as f:
             lines = f.readlines()
         f.close()
 
@@ -797,8 +801,8 @@ class AlamoTrainer(SurrogateTrainer):
         # Get trace output from final line(s) of file
         # ALAMO will append new lines to existing trace files
         # For multiple outputs, each output has its own line in trace file
-        for j in range(len(self._output_labels)):
-            trace = lines[-len(self._output_labels)+j].split(", ")
+        for j in range(len(output_labels)):
+            trace = lines[-len(output_labels)+j].split(", ")
 
             for i in range(len(headers)):
                 header = headers[i].strip("#\n")
@@ -822,7 +826,7 @@ class AlamoTrainer(SurrogateTrainer):
                                 f"file. Values for {header}: "
                                 f"{trace_read[header]}, {header}")
                 else:
-                    trace_read[header][self._output_labels[j]] = trace_val
+                    trace_read[header][output_labels[j]] = trace_val
 
                 # Do some final sanity checks
                 if header == "OUTPUT":
@@ -834,12 +838,12 @@ class AlamoTrainer(SurrogateTrainer):
                 elif header == "Model":
                     # Var label on LHS should match output label
                     vlabel = trace_val.split("==")[0].strip()
-                    if vlabel != self._output_labels[j]:
+                    if vlabel != output_labels[j]:
                         raise RuntimeError(
                             f"Mismatch when reading ALAMO trace file. "
                             f"Label of output variable in expression "
                             f"({vlabel}) does not match expected label "
-                            f"({self._output_labels[j]}).")
+                            f"({output_labels[j]}).")
 
         return trace_read
 

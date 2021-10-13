@@ -528,7 +528,7 @@ class TestAlamoTrainer:
     @pytest.mark.unit
     def test_read_trace_single(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
                         '4.0000000000020765611453 * x2**2 - '
@@ -610,7 +610,7 @@ class TestAlamoTrainer:
         alamo_trainer._output_labels = ["z1", "z2"]
 
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace2.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
 
         mdict = {
             'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -704,7 +704,8 @@ class TestAlamoTrainer:
         with pytest.raises(RuntimeError,
                            match="Mismatch when reading ALAMO trace file. "
                            "Expected OUTPUT = 1, found 2."):
-            alamo_trainer._read_trace_file()
+            alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
+            
 
     @pytest.mark.unit
     def test_read_trace_label_mismatch(self, alamo_trainer):
@@ -715,12 +716,12 @@ class TestAlamoTrainer:
                            match="Mismatch when reading ALAMO trace file. "
                            "Label of output variable in expression "
                            "\(z2\) does not match expected label \(z3\)."):
-            alamo_trainer._read_trace_file()
+            alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
 
     @pytest.mark.unit
     def test_populate_results(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
         alamo_trainer._populate_results(trc)
 
         mdict = {'z1': (' z1 == 3.9999999999925446303450 * x1**2 - '
@@ -801,7 +802,7 @@ class TestAlamoTrainer:
     @pytest.mark.unit
     def test_build_surrogate_object(self, alamo_trainer):
         alamo_trainer._trcfile = os.path.join(dirpath, "alamotrace.trc")
-        trc = alamo_trainer._read_trace_file()
+        trc = alamo_trainer._read_trace_file(alamo_trainer._trcfile, alamo_trainer.output_labels())
         alamo_trainer._populate_results(trc)
         alamo_object = alamo_trainer._build_surrogate_object()
 
@@ -1249,7 +1250,7 @@ class TestWorkflow():
     def test_metrics(self, alamo_trainer):
         alamo_object = alamo_trainer._alamo_object
 
-        metrics = alamo_object.calculate_fit_metrics(TestWorkflow.training_data)
+        metrics = alamo_object.compute_fit_metrics(TestWorkflow.training_data)
 
         assert isinstance(metrics, TrainingMetrics)
 
