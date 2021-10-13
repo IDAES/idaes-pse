@@ -299,7 +299,7 @@ html_context = {
         "row2":[
             {
                 "alt": "Carnegie Mellon University logo", 
-                "src": "footer_logo_CMU.png", 
+                "src": "footer_logo_CMU.jpg", 
                 "href": "https://www.cmu.edu/"
             },
             {
@@ -326,7 +326,7 @@ html_context = {
             },
             {
                 "alt": "Department of Energy logo", 
-                "src": "footer_logo_DOE.jpeg", 
+                "src": "footer_logo_DOE.jpg", 
                 "href": "https://www.energy.gov/"
             },
         ]
