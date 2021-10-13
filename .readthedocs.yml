@@ -7,7 +7,7 @@ version: 2
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
-    fail_on_warning: true
+    fail_on_warning: false
 
 python:
     version: "3.8"
