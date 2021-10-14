@@ -206,6 +206,26 @@ def petsc_dae_by_time_element(
     ts_options=None,
     wsl=None,
 ):
+    """Solve a DAE problem step by step using the PETSc DAE solver.  This
+    integrates from one time point to the next.
+
+    Args:
+        m (Block): Pyomo model to solve
+        time (ContinuousSet): Time set
+        initial_constraints (list): Constraints to solve with in the initial
+            condition solve step.  This can include initial condition constraints
+            as well as other non-time-indexed constraints
+        initial_variables (list): This is a list of variables to fix after the
+            initial condition solve step.  If these variables were origially
+            unfixed, they will be unfixed at the end of the solve.
+        snes_options (dict): PETSc nonlinear equation solver options
+        ts_options (dict): PETSc time-stepping solver options.
+        wsl (bool): if True use WSL to run PETSc, if False don't use WSL to run
+            PETSc, if None automatic. The WSL is only for Windows.
+
+    Returns:
+        None (for now, should return some status)
+    """
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     time_disc = list(_generate_time_discretization(m, time))
@@ -223,6 +243,7 @@ def petsc_dae_by_time_element(
     # Context manager so we don't forget to reactivate
     with TemporarySubsystemManager(to_deactivate=time_disc):
         # Solver time steps
+        var_unfix = []
         for t in time:
             constraints = [con[t] for con in time_cons if t in con]
             variables = [var[t] for var in time_vars]
@@ -236,10 +257,12 @@ def petsc_dae_by_time_element(
                     variables
                 )
                 solver_snes.solve(t_block, tee=True)
+                for var in initial_variables:
+                    if not var.fixed:
+                        var.fix()
+                        var_unfix.append(var)
             else:
                 t_block = create_subsystem_block(constraints, variables)
-                for c in constraints:
-                    print(c)
                 differential_vars = _set_dae_suffixes_from_variables(
                     t_block, time, variables)
                 _copy_time(time_vars, tprev, t)
@@ -252,3 +275,5 @@ def petsc_dae_by_time_element(
                     options={"--ts_init_time":tprev, "--ts_max_time":t}
                 )
             tprev = t
+            for var in var_unfix:
+                var.unfix()
