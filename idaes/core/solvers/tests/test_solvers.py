@@ -13,7 +13,7 @@
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.features import lp, milp, nlp, minlp, sne
+from idaes.core.solvers.features import lp, milp, nlp, minlp, nle
 from idaes.core.solvers import ipopt_has_linear_solver
 from idaes.core.solvers import petsc
 
@@ -23,7 +23,7 @@ def test_couenne_available():
         raise Exception("Could not find couenne.")
 
 @pytest.mark.unit
-def test_couenne_available():
+def test_bonmin_available():
     if not pyo.SolverFactory('bonmin').available():
         raise Exception("Could not find bonmin.")
 
@@ -48,6 +48,11 @@ def test_ipopt_idaes_available():
 def test_cbc_available():
     if not pyo.SolverFactory('cbc').available():
         raise Exception("Could not find cbc.")
+
+@pytest.mark.unit
+def test_clp_available():
+    if not pyo.SolverFactory('clp').available():
+        raise Exception("Could not find clp.")
 
 @pytest.mark.unit
 def test_sipopt_idaes_solve():
@@ -87,7 +92,7 @@ def test_petsc_idaes_solve():
     Make sure there is no issue with the solver class or default settings that
     break the solver object.  Passing a bad solver option will result in failure
     """
-    m, x = sne()
+    m, x = nle()
     solver = petsc.get_petsc_solver(solver_type=petsc.PetscSolverType.SNES)
     solver.solve(m, tee=True)
     assert pytest.approx(x) == pyo.value(m.x) or pytest.approx(x) == pyo.value(-m.x)
@@ -123,5 +128,15 @@ def test_cbc_idaes_solve():
     m, x = milp()
     solver = pyo.SolverFactory('cbc')
     solver.solve(m)
-    m.display()
+    assert pytest.approx(x) == pyo.value(m.x)
+
+@pytest.mark.unit
+def test_clp_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = lp()
+    solver = pyo.SolverFactory('clp')
+    solver.solve(m)
     assert pytest.approx(x) == pyo.value(m.x)

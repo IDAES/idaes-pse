@@ -53,7 +53,7 @@ def milp():
     m.obj = pyo.Objective(expr=m.x + m.y)
     return m, 1
 
-def sne():
+def nle():
     """This provides a simple system of nonlinear equations model for solver
     testing.
 
