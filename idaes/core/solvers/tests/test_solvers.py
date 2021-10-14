@@ -13,8 +13,9 @@
 import pyomo.environ as pyo
 import pytest
 import idaes.core.plugins
-from idaes.core.solvers.features import lp, milp, nlp, minlp
+from idaes.core.solvers.features import lp, milp, nlp, minlp, sne
 from idaes.core.solvers import ipopt_has_linear_solver
+from idaes.core.solvers import petsc
 
 @pytest.mark.unit
 def test_couenne_available():
@@ -78,6 +79,18 @@ def test_ipopt_has_ma27():
             " more reliably with HSL linear solvers see https://www.hsl.rl.ac.uk/,"
             " or use solvers distributed by the IDAES project. See IDAES install"
             " guide.")
+
+@pytest.mark.unit
+@pytest.mark.skipif(not petsc.petsc_available(), reason="PETSc solver not available")
+def test_petsc_idaes_solve():
+    """
+    Make sure there is no issue with the solver class or default settings that
+    break the solver object.  Passing a bad solver option will result in failure
+    """
+    m, x = sne()
+    solver = petsc.get_petsc_solver(solver_type=petsc.PetscSolverType.SNES)
+    solver.solve(m, tee=True)
+    assert pytest.approx(x) == pyo.value(m.x) or pytest.approx(x) == pyo.value(-m.x)
 
 @pytest.mark.unit
 def test_bonmin_idaes_solve():

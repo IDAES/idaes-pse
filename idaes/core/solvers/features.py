@@ -16,7 +16,7 @@ import pyomo.environ as pyo
 from pyomo.common.errors import ApplicationError
 
 def lp():
-    """This provides a simple LP model form solver testing.
+    """This provides a simple LP model for solver testing.
 
     Args:
         None
@@ -35,7 +35,7 @@ def lp():
     return m, 1
 
 def milp():
-    """This provides a simple MILP model form solver testing.
+    """This provides a simple MILP model for solver testing.
 
     Args:
         None
@@ -53,8 +53,23 @@ def milp():
     m.obj = pyo.Objective(expr=m.x + m.y)
     return m, 1
 
+def sne():
+    """This provides a simple system of nonlinear equations model for solver
+    testing.
+
+    Args:
+        None
+
+    Returns:
+        (tuple): Pyomo ConcreteModel, correct solved value for m.x
+    """
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(initialize=-0.1)
+    m.eq1 = pyo.Constraint(expr=m.x**2 == 1)
+    return m, 1
+
 def nlp():
-    """This provides a simple NLP model form solver testing.
+    """This provides a simple NLP model for solver testing.
 
     Args:
         None
@@ -70,7 +85,7 @@ def nlp():
     return m, 1
 
 def minlp():
-    """This provides a simple MINLP model form solver testing.
+    """This provides a simple MINLP model for solver testing.
 
     Args:
         None
