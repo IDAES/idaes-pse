@@ -274,7 +274,7 @@ def petsc_dae_by_time_element(
                         tee=slc.tee,
                         #keepfiles=True,
                         #symbolic_solver_labels=True,
-                        force_in_nonlinear_constraint_vars=differential_vars,
+                        export_nonlinear_variables=differential_vars,
                         options={"--ts_init_time":tprev, "--ts_max_time":t}
                     )
             tprev = t
