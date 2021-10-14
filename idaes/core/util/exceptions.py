@@ -66,3 +66,10 @@ class PropertyPackageError(AttributeError):
     Needs to inherit from AttributeError for Pyomo interactions.
     """
     pass  # Bread stuck
+    
+class UserModelError(ValueError):
+    """
+    IDAES exception for when a user model returns unphysical values that
+    prevent further execution of code.
+    """
+    pass
