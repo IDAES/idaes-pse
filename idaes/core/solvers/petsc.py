@@ -226,6 +226,7 @@ def petsc_dae_by_time_element(
     Returns:
         None (for now, should return some status)
     """
+    solve_log = idaeslog.getSolveLogger("petsc-dae")
     regular_vars, time_vars = flatten_dae_components(m, time, pyo.Var)
     regular_cons, time_cons = flatten_dae_components(m, time, pyo.Constraint)
     time_disc = list(_generate_time_discretization(m, time))
@@ -256,7 +257,8 @@ def petsc_dae_by_time_element(
                     constraints + initial_constraints,
                     variables
                 )
-                solver_snes.solve(t_block, tee=True)
+                with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+                    res = solver_snes.solve(t_block, tee=slc.tee)
                 for var in initial_variables:
                     if not var.fixed:
                         var.fix()
@@ -266,14 +268,15 @@ def petsc_dae_by_time_element(
                 differential_vars = _set_dae_suffixes_from_variables(
                     t_block, time, variables)
                 _copy_time(time_vars, tprev, t)
-                solver_dae.solve(
-                    t_block,
-                    tee=True,
-                    #keepfiles=True,
-                    #symbolic_solver_labels=True,
-                    force_in_nonlinear_constraint_vars=differential_vars,
-                    options={"--ts_init_time":tprev, "--ts_max_time":t}
-                )
+                with idaeslog.solver_log(solve_log, idaeslog.INFO) as slc:
+                    res = solver_dae.solve(
+                        t_block,
+                        tee=slc.tee,
+                        #keepfiles=True,
+                        #symbolic_solver_labels=True,
+                        force_in_nonlinear_constraint_vars=differential_vars,
+                        options={"--ts_init_time":tprev, "--ts_max_time":t}
+                    )
             tprev = t
             for var in var_unfix:
                 var.unfix()
