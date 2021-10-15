@@ -29,7 +29,7 @@ from idaes.surrogate.alamopy import \
     AlamoTrainer, AlamoObject, Modelers, Screener, alamo
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.surrogate.metrics import TrainingMetrics
+from idaes.surrogate.metrics import compute_fit_metrics, TrainingMetrics
 
 
 dirpath = Path(__file__).parent.resolve()
@@ -1249,7 +1249,7 @@ class TestWorkflow():
     def test_metrics(self, alamo_trainer):
         alamo_object = alamo_trainer._alamo_object
 
-        metrics = alamo_object.calculate_fit_metrics(TestWorkflow.training_data)
+        metrics = compute_fit_metrics(alamo_object, TestWorkflow.training_data)
 
         assert isinstance(metrics, TrainingMetrics)
 
