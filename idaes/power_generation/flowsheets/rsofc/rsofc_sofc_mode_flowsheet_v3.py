@@ -1722,7 +1722,7 @@ def check_scaling(m):
     print(f"Jacobian Condition Number: {iscale.jacobian_cond(jac=jac):.2e}")
 
 
-def get_model(m=None, use_DNN=True):
+def get_model(m=None, use_DNN=False):
     # create model and flowsheet
     # m = pyo.ConcreteModel()
 
@@ -1767,4 +1767,4 @@ def get_model(m=None, use_DNN=True):
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
     m = get_model(m)
-    # check_scaling(m)
+    check_scaling(m)

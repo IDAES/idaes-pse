@@ -15,8 +15,8 @@ __author__ = "Chinedu Okoli", "John Eslick", "Alex Noring"
 
 # Import python modules
 import os
-# import csv
-# import numpy as np
+import csv
+import numpy as np
 # import matplotlib.pyplot as plt
 
 # Import pyomo modules
@@ -68,6 +68,9 @@ from idaes.generic_models.properties import iapws95
 # from idaes.generic_models.properties.helmholtz.helmholtz import (
 #     HelmholtzThermoExpressions as ThermoExpr,
 # )
+
+# Import costing
+from idaes.power_generation.flowsheets.rsofc import rsofc_costing as rsofc_cost
 
 import idaes.logger as idaeslog
 
@@ -1361,7 +1364,7 @@ def set_inputs(fs):
     fs.soec_heat_duty.fix(0)  # going for the thermoneutral point here
 
     fs.soec.fc.mole_frac_comp[:, 0, "H2"].fix(0.10)  # why not unfixed later
-    fs.soec.fc.flow_mol[:, 0].fix(8e-6)
+    fs.soec.fc.flow_mol[:, 0].fix(1e-5)
     fs.soec.ac.flow_mol[:, 0].fix(1e-5)
 
 
@@ -1431,10 +1434,11 @@ def initialize_plant(fs, solver):
 
     # Unfix some dof
     # TODO - maybe tie the unfixing of these vars to the add_constraint method
-    fs.bhx2.outlet.enth_mol.unfix()
-    fs.air_compressor_s1.inlet.flow_mol.unfix()
-    fs.ng_preheater.tube_inlet.flow_mol.unfix()
-    fs.soec.E_cell.unfix()
+    fs.bhx2.outlet.enth_mol.unfix()  # related to soec_steam_temperature eqn
+    fs.air_compressor_s1.inlet.flow_mol.unfix()  #  related to fixing soec.ac.flow_mol
+    fs.ng_preheater.tube_inlet.flow_mol.unfix()  # related to fixing soec.fc.flow_mol
+    fs.soec.E_cell.unfix()  # related to thermoneutral point i.e. soec_heat_duty.fix(0)
+
     # Solve soec model alone before flowsheet solve to check that it converges
     # solver.solve(fs.soec, tee=True, symbolic_solver_labels=True)
     # Unfix because cell is solved as thermoneutral (soec_heat_duty.fix(0))
@@ -1478,7 +1482,7 @@ def initialize_plant(fs, solver):
                        "max_iter": 200,
                        "tol": 1e-7,
                        "bound_push": 1e-12,
-                       "linear_solver": "ma27"
+                       "linear_solver": "ma57"
                            },
                  symbolic_solver_labels=True)
 
@@ -1673,7 +1677,7 @@ def get_solver():
     idaes.cfg.ipopt["options"]["tol"] = 1e-7
     # due to a lot of component mole fractions being on their lower bound of 0
     # bound push result in much longer solve times, so set it low.
-    idaes.cfg.ipopt["options"]["halt_on_ampl_error"] = 'yes'
+    # idaes.cfg.ipopt["options"]["halt_on_ampl_error"] = 'yes'
     idaes.cfg.ipopt["options"]["bound_push"] = 1e-12
     idaes.cfg.ipopt["options"]["linear_solver"] = "ma57"
     idaes.cfg.ipopt["options"]["max_iter"] = 200
@@ -1703,11 +1707,17 @@ def tag_inputs_opt_vars(fs):
         display_units=None,
         doc="H2 side inlet H2 mole frac (from recycle)",
     )
-    tags["sweep_o2_frac"] = iutil.ModelTag(
-        expr=fs.soec.ac.mole_frac_comp[0, 0, "O2"],
+    tags["feed_water_flow"] = iutil.ModelTag(
+        expr=fs.aux_boiler_feed_pump.inlet.flow_mol[0],
         format_string="{:.3f}",
         display_units=None,
-        doc="O2 side inlet O2 mole frac (from recycle)",
+        doc="Feed water flow (provides steam to soec fuel side)",
+    )
+    tags["sweep_air_flow"] = iutil.ModelTag(
+        expr=fs.air_compressor_s1.inlet.flow_mol[0],
+        format_string="{:.3f}",
+        display_units=None,
+        doc="Air flow to soec air side",
     )
     tags["single_cell_heat_required"] = iutil.ModelTag(
         expr=fs.soec_heat_duty[0],
@@ -1769,6 +1779,12 @@ def tag_inputs_opt_vars(fs):
         format_string="{:.3f}",
         display_units=pyo.units.m**2,
         doc="air_preheater_2 area",
+    )
+    tags["hydrogen_product_rate"] = iutil.ModelTag(
+        expr=fs.hydrogen_product_rate[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kmol / pyo.units.s,
+        doc="Rate of hydrogen production",
     )
     fs.tag_input = tags
     display_input_tags(fs)
@@ -1855,6 +1871,43 @@ def tag_for_pfd_and_tables(fs):
         display_units=pyo.units.V
     )
 
+    tag_group["h2_product_rate_mass"] = iutil.ModelTag(
+        expr=fs.h2_product_rate_mass[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.kg / pyo.units.s,
+    )
+    # tag_group["co2_product_rate"] = iutil.ModelTag(
+    #     expr=fs.co2_product_rate[0],
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.kmol / pyo.units.s,
+    # )
+    # tag_group["co2_product_rate_mass"] = iutil.ModelTag(
+    #     expr=fs.co2_product_rate_mass[0],
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.kg / pyo.units.s,
+    # )
+    # tag_group["fuel_rate"] = iutil.ModelTag(
+    #     expr=fs.ng_preheater.shell.properties_in[0].flow_mol,
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.kmol / pyo.units.s,
+    # )
+    # tag_group["fuel_rate_mass"] = iutil.ModelTag(
+    #     expr=fs.ng_preheater.shell.properties_in[0].flow_mass,
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.kg / pyo.units.s,
+    # )
+    # tag_group["electric_power"] = iutil.ModelTag(
+    #     expr=fs.electric_power[0],
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.MW,
+    # )
+    # tag_group["electric_power_per_mass_h2"] = iutil.ModelTag(
+    #     expr=fs.electric_power_per_mass_h2[0],
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.MWh/pyo.units.kg,
+    # )
+
+    tag_group["status"] = iutil.ModelTag(expr=None, format_string="{}")
     fs.tag_pfd = tag_group
 
 
@@ -1919,7 +1972,7 @@ def write_pfd_results(m, filename, infilename=None):
     if infilename is None:
         infilename = os.path.join(this_file_dir(), "rsofc_soec_mode.svg")
     with open(infilename, "r") as f:
-        iutil.svg_tag(svg=f, tag_group=m.tag_pfd, outfile=filename)
+        iutil.svg_tag(svg=f, tag_group=m.soec_fs.tag_pfd, outfile=filename)
 
 
 def get_model(m=None, name="SOEC Module"):
@@ -1958,11 +2011,204 @@ def get_model(m=None, name="SOEC Module"):
     tag_for_pfd_and_tables(m.soec_fs)
 
     display_input_tags(m.soec_fs)
-    return m
 
+    return m, solver
+
+def residual_checker(m):
+    # Print model constraints - residual checker
+    with open('model_residuals.txt','w') as f:
+        for v in m.component_data_objects(pyo.Constraint, descend_into=True, active=True):
+            residual_value = abs(v.body() - v.lower())
+            if residual_value >= 1e-6:
+                a = " FAIL"
+            else:
+                a = " PASS"
+            residual_print = [str(v.name), ": value = ", str(residual_value), a, " \n"]
+            f.writelines(residual_print)
+def variables_generator(
+        block, tol=1e-6, relative=True, skip_lb=False, skip_ub=False):
+    """
+    Generator which returns all Var components in a model which have a value
+    within tol (default: relative) of a bound.
+
+    Args:
+        block : model to be studied
+        tol : (relative) tolerance for inclusion in generator (default = 1e-4)
+        relative : Boolean, use relative tolerance (default = True)
+        skip_lb: Boolean to skip lower bound (default = False)
+        skip_ub: Boolean to skip upper bound (default = False)
+
+    Returns:
+        A generator which returns all Var components block that are close to a
+        bound
+    """
+    for v in block.component_data_objects(
+            ctype=pyo.Var, active=True, descend_into=True):
+        # To avoid errors, check that v has a value
+        if v.value is None:
+            continue
+        if v.value is not None:
+            yield v
 
 if __name__ == "__main__":
     m = pyo.ConcreteModel()
-    m = get_model(m)
+    m, solver = get_model(m)
     # check_scaling(m)
     # write_pfd_results(m, "soec_init.svg")
+  
+
+    # Did not fix area of air preheater 2 as that it uses the outlet T as the dof instead
+    # m.soec_fs.air_preheater_2.tube_outlet.temperature[0].unfix()
+    m.soec_fs.air_preheater_2.overall_heat_transfer_coefficient.unfix()
+    m.soec_fs.air_preheater_2.area.fix()
+
+    # m.soec_fs.bhx1.delta_temperature_out.unfix()
+    m.soec_fs.bhx1.overall_heat_transfer_coefficient.unfix()
+    m.soec_fs.bhx1.area.fix()
+
+    # m.soec_fs.air_preheater_1.delta_temperature_in.unfix()
+    m.soec_fs.air_preheater_1.overall_heat_transfer_coefficient.unfix()
+    m.soec_fs.air_preheater_1.area.fix()
+
+    # m.soec_fs.oxygen_preheater.delta_temperature_in.unfix()
+    m.soec_fs.oxygen_preheater.overall_heat_transfer_coefficient.unfix() 
+    m.soec_fs.oxygen_preheater.area.fix()
+
+    m.soec_fs.ng_preheater.overall_heat_transfer_coefficient.unfix()   
+    m.soec_fs.ng_preheater.area.fix()
+
+    print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
+
+    m.soec_fs.tag_input["hydrogen_product_rate"].fix()
+    m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].unfix()
+    solver.solve(m, tee=True)
+
+    m.soec_fs.visualize("rSOEC Flowsheet")  # visualize flowsheet
+
+    # rsofc_cost.get_rsofc_capital_costing(m)
+    # rsofc_cost.lock_capital_cost(m)
+    # rsofc_cost.get_rsofc_fixed_OM_costing(m, 650)
+    # rsofc_cost.get_rsofc_soec_variable_OM_costing(m.soec_fs)
+
+    # iscale.calculate_scaling_factors(m.fs.costing)
+    # iscale.calculate_scaling_factors(m.soec_fs.costing)
+
+    # solver.solve(m, tee=True)
+
+    # m.fs.costing.display()
+    # m.soec_fs.H2_costing.display()
+
+    import sys
+    sys.exit('stop')
+    # strip_bounds = pyo.TransformationFactory("contrib.strip_var_bounds")
+    # strip_bounds.apply_to(m, reversible=False)
+
+    m.soec_fs.sweep_constraint = pyo.Constraint(
+        expr=1e2* m.soec_fs.tag_input["single_cell_sweep_flow"].expression
+        ==
+        1e2* m.soec_fs.tag_input["single_cell_h2_side_inlet_flow"].expression
+    )
+    m.soec_fs.tag_input["single_cell_sweep_flow"].unfix()
+    m.soec_fs.tag_input["sweep_air_flow"].unfix()
+    m.soec_fs.tag_input["sweep_air_flow"].setlb(1000)
+    m.soec_fs.tag_input["sweep_air_flow"].setub(20000)
+
+    # m.soec_fs.tag_input["feed_water_flow"].unfix()  # redundant as already unfixed
+    # m.soec_fs.tag_input["feed_water_flow"].setlb(1000)
+    # m.soec_fs.tag_input["feed_water_flow"].setub(10000)
+
+    # # TODO - is the sum of mole frac needed for this constraint?
+    # m.soec_fs.tag_input["feed_h2_frac"].unfix()
+    # m.soec_fs.tag_input["feed_h2_frac"].setlb(0.001)
+    # m.soec_fs.tag_input["feed_h2_frac"].setub(0.98)
+
+    # m.soec_fs.tag_input["preheat_fg_split_to_air"].unfix()
+    # m.soec_fs.tag_input["preheat_fg_split_to_air"].setlb(0.85)
+    # m.soec_fs.tag_input["preheat_fg_split_to_air"].setub(0.95)
+
+    # m.soec_fs.tag_input["recover_split_to_hxh2"].unfix()
+    # m.soec_fs.tag_input["recover_split_to_hxh2"].setlb(0.20)
+    # m.soec_fs.tag_input["recover_split_to_hxh2"].setub(0.80)
+
+    m.soec_fs.spltf1.split_fraction[:, "out"].setlb(0.001)
+    m.soec_fs.spltf1.split_fraction[:, "out"].setub(0.999)
+
+    # m.soec_fs.splta1.split_fraction[:, "out"].setlb(0.001)
+    # m.soec_fs.splta1.split_fraction[:, "out"].setub(0.95)
+
+    # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.fix(20e5)
+    # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setlb(1.1e5)
+    # m.soec_fs.aux_boiler_feed_pump.outlet.pressure.setub(40e5)
+
+    # m.soec_fs.obj = pyo.Objective(
+    #     expr=m.soec_fs.ng_preheater.tube_inlet.flow_mol[0] / 10)
+    # m.soec_fs.obj = pyo.Objective(expr=-m.soec_fs.hxh2.shell_outlet.mole_frac_comp[0, "H2"]*10)
+    # m.soec_fs.obj = pyo.Objective(expr=m.soec_fs.H2_costing.total_variable_OM_cost[0])
+
+    # m.soec_fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
+    #     expr=m.soec_fs.H2_costing.total_variable_OM_cost[0],
+    #     format_string="{:.3f}",
+    #     display_units=pyo.units.USD / pyo.units.kg,
+    #     doc="Variable Hydrogen Production Cost",
+    # )
+
+    cols_input = ("hydrogen_product_rate",)
+    cols_pfd = (
+        "status",
+        # "total_variable_OM_cost",
+        "h2_product_rate_mass",
+        # "co2_product_rate",
+        # "co2_product_rate_mass",
+        # "soec_power",
+        # "h2_compressor_power",
+        # "feed_pump_power",
+        # "fuel_rate",
+        # "fuel_rate_mass",
+        # "electric_power",
+        # "electric_power_per_mass_h2",
+    )
+
+    head_1 = m.soec_fs.tag_input.table_heading(tags=cols_input, units=True)
+    head_2 = m.soec_fs.tag_pfd.table_heading(tags=cols_pfd, units=True)
+    with open("opt_res.csv", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(head_1 + head_2)
+    for h in np.linspace(2.5, 0.1, 25):  # Generate 25 points btw 2.5 to 0.1
+        m.soec_fs.tag_input["hydrogen_product_rate"].fix(
+            float(h) * pyo.units.kmol / pyo.units.s
+        )
+        print(f"Hydrogen product rate {m.soec_fs.tag_input['hydrogen_product_rate']}.")
+        # idaes.cfg.ipopt["options"]["max_iter"] = 5
+        res = solver.solve(m.soec_fs, tee=True, symbolic_solver_labels=True,
+                           options={"max_iter":100})
+
+        # generator=variables_generator(m.soec_fs.soec)
+        # # generator2=variables_near_bounds_generator(m, tol=1e-6)
+               
+    
+        # sourceFile = open('model_variables.txt', 'w')          
+        # for v in generator:
+        #     print("var_name: %a, var_lb: %a, var_value: %a, var_ub: %a" %(
+        #             v.name, pyo.value(v.lb), v.value, pyo.value(v.ub)),
+        #             file=sourceFile)  
+        # sourceFile.close()
+
+
+
+        # # m.soec_fs.soec.fe.mole_frac_comp.display()
+        # # m.soec_fs.soec.ae.mole_frac_comp.display()
+        # residual_checker(m.soec_fs.soec)
+        # import sys
+        # sys.exit('stop')
+        
+        stat = idaeslog.condition(res)
+        m.soec_fs.tag_pfd["status"].set(stat)
+        # soec_cost.display_soec_costing(m)
+        row_1 = m.soec_fs.tag_input.table_row(tags=cols_input, numeric=True)
+        row_2 = m.soec_fs.tag_pfd.table_row(tags=cols_pfd, numeric=True)
+        with open("opt_res.csv", "a", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(row_1 + row_2)
+        # write_pfd_results(
+        #     m, f"soec_{m.tag_input['hydrogen_product_rate'].display(units=False)}.svg"
+        # )
