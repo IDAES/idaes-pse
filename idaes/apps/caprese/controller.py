@@ -75,8 +75,9 @@ class _ControllerBlockData(_DynamicBlockData):
         self.has_estimator = False
 
     def solve_setpoint(self, solver, **kwargs):
+        ic_type = kwargs.pop("ic_type", "measurement_var")
         self.solve_single_time_optimization(
-            solver, ic_type="measurement_var", load_setpoints=True, **kwargs
+            solver, ic_type=ic_type, load_setpoints=True, **kwargs
         )
 
     def add_tracking_objective(self,
