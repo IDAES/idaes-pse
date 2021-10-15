@@ -30,7 +30,7 @@ import idaes.logger as idaeslog
 from .electrolyte_states import \
     define_electrolyte_state, calculate_electrolyte_scaling
 import idaes.core.util.scaling as iscale
-from idaes.core.util.exceptions import BurntToast, UserModelError
+from idaes.core.util.exceptions import UserModelError
 
 
 # Set up logger
@@ -287,15 +287,22 @@ def define_state(b):
 
 
 def state_initialization(b):
+    # Need to do sanity checking of mole fractions for ideal phase fraction
+    # calculations
     for j in b.component_list:
         if value(b.mole_frac_comp[j]) <= -1E-6:
             raise ValueError(f"Component {j} has a negative "
                              f"mole fraction in block {b.getname()}. "
                              "Check your initialization.")
     
-    if sum([value(b.mole_frac_comp[j]) for j in b.component_list]) >= 1.01:
-        raise ValueError(f"Mole fractions in block {b.getname()} sum to value "
-                         "greater than 1.")
+    # Mole fractions that add up to a value less than 1 are mathematically
+    # equivalent to a phantom nonvaporizable component in the ideal phase
+    # fraction calculations. Nevertheless, since we need to check for values 
+    # greater than 1, we might as well check values less than 1
+    if abs(sum([value(b.mole_frac_comp[j]) 
+                for j in b.component_list])-1) >= 0.01:
+        raise ValueError(f"Mole fractions in block {b.getname()} do not "
+                         "add up to 1.")
 
     vl_comps = []
     henry_comps = []
@@ -354,7 +361,7 @@ def state_initialization(b):
                                          f"your implementation and parameters.")
                 for j in henry_comps:
                     if H[j] <= -1E-6:
-                        raise ConfigurationError(f"Component {j} has a negative "
+                        raise UserModelError(f"Component {j} has a negative "
                                          f"Henry's Law constant in block "
                                          f"{b.getname()}. Check "
                                          f"your implementation and parameters.")
