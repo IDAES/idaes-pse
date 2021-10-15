@@ -339,12 +339,6 @@ class _EstimatorBlockData(_DynamicBlockData):
             #Deactivate the original/undisturbed differential equs
             curr_difeq.deactivate() 
 
-    def solve_steady_state(self, solver, **kwargs):
-        assert kwargs.pop("isMHE_block", True)
-        self.solve_single_time_optimization(
-            solver, **kwargs
-        )
-
     def initialize_actualmeasurements_at_t0(self):
         t0 = self.time.first()
         for ind in self.MEASUREMENT_SET:

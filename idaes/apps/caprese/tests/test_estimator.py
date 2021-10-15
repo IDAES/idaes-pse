@@ -535,7 +535,7 @@ class TestEstimatorBlock(object):
         
                 
     @pytest.mark.unit
-    def test_add_steady_state_objective(self):
+    def test_add_steady_state_objective_for_MHE_initialization(self):
         estimator = self.make_estimator()
         time = estimator.time
         t0 = time.first()
@@ -578,7 +578,7 @@ class TestEstimatorBlock(object):
         
     @pytest.mark.component
     @pytest.mark.skipif(not solver_available, reason='IPOPT is not available')
-    def test_solve_steady_state(self):
+    def test_solve_steady_state_for_MHE_initialization(self):
         estimator = self.make_estimator()
         time = estimator.time
         t0 = time.first()
@@ -593,12 +593,12 @@ class TestEstimatorBlock(object):
         initialize_t0(estimator.mod)
 
         dof_prior = degrees_of_freedom(estimator)
-        estimator.solve_steady_state(
-            solver,
-            isMHE_block=True,
-            ic_type="differential_var",
-            restore_ic_input_after_solve=False,
-        )
+        estimator.solve_single_time_optimization(solver, 
+                                            ic_type = "differential_var",
+                                            require_steady = True,
+                                            load_setpoints = False,
+                                            restore_ic_input_after_solve = False,
+                                            isMHE_block = True,)
         dof_post = degrees_of_freedom(estimator)
 
         assert dof_prior == dof_post
@@ -806,3 +806,5 @@ class TestEstimatorBlock(object):
         for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals2):
             assert b.var[t_last].value == val
 
+abc = TestEstimatorBlock()
+abc.test_solve_steady_state()
