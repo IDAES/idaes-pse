@@ -19,7 +19,7 @@ Author: B. Paul
 # Import statements
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn
+# TODO: Consider adding seaborn in future
 from matplotlib.backends.backend_pdf import PdfPages
 
 from itertools import combinations  # used to pick xvar pairs in scatter3D
