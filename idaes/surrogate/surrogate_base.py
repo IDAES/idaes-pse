@@ -18,7 +18,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, ConfigList
 from pyomo.core.base.global_set import UnindexedComponent_set
 import os.path, pickle
 
-from idaes.surrogate.metrics import TrainingMetrics
+from idaes.surrogate.metrics import compute_fit_metrics
 
 
 class TrainingStatus(object):
@@ -126,44 +126,47 @@ class SurrogateTrainer(object):
         raise NotImplementedError('train_surrogate called, but not implemented on the derived class')
 
 
-# TODO: This needs to have 
 class SurrogateBase():
-    """
-    Base class for standard IDAES Surrogate Object
-    """
-    # TODO: remove "surrogate"
-    def __init__(self, surrogate, input_labels=None, output_labels=None,
-                 input_bounds=None):
-        self._surrogate = surrogate
+    def __init__(self, input_labels=None, output_labels=None, input_bounds=None):
+        """
+        Base class for standard IDAES Surrogate object. This class is responsible for
+        being able to load/save a surrogate model, evaluate the model given an input
+        dataframe, and populating a block to provide an EO representation of the
+        surrogate for solving in IDAES.
+
+        Args:
+           input_labels: list
+              list of labels corresponding to the inputs (in order)
+           output_labels: list
+              list of labels corresponding to the outputs (in order)
+           input_bounds: dict of tuples
+              A dictionary where the keys correspond to the input label,
+              and the values are tuples of bounds (lower,upper). These
+              should represent the valid range for the input variables
+        """
         self._input_labels = input_labels
         self._output_labels = output_labels
-        self._input_bounds = input_bounds  # dict of bounds for each label
+        self._input_bounds = input_bounds
 
-    # TODO: make these properties in SurrogateTrainer as well?
-    @property
     def n_inputs(self):
         return len(self._input_labels)
 
-    @property
     def n_outputs(self):
         return len(self._output_labels)
 
-    @property
     def input_labels(self):
         return self._input_labels
 
-    @property
     def output_labels(self):
         return self._output_labels
 
-    @property
     def input_bounds(self):
         return self._input_bounds
 
     def populate_block(self, block, **kwargs):
         """
-        Placeholder method to populate a Pyomo Block with surrogate model
-        constraints.
+        Method to populate a Pyomo Block with surrogate model
+        constraints and variables.
 
         Args:
             block: Pyomo Block component to be populated with constraints.
@@ -180,7 +183,6 @@ class SurrogateBase():
         raise NotImplementedError(
             "SurrogateModel class has not implemented populate_block method.")
 
-    # TODO: Change this to take dataframe as input - include a method that get's the numpy ndarray for this
     def evaluate_surrogate(self, dataframe):
         """
         Placeholder method to evaluate surrogate model at a set of user
@@ -196,7 +198,7 @@ class SurrogateBase():
             "SurrogateModel class has not implemented an evaluate_surrogate "
             "method.")
 
-    # todo: this should serialize to a stream
+    # TODO: this should serialize to a stream instead of a file
     def save(self, filename):
         """
         Save an instance of this surrogate to be used in a model later
@@ -204,8 +206,7 @@ class SurrogateBase():
         raise NotImplementedError('"save" should be implemented in the derived'
                                   ' SurrogateObject class')
 
-    # TODO: it is recommended that you add a "load" static method to build
-    #       a derived surrogate object from the file on disk
+    @staticmethod
     def load(self, filename):
         """
         Load an instance of this surrogate from a file
@@ -213,5 +214,18 @@ class SurrogateBase():
         raise NotImplementedError('"load" should be implemented in the derived'
                                   ' SurrogateObject class')
 
-    def calculate_metrics(self, test_data):
-        return TrainingMetrics.build_metrics(self, test_data)
+    def compute_fit_metrics(self, data):
+        """
+        This method computes a variety of metrics regarding the fit of the 
+        surrogate to the data provided.
+
+        Args:
+           data : pandas DataFrame
+              pandas DataFrame that includes columns for the inputs and the outputs.
+              Metrics for the quality of fit will be computed across all the rows in
+              the provided data.
+
+        Returns:
+           TrainingMetrics object
+        """
+        return compute_fit_metrics(self, data)

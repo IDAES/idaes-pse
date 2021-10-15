@@ -443,8 +443,9 @@ class AlamoTrainer(SurrogateTrainer):
     CONFIG.declare("filename", ConfigValue(
         default=None,
         domain=str,
-        description="File name to use for ALAMO files - must be full path. "
-        "If this option is not None, then working files will not be deleted."))
+        description="File name to use for ALAMO files - must be full path of a .alm file."
+        " Other files will be defined from this pattern. If this option is not None,"
+        " then working files will not be deleted."))
     CONFIG.declare("working_directory", ConfigValue(
         default=None,
         domain=str,
@@ -456,6 +457,8 @@ class AlamoTrainer(SurrogateTrainer):
         description="Flag indicating whether existing files can be "
         "overwritten."))
 
+    #TODO: We need to do some processing of the labels since ALAMO is restrictive about the labels
+    #TODO: We need to think more carefully about "input_bounds". Alamo uses bounds during training, but we also want to consider "valid" bounds for the surrogate
     def __init__(self, **settings):
         super().__init__(**settings)
 
@@ -864,7 +867,7 @@ class AlamoTrainer(SurrogateTrainer):
             AlamoObject
         """
         return AlamoObject(
-            surrogate=self._results["Model"],
+            surrogate_expressions=self._results["Model"],
             input_labels=self._input_labels,
             output_labels=self._output_labels,
             input_bounds=self._input_bounds)
@@ -899,9 +902,9 @@ class AlamoObject(SurrogateBase):
     """
 
     def __init__(
-            self, surrogate, input_labels, output_labels, input_bounds=None):
-        super(AlamoObject, self).__init__(
-            surrogate, input_labels, output_labels, input_bounds)
+            self, surrogate_expressions, input_labels, output_labels, input_bounds=None):
+        super(AlamoObject, self).__init__(input_labels, output_labels, input_bounds)
+        self._surrogate_expressions = surrogate_expressions
 
     def evaluate_surrogate(self, inputs):
         """
@@ -921,10 +924,10 @@ class AlamoObject(SurrogateBase):
         for o in self._output_labels:
             fcn[o] = eval(
                 f"lambda {', '.join(self._input_labels)}: "
-                f"{self._surrogate[o].split('==')[1]}",
+                f"{self._surrogate_expressions[o].split('==')[1]}",
                 GLOBAL_FUNCS)
 
-        # Use numpy to do the calcuations as it is faster
+        # Use numpy to do the calculations as it is faster
         inputdata = inputs[self._input_labels].to_numpy()
         outputs = np.zeros(shape=(inputs.shape[0], len(self._output_labels)))
 
@@ -932,7 +935,8 @@ class AlamoObject(SurrogateBase):
             for o in range(len(self._output_labels)):
                 o_name = self._output_labels[o]
                 outputs[i, o] = value(fcn[o_name](*inputdata[i, :]))
-        return pd.DataFrame(outputs, columns=self._output_labels)
+
+        return pd.DataFrame(data=outputs, index=inputs.index, columns=self._output_labels)
 
     def populate_block(self, block, **kwargs):
         """
@@ -979,7 +983,7 @@ class AlamoObject(SurrogateBase):
             if len(args) > 0:
                 for k, v in variables.items():
                     lvars[k] = v[args]
-            return eval(self._surrogate[o], GLOBAL_FUNCS, lvars)
+            return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
 
         block.add_component(
             "alamo_constraint",
@@ -991,7 +995,7 @@ class AlamoObject(SurrogateBase):
         def alamo_rule(b, o):
             lvars = block._input_vars_as_dict()
             lvars.update(block._output_vars_as_dict())
-            return eval(self._surrogate[o], GLOBAL_FUNCS, lvars)
+            return eval(self._surrogate_expressions[o], GLOBAL_FUNCS, lvars)
 
         block.alamo_constraint = Constraint(output_set, rule=alamo_rule)
 
@@ -1006,7 +1010,7 @@ class AlamoObject(SurrogateBase):
         Retruns:
             stream
         """
-        json.dump({"surrogate": self._surrogate,
+        json.dump({"surrogate": self._surrogate_expressions,
                    "input_labels": self._input_labels,
                    "output_labels": self._output_labels,
                    "input_bounds": self._input_bounds},
@@ -1014,9 +1018,10 @@ class AlamoObject(SurrogateBase):
 
         return stream
 
-    def from_json(self, js):
+    @staticmethod
+    def create_from_json(js):
         """
-        Method to populate surrogate model attribtues based on data stored in
+        Method to create an AlamoObject based on data stored in
         a json string.
 
         Args:
@@ -1024,14 +1029,19 @@ class AlamoObject(SurrogateBase):
         """
         d = json.loads(js)
 
-        self._surrogate = d["surrogate"]
-        self._input_labels = d["input_labels"]
-        self._output_labels = d["output_labels"]
+        surrogate_expressions = d["surrogate"]
+        input_labels = d["input_labels"]
+        output_labels = d["output_labels"]
 
         # Need to convert list of bounds to tuples
-        self._input_bounds = {}
+        input_bounds = {}
         for k, v in d["input_bounds"].items():
-            self._input_bounds[k] = tuple(v)
+            input_bounds[k] = tuple(v)
+
+        return AlamoObject(surrogate_expressions=surrogate_expressions,
+                           input_labels=input_labels,
+                           output_labels=output_labels,
+                           input_bounds=input_bounds)
 
     def save(self, filename, overwrite=False):
         """
@@ -1067,7 +1077,4 @@ class AlamoObject(SurrogateBase):
             js = f.read()
         f.close()
 
-        alm_surr = AlamoObject({}, [], [])
-        alm_surr.from_json(js)
-
-        return alm_surr
+        return AlamoObject.create_from_json(js)
