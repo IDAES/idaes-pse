@@ -769,7 +769,7 @@ class TestEstimatorBlock(object):
         estimator.vectors.input[...].set_value(0.5)
         
         input = [100.]
-        estimator.load_inputs_for_MHE(input)
+        estimator.load_inputs_into_last_sample(input)
         
         spi = estimator.sample_point_indices
         check_t_list = [tp for tp in time if tp > time[spi[-2]] and tp <= time[spi[-1]]]

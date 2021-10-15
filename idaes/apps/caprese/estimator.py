@@ -479,7 +479,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             dof = degrees_of_freedom(self)
             assert dof == correct_dof  
 
-    def load_inputs_for_MHE(self, inputs):
+    def load_inputs_into_last_sample(self, inputs):
         sample_points = self.sample_points
         # Accessing these entries is valid because sample_points
         # should always have length of at least two.

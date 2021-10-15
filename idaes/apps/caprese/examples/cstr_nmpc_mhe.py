@@ -234,7 +234,7 @@ def main():
     dyna.estimator.load_measurements(measurements,
                                      target = "actualmeasurement",
                                      timepoint = estimator.time.last())
-    dyna.estimator.load_inputs_for_MHE(inputs)
+    dyna.estimator.load_inputs_into_last_sample(inputs)
     
     # Solve the first estimation problem
     dyna.estimator.check_var_con_dof(skip_dof_check = False)
@@ -267,7 +267,7 @@ def main():
         dyna.estimator.load_measurements(measurements,
                                          target = "actualmeasurement",
                                          timepoint = estimator.time.last())
-        dyna.estimator.load_inputs_for_MHE(inputs)
+        dyna.estimator.load_inputs_into_last_sample(inputs)
         
         dyna.estimator.check_var_con_dof(skip_dof_check = False)
         solver.solve(dyna.estimator, tee = True)

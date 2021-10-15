@@ -140,7 +140,7 @@ def main():
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
-    mhe.estimator.load_inputs_for_MHE(mhe.plant.generate_inputs_at_time(p_ts))
+    mhe.estimator.load_inputs_into_last_sample(mhe.plant.generate_inputs_at_time(p_ts))
 
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
@@ -175,7 +175,7 @@ def main():
         mhe.estimator.load_measurements(measurements,
                                         target = "actualmeasurement",
                                         timepoint = estimator.time.last())
-        mhe.estimator.load_inputs_for_MHE(inputs)
+        mhe.estimator.load_inputs_into_last_sample(inputs)
         
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
