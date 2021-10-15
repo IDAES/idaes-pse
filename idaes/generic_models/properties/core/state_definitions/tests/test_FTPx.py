@@ -237,16 +237,6 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
                 str(frame.props[1].phase_frac[i])
 
         assert_units_consistent(frame.props[1])
-        
-    @pytest.mark.unit
-    def test_runtime_error(self,frame):
-        
-        with pytest.raises(RuntimeError,
-                           match = "Could not calculate ideal vapor fraction "
-                           "in initialization of block props. Check that mole "
-                           "fractions and saturation pressures have "
-                           "reasonable values."):
-            raise_runtime_error(frame.props)
 
 
 class Test1PhaseDefinedStateTrueWithBounds(object):
@@ -1123,6 +1113,40 @@ class TestCommon(object):
         assert isinstance(frame.props[1].conc_mol_phase_comp, Expression)
         assert len(frame.props[1].conc_mol_phase_comp) == 6
         
+    @pytest.mark.unit
+    def test_runtime_error(self,frame):        
+        with pytest.raises(RuntimeError,
+                           match = "Could not calculate ideal vapor fraction "
+                           "in initialization of block props. Check that mole "
+                           "fractions and saturation pressures have "
+                           "reasonable values."):
+            raise_runtime_error(frame.props)
+    @pytest.mark.unit
+    def test_unphysical_mol_fraction_fails(self,frame):
+        frame.props[1].mole_frac_comp["c1"].value = -0.1
+        with pytest.raises(ValueError,
+                           match = "Component c1 has a negative mole fraction "
+                           "in block props\[1\]. Check your initialization."):
+            frame.props[1].params.\
+                config.state_definition.state_initialization(frame.props[1])
+        frame.props[1].mole_frac_comp["c1"].value = 0.4
+        frame.props[1].mole_frac_comp["c2"].value = 0.4
+        frame.props[1].mole_frac_comp["c3"].value = 0.4
+        with pytest.raises(ValueError,
+                           match = "Mole fractions in block props\[1\] do not "
+                           "add up to 1."):
+            frame.props[1].params.\
+                config.state_definition.state_initialization(frame.props[1])
+        frame.props[1].mole_frac_comp["c1"].value = 0.3
+        frame.props[1].mole_frac_comp["c2"].value = 0.3
+        frame.props[1].mole_frac_comp["c3"].value = 0.3
+        with pytest.raises(ValueError,
+                           match = "Mole fractions in block props\[1\] do not "
+                           "add up to 1."):
+            frame.props[1].params.\
+                config.state_definition.state_initialization(frame.props[1])
+        
+        
 @pytest.mark.unit
 def test_henry_fail():
     m = ConcreteModel()
@@ -1159,7 +1183,7 @@ def test_henry_fail():
     
     m.state[0].params._pe_pairs = Set(initialize=(("Liq","Vap"),),
                                  ordered=True)
-    with pytest.raises(ConfigurationError,
+    with pytest.raises(UserModelError,
                 match="Component H2O has a negative Henry's Law constant in "
                     "block state\[0\]. Check your implementation and "
                     "parameters."):
