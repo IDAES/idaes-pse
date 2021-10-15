@@ -21,6 +21,9 @@ from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
 from idaes.apps.caprese.data_manager import PlantDataManager
+from idaes.apps.caprese.plotlibrary import (
+        plot_plant_state_evolution,
+        plot_control_input)
 
 __author__ = "Kuan-Han Lin"
 
@@ -57,7 +60,7 @@ def main():
             m_plant.fs.cstr.outlet.temperature[0],
             m_plant.fs.cstr.volume[0],
             ]
-    
+
     # Construct the "plant simulator" object
     simulator = DynamicSim(
                     plant_model=m_plant,
@@ -68,7 +71,7 @@ def main():
                     )
 
     plant = simulator.plant
-    
+
     p_t0 = simulator.plant.time.first()
     p_ts = simulator.plant.sample_points[1]           
     #--------------------------------------------------------------------------
@@ -82,11 +85,11 @@ def main():
                           # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
                           Reference(simulator.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
                           ]   
-    
+
     inputs_of_interest = [Reference(simulator.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
                           # Reference(simulator.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
                           ]
-    
+
     # Set up data manager to save plant data
     data_manager = PlantDataManager(plant, 
                                     states_of_interest,
@@ -112,21 +115,21 @@ def main():
 
     for i in range(1, 10):
         print('\nENTERING SIMULATOR LOOP ITERATION %s\n' % i)
-        
+
         simulator.plant.advance_one_sample()
         simulator.plant.initialize_to_initial_conditions()
         cinput = [cinput1[i], cinput2[i]]
         simulator.plant.inject_inputs(cinput)
-        
+
         simulator.plant.initialize_by_solving_elements(solver)
         simulator.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(simulator.plant, tee = True)
         data_manager.save_plant_data(iteration = i)
-        
-    data_manager.plot_plant_state_evolution(states_of_interest)
-    data_manager.plot_control_input(inputs_of_interest)
-    
+
+    plot_plant_state_evolution(states_of_interest, data_manager.plant_df)
+    plot_control_input(inputs_of_interest, data_manager.plant_df)
+
     return simulator, data_manager
 
 if __name__ == '__main__':
-    simulator, data_manager = main()      
+    simulator, data_manager = main()  

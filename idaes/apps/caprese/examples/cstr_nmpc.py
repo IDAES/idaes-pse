@@ -20,8 +20,11 @@ from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
+from idaes.apps.caprese.data_manager import PlantDataManager
 from idaes.apps.caprese.data_manager import ControllerDataManager
-                    
+from idaes.apps.caprese.plotlibrary import (
+        plot_setpoint_tracking_results,
+        plot_control_input)
 
 __author__ = "Robert Parker"
 
@@ -65,7 +68,7 @@ def main():
             m_plant.fs.cstr.outlet.temperature[0],
             m_plant.fs.cstr.volume[0],
             ]
-    
+
     # Construct the "NMPC simulator" object
     nmpc = DynamicSim(
             plant_model=m_plant,
@@ -96,17 +99,20 @@ def main():
                           # Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
                           Reference(nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
                           ]
-    
+
     inputs_of_interest = [Reference(nmpc.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
                           # Reference(nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
                           ]
-    
-    data_manager = ControllerDataManager(plant, 
-                                         controller,
-                                         states_of_interest,
-                                         inputs_of_interest,)
+
+    plant_data= PlantDataManager(plant, 
+                                 states_of_interest,
+                                 inputs_of_interest,)
+
+    controller_data= ControllerDataManager(controller,
+                                           states_of_interest,
+                                           inputs_of_interest,)
     #--------------------------------------------------------------------------
-    
+
     solve_consistent_initial_conditions(plant, plant.time, solver)
     solve_consistent_initial_conditions(controller, controller.time, solver)
 
@@ -137,8 +143,14 @@ def main():
     nmpc.controller.mod.fs.cstr.control_volume.energy_holdup[0,...].unfix()
     nmpc.controller.mod.fs.cstr.volume[0].unfix()
 
-    nmpc.controller.add_setpoint_objective(setpoint, setpoint_weights)
-    nmpc.controller.solve_setpoint(solver)
+    # nmpc.controller.add_setpoint_objective(setpoint, setpoint_weights)
+    # nmpc.controller.solve_setpoint(solver)
+    nmpc.controller.add_single_time_optimization_objective(setpoint,
+                                                           setpoint_weights)
+    nmpc.controller.solve_single_time_optimization(solver,
+                                                   ic_type = "measurement_var",
+                                                   require_steady = True,
+                                                   load_setpoints = True)
 
     # Now we are ready to construct the tracking NMPC problem
     tracking_weights = [
@@ -149,15 +161,15 @@ def main():
     nmpc.controller.add_tracking_objective(tracking_weights)
 
     nmpc.controller.constrain_control_inputs_piecewise_constant()
-    
+
     nmpc.controller.initialize_to_initial_conditions()
-    
+
     
     # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
     solver.solve(nmpc.controller, tee=True)
-    data_manager.save_controller_data(iteration = 0)
+    controller_data.save_controller_data(iteration = 0)
 
 
     # For a proper NMPC simulation, we must have noise.
@@ -192,13 +204,13 @@ def main():
     # Extract inputs from controller and inject them into plant
     inputs = controller.generate_inputs_at_time(c_ts)
     plant.inject_inputs(inputs)
-    
-    data_manager.save_initial_plant_data()
+
+    plant_data.save_initial_plant_data()
 
     # This "initialization" really simulates the plant with the new inputs.
     nmpc.plant.initialize_by_solving_elements(solver)
     solver.solve(nmpc.plant)
-    data_manager.save_plant_data(iteration = 0)
+    plant_data.save_plant_data(iteration = 0)
 
     for i in range(1, 11):
         print('\nENTERING NMPC LOOP ITERATION %s\n' % i)
@@ -216,7 +228,7 @@ def main():
         nmpc.controller.load_initial_conditions(measured)
 
         solver.solve(nmpc.controller, tee=True)
-        data_manager.save_controller_data(iteration = i)
+        controller_data.save_controller_data(iteration = i)
 
         inputs = controller.generate_inputs_at_time(c_ts)
         inputs = apply_noise_with_bounds(
@@ -226,15 +238,18 @@ def main():
                 input_noise_bounds,
                 )
         plant.inject_inputs(inputs)
-        
+
         nmpc.plant.initialize_by_solving_elements(solver)
         solver.solve(nmpc.plant)
-        data_manager.save_plant_data(iteration = i)
+        plant_data.save_plant_data(iteration = i)
 
-    data_manager.plot_setpoint_tracking_results(states_of_interest)
-    data_manager.plot_control_input(inputs_of_interest)
+    plot_setpoint_tracking_results(states_of_interest,
+                                   plant_data.plant_df,
+                                   controller_data.setpoint_df)
+    plot_control_input(inputs_of_interest,
+                       plant_data.plant_df)
 
-    return nmpc, data_manager
+    return nmpc, plant_data, controller_data
 
 if __name__ == '__main__':
-    nmpc, data_manager = main()
+    nmpc, plant_data, controller_data = main()

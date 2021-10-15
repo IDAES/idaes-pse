@@ -21,9 +21,11 @@ from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_rodrigo.cstr_rodrigo_model import make_model
 from idaes.apps.caprese.data_manager import PlantDataManager
+from idaes.apps.caprese.plotlibrary import (
+        plot_plant_state_evolution,
+        plot_control_input)
 
 __author__ = "Kuan-Han Lin"
-
 
 
 # See if ipopt is available and set up solver
@@ -43,7 +45,7 @@ def main():
     sample_time = 2.
     m_plant = make_model(horizon=sample_time, ntfe=4, ntcp=2, bounds = True)
     time_plant = m_plant.t
-    
+
     # We must identify for the plant which variables are our
     # inputs and measurements.
     inputs = [
@@ -54,7 +56,7 @@ def main():
             # m_plant.Tall[0, "Tj"],
             m_plant.Ca[0],
             ]
-    
+
     # Construct the "plant simulator" object
     simulator = DynamicSim(
                     plant_model=m_plant,
@@ -63,9 +65,9 @@ def main():
                     measurements_at_t0=measurements,
                     sample_time=sample_time,
                     )
-    
+
     plant = simulator.plant
-    
+
     p_t0 = simulator.plant.time.first()
     p_ts = simulator.plant.sample_points[1]
     #--------------------------------------------------------------------------
@@ -75,7 +77,7 @@ def main():
     states_of_interest = [Reference(simulator.plant.mod.Ca[:]),
                           Reference(simulator.plant.mod.Tall[:, "T"])]
     inputs_of_interest = [Reference(simulator.plant.mod.Tjinb[...])]
-    
+
     # Set up data manager to save plant data
     data_manager = PlantDataManager(plant, 
                                     states_of_interest,
@@ -84,9 +86,9 @@ def main():
     solve_consistent_initial_conditions(plant, plant.time, solver)
 
     input_list = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(0, 11)}
-    
+
     data_manager.save_initial_plant_data()
-    
+
     plant.inject_inputs([input_list[0]])
 
     # This "initialization" really simulates the plant with the new inputs.
@@ -97,19 +99,19 @@ def main():
 
     for i in range(1,11):
         print('\nENTERING SIMULATOR LOOP ITERATION %s\n' % i)
-        
+
         simulator.plant.advance_one_sample()
         simulator.plant.initialize_to_initial_conditions()
         simulator.plant.inject_inputs([input_list[i]])
-        
+
         simulator.plant.initialize_by_solving_elements(solver)
         simulator.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(simulator.plant, tee = True)
         data_manager.save_plant_data(iteration = i)
-        
-    data_manager.plot_plant_state_evolution(states_of_interest)
-    data_manager.plot_control_input(inputs_of_interest)
-    
+
+    plot_plant_state_evolution(states_of_interest, data_manager.plant_df)
+    plot_control_input(inputs_of_interest, data_manager.plant_df)
+
     return simulator, data_manager
 
 if __name__ == '__main__':

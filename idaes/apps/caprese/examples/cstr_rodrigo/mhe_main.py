@@ -20,7 +20,9 @@ from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_rodrigo.cstr_rodrigo_model import make_model
+from idaes.apps.caprese.data_manager import PlantDataManager
 from idaes.apps.caprese.data_manager import EstimatorDataManager
+from idaes.apps.caprese.plotlibrary import plot_estimation_results
 
 __author__ = "Kuan-Han Lin"
 
@@ -89,10 +91,9 @@ def main():
                           Reference(mhe.plant.mod.Tall[:, "T"])]
 
     # Set up data manager to save estimation data
-    data_manager = EstimatorDataManager(plant, 
-                                       estimator,
-                                       states_of_interest,)
-    #--------------------------------------------------------------------------
+    plant_data = PlantDataManager(plant, states_of_interest)
+    estimator_data = EstimatorDataManager(estimator, states_of_interest)
+    #-------------------------------------------------------------------L-------
     solve_consistent_initial_conditions(plant, plant.time, solver)
 
     # Here we solve for a steady state and use it to fill in past measurements
@@ -135,26 +136,26 @@ def main():
             ]
     #-------------------------------------------------------------------------
 
-    data_manager.save_initial_plant_data()
+    plant_data.save_initial_plant_data()
 
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
-    data_manager.save_plant_data(iteration = 0)
+    plant_data.save_plant_data(iteration = 0)
 
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     mhe.estimator.load_measurements(measurements,
                                     target = "actualmeasurement",
                                     timepoint = estimator.time.last())
-    mhe.estimator.inject_inputs(mhe.plant.generate_inputs_at_time(p_ts), 
-                                quick_option = "last_sample_time")
+    mhe.estimator.load_inputs_into_last_sample(
+        mhe.plant.generate_inputs_at_time(p_ts))
 
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
-    data_manager.save_estimator_data(iteration = 0)
+    estimator_data.save_estimator_data(iteration = 0)
 
     cinput = {ind: 250.+ind*5 if ind<=5 else 260.-ind*5 for ind in range(1, 11)}
 
@@ -170,7 +171,7 @@ def main():
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
-        data_manager.save_plant_data(iteration = i)
+        plant_data.save_plant_data(iteration = i)
 
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
@@ -185,15 +186,17 @@ def main():
         mhe.estimator.load_measurements(measurements,
                                         target = "actualmeasurement",
                                         timepoint = estimator.time.last())
-        mhe.estimator.inject_inputs(inputs, quick_option = "last_sample_time")
+        mhe.estimator.load_inputs_into_last_sample(inputs)
 
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
-        data_manager.save_estimator_data(iteration = i)
+        estimator_data.save_estimator_data(iteration = i)
 
-    data_manager.plot_estimation_results(states_of_interest)
-    return mhe, data_manager
+    plot_estimation_results(states_of_interest,
+                            plant_data.plant_df,
+                            estimator_data.estimator_df)
+    return mhe, plant_data, estimator_data
 
 if __name__ == '__main__':
-    mhe, data_manager = main()
+    mhe, plant_data, estimator_data = main()

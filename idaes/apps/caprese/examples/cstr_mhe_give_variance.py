@@ -20,7 +20,9 @@ from pyomo.environ import SolverFactory, Reference
 from pyomo.dae.initialization import solve_consistent_initial_conditions
 # import idaes.logger as idaeslog
 from idaes.apps.caprese.examples.cstr_model import make_model
+from idaes.apps.caprese.data_manager import PlantDataManager
 from idaes.apps.caprese.data_manager import EstimatorDataManager
+from idaes.apps.caprese.plotlibrary import plot_estimation_results
 
 __author__ = "Kuan-Han Lin"
 
@@ -97,9 +99,8 @@ def main():
                           )
 
     # Set up data manager to save estimation data
-    data_manager = EstimatorDataManager(plant, 
-                                       estimator,
-                                       states_of_interest,)
+    plant_data = PlantDataManager(plant, states_of_interest)
+    estimator_data = EstimatorDataManager(estimator, states_of_interest)
     #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
     
@@ -158,13 +159,13 @@ def main():
             ]
     #-------------------------------------------------------------------------
     
-    data_manager.save_initial_plant_data()
+    plant_data.save_initial_plant_data()
     
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
-    data_manager.save_plant_data(iteration = 0)
+    plant_data.save_plant_data(iteration = 0)
     
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
@@ -176,7 +177,7 @@ def main():
     # Solve the first estimation problem
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
-    data_manager.save_estimator_data(iteration = 0)
+    estimator_data.save_estimator_data(iteration = 0)
         
     cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06, 
                5.00, 2.29, 3.91, 3.46, 5.0]
@@ -194,7 +195,7 @@ def main():
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
-        data_manager.save_plant_data(iteration = i)
+        plant_data.save_plant_data(iteration = i)
             
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
@@ -213,10 +214,12 @@ def main():
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
-        data_manager.save_estimator_data(iteration = i)
+        estimator_data.save_estimator_data(iteration = i)
         
-    data_manager.plot_estimation_results(states_of_interest)
-    return mhe, data_manager
+    plot_estimation_results(states_of_interest,
+                            plant_data.plant_df,
+                            estimator_data.estimator_df)
+    return mhe, plant_data, estimator_data
 
 if __name__ == '__main__':
-    mhe, data_manager = main()
+    mhe, plant_data, estimator_data = main()
