@@ -378,11 +378,20 @@ class _EstimatorBlockData(_DynamicBlockData):
                                             load_setpoints = False,
                                             restore_ic_input_after_solve = False,
                                             isMHE_block = True,)
+        # This function solves an optimization problem, then uses the results
+        # to initialize (a) measurement parameters and (b) variables in the
+        # model.
+        # We would rather (a) solve the optimization problem, then (b) get
+        # scalar data ({cuid: value}) from the result.
+        # We would then EITHER (a) use this scalar data to initialize
+        # variables at initial points and copy the values forward OR
+        # (b) convert this scalar data to time indexed data (effectively
+        # doing the copying) and initialize the model from time indexed data.
 
         self.initialize_actualmeasurements_at_t0()
         self.initialize_to_initial_conditions(
             ctype=(DiffVar, AlgVar, DerivVar, InputVar, ActualMeasurementVar)
-                )
+        )
 
     def add_noise_minimize_objective(self,
                                      model_disturbance_weights,
