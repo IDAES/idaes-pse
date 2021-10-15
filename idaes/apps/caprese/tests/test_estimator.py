@@ -805,6 +805,3 @@ class TestEstimatorBlock(object):
         blk.load_measurements(vals2, target = "actualmeasurement", timepoint = t_last)        
         for b, val in zip(blk.ACTUALMEASUREMENT_BLOCK.values(), vals2):
             assert b.var[t_last].value == val
-
-abc = TestEstimatorBlock()
-abc.test_solve_steady_state()
