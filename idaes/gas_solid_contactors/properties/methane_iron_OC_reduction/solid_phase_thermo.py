@@ -93,7 +93,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                     mutable=False,
                     initialize=mw_comp_dict,
                     doc="Molecular weights of solid components [kg/mol]",
-                    units=pyunits.kg/pyunits.m**3)
+                    units=pyunits.kg/pyunits.mol)
 
         # Skeletal density of solid components - units = kg/m3. ref: NIST
         dens_mass_comp_skeletal_dict = {
@@ -180,6 +180,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                               doc='Voidage at minimum fluidization [-]',
                               units=pyunits.m**3/pyunits.m**3)
         self.voidage_mf.fix()
+
+        # Voidage of the bed
+        self.voidage = Var(domain=Reals,
+                           initialize=0.35,
+                           doc='Voidage [-]',
+                           units=pyunits.m**3/pyunits.m**3)
+        self.voidage.fix()
 
         # Particle thermal conductivity
         self.therm_cond_sol = Var(

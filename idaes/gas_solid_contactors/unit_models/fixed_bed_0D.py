@@ -1,21 +1,21 @@
-#################################################################################
+###############################################################################
 # The Institute for the Design of Advanced Energy Systems Integrated Platform
 # Framework (IDAES IP) was produced under the DOE Institute for the
 # Design of Advanced Energy Systems (IDAES), and is copyright (c) 2018-2021
 # by the software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
-# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia University
-# Research Corporation, et al.  All rights reserved.
+# Solutions of Sandia, LLC, Carnegie Mellon University,
+# West Virginia University Research Corporation, et al.  All rights reserved.
 #
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and
 # license information.
-#################################################################################
+###############################################################################
 """
 IDAES 0D Fixed Bed Reactor model.
 """
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Var
+from pyomo.environ import Constraint, Var, units as pyunits
 from pyomo.dae import DerivativeVar
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -24,6 +24,7 @@ from idaes.core import (declare_process_block_class,
                         EnergyBalanceType,
                         UnitModelBlockData)
 from idaes.core.util.config import (is_physical_parameter_block)
+from idaes.core.util.constants import Constants as constants
 import idaes.logger as idaeslog
 from idaes.core.util import get_solver
 
@@ -34,8 +35,6 @@ __author__ = "Chinedu Okoli, Andrew Lee"
 # Only Vap and Sol phases, which are explicitly named as such
 # Perfect mixing in Vap phase
 # Static solid phase
-
-# Need to have build-on-demand properties in reactions for this to work
 
 @declare_process_block_class("FixedBed0D")
 class FixedBed0DData(UnitModelBlockData):
@@ -162,40 +161,65 @@ see reaction package for documentation.}"""))
                     doc="Reaction properties in control volume",
                     default=tmp_dict))
 
+        # Volume of reactor
+        self.bed_diameter = Var(initialize=1,
+                                doc='Reactor diameter [m]',
+                                units=pyunits.m)
+        self.bed_height = Var(initialize=1,
+                              doc='Bed length [m]',
+                              units=pyunits.m)
+        self.volume_bed = Var(initialize=1.0,
+                              doc="Volume of the reactor bed [m**3]",
+                              units=pyunits.m**3)
+
+        @self.Constraint(doc="Calculating volume of the reactor bed")
+        def volume_bed_constraint(b):
+            return b.volume_bed == (constants.pi * b.bed_height *
+                                    (0.5 * b.bed_diameter) ** 2
+                                    )
+
         # Solid phase material balance
         # Volume of solid
-        self.volume_solid = Var(initialize=1.0,
-                                doc="Solids phase volume")
+        self.volume_solid = Var(
+                    self.flowsheet().config.time,
+                    initialize=1.0,
+                    doc="Solids phase volume including particle pores  [m**3]")
+
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Calculating solid phase volume")
+        def volume_solid_constraint(b, t):
+            return b.volume_solid[t] == (b.volume_bed *
+                                         (1 - b.solids[t]._params.voidage)
+                                         )
 
         # Accumulation equal to mass transfer/reaction
         self.solids_material_holdup = Var(
                 self.flowsheet().time,
                 self.config.solid_property_package.component_list,
                 initialize=1,
-                doc="Solid phase component holdups")
+                doc="Solid phase component holdups",
+                units=pyunits.kg)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.solid_property_package.component_list,
                          doc="Solid phase material holdup constraints")
         def solids_material_holdup_constraints(b, t, j):
             return b.solids_material_holdup[t, j] == (
-                b.volume_solid *
+                b.volume_solid[t] *
                 b.solids[t].get_material_density_terms("Sol", j))
 
         self.solids_material_accumulation = DerivativeVar(
                     self.solids_material_holdup,
                     wrt=self.flowsheet().config.time,
-                    doc="Solids material accumulation")
+                    doc="Solids material accumulation",
+                    units=pyunits.kg/pyunits.s)
 
         @self.Constraint(self.flowsheet().config.time,
                          self.config.solid_property_package.component_list,
                          doc="Solid phase material accumulation constraints")
         def solids_material_accumulation_constraints(b, t, j):
-            # if t == self.flowsheet().config.time.first():
-            #     return Constraint.Skip
-            # else:
             return (b.solids_material_accumulation[t, j] ==
-                    b.volume_solid *
+                    b.volume_solid[t] *
                     b.solids[t]._params.mw_comp[j] *
                     sum(b.reactions[t].reaction_rate[r] *
                         b.config.reaction_package
@@ -204,19 +228,20 @@ see reaction package for documentation.}"""))
 
         # Add solid mass variable and constraint for TGA tracking
         self.mass_solids = Var(self.flowsheet().config.time,
-                               doc="Total mass of solids")
+                               doc="Total mass of solids",
+                               units=pyunits.kg)
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculating total mass of solids")
-        def mass_solids_eq(b, t):
-            return 1e2*b.mass_solids[t] == 1e2*b.volume_solid * sum(
+        def mass_solids_constraint(b, t):
+            return 1e2*b.mass_solids[t] == 1e2*b.volume_solid[t] * sum(
                     b.solids[t].get_material_density_terms("Sol", j)
                     for j in b.config.solid_property_package.component_list)
 
         # Sum of mass fractions at all time equals 1
         @self.Constraint(self.flowsheet().config.time,
                          doc="Sum of mass fractions at all time")
-        def sum_component_eqn(b, t):
+        def sum_component_constraint(b, t):
             if t == b.flowsheet().config.time.first():
                 return Constraint.Skip
             else:
@@ -230,29 +255,28 @@ see reaction package for documentation.}"""))
             self.solids_energy_holdup = Var(
                     self.flowsheet().time,
                     initialize=1,
-                    doc="Solid phase energy holdup")
+                    doc="Solid phase energy holdup",
+                    units=pyunits.kJ)
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Solid phase energy holdup constraints")
             def solids_energy_holdup_constraints(b, t):
                 return b.solids_energy_holdup[t] == (
-                      self.volume_solid *
+                      self.volume_solid[t] *
                       b.solids[t].get_energy_density_terms("Sol"))
 
             self.solids_energy_accumulation = DerivativeVar(
                         self.solids_energy_holdup,
                         wrt=self.flowsheet().config.time,
-                        doc="Solids energy accumulation")
+                        doc="Solids energy accumulation",
+                        units=pyunits.kJ/pyunits.s)
 
             @self.Constraint(self.flowsheet().config.time,
                              doc="Solid phase energy accumulation constraints")
             def solids_energy_accumulation_constraints(b, t):
-                # if t == self.flowsheet().config.time.first():
-                #     return Constraint.Skip
-                # else:
                 return b.solids_energy_accumulation[t] == \
                     - sum(b.reactions[t].reaction_rate[r] *
-                          b.volume_solid *
+                          b.volume_solid[t] *
                           b.reactions[t].dh_rxn[r]
                           for r in b.config.reaction_package.
                           rate_reaction_idx)
