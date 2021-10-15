@@ -157,6 +157,15 @@ def scatter3D(xdata, zdata, xtest, zfit, xlabels=None, zlabels=None, show=True,
     if PDF is True:
         pdfPrint(fig, filename)
 
+def surrogate_parity(surrogate, dataframe, filename=None):
+    output_data = dataframe[surrogate.output_labels()]
+    output_surrogate = surrogate.evaluate_surrogate(dataframe)
+    if filename is None:
+        parity(zdata=output_data.values, zfit=output_surrogate.values, zlabels=surrogate.output_labels())
+    else:
+        parity(zdata=output_data.values, zfit=output_surrogate.values, zlabels=surrogate.output_labels(),
+               PDF=True, filename=filename)
+
 
 def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
            clabel=None, show=True, PDF=False, filename='results_parity.pdf'):
@@ -200,6 +209,19 @@ def parity(zdata, zfit, zlabels=None, clo=None, chi=None,
             plt.show()
     if PDF is True:
         pdfPrint(fig, filename)
+
+def surrogate_residual(surrogate, dataframe, filename=None, relative_error=False):
+    input_data = dataframe[surrogate.input_labels()]
+    output_data = dataframe[surrogate.output_labels()]
+    output_surrogate = surrogate.evaluate_surrogate(dataframe)
+    error = np.abs(output_data - output_surrogate)
+    if relative_error == True:
+        error = np.divide(error, np.maximum(output_data,1.0))
+    if filename is None:
+        residual(xdata=input_data.values, e=error.values, xlabels=surrogate.input_labels(), elabels=surrogate.output_labels())
+    else:
+        residual(xdata=input_data.values, e=error.values, xlabels=surrogate.input_labels(), elabels=surrogate.output_labels(),
+                 PDF=True, filename=filename)
 
 
 def residual(xdata, e, xlabels=None, elabels=None, show=True, PDF=False,

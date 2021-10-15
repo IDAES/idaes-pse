@@ -11,80 +11,100 @@
 # license information.
 #################################################################################
 
-msg = "Surrogate metrics have not yet been calculated. Please call compute"
-"metrics first."
+def compute_fit_metrics(surrogate, dataframe):
+    """
+    Compute the fit metrics for the surrogate against the
+    data in dataframe. The surrogate will be evaluated
+    for the input values in the dataframe, and the results
+    will be compared against the output values in the dataframe
+    to provide the metrics.
+
+    Args:
+       surrogate : surrogate object (derived from SurrogateBase)
+          This is the surrogate object we want to evaluate for the comparison
+       dataframe : pandas DataFrame
+          The dataframe that contains the inputs and outputs we want to use 
+          in the evaluation.
+    """
+    y = dataframe[surrogate.output_labels()]
+    f = surrogate.evaluate_surrogate(dataframe)
+    #print(f.columns.to_list())
+    #print(surrogate.output_labels())
+    assert f.columns.to_list() == surrogate.output_labels()
+
+    y_mean = y.mean(axis=0)
+    SST = ((y-y_mean)**2).sum(axis=0)
+    SSE = ((y-f)**2).sum(axis=0)
+
+    R2 = 1-SSE/SST
+    MAE = (y-f).abs().mean(axis=0)
+    maxAE = (y-f).abs().max(axis=0)
+    MSE = ((y-f)**2).mean(axis=0)
+    RMSE = MSE**0.5
+
+    return TrainingMetrics(RMSE=RMSE, MSE=MSE, MAE=MAE, maxAE=maxAE, SSE=SSE, R2=R2)
 
 
+#TODO: Maybe this should just be a dictionary (or munch)
+#TODO: think of other metrics utility functions we may want
 class TrainingMetrics(object):
-    def __init__(self, surrogate, dataframe):
-        self._surrogate = surrogate
-        self._measured_data = dataframe
-
-        self._evaluated_data = None
-
+    def __init__(self, RMSE, MSE, MAE, maxAE, SSE, R2):
         # root mean-squared error
-        self._RMSE = None
+        self._RMSE = RMSE
 
         # mean squared error
-        self._MSE = None
+        self._MSE = MSE
+
+        # mean absolute error
+        self._MAE = MAE
+
+        # max absolute error
+        self._maxAE = maxAE
 
         # sum of squared errors
-        self._SSE = None
+        self._SSE = SSE
 
         # R-squared
-        self._R2 = None
+        self._R2 = R2
+
 
         # TODO: number of datapoints out of bounds
 
     @property
     def RMSE(self):
-        if self._RMSE is None:
-            raise ValueError(msg)
-        else:
-            return self._RMSE
+        return self._RMSE
 
     @property
     def MSE(self):
-        if self._MSE is None:
-            raise ValueError(msg)
-        else:
-            return self._MSE
+        return self._MSE
+
+    @property
+    def MAE(self):
+        return self._MAE
+
+    @property
+    def maxAE(self):
+        return self._maxAE
 
     @property
     def SSE(self):
-        if self._SSE is None:
-            raise ValueError(msg)
-        else:
-            return self._SSE
+        return self._SSE
 
     @property
     def R2(self):
-        if self._R2 is None:
-            raise ValueError(msg)
-        else:
-            return self._R2
+        return self._R2
 
-    @staticmethod
-    def build_metrics(surrogate, dataframe):
-        metrics = TrainingMetrics(surrogate, dataframe)
-        metrics.compute_metrics()
+    def __str__(self):
+        ret = '\n'
+        for l in self.RMSE.index:
+            ret += '\nQuality metrics for output: {}\n'.format(l)
+            ret += '---------------------------------------------------------\n'
+            ret += 'RMSE:          {}\n'.format(float(self.RMSE[l]))
+            ret += 'MSE:           {}\n'.format(float(self.MSE[l]))
+            ret += 'MAE:           {}\n'.format(float(self.MAE[l]))
+            ret += 'maxAE:         {}\n'.format(float(self.maxAE[l]))
+            ret += 'R2:            {}\n'.format(float(self.R2[l]))
+            ret += 'SSE:           {}\n'.format(float(self.SSE[l]))
 
-        return metrics
+        return ret
 
-    def evaluate_surrogate(self):
-        self._evaluated_data = self._surrogate.evaluate_surrogate(
-            self._measured_data)
-
-    def compute_metrics(self):
-        if self._evaluated_data is None:
-            self.evaluate_surrogate()
-
-        y = self._measured_data[self._surrogate._output_labels]
-        f = self._evaluated_data[self._surrogate._output_labels]
-        y_mean = y.mean(axis=0)
-        self._SST = ((y-y_mean)**2).sum(axis=0)
-        self._SSE = ((y-f)**2).sum(axis=0)
-
-        self._R2 = 1-self._SSE/self._SST
-        self._MSE = ((y-f)**2).mean(axis=0)
-        self._RMSE = self._MSE**0.5

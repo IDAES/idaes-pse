@@ -22,13 +22,13 @@ class SurrogateBlockData(_BlockData):
     def build_model(self, surrogate_object, input_vars=None, output_vars=None,
                     use_surrogate_bounds=True, **kwargs):
         self._setup_inputs_outputs(
-            n_inputs=surrogate_object.n_inputs,
-            n_outputs=surrogate_object.n_outputs,
-            input_vars=input_vars, input_labels=surrogate_object.input_labels,
-            output_vars=output_vars, output_labels=surrogate_object.output_labels)
+            n_inputs=surrogate_object.n_inputs(),
+            n_outputs=surrogate_object.n_outputs(),
+            input_vars=input_vars, input_labels=surrogate_object.input_labels(),
+            output_vars=output_vars, output_labels=surrogate_object.output_labels())
 
         # set the input bounds if desired
-        input_bounds = surrogate_object.input_bounds
+        input_bounds = surrogate_object.input_bounds()
         if use_surrogate_bounds is True and input_bounds is not None:
             input_vars_as_dict = self._input_vars_as_dict()
             for k,bnd in input_bounds.items():
@@ -39,11 +39,18 @@ class SurrogateBlockData(_BlockData):
                 ub = bnd[1]
                 if v.ub is not None:
                     ub = min(ub, v.ub)
+                print('Setting bound of {} to {}.'.format(v, (lb,ub)))
                 v.setlb(lb)
                 v.setub(ub)
 
         # call populate block to fill-in the constraints
         surrogate_object.populate_block(self, **kwargs)
+
+        # test that kwargs is empty
+        # derived classes should call .pop when they use a keyword argument
+        if len(kwargs) > 0:
+            raise ValueError('Error in keyword arguments passed to build_model.'
+                             ' The following arguments were not used: {}'.format([k for k in kwargs.keys()]))
 
     def _setup_inputs_outputs(self, n_inputs, n_outputs,
                               input_vars=None, input_labels=None,

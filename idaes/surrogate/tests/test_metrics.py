@@ -16,9 +16,8 @@ Tests for Metrics object
 import pytest
 import pandas as pd
 
-from idaes.surrogate.metrics import TrainingMetrics
+from idaes.surrogate.metrics import compute_fit_metrics
 from idaes.surrogate import AlamoObject
-
 
 # For this test we will use a simple z = x function and calcuate metrics
 # Measured (test) data will include a fixed offset (i.e. z = x + Err)
@@ -40,44 +39,16 @@ def metrics():
     dataset = pd.DataFrame({"x1": x, "z1": z})
 
     # Create a dummy ALAMO surrogate to use for testing
-    alm_obj = AlamoObject(surrogate={"z1": "z1 == x1"},
+    alm_obj = AlamoObject(surrogate_expressions={"z1": "z1 == x1"},
                           input_labels=["x1"],
                           output_labels=["z1"])
 
-    metrics = TrainingMetrics(surrogate=alm_obj, dataframe=dataset)
+    metrics = compute_fit_metrics(surrogate=alm_obj, dataframe=dataset)
 
     return metrics
 
-
-@pytest.mark.unit
-def test_init(metrics):
-    assert isinstance(metrics._surrogate, AlamoObject)
-    assert metrics._surrogate._surrogate["z1"] == "z1 == x1"
-
-    assert isinstance(metrics._measured_data, pd.DataFrame)
-
-    assert metrics._evaluated_data is None
-    assert metrics._RMSE is None
-    assert metrics._MSE is None
-    assert metrics._SSE is None
-    assert metrics._R2 is None
-
-
-@pytest.mark.unit
-def test_evalaute_surrogate(metrics):
-    metrics.evaluate_surrogate()
-
-    assert isinstance(metrics._evaluated_data, pd.DataFrame)
-
-    # Check that z = x in all rows
-    for i, r in metrics._evaluated_data.iterrows():
-        assert metrics._evaluated_data["z1"][i] == \
-            metrics._measured_data["x1"][i]
-
-
 @pytest.mark.unit
 def test_compute_metrics(metrics):
-    metrics.compute_metrics()
 
     # All data should have an offset of ERR, so error is known
     assert metrics.SSE["z1"] == pytest.approx(ERR**2*N, rel=1e-12)
@@ -90,5 +61,4 @@ def test_compute_metrics(metrics):
     for i in range(int(Np)):
         sst += 2*(Np/10-0.1*i)**2
 
-    assert metrics._SST["z1"] == pytest.approx(sst, rel=1e-12)
     assert metrics.R2["z1"] == pytest.approx(1-ERR**2*N/sst, rel=1e-12)
