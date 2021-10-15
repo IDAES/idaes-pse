@@ -334,38 +334,52 @@ def state_initialization(b):
              l_only_comps,
              v_only_comps) = _valid_VL_component_list(b, pp)
             
+            H = {j: value(get_method(b, "henry_component", j, l_phase)(
+                        b, l_phase, j, b.temperature))
+                        for j in henry_comps}
             try:
-                psat = {j: value(get_method(
-                            b, "pressure_sat_comp", j)(
-                                b,
-                                b.params.get_component(j),
-                                b.temperature)) for j in vl_comps}
+                psat = {j: value(get_method(b, "pressure_sat_comp", j)(
+                        b, b.params.get_component(j),b.temperature)) 
+                        for j in vl_comps}
                 raoult_init = True
             except GenericPropertyPackageError:
                 # No method for calculating Psat, use default values
                 raoult_init = False
             if raoult_init:
                 for j in vl_comps:
-                    if not psat[j] >= -1E-6:
+                    if psat[j] <= -1E-6:
                         raise UserModelError(f"Component {j} has a negative "
                                          f"saturation pressure in block "
+                                         f"{b.getname()}. Check "
+                                         f"your implementation and parameters.")
+                for j in henry_comps:
+                    if H[j] <= -1E-6:
+                        raise ConfigurationError(f"Component {j} has a negative "
+                                         f"Henry's Law constant in block "
                                          f"{b.getname()}. Check "
                                          f"your implementation and parameters.")
 
                 # Calculate bubble and dew pressures for an ideal mixture
                 if len(l_only_comps) == 0:
-                    p_dew_ideal = 1/sum([value(b.mole_frac_comp[j])/psat[j]
-                                        for j in vl_comps])
+                    p_dew_ideal = 1/(sum([value(b.mole_frac_comp[j])/psat[j]
+                                        for j in vl_comps]) + sum(
+                                        [value(b.mole_frac_comp[j])/H[j]
+                                        for j in henry_comps]))
                 else:
                     p_dew_ideal = 0
                 if len(v_only_comps) == 0:
-                    p_bubble_ideal = sum([value(b.mole_frac_comp[j])*psat[j]
-                                        for j in vl_comps])
+                    p_bubble_ideal = (sum([value(b.mole_frac_comp[j])*psat[j]
+                                        for j in vl_comps]) + sum(
+                                        [value(b.mole_frac_comp[j])*H[j]
+                                        for j in henry_comps]))
                 else:
                     p_bubble_ideal = float('inf')
                     
-                # Sanity check for the block's pressure. If the mixture is 
-                # strongly nonideal, we give up and assume that the 
+                # Sanity check for the block's pressure. The method to 
+                # calculate the ideal vapor fraction converges may not
+                # converge to a reasonable value if the system pressure does
+                # not lie between the ideal dew and bubble pressures. If 
+                # this is the case, we give up and assume that the 
                 # is predominantly one phase or the other
                 if value(b.pressure) <= p_dew_ideal:
                     vapFrac = 0.95
@@ -382,7 +396,10 @@ def state_initialization(b):
                                   /(vapFrac*psat[j]+(1-vapFrac)*b.pressure))
                                 for j in vl_comps])
                             + sum([value(b.mole_frac_comp[j]/vapFrac)
-                                   for j in v_only_comps]) - 1
+                                   for j in v_only_comps]) 
+                            + sum([value(b.mole_frac_comp[j]*H[j]
+                                  /(vapFrac*H[j]+(1-vapFrac)*b.pressure))
+                                for j in henry_comps]) - 1
                             )
                     def dB_dvapFrac(vapFrac):
                         return (
@@ -390,6 +407,10 @@ def state_initialization(b):
                                        *(b.pressure - psat[j])
                                   /(vapFrac*psat[j]+(1-vapFrac)*b.pressure)**2)
                                 for j in vl_comps])
+                            + sum([value(b.mole_frac_comp[j]*H[j]
+                                       *(b.pressure - H[j])
+                                  /(vapFrac*H[j]+(1-vapFrac)*b.pressure)**2)
+                                for j in henry_comps])
                             - sum([value(b.mole_frac_comp[j]/vapFrac**2)
                                    for j in v_only_comps])
                             )
@@ -405,24 +426,14 @@ def state_initialization(b):
                         vapFrac /= 2
                         k += 1
                         if k > 40:
-                            raise BurntToast(
-                                "Could not calculate ideal vapor fraction "
-                                "because B(vapFrac) is negative for all values "
-                                "of vapFrac. This should never happen, so "
-                                "contact the IDAES developers with this "
-                                "bug.")
+                            raise_runtime_error(b)
                     # Now use Newton's method to calculate vapFrac
                     k = 0
                     while abs(B(vapFrac)) > 1E-6:
                         vapFrac -= B(vapFrac)/dB_dvapFrac(vapFrac)
                         k += 1
                         if k > 40 or vapFrac<0 or vapFrac>1:
-                            raise BurntToast(
-                                "Could not calculate ideal vapor fraction "
-                                "because Newton's method did not converge "
-                                "to vapFrac. This should never happen, so "
-                                "contact the IDAES developers with this "
-                                "bug.")
+                            raise_runtime_error(b)
 
                 
     for p in b.phase_list:
@@ -479,6 +490,10 @@ def state_initialization(b):
                     kfact = value(psat[j] / b.pressure)
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
+                for j in henry_comps:
+                    kfact = value(H[j] / b.pressure)
+                    b.mole_frac_phase_comp[p, j].value = value(
+                        b.mole_frac_comp[j]/(1+vapFrac*(kfact-1)))
                 for j in l_only_comps:
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/(1-vapFrac))
@@ -524,7 +539,11 @@ def state_initialization(b):
                     kfact = value(psat[j] / b.pressure)
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
-                for j in v_only_comps + henry_comps:
+                for j in henry_comps:
+                    kfact = value(H[j] / b.pressure)
+                    b.mole_frac_phase_comp[p, j].value = value(
+                        b.mole_frac_comp[j]*kfact/(kfact+1-vapFrac))
+                for j in v_only_comps:
                     b.mole_frac_phase_comp[p, j].value = value(
                         b.mole_frac_comp[j]/vapFrac)
             else:
@@ -657,3 +676,16 @@ class FTPx(object):
     do_not_initialize = do_not_initialize
     define_default_scaling_factors = define_default_scaling_factors
     calculate_scaling_factors = calculate_scaling_factors
+
+# Mathematically, it should be impossible for the ideal vapor fraction
+# calculations to not converge, given nonnegative saturation pressures, Henry's
+# law constants, and mole fractions (that also add up to 1). However, the
+# methods that check those properties relax the bounds slightly to avoid
+# raising exceptions over roundoff errors, and, of course, floating point
+# calculations do not perfectly capture mathematical reality. Therefore, 
+# the error message is put in a separate function so we can test formatting.
+def raise_runtime_error(b):
+    raise RuntimeError("Could not calculate ideal vapor fraction "
+                        f"in initialization of block {b.getname()}. "
+                        "Check that mole fractions and saturation "
+                        "pressures have reasonable values.")
