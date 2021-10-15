@@ -340,6 +340,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             curr_difeq.deactivate() 
 
     def solve_steady_state(self, solver, **kwargs):
+        assert kwargs.pop("isMHE_block", True)
         self.solve_single_time_optimization(
             solver, **kwargs
         )
