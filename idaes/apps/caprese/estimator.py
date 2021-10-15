@@ -370,7 +370,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         # self.add_steady_state_objective(desired_ss, ss_weights)
         # self.solve_steady_state(solver)
-        
+
         self.add_single_time_optimization_objective(desired_ss, ss_weights)
         self.solve_single_time_optimization(solver, 
                                             ic_type = "differential_var",
