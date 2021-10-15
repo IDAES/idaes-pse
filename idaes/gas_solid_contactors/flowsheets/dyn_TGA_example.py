@@ -84,6 +84,7 @@ def main(m):
         m.fs.TGA.gas[t].mole_frac_comp['H2O'].fix(0.5)
         m.fs.TGA.gas[t].mole_frac_comp['CH4'].fix(0.1)
 
+    # Solver options
     optarg = {
              "bound_push": 1e-8,
              'halt_on_ampl_error': 'yes',
@@ -102,8 +103,6 @@ def main(m):
     solver.solve(m, tee=True)
 
     t_simulation = time.time()  # Simulation time
-
-    m.fs.TGA.solids[3600].display()
 
     print("\n")
     print("----------------------------------------------------------")
