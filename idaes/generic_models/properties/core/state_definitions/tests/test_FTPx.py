@@ -20,13 +20,14 @@ import pytest
 from sys import modules
 
 from pyomo.environ import (
-    ConcreteModel, Constraint, Expression, Var, units as pyunits)
+    ConcreteModel, Constraint, Expression, Var, Set, units as pyunits)
 from pyomo.util.check_units import (
     check_units_equivalent, assert_units_consistent)
 
 # Need define_default_scaling_factors, even though it is not used directly
 from idaes.generic_models.properties.core.state_definitions.FTPx import \
-    FTPx, define_state, set_metadata, define_default_scaling_factors
+    FTPx, define_state, set_metadata, define_default_scaling_factors, \
+    raise_runtime_error
 from idaes.core import (MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -34,8 +35,18 @@ from idaes.core import (MaterialFlowBasis,
 from idaes.generic_models.properties.core.generic.generic_property import (
         GenericParameterData)
 from idaes.generic_models.properties.core.generic.tests.dummy_eos import DummyEoS
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import ConfigurationError, UserModelError
+from idaes.generic_models.properties.core.phase_equil.henry import \
+    ConstantH
 import idaes.logger as idaeslog
+
+from idaes.generic_models.properties.core.generic.generic_property import \
+    GenericParameterBlock
+    
+from idaes.generic_models.properties.core.phase_equil.forms import \
+    fugacity
+
+from idaes.core import VaporPhase, LiquidPhase, Component
 
 
 @declare_process_block_class("DummyParameterBlock")
@@ -226,6 +237,16 @@ class Test1PhaseDefinedStateFalseNoBounds(object):
                 str(frame.props[1].phase_frac[i])
 
         assert_units_consistent(frame.props[1])
+        
+    @pytest.mark.unit
+    def test_runtime_error(self,frame):
+        
+        with pytest.raises(RuntimeError,
+                           match = "Could not calculate ideal vapor fraction "
+                           "in initialization of block props. Check that mole "
+                           "fractions and saturation pressures have "
+                           "reasonable values."):
+            raise_runtime_error(frame.props)
 
 
 class Test1PhaseDefinedStateTrueWithBounds(object):
@@ -1101,3 +1122,96 @@ class TestCommon(object):
         assert len(frame.props[1].conc_mol_comp) == 3
         assert isinstance(frame.props[1].conc_mol_phase_comp, Expression)
         assert len(frame.props[1].conc_mol_phase_comp) == 6
+        
+@pytest.mark.unit
+def test_henry_fail():
+    m = ConcreteModel()
+
+    # Add a dummy var for use in constructing expressions
+    m.x = Var(["Vap", "Liq"], ["H2O"], initialize=1)
+
+    m.mole_frac_phase_comp = Var(["Vap", "Liq"], ["H2O"], initialize=1)
+
+    # Create a dummy parameter block
+    m.params = GenericParameterBlock(default={
+        "components": {"H2O": {"parameter_data": {"type": Component,
+                                                  "temperature_crit": 647.3,
+                                                  "henry_ref": {
+                                                      "Liq": -1}},
+                               "henry_component": {
+                                   "Liq": ConstantH},
+                               "phase_equilibrium_form": {
+                                   ("Vap", "Liq"): fugacity}}},
+        "phases": {"Liq": {"type": LiquidPhase,
+                           "equation_of_state": DummyEoS},
+                   "Vap": {"type": VaporPhase,
+                           "equation_of_state": DummyEoS}},
+        "state_definition": FTPx,
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}})
+
+    m.state = m.params.build_state_block([0])
+    
+    m.state[0].params._pe_pairs = Set(initialize=(("Liq","Vap"),),
+                                 ordered=True)
+    with pytest.raises(ConfigurationError,
+                match="Component H2O has a negative Henry's Law constant in "
+                    "block state\[0\]. Check your implementation and "
+                    "parameters."):
+        m.state[0].params.config.state_definition.state_initialization(m.state[0])
+
+# -----------------------------------------------------------------------------
+# Dummy class to test Psat checking
+class pressure_sat_comp():
+    @staticmethod
+    def return_expression(b, cobj, T, dT=False):
+        return -1
+
+class Psat_fail(object):
+    pressure_sat_comp = pressure_sat_comp
+
+@pytest.mark.unit
+def test_Psat_fail():
+    m = ConcreteModel()
+
+    # Add a dummy var for use in constructing expressions
+    m.x = Var(["Vap", "Liq"], ["H2O"], initialize=1)
+
+    m.mole_frac_phase_comp = Var(["Vap", "Liq"], ["H2O"], initialize=1)
+
+    # Create a dummy parameter block
+    m.params = GenericParameterBlock(default={
+        "components": {"H2O": {"type": Component,
+                                "pressure_sat_comp": Psat_fail,
+                               "phase_equilibrium_form": {
+                                   ("Vap", "Liq"): fugacity}}},
+        "phases": {"Liq": {"type": LiquidPhase,
+                           "equation_of_state": DummyEoS},
+                   "Vap": {"type": VaporPhase,
+                           "equation_of_state": DummyEoS}},
+        "state_definition": FTPx,
+        "pressure_ref": 1e5,
+        "temperature_ref": 300,
+        "base_units": {"time": pyunits.s,
+                       "length": pyunits.m,
+                       "mass": pyunits.kg,
+                       "amount": pyunits.mol,
+                       "temperature": pyunits.K}})
+
+    m.state = m.params.build_state_block([0])
+    m.state[0].params._pe_pairs = Set(initialize=(("Liq","Vap"),),
+                                 ordered=True)
+    with pytest.raises(UserModelError,
+                match="Component H2O has a negative saturation pressure in "
+                "block state\[0\]. Check your implementation and parameters."):
+        m.state[0].params.config.state_definition.state_initialization(m.state[0])
+    
+
+if __name__ == '__main__':
+    pass 
+    #test_Psat_fail()
