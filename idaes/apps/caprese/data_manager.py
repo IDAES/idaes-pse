@@ -35,7 +35,7 @@ def empty_dataframe_from_variables(variables, rename_map=None):
     variables : list of variables of interest
     rename_map : dictionary or componentmap that maps the variable to a 
                     specific name string.
-        
+
     Returns
     -------
     dataframe : pandas dataframe
@@ -226,13 +226,14 @@ class PlantDataManager(object):
                                                          self.plant_vars_of_interest,
                                                          iteration,
                                                          time_subset = time_subset,)
-        
+
+
 class ControllerDataManager(object):
     def __init__(self, 
                  controllerblock, 
                  user_interested_states = None,
                  user_interested_inputs = None):
-        
+
         self.controllerblock = controllerblock
         # Convert vars in plant to vars in controller
         if user_interested_states is not None:
@@ -241,19 +242,18 @@ class ControllerDataManager(object):
                                                       for cuid in cuid_states]
         else:
             self.controller_user_interested_states = []
-            
+
         if user_interested_inputs is not None:
             cuid_inputs = [ComponentUID(var.referent) for var in user_interested_inputs]
             self.controller_user_interested_inputs = [cuid.find_component_on(controllerblock)
                                                       for cuid in cuid_inputs]
         else:
             self.controller_user_interested_inputs = []
-        
-        
+
         self.controller_vars_of_interest = self.controller_user_interested_inputs + \
                                                     controllerblock.input_vars   
         self.controller_df = empty_dataframe_from_variables(self.controller_vars_of_interest)
-        
+
         self.states_need_setpoints = self.controller_user_interested_states + \
                                             controllerblock.differential_vars
 
