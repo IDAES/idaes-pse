@@ -340,10 +340,11 @@ class TestDataManager(object):
         t0 = time.first()
 
         states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(model.flow_in[:])]
-        plant_datamanager = PlantDataManager(plant,
-                                             states_of_interest,
-                                             inputs_of_interest,)  
+        # Now that Pyomo PR #2141 has been merged, the programatically
+        # generated reference to flow_in will have the correct "single-
+        # star" CUID, so this line is unnecessary.
+        #inputs_of_interest = [pyo.Reference(model.flow_in[:])]
+        plant_datamanager = PlantDataManager(plant, states_of_interest)
 
         # Set some values at t0 for differential variables
         plant.vectors.differential[0,:].set_value(35.)
@@ -355,15 +356,15 @@ class TestDataManager(object):
         assert len(df.index) == 1
         assert df.index[0] == 0.0
 
-        pred_columns = ["iteration", "mod.conc[*,A]", "mod.flow_in[*]", 
-                        "mod.conc[*,B]", "mod.flow_in[**]"]
+        pred_columns = [
+            "iteration", "mod.conc[*,A]", "mod.conc[*,B]", "mod.flow_in[*]"
+        ]
         assert all(i1 == i2 for i1, i2 in zip(pred_columns, df.columns))
         assert df["iteration"][0] == 0
         assert df["mod.conc[*,A]"][0] == 35.
         import numpy as np
         assert np.isnan(df["mod.flow_in[*]"][0])
         assert df["mod.conc[*,B]"][0] == 45.
-        assert np.isnan(df["mod.flow_in[**]"][0])
 
     @pytest.mark.unit
     def test_save_plant_data(self):
@@ -373,10 +374,8 @@ class TestDataManager(object):
         t0 = time.first()
 
         states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(model.flow_in[:])]
-        plant_datamanager = PlantDataManager(plant,
-                                             states_of_interest,
-                                             inputs_of_interest,)  
+        #inputs_of_interest = [pyo.Reference(model.flow_in[:])]
+        plant_datamanager = PlantDataManager(plant, states_of_interest)
 
         # Set some initial values for differential variables
         plant.vectors.differential[0,0].set_value(35.)
@@ -396,14 +395,14 @@ class TestDataManager(object):
         pred_index = [0.0, 0.083333, 0.25, 0.333333, 0.5]
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df.index))
 
-        pred_columns = ["iteration", "mod.conc[*,A]", "mod.flow_in[*]", 
-                        "mod.conc[*,B]", "mod.flow_in[**]"]
+        pred_columns = [
+            "iteration", "mod.conc[*,A]", "mod.conc[*,B]", "mod.flow_in[*]"
+        ]
         assert all(i1 == i2 for i1, i2 in zip(pred_columns, df.columns))
         assert all(val == 1 for val in df["iteration"][1:])
         assert all(val == 55. for val in df["mod.conc[*,A]"][1:])
         assert all(val == 123. for val in df["mod.flow_in[*]"][1:])
         assert all(val == 65. for val in df["mod.conc[*,B]"][1:])
-        assert all(val == 123. for val in df["mod.flow_in[**]"][1:])
 
     @pytest.mark.unit
     def test_ControllerDataManager(self):
@@ -537,10 +536,8 @@ class TestDataManager(object):
         c_t0 = c_time.first()
 
         states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
-        nmpc_data = ControllerDataManager(controller,
-                                          states_of_interest,
-                                          inputs_of_interest,)
+        #inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
+        nmpc_data = ControllerDataManager(controller, states_of_interest)
 
         # Set values of control inputs and setpoints in the controller
         controller.vectors.input[...].set_value(5.0)
@@ -548,9 +545,10 @@ class TestDataManager(object):
 
         nmpc_data.save_controller_data(iteration = 10)
 
-        pred_controller_result = OrderedDict([("iteration", 10),
-                                           ("mod.flow_in[*]", 5), 
-                                           ("mod.flow_in[**]", 5),])
+        pred_controller_result = OrderedDict(
+            [("iteration", 10), ("mod.flow_in[*]", 5)]
+            #("mod.flow_in[**]", 5),])
+        )
         pred_setpoint_result = OrderedDict([("iteration", 10),
                                             ("mod.conc[*,A]", 0.2), 
                                             ("mod.conc[*,B]", 0.3),])
@@ -558,7 +556,8 @@ class TestDataManager(object):
         pred_index = [0.083333, 0.25, 0.333333, 0.5]
 
         df = nmpc_data.controller_df
-        assert all(i1 == i2 for i1, i2 in zip(pred_controller_result.keys(), df.columns))
+        assert all(i1 == i2 for i1, i2 in
+                zip(pred_controller_result.keys(), df.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df.index))
         for key, value in pred_controller_result.items():
             assert all(val == value for val in df[key])    
@@ -576,22 +575,23 @@ class TestDataManager(object):
 
         nmpc_data.save_controller_data(iteration = 20)                        
 
-        pred_columns_result = OrderedDict([("iteration", 20),
-                                           ("mod.flow_in[*]", 15), 
-                                           ("mod.flow_in[**]", 15),])
+        pred_columns_result = OrderedDict(
+            [("iteration", 20), ("mod.flow_in[*]", 15)]
+            #("mod.flow_in[**]", 15),])
+        )
         pred_setpoint_result = OrderedDict([("iteration", 20),
-                                            ("mod.conc[*,A]", 5.2), 
+                                            ("mod.conc[*,A]", 5.2),
                                             ("mod.conc[*,B]", 5.3),])
         pred_index = [0.583333, 0.75, 0.833333, 1.0]
 
         df = nmpc_data.controller_df
-        assert all(i1 == i2 for i1, i2 in zip(pred_columns_result.keys(), df.columns))
+        assert all(i1 == i2 for i1, i2 in
+                zip(pred_columns_result.keys(), df.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df.index[4:]))
         for key, value in pred_columns_result.items():
-            assert all(val == value for val in df[key][4:])  
+            assert all(val == value for val in df[key][4:])
 
         df_sp = nmpc_data.setpoint_df
-        assert all(i1 == i2 for i1, i2 in zip(pred_setpoint_result.keys(), df_sp.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df_sp.index[4:]))
         for key, value in pred_setpoint_result.items():
             assert all(val == value for val in df_sp[key][4:]) 
