@@ -592,6 +592,8 @@ class TestDataManager(object):
             assert all(val == value for val in df[key][4:])
 
         df_sp = nmpc_data.setpoint_df
+        assert all(i1 == i2 for i1, i2 in
+                zip(pred_setpoint_result.keys(), df_sp.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df_sp.index[4:]))
         for key, value in pred_setpoint_result.items():
             assert all(val == value for val in df_sp[key][4:]) 
