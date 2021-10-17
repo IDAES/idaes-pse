@@ -558,6 +558,10 @@ class TestDynamicBlock(object):
         dyn_block.set_sample_time(sample_time)
         return dyn_block
 
+    # The following two tests are done in test_controller and test_estimator.
+    # def test_add_single_time_optimization_objective(self):
+    # def solve_single_time_optimization(self):
+        
     @pytest.mark.unit
     def test_init_sample_to_setpoint(self):
         blk = self.make_block()
@@ -1225,6 +1229,3 @@ class TestDynamicBlock(object):
         # over, e.g., vectors.algebraic[:, :] would
         # fail due to inconsistent dimension.
         assert VC.ALGEBRAIC not in db.category_dict
-        
-abc = TestDynamicBlock()
-abc.test_inject_inputs()
