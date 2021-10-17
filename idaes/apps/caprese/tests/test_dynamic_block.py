@@ -1076,6 +1076,18 @@ class TestDynamicBlock(object):
             for t in time:
                 assert b.var[t].value == val
 
+        #Time_subset is given
+        time_subset = time.ordered_data()[1:4]
+        vals_2 = [0.75]
+        blk.inject_inputs(vals_2, time_subset = time_subset)
+        for b, val in zip(blk.INPUT_BLOCK.values(), vals_2):
+            for t in time_subset:
+                assert b.var[t].value == val
+                
+        #Inputs at time.at(1) & time.at(-1) should not change.
+        assert blk.INPUT_BLOCK[0].var[time.at(1)].value == 0.0
+        assert blk.INPUT_BLOCK[0].var[time.at(-1)].value == 0.0
+
     @pytest.mark.unit
     def test_categories_only_measurement_input(self):
         model = make_model(horizon=1, nfe=2)
@@ -1209,3 +1221,5 @@ class TestDynamicBlock(object):
         # fail due to inconsistent dimension.
         assert VC.ALGEBRAIC not in db.category_dict
         
+abc = TestDynamicBlock()
+abc.test_inject_inputs()
