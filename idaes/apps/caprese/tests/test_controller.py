@@ -250,7 +250,7 @@ class TestControllerBlock(object):
         # Re-initialize inputs so they are not at the setpoint
         # for objective evaluation.
         controller.mod.flow_in[:].set_value(2.5)
-        
+
         weights = [
                 (controller.mod.conc[t0,'A'], 1),
                 (controller.mod.conc[t0,'B'], 1),
@@ -328,19 +328,19 @@ class TestControllerBlock(object):
             inputs = controller.vectors.input
             pred_expr = (inputs[i, tn] == inputs[i, t])
             assert pwc_expr.to_string() == pred_expr.to_string()
-            
+
     @pytest.mark.unit
     def test_load_estimates(self):
         controller = self.make_controller()
         time = controller.time
         t0 = time.first()
-        
+
         estimates = [100., 200.]
         controller.load_estimates(estimates)
-        
+
         assert controller.vectors.differential[0, t0].value == 100.
         assert controller.vectors.differential[1, t0].value == 200.
-        
+
     @pytest.mark.unit
     def test_load_initial_conditions(self):
         model = make_model(horizon=1., nfe=2)
@@ -365,7 +365,7 @@ class TestControllerBlock(object):
 
         assert controller.vectors.measurement[0, t0].value == 10.
         assert controller.vectors.measurement[1, t0].value == 20.
-        
+
         #case 2: estimator does exist
         controller.has_estimator = True
         ics = [11., 21.]
@@ -380,7 +380,7 @@ class TestControllerBlock(object):
 
         assert controller.vectors.measurement[0, t0].value == 12.
         assert controller.vectors.measurement[1, t0].value == 22.
-        
+
         #case 3: type of ics is declared => "estimates"
         ics = [13., 23.]
         controller.load_initial_conditions(ics, "estimate")

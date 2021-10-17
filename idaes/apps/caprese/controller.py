@@ -69,7 +69,7 @@ class _ControllerBlockData(_DynamicBlockData):
     models to be used by a controller. These include methods for
     calculating a setpoint and adding objective functions.
     """
-    
+
     def _construct(self):
         super(_ControllerBlockData, self)._construct()
         self.has_estimator = False
@@ -175,12 +175,12 @@ class _ControllerBlockData(_DynamicBlockData):
                     "Trying to add constraints on inputs but no input "
                     "variables have been specified."
                     )
-            
+
     def load_estimates(self, estimates):
         tp = self.time.first()
         for var, val in zip(self.DIFFERENTIAL_BLOCK[:].var, estimates):
             var[tp].fix(val)
-            
+
     def load_initial_conditions(self, ics, type_of_ics = None):
         '''
         Load initial conditions for the NMPC controller. 
@@ -192,7 +192,7 @@ class _ControllerBlockData(_DynamicBlockData):
         ----------
         ics : list of initial conditions.
         '''
-        
+
         if type_of_ics is None:
             print("Loading type of initial conditions is not declared. \n"
                   "Determine the type by checking whether MHE exists or not.")
@@ -200,13 +200,13 @@ class _ControllerBlockData(_DynamicBlockData):
                 type_of_ics = "estimate"
             else:
                 type_of_ics = "measurement"
-                
+
         if type_of_ics == "estimate":
             self.load_estimates(ics)
         elif type_of_ics == "measurement":
             self.load_measurements(ics, 
                                    target = "measurement",
-                                   timepoint = self.time.first())                     
+                                   timepoint = self.time.first())
         else:
             raise RuntimeError("Declared type of initial conditions does not support."
                                "Please use either 'measurement' or 'estimate'.")
