@@ -392,7 +392,7 @@ class TestEstimatorBlock(object):
                 assert var[sp].value == 0.0
                 
     @pytest.mark.unit
-    def test_add_MHE_vars_to_category_dict(self):
+    def test_new_MHE_vars_in_category_dict(self):
         estimator = self.make_estimator()
         time = estimator.time
         t0 = time.first()
@@ -760,7 +760,7 @@ class TestEstimatorBlock(object):
             assert pyo.value(estimator.vectors.modeldisturbance[ind, 0]) == 0.0
             
     @pytest.mark.unit
-    def test_load_inputs_for_MHE(self):
+    def load_inputs_into_last_sample(self):
         estimator = self.make_estimator()
         time = estimator.time
         t0 = time.first()
