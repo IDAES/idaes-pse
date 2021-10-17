@@ -88,7 +88,7 @@ class _EstimatorBlockData(_DynamicBlockData):
 
         # Call base class construct method
         super(_EstimatorBlockData, self)._construct()
-            
+
         # Update category dict with references to proper ctypes.
         # Not necessary for constraints currently.
         self.category_dict.update(
@@ -208,21 +208,21 @@ class _EstimatorBlockData(_DynamicBlockData):
             #Fix model disturbance at t = 0 as 0.0
             moddis_block[i].find_component(var_name)[t0].fix(0.0) 
 
-    def _get_mhe_var_category_dict(self):        
+    def _get_mhe_var_category_dict(self):
         MHEBlock = self.MHE_VARS_CONS_BLOCK
-        # target_set = ComponentSet((self.SAMPLEPOINT_SET,))        
-        blo_list = [MHEBlock.ACTUAL_MEASUREMENT_BLOCK, 
-                    MHEBlock.MEASUREMENT_ERROR_BLOCK, 
+        # target_set = ComponentSet((self.SAMPLEPOINT_SET,))
+        blo_list = [MHEBlock.ACTUAL_MEASUREMENT_BLOCK,
+                    MHEBlock.MEASUREMENT_ERROR_BLOCK,
                     MHEBlock.MODEL_DISTURBANCE_BLOCK]
-        cate_list = [VC.ACTUALMEASUREMENT, 
-                      VC.MEASUREMENTERROR, 
+        cate_list = [VC.ACTUALMEASUREMENT,
+                      VC.MEASUREMENTERROR,
                       VC.MODELDISTURBANCE]
         MCTM = MHE_CATEGORY_TYPE_MAP
         mhe_category_dict = {}
         for bloitem, category in zip(blo_list, cate_list):
             ctype = MCTM[category]
             newvars = []
-            for i in bloitem:                        
+            for i in bloitem:
                 varlist = list(bloitem[i].component_objects(Var))
                 assert len(varlist) == 1
                 newvars.append(Reference(varlist[0], ctype=ctype))
@@ -242,22 +242,27 @@ class _EstimatorBlockData(_DynamicBlockData):
         differential_block = self.find_component("DIFFERENTIAL_BLOCK")
         moddis_block = self.find_component("MODELDISTURBANCE_BLOCK")
         diffvar_set = self.DIFFERENTIAL_SET
-        self.diffvar_map_moddis = ComponentMap((differential_block[ind].var[t0], moddis_block[ind].var)
+        self.diffvar_map_moddis = ComponentMap(
+            (differential_block[ind].var[t0], moddis_block[ind].var)
                                                 for ind in diffvar_set)
 
         derivative_block = self.find_component("DERIVATIVE_BLOCK")
         derivar_set = self.DERIVATIVE_SET
-        self.derivar_map_moddis = ComponentMap((derivative_block[ind].var[t0], moddis_block[ind].var)
+        self.derivar_map_moddis = ComponentMap(
+            (derivative_block[ind].var[t0], moddis_block[ind].var)
                                                 for ind in derivar_set)
-        #Note that order of self.DIFFERENTIAL_SET and the order of self.DERIVATIVE_SET are corresponding.
+        # Note that order of self.DIFFERENTIAL_SET and the order of
+        # self.DERIVATIVE_SET are corresponding.
 
         measurement_block = self.find_component("MEASUREMENT_BLOCK")
         meaerr_block = self.find_component("MEASUREMENTERROR_BLOCK")
         actmea_block = self.find_component("ACTUALMEASUREMENT_BLOCK")
         mea_set = self.MEASUREMENT_SET
-        self.meavar_map_meaerr = ComponentMap((measurement_block[ind].var[t0], meaerr_block[ind].var)
+        self.meavar_map_meaerr = ComponentMap(
+            (measurement_block[ind].var[t0], meaerr_block[ind].var)
                                                 for ind in mea_set)
-        self.meavar_map_actmea = ComponentMap((measurement_block[ind].var[t0], actmea_block[ind].var)
+        self.meavar_map_actmea = ComponentMap(
+            (measurement_block[ind].var[t0], actmea_block[ind].var)
                                                 for ind in mea_set)
 
     def _add_measurement_constraint(self):
@@ -266,7 +271,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         '''
         
         MHEBlock = self.MHE_VARS_CONS_BLOCK
-        block_name = "MEASUREMENT_CONSTRAINT_BLOCK" 
+        block_name = "MEASUREMENT_CONSTRAINT_BLOCK"
         mea_set = MHEBlock.MEASUREMENT_SET
         meacon_block = Block(mea_set)
         MHEBlock.add_component(block_name, meacon_block)
@@ -276,9 +281,9 @@ class _EstimatorBlockData(_DynamicBlockData):
         sample_points = self.sample_points
         for i in mea_set:
             def _con_mea_err(m, s):
-                # Measurement equation is only defined at sample points, but 
-                # it needs to be constructed with time set. 
-                # Otherwise, other functions wouldn't work. 
+                # Measurement equation is only defined at sample points, but
+                # it needs to be constructed with time set.
+                # Otherwise, other functions wouldn't work.
                 if s not in sample_points:
                     return Constraint.Skip
                 else:
@@ -322,9 +327,10 @@ class _EstimatorBlockData(_DynamicBlockData):
             def _dd_rule(m, tp):
                 curr_sampt = curr_sample_point(tp, sample_points)
                 newbody = (curr_difeq[tp].body - mod_dist[curr_sampt])
-                #Differential constraints are confirmed as equalities in categorize_dae_variables_and_constraints
-                #I just set it equal to the original upper bound for convience.
-                newexpr = newbody == curr_difeq[tp].upper.value 
+                # Differential constraints are confirmed as equalities 
+                # in categorize_dae_variables_and_constraints.
+                # I just set it equal to the original upper bound for convience.
+                newexpr = newbody == curr_difeq[tp].upper.value
                 return newexpr
             _dd_con = Constraint(time, rule=_dd_rule)
             ddc_block[i].add_component(con_name, _dd_con)
@@ -337,14 +343,14 @@ class _EstimatorBlockData(_DynamicBlockData):
         for ind in self.MEASUREMENT_SET:
             actmea_block = self.ACTUALMEASUREMENT_BLOCK[ind]
             mea_block = self.MEASUREMENT_BLOCK[ind]
-            actmea_block.var[t0].set_value(mea_block.var[t0].value)  
+            actmea_block.var[t0].set_value(mea_block.var[t0].value)
 
     def initialize_past_info_with_steady_state(self, 
-                                               desired_ss, 
-                                               ss_weights, 
+                                               desired_ss,
+                                               ss_weights,
                                                solver):
         '''
-        Before running MHE, we need to set up past information (measurements, states, etc.). 
+        Before running MHE, we need to set up past information (measurements, states, etc.).
         Here we solve for a steady state and set it as past information.
 
         Parameters
@@ -409,7 +415,7 @@ class _EstimatorBlockData(_DynamicBlockData):
         for var, val in model_disturbance_weights:  
             #Check whether the given variable is classified under diffvar
             if id(var) not in diff_id_set:
-                raise RuntimeError(var.name, 
+                raise RuntimeError(var.name,
                                    " is not a differential variable.")
 
             if givenform == "weight":
@@ -448,7 +454,7 @@ class _EstimatorBlockData(_DynamicBlockData):
             for sampt in self.sample_points #Here should include the time.first()
             )
 
-        self.noise_minimize_objective = Objective(expr = (wQw) + (vRv))  
+        self.noise_minimize_objective = Objective(expr = (wQw) + (vRv))
 
     def check_var_con_dof(self, skip_dof_check = False):
         '''This function does the final check for fixed and unfixed variables
@@ -456,7 +462,7 @@ class _EstimatorBlockData(_DynamicBlockData):
 
         Parameters
         ----------
-        skip_dof_check: SKip to check the degree of freedom if it's True. 
+        skip_dof_check: SKip to check the degree of freedom if it's True.
                         Default is False.
         '''
 
@@ -473,7 +479,7 @@ class _EstimatorBlockData(_DynamicBlockData):
 
         if not skip_dof_check:
             dof = degrees_of_freedom(self)
-            assert dof == correct_dof  
+            assert dof == correct_dof
 
     def load_inputs_into_last_sample(self, inputs):
         sample_points = self.sample_points
