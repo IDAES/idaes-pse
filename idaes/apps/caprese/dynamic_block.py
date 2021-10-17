@@ -829,7 +829,7 @@ class _DynamicBlockData(_BlockData):
         time = self.time
 
         if target is None:
-            print("Desired variables to load measurements to is not given,
+            print("Desired variables to load measurements to is not given, "
                   "assuming it's 'measurement'.")
             if VC.MEASUREMENT in self.categories:
                 target_block = self.MEASUREMENT_BLOCK
