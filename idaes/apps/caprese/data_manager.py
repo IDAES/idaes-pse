@@ -18,10 +18,6 @@ from pyomo.core.base.componentuid import ComponentUID
 from pyomo.common.collections import ComponentMap
 import pandas as pd
 from collections import OrderedDict
-# from idaes.apps.caprese.plotlibrary import (
-#                         PLANT_PlotLibrary,
-#                         NMPC_PlotLibrary,
-#                         MHE_PlotLibrary,)
 
 __author__ = "Robert Parker and Kuan-Han Lin"
 
@@ -33,7 +29,7 @@ def empty_dataframe_from_variables(variables, rename_map=None):
     Parameters
     ----------
     variables : list of variables of interest
-    rename_map : dictionary or componentmap that maps the variable to a 
+    rename_map : dictionary or componentmap that maps the variable to a
                     specific name string.
 
     Returns
@@ -83,7 +79,7 @@ def add_variable_values_to_dataframe(
     variables : list of variables of interest
     iteration : current iteration.
     time_subset : time indices of interset in the variables.
-    rename_map : dictionary or componentmap that maps the variable to a 
+    rename_map : dictionary or componentmap that maps the variable to a
                     specific name string.
     time_map : map the time in time_subset to real time points
     '''
@@ -115,7 +111,7 @@ def add_variable_values_to_dataframe(
                 if (len(dataframe.index) != 0 and time_subset[0] == 0
                     and time_map is None):
                     time_subset = time_subset[1:]
-                
+
             df_map["iteration"] = len(time_subset)*[iteration]
 
         elif set_hash not in hash_set:
@@ -146,8 +142,8 @@ def add_variable_values_to_dataframe(
 
     return dataframe.append(df)
 
-def add_variable_setpoints_to_dataframe(dataframe, 
-                                        variables, 
+def add_variable_setpoints_to_dataframe(dataframe,
+                                        variables,
                                         iteration,
                                         time_subset, 
                                         map_for_user_given_vars = None):
@@ -176,7 +172,7 @@ def add_variable_setpoints_to_dataframe(dataframe,
     else:
         initial_time = dataframe.index[-1]
     time_points = [initial_time + t for t in time_subset]
-    df = pd.DataFrame(df_map, index=time_points)         
+    df = pd.DataFrame(df_map, index=time_points)
 
     return dataframe.append(df)
 
@@ -185,7 +181,7 @@ class PlantDataManager(object):
                  plantblock,
                  user_interested_states = None,
                  user_interested_inputs = None):
-                
+
         # Make sure given variables are all in plantblock
         if user_interested_states is not None:
             cuid_states = [ComponentUID(var.referent) for var in user_interested_states]
@@ -193,14 +189,14 @@ class PlantDataManager(object):
                                                  for cuid in cuid_states]
         else:
             self.plant_user_interested_states = []
-            
+
         if user_interested_inputs is not None:
             cuid_inputs = [ComponentUID(var.referent) for var in user_interested_inputs]
             self.plant_user_interested_inputs = [cuid.find_component_on(plantblock)
                                                  for cuid in cuid_inputs]
         else:
             self.plant_user_interested_inputs = []
-        
+
         self.plantblock = plantblock
         self.plant_vars_of_interest = self.plant_user_interested_states + \
                                         self.plant_user_interested_inputs + \
@@ -208,10 +204,10 @@ class PlantDataManager(object):
                                                 self.plantblock.input_vars
 
         self.plant_df = empty_dataframe_from_variables(self.plant_vars_of_interest)
-        
+
     def get_plant_dataframe(self):
         return self.plant_df
-        
+
     def save_initial_plant_data(self):
         plant_states_to_save = self.plant_user_interested_states + self.plantblock.differential_vars
         self.plant_df = add_variable_values_to_dataframe(self.plant_df,
@@ -230,7 +226,7 @@ class PlantDataManager(object):
 
 class ControllerDataManager(object):
     def __init__(self, 
-                 controllerblock, 
+                 controllerblock,
                  user_interested_states = None,
                  user_interested_inputs = None):
 
@@ -258,18 +254,18 @@ class ControllerDataManager(object):
                                             controllerblock.differential_vars
 
         self.setpoint_df = empty_dataframe_from_variables(self.states_need_setpoints)
-        
+
         # Important!!!
         # User given variables are not nmpc_var, so they don't have setpoint attribute.
         # Create this componentmap to map the given vars to corresponding nmpc_vars.
         vardata_map = self.controllerblock.vardata_map
         t0 = self.controllerblock.time.first()
-        self.user_given_vars_map_nmpcvar = ComponentMap((var, vardata_map[var[t0]]) 
+        self.user_given_vars_map_nmpcvar = ComponentMap((var, vardata_map[var[t0]])
                                                         for var in self.controller_user_interested_states)
 
     def get_controller_dataframe(self):
         return self.controller_df
-    
+
     def get_setpoint_dataframe(self):
         return self.setpoint_df
 
@@ -277,7 +273,7 @@ class ControllerDataManager(object):
         #skip time.first()
         time = self.controllerblock.time
         #Save values in the first sample time
-        time_subset = [t for t in time if t <= self.controllerblock.sample_points[1] 
+        time_subset = [t for t in time if t <= self.controllerblock.sample_points[1]
                                            and t != time.first()]
         self.controller_df = add_variable_values_to_dataframe(self.controller_df,
                                                               self.controller_vars_of_interest,
@@ -294,7 +290,7 @@ class EstimatorDataManager(object):
     def __init__(self, 
                  estimatorblock, 
                  user_interested_states = None,):
-        
+
         self.estimatorblock = estimatorblock
         # Convert vars in plant to vars in estimator
         if user_interested_states is not None:

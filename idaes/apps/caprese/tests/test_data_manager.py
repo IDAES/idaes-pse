@@ -596,7 +596,7 @@ class TestDataManager(object):
                 zip(pred_setpoint_result.keys(), df_sp.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df_sp.index[4:]))
         for key, value in pred_setpoint_result.items():
-            assert all(val == value for val in df_sp[key][4:]) 
+            assert all(val == value for val in df_sp[key][4:])
 
     @pytest.mark.unit
     def test_EstimatorDataManager(self):
@@ -639,15 +639,15 @@ class TestDataManager(object):
 
         assert hasattr(mhe_data, "estimator_user_interested_states")
         pred_estimator_user_interested_states = [pyo.Reference(e_model.conc[:, "A"])] 
-        assert all(i1[e_t0] == i2[e_t0] for i1, i2 
-                    in zip(pred_estimator_user_interested_states, 
+        assert all(i1[e_t0] == i2[e_t0] for i1, i2
+                    in zip(pred_estimator_user_interested_states,
                             mhe_data.estimator_user_interested_states))
 
         assert hasattr(mhe_data, "estimator_vars_of_interest")
         pred_estimator_vars_of_interest = [pyo.Reference(e_model.conc[:, "A"])] + \
                                                     estimator.differential_vars
-        assert all(i1[e_t0] == i2[e_t0] for i1, i2 
-                    in zip(pred_estimator_user_interested_states, 
+        assert all(i1[e_t0] == i2[e_t0] for i1, i2
+                    in zip(pred_estimator_user_interested_states,
                             mhe_data.estimator_user_interested_states))
 
         assert hasattr(mhe_data, "estimator_df")
