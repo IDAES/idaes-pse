@@ -577,7 +577,7 @@ class _DynamicBlockData(_BlockData):
             # Deactivate the original/undisturbed differential equations at t0
             for indexcon in self.con_category_dict[CC.DIFFERENTIAL]:
                 indexcon[t0].deactivate()
-        
+
         if VC.DERIVATIVE in self.categories:
             if require_steady == True:
                 self.vectors.derivative[:,t0].unfix()
@@ -595,7 +595,7 @@ class _DynamicBlockData(_BlockData):
             for var in self.vectors.input[:,t0]:
                 if was_fixed[var]:
                     var.fix()
-        
+
         # Load setpoints to vars' attribute "setpoint"
         if load_setpoints:
             setpoint_ctype = (DiffVar, AlgVar, InputVar,
@@ -632,7 +632,7 @@ class _DynamicBlockData(_BlockData):
                 # but include last time point of sample.
                 t = time.at(i)
                 var[t].set_value(var.setpoint)
-                
+
     def initialize_sample_to_initial(self,
             sample_idx,
             ctype=(DiffVar, AlgVar, DerivVar),
@@ -821,16 +821,16 @@ class _DynamicBlockData(_BlockData):
                     "category has been specified."
                     )
 
-            
     def load_measurements(self, measured, target = None, timepoint = None):
         '''
         (This one provides the choices of desired vars and timepoint 
          to load the measurements to. It works for both MHE and NMPC.)
         '''
         time = self.time
-            
+
         if target is None:
-            print("Desired variables to load measurements to is not given, assuming it's 'measurement'.")
+            print("Desired variables to load measurements to is not given,
+                  "assuming it's 'measurement'.")
             if VC.MEASUREMENT in self.categories:
                 target_block = self.MEASUREMENT_BLOCK
             else:
@@ -838,7 +838,7 @@ class _DynamicBlockData(_BlockData):
                         "Trying to set measurement values but no measurement "
                         "category has been specified."
                         )
-        
+
         elif target == "measurement":
             if VC.MEASUREMENT in self.categories:
                 target_block = self.MEASUREMENT_BLOCK
@@ -847,7 +847,7 @@ class _DynamicBlockData(_BlockData):
                         "Trying to set measurement values but no measurement "
                         "category has been specified."
                         )
-                
+
         elif target == "actualmeasurement":
             if VC.ACTUALMEASUREMENT in self.categories:
                 target_block = self.ACTUALMEASUREMENT_BLOCK
@@ -856,22 +856,21 @@ class _DynamicBlockData(_BlockData):
                         "Trying to set measurement values but no measurement "
                         "category has been specified."
                         )
-                
+
         else:
             raise RuntimeError("Wrong target variable type is given, "
                                "please use either 'measurement' or 'actualmeasurement'.")
-                               
+
         if timepoint is None:
             print("Desired time point is not given, assuming it's time.first().")
             timepoint = time.first()
         elif timepoint not in [time.first(), time.last()]:
             raise RuntimeError("Wrong time point is given, "
                                "please use either 'time.first()' or 'time.last()'.")
-                               
+
         for var, val in zip(target_block[:].var, measured):
             var[timepoint].fix(val)
-            
-                
+
     def advance_by_time(self,
             t_shift,
             ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
@@ -905,7 +904,6 @@ class _DynamicBlockData(_BlockData):
                         if idx in self.sample_point_indices:
                             var[t].set_value(var[ts].value)
 
-                
     def advance_one_sample(self,
             ctype=(DiffVar, DerivVar, AlgVar, InputVar, FixedVar),
             tolerance=1e-8,
@@ -1194,7 +1192,6 @@ class SquareSolveContext(object):
                         time_indices.append(i)
                         already_visited.add(i)
             self.time_indices = time_indices
-            
 
     def __enter__(self):
         # Strip bounds:

@@ -250,9 +250,9 @@ class TestDynamicBlock(object):
             assert b.mod is model_map[i]
             assert b.time is model_map[i].time
             t0 = b.time.first()
-            assert all(i1 is i2 for i1, i2 in zip(b._inputs, 
+            assert all(i1 is i2 for i1, i2 in zip(b._inputs,
                 [model_map[i].flow_in[t0]]))
-            assert all(i1 is i2 for i1, i2 in zip(b._measurements, 
+            assert all(i1 is i2 for i1, i2 in zip(b._measurements,
                 [model_map[i].conc[t0,'A'], model_map[i].conc[t0,'B']]))
 
             assert hasattr(b, 'category_dict')
@@ -312,7 +312,7 @@ class TestDynamicBlock(object):
         assert VariableCategory.DERIVATIVE in helper.category_dict
         assert VariableCategory.INPUT in helper.category_dict
         assert VariableCategory.FIXED in helper.category_dict
-    
+
         pred_diff_vars = ComponentSet((
                 m.conc[t0,'A'],
                 m.conc[t0,'B'],
@@ -482,7 +482,7 @@ class TestDynamicBlock(object):
         assert hasattr(blk, 'sample_points')
         assert hasattr(blk, 'fe_per_sample')
         assert hasattr(blk, 'sample_point_indices')
-        
+
         sample_point_set = set(blk.sample_points)
         sample_point_indices = set(blk.sample_point_indices)
         for p in [0.0, 0.5, 1.0]:
@@ -561,7 +561,7 @@ class TestDynamicBlock(object):
     # The following two tests are done in test_controller and test_estimator.
     # def test_add_single_time_optimization_objective(self):
     # def solve_single_time_optimization(self):
-        
+
     @pytest.mark.unit
     def test_init_sample_to_setpoint(self):
         blk = self.make_block()
@@ -1087,12 +1087,12 @@ class TestDynamicBlock(object):
         for b, val in zip(blk.INPUT_BLOCK.values(), vals_2):
             for t in time_subset:
                 assert b.var[t].value == val
-                
+
         #Inputs at time.at(1) & time.at(-1) should not change.
         assert blk.INPUT_BLOCK[0].var[time.at(1)].value == 0.0
         assert blk.INPUT_BLOCK[0].var[time.at(-1)].value == 0.0
-        
-    # Should test "load_measurements" here. However, in this PR, we want to 
+
+    # Not test "load_measurements" here. In this PR, we want to 
     # build the separate function for controller and estimator. Then we will 
     # remote "load_measurements" in dynamic_block and test similar functions for
     # controller and estimator.
