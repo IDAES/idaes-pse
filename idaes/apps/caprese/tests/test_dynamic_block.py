@@ -1087,6 +1087,11 @@ class TestDynamicBlock(object):
         #Inputs at time.at(1) & time.at(-1) should not change.
         assert blk.INPUT_BLOCK[0].var[time.at(1)].value == 0.0
         assert blk.INPUT_BLOCK[0].var[time.at(-1)].value == 0.0
+        
+    # Should test "load_measurements" here. However, in this PR, we want to 
+    # build the separate function for controller and estimator. Then we will 
+    # remote "load_measurements" in dynamic_block and test similar functions for
+    # controller and estimator.
 
     @pytest.mark.unit
     def test_categories_only_measurement_input(self):
