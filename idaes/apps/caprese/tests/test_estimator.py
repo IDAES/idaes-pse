@@ -58,7 +58,7 @@ if solver_available:
     solver = pyo.SolverFactory('ipopt')
 else:
     solver = None
-    
+
     
 class TestEstimatorBlock(object):
     
@@ -223,7 +223,7 @@ class TestEstimatorBlock(object):
         
         mod = estimator.mod
         
-        # line253 - 287: make sure variables are categoried in correct cateogries.
+        # line227 - 261: make sure variables are categoried in correct cateogries.
         pred_diff_vars = [mod.conc[t0, "A"], mod.conc[t0, "B"]]
         diff_vars = estimator.category_dict[VariableCategory.DIFFERENTIAL]
         diff_vart0_ids = [id(var[t0]) for var in diff_vars]
@@ -261,7 +261,7 @@ class TestEstimatorBlock(object):
         assert input_vart0_ids == []
         
         
-        # line293 - 322: make sure constraints are categoried in correct cateogries.
+        # line265 - 296: make sure constraints are categoried in correct cateogries.
         tlast = time.last()
         
         pred_diff_cons = [mod.material_balance[tlast, "A"],

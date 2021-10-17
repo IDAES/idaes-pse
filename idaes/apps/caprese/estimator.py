@@ -137,13 +137,6 @@ class _EstimatorBlockData(_DynamicBlockData):
         CATEGORY_TYPE_MAP.pop(VC.MEASUREMENTERROR)
         CATEGORY_TYPE_MAP.pop(VC.MODELDISTURBANCE)
 
-        #Set initial values for actual measurements
-        # for ind in self.MEASUREMENT_SET:
-        #     init_mea_block = self.MEASUREMENT_BLOCK[ind]
-        #     init_val = {idx: 0.0 if init_mea_block.var[idx].value is None else init_mea_block.var[idx].value 
-        #                 for idx in self.SAMPLEPOINT_SET} #Not sure why it doesn't work when the value is None
-        #     self.ACTUALMEASUREMENT_BLOCK[ind].var.set_values(init_val)
-
     def reference_var_category_dict(self, unref_category_dict):
         category_dict = {
                         category: [
