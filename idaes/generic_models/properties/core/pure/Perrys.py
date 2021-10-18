@@ -18,9 +18,14 @@ Perry, Green, Maloney, 1997, McGraw-Hill
 
 All parameter indicies and units based on conventions used by the source
 """
-from pyomo.environ import log, Var, units as pyunits
+from pyomo.environ import log, Var, Param, units as pyunits
 
 from idaes.core.util.misc import set_param_from_config
+
+from idaes.core.util.exceptions import BurntToast
+import idaes.logger as idaeslog
+
+_log = idaeslog.getLogger(__name__)
 
 
 # -----------------------------------------------------------------------------
@@ -224,24 +229,26 @@ class dens_mol_liq_comp_eqn_2():
 class dens_mol_liq_comp():  # dens_mol_liq_comp_eqn_1, dens_mol_liq_comp_eqn_2
 
     def build_parameters(cobj):
-        cobj.dens_mol_liq_comp_coeff_eqn_type = Var(
-            doc="EOS eqn type for liquid phase molar density")
+        cobj.dens_mol_liq_comp_coeff_eqn_type = Param(
+            mutable=True, doc="Liquid molar density equation form")
 
         try:
             set_param_from_config(cobj, param="dens_mol_liq_comp_coeff",
                                   index="eqn_type")
+            eqn_type = cobj.dens_mol_liq_comp_coeff_eqn_type.value
         except KeyError:
-            raise Exception("Index 'eqn_type' of dens_mol_liq_comp_coeff for "
-                            "component {} not specified.".format(cobj))
+            _log.info("DEPRECATED - {} dens_mol_liq_comp_coeff index "
+                      "'eqn_type' should be specified, defaulting to "
+                      "equation form 1.".format(cobj))
+            eqn_type = 1  # default to equation form 1 if not specified
 
-        eqn_type = cobj.dens_mol_liq_comp_coeff_eqn_type.value
         if eqn_type == 1:
             dens_mol_liq_comp_eqn_1.build_parameters(cobj)
         elif eqn_type == 2:
             dens_mol_liq_comp_eqn_2.build_parameters(cobj)
         else:
-            raise Exception("Specified eqn_type not valid, please refer to "
-                            "Perrys EOS package for valid flags.")
+            raise BurntToast(f"{cobj.name} unrecognized value for "
+                             "dens_mol_liq_comp equation type: {eqn_type}")
 
     def return_expression(b, cobj, T):
         eqn_type = cobj.dens_mol_liq_comp_coeff_eqn_type.value

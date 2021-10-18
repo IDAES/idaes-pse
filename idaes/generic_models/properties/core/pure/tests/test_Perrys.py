@@ -26,7 +26,7 @@ Authors: Andrew Lee
 import pytest
 import types
 
-from pyomo.environ import ConcreteModel, Block, value, Var, units as pyunits
+from pyomo.environ import ConcreteModel, Block, value, Var, Param, units as pyunits
 from pyomo.common.config import ConfigBlock
 from pyomo.util.check_units import assert_units_equivalent
 
@@ -44,7 +44,8 @@ def frame():
 
     m.params.config = ConfigBlock(implicit=True)
     m.params.config.parameter_data = {
-        "dens_mol_liq_comp_coeff": {'1': 5.459,
+        "dens_mol_liq_comp_coeff": {'eqn_type': 1,
+                                    '1': 5.459,
                                     '2': 0.30542,
                                     '3': 647.13,
                                     '4': 0.081},
@@ -169,6 +170,23 @@ def test_entr_mol_liq_comp(frame):
 def test_dens_mol_liq_comp(frame):
     dens_mol_liq_comp.build_parameters(frame.params)
 
+    assert isinstance(frame.params.dens_mol_liq_comp_coeff_eqn_type, Param)
+    assert value(frame.params.dens_mol_liq_comp_coeff_eqn_type) == 1
+
+    expr = dens_mol_liq_comp.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
+
+    frame.props[1].temperature.value = 333.15
+    assert value(expr) == pytest.approx(54.703e3, rel=1e-4)
+
+    assert_units_equivalent(expr, pyunits.mol/pyunits.m**3)
+
+
+@pytest.mark.unit
+def test_dens_mol_liq_comp_eqn_1(frame):
+    dens_mol_liq_comp_eqn_1.build_parameters(frame.params)
+
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_1, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff_1) == 5.459
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_2, Var)
@@ -178,11 +196,34 @@ def test_dens_mol_liq_comp(frame):
     assert isinstance(frame.params.dens_mol_liq_comp_coeff_4, Var)
     assert value(frame.params.dens_mol_liq_comp_coeff_4) == 0.081
 
-    expr = dens_mol_liq_comp.return_expression(
+    expr = dens_mol_liq_comp_eqn_1.return_expression(
         frame.props[1], frame.params, frame.props[1].temperature)
     assert value(expr) == pytest.approx(55.583e3, rel=1e-4)
 
     frame.props[1].temperature.value = 333.15
     assert value(expr) == pytest.approx(54.703e3, rel=1e-4)
+
+    assert_units_equivalent(expr, pyunits.mol/pyunits.m**3)
+
+
+@pytest.mark.unit
+def test_dens_mol_liq_comp_eqn_2(frame):
+    dens_mol_liq_comp_eqn_2.build_parameters(frame.params)
+
+    assert isinstance(frame.params.dens_mol_liq_comp_coeff_1, Var)
+    assert value(frame.params.dens_mol_liq_comp_coeff_1) == 5.459
+    assert isinstance(frame.params.dens_mol_liq_comp_coeff_2, Var)
+    assert value(frame.params.dens_mol_liq_comp_coeff_2) == 0.30542
+    assert isinstance(frame.params.dens_mol_liq_comp_coeff_3, Var)
+    assert value(frame.params.dens_mol_liq_comp_coeff_3) == 647.13
+    assert isinstance(frame.params.dens_mol_liq_comp_coeff_4, Var)
+    assert value(frame.params.dens_mol_liq_comp_coeff_4) == 0.081
+
+    expr = dens_mol_liq_comp_eqn_2.return_expression(
+        frame.props[1], frame.params, frame.props[1].temperature)
+    assert value(expr) == pytest.approx(4.99375e10, rel=1e-4)
+
+    frame.props[1].temperature.value = 333.15
+    assert value(expr) == pytest.approx(7.48194e10, rel=1e-4)
 
     assert_units_equivalent(expr, pyunits.mol/pyunits.m**3)
