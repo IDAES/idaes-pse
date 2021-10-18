@@ -1288,7 +1288,7 @@ class _GenericStateBlock(StateBlock):
                     lcomp = getattr(blk[k], "log_"+prop)
                     for k2, v in lcomp.items():
                         c = value(comp[k2])
-                        if c == 0:
+                        if c <= 0:
                             c = 1e-8
                         lc = log(c)
                         v.set_value(value(lc))
@@ -2009,7 +2009,8 @@ class GenericStateBlockData(StateBlockData):
             pc_set = self.phase_component_set
         else:
             config = self.params.get_phase(phase).config
-            if ("property_basis" in config.equation_of_state_options and
+            if (config.equation_of_state_options is not None and
+                    "property_basis" in config.equation_of_state_options and
                     config.equation_of_state_options["property_basis"] ==
                     "apparent"):
                 component_list = self.params.apparent_species_set
@@ -2037,7 +2038,8 @@ class GenericStateBlockData(StateBlockData):
         else:
             if phase is not None:
                 config = self.params.get_phase(phase).config
-                if ("property_basis" in config.equation_of_state_options and
+                if (config.equation_of_state_options is not None and
+                        "property_basis" in config.equation_of_state_options and
                         config.equation_of_state_options["property_basis"] ==
                         "apparent"):
                     return self.mole_frac_phase_comp_apparent

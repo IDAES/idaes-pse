@@ -987,9 +987,13 @@ class TestGenericStateBlock(object):
                 "phases": {
                     "p1": {"equation_of_state": DummyEoS,
                            "diffus_phase_comp": dummy_method,
+                           "therm_cond_phase": dummy_method,
+                           "surf_tens_phase": dummy_method,
                            "visc_d_phase": dummy_method},
                     "p2": {"equation_of_state": DummyEoS,
                            "diffus_phase_comp": dummy_method,
+                           "therm_cond_phase": dummy_method,
+                           "surf_tens_phase": dummy_method,
                            "visc_d_phase": dummy_method}},
                 "state_definition": modules[__name__],
                 "pressure_ref": 1e5,
