@@ -3239,7 +3239,7 @@ class GenericStateBlockData(StateBlockData):
     def _log_conc_mol_phase_comp_true(self):
         try:
             self.log_conc_mol_phase_comp_true = Var(
-                self.phase_component_set,
+                self.params.true_phase_component_set,
                 initialize=1,
                 bounds=(-50, None),
                 units=pyunits.dimensionless,
@@ -3250,7 +3250,7 @@ class GenericStateBlockData(StateBlockData):
                     b.conc_mol_phase_comp_true[p, j] /
                     pyunits.get_units(b.conc_mol_phase_comp_true[p, j]))
             self.log_conc_mol_phase_comp_true_eq = Constraint(
-                self.phase_component_set,
+                self.params.true_phase_component_set,
                 rule=rule_log_conc_mol_phase_comp_true,
                 doc="Constraint for log of molar concentration")
         except AttributeError:
