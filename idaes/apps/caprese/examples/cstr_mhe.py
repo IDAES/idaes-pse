@@ -72,7 +72,7 @@ def main():
     mhe = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.fs.time,
-            estimator_model=m_estimator, 
+            estimator_model=m_estimator,
             estimator_time_set=m_estimator.fs.time,
             inputs_at_t0=inputs,
             measurements_at_t0=measurements,
@@ -88,7 +88,7 @@ def main():
     e_ts = mhe.estimator.sample_points[1]
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
+    # It's ok not declaring anything. The data manager will still save some
     # important data, but the user should use the default string of CUID for plotting afterward.
     states_of_interest = (Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
                           Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
@@ -142,7 +142,7 @@ def main():
             (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 20.),
             (estimator.mod.fs.cstr.outlet.temperature[0], 10.),
             (estimator.mod.fs.cstr.volume[0], 20.),
-            ]   
+            ]
 
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
@@ -188,7 +188,7 @@ def main():
     solver.solve(mhe.estimator, tee=True)
     estimator_data.save_estimator_data(iteration = 0)
 
-    cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06, 
+    cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06,
                5.00, 2.29, 3.91, 3.46, 5.0]
     cinput2 = [0.29, 0.01, 0.01, 0.01, 0.13,
                0.01, 1.00, 0.24, 0.71, 0.01]
@@ -228,6 +228,7 @@ def main():
     plot_estimation_results(states_of_interest,
                             plant_data.plant_df,
                             estimator_data.estimator_df)
+
     return mhe, plant_data, estimator_data
 
 if __name__ == '__main__':

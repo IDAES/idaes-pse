@@ -67,28 +67,28 @@ def main():
             m_plant.fs.cstr.outlet.temperature[0],
             m_plant.fs.cstr.volume[0],
             ]
-    
+
     # Construct the "MHE simulator" object
     mhe = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.fs.time,
-            estimator_model=m_estimator, 
+            estimator_model=m_estimator,
             estimator_time_set=m_estimator.fs.time,
             inputs_at_t0=inputs,
             measurements_at_t0=measurements,
             sample_time=sample_time,
             )
-    
+
     plant = mhe.plant
     estimator = mhe.estimator
-    
+
     p_t0 = mhe.plant.time.first()
     e_t0 = mhe.estimator.time.first()
     p_ts = mhe.plant.sample_points[1]
     e_ts = mhe.estimator.sample_points[1]
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
+    # It's ok not declaring anything. The data manager will still save some
     # important data, but the user should use the default string of CUID for plotting afterward.
     states_of_interest = (Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
                           Reference(mhe.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
@@ -103,9 +103,9 @@ def main():
     estimator_data = EstimatorDataManager(estimator, states_of_interest)
     #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
-    
+
     estimator.mod.fs.cstr.volume[0].unfix()
-    
+
     # Here we solve for a steady state and use it to fill in past measurements
     desired_ss = [
         (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 0.4),
@@ -124,7 +124,7 @@ def main():
         (estimator.mod.fs.cstr.volume[0], 1.),
         ]
     mhe.estimator.initialize_past_info_with_steady_state(desired_ss, ss_weights, solver)
-    
+
     # Now we are ready to construct the objective function for MHE
     model_disturbance_variances = [
             (estimator.mod.fs.cstr.control_volume.material_holdup[0,'aq','S'], 1.),
@@ -142,12 +142,12 @@ def main():
             (estimator.mod.fs.cstr.outlet.conc_mol[0, 'P'], 0.05),
             (estimator.mod.fs.cstr.outlet.temperature[0], 0.1),
             (estimator.mod.fs.cstr.volume[0], 0.05),
-            ]   
-    
+            ]
+
     mhe.estimator.add_noise_minimize_objective(model_disturbance_variances,
                                                measurement_noise_variances,
                                                givenform = "variance")
-    
+
     #-------------------------------------------------------------------------
     # Set up measurement noises that will be applied to measurements
     mhe.estimator.set_variance(measurement_noise_variances)
@@ -158,15 +158,15 @@ def main():
             (0.0, var[e_t0].ub) for var in estimator.MEASUREMENT_BLOCK[:].var
             ]
     #-------------------------------------------------------------------------
-    
+
     plant_data.save_initial_plant_data()
-    
+
     # This "initialization" really simulates the plant with the new inputs.
     mhe.plant.initialize_by_solving_elements(solver)
     mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
     solver.solve(mhe.plant, tee = True)
     plant_data.save_plant_data(iteration = 0)
-    
+
     # Extract measurements from the plant and inject them into MHE
     measurements = mhe.plant.generate_measurements_at_time(p_ts)
     mhe.estimator.load_measurements(measurements,
@@ -178,25 +178,25 @@ def main():
     mhe.estimator.check_var_con_dof(skip_dof_check = False)
     solver.solve(mhe.estimator, tee=True)
     estimator_data.save_estimator_data(iteration = 0)
-        
-    cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06, 
+
+    cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06,
                5.00, 2.29, 3.91, 3.46, 5.0]
     cinput2 = [0.29, 0.01, 0.01, 0.01, 0.13,
                0.01, 1.00, 0.24, 0.71, 0.01]
-    
+
     for i in range(1,11):
         print('\nENTERING MHE LOOP ITERATION %s\n' % i)
-        
+
         mhe.plant.advance_one_sample()
         mhe.plant.initialize_to_initial_conditions()
         cinput = [cinput1[i-1], cinput2[i-1]]
         mhe.plant.inject_inputs(cinput)
-        
+
         mhe.plant.initialize_by_solving_elements(solver)
         mhe.plant.vectors.input[...].fix() #Fix the input to solve the plant
         solver.solve(mhe.plant, tee = True)
         plant_data.save_plant_data(iteration = i)
-            
+
         measurements = mhe.plant.generate_measurements_at_time(p_ts)
         measurements = apply_noise_with_bounds(
                     measurements,
@@ -204,21 +204,22 @@ def main():
                     random.gauss,
                     measurement_noise_bounds,
                     )
-        
+
         mhe.estimator.advance_one_sample()
         mhe.estimator.load_measurements(measurements,
                                         target = "actualmeasurement",
                                         timepoint = estimator.time.last())
         mhe.estimator.load_inputs_into_last_sample(cinput)
-        
+
         mhe.estimator.check_var_con_dof(skip_dof_check = False)
         # mhe.estimator.vectors.modeldisturbance[...].fix(0.0)
         solver.solve(mhe.estimator, tee=True)
         estimator_data.save_estimator_data(iteration = i)
-        
+
     plot_estimation_results(states_of_interest,
                             plant_data.plant_df,
                             estimator_data.estimator_df)
+
     return mhe, plant_data, estimator_data
 
 if __name__ == '__main__':

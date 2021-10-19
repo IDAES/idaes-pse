@@ -73,7 +73,7 @@ def main():
     nmpc = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.fs.time,
-            controller_model=m_controller, 
+            controller_model=m_controller,
             controller_time_set=m_controller.fs.time,
             inputs_at_t0=inputs,
             measurements_at_t0=measurements,
@@ -90,8 +90,8 @@ def main():
 
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
-    # important data, but the user should use the default string of CUID for plotting afterward.
+    # It's ok not declaring anything. The data manager will still save some
+    # important data.
     states_of_interest = [Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
                           Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
                           # Reference(nmpc.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
@@ -100,17 +100,8 @@ def main():
                           Reference(nmpc.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
                           ]
 
-    inputs_of_interest = [Reference(nmpc.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
-                          # Reference(nmpc.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
-                          ]
-
-    plant_data= PlantDataManager(plant, 
-                                 states_of_interest,
-                                 inputs_of_interest,)
-
-    controller_data= ControllerDataManager(controller,
-                                           states_of_interest,
-                                           inputs_of_interest,)
+    plant_data= PlantDataManager(plant, states_of_interest)
+    controller_data= ControllerDataManager(controller, states_of_interest)
     #--------------------------------------------------------------------------
 
     solve_consistent_initial_conditions(plant, plant.time, solver)
@@ -164,7 +155,7 @@ def main():
 
     nmpc.controller.initialize_to_initial_conditions()
 
-    
+
     # Solve the first control problem
     nmpc.controller.vectors.input[...].unfix()
     nmpc.controller.vectors.input[:,0].fix()
@@ -246,8 +237,11 @@ def main():
     plot_setpoint_tracking_results(states_of_interest,
                                    plant_data.plant_df,
                                    controller_data.setpoint_df)
-    plot_control_input(inputs_of_interest,
-                       plant_data.plant_df)
+
+    inputs_to_plot = [Reference(nmpc.plant.mod.fs.mixer.S_inlet.flow_vol[:]),
+                      # Reference(nmpc.plant.mod.fs.mixer.E_inlet.flow_vol[:]),
+                      ]
+    plot_control_input(inputs_to_plot, plant_data.plant_df)
 
     return nmpc, plant_data, controller_data
 

@@ -68,7 +68,7 @@ def main():
     mhe = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.t,
-            estimator_model=m_estimator, 
+            estimator_model=m_estimator,
             estimator_time_set=m_estimator.t,
             inputs_at_t0=inputs,
             measurements_at_t0=measurements,
@@ -84,7 +84,7 @@ def main():
     e_ts = mhe.estimator.sample_points[1]
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
+    # It's ok not declaring anything. The data manager will still save some
     # important data, but the user should use the default string of CUID for
     # plotting afterward.
     states_of_interest = [Reference(mhe.plant.mod.Ca[:]),
@@ -115,7 +115,7 @@ def main():
     measurement_noise_weights = [
             (estimator.mod.Ca[0], 100.),
             (estimator.mod.Tall[0, "T"], 20.),
-            ]   
+            ]
 
     mhe.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                measurement_noise_weights)
@@ -196,6 +196,7 @@ def main():
     plot_estimation_results(states_of_interest,
                             plant_data.plant_df,
                             estimator_data.estimator_df)
+
     return mhe, plant_data, estimator_data
 
 if __name__ == '__main__':

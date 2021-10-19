@@ -72,16 +72,13 @@ def main():
     p_ts = simulator.plant.sample_points[1]
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
-    # important data, but the user should use the default string of CUID for plotting afterward.
+    # It's ok not declaring anything. The data manager will still save some
+    # important data.
     states_of_interest = [Reference(simulator.plant.mod.Ca[:]),
                           Reference(simulator.plant.mod.Tall[:, "T"])]
-    inputs_of_interest = [Reference(simulator.plant.mod.Tjinb[...])]
 
     # Set up data manager to save plant data
-    data_manager = PlantDataManager(plant, 
-                                    states_of_interest,
-                                    inputs_of_interest)
+    data_manager = PlantDataManager(plant, states_of_interest)
     #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
 
@@ -110,7 +107,9 @@ def main():
         data_manager.save_plant_data(iteration = i)
 
     plot_plant_state_evolution(states_of_interest, data_manager.plant_df)
-    plot_control_input(inputs_of_interest, data_manager.plant_df)
+
+    inputs_to_plot = [Reference(simulator.plant.mod.Tjinb[:])]
+    plot_control_input(inputs_to_plot, data_manager.plant_df)
 
     return simulator, data_manager
 

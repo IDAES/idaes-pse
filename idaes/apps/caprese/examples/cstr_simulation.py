@@ -73,34 +73,28 @@ def main():
     plant = simulator.plant
 
     p_t0 = simulator.plant.time.first()
-    p_ts = simulator.plant.sample_points[1]           
+    p_ts = simulator.plant.sample_points[1]
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
-    # important data, but the user should use the default string of CUID for plotting afterward.
+    # It's ok not declaring anything. The data manager will still save some
+    # important data.
     states_of_interest = [Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','S']),
                           Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','E']),
                           # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','C']),
                           # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','P']),
                           # Reference(simulator.plant.mod.fs.cstr.control_volume.material_holdup[:,'aq','Solvent']),
                           Reference(simulator.plant.mod.fs.cstr.control_volume.energy_holdup[:,'aq']),
-                          ]   
-
-    inputs_of_interest = [Reference(simulator.plant.mod.fs.mixer.S_inlet_state[:].flow_vol),
-                          # Reference(simulator.plant.mod.fs.mixer.E_inlet_state[:].flow_vol),
                           ]
 
     # Set up data manager to save plant data
-    data_manager = PlantDataManager(plant, 
-                                    states_of_interest,
-                                    inputs_of_interest)
+    data_manager = PlantDataManager(plant, states_of_interest)
     #--------------------------------------------------------------------------
     solve_consistent_initial_conditions(plant, plant.time, solver)
 
-    cinput1 = [0.5608456705408656, 3.4818166997491384, 5.0, 0.9629431563506397, 2.0623866186035156, 
-               4.9999999797327686, 2.285805028476981, 3.913753219840146, 3.4585265451075538, 5.0]
-    cinput2 = [0.28666548361218924, 0.01, 0.01, 0.01, 0.12654063510571273,
-               0.01, 0.9999996329001195, 0.242203179025321, 0.7110096123027149, 0.01]
+    cinput1 = [0.56, 3.48, 5.00, 0.96, 2.06,
+               5.00, 2.29, 3.91, 3.46, 5.0]
+    cinput2 = [0.29, 0.01, 0.01, 0.01, 0.13,
+               0.01, 1.00, 0.24, 0.71, 0.01]
 
     data_manager.save_initial_plant_data()
 
@@ -127,9 +121,13 @@ def main():
         data_manager.save_plant_data(iteration = i)
 
     plot_plant_state_evolution(states_of_interest, data_manager.plant_df)
-    plot_control_input(inputs_of_interest, data_manager.plant_df)
+
+    inputs_to_plot = [Reference(simulator.plant.mod.fs.mixer.S_inlet.flow_vol[:]),
+                      # Reference(simulator.plant.mod.fs.mixer.E_inlet.flow_vol[:]),
+                      ]
+    plot_control_input(inputs_to_plot, data_manager.plant_df)
 
     return simulator, data_manager
 
 if __name__ == '__main__':
-    simulator, data_manager = main()  
+    simulator, data_manager = main()

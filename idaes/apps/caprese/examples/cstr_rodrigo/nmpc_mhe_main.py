@@ -73,9 +73,9 @@ def main():
     dyna = DynamicSim(
             plant_model = m_plant,
             plant_time_set = m_plant.t,
-            estimator_model = m_estimator, 
+            estimator_model = m_estimator,
             estimator_time_set = m_estimator.t,
-            controller_model = m_controller, 
+            controller_model = m_controller,
             controller_time_set = m_controller.t,
             inputs_at_t0 = inputs,
             measurements_at_t0 = measurements,
@@ -95,23 +95,14 @@ def main():
 
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
+    # It's ok not declaring anything. The data manager will still save some
     # important data, but the user should use the default string of CUID for plotting afterward.
     states_of_interest = [Reference(dyna.plant.mod.Ca[:]),
                           Reference(dyna.plant.mod.Tall[:, "T"])]
-    inputs_of_interest = [Reference(dyna.plant.mod.Tjinb[...])]
 
-    plant_data = PlantDataManager(plant,
-                                  states_of_interest,
-                                  inputs_of_interest)
-
-    controller_data = ControllerDataManager(controller,
-                                            states_of_interest,
-                                            inputs_of_interest)
-
-    estimator_data = EstimatorDataManager(estimator,
-                                          states_of_interest)
-
+    plant_data = PlantDataManager(plant, states_of_interest)
+    controller_data = ControllerDataManager(controller, states_of_interest)
+    estimator_data = EstimatorDataManager(estimator, states_of_interest)
     #--------------------------------------------------------------------------
     # Plant setup
     solve_consistent_initial_conditions(plant, plant.time, solver)
@@ -170,7 +161,7 @@ def main():
     measurement_noise_weights = [
             (estimator.mod.Ca[0], 100.),
             (estimator.mod.Tall[0, "T"], 20.),
-            ]   
+            ]
 
     dyna.estimator.add_noise_minimize_objective(model_disturbance_weights,
                                                 measurement_noise_weights)
@@ -190,7 +181,7 @@ def main():
     random.seed(246)
     #--------------------------------------------------------------------------
 
-    plant_data.save_initial_plant_data()    
+    plant_data.save_initial_plant_data()
 
     # Solve the first control problem
     dyna.controller.vectors.input[...].unfix()
@@ -226,7 +217,7 @@ def main():
         estimates = dyna.estimator.generate_estimates_at_time(estimator.time.last())
 
         dyna.controller.advance_one_sample()
-        dyna.controller.load_initial_conditions(estimates)    
+        dyna.controller.load_initial_conditions(estimates)
 
         solver.solve(dyna.controller, tee = True)
         controller_data.save_controller_data(iteration = i)
@@ -244,7 +235,7 @@ def main():
 
         dyna.plant.initialize_by_solving_elements(solver)
         dyna.plant.vectors.input[...].fix() #Fix the input to solve the plant
-        solver.solve(dyna.plant, tee = True)    
+        solver.solve(dyna.plant, tee = True)
         plant_data.save_plant_data(iteration = i)
 
         measurements = dyna.plant.generate_measurements_at_time(p_ts)
@@ -268,7 +259,8 @@ def main():
                                    plant_data.plant_df,
                                    controller_data.setpoint_df)
 
-    plot_control_input(inputs_of_interest,
+    inputs_to_plot = [Reference(dyna.plant.mod.Tjinb[:])]
+    plot_control_input(inputs_to_plot,
                        plant_data.plant_df)
 
     plot_estimation_results(states_of_interest,

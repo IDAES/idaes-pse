@@ -70,7 +70,7 @@ def main():
     nmpc = DynamicSim(
             plant_model=m_plant,
             plant_time_set=m_plant.t,
-            controller_model=m_controller, 
+            controller_model=m_controller,
             controller_time_set=m_controller.t,
             inputs_at_t0=inputs,
             measurements_at_t0=measurements,
@@ -87,20 +87,13 @@ def main():
 
     #--------------------------------------------------------------------------
     # Declare variables of interest for plotting.
-    # It's ok not declaring anything. The data manager will still save some 
-    # important data, but the user should use the default string of CUID for plotting afterward.
+    # It's ok not declaring anything. The data manager will still save some
+    # important data.
     states_of_interest = [Reference(nmpc.plant.mod.Ca[:]),
                           Reference(nmpc.plant.mod.Tall[:, "T"])]
-    inputs_of_interest = [Reference(nmpc.plant.mod.Tjinb[...])]
 
-    plant_data= PlantDataManager(plant, 
-                                 states_of_interest,
-                                 inputs_of_interest,)
-
-    controller_data= ControllerDataManager(controller,
-                                           states_of_interest,
-                                           inputs_of_interest,)
-
+    plant_data= PlantDataManager(plant, states_of_interest)
+    controller_data= ControllerDataManager(controller, states_of_interest)
     #--------------------------------------------------------------------------
 
     solve_consistent_initial_conditions(plant, plant.time, solver)
@@ -193,7 +186,7 @@ def main():
                 )
 
         nmpc.controller.advance_one_sample()
-        nmpc.controller.load_initial_conditions(measured)    
+        nmpc.controller.load_initial_conditions(measured)
 
         solver.solve(nmpc.controller, tee=True)
         controller_data.save_controller_data(iteration = i)
@@ -209,14 +202,15 @@ def main():
 
         nmpc.plant.initialize_by_solving_elements(solver)
         nmpc.plant.vectors.input[...].fix() #Fix the input to solve the plant
-        solver.solve(nmpc.plant, tee = True)    
+        solver.solve(nmpc.plant, tee = True)
         plant_data.save_plant_data(iteration = i)
 
     plot_setpoint_tracking_results(states_of_interest,
                                    plant_data.plant_df,
                                    controller_data.setpoint_df)
-    plot_control_input(inputs_of_interest,
-                       plant_data.plant_df)
+
+    inputs_to_plot = [Reference(nmpc.plant.mod.Tjinb[:])]
+    plot_control_input(inputs_to_plot, plant_data.plant_df)
 
     return nmpc, plant_data, controller_data
 
