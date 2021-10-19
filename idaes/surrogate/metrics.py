@@ -26,6 +26,10 @@ def compute_fit_metrics(surrogate, dataframe):
        dataframe : pandas DataFrame
           The dataframe that contains the inputs and outputs we want to use
           in the evaluation.
+
+    Returns:
+        dict-of-dicts with outer keys representing output labels and inner keys
+        representing metrics for that output.
     """
     y = dataframe[surrogate.output_labels()]
     f = surrogate.evaluate_surrogate(dataframe)
@@ -41,4 +45,14 @@ def compute_fit_metrics(surrogate, dataframe):
     MSE = ((y-f)**2).mean(axis=0)
     RMSE = MSE**0.5
 
-    return {"RMSE": RMSE, "MSE": MSE, "MAE": MAE, "maxAE": maxAE, "SSE": SSE, "R2": R2}
+    # Reorder indices to have output first
+    metrics = {}
+    for o in surrogate.output_labels():
+        metrics[o] = {"RMSE": RMSE[o],
+                      "MSE": MSE[o],
+                      "MAE": MAE[o],
+                      "maxAE": maxAE[o],
+                      "SSE": SSE[o],
+                      "R2": R2[o]}
+
+    return metrics

@@ -1254,11 +1254,11 @@ class TestWorkflow():
         assert isinstance(metrics, dict)
 
         # ALAMO metrics are consistently 10x larger than they should be
-        assert metrics["SSE"]["z1"] == pytest.approx(
+        assert metrics["z1"]["SSE"] == pytest.approx(
             float(alamo_trainer._results["SSE"]["z1"])*0.1, rel=1e-8)
-        assert metrics["R2"]["z1"] == pytest.approx(
+        assert metrics["z1"]["R2"] == pytest.approx(
             float(alamo_trainer._results["R2"]["z1"]), rel=1e-8)
-        assert metrics["MSE"]["z1"] == pytest.approx(
+        assert metrics["z1"]["MSE"] == pytest.approx(
             float(alamo_trainer._results["RMSE"]["z1"])**2*0.1, rel=1e-8)
-        assert metrics["RMSE"]["z1"] == pytest.approx(
+        assert metrics["z1"]["RMSE"] == pytest.approx(
             float(alamo_trainer._results["RMSE"]["z1"])*0.1, rel=1e-8)

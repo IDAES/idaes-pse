@@ -52,13 +52,13 @@ def metrics():
 def test_compute_metrics(metrics):
 
     # All data should have an offset of ERR, so error is known
-    assert metrics["SSE"]["z1"] == pytest.approx(ERR**2*N, rel=1e-12)
-    assert metrics["MSE"]["z1"] == pytest.approx(ERR**2, rel=1e-12)
-    assert metrics["RMSE"]["z1"] == pytest.approx(ERR, rel=1e-12)
+    assert metrics["z1"]["SSE"] == pytest.approx(ERR**2*N, rel=1e-12)
+    assert metrics["z1"]["MSE"] == pytest.approx(ERR**2, rel=1e-12)
+    assert metrics["z1"]["RMSE"] == pytest.approx(ERR, rel=1e-12)
 
     # Max and mean errors should be equal to ERR
-    assert metrics["MAE"]["z1"] == pytest.approx(ERR, rel=1e-12)
-    assert metrics["maxAE"]["z1"] == pytest.approx(ERR, rel=1e-12)
+    assert metrics["z1"]["MAE"] == pytest.approx(ERR, rel=1e-12)
+    assert metrics["z1"]["maxAE"] == pytest.approx(ERR, rel=1e-12)
 
     # Calculate SST
     # Average measured z1 is equal to ERR, thus measured z1-z1_mean = x1
@@ -66,4 +66,4 @@ def test_compute_metrics(metrics):
     for i in range(int(Np)):
         sst += 2*(Np/10-0.1*i)**2
 
-    assert metrics["R2"]["z1"] == pytest.approx(1-ERR**2*N/sst, rel=1e-12)
+    assert metrics["z1"]["R2"] == pytest.approx(1-ERR**2*N/sst, rel=1e-12)
