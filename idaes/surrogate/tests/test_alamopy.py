@@ -29,7 +29,7 @@ from idaes.surrogate.alamopy import \
     AlamoTrainer, AlamoObject, Modelers, Screener, alamo
 from idaes.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.surrogate.metrics import compute_fit_metrics, TrainingMetrics
+from idaes.surrogate.metrics import compute_fit_metrics
 
 
 dirpath = Path(__file__).parent.resolve()
@@ -1251,14 +1251,14 @@ class TestWorkflow():
 
         metrics = compute_fit_metrics(alamo_object, TestWorkflow.training_data)
 
-        assert isinstance(metrics, TrainingMetrics)
+        assert isinstance(metrics, dict)
 
         # ALAMO metrics are consistently 10x larger than they should be
-        assert metrics.SSE["z1"] == pytest.approx(
+        assert metrics["SSE"]["z1"] == pytest.approx(
             float(alamo_trainer._results["SSE"]["z1"])*0.1, rel=1e-8)
-        assert metrics.R2["z1"] == pytest.approx(
+        assert metrics["R2"]["z1"] == pytest.approx(
             float(alamo_trainer._results["R2"]["z1"]), rel=1e-8)
-        assert metrics.MSE["z1"] == pytest.approx(
+        assert metrics["MSE"]["z1"] == pytest.approx(
             float(alamo_trainer._results["RMSE"]["z1"])**2*0.1, rel=1e-8)
-        assert metrics.RMSE["z1"] == pytest.approx(
+        assert metrics["RMSE"]["z1"] == pytest.approx(
             float(alamo_trainer._results["RMSE"]["z1"])*0.1, rel=1e-8)

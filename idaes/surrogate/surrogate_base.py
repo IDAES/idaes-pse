@@ -222,19 +222,3 @@ class SurrogateBase():
         """
         raise NotImplementedError('"load" should be implemented in the derived'
                                   ' SurrogateObject class')
-
-    def compute_fit_metrics(self, data):
-        """
-        This method computes a variety of metrics regarding the fit of the
-        surrogate to the data provided.
-
-        Args:
-           data : pandas DataFrame
-              pandas DataFrame that includes columns for the inputs and the
-              outputs. Metrics for the quality of fit will be computed across
-              all the rows in the provided data.
-
-        Returns:
-           TrainingMetrics object
-        """
-        return compute_fit_metrics(self, data)

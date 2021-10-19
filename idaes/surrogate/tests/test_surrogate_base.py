@@ -245,13 +245,3 @@ class TestSurrogateBase:
                            match='"load" should be implemented in the derived'
                            ' SurrogateObject class'):
             surrogate.load(surrogate, "foo")
-
-    @pytest.mark.unit
-    def test_compute_fit_metrics(self, surrogate):
-        # Calling compute_fit_metrics should result in a call to
-        # evaluate_surrogate, which will give a NotImplementedError
-        # This test does rely on the expected behaviour of compute_fit_metrics
-        with pytest.raises(NotImplementedError,
-                           match="SurrogateModel class has not implemented an "
-                           "evaluate_surrogate method."):
-            surrogate.compute_fit_metrics(data=training_data)
