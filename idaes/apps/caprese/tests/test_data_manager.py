@@ -134,7 +134,7 @@ class TestDataManager(object):
                                                variables,
                                                iteration = 300,
                                                time_subset = [0,1],
-                                               rename_map = rename_map)       
+                                               rename_map = rename_map)
         assert len(df3.index) == 2
         assert all(i1 == i2 for i1, i2 in zip(df3.index, [0.0,1.0]))
         assert len(df3.columns) == 3
@@ -162,7 +162,7 @@ class TestDataManager(object):
         variables = [pyo.Reference(m.var1[:, "A"]), pyo.Reference(m.var1[:, "B"])]
         str_cuids = [str(ComponentUID(var.referent)) for var in variables]
 
-        # Manually create differential_vars, save differential varialbes and, 
+        # Manually create differential_vars, save differential varialbes and,
         # assign their setpoints.
         m.differential_vars = []
         for ind, var in enumerate(variables):
@@ -170,10 +170,10 @@ class TestDataManager(object):
             new_ref.setpoint = 10.*(ind+1)
             m.differential_vars.append(new_ref)
 
-        # This mapping is important, because user given variables are not nmpc_var. 
+        # This mapping is important, because user given variables are not nmpc_var.
         # Thus, they don't have setpoint attribute.
         # This mapping maps the user given variables to corresponding nmpc_vars.
-        m.var_mapping = ComponentMap((original_ref, new_ref) 
+        m.var_mapping = ComponentMap((original_ref, new_ref)
                                      for original_ref, new_ref in zip(variables, m.differential_vars))
 
 
@@ -216,7 +216,7 @@ class TestDataManager(object):
                 time=time,
                 inputs=inputs,
                 measurements=measurements,
-                )    
+                )
         plant.construct()
         plant.set_sample_time(sample_time = 0.5)
         return plant
@@ -233,7 +233,7 @@ class TestDataManager(object):
                     time=time,
                     inputs=inputs,
                     measurements=measurements,
-                    )    
+                    )
         controller.construct()
         controller.set_sample_time(sample_time = 0.5)
         return controller
@@ -250,7 +250,7 @@ class TestDataManager(object):
                     time=time,
                     inputs=inputs,
                     measurements=measurements,
-                    sample_time = 0.5)    
+                    sample_time = 0.5)
         estimator.construct()
         estimator.set_sample_time(sample_time = 0.5)
         return estimator
@@ -267,14 +267,11 @@ class TestDataManager(object):
                 time=time,
                 inputs=inputs,
                 measurements=measurements,
-                )    
+                )
         plant.construct()
 
         states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(model.flow_in[:])]
-        plant_datamanager = PlantDataManager(plant,
-                                             states_of_interest,
-                                             inputs_of_interest,)
+        plant_datamanager = PlantDataManager(plant, states_of_interest,)
 
         # Make sure all methods are there.
         assert hasattr(plant_datamanager, "__init__")
@@ -289,30 +286,25 @@ class TestDataManager(object):
         time = plant.time
         t0 = time.first()
 
-        states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(model.flow_in[:])]
-        plant_datamanager = PlantDataManager(plant,
-                                             states_of_interest,
-                                             inputs_of_interest,)
-
-        assert hasattr(plant_datamanager, "plant_user_interested_states")
-        assert all(i1[t0] == i2[t0] for i1, i2 in 
-                   zip(plant_datamanager.plant_user_interested_states, states_of_interest))
-
-        assert hasattr(plant_datamanager, "plant_user_interested_inputs")
-        assert all(i1[t0] == i2[t0] for i1, i2 in 
-                   zip(plant_datamanager.plant_user_interested_inputs, inputs_of_interest))        
+        states_of_interest = [pyo.Reference(model.conc[:, "A"]),
+                              pyo.Reference(model.rate[:, "A"])]
+        plant_datamanager = PlantDataManager(plant, states_of_interest)
 
         assert hasattr(plant_datamanager, "plantblock")
         assert plant == plant_datamanager.plantblock
 
+        # Note that model.conc[:, "A"] has alrealy existed in differential_vars
+        assert hasattr(plant_datamanager, "plant_states_of_interest")
+        assert all(i1[t0] == i2[t0] for i1, i2 in
+                   zip(plant_datamanager.plant_states_of_interest,
+                       plant.differential_vars + [states_of_interest[1]]))
+
         assert hasattr(plant_datamanager, "plant_vars_of_interest")
-        pred_plant_vars_of_interest = states_of_interest + \
-                                        inputs_of_interest + \
-                                            plant.differential_vars + \
-                                                plant.input_vars
-        assert all(i1[t0] == i2[t0] for i1, i2 in 
-                   zip(plant_datamanager.plant_vars_of_interest, pred_plant_vars_of_interest)) 
+        pred_plant_vars_of_interest = plant.differential_vars + \
+                                        [states_of_interest[1]] + \
+                                        plant.input_vars
+        assert all(i1[t0] == i2[t0] for i1, i2 in
+                   zip(plant_datamanager.plant_vars_of_interest, pred_plant_vars_of_interest))
 
         assert hasattr(plant_datamanager, "plant_df")
         # empty_dataframe_from_variables has been tested.
@@ -324,11 +316,10 @@ class TestDataManager(object):
         time = plant.time
         t0 = time.first()
 
-        states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(model.flow_in[:])]
-        plant_datamanager = PlantDataManager(plant,
-                                             states_of_interest,
-                                             inputs_of_interest,)  
+        states_of_interest = [pyo.Reference(model.conc[:, "A"]),
+                              pyo.Reference(model.rate[:, "A"])]
+        plant_datamanager = PlantDataManager(plant, states_of_interest)
+
 
         assert id(plant_datamanager.get_plant_dataframe()) == id(plant_datamanager.plant_df)
 
@@ -339,32 +330,34 @@ class TestDataManager(object):
         time = plant.time
         t0 = time.first()
 
-        states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        # Now that Pyomo PR #2141 has been merged, the programatically
-        # generated reference to flow_in will have the correct "single-
-        # star" CUID, so this line is unnecessary.
-        #inputs_of_interest = [pyo.Reference(model.flow_in[:])]
+        states_of_interest = [pyo.Reference(model.conc[:, "A"]),
+                              pyo.Reference(model.rate[:, "A"])]
         plant_datamanager = PlantDataManager(plant, states_of_interest)
 
         # Set some values at t0 for differential variables
         plant.vectors.differential[0,:].set_value(35.)
         plant.vectors.differential[1,:].set_value(45.)
 
-        plant_datamanager.save_initial_plant_data()   
+        # Set some values at t0 for the user-interested variable.
+        plant.vectors.algebraic[1,:].set_value(0.2)
+
+        plant_datamanager.save_initial_plant_data()
 
         df = plant_datamanager.plant_df
         assert len(df.index) == 1
         assert df.index[0] == 0.0
 
         pred_columns = [
-            "iteration", "mod.conc[*,A]", "mod.conc[*,B]", "mod.flow_in[*]"
+            "iteration", "mod.conc[*,A]", "mod.conc[*,B]",
+            "mod.rate[*,A]", "mod.flow_in[*]"
         ]
         assert all(i1 == i2 for i1, i2 in zip(pred_columns, df.columns))
         assert df["iteration"][0] == 0
         assert df["mod.conc[*,A]"][0] == 35.
+        assert df["mod.conc[*,B]"][0] == 45.
+        assert df["mod.rate[*,A]"][0] == 0.2
         import numpy as np
         assert np.isnan(df["mod.flow_in[*]"][0])
-        assert df["mod.conc[*,B]"][0] == 45.
 
     @pytest.mark.unit
     def test_save_plant_data(self):
@@ -373,19 +366,23 @@ class TestDataManager(object):
         time = plant.time
         t0 = time.first()
 
-        states_of_interest = [pyo.Reference(model.conc[:, "A"])]
-        #inputs_of_interest = [pyo.Reference(model.flow_in[:])]
+        states_of_interest = [pyo.Reference(model.conc[:, "A"]),
+                              pyo.Reference(model.rate[:, "A"])]
         plant_datamanager = PlantDataManager(plant, states_of_interest)
 
         # Set some initial values for differential variables
         plant.vectors.differential[0,0].set_value(35.)
         plant.vectors.differential[1,0].set_value(45.)
 
+        # Set values for the user-interested variable
+        plant.vectors.algebraic[1,0].set_value(0.2)
+
         plant_datamanager.save_initial_plant_data()
 
         # Set values at other time points
         plant.vectors.differential[0,:].set_value(55.)
         plant.vectors.differential[1,:].set_value(65.)
+        plant.vectors.algebraic[1,:].set_value(0.4)
         plant.vectors.input[...].set_value(123.)
 
         plant_datamanager.save_plant_data(iteration = 1)
@@ -396,13 +393,15 @@ class TestDataManager(object):
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df.index))
 
         pred_columns = [
-            "iteration", "mod.conc[*,A]", "mod.conc[*,B]", "mod.flow_in[*]"
+            "iteration", "mod.conc[*,A]", "mod.conc[*,B]",
+            "mod.rate[*,A]", "mod.flow_in[*]"
         ]
         assert all(i1 == i2 for i1, i2 in zip(pred_columns, df.columns))
         assert all(val == 1 for val in df["iteration"][1:])
         assert all(val == 55. for val in df["mod.conc[*,A]"][1:])
-        assert all(val == 123. for val in df["mod.flow_in[*]"][1:])
         assert all(val == 65. for val in df["mod.conc[*,B]"][1:])
+        assert all(val == 0.4 for val in df["mod.rate[*,A]"][1:])
+        assert all(val == 123. for val in df["mod.flow_in[*]"][1:])
 
     @pytest.mark.unit
     def test_ControllerDataManager(self):
@@ -416,11 +415,10 @@ class TestDataManager(object):
         c_time = controller.time
         c_t0 = c_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
         nmpc_data = ControllerDataManager(controller,
-                                          states_of_interest,
-                                          inputs_of_interest,)  
+                                          states_of_interest,)
 
         # Make sure all methods are there.
         assert hasattr(nmpc_data, "get_controller_dataframe")
@@ -439,48 +437,28 @@ class TestDataManager(object):
         c_time = controller.time
         c_t0 = c_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
         nmpc_data = ControllerDataManager(controller,
-                                          states_of_interest,
-                                          inputs_of_interest,)  
+                                          states_of_interest,)
 
         assert hasattr(nmpc_data, "controllerblock")
         assert nmpc_data.controllerblock == controller
 
-        assert hasattr(nmpc_data, "controller_user_interested_states")
-        pred_controller_user_interested_states = [pyo.Reference(c_model.conc[:, "A"])]
-        assert all(i1[c_t0] == i2[c_t0] for i1, i2 
-                   in zip(pred_controller_user_interested_states, 
-                          nmpc_data.controller_user_interested_states))
-
-        assert hasattr(nmpc_data, "controller_user_interested_inputs")
-        pred_controller_user_interested_inputs = [pyo.Reference(c_model.flow_in[:])]
-        assert all(i1[c_t0] == i2[c_t0] for i1, i2 
-                   in zip(pred_controller_user_interested_inputs, 
-                          nmpc_data.controller_user_interested_inputs))
-
-        assert hasattr(nmpc_data, "controller_vars_of_interest")
-        pred_controller_vars_of_interest = [pyo.Reference(c_model.flow_in[:])] + \
-                                                controller.input_vars
-        assert all(i1[c_t0] == i2[c_t0] for i1, i2 
-                   in zip(pred_controller_vars_of_interest, 
-                          nmpc_data.controller_vars_of_interest))
+        assert hasattr(nmpc_data, "controller_states_of_interest")
+        pred_controller_states_of_interest = controller.differential_vars + \
+                                                [pyo.Reference(c_model.rate[:, "A"])]
+        assert all(i1[c_t0] == i2[c_t0] for i1, i2 in
+                       zip(pred_controller_states_of_interest,
+                           nmpc_data.controller_states_of_interest))
 
         assert hasattr(nmpc_data, "controller_df")
-
-        assert hasattr(nmpc_data, "states_need_setpoints")
-        pred_states_need_setpoints = [pyo.Reference(c_model.conc[:, "A"])] + \
-                                            controller.differential_vars
-        assert all(i1[c_t0] == i2[c_t0] for i1, i2 
-                   in zip(pred_states_need_setpoints, 
-                          nmpc_data.states_need_setpoints))        
 
         assert hasattr(nmpc_data, "setpoint_df")
 
         assert hasattr(nmpc_data, "user_given_vars_map_nmpcvar")
         vardata_map = controller.vardata_map
-        for var in nmpc_data.controller_user_interested_states:
+        for var in nmpc_data.extra_vars_user_interested:
             assert nmpc_data.user_given_vars_map_nmpcvar[var] == vardata_map[var[c_t0]]
 
     @pytest.mark.unit
@@ -495,11 +473,10 @@ class TestDataManager(object):
         c_time = controller.time
         c_t0 = c_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
         nmpc_data = ControllerDataManager(controller,
-                                          states_of_interest,
-                                          inputs_of_interest,)
+                                          states_of_interest,)
 
         assert id(nmpc_data.get_controller_dataframe()) == id(nmpc_data.controller_df)
 
@@ -515,11 +492,10 @@ class TestDataManager(object):
         c_time = controller.time
         c_t0 = c_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
         nmpc_data = ControllerDataManager(controller,
-                                          states_of_interest,
-                                          inputs_of_interest,) 
+                                          states_of_interest,)
 
         assert id(nmpc_data.get_setpoint_dataframe()) == id(nmpc_data.setpoint_df)
 
@@ -535,23 +511,24 @@ class TestDataManager(object):
         c_time = controller.time
         c_t0 = c_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        #inputs_of_interest = [pyo.Reference(p_model.flow_in[:])]
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
         nmpc_data = ControllerDataManager(controller, states_of_interest)
 
         # Set values of control inputs and setpoints in the controller
         controller.vectors.input[...].set_value(5.0)
         controller.vectors.differential.set_setpoint([0.2, 0.3])
+        controller.vectors.algebraic.set_setpoint([4.5, 5.5, 6.5])
 
         nmpc_data.save_controller_data(iteration = 10)
 
         pred_controller_result = OrderedDict(
             [("iteration", 10), ("mod.flow_in[*]", 5)]
-            #("mod.flow_in[**]", 5),])
         )
         pred_setpoint_result = OrderedDict([("iteration", 10),
-                                            ("mod.conc[*,A]", 0.2), 
-                                            ("mod.conc[*,B]", 0.3),])
+                                            ("mod.conc[*,A]", 0.2),
+                                            ("mod.conc[*,B]", 0.3),
+                                            ("mod.rate[*,A]", 5.5)])
 
         pred_index = [0.083333, 0.25, 0.333333, 0.5]
 
@@ -560,28 +537,29 @@ class TestDataManager(object):
                 zip(pred_controller_result.keys(), df.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df.index))
         for key, value in pred_controller_result.items():
-            assert all(val == value for val in df[key])    
+            assert all(val == value for val in df[key])
 
         df_sp = nmpc_data.setpoint_df
         assert all(i1 == i2 for i1, i2 in zip(pred_setpoint_result.keys(), df_sp.columns))
         assert all(i1 == i2 for i1, i2 in zip(pred_index, df_sp.index))
         for key, value in pred_setpoint_result.items():
-            assert all(val == value for val in df_sp[key])  
+            assert all(val == value for val in df_sp[key])
 
-        # Check for the other iteration 
+        # Check for the other iteration
         # re-set values
         controller.vectors.input[...].set_value(15.0)
         controller.vectors.differential.set_setpoint([5.2, 5.3])
+        controller.vectors.algebraic.set_setpoint([9.5, 10.5, 11.5])
 
-        nmpc_data.save_controller_data(iteration = 20)                        
+        nmpc_data.save_controller_data(iteration = 20)
 
         pred_columns_result = OrderedDict(
             [("iteration", 20), ("mod.flow_in[*]", 15)]
-            #("mod.flow_in[**]", 15),])
         )
         pred_setpoint_result = OrderedDict([("iteration", 20),
                                             ("mod.conc[*,A]", 5.2),
-                                            ("mod.conc[*,B]", 5.3),])
+                                            ("mod.conc[*,B]", 5.3),
+                                            ("mod.rate[*,A]", 10.5)])
         pred_index = [0.583333, 0.75, 0.833333, 1.0]
 
         df = nmpc_data.controller_df
@@ -630,25 +608,19 @@ class TestDataManager(object):
         e_time = estimator.time
         e_t0 = e_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        mhe_data = EstimatorDataManager(estimator,
-                                        states_of_interest,)
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
+        mhe_data = EstimatorDataManager(estimator, states_of_interest,)
 
         assert hasattr(mhe_data, "estimatorblock")
         assert mhe_data.estimatorblock == estimator
 
-        assert hasattr(mhe_data, "estimator_user_interested_states")
-        pred_estimator_user_interested_states = [pyo.Reference(e_model.conc[:, "A"])] 
-        assert all(i1[e_t0] == i2[e_t0] for i1, i2
-                    in zip(pred_estimator_user_interested_states,
-                            mhe_data.estimator_user_interested_states))
-
         assert hasattr(mhe_data, "estimator_vars_of_interest")
-        pred_estimator_vars_of_interest = [pyo.Reference(e_model.conc[:, "A"])] + \
-                                                    estimator.differential_vars
+        pred_estimator_vars_of_interest = estimator.differential_vars + \
+                                            [pyo.Reference(e_model.rate[:, "A"])]
         assert all(i1[e_t0] == i2[e_t0] for i1, i2
-                    in zip(pred_estimator_user_interested_states,
-                            mhe_data.estimator_user_interested_states))
+                    in zip(pred_estimator_vars_of_interest,
+                            mhe_data.estimator_vars_of_interest))
 
         assert hasattr(mhe_data, "estimator_df")
 
@@ -664,9 +636,9 @@ class TestDataManager(object):
         e_time = estimator.time
         e_t0 = e_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        mhe_data = EstimatorDataManager(estimator,
-                                        states_of_interest,)
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
+        mhe_data = EstimatorDataManager(estimator, states_of_interest)
 
         df = mhe_data.get_estimator_dataframe()
         assert id(df) ==  id(mhe_data.estimator_df)
@@ -683,19 +655,21 @@ class TestDataManager(object):
         e_time = estimator.time
         e_t0 = e_time.first()
 
-        states_of_interest = [pyo.Reference(p_model.conc[:, "A"])]
-        mhe_data = EstimatorDataManager(estimator,
-                                        states_of_interest,)
+        states_of_interest = [pyo.Reference(p_model.conc[:, "A"]),
+                              pyo.Reference(p_model.rate[:, "A"])]
+        mhe_data = EstimatorDataManager(estimator, states_of_interest,)
 
         # Set values for differential variables
         estimator.vectors.differential[0,:].set_value(100.)
         estimator.vectors.differential[1,:].set_value(200.)
+        estimator.vectors.algebraic[1,:].set_value(30.)
 
         mhe_data.save_estimator_data(iteration = 10)
 
         pred_column_results = OrderedDict([("iteration", 10),
                                             ("mod.conc[*,A]", 100.),
-                                            ("mod.conc[*,B]", 200.)])
+                                            ("mod.conc[*,B]", 200.),
+                                            ("mod.rate[*,A]", 30.)])
         df = mhe_data.estimator_df
         assert all(i1 == i2 for i1, i2 in zip(pred_column_results.keys(), df.columns))
         assert df.index[0] == 5.5
@@ -706,12 +680,14 @@ class TestDataManager(object):
         # Re-set values for differential variables
         estimator.vectors.differential[0,:].set_value(300.)
         estimator.vectors.differential[1,:].set_value(400.)
+        estimator.vectors.algebraic[1,:].set_value(60.)
 
         mhe_data.save_estimator_data(iteration = 20)
 
         pred_column_results = OrderedDict([("iteration", 20),
                                             ("mod.conc[*,A]", 300.),
-                                            ("mod.conc[*,B]", 400.)])
+                                            ("mod.conc[*,B]", 400.),
+                                            ("mod.rate[*,A]", 60.)])
         df = mhe_data.estimator_df
         assert all(i1 == i2 for i1, i2 in zip(pred_column_results.keys(), df.columns))
         assert df.index[1] == 10.5
