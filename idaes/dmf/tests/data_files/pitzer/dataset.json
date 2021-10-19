@@ -1,0 +1,28 @@
+{
+    "name": "pitzer",
+    "text": {
+        "file": "Pitzer_1984.pdf",
+        "title": "Thermodynamic Properties of Aqueous Sodium Chloride Solutions",
+        "date": "1984",
+        "authors": "Kenneth S. Pitzer, J. Christopher Peiper, and R. H. Busey",
+        "venue": "Journal of Physical and Chemical Reference Data 13, 1",
+        "doi": "https://doi.org/10.1063/1.555709"
+    },
+    "tables": [
+      {
+        "name": "Table A-1",
+        "description": "\\text{The Standard Gibbs Energies of Water and NaCl(aq), Debye-Huckel Parameter } A\\phi \\text{ and NaCl Virial Parameters at t and P. } G^0_1(T,P) \\text{ is the Gibbs Energy of Water, } G^0_1(T,P) - H^0_1(\\text{0 K, 1 atm})^\\phi \\text{, and } G^0_2 \\text{ the Gibbs energy for NaCl(aq) in its Standard State,} G^0_2(T,P) - H^0_2(\\text{298 K, 1 atm})\\text{. Note that } C_{NaCl} = C^\\phi_{NaCl}/2.",
+        "datafile": "pitzer_1.csv"
+      },
+      {
+        "name": "Table A-2",
+        "description":"\\text{The Standard Entropies of Water and NaCl(aq), Debye-Huckel Parameter } A_S \\text{ and NaCl Virial Parameters at t and P. } S^0_1(T,P) \\text{ and } S^0_2(T,P) \\text{ are Absolute Entropies, i.e., they are Referenced to States Approaching Zero Entropy at 0 K.}",
+        "datafile": "pitzer_2.csv"
+      },
+      {
+        "name": "Table A-3",
+        "description":"\\text{The Standard Enthalpies of Water and NaCl(aq), Debye-Huckel Parameter } A_L \\text{ and NaCl Virial Parameters at t and P. } H^0_1 \\text{ is the Enthalpy of Water, }  H^0_1(T,P) - H^0_1(\\text{0 K, ideal gas})\\text{ and } H^0_2 \\text{ the Enthalpy of NaCl(aq) in its Standard State, }  H^0_2(T,P) - H^0_2(\\text{298 K, 1 atm}).",
+        "datafile": "pitzer_3.csv"
+      }
+    ]
+}
