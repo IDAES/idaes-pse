@@ -15,7 +15,7 @@ Tests for data_utils module
 """
 import pytest
 import pandas as pd
-from idaes.surrogate.data_utils import split_training_validation, split_training_validation_testing
+from idaes.surrogate.sampling import split_training_validation, split_training_validation_testing
 
 
 class TestDataUtils:
